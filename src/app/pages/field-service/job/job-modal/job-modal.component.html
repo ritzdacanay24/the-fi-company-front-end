@@ -1,0 +1,12 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Job Modal</h4>
+</div>
+
+<div class="modal-body">
+  <app-job-form (setFormElements)="setFormElements($event)" [submitted]="submitted"></app-job-form>
+</div>
+
+<div class="modal-footer" style="background: #fff">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-success">Save</button>
+</div>

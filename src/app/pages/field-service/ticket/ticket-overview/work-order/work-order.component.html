@@ -1,0 +1,104 @@
+<div class="row">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header align-items-center d-flex">
+        <h4 class="card-title mb-0 flex-grow-1">Submit Job</h4>
+      </div>
+
+      <div class="card-body" style="height: calc(100vh - 261px);overflow: auto;" *ngIf="isLoading">
+        <h4>Loading data.. Please wait.</h4>
+      </div>
+
+      <div class="card-body" *ngIf="!isLoading">
+        <div class="mb-3">
+          <label class="form-label required">Work completed?</label>
+          <select class="form-select" [(ngModel)]="data.workCompleted" (change)="update()">
+            <option selected [value]="">Select</option>
+            <option *ngFor="let row of ['Yes', 'No']" [value]="row">{{row}}</option>
+          </select>
+        </div>
+
+        <div class="mb-3" *ngIf="data?.workCompleted == 'No'">
+          <label class="form-label required">Please Explain</label>
+          <textarea type="text" class="form-control form-control"
+            placeholder="Please explain why the service was not completed" [(ngModel)]="data.workCompletedComment"
+            (change)="update()" row="6"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="col mb-3">
+            <label class="form-label required">Customer name:</label>
+            <input type="text" class="form-control form-control" placeholder="Enter customer name"
+              [(ngModel)]="data.customerName1" (change)="update()">
+          </div>
+          <div class="col mb-3">
+            <label class="form-label required">Customer Phone:</label>
+            <input type="text" class="form-control form-control" placeholder="Enter customer number"
+              [(ngModel)]="data.phone" (change)="update()">
+          </div>
+        </div>
+
+
+        <div class="row">
+          <div class="col mb-3">
+            <label class="form-label required">Customer Signature:</label>
+            <div class="d-grid gap-2 col-12 mx-auto">
+              <button class="btn btn-primary btn-block" (click)="openSignature()">Click here for customer
+                signature</button>
+              <img *ngIf="data?.customerSignatureImage" [errorImage]="'assets/images/no-image.PNG'"
+                [defaultImage]="'assets/images/loading.PNG'" [lazyLoad]="data?.customerSignatureImage"
+                style="border: 2px dashed #c0c0c0" class="mx-auto">
+            </div>
+          </div>
+          <div class="col mb-3">
+            <label class="form-label required">Tech Signature:</label>
+            <div class="d-grid gap-2 col-12 mx-auto">
+              <button class="btn btn-primary btn-block" (click)="openTechSignature()">Click here for
+                technician
+                signature</button>
+              <img *ngIf="data?.technicianSignatureImage" [errorImage]="'assets/images/no-image.PNG'"
+                [defaultImage]="'assets/images/loading.PNG'" [lazyLoad]="data?.technicianSignatureImage"
+                style="border: 2px dashed #c0c0c0" class="mx-auto">
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Sign/Parts Returned To:</label>
+          <select class="form-select" [(ngModel)]="data.partLocation" (change)="update();goToBottom()">
+            <option *ngFor="let row of ['Eye-Fi', 'Customer', 'N/A']">{{row}}</option>
+          </select>
+        </div>
+
+
+        <div *ngIf="data?.partLocation == 'Eye-Fi'">
+          <div class="mb-3">
+            <label class="form-label required">Tech Signature:</label>
+            <div class="d-grid gap-2 col-12 mx-auto">
+              <button class="btn btn-primary btn-block" (click)="openRecSignature()">Click here for
+                employee
+                signature</button>
+              <img *ngIf="data?.partReceivedBySignature" [errorImage]="'assets/images/no-image.PNG'"
+                [defaultImage]="'assets/images/loading.PNG'" [lazyLoad]="data?.partReceivedBySignature"
+                style="border: 2px dashed #c0c0c0" class="mx-auto">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label required">Receiving Employee’s Name</label>
+            <input type="text" class="form-control form-control" id="partReceivedByName"
+              placeholder="Enter receiving employee’s name" [(ngModel)]="data.partReceivedByName" (change)="update()">
+          </div>
+        </div>
+
+        <p class="text-center p-1 bg-light" style="margin-left: -24px;
+    margin-right: -24px;" *ngIf="data && !loading">End of data</p>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <button class="btn btn-warning me-3" (click)="onClearSubmissionDate()" *ngIf="this.data.dateSubmitted">Clear
+          Submission Date</button>
+        <button class="btn btn-success" (click)="submit()">Submit Job</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,9 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { SharedModule } from '../shared.module';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-breadcrumbs',
   templateUrl: './breadcrumbs.component.html',
   styleUrls: ['./breadcrumbs.component.scss']

@@ -1,0 +1,21 @@
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex align-items-center">
+          <div class=" me-3">
+            <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [displayOptions]="true"></app-date-range>
+          </div>
+          <div class="ms-auto">
+            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <ag-grid-angular class="ag-theme-alpine no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
+          style="width: 100%;height: calc(100vh - 157px);">
+        </ag-grid-angular>
+      </div>
+    </div>
+  </div>
+</div>

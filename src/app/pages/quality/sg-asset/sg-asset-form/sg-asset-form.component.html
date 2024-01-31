@@ -1,0 +1,42 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3">
+    <label class="form-label">L&W Serial #</label>
+    <input class="form-control" type="text" formControlName="generated_SG_asset"
+      [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter L&W Serial Number" />
+    <small>If L&W serial # is blank, the serial # will automatically generate.</small>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">PO Number</label>
+    <input class="form-control" type="text" formControlName="poNumber" placeholder="Enter PO Number"
+      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Property site</label>
+    <input class="form-control" type="text" formControlName="property_site" placeholder="Enter Property Site"
+      [ngClass]="{ 'is-invalid': submitted && f.property_site.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <app-qad-customer-part-search [form_label]="'SG Part #'" (notifyParent)="getCustomerPartNumber($event)"
+      [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
+      [value]="f.sgPartNumber.value"></app-qad-customer-part-search>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Serial number</label>
+    <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
+      [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+        (change)="setBooleanToNumber('active')">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+</form>

@@ -16,6 +16,7 @@ File: Custom Css File
     .navbar-nav .nav-sm .nav-link:before {
         left: 10px;
         vertical-align: middle;
+        top: 17.5px;
     }
 
     .nav-link {
@@ -34,6 +35,18 @@ File: Custom Css File
 
     .nav-item:hover>.nav-link {
         border-radius: 10px;
+    }
+
+    .nav-item>a.menu-link {
+        padding-left: 18px
+    }
+
+    :is([data-layout=vertical], [data-layout=semibox])[data-sidebar-size=sm] .navbar-menu .navbar-nav .nav-sm {
+        padding: 5px;
+    }
+
+    .nav-link:before {
+        left: 11px !important;
     }
 }
 
@@ -54,6 +67,7 @@ File: Custom Css File
     .navbar-brand-box {
         border-bottom: 1px solid #e8ebf1;
     }
+
 }
 
 [data-sidebar="dark"] {
@@ -72,4 +86,125 @@ File: Custom Css File
     .navbar-brand-box {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
+
+    .btn-gray:disabled {
+        background-color: inherit !important;
+        border: #757575 !important;
+        color: #fff !important;
+    }
+
 }
+
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-input>input {
+    color: var(--vz-body-color);
+}
+
+
+.btn.btn-primary,
+.btn.btn-gray,
+.btn.btn-warning,
+.btn.btn-success,
+.btn.btn-info,
+.btn.btn-danger {
+    box-shadow: #0003 0 3px 1px -2px, #00000024 0 2px 2px, #0000001f 0 1px 5px;
+}
+
+.btn.btn-primary:active,
+.btn.btn-gray:active,
+.btn.btn-warning:active,
+.btn.btn-success:active,
+.btn.btn-info:active,
+.btn.btn-danger:active {
+    box-shadow: #0000002b 0 5px 5px -3px, #00000014 0 8px 14px 1px, #00000005 0 3px 2px 2px !important;
+}
+
+
+.ng-dropdown-panel.ng-select-bottom {
+    background-color: white;
+}
+
+[data-bs-theme="dark"] {
+    .mbsc-ios.mbsc-range-control-value.active {
+        color: #fff;
+    }
+
+    .ng-dropdown-panel {
+        background-color: #32383e;
+        color: #fff;
+    }
+
+    .ng-dropdown-panel.ng-select-bottom {
+        background-color: #32383e;
+    }
+}
+
+[data-bs-theme="light"] {
+    .ng-dropdown-panel {
+        background-color: white;
+    }
+}
+
+.card {
+    overflow: hidden
+}
+
+.btn-gray {
+    background-color: #757575 !important;
+    border: #757575 !important;
+    color: #fff !important;
+}
+
+.btn-gray:not(:disabled):not(.disabled):active:focus {
+    box-shadow: 0 0 0 0.2rem rgba(110, 107, 113, 0.4);
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.ng-select.ng-select-single .ng-select-container {
+    height: 39px;
+}
+
+//quill
+.ql-editor.ql-blank::before {
+    color: $input-placeholder-color;
+    content: attr(data-placeholder);
+    font-style: italic;
+    left: 15px;
+    pointer-events: none;
+    position: absolute;
+    right: 15px;
+}
+
+p {
+    margin-bottom: 0px;
+}
+
+label.required:after {
+    content: " *";
+    color: $red
+}
+
+
+//icons 
+.icon-md-lg {
+    font-size: 20px
+}
+
+.modal-xxl .modal-lg {
+    max-width: 85%;
+}
+
+// @import "./components/plugin-overrides/_ag-grid";
+@import "ag-grid-community/dist/styles/ag-grid.css";
+@import "ag-grid-community/dist/styles/ag-theme-alpine.css";
+@import "ngx-toastr/toastr";
+@import 'ngx-toastr/toastr-bs5-alert';
+@import '~quill/dist/quill.snow.css';
+//my custom
+@import "../../plugins/ngx-toastr";
+@import "../../plugins/ag-grid.scss";
+@import "../../plugins/select2";
+@import "quill-mention/dist/quill.mention.min.css";
+@import "../../plugins/quill-mention";

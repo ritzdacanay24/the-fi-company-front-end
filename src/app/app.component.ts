@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +7,13 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'velzon';
+
+  constructor(ngbModalConfig: NgbModalConfig) {
+    ngbModalConfig.backdrop = 'static';
+    ngbModalConfig.keyboard = false;
+    ngbModalConfig.centered = true;
+    ngbModalConfig.scrollable = true;
+  }
+
+  title = 'Eye-Fi';
 }

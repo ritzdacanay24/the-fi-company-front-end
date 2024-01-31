@@ -1,0 +1,116 @@
+<div class="card">
+  <div class="card-header">
+    <h4 class="text-left"> {{title}} </h4>
+  </div>
+  <div class="card-body" style="height: calc(100vh - 261px);overflow: auto;">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" autofocus="false">
+      <ng-container formGroupName="invoice">
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidator('paper_work_location')">Paperwork Location</label>
+            <select class="form-select" formControlName="paper_work_location"
+              [ngClass]="{ 'is-invalid': submitted && getInvoice.paper_work_location.errors }">
+              <option value="" disabled selected>--Select--</option>
+              <option *ngFor="let row of ['Accounting', 'Field Service', '3rd Party Contractors']" [value]="row">
+                {{row}}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label me-3" [ngClass]="formValidator('billable_flat_rate_or_po')">
+              Billable Flat Rate / PO
+            </label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No'];let i = index;">
+              <input class="form-check-input" type="radio" name="billable_flat_rate_or_po"
+                id="billable_flat_rate_or_po{{i}}" [value]="row" formControlName="billable_flat_rate_or_po"
+                [ngClass]="{ 'is-invalid': submitted && getInvoice.billable_flat_rate_or_po.errors }">
+              <label class="form-check-label" for="billable_flat_rate_or_po{{i}}">{{row}}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label me-3" [ngClass]="formValidator('contractor_inv_sent_to_ap')">
+              Contractor Inv Sent To AP
+            </label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No'];let i = index;">
+              <input class="form-check-input" type="radio" name="contractor_inv_sent_to_ap"
+                id="contractor_inv_sent_to_ap{{i}}" [value]="row" formControlName="contractor_inv_sent_to_ap"
+                [ngClass]="{ 'is-invalid': submitted && getInvoice.contractor_inv_sent_to_ap.errors }">
+              <label class="form-check-label" for="contractor_inv_sent_to_ap{{i}}">{{row}}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label me-3" [ngClass]="formValidator('period')">
+              Period
+            </label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No'];let i = index;">
+              <input class="form-check-input" type="radio" name="period" id="period{{i}}" [value]="row"
+                formControlName="period" [ngClass]="{ 'is-invalid': submitted && getInvoice.period.errors }">
+              <label class="form-check-label" for="period{{i}}">{{row}}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('vendor_inv_number')">Vendor Invoice Number</label>
+            <input type="text" class="form-control" formControlName="vendor_inv_number"
+              placeholder="Enter vendor invoice number" [ngClass]="formClass('vendor_inv_number')">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('vendor_cost')">Vendor cost</label>
+            <input type="text" class="form-control" formControlName="vendor_cost" placeholder="Enter vendor cost"
+              [ngClass]="formClass('vendor_cost')">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('invoice_date')">Invoice Date</label>
+            <input type="text" placeholder="Enter request date" class="form-control" bsDatepicker #drp="bsDatepicker"
+              formControlName="invoice_date" [ngClass]="formClass('invoice_date')" [bsConfig]="bsConfig1">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('invoice_number')">Invoice #</label>
+            <input type="text" class="form-control" formControlName="invoice_number" placeholder="Enter invoice number"
+              [ngClass]="formClass('invoice_number')">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('acc_status')">Status</label>
+            <input type="text" class="form-control" formControlName="acc_status" placeholder="Account Status"
+              [ngClass]="formClass('acc_status')">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('invoice')">Invoice $</label>
+            <input type="text" class="form-control" formControlName="invoice" placeholder="Enter invoice amount"
+              [ngClass]="formClass('invoice')">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidator('invoice_notes')">Invoice Notes</label>
+            <textarea type="text" class="form-control" formControlName="invoice_notes" placeholder="Enter Invoice Notes"
+              [ngClass]="formClass('invoice_notes')" rows="10"></textarea>
+          </div>
+        </div>
+
+      </ng-container>
+    </form>
+  </div>
+  <div class="card-footer">
+    <button class="btn btn-primary" (click)="submit()">Submit</button>
+  </div>
+</div>

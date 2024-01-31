@@ -1,0 +1,40 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="exampleModalLabel">Owner Transactions</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="close()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-400">
+  <h4 class="mb-3">SO#: {{soNumberAndLineNumber}}</h4>
+  <div *ngIf="!isLoading && data?.length == 0">
+    <h5> No owner transactions </h5>
+  </div>
+
+  <div *ngIf="!isLoading && data?.length > 0">
+    <h6>
+      Recent change:
+      {{data[0].createdByFullName}} changed <b>{{data[0].o}}</b> to
+      <b>{{data[0].n}}</b> at {{data[0].createDate}}
+    </h6>
+    <br>
+    <table class="table">
+      <thead>
+        <tr>
+          <th> From </th>
+          <th> To </th>
+          <th> Updated By </th>
+          <th> Updated On </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of data">
+          <td>{{row.o}}</td>
+          <td>{{row.n}}</td>
+          <td>{{row.createdByFullName}}</td>
+          <td>{{row.createDate}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-outline-dark mr-auto" (click)="close()">Close</button>
+</div>

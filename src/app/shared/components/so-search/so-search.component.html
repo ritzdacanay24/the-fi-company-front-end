@@ -1,0 +1,16 @@
+<label class="form-label" *ngIf="showLabel">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
+<ng-select bindLabel="sod_nbr_line" #select [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag" [multiple]="multiple"
+  [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength" [loading]="dataLoading"
+  typeToSearchText="Please enter {{minTermLength}} or more characters" [typeahead]="dataInput$" [(ngModel)]="value"
+  [virtualScroll]="virtualScroll" (change)="select.blur();getSelectedValue($event)"
+  [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
+  [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="SO not found."
+  [clearSearchOnAdd]="true" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendToBody"
+  [clearable]="true">
+
+  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+    <div class="text-left" style="text-align: left !important;">
+      <p> SO: <b>{{ item.sod_nbr }} </b> | Line: <b>{{item.sod_line}}</b> | Part: <b>{{item.sod_part}}</b>
+    </div>
+  </ng-template>
+</ng-select>

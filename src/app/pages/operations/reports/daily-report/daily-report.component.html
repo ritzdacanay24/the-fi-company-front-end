@@ -1,0 +1,159 @@
+<div class="row">
+    <div class="col-lg-12 col-md-12 col-sm-12 col-xl-7 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h4>Daily Report</h4>
+            </div>
+
+            <div *ngIf="isLoading" class="p-5 card-body text-center">
+                <h4>
+                    <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading Data. Please wait...</p>
+                </h4>
+            </div>
+
+            <div class="card-body" *ngIf="!isLoading">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle">
+                        <tbody class="align-middle">
+                            <tr>
+                                <th width="80px">
+                                    <p>Open sales order $</p>
+                                    <small>Calculated based on <span style="text-decoration: underline;">Overdue</span>
+                                        &
+                                        <span style="text-decoration: underline;">Due Today</span> lines</small>
+                                </th>
+                                <td width="80" colspan="2">
+                                    {{data?.shipping_open_overdue_and_due_today_value | currency}}
+                                    <br>
+                                    <small>({{data?.shipping_open_overdue_and_due_today_lines}} total open
+                                        lines)</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th width="80">
+                                    Lines shipped today $ ({{today}})
+                                </th>
+                                <td width="80" colspan="2">
+                                    {{data?.shipping_total_shipped_value | currency}}
+                                    <br>
+                                    <small>({{data?.total_shipped_today_lines}} total lines shipped today)</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th width="80">
+                                    % Shipping OTD ({{today}})
+                                    <br>
+                                    <small>(Lines shipped before or on <span style="text-decoration: underline;">due
+                                            date</span> / Total
+                                        lines shipped today)</small>
+                                </th>
+                                <td width="80" colspan="2">
+                                    {{data?.on_time_delivery_today_percent | number : '1.2-2'}}%
+                                    <br>
+                                    <small>({{data?.on_time_delivery_today}} of {{data?.total_lines_due_today}} total
+                                        lines)</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th width="80">
+                                    Total Inventory $
+                                    <br>
+                                    <small>Total value in inventory</small>
+                                </th>
+                                <td colspan="2">{{data?.inventory_value | currency}}</td>
+                            </tr>
+
+                            <tr>
+                                <th width="80">FG Inventory $</th>
+                                <td colspan="2">{{data?.fgLV?.total | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th width="80">JIAXING Inventory $</th>
+                                <td colspan="2">{{data?.jx01?.total | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th width="80">TRANSIT Inventory $</th>
+                                <td colspan="2">{{data?.transit_total_ext_cost | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th width="80">Safety Stock $</th>
+                                <td colspan="2">{{data?.ss?.total | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th width="80">REJECT Inventory $</th>
+                                <td colspan="2">{{data?.reject_total_ext_cost | currency}}</td>
+                            </tr>
+
+                            <tr>
+                                <th width="80">WIP $</th>
+                                <td colspan="2">{{data?.wip | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th width="80">
+                                    % Production Orders OTD ({{today}})
+                                    <br>
+                                    <small>Based on routing 20</small>
+                                </th>
+                                <td colspan="2">
+                                    {{( data?.production.production_routing_20.due.due_completed_today /
+                                    data?.production.production_routing_20.due.due_total ) * 100 | number : '1.2-2'}}%
+                                    <br>
+                                    <small>{{data?.production.production_routing_20.due.due_completed_today}} of
+                                        {{data?.production.production_routing_20.due.due_total}} work orders</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th rowspan="2">RMLV</th>
+                                <th>
+                                    < 1</th>
+                                <th> >= 1</th>
+                            </tr>
+                            <tr>
+                                <td>{{data?.eye01?.lessthanone | currency}}</td>
+                                <td>{{data?.eye01?.greaterthanorequaltoone | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th rowspan="2">FGLV</th>
+                            </tr>
+                            <tr>
+                                <td>{{data?.fgLV?.lessthanone | currency}}</td>
+                                <td>{{data?.fgLV?.greaterthanorequaltoone | currency}}</td>
+                            </tr>
+
+                            <tr>
+                                <th rowspan="2">JX</th>
+                            </tr>
+                            <tr>
+                                <td>{{data?.jx01?.lessthanone | currency}}</td>
+                                <td>{{data?.jx01?.greaterthanorequaltoone | currency}}</td>
+                            </tr>
+                            <tr>
+                                <th rowspan="2">All</th>
+                            </tr>
+                            <tr>
+                                <td>{{data?.all?.lessthanone | currency}}</td>
+                                <td>{{data?.all?.greaterthanorequaltoone | currency}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" *ngIf="!isLoading">
+    <div class="col-12 col-xl-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Recorded daily &#64; 4pm </h4>
+            </div>
+            <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-alpine no-border" style="height: calc(100vh - 170px);"
+                [rowData]="data?.scheduledJobs" [columnDefs]="columnDefs">
+            </ag-grid-angular>
+        </div>
+    </div>
+</div>

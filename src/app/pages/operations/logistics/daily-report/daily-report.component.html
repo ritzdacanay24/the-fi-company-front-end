@@ -1,0 +1,42 @@
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-3">
+                        <tbody>
+                            <tr>
+                                <td>Open Balance Current Month</td>
+                                <td>{{data?.openBalanceCurrentMonth?.VALUE | currency}}</td>
+                            </tr>
+                            <tr>
+                                <td>Open Lines Current Week</td>
+                                <td>{{data?.openLinesForCurrentWeek?.VALUE}}</td>
+                            </tr>
+                            <tr>
+                                <td>Ops 10 Completed Today</td>
+                                <td>{{data?.ops10RoutingCompleted?.VALUE}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <h4 class="mb-3">Late Reason Codes (Current Week)</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody *ngFor="let row of data?.lateReasonCodes">
+                            <tr>
+                                <td>{{row.lateReasonCode}}</td>
+                                <td>{{row.value}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

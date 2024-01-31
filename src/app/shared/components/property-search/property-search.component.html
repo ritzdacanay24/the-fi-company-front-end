@@ -1,0 +1,23 @@
+<label class="form-label">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
+
+<ng-select bindLabel="property" [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag"
+  [multiple]="multiple" [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength"
+  [loading]="dataLoading" typeToSearchText="Please enter {{minTermLength}} or more characters" [typeahead]="dataInput$"
+  [(ngModel)]="value" [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
+  [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
+  [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="Property not found"
+  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter">
+
+  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+    <div>
+      <address class="mb-0 float-start">
+        Property: <b>{{item.property}}</b><br>
+        {{item.address1}} {{item.address2}}<br *ngIf="item.address1">
+        {{item.city}}, {{item.state}} {{item.zip_code}} <br
+          *ngIf="item.city != '' && item.state != '' &&  item.zip_code != ''">
+        <p>Address complete: <span [ngClass]="{'text-success': item.address_complete == 'Yes', 'text-danger': item.address_complete == 'No'}"><b>{{item.address_complete}}</b></span></p>
+      </address>
+      <span class="text-end float-end">#{{ item.id }}</span>
+    </div>
+  </ng-template>
+</ng-select>

@@ -44,7 +44,7 @@
               "src/assets/scss/config/modern/app.scss",
               "src/assets/scss/icons.scss"
             ],
-            "scripts":[
+            "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
               "node_modules/slick-carousel/slick/slick.min.js"
             ],
@@ -92,7 +92,7 @@
               "core-js/modules/es.string.replace.js",
               "core-js/modules/es.weak-map.js",
               "core-js/modules/web.dom-collections.iterator.js"
-           ]
+            ]
           },
           "configurations": {
             "production": {
@@ -118,10 +118,10 @@
               "optimization": {
                 "scripts": true,
                 "styles": {
-                    "minify": true,
-                    "inlineCritical": false
+                  "minify": true,
+                  "inlineCritical": false
                 }
-            }
+              }
             },
             "development": {
               "buildOptimizer": false,

@@ -1,0 +1,111 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="row">
+    <div class="col-md-9 mb-3">
+      <app-address-search [addTag]="true" (notifyParent)="notifyParent($event)"
+        [ngClass]="{ 'is-invalid': submitted && f.address1.value }" [value]="f.address1.value"
+        [editableSearchTerm]="true" [hideSelected]="false"></app-address-search>
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label">Suite #</label>
+      <input type="text" class="form-control" name="address2" formControlName="address2" placeholder="Suite Number"
+        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label">City</label>
+      <input type="text" class="form-control" name="city" formControlName="city" placeholder="City"
+        [ngClass]="{ 'is-invalid': submitted && f.city.errors }" />
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label">State</label>
+      <select class="form-select" name="a4" formControlName="state" aria-label="Floating label select example"
+        [ngClass]="{ 'is-invalid': submitted && f.state.errors }">
+        <option disabled selected value="">Select State</option>
+        <option [value]="row.abbreviation" *ngFor="let row of states">
+          {{ row.name }}
+        </option>
+      </select>
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label">Zip Code</label>
+      <input type="tel" class="form-control" name="a5" formControlName="zip_code" placeholder="Zip Code"
+        pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true"
+        [ngClass]="{ 'is-invalid': submitted && f.zip_code.errors }" />
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Country</label>
+    <input type="text" class="form-control" name="country" formControlName="country" placeholder="Enter country"
+      [ngClass]="{ 'is-invalid': submitted && f.country.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Property Name</label>
+    <input type="text" class="form-control" name="property" formControlName="property" placeholder="Enter property"
+      [ngClass]="{ 'is-invalid': submitted && f.property.errors }" />
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label">Property Phone</label>
+      <input type="tel" class="form-control" name="property_phone" formControlName="property_phone"
+        placeholder="Enter Property Phone" [ngClass]="{ 'is-invalid': submitted && f.property_phone.errors }"
+        prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Latitude</label>
+      <input type="text" class="form-control" name="lat" formControlName="lat" placeholder="Enter latitude"
+        [ngClass]="{ 'is-invalid': submitted && f.lat.errors }" />
+      <small>Track jobs on map</small>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Longitude</label>
+      <input type="text" class="form-control" name="lon" formControlName="lon" placeholder="Enter longitude"
+        [ngClass]="{ 'is-invalid': submitted && f.lon.errors }" />
+      <small>Track jobs on map</small>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="out_of_town" formControlName="out_of_town">
+      <label class="form-check-label" for="out_of_town">Out Of Town</label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-check-label me-3">License Required</label>
+    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No', 'NA']; let i = index">
+      <input class="form-check-input" type="radio" name="license_required" id="license_required-{{i}}" [value]="row"
+        formControlName="license_required">
+      <label class="form-check-label" for="license_required-{{i}}">{{row}}</label>
+    </div>
+  </div>
+
+
+  <div class="mb-3">
+    <label class="form-label">License Notes</label>
+    <textarea type="text" class="form-control" name="license_notes" formControlName="license_notes" rows="5"
+      placeholder="Enter License notes" [ngClass]="{ 'is-invalid': submitted && f.license_notes.errors }"></textarea>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Notes</label>
+    <textarea type="text" class="form-control" name="notes" formControlName="notes" rows="5"
+      placeholder="Enter property notes" [ngClass]="{ 'is-invalid': submitted && f.notes.errors }"></textarea>
+  </div>
+
+  <div class="form-check form-switch form-switch-md form-switch-md mt-2">
+    <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+      (change)="setBooleanToNumber('active')">
+    <label class="form-check-label" for="active">Active</label>
+  </div>
+
+</form>

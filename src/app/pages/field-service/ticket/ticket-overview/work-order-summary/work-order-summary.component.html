@@ -1,0 +1,28 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Summary</h4>
+</div>
+<div class="modal-body">
+  <div class="modal-content modal-content-fixed">
+    <div class="alert alert-danger" role="alert">
+      Please ensure everything is 100% correct. Once submitted, changes cannot be made.
+    </div>
+    <ul class="list-group">
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        Total Hours
+        <span>{{timeConvert(_travelAndWorkTotalHrs)}}</span>
+      </li>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        Total Expenses
+        <span>{{tripExpenseTotal | currency}}</span>
+      </li>
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        Credit Card Receipts
+        <span>{{assignedTotalBankTransactions}} of {{totalBankTransactins}}</span>
+      </li>
+    </ul>
+  </div>
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-success" >Submit</button>
+</div>

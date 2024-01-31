@@ -7,13 +7,14 @@ import { GlobalComponent } from "../../global-component";
 import { Store } from '@ngrx/store';
 import { catchError, map } from 'rxjs/operators';
 import { RegisterSuccess, loginFailure, loginSuccess, logout, logoutSuccess } from 'src/app/store/Authentication/authentication.actions';
+import { TokenStorageService } from './token-storage.service';
 
 
 const AUTH_API = GlobalComponent.AUTH_API;
 
 const httpOptions = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-  };
+};
 
 @Injectable({ providedIn: 'root' })
 
@@ -23,30 +24,29 @@ const httpOptions = {
 export class AuthenticationService {
 
     user!: User;
-    currentUserValue: any;
     private currentUserSubject: BehaviorSubject<User>;
 
-    constructor(private http: HttpClient, private store: Store) {
+    constructor(private http: HttpClient, private store: Store, private tokenStorageService: TokenStorageService) {
         this.currentUserSubject = new BehaviorSubject<User>(JSON.parse(sessionStorage.getItem('currentUser')!));
         // this.currentUser = this.currentUserSubject.asObservable();
-     }
+    }
     /**
      * Performs the register
      * @param email email
      * @param password password
      */
-     register(email: string, first_name: string, password: string) {
+    register(email: string, first_name: string, password: string) {
         // return getFirebaseBackend()!.registerUser(email, password).then((response: any) => {
         //     const user = response;
         //     return user;
         // });
 
-         // Register Api
-         return this.http.post(AUTH_API + 'signup', {
+        // Register Api
+        return this.http.post(AUTH_API + 'signup', {
             email,
             first_name,
             password,
-          }, httpOptions).pipe(
+        }, httpOptions).pipe(
             map((response: any) => {
                 const user = response;
                 return user;
@@ -73,8 +73,8 @@ export class AuthenticationService {
         return this.http.post(AUTH_API + 'auth/Login/login', {
             email,
             password
-          }, httpOptions).pipe(
-              map((response: any) => {
+        }, httpOptions).pipe(
+            map((response: any) => {
                 const user = response;
                 return user;
             }),
@@ -89,7 +89,14 @@ export class AuthenticationService {
      * Returns the current user
      */
     public currentUser(): any {
-        return getFirebaseBackend()!.getAuthenticatedUser();
+        return this.tokenStorageService.getUser();
+    }
+
+    /**
+     * Returns the current user
+     */
+    get currentUserValue(): any {
+        return this.tokenStorageService.getUser();
     }
 
     /**
@@ -104,7 +111,7 @@ export class AuthenticationService {
         this.currentUserSubject.next(null!);
 
         return of(undefined).pipe(
-        
+
         );
     }
 

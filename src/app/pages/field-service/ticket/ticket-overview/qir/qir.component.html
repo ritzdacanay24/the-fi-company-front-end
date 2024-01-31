@@ -1,0 +1,71 @@
+<div class="row">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h4 class="float-start me-auto">QIR</h4>
+
+        <button class="btn btn-success float-end" (click)="open(content)" [disabled]="loading">Add More</button>
+
+      </div>
+      <div class="card-body p-0" style="height: calc(100vh - 382px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait. </div>
+        <div *ngIf="!data?.length && !loading" class="text-center p-3"> No QIR's found.</div>
+        <div class="list-group list-group-flush">
+          <a class="list-group-item list-group-item-action flex-column align-items-start"
+            (click)="!disabled && open(content, row)" *ngFor="let row of data;let i = index">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-2">{{i+1}}# {{row.name || '-'}}</h5>
+            </div>
+            <pre class="mb-1" style="white-space:pre-line;">{{row.description || '-'}}</pre>
+          </a>
+        </div>
+
+        <p class="text-center p-1" style="color:#909090;background-color:	#E8E8E8;margin-left: 0px;
+        margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+      </div>
+      <div class=" p-0 card-footer text-center display-6" style="white-space:nowrap;overflow:auto">
+        Total QIR's:
+        <span class="text-success"> {{data?.length}}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #content let-offcanvas>
+  <div class="offcanvas-header">
+    <h4 class="offcanvas-title" id="offcanvas-basic-title">{{editInfo.id ? 'Edit': 'Add'}} QIR Info</h4>
+  </div>
+  <div class="offcanvas-body h-50">
+
+    <label class="form-label required">QIR Category</label>
+    <div class="input-group mb-3">
+
+      <input type="text" style="display:none">
+      <ng-select [items]="list" [searchable]="true" bindLabel="name" bindValue="name" [(ngModel)]="editInfo.name"
+        autoFocus="off" [minTermLength]="2" placeholder="Search category" [addTag]="search"
+        [ngStyle]="{display: 'block', width: '100%', 'text-overflow': 'ellipsis'}" [addTagText]="'Other: '"
+        [closeOnSelect]="true" [hideSelected]="true" [markFirst]="true">
+        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+          <div style="white-space:normal">
+            <p>{{item.name}}</p>
+          </div>
+        </ng-template>
+      </ng-select>
+
+    </div>
+
+    <div class="mb-3">
+      <label for="qty" class="form-label">Description (Optional)</label>
+      <textarea type="number" class="form-control" id="qty" placeholder="Briefly explain the issue"
+        [(ngModel)]="editInfo.description" rows="15"></textarea>
+    </div>
+  </div>
+  <div class="offcanvas-footer p-2 mb-2">
+    <div class="text-end">
+      <button type="button" class="btn btn-gray me-2" (click)="offcanvasService.dismiss()">Close</button>
+      <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="editInfo.id">Delete</button>
+      <button type="button" class="btn btn-success" (click)="onSubmit()"
+        [disabled]="editInfo.name == ''">Save</button>
+    </div>
+  </div>
+</ng-template>

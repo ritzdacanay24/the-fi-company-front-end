@@ -1,0 +1,138 @@
+<div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+</div>
+
+<div class="modal-body">
+    <div *ngIf="isLoading" class="m-5 text-center">
+        <h4>
+            <div class="spinner-grow text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading Data. Please wait...</p>
+        </h4>
+    </div>
+
+    <div *ngIf="!isLoading">
+        <div class="alert alert-success" role="alert" *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines">
+            No parts to pick on this order. Verify parts then perform the operation transactions.
+        </div>
+
+        <div class="alert alert-warning" role="alert" *ngIf="!data?.doesOrderHaveLines">
+            No Lines Found! This order does not have any lines to be picked.
+        </div>
+
+        <div class="alert alert-primary" role="alert" *ngIf="data?.openWorkOrderCount > 0">
+            {{data?.openWorkOrderCount}} line(s) to be picked.
+            {{data?.completedWorkOrderCount}} / {{data?.totalWorkOrderCount}} lines picked
+            ({{data?.workOrderPercentComplete | number : '1.2-2'}}% percent Completed)
+        </div>
+
+        <div id="pickSheet">
+            <div class="row">
+                <div class="col mb-3">
+                    <ul class="list-group">
+                        <li class="list-group-item border-0 p-0">
+                            <ngx-barcode6 [bc-value]="data?.mainDetails?.wo_nbr" [bc-display-value]="true"
+                                [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="0"
+                                [bc-text-align]="'center'">
+                            </ngx-barcode6>
+                        </li>
+                        <li class="list-group-item border-0 p-0">Qty Completed:
+                            <b>{{data?.mainDetails?.wo_qty_comp}}/{{data?.mainDetails?.wo_qty_ord}}</b></li>
+                        <li class="list-group-item border-0 p-0">WO Due By: <b>{{data?.mainDetails?.wo_due_date}}</b>
+                        </li>
+                        <li class="list-group-item border-0 p-0">WO Status: <b>{{data?.mainDetails?.wo_status}}</b></li>
+                        <li class="list-group-item border-0 p-0">Part #: <b>{{data?.mainDetails?.wo_part}}</b></li>
+                        <li class="list-group-item border-0 p-0">Part Desc: <b>{{data?.mainDetails?.PT_DESC1}}</b></li>
+                        <li class="list-group-item border-0 p-0">Assigned To: <b>{{form.get('assignedTo').value}}</b>
+                        </li>
+                        <li class="list-group-item border-0 p-0">Printed On: <b>{{data?.printDetails?.printedDate}}</b>
+                        </li>
+                        <li class="list-group-item border-0 p-0">Filter: <b>{{filterSelections}}</b></li>
+                        <li class="list-group-item border-0 p-0">Remarks: <b>{{data?.mainDetails?.wo_rmks}}</b></li>
+                        <li class="list-group-item border-0 p-0">Instructions: <b>Deliver to
+                                {{data?.mainDetails?.WO_LINE}}</b></li>
+                        <li class="list-group-item border-0 p-0" *ngIf="comments">Comments: <b>{{comments}}</b></li>
+                    </ul>
+                </div>
+                <div class="col mb-3 d-print-none">
+                    <div class="form-check form-check-inline mb-3" *ngFor="let row1 of filterOptionns;let i = index;">
+                        <input class="form-check-input" type="checkbox" name="checkAll-{{i}}" id="checkAll-{{i}}"
+                            [value]="row1" (change)="checkAll()" [(ngModel)]="row1.checked">
+                        <label class="form-check-label" for="checkAll-{{i}}">{{row1.name}}</label>
+                    </div>
+
+                    <form [formGroup]="form">
+                        <div class="mb-3">
+                            <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value.assignedTo"
+                                [required]="true"
+                                [ngClass]="{ 'is-invalid': submitted && f['assignedTo'].errors }"></app-user-search>
+                        </div>
+                        <div class="mb-3">
+                            <label for="formGroupExampleInput2" class="form-label">Comments/Instructions</label>
+                            <textarea type="text" class="form-control" id="comments" placeholder="Enter comments"
+                                rows="4" formControlName="comments"></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered text-center table-sm" *ngIf="data">
+                    <thead>
+                        <tr>
+                            <th>Part</th>
+                            <th>Loc/Qty</th>
+                            <th>Qty Req (mstr)</th>
+                            <th>Qty Iss</th>
+                            <th>Status</th>
+                            <th>Qty Short</th>
+                            <th>Qty Picked</th>
+                        </tr>
+                    </thead>
+                    <tbody class="align-middle">
+                        <tr *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines"
+                            class="table-success d-print-none">
+                            <td colspan="9" class="p-2"> All lines picked</td>
+                        </tr>
+                        <tr *ngIf="!data?.doesOrderHaveLines" class="table-danger d-print-none text-white">
+                            <td colspan="9" class="p-2"> No Lines Found</td>
+                        </tr>
+                        <tr *ngIf="data?.totalWorkOrderCount == 0 " class="table-danger d-print-none">
+                            <td colspan="9" class="p-2"> No records found.</td>
+                        </tr>
+                        <tr *ngFor="let row of data?.details" class="align-middle">
+                            <td>
+                                <ngx-barcode6 [bc-value]="row.wod_part" [bc-display-value]="true" [bc-height]="20"
+                                    [bc-width]="1" [bc-font-size]="14" [bc-margin-left]="0" [bc-text-align]="'center'"
+                                    >
+                                </ngx-barcode6>
+                                <small>{{row.PT_DESC1}}</small>
+                            </td>
+                            <td>
+                                <ul class="list-unstyled align-middle m-0 p-0">
+                                    <li *ngFor="let loc of row.locations | slice:0:4;">
+                                        {{loc['LD_LOC'] | uppercase}} ({{loc['LD_QTY_OH']}})
+                                    </li>
+                                </ul>
+                            </td>
+                            <td>{{row.WOD_QTY_REQ}}</td>
+                            <td>{{row.WOD_QTY_ISS}}</td>
+                            <td> {{row.LINESTATUS | number: '1.0-0' }}%</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-gray me-auto" [disabled]="isLoading">Close</button>
+    <button (click)="getData()" type="button" class="btn btn-warning ms-auto">Refresh</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="isLoading">Print</button>
+</div>

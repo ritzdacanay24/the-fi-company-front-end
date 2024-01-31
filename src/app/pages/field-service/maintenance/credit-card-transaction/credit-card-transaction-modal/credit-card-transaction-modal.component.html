@@ -1,0 +1,21 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Upload Credit Card Transactions</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
+</div>
+<div class="modal-body">
+
+  <div class="mb-3">
+    <label for="exampleInputPassword1" class="form-label required">Month/Year</label>
+    <input class="form-control" type="month" id="exampleInputPassword1" name="monthAndYear" [(ngModel)]="monthAndYear"
+      [value]="monthAndYear" (change)="onMonthAndYear()" />
+  </div>
+
+  <div class="mb-3">
+    <label for="file" class="form-label required">Select File</label>
+    <input class="form-control" type="file" id="file" name="file" (change)="selectFile($event)">
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" (click)="onSubmit()">Upload</button>
+</div>

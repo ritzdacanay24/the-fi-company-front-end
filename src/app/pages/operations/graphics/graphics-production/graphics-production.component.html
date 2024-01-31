@@ -1,0 +1,83 @@
+<div *ngIf="isLoading" class="text-center m-5">
+    <div class="spinner-grow text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading data. Please wait..</p>
+</div>
+
+<div class="graphics-production" style="overflow:auto;height: calc(100vh - 91px);" *ngIf="!isLoading">
+    <div class="d-flex flex-nowrap">
+        <div style="min-width:230px;" class="me-2 mb-2" *ngFor="let row of data?.queues;let i = index">
+            <div class="sticky-top bg-light">
+                <div class="card mb-2">
+                    <div class="card-body text-center">
+                        <p class="card-text">{{row.name}} </p>
+                        <h4 class="card-text bold mt-2">
+                            {{row.orderStatus.length}}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="card {{item.classColors}} mb-2" *ngFor="let item of row.orderStatus; let ii = index">
+
+                <div class="card-header p-2 d-flex align-items-center px-4 pe-2 {{item.classColors}}">
+                    <h4 class="card-title mb-0 flex-grow-1 text-start text-white"> {{item.graphicsWorkOrder}} </h4>
+
+                    <i (click)="openComments(item)" class="fs-16 mdi mdi-comment-alert-outline pointer me-2"
+                        *ngIf="item.commentCount > 0"></i>
+                    <i (click)="openComments(item)" class="fs-16 mdi mdi-comment pointer text-white-50 me-2"
+                        *ngIf="!item.commentCount"></i>
+
+                    <div class="flex-shrink-0">
+                        <div class="dropdown card-header-dropdown" ngbDropdown container="body">
+                            <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+                                <span class="text-light fs-16"><i class="mdi mdi-dots-vertical align-middle"></i></span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                <a ngbDropdownItem class="dropdown-item" (click)="openQueueSelection(item)">
+                                    <i class="icon-sm me-2 mdi mdi-chart-gantt"></i> Move Order</a>
+                                <a ngbDropdownItem class="dropdown-item" (click)="openGraphicsBom(item)">
+                                    <i class="icon-sm me-2 mdi mdi-printer"></i>Print</a>
+                                <a ngbDropdownItem class="dropdown-item" (click)="openComments(item)">
+                                    <i class="icon-sm me-2 mdi mdi-comment-outline"></i>View/Add Comments</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- <div ngbDropdown container="body">
+                        <h3>
+                            <i class="mdi mdi-menu no-dropdown-toggle-icon pointer" ngbDropdownToggle></i>
+                        </h3>
+                        <div ngbDropdownMenu aria-labelledby="dropdownMenuButton" class="drop-down-menu">
+                            <a ngbDropdownItem (click)="openComplete(item)" *ngIf="item.status == '70'">
+                                <i class="icon-sm me-2 mdi mdi-check-circle"></i>
+                                <span>Complete Order</span>
+                            </a>
+                            <a ngbDropdownItem (click)="openQueueSelection(item)">
+                                <i class="icon-sm me-2 mdi mdi-chart-gantt"></i>
+                                <span>Move Order</span>
+                            </a>
+                            <a ngbDropdownItem (click)="openGraphicsBom(item)">
+                                <i class="icon-sm me-2 mdi mdi-printer"></i>
+                                <span>Print</span>
+                            </a>
+                            <a ngbDropdownItem (click)="openComments(item)"><i
+                                    class="icon-sm me-2 mdi mdi-comment-outline"></i>
+                                <span>View/Add Comments</span>
+                            </a>
+                        </div>
+                    </div> -->
+                </div>
+                <div class="card-body py-3">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-1"><b>Ordered:</b> {{item.ordered_date}}</li>
+                        <li class="mb-1"><b>Due:</b> {{item.dueDate}}</li>
+                        <li class="mb-1"><b>Item:</b> {{item.itemNumber | uppercase}}</li>
+                        <li class="mb-1"><b>Qty:</b> {{item.qtyShipped}} / {{item.qty}}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

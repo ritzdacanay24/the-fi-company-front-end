@@ -1,0 +1,144 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <ng-container formGroupName="main">
+
+    <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.requestor')">Requestor</label>
+          <input type="text" class="form-control" name="requestor" formControlName="requestor"
+            placeholder="Enter your name" [ngClass]="{ 'is-invalid': submitted && f.requestor.errors }" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.assemblyNumber')">Assembly Number</label>
+          <input type="text" class="form-control" name="assemblyNumber" formControlName="assemblyNumber"
+            placeholder="Enter assembly number" [ngClass]="{ 'is-invalid': submitted && f.assemblyNumber.errors }" />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.dueDate')">Due Date</label>
+          <input type="date" class="form-control" name="dueDate" formControlName="dueDate" placeholder="Enter due date"
+            [ngClass]="{ 'is-invalid': submitted && f.dueDate.errors }" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.pickList')">Pick List</label>
+          <input type="text" class="form-control" name="pickList" formControlName="pickList"
+            placeholder="Enter pick list number" [ngClass]="{ 'is-invalid': submitted && f.pickList.errors }" />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.lineNumber')">Line Number</label>
+          <input type="text" class="form-control" name="lineNumber" formControlName="lineNumber"
+            placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.lineNumber.errors }" />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.priority')">Priority</label>
+          <select class="form-select" formControlName="priority"
+            [ngClass]="{ 'is-invalid': submitted && f.priority.errors }">
+            <option *ngFor="let row of materialRequestForm.priorityOptions">{{row}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label" [ngClass]="formValidator('main.specialInstructions')">Special Instructions</label>
+          <textarea type="text" class="form-control" name="specialInstructions" formControlName="specialInstructions"
+            placeholder="Enter any instructions" [ngClass]="{ 'is-invalid': submitted && f.specialInstructions.errors }"
+            rows="5"></textarea>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+          <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+          <label class="form-check-label" for="active">Active</label>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+
+  <ng-container formGroupName="details">
+
+    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase">
+      Line Details
+    </h4>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle" *ngIf="getDetails.length">
+        <thead>
+          <tr>
+            <th>Part #</th>
+            <th>Reason</th>
+            <th>Qty *</th>
+            <th>Transaction</th>
+            <th>Account Code</th>
+            <th>Comments</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="p-0 m-0 align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+
+            <td style="min-width:200px">
+              <app-qad-part-search (notifyParent)="notifyParent($event, i, row)" [value]="row.value.partNumber"
+                [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true" 
+                [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled"
+                [ngClass]="{ 'is-invalid': submitted && row.get('partNumber').errors }"></app-qad-part-search>
+            </td>
+            <td style="min-width:200px">
+              <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"
+                formControlName="reasonCode" bindLabel="value" bindValue="value" placeholder="Select reason code"
+                [clearable]="true" [editableSearchTerm]="true" 
+                [ngClass]="{ 'is-invalid': submitted && row.get('reasonCode').errors }">
+              </ng-select>
+            </td>
+            <td style="min-width:100px">
+              <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty needed"
+                [ngClass]="{ 'is-invalid': submitted && row.get('qty').errors }" />
+            </td>
+            <td style="min-width:200px">
+              <ng-select appendTo="body" [items]="materialRequestForm.transactionType" [searchable]="true"
+                formControlName="trType" bindLabel="TrType" bindValue="TrType" placeholder="Select transaction type"
+                [clearable]="false"  [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': submitted && row.get('trType').errors }" >
+                <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                  <div>{{item.TrType}}</div>
+                  <div>{{item.Description}}</div>
+                </ng-template>
+              </ng-select>
+            </td>
+            <td style="min-width:200px">
+              <ng-select appendTo="body" [items]="materialRequestForm.accountCodes" [searchable]="true"
+                formControlName="ac_code" bindLabel="ac_code" bindValue="ac_code" placeholder="Select account code"
+                [clearable]="false"  [editableSearchTerm]="true"  [ngClass]="{ 'is-invalid': submitted && row.get('ac_code').errors }">
+                <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                  <div>{{item.ac_code}}</div>
+                  <div>{{item.ac_desc}}</div>
+                </ng-template>
+              </ng-select>
+            </td>
+            <td style="min-width:200px">
+              <input type="text" class="form-control" name="notes" formControlName="notes"
+                placeholder="Enter any comments" />
+            </td>
+            <td>
+              <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)" [disabled]="form.disabled">
+                <i class="feather icon-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-primary mt-3 mb-3" (click)="addMoreItems()" [disabled]="form.disabled">
+        <i class="feather icon-plus"></i> Add More
+      </button>
+    </div>
+  </ng-container>
+
+</form>

@@ -1,0 +1,29 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="modal-basic-title">POR Label</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="col-lg-12 mb-3">
+      <p>PO number: {{poNumber}}</p>
+      <p>Part number: {{customerPartNumber || partNumber}}</p>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="formGroupExampleInput" class="form-label">Total Labels:</label>
+    <input type="text" class="form-control" id="totalLabels" name="totalLabels" placeholder="Total Labels"
+      [(ngModel)]="totalLabels">
+  </div>
+
+  <div class="mb-3">
+    <label for="formGroupExampleInput" class="form-label">Qty Per Label:</label>
+    <input type="text" class="form-control" id="qtyPerLabel" name="qtyPerLabel" placeholder="Total Labels"
+      [(ngModel)]="qtyPerLabel">
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray">Close</button>
+  <button (click)="print()" type="button" class="btn btn-primary">Print</button>
+</div>

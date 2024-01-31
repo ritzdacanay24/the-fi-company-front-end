@@ -1,0 +1,63 @@
+<div class="row">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto">Serial</h4>
+        <button class="btn btn-primary float-end btn-md" (click)="open(content)" [disabled]="loading">Add More</button>
+      </div>
+      <div class="card-body p-0" style="height: calc(100vh - 312px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait. </div>
+        <div *ngIf="!data?.length && !loading" class="text-center p-3"> No serial numbers found.</div>
+        <div class="list-group list-group-flush">
+          <a class="list-group-item list-group-item-action flex-column align-items-start"
+            (click)="!disabled && open(content, row)" *ngFor="let row of data;">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">Type: {{row.type || '-'}}</h5>
+            </div>
+            <p class="mb-1">Eyefi Asset: {{row.eyefiAsset || '-'}}</p>
+            <p class="mb-1">Asset: {{row.customerAsset || '-'}}</p>
+          </a>
+        </div>
+        <p class="text-center p-1 bg-light" style="margin-left: 0px;
+              margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #content let-offcanvas>
+  <div class="offcanvas-header">
+    <h4 class="offcanvas-title mb-0" id="offcanvas-basic-title">{{editInfo.id ? 'Edit': 'Add'}} Serial Info</h4>
+  </div>
+  <div class="offcanvas-body h-50">
+    <div class="mb-3">
+      <label class="form-label required">Type</label>
+
+      <div class="form-check" *ngFor="let row of ['Sign', 'Wedge']">
+        <input class="form-check-input mb-2" id="enum_answer_{{row}}" type="radio" name="flexRadioDefault"
+          [(ngModel)]="editInfo.type" [value]="row">
+        <label class="form-check-label mb-2" for="enum_answer_{{row}}">
+          {{row}}
+        </label>
+      </div>
+
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Customer Asset</label>
+      <input type="text" class="form-control form-control" placeholder="Customer Asset"
+        [(ngModel)]="editInfo.customerAsset">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Eyefi Asset</label>
+      <input type="text" class="form-control form-control" placeholder="Eyefi Asset"
+        [(ngModel)]="editInfo.eyefiAsset">
+    </div>
+  </div>
+  <div class="offcanvas-footer p-2 mb-2">
+    <div class="text-end">
+      <button type="button" class="btn btn-gray me-2" (click)="offcanvasService.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="editInfo.id">Delete</button>
+      <button type="button" class="btn btn-success" (click)="onSubmit()">Save</button>
+    </div>
+  </div>
+</ng-template>

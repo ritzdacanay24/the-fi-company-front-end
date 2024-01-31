@@ -1,0 +1,119 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3">
+    <label for="ca_action_req" class="form-label me-2">Corrective Action Required?</label>
+    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+      <label class="form-check-label">
+        <input type="radio" class="form-check-input" name="ca_action_req" id="ca_action_req" [value]="row"
+          formControlName="ca_action_req" placeholder="Enter Issued By">
+        <i class="input-frame"></i>
+        {{row}}
+      </label>
+    </div>
+    <p>If CA is not required, DO NOT proceed.</p>
+  </div>
+
+  <div class="row">
+    <div class="col-7 mb-3">
+      <label for="iss_by" class="form-label">Issued By:</label>
+      <input type="text" class="form-control" id="iss_by" formControlName="iss_by" placeholder="Enter Issued By">
+    </div>
+    <div class="col mb-3">
+      <label for="iss_dt" class="form-label">Date:</label>
+      <input type="date" class="form-control" id="iss_dt" formControlName="iss_dt">
+    </div>
+  </div>
+
+  <h5 class="mb-3">Corrective action must be completed within the due date and forwarded to the quaility
+    assurance manager.
+  </h5>
+
+  <div class="row">
+    <div class="col-4 mb-3">
+      <label for="ca_iss_to" class="form-label">Corrective Action Issued To</label>
+      <select class="form-select" id="ca_iss_to" formControlName="ca_iss_to">
+        <option selected disabled value="null">--SELECT--</option>
+        <option *ngFor="let row of corrective_action_issued_to">{{row}}</option>
+      </select>
+    </div>
+    <div class="col mb-3">
+      <label for="ca_due_dt" class="form-label">Due Date</label>
+      <input type="date" class="form-control" id="ca_due_dt" formControlName="ca_due_dt">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label for="ca_cont_immed_action_taken" class="form-label">Containment/Immediate Action
+        Taken (Only need to be completed if CA is issued to Supplier)</label>
+      <textarea type="text" class="form-control" id="ca_cont_immed_action_taken"
+        formControlName="ca_cont_immed_action_taken" rows="10"
+        placeholder="Enter Containment/Immediate Action Taken (Only need to be completed if CA is issued to Supplier)"></textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label for="ca_root_cause" class="form-label">Root Cause (Attach additional documentation if
+        nescessary)</label>
+      <textarea type="text" class="form-control" id="ca_root_cause" formControlName="ca_root_cause" rows="10"
+        placeholder="Enter Root Cause (Attach additional documentation if nescessary)"></textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label for="ca_taken_to_prevent_recurr" class="form-label">Correction Action(s) Taken to
+        Prevent Reoccurrence</label>
+      <textarea type="text" class="form-control" id="ca_taken_to_prevent_recurr"
+        formControlName="ca_taken_to_prevent_recurr" rows="10"
+        placeholder="Enter Correction Action(s) Taken to Prevent Reoccurrence">
+              </textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <div class="input-group-text">Planned CA Implementation Date:</div>
+        </div>
+        <input type="date" class="form-control" id="planned_ca_impl_dt" formControlName="planned_ca_impl_dt">
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-6 mb-3">
+      <label for="ca_by" class="form-label">Corrective Action By</label>
+      <input type="text" class="form-control" id="ca_by" formControlName="ca_by"
+        placeholder="Enter Corrective Action By">
+    </div>
+    <div class="col mb-3">
+      <label for="ca_title" class="form-label">Title</label>
+      <input type="text" class="form-control" id="ca_title" formControlName="ca_title" placeholder="Enter Title">
+    </div>
+    <div class="col mb-3">
+      <label for="ca_dt" class="form-label">Date</label>
+      <input type="date" class="form-control" id="ca_dt" formControlName="ca_dt">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-6 mb-3">
+      <label for="ca_impl_by" class="form-label">Corrective Action Implemented By</label>
+      <input type="text" class="form-control" id="ca_impl_by" formControlName="ca_impl_by"
+        placeholder="Enter Corrective Action Implemented By">
+    </div>
+    <div class="col mb-3">
+      <label for="ca_impl_title" class="form-label">Title</label>
+      <input type="text" class="form-control" id="ca_impl_title" formControlName="ca_impl_title"
+        placeholder="Enter Title">
+    </div>
+    <div class="col mb-3">
+      <label for="ca_impl_dt" class="form-label">Implementation Dt:</label>
+      <input type="date" class="form-control" id="ca_impl_dt" formControlName="ca_impl_dt">
+    </div>
+  </div>
+
+</form>

@@ -1,0 +1,138 @@
+<div class="modal-header">
+  <h4 class="modal-title  mt-0">{{!id ? 'Add' : 'Edit'}} Work Details </h4>
+  <button type="button" class="btn-close" aria-hidden="true" (click)="ngbActiveModal.dismiss('Cross click')"></button>
+</div>
+<div class="modal-body">
+
+  <form [formGroup]="form">
+    <div class="mb-3">
+      <label class="form-label">Type</label>
+      <input style="display:none" />
+      <ng-select [items]="getEventType" bindLabel="event_name" bindValue="event_name" formControlName="proj_type"
+        [addTag]="true" autoFocus="off" placeholder="Select type" #select (change)="select.blur()" [markFirst]="false">
+      </ng-select>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="include_calculation" formControlName="include_calculation"
+        (change)="calculateTime()">
+      <label class="form-check-label" for="include_calculation">
+        Include times in total hours?
+      </label>
+    </div>
+
+    <!-- <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="include_traveling" formControlName="include_traveling"
+        (change)="calculateTime()">
+      <label class="form-check-label" for="include_traveling">
+        Traveling to site or traveling back home?
+      </label>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="include_install" formControlName="include_install"
+        (change)="calculateTime()">
+      <label class="form-check-label" for="include_install">
+        Event occurred during install, relocation, removal etc..
+      </label>
+    </div> -->
+
+    <div *ngIf="getForm.proj_type.value == 'Clock-In' || getForm.proj_type.value == 'Clock-Out'">
+      <div>
+        <label class="form-label">Start Time</label>
+        <div class="input-group mb-1">
+          <input style="display:none" />
+          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
+            mbsc-datepicker formControlName="projectStart" [displayTimezone]="getForm.projectStartTz.value"
+            (change)="calculateTime()" readonly />
+          <button type="button" class="btn btn-danger" style="box-shadow:unset" *ngIf="getForm.projectStart.value"
+            (click)="clearBreakByKey('projectStart')">
+            Clear
+          </button>
+        </div>
+        <div ngbDropdown class="d-inline-block mb-3">
+          <a class="btn btn-light" ngbDropdownToggle>
+            {{getForm.projectStartTz.value || 'Select TZ' }}
+          </a>
+          <div ngbDropdownMenu>
+            <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
+              (click)="setTimeZone('projectStartTz', row.name)"
+              [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="getForm.proj_type.value != 'Clock-Out' && getForm.proj_type.value != 'Clock-In'">
+
+      <div>
+        <label class="form-label">Start Time</label>
+        <div class="input-group mb-3">
+          <div ngbDropdown>
+            <a class="btn btn-light me-1" ngbDropdownToggle>
+              {{getForm.projectStartTz.value || 'Select TZ' }}
+            </a>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
+                (click)="setTimeZone('projectStartTz', row.name)"
+                [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
+            </div>
+          </div>
+
+          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
+            mbsc-datepicker formControlName="projectStart" [max]="getForm.projectFinish.value"
+            [displayTimezone]="getForm.projectStartTz.value" (change)="calculateTime()" readonly />
+          <button type="button" class="btn btn-danger" style="box-shadow:unset" *ngIf="getForm.projectStart.value"
+            (click)="clearBreakByKey('projectStart')">
+            Clear
+          </button>
+        </div>
+
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">End Time</label>
+        <div class="input-group mb-3">
+          <div ngbDropdown class="me-1">
+            <a class="btn btn-light " ngbDropdownToggle>
+              {{getForm.projectFinishTz.value || 'Select TZ' }}
+            </a>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
+                (click)="setTimeZone('projectFinishTz', row.name)"
+                [ngClass]="getForm.projectFinishTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
+            </div>
+          </div>
+          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
+            mbsc-datepicker formControlName="projectFinish" [min]="getForm.projectStart.value"
+            [displayTimezone]="getForm.projectFinishTz.value" (change)="calculateTime()" readonly
+            [defaultSelection]="defaultSelection" />
+          <button type="button" class="btn btn-danger rounded-end" style="box-shadow:unset"
+            *ngIf="getForm.projectFinish.value" (click)="clearBreakByKey('projectFinish')">
+            Clear
+          </button>
+        </div>
+
+      </div>
+
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label">Description of work</label>
+          <textarea formControlName="description" autosize [minRows]="3" class="form-control"></textarea>
+        </div>
+      </div>
+    </div>
+
+
+  </form>
+</div>
+<div class="modal-footer text-center"
+  *ngIf="getForm.proj_type.value != 'Clock-Out' && getForm.proj_type.value != 'Clock-In'">
+  <h3>Total Time: {{tot || 0.00}}</h3>
+</div>
+
+<div class="modal-footer d-flex">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto ">Close</button>
+  <button (click)="deleteWorkDetailsById()" type="button" class="btn btn-danger " *ngIf="data?.id">Delete</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-success ">Save</button>
+</div>

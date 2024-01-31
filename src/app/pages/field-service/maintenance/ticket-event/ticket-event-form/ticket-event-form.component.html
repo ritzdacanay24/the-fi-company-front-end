@@ -1,0 +1,71 @@
+<form [formGroup]="form" autocomplete="off">
+  <div class="mb-3">
+    <label class="form-label">Event Name</label>
+    <input type="text" class="form-control" name="event_name" formControlName="event_name"
+      placeholder="Enter event name" [ngClass]="{ 'is-invalid': submitted && f.event_name.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Description</label>
+    <textarea type="text" class="form-control" name="description" formControlName="description" rows="5"
+      placeholder="Enter description" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Event Type</label>
+    <select class="form-select" formControlName="event_type"
+      [ngClass]="{ 'is-invalid': submitted && f.event_type.errors }">
+      <option selected disabled value="null">--SELECT--</option>
+      <option *ngFor="let row of eventTypeOptions" [value]="row.value">{{row.name}}</option>
+    </select>
+    <small> This is used to differentiate (0) not applicable , (1) service, (2) travel, (3) non-service </small>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Event Icon</label>
+    <input type="text" class="form-control" name="icon" formControlName="icon" placeholder="Enter event name"
+      [ngClass]="{ 'is-invalid': submitted && f.icon.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Background Color</label>
+    <input type="text" class="form-control" name="background_color" formControlName="background_color" placeholder="Enter color"
+      [ngClass]="{ 'is-invalid': submitted && f.background_color.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="isEvent" formControlName="isEvent"
+        (change)="setBooleanToNumber('isEvent')">
+      <label class="form-check-label" for="isEvent">Is Event</label>
+    </div>
+    <small> This is used to determine what should be computed as labor</small>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="isTravel" formControlName="isTravel"
+        (change)="setBooleanToNumber('isTravel')">
+      <label class="form-check-label" for="isTravel">Is Travel</label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="isBreak" formControlName="isBreak"
+        (change)="setBooleanToNumber('isBreak')">
+      <label class="form-check-label" for="isBreak">Is Break</label>
+    </div>
+    <small> Used to subtract from labor</small>
+  </div>
+
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+        (change)="setBooleanToNumber('active')">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+</form>

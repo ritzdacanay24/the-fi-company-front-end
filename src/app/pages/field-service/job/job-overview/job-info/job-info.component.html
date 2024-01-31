@@ -1,0 +1,122 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select job from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header align-items-center d-flex">
+        <h4 class="card-title mb-0 flex-grow-1"> {{id ? 'EDIT' : 'ADD'}}</h4>
+
+        <div class="flex-shrink-0">
+          <div class="dropdown card-header-dropdown" ngbDropdown>
+            <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);" data-bs-toggle="dropdown"
+              aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+              <span class="text-muted"><i class="ri-settings-4-line align-middle me-1 fs-15"></i>Settings</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+              <button ngbDropdownItem class="py-2" (click)="print()" [disabled]="!id">
+                <span class="mdi mdi-printer me-2 text-primary"></span>Print Job
+              </button>
+              <button ngbDropdownItem class="py-2" (click)="duplicate()" [disabled]="!id">
+                <i class="mdi mdi-content-copy me-2 text-warning"></i>Duplicate Job
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <div class="border border-3 p-3 mb-3" *ngIf="data">
+          <p class="mb-0">FSID: {{data?.id}}</p>
+          <p class="mb-0">Created by: {{data?.created_by}}</p>
+          <p class="mb-0">Created date: {{data?.created_date}}</p>
+          <p class="mb-0" *ngIf="data?.customer_cancelled">Cancellation: {{data?.cancellation_comments}}</p>
+        </div>
+        <app-job-form (setFormElements)="form = $event" (setOnRemoveTech)="setOnRemoveTech($event)"
+          [submitted]="submitted"></app-job-form>
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="print  d-none d-print-block" id="print">
+  <h4>Job Information</h4>
+  <h3>FSID# {{id}}</h3>
+  <table class="table table-bordered" style="font-size:16px">
+    <tr>
+      <th style="width: 200px">Install Date</th>
+      <td>{{form.value?.job?.request_date}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Install Time</th>
+      <td>{{form.value?.job?.start_time}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Requested By</th>
+      <td>{{form.value?.job?.requested_by}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sales Order Number</th>
+      <td>{{form.value?.job?.sales_order_number}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Customer CO #</th>
+      <td>{{form.value?.job?.co_number}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Property</th>
+      <td>{{form.value?.job?.property}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Service Type</th>
+      <td>{{form.value?.job?.service_type}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Customer</th>
+      <td>{{form.value?.job?.customer}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">ST</th>
+      <td>{{form.value?.job?.state}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Platform</th>
+      <td>{{form.value?.job?.platform}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sign/Theme</th>
+      <td>{{form.value?.job?.sign_theme}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sign Type</th>
+      <td>{{form.value?.job?.sign_type}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Team</th>
+      <td>
+        <div *ngFor="let row of form.value?.resource">
+          <p>{{row.user}}</p>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <div class="text-center">
+    <h4>{{form.value?.job?.property}}</h4>
+    <h4>{{form.value?.job?.address1}} {{form.value?.job?.address2}}</h4>
+    <h4>{{form.value?.job?.city}}, {{form.value?.job?.state}} {{form.value?.job?.zip_code}}</h4>
+    <h4>{{form.value?.job?.property_phone}}</h4>
+  </div>
+</div>

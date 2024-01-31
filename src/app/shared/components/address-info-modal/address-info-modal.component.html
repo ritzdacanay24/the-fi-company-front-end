@@ -1,0 +1,27 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="exampleModalLabel">{{addressCode}}</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-250">
+
+  <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+
+  <address *ngIf="!isLoading && data">
+    <blockquote class="blockquote">
+      <strong>{{addressCode}}</strong><br>
+      <strong>{{data.ad_name}}</strong><br>
+      <div>{{data.ad_line1 || 'No address line 1 provided'}}</div>
+      <div>{{data.ad_line2 || 'No address line 2 provided'}}</div>
+      <div>{{data.ad_line3 || 'No address line 3 provided'}}</div>
+      <div>{{data.ad_city}}, {{data.ad_state}} {{data.ad_zip}}</div>
+    </blockquote>
+
+  </address>
+
+  <h4 *ngIf="!isLoading && !data">Sorry, no data found.</h4>
+
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="getData()" type="button" class="btn btn-primary">Refresh</button>
+</div>

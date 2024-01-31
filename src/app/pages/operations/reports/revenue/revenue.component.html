@@ -1,0 +1,84 @@
+<div class="row justify-content-md-center">
+    <div class="col-4 mb-3">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between  align-items-center">
+                <h4>Projected Amount</h4>
+                <p>{{data?.overall?.projected | currency}}</p>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Open
+                        <span>{{data?.overall?.open | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Pending Invoice
+                        <span>{{data?.overall?.pendingInvoice | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Current Revenue
+                        <span>{{data?.overall?.currentRevenue | currency}}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 mb-3">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between  align-items-center">
+                <h4>Current Revenue</h4>
+                <p>{{data?.overall?.currentRevenue | currency}}</p>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Product
+                        <span>{{data?.overall?.Product | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Service/Parts
+                        <span>{{data?.overall?.serviceParts | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Service
+                        <span>{{data?.overall?.serviceStorage | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Kitting
+                        <span>{{data?.overall?.Kitting | currency}}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Graphics
+                        <span>{{data?.overall?.Graphics | currency}}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12 mb-3">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
+                            [displayOptions]="true"></app-date-range>
+                    </div>
+                </div>
+                <h4>Revenue & Projected</h4>
+            </div>
+            <div class="card-body">
+                <div *ngIf="isLoading">
+                    <h4 class="mb-3">
+                        <div class="spinner-grow text-primary spinner-grow-sm" role="status" style="margin-bottom:2px">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading Data. Please wait...
+                    </h4>
+                </div>
+                <app-revenue-chart [data]="data?.chart" [label]="data?.label"></app-revenue-chart>
+            </div>
+        </div>
+    </div>
+</div>

@@ -17,6 +17,10 @@ import { allNotification, messages } from './data'
 import { CartModel } from './topbar.model';
 import { cartData } from './data';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ChartService } from 'src/app/core/services/chart.service';
+import { RootReducerState } from 'src/app/store';
+import { Store } from '@ngrx/store';
+import { changeMode } from 'src/app/store/layouts/layout-action';
 
 @Component({
   selector: 'app-topbar',
@@ -46,7 +50,9 @@ export class TopbarComponent implements OnInit {
 
   constructor(@Inject(DOCUMENT) private document: any, private eventService: EventService, public languageService: LanguageService, private modalService: NgbModal,
     public _cookiesService: CookieService, public translate: TranslateService, private authService: AuthenticationService, private authFackservice: AuthfakeauthenticationService,
-    private router: Router, private TokenStorageService: TokenStorageService) { }
+    private router: Router, private TokenStorageService: TokenStorageService,
+    private chartService: ChartService,
+    private store: Store<RootReducerState>,) { }
 
   ngOnInit(): void {
     this.userData = this.TokenStorageService.getUser();
@@ -133,19 +139,28 @@ export class TopbarComponent implements OnInit {
   changeMode(mode: string) {
     this.mode = mode;
     this.eventService.broadcast('changeMode', mode);
+    this.store.dispatch(changeMode({ mode }));
 
     switch (mode) {
       case 'light':
         document.documentElement.setAttribute('data-bs-theme', "light");
+        document.documentElement.setAttribute('data-sidebar', "light");
         break;
       case 'dark':
         document.documentElement.setAttribute('data-bs-theme', "dark");
+        document.documentElement.setAttribute('data-sidebar', "dark");
         break;
       default:
         document.documentElement.setAttribute('data-bs-theme', "light");
+        document.documentElement.setAttribute('data-sidebar', "light");
         break;
     }
+
+    //set theme for chart.js
+
+
   }
+
 
   /***
    * Language Listing

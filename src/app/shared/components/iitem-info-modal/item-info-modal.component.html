@@ -1,0 +1,156 @@
+<div class="modal-header d-flex justify-content-between">
+    <div style="width:400px">
+        <input style="display: none;">
+        <app-qad-part-search (notifyParent)="notifyParent($event)" [value]="partNumber"
+            [showLabel]="false"></app-qad-part-search>
+    </div>
+    <h4 class="modal-title" id="modal-basic-title">Item Info</h4>
+</div>
+
+<div class="modal-body" *ngIf="isLoading">
+    <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+</div>
+
+<div class="modal-body bg-light" *ngIf="!isLoading">
+
+    <div class="row" *ngIf="itemInfo">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h4 class="card-title mb-0 flex-grow-1">Part Information </h4>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item border-0 p-1">Part #: {{itemInfo.pt_part}}</li>
+                        <li class="list-group-item border-0 p-1">Desc: {{itemInfo.pt_desc1}} {{itemInfo.pt_desc2}}</li>
+                        <li class="list-group-item border-0 p-1">Part Price: {{itemInfo.PT_PRICE | currency}}</li>
+                        <li class="list-group-item border-0 p-1">PM Code: {{itemInfo.pt_pm_code}}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h4 class="card-title mb-0 flex-grow-1">Item Summary </h4>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item border-0 p-1">Total On Hand: {{total}}</li>
+                        <li class="list-group-item border-0 p-1">Order Demand: {{totalDemand}}</li>
+                        <li class="list-group-item border-0 p-1">Work Order Demand: {{workOrderSum}}</li>
+                        <li class="list-group-item border-0 p-1">Value On Hand: {{total*itemInfo.PT_PRICE | currency}}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <h4 class="card-title mb-0 flex-grow-1">Location Details </h4>
+                <button class="btn btn-primary btn-sm" (click)='printLocationDetails()'
+                    *ngIf="locationDet.length > 0">Print</button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <ag-grid-angular *ngIf="locationDet.length > 0" class="ag-theme-alpine no-border w-100"
+                [gridOptions]="gridOptions" [rowData]="locationDet">
+            </ag-grid-angular>
+        </div>
+        <div class="card-body" *ngIf="locationDet.length == 0">
+            <h5 *ngIf="!isLoading" class="text-danger">No location info found.</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header ">
+            <h4 class="card-title mb-0 flex-grow-1">Open Shortage Request Details</h4>
+        </div>
+        <div class="card-body  p-0">
+            <ag-grid-angular *ngIf="shortages?.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="shortages"
+                [gridOptions]="gridOptions5">
+            </ag-grid-angular>
+        </div>
+        <div class="card-body " *ngIf="shortages?.length == 0">
+            <h5 *ngIf="!isLoading" class="text-danger">No open shortage requests found.</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header ">
+            <h4 class="card-title mb-0 flex-grow-1">Purchase Order Details</h4>
+        </div>
+        <div class="card-body  p-0">
+            <ag-grid-angular *ngIf="poResults.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="poResults"
+                [gridOptions]="gridOptions2">
+            </ag-grid-angular>
+        </div>
+        <div class="card-body " *ngIf="poResults.length == 0">
+            <h5 *ngIf="!isLoading" class="text-danger">No purchase order info found.</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header ">
+            <h4 class="card-title mb-0 flex-grow-1">Work Order Details</h4>
+        </div>
+        <div class="card-body  p-0">
+            <ag-grid-angular *ngIf="woResults.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="woResults"
+                [gridOptions]="gridOptions3">
+            </ag-grid-angular>
+        </div>
+        <div class="card-body " *ngIf="woResults.length == 0">
+            <h5 *ngIf="!isLoading" class="text-danger">No work order info found.</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header ">
+            <h4 class="card-title mb-0 flex-grow-1">Order Demand Details</h4>
+        </div>
+        <div class="card-body  p-0">
+            <ag-grid-angular *ngIf="demand?.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="demand"
+                [gridOptions]="gridOptions4">
+            </ag-grid-angular>
+        </div>
+        <div class="card-body " *ngIf="demand?.length == 0">
+            <h5 *ngIf="!isLoading" class="text-danger">No order info found.</h5>
+        </div>
+    </div>
+
+    <div class="print d-none d-print-block" id="print">
+        <h4>Part #: {{partNumber}}</h4>
+        <h3>Description: {{itemInfo?.pt_desc1}} {{itemInfo?.pt_desc12}}</h3>
+        <table class="table table-bordered" style="font-size:16px">
+            <thead>
+                <tr>
+                    <th>Location</th>
+                    <th>Location On Hand</th>
+                    <th>Location Qty Allocated</th>
+                    <th>Lot #</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let row of locationDet">
+                    <td>{{row.LD_LOC}}</td>
+                    <td>{{row.LD_QTY_OH}}</td>
+                    <td>{{row.LD_QTY_ALL}}</td>
+                    <td>{{row.LD_LOT}}</td>
+                    <td>{{row.LD_STATUS}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" [disabled]="isLoading" class="btn btn-gray me-auto">Close</button>
+    <button (click)="getData()" type="button" [disabled]="isLoading" class="btn btn-primary">Refresh</button>
+</div>

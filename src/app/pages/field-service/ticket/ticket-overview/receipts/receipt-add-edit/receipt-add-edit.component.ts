@@ -1,0 +1,292 @@
+import { Component, Input, OnInit } from '@angular/core';
+import { FormBuilder } from '@angular/forms';
+import { TripExpenseService } from '@app/core/api/field-service/trip-expense.service';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgSelectModule } from '@ng-select/ng-select';
+import moment from 'moment';
+import imageCompression from 'browser-image-compression';
+import { LazyLoadImageModule } from 'ng-lazyload-image';
+
+import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
+import { SharedModule } from '@app/shared/shared.module';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { byteConverter } from 'src/assets/js/util/byteConverter';
+
+@Component({
+  standalone: true,
+  imports: [
+    SharedModule,
+    NgSelectModule,
+    LazyLoadImageModule
+  ],
+  selector: 'app-receipt-add-edit',
+  templateUrl: './receipt-add-edit.component.html'
+})
+export class ReceiptAddEditComponent implements OnInit {
+
+  @Input() public id: any;
+  @Input() public workOrderId: any;
+  @Input() public typeOfClick: any = 'Front';
+
+  selectedDate: any;
+  selectedDateView: any;
+  url: string | ArrayBuffer;
+  isLoading: boolean;
+  fileToUpload_;
+
+  receiptOptions = [
+    "Airfare",
+    "Bag Fees",
+    "Rental Car",
+    "Hotel",
+    "Gas",
+    "Parking/Taxi",
+    "Per Diem",
+    "Equipment Rental",
+    "Supplies"
+  ]
+
+  form: any = this.fb.group<any>({
+    name: null,
+    cost: null,
+    workOrderId: null,
+    created_date: null,
+    vendor_name: null,
+    fileName: null,
+    locale: null,
+    date: null,
+    time: null,
+  })
+
+  link: any;
+
+  constructor(
+    private fb: FormBuilder,
+    private ngbActiveModal: NgbActiveModal,
+    private api: TripExpenseService,
+    public schedulerService: SchedulerService,
+  ) {
+  }
+
+  async getData() {
+    let data: any = await this.api.getById(this.id);
+    this.link = data.link;
+    this.form.patchValue(data)
+  }
+
+  ngOnInit(): void {
+    if (this.id) {
+      this.getData();
+      this.getConnectingJobs()
+    } else {
+      this.form.patchValue({ 'workOrderId': this.workOrderId });
+
+      if (this.typeOfClick == 'Front') {
+        let e = (<HTMLInputElement>document.getElementById("front"))
+        e.click();
+      } else if (this.typeOfClick == 'Folder') {
+        let e = (<HTMLInputElement>document.getElementById("folder"))
+        e.click();
+      }
+    }
+  }
+
+  dismiss() {
+    this.ngbActiveModal.dismiss()
+  }
+
+  onChange(e) {
+    if (!e._value) return
+    this.selectedDateView = moment(e._value).format('LL')
+  }
+
+  get getForm() {
+    return this.form['controls']
+  }
+
+
+  async deleteTripExpense() {
+
+    const { value: accept } = await SweetAlert.confirm();
+
+    if (!accept) return;
+
+    try {
+      SweetAlert.loading('Deleting. Please wait');
+      await this.api.deleteById(this.id)
+      this.ngbActiveModal.close()
+      SweetAlert.close();
+    } catch (err) {
+      SweetAlert.close(0);
+    }
+
+  }
+
+  setValue(key, value) {
+    this.form
+      .get(key)
+      .setValue(value, { emitEvent: false })
+  }
+
+  removeImage() {
+    this.setValue('fileName', null)
+    this.link = null
+  }
+
+  autoExtract = true;
+  originalFileSize = "";
+  sizeOfFile = "";
+
+  predictInfo
+
+  async handleFileInput(files) {
+
+    this.predictInfo = "";
+
+    const imageFile = files[0];
+
+
+    if (imageFile === undefined || !imageFile) {
+      SweetAlert.close();
+      return;
+    }
+
+
+    SweetAlert.loading('Please wait.. Extracting data from receipt.');
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 700,
+      useWebWorker: true,
+      alwaysKeepResolution: true
+    }
+
+    let compressedFile
+    try {
+      compressedFile = await imageCompression(imageFile, options);
+
+    } catch (error) {
+      compressedFile = files[0];
+    }
+
+
+
+    let data = new FormData();
+    data.append('document', compressedFile, compressedFile.name);
+
+    this.originalFileSize = byteConverter(imageFile.size, true, 0)
+    this.sizeOfFile = byteConverter(compressedFile.size, true, 0)
+
+    try {
+      if (this.autoExtract) {
+
+        let res: any = await this.api.predictApi(data);
+
+        let obj = res
+        let prediction = obj.document.inference.prediction;
+
+        this.predictInfo = obj.document;
+
+        this.form.patchValue({
+          cost: prediction.total_incl.value,
+          vendor_name: prediction.supplier.value || '',
+          date: prediction.date.value,
+          locale: prediction.locale.value || '',
+          time: prediction.time.value,
+          name: prediction.category.value,
+          fileName: compressedFile.name,
+        })
+
+        SweetAlert.close();
+      }
+    } catch (err) {
+      alert('Unable to extract the data from the receipt but you can still enter the information manually.')
+      SweetAlert.close(0);
+    } finally {
+
+      var reader = new FileReader();
+
+      reader.readAsDataURL(compressedFile); // read file as data url
+
+      reader.onload = (event) => { // called once readAsDataURL is completed
+        this.url = event.target.result;
+      }
+      this.fileToUpload_ = compressedFile;
+
+    }
+  }
+
+  async create() {
+    if (this.form.value.date && this.form.value.time) {
+    } else {
+      alert('Date and time is now required')
+      return
+    }
+
+    let formData = new FormData();
+
+    if (this.fileToUpload_) {
+      formData.append("file", this.fileToUpload_, this.fileToUpload_.name);
+      formData.append("fileName", this.fileToUpload_.name);
+    }
+
+    this.form.value.created_date = moment().format('YYYY-MM-DD HH:mm:ss')
+
+    Object.keys(this.form.value).map((key) => {
+      formData.append(key, this.form.value[key]);
+    });
+
+    try {
+      SweetAlert.loading();
+      await this.api.create(formData)
+      SweetAlert.close();
+      this.ngbActiveModal.close()
+    } catch (err) {
+      SweetAlert.close(0);
+    }
+
+  }
+
+  async update() {
+    if (this.form.value.date && this.form.value.time) {
+    } else {
+      alert('Date and time is now required')
+      return
+    }
+
+    let formData = new FormData();
+
+    if (this.fileToUpload_) {
+      formData.append("file", this.fileToUpload_, this.fileToUpload_.name);
+      formData.append("fileName", this.fileToUpload_.name);
+    }
+
+    Object.keys(this.form.value).map((key) => {
+      formData.append(key, this.form.value[key]);
+    });
+
+    try {
+      SweetAlert.loading();
+      await this.api.updateById(this.id, formData)
+      SweetAlert.close();
+      this.ngbActiveModal.close()
+    } catch (err) {
+      SweetAlert.close(0);
+    }
+  }
+
+  onSubmit() {
+    if (this.id) {
+      this.update()
+    } else {
+      this.create()
+    }
+  }
+
+
+  connectingJobs: any
+  async getConnectingJobs() {
+    this.connectingJobs = await this.schedulerService.getConnectingJobs(this.workOrderId);
+  }
+
+}

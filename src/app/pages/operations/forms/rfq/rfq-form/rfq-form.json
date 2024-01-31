@@ -1,0 +1,155 @@
+{
+  "ccEmails": ["eyefishipping@eye-fi.com"],
+  "info": [{
+      "company": "C.H. Robinson Worldwide",
+      "id": 1,
+      "info": {
+        "description": "To schedule your pick up, please fill out this form and email to: Garrett.Riley@chrobinson.com",
+        "name": "C.H. Robinson",
+        "phone": "702-691-9909 x 2365",
+        "fax": "(702) 691-3395",
+        "logo": "assets/images/CHRobinson.png",
+        "width": "80",
+        "height": "80"
+      },
+      "emails": [
+        "ags@chrobinson.com",
+        "garrett.riley@chrobinson.com"
+      ]
+    },
+    {
+      "company": "BTX – Domestic – Bally's",
+      "id": 2,
+      "info": {
+        "description": "BTX Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/btx.jpg",
+        "width": "160",
+        "height": "100"
+      },
+      "emails": [
+        "laxdom@btxglobal.com",
+        "ballydomesticrouting@btxglobal.com"
+      ]
+    },
+    {
+      "company": "BTX – Domestic – Eye-fi",
+      "id": 2.1,
+      "info": {
+        "description": "BTX Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/btx.jpg",
+        "width": "160",
+        "height": "100"
+      },
+      "emails": [
+        "laxdom@btxglobal.com"
+      ]
+    },
+    {
+      "company": "BTX – International  - Bally's",
+      "id": 3,
+      "info": {
+        "description": "BTX Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/btx.jpg",
+        "width": "160",
+        "height": "100"
+      },
+      "emails": [
+        "laxintl@btxglobal.com"
+      ]
+    },
+    {
+      "company": "Pilot – Any Customer",
+      "id": 4,
+      "info": {
+        "description": "Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/pilot.png",
+        "width": "160",
+        "height": "100"
+      },
+      "emails": [
+        "las@pilotdelivers.com",
+        "lasquotes@pilotdelivers.com",
+        "lasiaquezada@pilotdelivers.com",
+        "sisihannah@pilotdelivers.com"
+      ]
+    },
+    {
+      "company": "InXpress – Any Customer",
+      "id": 5,
+      "info": {
+        "description": "Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/inxpress.jpg",
+        "width": "160",
+        "height": "120"
+      },
+      "emails": [
+        "info175@inxpress.com",
+        "christine.melton@inxpress.com"
+      ]
+    },
+    {
+      "company": "Logistify",
+      "id": 5,
+      "info": {
+        "description": "Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "",
+        "width": "160",
+        "height": "120"
+      },
+      "emails": [
+        "franco@logistifyco.com",
+        "cj@logistifyco.com"
+      ]
+    },
+    {
+      "company": "BTX - EVERI",
+      "id": 5,
+      "info": {
+        "description": "Description",
+        "name": "No Name Info",
+        "phone": "No Phone Provided",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/btx.jpg",
+        "width": "160",
+        "height": "120"
+      },
+      "emails": [
+        "aus_domestic@btxglobal.com"
+      ]
+    },
+    {
+      "company": "COYOTE",
+      "id": 6,
+      "info": {
+        "description": "COYOTE A UPS Company",
+        "name": "COYOTE",
+        "phone": "T: 773-365-6383 F: 773-365-5383",
+        "fax": "No Fax Provided",
+        "logo": "assets/images/Coyote-Logistics-UPS-Company-Global-Logo.jpg",
+        "width": "160",
+        "height": "120"
+      },
+      "emails": [
+        "mickey.krichevsky@coyote.com"
+      ]
+    }
+  ]
+}

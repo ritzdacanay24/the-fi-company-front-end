@@ -1,0 +1,100 @@
+<div id="printDiv" class=" d-none d-print-block">
+  <div *ngFor="let row of printedReceipts;let i = index">
+    <div *ngIf="isPdf(row.fileName)" style="page-break-after: always">
+      <div>
+        <p style="line-height:0.4">Type: {{row.name}}</p>
+        <p style="line-height:0.4">Date of Receipt: {{row.date !== "null" && row.date ? row.date : ''}} {{row.time !==
+          "null" && row.time ? row.time : ''}}</p>
+        <p style="line-height:0.4">Vendor: {{row.vendor_name}}</p>
+        <p style="line-height:0.4">Created By: {{row.created_by_name}}</p>
+        <p style="line-height:0.4">Amunt: {{row.cost}}</p>
+      </div>
+      <img style="width:80%;height:80%;" class="rounded" [src]="row?.link" id="img{{i}}">
+    </div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <!--<h4 class="float-start">Receipts</h4>-->
+
+        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active" class="nav justify-content-end nav-tabs-custom rounded card-header-tabs border-bottom-0"
+          (navChange)="onNavChange($event)">
+          <li [ngbNavItem]="'Receipts'" class="nav-item">
+            <a ngbNavLink  class="nav-link" data-bs-toggle="tab" role="tab"><i class="mdi mdi-receipt-text"></i> Uploaded Receipts</a>
+            <ng-template ngbNavContent>
+              <ag-grid-angular class="ag-theme-alpine no-border" [gridOptions]="gridOptions" [rowData]="data"
+                style="width: 100%;height: calc(100vh - 395px);">
+              </ag-grid-angular>
+
+
+              <p class="text-center p-1" style="color:#909090;background-color:	#E8E8E8;margin-left: 0px;
+     margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+            </ng-template>
+          </li>
+          <li [ngbNavItem]="'Transactions'"  class="nav-item">
+            <a ngbNavLink  class="nav-link" data-bs-toggle="tab" role="tab"> Transactions</a>
+            <ng-template ngbNavContent>
+
+              <ag-grid-angular class="ag-theme-alpine no-border" [gridOptions]="gridOptions" [rowData]="transactions"
+                style="width: 100%;height: calc(100vh - 395px);">
+              </ag-grid-angular>
+
+            </ng-template>
+          </li>
+        </ul>
+
+
+        <div class="form-check form-switch form-switch-md ms-auto me-3" *ngIf="active == 'Transactions'">
+          <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showNoReceipts"
+            (change)="onClickShowNoReceipts()">
+          <label class="form-check-label" for="flexSwitchCheckDefault">Show no receipts found.</label>
+        </div>
+
+        <div class="d-grid gap-1 d-flex ms-auto m-0 p-0">
+
+          <div class="btn-group text-end" role="group" aria-label="Button group with nested dropdown"
+            *ngIf="active == 'Transactions'">
+            <div ngbDropdown class="d-none d-sm-block  m-0" placement="bottom-right" container="body">
+              <button type="button" class="btn btn-primary btn-sm" id="dropdownBasic1"
+                ngbDropdownToggle>Actions</button>
+              <div ngbDropdownMenu aria-labelledby="dropdownBasic1" container="body">
+                <button ngbDropdownItem class="py-2" (click)="sendEmail()">
+                  <i class="feather icon-printer me-2 text-primary"></i>Email missing receipts to techs
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-warning  btn-sm m-0" *ngIf="active != 'Transactions'" (click)="create('Folder')">
+            Upload Receipt
+          </button>
+          <button class="btn btn-success btn-sm m-0" (click)="printReceipts()"
+            [disabled]="this.gridApi?.getSelectedRows()?.length == 0 ">Print Receipts</button>
+
+        </div>
+      </div>
+
+      <div class="card-body p-0 rounded-0" style="height: calc(100vh - 395px);overflow: auto;">
+        <!--<div *ngIf="loading" class="text-center p-3"> Loading data. Please wait.</div>-->
+        <div *ngIf="!data.length && !loading" class="text-center p-3"> No receipts found.</div>
+
+        <div [ngbNavOutlet]="nav"></div>
+
+
+      </div>
+
+
+      <div class="card-footer text-start">
+        Total Amount:
+        <span class="text-success"> {{tripExpenseTotal | currency}}</span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,130 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">{{id ? 'Edit' : 'Add'}} Receipt</h4>
+  <div class="form-check form-switch form-switch-md float-end">
+    <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="autoExtract">
+    <label class="form-check-label" for="flexSwitchCheckDefault"></label>
+  </div>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="form">
+    <div style="text-align: center;margin: 10px;" *ngIf="url || link">
+      <div>
+        <div>
+          <img style="width:150px; height:150px" [errorImage]="'assets/images/no-image.PNG'"
+            [defaultImage]="'assets/images/loading.PNG'" [lazyLoad]="url || link">
+        </div>
+        <a *ngIf="link" [href]="link" target="_blank">Click here if image not
+          displaying</a>
+      </div>
+      <div class="btn-group" role="group" aria-label="Basic example" *ngIf="link">
+        <button type="button" class="btn btn-danger" (click)="removeImage()">Remove</button>
+      </div>
+      <hr />
+    </div>
+
+    <div style="text-align: center;margin: 10px;" *ngIf="!url && !link">
+      <div>
+        Upload receipt
+      </div>
+    </div>
+
+    <h5 *ngIf="isLoading" class="mt-3 text-center">Loading... Please wait</h5>
+
+    <div class="form-group row mb-3">
+      <div class="col-sm-12">
+        <div class="d-grid gap-1 d-flex justify-content-center">
+          <label class="btn btn-info btn-attach btn-block me-2 btn-md" for="folder" style="line-height: 1.2rem;">
+            <input type="file" class="custom-file-input d-none" accept="image/*" id="folder"
+              aria-describedby="customFileInput" (change)="handleFileInput($any($event.target).files)">
+            <i class="feather icon-folder"></i> Library
+          </label>
+          <label class="btn btn-success btn-attach btn-block btn-md" for="front" style="line-height: 1.2rem;">
+            <input capture="environment" type="file" accept="image/*" class="custom-file-input d-none" id="front"
+              aria-describedby="front" (change)="handleFileInput($any($event.target).files)" #fileInput>
+            <i class="feather icon-camera"></i> Take Photo
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-2" *ngIf="predictInfo">
+      Upload File Info:
+      <p>Original Size: {{originalFileSize}}</p>
+      <p>Compressed Size: {{sizeOfFile}}</p>
+      <p>Processing Time: {{predictInfo?.inference?.processing_time}}</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required w-100">Total Amount
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.total_incl?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.total_incl?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <input type="tel" class="form-control" placeholder="Entet total amount" formControlName="cost">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required w-100">Category
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.category?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.category?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <ng-select [items]="receiptOptions" bindLabel="name" formControlName="name" placeholder="Select category"
+        [addTag]="true">
+      </ng-select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label w-100">Vendor Name
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.supplier?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.supplier?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <input type="search" class="form-control" placeholder="Ex) Lowes, Shell, Enterprise"
+        formControlName="vendor_name">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required w-100">Receipt Date
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.date?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.date?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <input type="date" class="form-control" placeholder="Date" formControlName="date">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label required w-100">Receipt Time
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.time?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.time?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <input step="600" type="time" class="form-control" id="time" placeholder="time"
+        formControlName="time">
+    </div>
+
+    <div *ngFor="let row of connectingJobs;let i = index">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="flexCheckDefault-{{i}}">
+        <label class="form-check-label" for="flexCheckDefault-{{i}}">
+          {{row.fsId}} - {{row.property}}
+        </label>
+      </div>
+    </div>
+
+
+
+  </form>
+</div>
+
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto btn-md">Close</button>
+  <button (click)="deleteTripExpense()" type="button" class="btn btn-danger btn-md" *ngIf="id">Delete</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-success btn-md">Save</button>
+</div>

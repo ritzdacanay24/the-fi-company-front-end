@@ -1,0 +1,293 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="modal-basic-title">Ticket Summary</h5>
+</div>
+<div class="modal-body mh-250">
+
+  <div class="container h-100" *ngIf="!workOrderInfo">
+    <div class="row align-items-center h-100">
+      <div class="col-6 mx-auto">
+        <div class="jumbotron text-center">
+          <h5>You will be able to view the ticket once the ticket is created.</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="invoiceWorkOrders" *ngIf="workOrderInfo">
+    <h5 id="watermark" *ngIf="!workOrderInfo.dateSubmitted" class="text-center text-danger mb-3">
+      ----------- This is not submitted yet. -----------
+    </h5>
+
+    <table class="report-container" style="width:100%">
+
+      <thead id="header" class="report-header">
+        <!-- Will print at the top of every page -->
+        <tr>
+          <th>
+            <div class="row mb-3">
+              <div class="col">
+                <a target="_blank">
+                  <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+                    style="width:170px" />
+                </a>
+              </div>
+              <div class="col">
+                <table class="float-end  header-table1">
+                  <tr>
+                    <td class="text-end p-1">Billing #</td>
+                    <td class="text-end p-1">___________________</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <table class="float-start header-table1">
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Company:</td>
+                    <td class="text-start ps-3">{{jobInfo?.customer || 'No customer added'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Property:</td>
+                    <td class="text-start ps-3">{{jobInfo?.property || 'No property added'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Sign/Theme:</td>
+                    <td class="text-start ps-3">{{jobInfo?.service_type || 'Not Listed '}}/
+                      {{jobInfo?.sign_theme || 'Not Listed'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Service Date:</td>
+                    <td class="text-start ps-3">{{jobInfo?.request_date + ' ' + jobInfo?.start_time}}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="col test">
+
+                <table class="float-start  header-table1">
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Id#/Job#:</td>
+                    <td class="text-start ps-3">{{workOrderInfo?.fs_scheduler_id}} -
+                      {{workOrderInfo?.id}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">SO#:</td>
+                    <td class="text-start ps-3">{{jobInfo?.sales_order_number || 'Not Listed'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Submitted:</td>
+                    <td class="text-start ps-3">{{workOrderInfo?.dateSubmitted}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Completed:</td>
+                    <td class="text-start ps-3">{{workOrderInfo?.workCompleted}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-start pe-2 font-weight-bold text-nowrap">Techs:</td>
+                    <td class="text-start ps-3">{{teams || 'Not Listed'}}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            <hr>
+          </th>
+        </tr>
+
+      </thead>
+      <tbody id="main " class="report-content">
+
+        <tr>
+          <th>
+            <h5 class="mt-2 mb-2">Time line</h5>
+
+            <table class="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th class="text-start" style="white-space: nowrap;">Type</th>
+                  <th class="text-center" style="white-space: nowrap;">Start/Finish</th>
+                  <th class="text-end " style="white-space: nowrap;">QTR Hours</th>
+                  <th class="text-end " style="white-space: nowrap;">Time</th>
+                </tr>
+              </thead>
+              <tbody *ngFor="let g of groupArrays">
+                <tr>
+                  <td colspan="4" class="pt-2 pb-2 font-weight-bold">
+                    {{g.date == 'null' || !g.date ? 'No start date' : g.date }}
+                  </td>
+                </tr>
+                <tr *ngFor="let row of g.games; let i = index" class="fw-normal">
+                  <td class=" text-start ps-4 text-wrap align-middle" style="white-space: nowrap;">{{i+1}}.
+                    {{row.event_name}}
+                    <p class="ms-3 m-0 p-0" *ngIf="row.flight_hrs_delay">Flight Hr delay: {{row.flight_hrs_delay}}</p>
+                    <p class="ms-3 m-0 p-0" *ngIf="row.description && printDetails" style="font-size:12px">-
+                      {{row.description}}</p>
+                  </td>
+                  <td class=" text-center align-middle" style="white-space: nowrap;">
+                    {{compare(row.projectStart, row.projectFinish).start}} {{zoneAbbr(row.projectStartTz)}} -
+                    {{compare(row.projectStart, row.projectFinish).finish}} {{zoneAbbr(row.projectFinishTz)}}
+                  </td>
+                  <td class=" text-end align-middle" style="white-space: nowrap;"
+                    [ngClass]="{'bg-danger text-white': calculateTotal(row) < 0}">
+                    {{calculateTotal(row)/60 | number : '1.2-2' }} </td>
+                  <td class=" text-end align-middle" style="white-space: nowrap;"
+                    [ngClass]="{'bg-danger text-white': calculateTotal(row) < 0}">
+                    {{timeConvert(calculateTotal(row)) }} </td>
+                </tr>
+                <tr style="page-break-inside: after;">
+                  <td colspan="2" class="text-end font-weight-bold align-middle">
+                    Sub Total
+                  </td>
+                  <td class="text-end font-weight-bold align-middle">
+                    {{g.groupTotal/60 | number : '1.2-2'}}
+                  </td>
+                  <td class="text-end font-weight-bold align-middle">
+                    {{timeConvert(g.groupTotal,'short')}}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot style="display: table-row-group;">
+                <tr style="font-size:20px">
+                  <td colspan="2" class="text-end font-weight-bold align-middle">
+                    <h4 class="p-0 m-0">Total</h4>
+                  </td>
+                  <td class="text-end font-weight-bold align-middle">
+                    <h4 class="p-0 m-0">
+                      {{_travelAndWorkTotalHrs/60 | number : '1.2-2'}}</h4>
+                  </td>
+                  <td class="text-end font-weight-bold align-middle">
+                    <h4 class="p-0 m-0">
+                      {{timeConvert(_travelAndWorkTotalHrs,'short')}}</h4>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </th>
+        </tr>
+      </tbody>
+
+
+
+      <tbody id="main" class="report-content" *ngIf="crashKitDetails?.length > 0">
+        <tr>
+          <td>
+            <h5 class="mt-3 mb-2">Crash kit Details</h5>
+
+            <table class="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th>Part Number</th>
+                  <th>Description</th>
+                  <th class="text-end">Qty</th>
+                  <th class="text-end">Unit Price</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of crashKitDetails">
+                  <td>{{row.part_number}}</td>
+                  <td>{{row.description}}</td>
+                  <td class="text-end">{{row.qty}}</td>
+                  <td class="text-end">{{row.price | currency}}</td>
+                  <td class="text-end">{{row.price * row.qty | currency}}</td>
+                </tr>
+              </tbody>
+              <!-- <tfoot style="display: table-row-group;">
+                <tr style="font-size:20px">
+                  <td colspan="4" class="text-end font-weight-bold align-middle">
+                    <h4 class="p-0 m-0">Total</h4>
+                  </td>
+                  <td class="text-end font-weight-bold align-middle">
+                    <h4 class="p-0 m-0">
+                      {{crashKitDetailsSum | currency}}</h4>
+                  </td>
+                </tr>
+              </tfoot> -->
+            </table>
+          </td>
+        </tr>
+      </tbody>
+
+      <tbody id="main " class="report-content">
+        <tr>
+          <th>
+            <h5 class="mt-3 mb-2">Work Done</h5>
+            <div class="border border-1 rounded p-3">
+              <ul class="ml-0 ps-3 pb-0 mb-0 font-weight-normal" *ngIf="installNotes?.length > 0">
+                <li *ngFor="let row of installNotes">{{row}}</li>
+              </ul>
+              <p *ngIf="!installNotes || installNotes?.length == 0" class="pb-0">No comments added</p>
+            </div>
+
+            <span class="d-print-none">
+              <h5 class="mt-3 mb-2">Scheduler Notes/Other Comments</h5>
+              <div class="border border-1 rounded p-3">
+                <ul class="ml-0 ps-3 pb-0 mb-0 font-weight-normal" *ngIf="schedulerNotesComments?.length > 0">
+                  <li *ngFor="let row of schedulerNotesComments">{{row}}</li>
+                </ul>
+                <p *ngIf="schedulerNotesComments?.length == 0">No comments added</p>
+              </div>
+            </span>
+
+          </th>
+        </tr>
+      </tbody>
+
+      <tbody id="main " class="report-content">
+        <tr>
+          <th>
+            <div class="row travelInfoBorder1">
+              <div class="col-6">
+
+                <h5 class="mt-2 mb-2">Serial/Assets</h5>
+
+                <table class="table table-bordered table-sm">
+
+                  <thead>
+                    <tr>
+                      <td>Cust Serial/Asset #:</td>
+                      <td>EYE-FI Asset #:</td>
+                    </tr>
+                  </thead>
+                  <tbody class=" font-weight-normal">
+                    <tr *ngIf="misc?.length == 0">
+                      <td colspan="2">No information provided</td>
+                    </tr>
+                    <tr *ngFor="let row of misc">
+                      <td>
+                        {{row.customerAsset}}</td>
+                      <td>
+                        {{row.eyefiAsset}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+              </div>
+              <div class="col-6">
+                <div class="row">
+                  <div class="col-6">
+                    <h5 class="text-bold mt-2 pb-2">Customer</h5>
+                    <img *ngIf="workOrderInfo.customerSignatureImage" src="{{ workOrderInfo.customerSignatureImage }}"
+                      style="width:100%;height:100px;margin-bottom:120px;background-color: #fff;">
+                  </div>
+                  <div class="col-6">
+                    <h5 class="text-bold mt-2 pb-2">Technician</h5>
+                    <img *ngIf="workOrderInfo.technicianSignatureImage"
+                      src="{{ workOrderInfo.technicianSignatureImage }}"
+                      style="width:100%;height:100px;margin-bottom:120px">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </th>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray mr-auto">Close</button>
+  <button (click)="getData()" type="button" class="btn btn-warning">Refresh</button>
+  <button (click)="print()" type="button" class="btn btn-info">Print</button>
+</div>

@@ -1,0 +1,85 @@
+td,
+th {
+  padding: 2px 6px;
+  //border-color: #484848;
+  vertical-align: middle;
+}
+
+// table {
+//   border: 1px solid #484848;
+// }
+
+.totalBill {
+  padding-right: 25px;
+  font-size: 22px;
+}
+
+.header-name {
+  background: gray;
+  color: #fff !important;
+  font-size: 20px !important;
+  padding: 5px !important;
+  text-align: center !important;
+}
+
+// .light-grey {
+//   background-color: #E8E8E8;
+// }
+
+/* The heart of the matter */
+.testimonial-group > .row {
+  overflow-x: auto;
+  white-space: nowrap;
+  display: block;
+}
+
+.testimonial-group > .row > .col-xs-4 {
+  display: inline-block;
+  float: none;
+}
+
+/* Decorations */
+.col-xs-4 {
+  color: #000;
+  font-size: 15px;
+  padding: 3px 10px;
+  margin: 5px 1px;
+}
+
+.col-xs-4:nth-child(1n + 1) {
+  background: lightskyblue;
+}
+
+.shadow {
+  -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  font-weight: bold;
+  background-color: cadetblue !important;
+  color: #fff;
+}
+
+.alpha {
+  z-index: 9999999;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: white;
+  margin-top: -193px;
+}
+
+.alpha .table {
+  z-index: 9999999;
+  background-color: white;
+}
+
+.secondary-header {
+  width: 100%;
+  top: 73px;
+  left: 0;
+  right: 0;
+  z-index: 9999999;
+  background-color: transparent;
+  padding: 8px;
+}

@@ -25,3 +25,14 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+
+
+$ENV:NODE_ENV = 'development' 
+
+git add . ; git commit -m "update" ; git push
+
+ng build --output-hashing=all
+
+
+#install different node versions for different work stations. 
+##https://dev.to/stephengade/how-to-install-and-manage-multiple-versions-of-nodejs-on-windows-5h30

@@ -1,0 +1,424 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <h6 class="mb-3 bg-light p-3 text-center">Shipping Information</h6>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Vendor</label>
+    <div class="col-sm-9">
+      <ng-select [items]="formValues?.info" [searchable]="true" formControlName="vendor" placeholder="Select vendor"
+        bindLabel="company" addTagText="Add emails" [ngClass]="{ 'is-invalid': submitted && f['vendor'].errors }">
+      </ng-select>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Subject line</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter subject line" formControlName="subjectLine"
+        [ngClass]="{ 'is-invalid': submitted && f['subjectLine'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">To emails</label>
+    <div class="col-sm-9">
+      <ng-select [addTag]="addEmail" [multiple]="true" formControlName='emailToSendTo'
+        [ngClass]="{ 'is-invalid': submitted && f['emailToSendTo'].errors }">
+      </ng-select>
+      <small>List of email that will be sent to</small>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">CC Emails</label>
+    <div class="col-sm-9">
+      <ng-select [addTag]="addEmail" [multiple]="true" formControlName='ccEmails'
+        [ngClass]="{ 'is-invalid': submitted && f['ccEmails'].errors }">
+      </ng-select>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Sales order</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter sales order number" formControlName="sod_nbr"
+        [ngClass]="{ 'is-invalid': submitted && f['sod_nbr'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Shipper name</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter shipper's name" formControlName="shipperName"
+        [ngClass]="{ 'is-invalid': submitted && f['shipperName'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Address</label>
+    <div class="col-sm-9">
+      <div class="row mt-2">
+        <div class="col-12 mb-3">
+          <label for="inputAddress" class="form-label">Address</label>
+          <input type="text" class="form-control" placeholder="Enter address" formControlName="address"
+            [ngClass]="{ 'is-invalid': submitted && f['address'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="inputCity" class="form-label">City</label>
+          <input type="text" class="form-control" placeholder="Enter city" formControlName="city"
+            [ngClass]="{ 'is-invalid': submitted && f['city'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">State</label>
+          <input type="text" class="form-control" placeholder="Enter state" formControlName="state"
+            [ngClass]="{ 'is-invalid': submitted && f['state'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Zip</label>
+          <input type="text" class="form-control" placeholder="Enter zip code" formControlName="zip"
+            [ngClass]="{ 'is-invalid': submitted && f['zip'].errors }">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Phone #</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter phone number" formControlName="phone"
+        [ngClass]="{ 'is-invalid': submitted && f['phone'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Requestor's name</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter requestor's name" formControlName="requestorName"
+        [ngClass]="{ 'is-invalid': submitted && f['requestorName'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Contact name</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter contact name" formControlName="contactName"
+        [ngClass]="{ 'is-invalid': submitted && f['contactName'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Shipping hours</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter shipping hours" formControlName="shippingHours"
+        [ngClass]="{ 'is-invalid': submitted && f['shippingHours'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Ready date & time</label>
+    <div class="col-sm-9">
+      <input type="datetime-local" class="form-control" placeholder="Enter date and time"
+        formControlName="readyDateTime" [ngClass]="{ 'is-invalid': submitted && f['readyDateTime'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">PU #</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter pu number" formControlName="puNumber"
+        [ngClass]="{ 'is-invalid': submitted && f['puNumber'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">PO #</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter po #" formControlName="poNumber"
+        [ngClass]="{ 'is-invalid': submitted && f['poNumber'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label required">Is PO shipping in full?</label>
+    <div class="col-sm-9">
+      <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No'];let i = index;">
+        <input type="radio" class="form-check-input" name="poShippingFull" id="poShippingFull-{{i}}"
+          formControlName="poShippingFull" [ngClass]="{ 'is-invalid': submitted && f['poShippingFull'].errors }"
+          [value]="row">
+        <label class="form-check-label" for="poShippingFull-{{i}}">{{row}}</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label required">Appointment required?</label>
+    <div class="col-sm-9">
+      <div class="form-check form-check-flat form-check-primary form-check-inline"
+        *ngFor="let row of ['Yes', 'No'];let i = index;">
+        <label class="form-check-label">
+          <input type="radio" class="form-check-input" name="appointmentRequired" id="appointmentRequired-{{i}}"
+            formControlName="appointmentRequired"
+            [ngClass]="{ 'is-invalid': submitted && f['appointmentRequired'].errors }" [value]="row">
+          <i class="input-frame"></i> {{row}}
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label required">Lift gate required?</label>
+    <div class="col-sm-9">
+      <div class="form-check form-check-flat form-check-primary form-check-inline"
+        *ngFor="let row of ['Yes', 'No'];let i = index;">
+        <label class="form-check-label">
+          <input type="radio" class="form-check-input" name="liftGateRequired" id="liftGateRequired-{{i}}"
+            formControlName="liftGateRequired" [ngClass]="{ 'is-invalid': submitted && f['liftGateRequired'].errors }"
+            [value]="row">
+          <i class="input-frame"></i> {{row}}
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">BOL goes to fax/email</label>
+    <div class="col-sm-9">
+      <tag-input formControlName='bolFaxEmail' theme="bootstrap" [modelAsStrings]="true"
+        [ngClass]="{ 'is-invalid': submitted && f['bolFaxEmail'].errors }" secondaryPlaceholder="+ Add emails"
+        placeholder="+ Add more emails" [errorMessages]="errorMessages" [validators]="validators">
+      </tag-input>
+    </div>
+  </div>
+
+
+  <!-- END SHIPPING INFORMATION-->
+
+  <h6 class="mb-3 bg-light p-3 text-center">Delivery Information</h6>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Company name</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter companies's name" formControlName="dest_companyName"
+        [ngClass]="{ 'is-invalid': submitted && f['dest_companyName'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Address</label>
+    <div class="col-sm-9">
+      <div class="row mt-2">
+        <div class="col-12 mb-3">
+          <label for="inputAddress" class="form-label">Address</label>
+          <input type="text" class="form-control" placeholder="Enter address" formControlName="dest_address"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_address'].errors }">
+        </div>
+        <div class="col-12 mb-3">
+          <label for="inputAddress2" class="form-label">Address 2</label>
+          <input type="text" class="form-control" placeholder="Enter address 2" formControlName="dest_address2"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_address2'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="inputCity" class="form-label">City</label>
+          <input type="text" class="form-control" placeholder="Enter city" formControlName="dest_city"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_city'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">State</label>
+          <input type="text" class="form-control" placeholder="Enter state" formControlName="dest_state"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_state'].errors }">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Zip</label>
+          <input type="text" class="form-control" placeholder="Enter zip code" formControlName="dest_zip"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_zip'].errors }">
+        </div>
+        <div class="col-12 mb-3">
+          <label class="form-label">Country</label>
+          <input type="text" class="form-control" placeholder="Enter country" formControlName="dest_country"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_country'].errors }">
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Phone #</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter phone number" formControlName="dest_phone"
+        [ngClass]="{ 'is-invalid': submitted && f['dest_phone'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Contact name</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter contact name" formControlName="dest_contactName"
+        [ngClass]="{ 'is-invalid': submitted && f['dest_contactName'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Delivery #</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter delivery number" formControlName="dest_deliveryNumber"
+        [ngClass]="{ 'is-invalid': submitted && f['dest_deliveryNumber'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Delivery Date</label>
+    <div class="col-sm-9">
+      <input type="date" class="form-control" placeholder="Enter delivery date" formControlName="dest_deliveryDate"
+        [ngClass]="{ 'is-invalid': submitted && f['dest_deliveryDate'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label required">Appointment required</label>
+    <div class="col-sm-9">
+      <div class="form-check form-check-flat form-check-primary form-check-inline"
+        *ngFor="let row of ['Yes', 'No'];let i = index;">
+        <label class="form-check-label">
+          <input type="radio" class="form-check-input" name="dest_appointmentRequired"
+            id="dest_appointmentRequired-{{i}}" formControlName="dest_appointmentRequired"
+            [ngClass]="{ 'is-invalid': submitted && f['dest_appointmentRequired'].errors }" [value]="row">
+          <i class="input-frame"></i> {{row}}
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- END DELIVERY INFORMATION-->
+
+  <h6 class="mb-3 bg-light p-3 text-center">Commodity Information</h6>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Description of product</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter description of product"
+        formControlName="descriptionOfProduct"
+        [ngClass]="{ 'is-invalid': submitted && f['descriptionOfProduct'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Pallets/Pieces/Cartons</label>
+    <div class="col-sm-5">
+      <select class="form-select" formControlName="piecesQtyUoM"
+        [ngClass]="{ 'is-invalid': submitted && f['piecesQtyUoM'].errors }">
+        <option selected disabled [value]="null">--SELECT--</option>
+        <option *ngFor="let row of ['Pallets', 'Pieces', 'Cartons']" [value]="row">{{row}}</option>
+      </select>
+    </div>
+    <div class="col-sm-4">
+      <input type="text" class="form-control" placeholder="Enter qty" formControlName="piecesQty"
+        [ngClass]="{ 'is-invalid': submitted && f['piecesQtyUoM'].errors }">
+    </div>
+  </div>
+
+  <div *ngIf="form.value.piecesQtyUoM === 'Pallets'" class="mb-3">
+    <div class="row mb-3" formArrayName="palletSizeInformationSendInfo"
+      *ngFor="let item of form.get('palletSizeInformationSendInfo')['controls']; let i = index;">
+      <label class="col-sm-3 col-form-label required">Pallet size ({{i + 1}})</label>
+      <div class="col-sm-9">
+        <div class="input-group">
+          <input type="text" class="form-control" placeholder="Enter size information" formControlName="size"
+            [ngClass]="{ 'is-invalid': submitted && item.get('size').errors }">
+
+          <div class="input-group-prepend">
+            <button type="button" class="btn btn-danger btn-icon" (click)="deletePallet(i)">
+              <i class="mdi mdi-trash-can-outline"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group mb-3" *ngIf="form.value.piecesQtyUoM === 'Pallets'">
+    <button class="btn btn-primary btn-sm" type="button" (click)="addPallets()">Add more pallets</button>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Weight</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter weight" formControlName="weight"
+        [ngClass]="{ 'is-invalid': submitted && f['weight'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Declared value</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter value" formControlName="value"
+        [ngClass]="{ 'is-invalid': submitted && f['value'].errors }">
+      <small>This is calculated based off of the line details</small>
+    </div>
+  </div>
+
+  <div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label required">Include insurance?</label>
+    <div class="col-sm-9">
+      <div class="form-check form-check-flat form-check-primary">
+        <label class="form-check-label">
+          <input type="checkbox" class="form-check-input" formControlName="insuranceIncluded">
+          <i class="input-frame"></i>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Freight Class</label>
+    <div class="col-sm-9">
+      <input type="text" class="form-control" placeholder="Enter frieght class" formControlName="freightClass"
+        [ngClass]="{ 'is-invalid': submitted && f['freightClass'].errors }">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <label class="col-sm-3 col-form-label required">Special Requirements</label>
+    <div class="col-sm-9">
+      <textarea type="text" class="form-control" placeholder="Enter special requirments" rows="10"
+        formControlName="specialRequirements"
+        [ngClass]="{ 'is-invalid': submitted && f['specialRequirements'].errors }"></textarea>
+    </div>
+  </div>
+
+  <!-- END COMMODITY INFORMATION-->
+
+  <h6 class="mb-3 bg-light p-3 text-center">Line Information</h6>
+
+  <div class="table-responsive">
+    <table class="table" style="max-height:400px;overflow:auto">
+      <thead>
+        <tr>
+          <th>Part</th>
+          <th>Price</th>
+          <th>Qty Shipping</th>
+          <th>Include in form</th>
+        </tr>
+      </thead>
+      <tbody formArrayName="lines" *ngFor="let item of form.get('lines')['controls']; let i = index;">
+        <tr [formGroupName]="i" class="align-middle">
+          <td>{{item.value.sod_part}}</td>
+          <td>{{item.value.sod_list_pr | currency}}</td>
+          <td>
+            <input type="number" class="form-control" placeholder="Enter qty" formControlName="qty"
+              [ngClass]="{ 'is-invalid': submitted && item.get('qty').errors }" (change)="calculateValue()">
+          </td>
+          <td>
+            <div class="form-check form-check-flat form-check-primary float-right">
+              <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" formControlName="addItemsList"
+                  (change)="calculateValue()">
+                <i class="input-frame"></i>
+              </label>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</form>

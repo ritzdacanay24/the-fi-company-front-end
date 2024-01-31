@@ -1,0 +1,245 @@
+<form [formGroup]="form" autofocus="false">
+
+  <div class="mb-3">
+    <label class="form-label required">Your Email</label>
+    <input type="text" class="form-control" placeholder="Enter your email"
+      [ngClass]="{ 'is-invalid': submitted && f.email.errors }" formControlName="email">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">CC Email (Optional)</label>
+    <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="cc_email"
+      placeholder="Enter email address" [items]="listOfCCemails">
+      <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+        {{item}}
+      </ng-template>
+    </ng-select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Subject Line</label>
+    <input type="text" class="form-control" placeholder="Enter subject line"
+      [ngClass]="{ 'is-invalid': submitted && f.subject.errors }" formControlName="subject">
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label required">Requested By</label>
+      <input type="text" class="form-control" placeholder="Enter your first and last name"
+        [ngClass]="{ 'is-invalid': submitted && f.requested_by.errors }" formControlName="requested_by">
+    </div>
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label required">Type of Service</label>
+      <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.type_of_service.errors }"
+        formControlName="type_of_service">
+        <option selected disabled value="">Select service</option>
+        <option *ngFor="let row of typeOfServiceOptions" [value]="row">{{row}}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-12 mb-3">
+      <label class="form-label required">Requested Date of Service</label>
+      <input type="text" placeholder="Please Select..." [controls]="['calendar', 'timegrid']"
+        class="form-control" [stepMinute]="5" mbsc-datepicker formControlName="dateAndTime"
+        [labels]="myLabels" [marked]="myInvalid" [mbscOptions]="myDatepickerOptions"
+        [ngClass]="{ 'is-invalid': submitted && f.dateAndTime.errors  }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label">SO # (Optional)</label>
+      <input type="text" class="form-control" placeholder="Enter So Number" formControlName="so_number"
+        [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }">
+    </div>
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label">CO/PO # (Optional)</label>
+      <input type="text" class="form-control" placeholder="Enter co number" formControlName="customer_co_number"
+        [ngClass]="{ 'is-invalid': submitted && f.customer_co_number.errors }">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Platform</label>
+    <input type="text" class="form-control" placeholder="Enter platform" formControlName="platform"
+      [ngClass]="{ 'is-invalid': submitted && f.platform.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Configuration</label>
+    <input type="text" class="form-control" placeholder="Enter configuration" formControlName="type_of_sign"
+      [ngClass]="{ 'is-invalid': submitted && f.type_of_sign.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Sign/Theme</label>
+    <input type="text" class="form-control" placeholder="Enter sign theme" formControlName="sign_theme"
+      [ngClass]="{ 'is-invalid': submitted && f.sign_theme.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">EYE-Fi/Customer Sign Part #</label>
+    <input type="text" class="form-control" placeholder="Enter eyefi/customer sign part"
+      formControlName="eyefi_customer_sign_part"
+      [ngClass]="{ 'is-invalid': submitted && f.eyefi_customer_sign_part.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Sign/Manufacture</label>
+    <input type="text" class="form-control" placeholder="Enter Sign Manufacture" formControlName="sign_manufacture"
+      [ngClass]="{ 'is-invalid': submitted && f.sign_manufacture.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Serial Number (Optional)</label>
+    <input type="text" class="form-control" placeholder="Enter serial number" formControlName="serial_number"
+      [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Company</label>
+    <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.customer.errors }" formControlName="customer"
+      (change)="getCompanyChange()">
+      <option selected disabled value="">Select Company</option>
+      <option *ngFor="let row of customerOptions" [value]="row.name">{{row.name}}</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-12 mb-3">
+      <label class="form-label">Customer Product Number</label>
+      <ng-select [readonly]="form.disabled" bindLabel="cp_cust_part" bindValue="cp_cust_part" [loading]="dataLoading"
+        [addTag]="true" [hideSelected]="true" [multiple]="false" formControlName="customer_product_number"
+        placeholder="Customer Product Number" [items]="data$ | async" [typeahead]="dataInput$" [virtualScroll]="true"
+        [minTermLength]="3" typeToSearchText="Please enter 3 or more characters"
+        notFoundText="Customer item not found.">
+        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+          <p>{{item.cp_cust_part}}</p>
+          <p>{{item.pt_desc1}} {{item.pt_desc2}}</p>
+        </ng-template>
+      </ng-select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label required">Onsite Customer Name</label>
+      <input type="text" class="form-control" placeholder="Enter onsite customer name"
+        formControlName="onsite_customer_name" [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_name.errors }">
+    </div>
+    <div class="col-sm-12 col-lg-6 mb-3">
+      <label class="form-label required">Onsite Customer Phone #</label>
+      <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
+        formControlName="onsite_customer_phone_number" prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true"
+        [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_phone_number.errors }">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Casino Name</label>
+    <input type="text" class="form-control" placeholder="Enter casino name" formControlName="property"
+      [ngClass]="{ 'is-invalid': submitted && f.property.errors }" />
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-8 mb-3">
+      <label class="form-label required">Casino Address</label>
+      <input type="text" class="form-control" placeholder="Enter casino address" formControlName="address1"
+        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }">
+    </div>
+    <div class="col-sm-12 col-lg-4 mb-3">
+      <label class="form-label">Ste</label>
+      <input type="text" class="form-control" placeholder="Enter ste" formControlName="address2"
+        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12 col-lg-4 mb-3">
+      <label class="form-label required">State</label>
+      <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.state.errors }" formControlName="state">
+        <option selected disabled value="">Select State</option>
+        <option *ngFor="let row of states" [value]="row.abbreviation">{{row.name}}</option>
+      </select>
+    </div>
+    <div class="col-sm-12 col-lg-5 mb-3">
+      <label class="form-label required">City</label>
+      <input type="text" class="form-control" placeholder="Enter city" formControlName="city"
+        [ngClass]="{ 'is-invalid': submitted && f.city.errors }">
+    </div>
+    <div class="col-sm-12 col-lg-3 mb-3">
+      <label class="form-label required">Zip Code</label>
+      <input type="text" class="form-control" placeholder="Enter zip" formControlName="zip"
+        [ngClass]="{ 'is-invalid': submitted && f.zip.errors }" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000"
+        [showMaskTyped]="true">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" formControlName="licensing_required"
+        [ngClass]="{ 'is-invalid': submitted && f.licensing_required.errors }">
+      <label class="form-check-label">
+        Licensing Required (Optional)
+      </label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" formControlName="bolt_to_floor"
+        [ngClass]="{ 'is-invalid': submitted && f.bolt_to_floor.errors }">
+      <label class="form-check-label">
+        Bolt to Floor (Optional)
+      </label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" formControlName="sign_jacks"
+        [ngClass]="{ 'is-invalid': submitted && f.sign_jacks.errors }">
+      <label class="form-check-label">
+        Sign Jacks (Optional)
+      </label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Special Instructions (Optional)</label>
+    <textarea type="text" class="form-control" placeholder="Enter special instructions or requirements" rows="15"
+      autosize [minRows]="5" [ngClass]="{ 'is-invalid': submitted && f.special_instruction.errors }"
+      formControlName="special_instruction"></textarea>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch mt-2">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+
+  <div class="mb-3">
+    <re-captcha #captchaElem class="text-xs-center" (resolved)="resolved($event)"
+      *ngIf="!form.get('token').value"></re-captcha>
+    <p class="mb-2" [ngClass]="{
+      'is-invalid':
+        submitted && form.get('g-recaptcha-response')['errors']
+    }" class="text-danger" *ngIf="submitted && form.get('g-recaptcha-response')['errors']">
+      Required
+    </p>
+  </div>
+
+  <div class="mb-3" *ngIf="!form.get('token').value">
+    <p>
+      Please ensure the information is accurate. In any case, this request needs to be modified
+      after submission,
+      you will need to notify the scheduling team by using the comments section below which will be available
+      after you submit this form.
+    </p>
+  </div>
+
+</form>

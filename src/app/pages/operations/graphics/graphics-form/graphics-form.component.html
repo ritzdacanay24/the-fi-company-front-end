@@ -1,0 +1,66 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('graphicsWorkOrder')">Work Order #</label>
+      <input type="text" class="form-control" formControlName="graphicsWorkOrder"
+        [ngClass]="{ 'is-invalid': submitted && f.graphicsWorkOrder.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-10 mb-3">
+      <label class="form-label" [ngClass]="formValidator('itemNumber')">Item Number</label>
+      <input type="text" class="form-control" formControlName="itemNumber"
+        [ngClass]="{ 'is-invalid': submitted && f.itemNumber.errors }" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('qty')">qty</label>
+      <input type="text" class="form-control" formControlName="qty"
+        [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('description')">Item Description</label>
+      <input type="text" class="form-control" formControlName="description"
+        [ngClass]="{ 'is-invalid': submitted && f.description.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('customer')">Customer</label>
+      <input type="text" class="form-control" formControlName="customer"
+        [ngClass]="{ 'is-invalid': submitted && f.customer.errors }" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('customerPartNumber')">Customer Part Number</label>
+      <input type="text" class="form-control" formControlName="customerPartNumber"
+        [ngClass]="{ 'is-invalid': submitted && f.customerPartNumber.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('dueDate')">Due Date</label>
+      <input type="date" class="form-control" formControlName="dueDate"
+        [ngClass]="{ 'is-invalid': submitted && f.dueDate.errors }" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('ordered_date')">Ordered Date</label>
+      <input type="date" class="form-control" formControlName="ordered_date"
+        [ngClass]="{ 'is-invalid': submitted && f.ordered_date.errors }" />
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+
+</form>

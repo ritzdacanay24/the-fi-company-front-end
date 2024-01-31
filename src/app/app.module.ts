@@ -1,4 +1,5 @@
-import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ErrorHandler, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 // routing
 import { AppRoutingModule } from './app-routing.module';
@@ -6,7 +7,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
 import { LayoutsModule } from "./layouts/layouts.module";
-import { PagesModule } from "./pages/pages.module";
 
 // Auth
 import { HttpClientModule, HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -28,7 +28,13 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { EffectsModule } from '@ngrx/effects';
 
 import { AuthenticationEffects } from './store/Authentication/authentication.effects';
+import { ApiPrefixInterceptor } from './core/helpers/api-prefix-interceptor';
 
+import { provideEnvironmentNgxMask } from 'ngx-mask';
+import { ErrorHandlerService } from './core/services/error-handler.service';
+import { ErrorService } from './core/services/error.service';
+import { ToastrModule } from 'ngx-toastr';
+// import { QuillModule } from 'ngx-quill';
 
 
 export function createTranslateLoader(http: HttpClient): any {
@@ -46,6 +52,7 @@ if (environment.defaultauth === 'firebase') {
     AppComponent
   ],
   imports: [
+    FormsModule,
     TranslateModule.forRoot({
       defaultLanguage: 'en',
       loader: {
@@ -59,7 +66,6 @@ if (environment.defaultauth === 'firebase') {
     BrowserModule,
     AppRoutingModule,
     LayoutsModule,
-    PagesModule,
     StoreModule.forRoot(rootReducer),
     StoreDevtoolsModule.instrument({
       maxAge: 25, // Retains last 25 states
@@ -68,11 +74,17 @@ if (environment.defaultauth === 'firebase') {
     EffectsModule.forRoot([
       AuthenticationEffects,
     ]),
+    ToastrModule.forRoot({ preventDuplicates: true }),
+    // QuillModule.forRoot()
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: FakeBackendInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
+    provideEnvironmentNgxMask(),
+    ErrorService,
+    { provide: ErrorHandler, useClass: ErrorHandlerService }
   ],
   bootstrap: [AppComponent]
 })

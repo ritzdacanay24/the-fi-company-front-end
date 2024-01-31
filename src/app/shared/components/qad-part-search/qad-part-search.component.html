@@ -1,0 +1,17 @@
+<label class="form-label" *ngIf="showLabel">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
+<ng-select bindLabel="pt_part" #select [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag"
+  [multiple]="multiple" [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength"
+  [loading]="dataLoading" loadingText="Loading..." typeToSearchText="Please enter {{minTermLength}} or more characters" [typeahead]="dataInput$"
+  [(ngModel)]="value" [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
+  [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
+  [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="Part number not found."
+  [clearSearchOnAdd]="true" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendToBody"
+  [clearable]="true" [ngClass]="ngClass">
+
+  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+    <div>
+      <p> Part: <b>{{ item.pt_part }}</b> | Status: <b>{{item.pt_status}}</b></p>
+      <p> {{item.description}} </p>
+    </div>
+  </ng-template>
+</ng-select>

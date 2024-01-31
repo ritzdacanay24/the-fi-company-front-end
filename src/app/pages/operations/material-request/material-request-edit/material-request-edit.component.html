@@ -1,0 +1,33 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-12 col-xxl-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <app-material-request-form (setFormEmitter)="form = $event" [submitted]="submitted"
+          [onDeleteItem]="onDeleteItem" [onActiveChange]="onActiveChange"></app-material-request-form>
+      </div>
+      <div class="card-footer d-flex " *ngIf="data && id">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary ms-auto me-2" [disabled]="isLoading" (click)="onSubmit()"
+          [disabled]="form.disabled"> Update </button>
+      </div>
+    </div>
+  </div>
+</div>

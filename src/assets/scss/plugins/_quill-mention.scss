@@ -1,0 +1,55 @@
+.ql-mention-list-container {
+    background-color: $dropdown-bg;
+    border: 1px solid $dropdown-border-color;
+    border-radius: $border-radius;
+    box-shadow: $dropdown-box-shadow;
+    overflow: auto;
+    width: 400px;
+    z-index: 9001
+}
+
+.ql-mention-loading {
+    font-size: 16px;
+    line-height: 44px;
+    padding: 0 20px;
+    vertical-align: middle
+}
+
+.ql-mention-list {
+    list-style: none;
+    margin: 0;
+    overflow: hidden;
+    padding: 5px
+}
+
+.ql-mention-list-item {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 44px;
+    padding: 0 20px;
+    vertical-align: middle
+}
+
+.ql-mention-list-item.disabled {
+    cursor: auto
+}
+
+.ql-mention-list-item.selected {
+    background-color: $dropdown-border-color;
+    text-decoration: none
+}
+
+.mention {
+    background-color: $primary;
+    border-radius: $border-radius;
+    height: 24px;
+    margin-right: 2px;
+    padding: 3px 0;
+    user-select: all;
+    width: 65px;
+    color: $white
+}
+
+.mention>span {
+    margin: 0 3px
+}

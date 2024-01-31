@@ -1,0 +1,193 @@
+<div id="printDiv" class="d-none d-print-block">
+  <div>
+    <h4>Event Details <span class="float-end">Ticket#: {{workOrderId}}</span></h4>
+    <table class="table table-sm mb-0" *ngFor="let g of groupArrays;let i = index; let last = last;"
+      style="page-break-after: avoid;">
+      <thead>
+        <tr>
+          <th colspan="5">{{g.date == 'null' || !g.date ? 'No start date' : g.date }}</th>
+        </tr>
+      </thead>
+      <tbody *ngFor="let row of g.games;let ii = index; let last1 = last;">
+        <tr style="page-break-inside : avoid">
+          <td>
+            <p style="font-weight:bolder" class="ps-3 sticky-top">{{ii + 1}}. {{row.event_name || 'No event name'}} </p>
+            <div class="ps-5">
+              <p *ngIf="row.projectStart" class="mb-0">Start: <span>{{compare(row.projectStart,
+                  row.projectFinish).start}} {{zoneAbbr(row.projectStartTz)}} </span></p>
+              <p *ngIf="row.projectFinish" class="mb-0">End: <span>{{compare(row.projectStart,
+                  row.projectFinish).finish}} {{zoneAbbr(row.projectFinishTz)}} </span></p>
+              <p *ngIf="!row.projectStart" class="mb-0">Start: <span class="text-danger">No start time set</span></p>
+              <p *ngIf="!row.projectFinish" class="mb-0">End: <span class="text-danger">No end time set</span></p>
+              <p *ngIf="row.description" style="white-space:normal;" class="mb-0">
+                Description: {{row.description}}
+              </p>
+            </div>
+          </td>
+          <td style="width:150px;text-align:right">
+            {{sumLaborAndBreakTimesAndConvert({
+            start:row.projectStart,
+            finish:row.projectFinish,
+            start_tz:row.projectStartTz,
+            finish_tz:row.projectFinishTz,
+            brStart:row.brStart,
+            brEnd:row.brEnd
+            }) || '-'}}
+          </td>
+        </tr>
+        <tr *ngIf="last1" style="background-color:#E0E0E0">
+          <th style="text-align:right" colspan="5">Sub Total: {{timeConvert(g.groupTotal)}}</th>
+        </tr>
+      </tbody>
+      <tfoot *ngIf="last">
+        <tr>
+          <th style="text-align:right" colspan="5">Total: {{timeConvert(_travelAndWorkTotalHrs,'short')}}</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto">
+          Events {{firstDay | date:"MM/dd/YYYY"}} to {{lastDay | date:"MM/dd/YYYY"}}
+        </h4>
+        <button class="btn btn-light float-end me-2" (click)="this.isExpanded = !this.isExpanded;expandTimeLine()">
+          {{isExpanded? 'Minimize ' : 'Expand '}} timeline
+        </button>
+        <button class="btn btn-light float-end me-2" (click)="showReceipts()">{{isShowingReceipts ? 'Hide' : 'Show'}}
+          Receipts
+        </button>
+        <div class="btn-group text-end" role="group" aria-label="Button group with nested dropdown">
+          <div ngbDropdown class="d-none d-sm-block" placement="bottom-right" container="body">
+            <button type="button" class="btn btn-primary me-2" id="dropdownBasic1" ngbDropdownToggle>Actions</button>
+            <div ngbDropdownMenu aria-labelledby="dropdownBasic1" container="body">
+              <button ngbDropdownItem class="py-2" (click)="printEventsOnly()">
+                <i class="feather icon-printer me-2 text-primary"></i>Print Event Details
+              </button>
+              <button ngbDropdownItem class="py-2" (click)="print()">
+                <i class="feather icon-printer me-2 text-warning"></i>Print Ticket Summary
+              </button>
+              <button ngbDropdownItem class="py-2" (click)="print(true)">
+                <i class="feather icon-printer me-2 text-warning"></i>Print Ticket Summary Details
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-success float-end" (click)="addWorkDetail()" [disabled]="loading">Add More</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <mbsc-eventcalendar [view]="view" [refDate]="refDate" [options]="settings"
+          (onPageLoading)="onPageLoading($event)" [data]="myEvents" [extendDefaultEvent]="myDefaultEvent"
+          class="md-timeline-templatec" [dragToMove]="true" [dragToResize]="true" [dragTimeStep]="5"
+          [dragToCreate]="true" [themeVariant]="themeVariant"></mbsc-eventcalendar>
+
+        <ng-template #eventTemplate let-data>
+          <div class="md-timeline-template-event" [ngStyle]="{borderColor: data.color, background: data.color}">
+            <div class="md-timeline-template-event-cont mbsc-schedule-event-inner">
+              <span class="md-timeline-template-time h6" [ngStyle]="{color: data.color}">{{data.start}} </span>
+              <span class="md-timeline-template-title h6">{{data.original.title}}</span>
+              <p class="md-timeline-template-time ">{{data.original.time}}</p>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto">
+          Events {{firstDay | date:"MM/dd/YYYY"}} to {{lastDay | date:"MM/dd/YYYY"}}</h4>
+      </div>
+      <div class="card-body" #target style="height: calc(100vh - 402px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait.</div>
+        <div *ngIf="!data?.length && !loading" class="text-center p-3"> No events found.</div>
+        <div *ngIf="data?.length > 0">
+          <table class="table table-bordered table-hover align-middle">
+            <thead class="table-dark sticky-top" style="top:-15px">
+              <tr>
+                <th class="text-start text-nowrap"></th>
+                <th class="text-start text-nowrap">Type</th>
+                <th class="text-start text-nowrap">Description</th>
+                <th class="text-end text-nowrap">Start/Finish</th>
+                <th class="text-end text-nowrap">Time</th>
+                <th class="text-end text-nowrap">QTR Hours</th>
+              </tr>
+            </thead>
+            <tbody *ngFor="let g of groupArrays">
+              <tr class="table-light sticky-top" style="top:30px">
+                <td colspan="6" class="pt-2 pb-2 font-weight-bold">
+                  {{g.date == 'null' || !g.date ? 'No start date' : g.date }}
+                  <span *ngIf="g.minMissing && g.minMissing.length > 0" class="text-danger">Missing {{g.minutes}}
+                    mins.</span>
+                  <span class="float-end pointer text-success" style="font-size: 22px;
+                       position: absolute;
+                       right: 11px;
+                       bottom: 3px;" (click)="addWorkDetail(g.dateRaw, g)"> + </span>
+                </td>
+              </tr>
+              <tr *ngFor="let row of g.games; let i = index" class="fw-normal pointer"
+                (click)="!disabled && openWorkInfo(row.id)" class="{{row.cssClass}}"
+                [ngClass]="{'fw-bolder fst-italic':!row.include_calculation}">
+                <td class="pointer text-nowrap" (click)="_navigate(row.projectStart);$event.stopPropagation()">
+                  View
+                </td>
+                <td class="text-start ps-4">
+                  <span class="fw-bolder">{{i+1}}. {{row.event_name}}</span>
+                  <p *ngIf="row.flight_hrs_delay">Flight Hr delay: {{row.flight_hrs_delay}}</p>
+                  <p class="ms-4" *ngIf="row.receipts?.length"><b>Receipts</b></p>
+                  <div *ngFor="let item of row.receipts; let i = index" class=" ms-4">
+                    <p class="ms-2 pointer text-success" (click)="viewReceipt(item);$event.stopPropagation()">
+                      [{{i+1}}]
+                      {{item.name}} - {{item.time}}</p>
+                  </div>
+                </td>
+                <td>
+                  {{row.description}}
+                </td>
+                <td class="text-end text-nowrap">
+                  {{compare(row.projectStart, row.projectFinish).start}} {{zoneAbbr(row.projectStartTz)}} -
+                  {{compare(row.projectStart, row.projectFinish).finish}} {{zoneAbbr(row.projectFinishTz)}}
+                </td>
+                <td class="text-end text-nowrap">
+                  {{timeConvert(calculateTotal(row)) }}
+                  <!-- <p *ngIf="!row.include_calculation">Excluded</p> -->
+                </td>
+                <td class="text-end text-nowrap">
+                  {{calculateTotal(row)/60 | number : '1.2-2' }}
+                  <!-- <p *ngIf="!row.include_calculation">Excluded</p> -->
+                </td>
+              </tr>
+              <tr class="text-end text-uppercase fw-bolder">
+                <td colspan="4"> Sub Total </td>
+                <td> {{timeConvert(g.groupTotal,'short')}} </td>
+                <td> {{g.groupTotal/60 | number : '1.2-2'}} </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="text-end text-uppercase fw-bolder">
+                <td colspan="4">Total</td>
+                <td>{{timeConvert(_travelAndWorkTotalHrs,'short')}}</td>
+                <td>{{_travelAndWorkTotalHrs/60 | number : '1.2-2'}}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="text-center p-2 bg-light" *ngIf="data.length && !loading">End of data</p>
+      </div>
+      <div class="card-footer">
+        Time:
+        <span class="text-success">
+          {{timeConvert(_travelAndWorkTotalHrs,'short')}}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,12 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Event Modal</h4>
+</div>
+
+<div class="modal-body">
+  <app-event-form (setFormEmitter)="form = $event"></app-event-form>
+</div>
+
+<div class="modal-footer" style="background: #fff">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto btn-lg">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-success btn-lg">Save</button>
+</div>

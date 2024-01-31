@@ -8,282 +8,239 @@
     "MENU": {
       "TEXT": "MENU"
     },
-    "DASHBOARD": {
-      "TEXT": "Dashboards",
-      "BADGE": "New",
-      "LIST": {
-        "ANALYTICS": "Analytics",
-        "CRM": "CRM",
-        "ECOMMERCE": "Ecommerce",
-        "CRYPTO": "Crypto",
-        "PROJECTS": "Projects",
-        "NFT": "NFT",
-        "JOB": "Job"
+    "ADMIN": {
+      "NAME": "Admin",
+      "QUERY": "Query"
+    },
+    "MAINTENANCE": {
+      "NAME": "Maintenance",
+      "USERS": "Users",
+      "EDIT": "Edit User",
+      "CREATE": "Create User"
+    },
+    "OPERATIONS": {
+      "TEXT": "Operations",
+      "OVERVIEW": "Dashboard",
+      "SHIPPING_REQUEST": {
+        "NAME": "Shipping Request",
+        "LIST": "List SR",
+        "CREATE": "Create SR",
+        "EDIT": "Edit SR"
+      },
+      "RFQ": {
+        "NAME": "RFQ",
+        "LIST": "List RFQ",
+        "CREATE": "Create RFQ",
+        "EDIT": "Edit RFQ"
+      },
+      "VEHICLE": {
+        "NAME": "Vehicles",
+        "LIST": "List Vehicles",
+        "CREATE": "Create Vehicle",
+        "EDIT": "Edit Vehicle"
+      },
+      "PLACARD": {
+        "NAME": "Placard",
+        "LIST": "List Placards",
+        "CREATE": "Create Placard",
+        "EDIT": "Edit Placard"
+      },
+      "IGT_TRANSFER": {
+        "NAME": "IGT Transfer",
+        "LIST": "List IGT Transfers",
+        "CREATE": "Create IGT Transfer",
+        "EDIT": "Edit IGT Transfer"
+      },
+      "SHORTAGES": {
+        "NAME": "Shortages",
+        "LIST": "List Shortages",
+        "CREATE": "Create Shortages",
+        "EDIT": "Edit Shortages"
+      },
+      "MATERIAL_REQUEST": {
+        "NAME": "Material Requests",
+        "LIST": "List MR's",
+        "CREATE": "Create MR",
+        "EDIT": "Edit MR",
+        "VALIDATE": "Validate",
+        "PICKING": "Picking"
+      },
+      "MASTER_SCHEDULING": {
+        "NAME": "Master Scheduling",
+        "SHIPPING": "Shipping",
+        "MASTER_PRODUCTION": "Master Production"
+      },
+      "REPORTS": {
+        "NAME": "Reports",
+        "DAILY_REPORT": "Daily Report",
+        "REVENUE": "Revenue",
+        "REVENUE_BY_CUSTOMER": "Revenue By Customer",
+        "WIP_REPORT": "WIP Report",
+        "TRANSIT_LOCATION_VALUE_REPORT": "Transaction Location",
+        "FG_VALUE_REPORT": "FG Value Report",
+        "JX_VALUE_REPORT": "JX Value Report",
+        "LV_RAW_MATERIAL": "LV Raw Material",
+        "SAFETY_STOCK_REPORT": "Safety Stock",
+        "SHIPPED_ORDERS": "Shipped Orders",
+        "NEGATIVE_LOCATION_REPORT": "Negative Locations",
+        "EMPTY_LOCATION_REPORT": "Empty Locations",
+        "INVENTORY_REPORT": "Inventory",
+        "ONE_SKU_LOCATION_REPORT": "One SKU Location",
+        "ITEM_CONSOLIDATION_REPORT": "Item Consolidation"
+      },
+      "GRAPHICS": {
+        "NAME": "Graphics",
+        "LIST": "List Graphics",
+        "EDIT": "Edit Graphics",
+        "PRODUCTION": "Graphics Production",
+        "DEMAND": "Graphics Demand",
+        "BOM": {
+          "NAME": "BOM",
+          "LIST": "List BOM",
+          "CREATE": "Create BOM",
+          "EDIT": "Edit BOM"
+        }
       }
     },
-    "APPS": {
-      "TEXT": "Apps",
-      "LIST": {
-        "CALENDAR": "Calendar",
-        "MAINCALENDAR": "Main Calendar",
-        "MONTHGRID": "Month Grid",
-        "CHAT": "Chat",
-        "EMAIL": "Email",
-        "MAILBOX": "Mailbox",
-        "MAILTEMPLATES": "Email Templates",
-        "BASICACTION": "Basic Action",
-        "ECOMMERCEACTION": "Ecommerce Action",
-        "ECOMMERCE": "Ecommerce",
-        "PRODUCTS": "Products",
-        "PRODUCTDETAILS": "Product Details",
-        "CREATEPRODUCT": "Create Product",
-        "ORDERS": "Orders",
-        "ORDERDETAILS": "Order Details",
-        "CUSTOMERS": "Customers",
-        "SHOPPINGCART": "Shopping Cart",
-        "CHECKOUT": "Checkout",
-        "SELLERS": "Sellers",
-        "SELLERDETAILS": "Seller Details",
-        "PROJECTS": "Projects",
-        "LIST": "List",
-        "OVERVIEW": "Overview",
-        "CREATEPROJECT": "Create Project",
-        "TASK": "Tasks",
-        "KANBANBOARD": "Kanban Board",
-        "LISTVIEW": "List View",
-        "TASKDETAILS": "Task Details",
-        "CRM": "CRM",
-        "CONTACTS": "Contacts",
-        "COMPANIES": "Companies",
-        "DEALS": "Deals",
-        "LEADS": "Leads",
-        "CRYPTO": "Crypto",
-        "TRANSACTIONS": "Transactions",
-        "BUY&SELL": "Buy & Sell",
-        "MYWALLET": "My Wallet",
-        "ICOLIST": "ICO List",
-        "KYCAPPLICATION": "KYC Application",
-        "INVOICES": "Invoices",
-        "DETAILS": "Details",
-        "CREATEINVOICE": "Create Invoice",
-        "SUPPORTTICKETS": "Support Tickets",
-        "TICKETDETAILS": "Ticket Details",
-        "NFTMARKETPLACE": "NFT Marketplace",
-        "MARKETPLACE": "Marketplace",
-        "EXPLORENOW": "Explore Now",
-        "LIVEAUCTION": "Live Auction",
-        "ITEMDETAILS": "Item Details",
-        "COLLECTIONS": "Collections",
-        "CREATORS": "Creators",
-        "RANKING": "Ranking",
-        "WALLETCONNECT": "Wallet Connect",
-        "CREATENFT": "Create NFT",
-        "FILEMANAGER": "File Manager",
-        "TODO": "To Do",
-        "JOBS": "Jobs",
-        "STATISTICS": "Statistics",
-        "JOBLISTS": "Job Lists",
-        "GRID": "Grid",
-        "CANDIDATELISTS": "Candidate Lists",
-        "GRIDVIEW": "Grid View",
-        "APPLICATION": "Application",
-        "NEWJOB": "New Job",
-        "COMPANIESLIST": "Companies List",
-        "JOBCATEGORIES": "Job Categories",
-        "APIKEY": "API Key"
+    "QUALITY": {
+      "TEXT": "Quality",
+      "OVERVIEW": "Dashboard",
+      "RMA": {
+        "NAME": "RMA",
+        "LIST": "List RMA",
+        "CREATE": "Create RMA",
+        "EDIT": "Edit RMA"
+      },
+      "SGASSET": {
+        "NAME": "SG Asset",
+        "LIST": "List SG Assets",
+        "CREATE": "Create SG Asset",
+        "EDIT": "Edit SG Asset"
+      },
+      "AGSSERIAL": {
+        "NAME": "AGS Serial",
+        "LIST": "List AGS Serial",
+        "CREATE": "Create AGS Serial",
+        "EDIT": "Edit AGS Serial"
+      },
+      "MRB": {
+        "NAME": "MRB",
+        "LIST": "List MRB",
+        "CREATE": "Create MRB",
+        "EDIT": "Edit MRB"
+      },
+      "NCR": {
+        "NAME": "NCR",
+        "LIST": "List NCR",
+        "CREATE": "Create NCR",
+        "OVERVIEW": "Edit NCR"
+      },
+      "QIR": {
+        "NAME": "QIR",
+        "LIST": "List QIR",
+        "CREATE": "Create QIR",
+        "EDIT": "Edit QIR",
+        "SETTINGS": {
+          "NAME": "Settings",
+          "LIST": "List QIR Settings",
+          "CREATE": "Create QIR Setting",
+          "EDIT": "Edit QIR Setting"
+        }
       }
     },
-    "LAYOUTS": {
-      "TEXT": "Layouts",
-      "LIST": {
-        "HORIZONTAL": "Horizontal",
-        "DETACHED": "Detached",
-        "TWOCOLUMN": "Two Column",
-        "HOVERED": "Hovered"
-      }
-    },
-    "PAGES": {
-      "TEXT": "Pages"
-    },
-    "AUTHENTICATION": {
-      "TEXT": "Authentication",
-      "LIST": {
-        "BASIC": "Basic",
-        "COVER": "Cover",
-        "SIGNIN": "Sign In",
-        "SIGNUP": "Sign Up",
-        "PASSWORDRESET": "Password Reset",
-        "PASSWORDCREATE": "Password Create",
-        "LOCKSCREEN": "Lock Screen",
-        "LOGOUT": "Logout",
-        "SUCCESSMESSAGE": "Success Message",
-        "TWOSTEPVERIFICATION": "Two Step Verification",
-        "ERRORS": "Errors",
-        "404BASIC": "404 Basic",
-        "404COVER": "404 Cover",
-        "404ALT": "404 Alt",
-        "500": "500",
-        "OFFLINE": "Offline Page"
-      }
-    },
-    "PAGES": {
-      "TEXT": "Pages",
-      "LIST": {
-        "STARTER": "Starter",
-        "PROFILE": "Profile",
-        "SIMPLEPAGE": "Simple Page",
-        "SETTINGS": "Settings",
-        "TEAM": "Team",
-        "TIMELINE": "Timeline",
-        "FAQS": "FAQs",
-        "PRICING": "Pricing",
-        "GALLERY": "Gallery",
-        "MAINTENANCE": "Maintenance",
-        "COMINGSOON": "Coming Soon",
-        "SITEMAP": "Sitemap",
-        "SEARCHRESULTS": "Search Results",
-        "PRIVACYPOLICY": "Privacy Policy",
-        "TERMS&CONDITIONS": "Term & Conditions"
-      }
-    },
-    "LANDING": {
-      "TEXT": "Landing",
-      "LIST": {
-        "ONEPAGE": "One Page",
-        "NFTLANDING": "NFT Landing",
-        "JOB": "Job"
-      }
-    },
-    "COMPONENTS": {
-      "TEXT": "Components"
-    },
-    "BASEUI": {
-      "TEXT": "Base UI",
-      "LIST": {
-        "ALERTS": "Alerts",
-        "BADGES": "Badges",
-        "BUTTONS": "Buttons",
-        "COLORS": "Colors",
-        "CARDS": "Cards",
-        "CAROUSEL": "Carousel",
-        "DROPDOWNS": "Dropdowns",
-        "GRID": "Grid",
-        "IMAGES": "Images",
-        "TABS": "Tabs",
-        "ACCORDION&COLLAPSE": "Accordion & Collapse",
-        "MODALS": "Modals",
-        "OFFCANVAS": "Offcanvas",
-        "PLACEHOLDERS": "Placeholders",
-        "PROGRESS": "Progress",
-        "NOTIFICATIONS": "Notifications",
-        "MEDIAOBJECT": "Media object",
-        "EMBEDVIDEO": "Embed Video",
-        "TYPOGRAPHY": "Typography",
-        "LISTS": "Lists",
-        "LINKS": "Links",
-        "GENERAL": "General",
-        "RIBBONS": "Ribbons",
-        "UTILITIES": "Utilities"
-      }
-    },
-    "ADVANCEUI": {
-      "TEXT": "Advance UI",
-      "LIST": {
-        "SWEETALERTS": "Sweet Alerts",
-        "NESTABLELIST": "Nestable List",
-        "SCROLLBAR": "Scrollbar",
-        "ANIMATION": "Animation",
-        "TOUR": "Tour",
-        "SWIPERSLIDER": "Swiper Slider",
-        "RATTINGS": "Ratings",
-        "HIGHLIGHT": "Highlight",
-        "SCROLLSPY": "ScrollSpy"
-      }
-    },
-    "WIDGETS": {
-      "TEXT": "Widgets"
-    },
-    "FORMS": {
-      "TEXT": "Forms",
-      "LIST": {
-        "BASICELEMENTS": "Basic Elements",
-        "FORMSELECT": "Form Select",
-        "CHECKBOXS&RADIOS": "Checkboxs & Radios",
-        "PICKERS": "Pickers",
-        "INPUTMASKS": "Input Masks",
-        "ADVANCED": "Advanced",
-        "RANGESLIDER": "Range Slider",
-        "VALIDATION": "Validation",
-        "WIZARD": "Wizard",
-        "EDITORS": "Editors",
-        "FILEUPLOADS": "File Uploads",
-        "FORMLAYOUTS": "Form Layouts"
-      }
-    },
-    "TABLES": {
-      "TEXT": "Tables",
-      "LIST": {
-        "BASICTABLES": "Basic Tables",
-        "GRIDJS": "Grid Js",
-        "LISTJS": "List Js",
-        "DATATABLES": "Datatables"
-      }
-    },
-    "CHARTS": {
-      "TEXT": "Charts",
-      "LIST": {
-        "APEXCHARTS": "Apexcharts",
-        "LINE": "Line",
-        "AREA": "Area",
-        "COLUMN": "Column",
-        "BAR": "Bar",
-        "MIXED": "Mixed",
-        "TIMELINE": "Timeline",
-        "RANGEAREA": "Range Area",
-        "FUNNEL": "Funnel",
-        "CANDLSTICK": "Candlstick",
-        "BOXPLOT": "Boxplot",
-        "BUBBLE": "Bubble",
-        "SCATTER": "Scatter",
-        "HEATMAP": "Heatmap",
-        "TREEMAP": "Treemap",
-        "PIE": "Pie",
-        "RADIALBAR": "Radialbar",
-        "RADAR": "Radar",
-        "POLARAREA": "Polar Area",
-        "CHARTJS": "Chartjs",
-        "ECHARTS": "Echarts"
-      }
-    },
-    "ICONS": {
-      "TEXT": "Icons",
-      "LIST": {
-        "REMIX": "Remix",
-        "BOXICONS": "Boxicons",
-        "MATERIALDESIGN": "Material Design",
-        "LINEAWESOME": "Line Awesome",
-        "FEATHER": "Feather",
-        "CRYPTOSVG": "Crypto SVG"
-      }
-    },
-    "MAPS": {
-      "TEXT": "Maps",
-      "LIST": {
-        "GOOGLE": "Google",
-        "VECTOR": "Vector",
-        "LEAFLET": "Leaflet"
-      }
-    },
-    "MULTILEVEL": {
-      "TEXT": "Multi Level",
-      "LIST": {
-        "LEVEL1": {
-          "1": "Level 1.1",
-          "2": "Level 1.2",
-          "LEVEL2": {
-            "1": "Level 2.1",
-            "2": "Level 2.2"
-          }
+    "FIELDSERVICE": {
+      "TEXT": "Field Service",
+      "OVERVIEW": "Dashboard",
+      "JOB": {
+        "NAME": "Jobs",
+        "LIST": "List Jobs",
+        "CREATE": "Create Job",
+        "EDIT": "Edit Job",
+        "OVERVIEW": "Job Overview",
+        "OPEN_INVOICES": "Open Invoices"
+      },
+      "REQUEST": {
+        "NAME": "Requests",
+        "LIST": "List Requests",
+        "CREATE": "Create Request",
+        "EDIT": "Edit Request"
+      },
+      "TICKET": {
+        "NAME": "Tickets",
+        "LIST": "List Tickets",
+        "OVERVIEW": "Edit Ticket"
+      },
+      "SCHEDULING": {
+        "NAME": "Scheduling",
+        "SCHEDULER": "Scheduler"
+      },
+      "REPORTS": {
+        "NAME": "Reports",
+        "JOBSBYLOCATION": "Jobs By Location",
+        "PLATFORMAVG": "Platform Avg",
+        "EXPENSEREPORT": "Expense Report",
+        "SERVICEREPORT": "Service Report",
+        "CUSTOMEREPORT": "Customer Report",
+        "INVOICEREPORT": "Invoice Report",
+        "JOBBYUSERREPORT": "Job By User",
+        "CONTRACTORVSTECH": "Contractor Vs Tech",
+        "TICKETEVENTREPORT": "Ticket Events"
+      },
+      "MAINTENANCE": {
+        "NAME": "Maintenance",
+        "JOB_STATUS": {
+          "NAME": "Job Status",
+          "LIST": "List Job Status",
+          "CREATE": "Create Job Status",
+          "EDIT": "Edit Job Status"
+        },
+        "SERVICE_TYPE": {
+          "NAME": "Service Type",
+          "LIST": "List Service Types",
+          "CREATE": "Create Service Type",
+          "EDIT": "Edit Service Type"
+        },
+        "PROPERTY": {
+          "NAME": "Properties",
+          "LIST": "List Properties",
+          "CREATE": "Create Property",
+          "EDIT": "Edit Property"
+        },
+        "RECEIPT_CATEGORY": {
+          "NAME": "Receipts Category",
+          "LIST": "List Receipts",
+          "CREATE": "Create Receipt",
+          "EDIT": "Edit Receipt"
+        },
+        "TICKET_EVENT": {
+          "NAME": "Ticket Events",
+          "LIST": "List Ticket Events",
+          "CREATE": "Create Ticket Event",
+          "EDIT": "Edit Ticket Event"
+        },
+        "CUSTOMER": {
+          "NAME": "Customers",
+          "LIST": "List Customers",
+          "CREATE": "Create Customer",
+          "EDIT": "Edit Customer"
+        },
+        "PLATFORM": {
+          "NAME": "Platforms",
+          "LIST": "List Platforms",
+          "CREATE": "Create Platform",
+          "EDIT": "Edit Platform"
+        },
+        "NON_BILLABLE_CODES": {
+          "NAME": "Non-Billable Codes",
+          "LIST": "List Non-Billable Codes",
+          "CREATE": "Create Non-Billable Code",
+          "EDIT": "Edit Non-Billable Code"
+        },
+        "VENDORS": {
+          "NAME": "Vendors",
+          "LIST": "List Vendors",
+          "CREATE": "Create Vendor",
+          "EDIT": "Edit Vendor"
         }
       }
     }

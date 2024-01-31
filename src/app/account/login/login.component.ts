@@ -29,23 +29,23 @@ export class LoginComponent implements OnInit {
   // set the current year
   year: number = new Date().getFullYear();
 
-  constructor(private formBuilder: UntypedFormBuilder,private authenticationService: AuthenticationService,private router: Router,
-    private authFackservice: AuthfakeauthenticationService,private route: ActivatedRoute,
+  constructor(private formBuilder: UntypedFormBuilder, private authenticationService: AuthenticationService, private router: Router,
+    private authFackservice: AuthfakeauthenticationService, private route: ActivatedRoute,
     public toastservice: ToastService) {
-      // redirect to home if already logged in
-      if (this.authenticationService.currentUserValue) {
-        this.router.navigate(['/']);
-      }
-     }
+    // redirect to home if already logged in
+    if (this.authenticationService.currentUserValue) {
+      this.router.navigate(['/']);
+    }
+  }
 
   ngOnInit(): void {
-    if(sessionStorage.getItem('currentUser')) {
+    if (sessionStorage.getItem('currentUser')) {
       this.router.navigate(['/']);
     }
     /**
      * Form Validatyion
      */
-     this.loginForm = this.formBuilder.group({
+    this.loginForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
     });
@@ -59,15 +59,19 @@ export class LoginComponent implements OnInit {
   /**
    * Form submit
    */
-   onSubmit() {
+  onSubmit() {
     this.submitted = true;
 
-     // Login Api
-     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data:any) => {      
-      if(data.status == 'success'){
+    if (this.loginForm.invalid) {
+      return;
+    }
+
+    // Login Api
+    this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data: any) => {
+      if (data.status == 'success') {
         sessionStorage.setItem('toast', 'true');
         sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.access_token);
         this.router.navigate(['/']);
       } else {
         this.toastservice.show(data.data, { classname: 'bg-danger text-white', delay: 15000 });
@@ -99,7 +103,7 @@ export class LoginComponent implements OnInit {
   /**
    * Password Hide/Show
    */
-   toggleFieldTextType() {
+  toggleFieldTextType() {
     this.fieldTextType = !this.fieldTextType;
   }
 

@@ -1,0 +1,27 @@
+<div class="modal-header">
+  <h4 class="modal-title"> Queue Selection </h4>
+</div>
+<div class="modal-body">
+  <div class="mb-3">
+    <h5>Work Order Information</h5>
+    <p>WO#: {{data?.graphicsWorkOrder}}</p>
+    <p>Item#: {{data?.itemNumber}}</p>
+    <p>Description#: {{data?.description}}</p>
+  </div>
+  <div class="form-group">
+    <div class="form-check" *ngFor="let row of queues;let i = index">
+      <label class="form-check-label">
+        <input type="radio" class="form-check-input" name="optionsRadios" id="optionsRadios-{{i}}" [value]="row"
+          [disabled]="data.status == row.queueStatus || row.queueStatus == 900"
+          [checked]="data.status == row.queueStatus" (change)="onChangeValue(row)">
+        <i class="input-frame"></i>
+        {{row.name}} <span *ngIf="data.status == row.queueStatus" class="text-primary">Current
+          Queue</span>
+      </label>
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-gray" (click)="dismiss()">Cancel</button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
+</div>

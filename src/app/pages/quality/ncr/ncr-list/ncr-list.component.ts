@@ -1,0 +1,191 @@
+import { GridApi, ColumnApi } from 'ag-grid-community'
+import { Component, Input, OnInit } from '@angular/core'
+import { ReactiveFormsModule } from '@angular/forms'
+import { NgSelectModule } from '@ng-select/ng-select'
+import { AgGridModule } from 'ag-grid-angular'
+
+import { ActivatedRoute, Router } from '@angular/router'
+import moment from 'moment'
+import { NAVIGATION_ROUTE } from '../ncr-constant'
+import { NcrService } from '@app/core/api/quality/ncr-service'
+import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
+import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
+import { agGridOptions } from '@app/shared/config/ag-grid.config'
+import { SharedModule } from '@app/shared/shared.module'
+import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
+import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
+
+@Component({
+  standalone: true,
+  imports: [
+    SharedModule,
+    ReactiveFormsModule,
+    NgSelectModule,
+    AgGridModule,
+    DateRangeComponent,
+  ],
+  selector: 'app-ncr-list',
+  templateUrl: './ncr-list.component.html',
+})
+export class NcrListComponent implements OnInit {
+
+  constructor(
+    public api: NcrService,
+    public router: Router,
+    private activatedRoute: ActivatedRoute,
+  ) { }
+
+  ngOnInit(): void {
+
+    this.activatedRoute.queryParams.subscribe(params => {
+      this.dateFrom = params['dateFrom'] || this.dateFrom;
+      this.dateTo = params['dateTo'] || this.dateTo;
+      this.dateRange = [this.dateFrom, this.dateTo];
+
+      this.id = params['id'];
+      this.isAll = params['isAll'] ? params['isAll'].toLocaleLowerCase() === 'true' : false;
+      this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
+    });
+
+    this.getData();
+  }
+
+  columnDefs:any = [
+    {
+      field: "View", headerName: "View", filter: "agMultiColumnFilter",
+      pinned: "left",
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: (e: any) => this.onEdit(e.rowData.id),
+        value: 'SELECT'
+      },
+      maxWidth: 115,
+      minWidth: 115
+    },
+    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
+    { field: "ncr_type", headerName: "Type", filter: "agTextColumnFilter" },
+    { field: "initiated_by", headerName: "Initiated By", filter: "agTextColumnFilter" },
+    { field: "wo_nbr", headerName: "WO#", filter: "agTextColumnFilter" },
+    { field: "submitted_date", headerName: "Submitted Date", filter: "agTextColumnFilter" },
+    { field: "po_nbr", headerName: "PO #", filter: "agTextColumnFilter" },
+    { field: "pt_nbr", headerName: "Part #", filter: "agTextColumnFilter" },
+    { field: "created_date", headerName: "Created Date", filter: "agTextColumnFilter" },
+    { field: "created_by", headerName: "Created By", filter: "agTextColumnFilter" },
+  ]
+
+  @Input() selectedViewType = 'Open';
+
+  selectedViewOptions = [
+    {
+      name: "Open",
+      value: 1,
+      selected: false
+    },
+    {
+      name: "Closed",
+      value: 0,
+      selected: false
+    },
+    {
+      name: "All",
+      selected: false
+    }
+  ]
+
+  title = 'RMA List';
+
+  gridApi: GridApi;
+
+  gridColumnApi: ColumnApi;
+
+  data: any[];
+
+  id = null;
+
+  isAll = false
+
+  changeIsAll() { }
+
+  dateFrom = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD')
+  dateTo = moment().endOf('month').format('YYYY-MM-DD')
+  dateRange = [this.dateFrom, this.dateTo];
+
+  onChangeDate($event) {
+    this.dateFrom = $event['dateFrom']
+    this.dateTo = $event['dateTo']
+    this.getData()
+  }
+
+  gridOptions = {
+    ...agGridOptions,
+    columnDefs: this.columnDefs,
+    onGridReady: (params: any) => {
+      this.gridApi = params.api;
+      this.gridColumnApi = params.columnApi;
+
+      let data = this.activatedRoute.snapshot.queryParams['gridParams']
+      _decompressFromEncodedURIComponent(data, params);
+    },
+    onFirstDataRendered: (params) => {
+      highlightRowView(params, 'id', this.id);
+      autoSizeColumns(params)
+    },
+    getRowId: params => params.data.id,
+    onFilterChanged: params => this.updateUrl(params),
+    onSortChanged: params => this.updateUrl(params),
+  };
+
+  updateUrl = (params) => {
+    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: 'merge',
+      queryParams: {
+        gridParams
+      }
+    });
+  }
+
+  onEdit(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        id: id,
+        gridParams
+      }
+    });
+  }
+
+  async getData() {
+    try {
+      this.gridApi?.showLoadingOverlay()
+
+      let params: any = {};
+      if (this.selectedViewType != 'All') {
+        let status = this.selectedViewOptions.find(person => person.name == this.selectedViewType)
+        params = { active: status.value };
+      }
+
+      this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
+
+      this.router.navigate(['.'], {
+        queryParams: {
+          selectedViewType: this.selectedViewType,
+          isAll: this.isAll,
+          dateFrom: this.dateFrom,
+          dateTo: this.dateTo
+        },
+        relativeTo: this.activatedRoute
+        , queryParamsHandling: 'merge'
+      });
+
+      this.gridApi?.hideOverlay()
+
+    } catch (err) {
+      this.gridApi?.hideOverlay()
+    }
+
+  }
+
+}

@@ -1,0 +1,90 @@
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h4>Open Revenue by Customer</h4>
+            </div>
+
+            <div *ngIf="isLoading" class="p-5 card-body text-center">
+                <h4>
+                    <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading Data. Please wait...</p>
+                </h4>
+            </div>
+
+            <div class="card-body" *ngIf="data && !isLoading">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-primary">
+                            <tr>
+                                <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
+                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">{{ item.key
+                                    }}</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of data">
+                                <td *ngFor="let column of row | keyvalue:originalOrder; let i = index"
+                                    [ngClass]="{'text-end pointer': i != 0, 'bg-primary text-white': column.key == d}"
+                                    (click)="getData1(column.key)">
+                                    <span *ngIf="i == 0">{{ column.value }}</span>
+                                    <span *ngIf="i != 0">{{ column.value | currency }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <tfoot class="table-primary">
+                            <tr>
+                                <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
+                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">
+                                    <span *ngIf="i == 0">Total</span>
+                                    <span *ngIf="i != 0">{{ getTotal(item.key) | currency}}</span>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row" *ngIf="data1?.chart1">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Open revenue by customer and week {{d}}</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered mb-2" *ngFor="let item of data1?.chart1 | keyvalue">
+                    <tbody>
+                        <tr>
+                            <th colspan="2">{{item.key}}</th>
+                        </tr>
+                        <!-- <tr *ngFor="let r of item.value">
+                            <td>{{r.week}}</td>
+                            <td>{{r.value | currency}}</td>
+                        </tr> -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Open revenue by week {{d}}</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr *ngFor="let item of data1?.chart2 | keyvalue">
+                            <td>{{item.key}}</td>
+                            <td>{{item.value}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,84 @@
+<div class="row">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-header align-items-center d-flex">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto">Crash Kit</h4>
+
+        <button class="btn btn-success float-end" (click)="open(content)" [disabled]="loading">Add More</button>
+
+      </div>
+      <div class="card-body p-0" style="height: calc(100vh - 382px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait. </div>
+        <div *ngIf="!data?.length && !loading" class="text-center p-3"> No part numbers found.</div>
+        <div class="list-group list-group-flush">
+          <a class="list-group-item list-group-item-action flex-column align-items-start"
+            (click)="!disabled && open(content, row)" *ngFor="let row of data;">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{row.part_number || '-'}}</h5>
+            </div>
+            <p class="mb-1">{{row.description || '-'}}</p>
+            <p class="mb-1">Qty: {{row.qty}}</p>
+          </a>
+        </div>
+
+        <p class="text-center p-1 bg-light" style="margin-left: 0px;
+      margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+      </div>
+      <div class="card-footer">
+        Total items:
+        <span class="text-success"> {{data?.length}}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #content let-offcanvas>
+  <div class="offcanvas-header">
+    <h4 class="offcanvas-title" id="offcanvas-basic-title">{{editInfo.id ? 'Edit': 'Add'}} Crash Kit Info</h4>
+  </div>
+  <div class="offcanvas-body h-50">
+
+    <label class="form-label">QAD Part Number</label>
+    <div class="input-group mb-3">
+
+      <input type="text" style="display:none">
+      <ng-select #select [items]="list" [searchable]="true" bindLabel="pt_part" bindValue="pt_part"
+        [(ngModel)]="editInfo.part_number" (change)="detectChang($event)" autoFocus="off" [minTermLength]="2"
+        placeholder="Search part number" [addTag]="search"
+        [ngStyle]="{display: 'block', width: '100%', 'text-overflow': 'ellipsis'}" [addTagText]="'Search part'"
+        [closeOnSelect]="true" [hideSelected]="true" [selectOnTab]="true">
+        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+          <div [ngClass]="{'opacity-25':item.message !== ''}" style="white-space:normal">
+            <p class="mb-0"><b>{{item.pt_part}}</b> <span class="float-end text-success"
+                *ngIf="item.message != ''">{{item.message}}</span></p>
+            <p class="mb-0">{{item.FULLDESC}}</p>
+          </div>
+        </ng-template>
+      </ng-select>
+
+    </div>
+
+    <div class="mb-3">
+      <label for="qty" class="form-label">Qty</label>
+      <input type="number" class="form-control" id="qty" placeholder="Enter qty" [(ngModel)]="editInfo.qty">
+    </div>
+
+    <div *ngIf="partSearch">
+      <h4>Information</h4>
+      <p class="mb-0">Part Number: {{partSearch?.pt_part}}</p>
+      <p class="mb-0">Description: {{partSearch?.FULLDESC}}</p>
+      <p class="mb-0">Price: {{partSearch?.PT_PRICE | currency}}</p>
+      <p class="mb-0">Cost: {{partSearch?.PT_PRICE * editInfo.qty | currency}}</p>
+    </div>
+  </div>
+  <div class="offcanvas-footer p-2 mb-2">
+    <div class="text-end">
+      <button type="button" class="btn btn-gray me-2" (click)="offcanvasService.dismiss()">Close</button>
+      <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="editInfo.id">Delete</button>
+      <button type="button" class="btn btn-success me-2" (click)="onSubmit(true)" [disabled]="!partSearch"
+        *ngIf="!editInfo.id">Save & Add Another</button>
+      <button type="button" class="btn btn-success" (click)="onSubmit()"
+        [disabled]="!partSearch && !editInfo.id">Save</button>
+    </div>
+  </div>
+</ng-template>

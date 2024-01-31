@@ -1,0 +1,115 @@
+<div class="row" *ngIf="addToSchedule">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <app-request-schedule-job [id]="id" [addToSchedule]="addToSchedule"
+      [goBack]="goBackToRequest"></app-request-schedule-job>
+  </div>
+</div>
+
+<div class="row" *ngIf="!data && !id && !addToSchedule">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row" *ngIf="(data && id) && !addToSchedule">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goToComments"
+          (click)="goToComments()">View Comments</button>
+        <button class="btn btn-primary btn-sm shadow-none bg-primary rounded border-0 me-2 me-auto"
+          *ngIf="scheduleRequest" (click)="scheduleRequest()">Schedule/View Request</button>
+        <h4 class="text-uppercase text-end ms-auto"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <div class="alert alert-success" role="alert" *ngIf="schedulerInfo">
+          This request is already scheduled.
+        </div>
+        <div class="alert alert-danger" role="alert" *ngIf="!schedulerInfo">
+          This request is not scheduled.
+        </div>
+
+        <div class="border border-info p-2 mb-2">
+          <p class="mb-0">Created Date: {{data?.created_date}}</p>
+          <p class="mb-0">Request Id: {{id}}</p>
+          <p class="mb-0">Status: {{schedulerInfo?.status}}</p>
+          <p class="mb-0">Published: {{schedulerInfo?.published ? 'Job scheduled' : 'Job under review'}}</p>
+          <p class="mb-0">FSID: {{schedulerInfo?.id}}</p>
+          <p class="mb-0" *ngIf="schedulerInfo?.published">
+            Service date set for <b>{{schedulerInfo?.request_date}} {{schedulerInfo?.start_time}}</b>
+          </p>
+        </div>
+
+        <app-request-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-request-form>
+
+        <div class="mb-3 mt-3">
+          <div class="form-group">
+            <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary"
+            [disabled]="isLoading || myFiles?.length == 0">
+            <i class="feather icon-upload"></i> Upload Documents</button>
+        </div>
+
+
+        <div class="mt-3" *ngIf="attachments?.length > 0">
+          <h4 class="mb-3">Attachments</h4>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between" *ngFor="let row of attachments; let i = index">
+              <a [href]="UPLOAD_LINK + row.fileName"
+                target="_blank">{{row.fileName}} - {{row.createdDate}}</a> <br />
+                <p></p>
+                <span class="text-danger pointer" (click)="deleteAttachment(row.id)">X</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isLoading || schedulerInfo" (click)="onSubmit()">Update
+          Request</button>
+      </div>
+    </div>
+
+    <div class="mt-3" *ngIf="form.get('token').value">
+      <h4 class="mt-2 mb-2" *ngIf="comments?.length">Comments ({{comments?.length}})</h4>
+
+      <div *ngFor="let row of comments" class="mb-2 card">
+        <div class="card-body">
+          <p class="mb-2">- {{row.comment}}</p>
+          <small>Created Date: {{row.created_date}}</small> <br />
+          <small>Created By: {{row.name || 'No name set'}}</small>
+        </div>
+      </div>
+
+      <div class="card" id="mydiv1">
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label required">Your full name</label>
+            <input rows="5" class="form-control mb-2" placeholder="Enter your full name" [(ngModel)]="name">
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Enter comments</label>
+            <textarea rows="5" autosize [minRows]="5" class="form-control mb-2"
+              placeholder="If you need to make changes to this request, please specify the change in this comment box."
+              [(ngModel)]="comment"></textarea>
+          </div>
+          <button class="btn btn-success" (click)="onSubmitComment()">Submit comment</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

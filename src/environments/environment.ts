@@ -15,6 +15,8 @@ export const environment = {
     appId: '',
     measurementId: ''
   }
+  , agKey: 'CompanyName=Eye-Fi, LLC,LicensedApplication=Eyefi Dashboard,LicenseType=SingleApplication,LicensedConcurrentDeveloperCount=1,LicensedProductionInstancesCount=0,AssetReference=AG-016249,ExpiryDate=10_June_2022_[v2]_MTY1NDgxNTYwMDAwMA==9ef30c0a90abc7677a5ea1e688a0e9d5',
+
 };
 
 /*

@@ -1,0 +1,105 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
+      <input class="form-control" type="text" formControlName="first_name"
+        [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" placeholder="Enter your first name" />
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
+      <input class="form-control" type="text" formControlName="last_name"
+        [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" placeholder="Enter your last name" />
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" [ngClass]="formValidator('email')">Your Email Address</label>
+    <input class="form-control" type="text" formControlName="email"
+      [ngClass]="{ 'is-invalid': submitted && f.email.errors }" placeholder="Enter your email address" />
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Customer Reported Date</label>
+      <input class="form-control" type="date" formControlName="customerReportedDate"
+        [ngClass]="{ 'is-invalid': submitted && f.customerReportedDate.errors }" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('failureType')">Failure Type</label>
+      <ng-select [items]="formData?.failureType" [searchable]="true" formControlName="failureType" bindLabel="name"
+        bindValue="name" placeholder="Select failure type"
+        [ngClass]="{ 'is-invalid': submitted && f.failureType.errors }" [addTag]="false" [markFirst]="false"
+        [appendTo]="'body'" (click)="getQirSettings()">
+      </ng-select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('customerName')">Customer Name</label>
+      <ng-select [items]="formData?.customerName" [searchable]="true" formControlName="customerName" bindLabel="name"
+        bindValue="code" placeholder="Select customer" [ngClass]="{ 'is-invalid': submitted && f.customerName.errors }"
+        [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+        <ng-template ng-optgroup-tmp let-item="item" let-index="index">
+          <h6>{{item}}</h6>
+        </ng-template>
+      </ng-select>
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('CustomerPartNumber')">Customer Part Number</label>
+      <input type="text" class="form-control" name="CustomerPartNumber" formControlName="CustomerPartNumber"
+        [ngClass]="{ 'is-invalid': submitted && f.CustomerPartNumber.errors }"
+        placeholder="Enter customer part number" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('customerSerialNumber')">Serial Number</label>
+      <input type="text" class="form-control" name="customerSerialNumber" formControlName="customerSerialNumber"
+        [ngClass]="{ 'is-invalid': submitted && f.customerSerialNumber.errors }"
+        placeholder="Enter customer serial number" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('eyefiPartNumber')">Eyefi part number</label>
+      <input type="text" class="form-control" name="eyefiPartNumber" formControlName="eyefiPartNumber"
+        [ngClass]="{ 'is-invalid': submitted && f.eyefiPartNumber.errors }" placeholder="Enter eyefi part number" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('purchaseOrder')">PO number / SO number</label>
+      <input type="text" class="form-control" name="purchaseOrder" formControlName="purchaseOrder"
+        [ngClass]="{ 'is-invalid': submitted && f.purchaseOrder.errors }" placeholder="Enter PO/SO Number" />
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('qtyAffected')">Qty of component affected</label>
+      <input type="text" class="form-control" name="qtyAffected" formControlName="qtyAffected"
+        [ngClass]="{ 'is-invalid': submitted && f.qtyAffected.errors }"
+        placeholder="Enter qty of components affected" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      <app-address-search (notifyParent)="notifyParent($event)" [value]="f.location.value" [required]="true"
+        [disabled]="this.form.disabled"></app-address-search>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label class="form-label" [ngClass]="formValidator('casinoName')">Casino Name</label>
+      <input type="text" class="form-control" name="casinoName" formControlName="casinoName"
+        [ngClass]="{ 'is-invalid': submitted && f.casinoName.errors }" placeholder="Enter casino name" />
+    </div>
+  </div>
+
+  <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail</label>
+  <div class="mb-3">
+    <quill-editor [ngClass]="{ 'is-invalid': submitted && f.issueComment.errors }" formControlName="issueComment"
+      placeholder="Enter Comments here.." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">
+    </quill-editor>
+
+  </div>
+
+</form>

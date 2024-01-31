@@ -1,0 +1,91 @@
+<div class="row" *ngIf="!id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="this.id">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card mt-n4 mx-n4 rounded-0">
+        <div class="bg-dark-subtle">
+          <div class="card-body pb-0 px-4">
+            <div class="row mb-3">
+              <div class="col-md">
+                <div class="row align-items-center g-3">
+                  <div class="col-md-auto">
+                    <div class="avatar-md">
+                      <div class="avatar-title bg-white rounded-circle">
+                        <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md">
+                    <div>
+                      <h4 class="fw-bold">{{title}}</h4>
+                      <div class="hstack gap-3 flex-wrap">
+                        <div>NCR ID : <span class="fw-medium">{{data?.id}}</span></div>
+                        <div class="vr"></div>
+                        <div>Created Date : <span class="fw-medium">{{data?.created_date}}</span></div>
+                        <div class="vr"></div>
+                        <div>Status : {{data?.submitted_date ? 'Closed' : 'Open'}}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ul ngbNav #customNav="ngbNav" [activeId]="1" class="nav nav-tabs-custom border-bottom-0" role="tablist">
+              <li [ngbNavItem]="1" class="nav-item">
+                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                  <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Main
+                </a>
+                <ng-template ngbNavContent>
+                  <app-ncr-main [id]="id"></app-ncr-main>
+                </ng-template>
+              </li>
+              <li [ngbNavItem]="2" class="nav-item">
+                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Corrective Actions
+                </a>
+                <ng-template ngbNavContent>
+                  <app-ncr-corrective-action [id]="id"></app-ncr-corrective-action>
+                </ng-template>
+              </li>
+              <li [ngbNavItem]="3" class="nav-item">
+                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Verifications
+                </a>
+                <ng-template ngbNavContent>
+                  <app-ncr-verification [id]="id"></app-ncr-verification>
+                </ng-template>
+              </li>
+
+            </ul>
+          </div>
+          <!-- end card body -->
+        </div>
+      </div>
+      <!-- end card -->
+    </div>
+    <!-- end col -->
+  </div>
+  <!-- end row -->
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="tab-content text-muted">
+        <div [ngbNavOutlet]="customNav"></div>
+      </div>
+    </div>
+    <!-- end col -->
+  </div>
+  <!-- end row -->
+</div>

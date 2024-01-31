@@ -95,3 +95,41 @@
         border-color: var(--#{$prefix}border-color) !important;
     }
 }
+
+
+.ql-mention-list-container-top {
+    z-index: 9001;
+    overflow: auto;
+    margin-top: 2px !important;
+    max-height: 200px !important;
+    overflow: auto;
+}
+
+.ql-mention-list-container {
+    z-index: 9001;
+    overflow: auto;
+    margin-top: 2px !important;
+    max-height: 300px !important;
+    overflow: auto;
+
+}
+
+.ql-mention-list-item {
+    cursor: pointer;
+    line-height: 17px;
+    font-size: 16px;
+    padding: 0 5px;
+    vertical-align: middle;
+}
+
+
+.no-border .ql-container.ql-snow {
+    border-color: transparent;
+}
+
+.no-border .ql-toolbar {
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-left-color: transparent;
+    border-bottom-color: $card-border-color;
+}

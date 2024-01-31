@@ -1,0 +1,26 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+</div>
+<div class="modal-body" style="margin-top:50px">
+  <div class="modal-content p-0 border-none text-center" style="width:100%;margin:auto;border:none">
+    <canvas id="canvas" height="150" style="border: solid 1px gray;padding:3px;display: none"></canvas>
+    <div class="row g-2 grid-margin">
+      <div class="col-md">
+        <div class="form-group form-group-lg">
+          <div class="col-sm-12">
+            <input autocomplete="off" type="text" class="form-control input-lg signature-text"
+              [(ngModel)]="signed_name" id="contentToWrite1" placeholder="Enter name" autofocus="off" #focus
+              [ngStyle]="{'font-family': signatureTypeDefault?.fontFamily}" (keyup.enter)="close()"
+              style="font-size: 2.875rem;border: dashed 2px gray;text-align:center;-webkit-box-shadow: unset;box-shadow: unset;">
+            <label for="contentToWrite1" class="mt-2">Enter Name</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-footer d-flex">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="clear()" type="button" class="btn btn-danger">Clear</button>
+  <button (click)="close()" type="button" class="btn btn-success">Save</button>
+</div>

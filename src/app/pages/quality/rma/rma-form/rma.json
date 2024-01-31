@@ -1,0 +1,76 @@
+{
+  "produceBy": [
+    "EYE-FI",
+    "YELLOWFISH"
+  ],
+  "failureCodes": [{
+      "failureCode": 4,
+      "description": "Vendor Issue - Item out of Spec"
+    },
+    {
+      "failureCode": 5,
+      "description": "Vendor Issue - Shipping Damage"
+    },
+    {
+      "failureCode": 6,
+      "description": "Vendor Issue - Wrong Item Sent/Missing Items"
+    },
+    {
+      "failureCode": 7,
+      "description": "Customer Issue - Physical Damage"
+    },
+    {
+      "failureCode": 8,
+      "description": "Customer Issue - Wrong Item Ordered"
+    },
+    {
+      "failureCode": 9,
+      "description": "Customer Issue - Other"
+    },
+    {
+      "failureCode": 10,
+      "description": "Customer Issue - Return Product for Refurb"
+    },
+    {
+      "failureCode": 11,
+      "description": "Unknown/Other"
+    }
+  ],
+  "returnType": [
+    "Credit Only",
+    "Refurb",
+    "Pending",
+    "Rework",
+    "Replacement"
+  ],
+  "disposition": [{
+      "name": "Scrap",
+      "description": ""
+    },
+    {
+      "name": "RTS",
+      "description": ""
+    },
+    {
+      "name": "Customer Owned",
+      "description": ""
+    },
+    {
+      "name": "RTN 1085",
+      "description": ""
+    },
+    {
+      "name": "Off Books",
+      "description": ""
+    }
+  ],
+  "status": [{
+      "name": "Open",
+      "description": ""
+    },
+    {
+      "name": "Closed",
+      "description": ""
+    }
+  ]
+}

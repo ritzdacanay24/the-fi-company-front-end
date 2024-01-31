@@ -1,0 +1,108 @@
+<div *ngIf="this.jobInfo?.id && this.id && !isLoading">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card mt-n4 mx-n4 rounded-0">
+        <div class="bg-dark-subtle">
+          <div class="card-body pb-0 px-4">
+            <div class="row">
+              <div class="col-md mb-3">
+                <div class="row align-items-center g-3">
+                  <div class="col-md-auto">
+                    <div class="avatar-md">
+                      <div class="avatar-title bg-white rounded-circle">
+                        <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md mb-3">
+                    <div>
+                      <h4 class="fw-bold">{{title}}</h4>
+                      <div class="hstack gap-3 flex-wrap">
+                        <div><i class="ri-building-line align-bottom me-1"></i> {{jobInfo?.property}}</div>
+                        <div class="vr"></div>
+                        <div>FSID : <span class="fw-medium">{{jobInfo?.id}}</span></div>
+                        <div class="vr"></div>
+                        <div>Service Type : <span class="fw-medium">{{jobInfo?.service_type}}</span></div>
+                        <div class="vr"></div>
+                        <div>Ticket ID : <a class="fw-medium pointer"
+                            (click)="showTicket && showTicket()">{{this.workOrderInfo?.id || 'NA'}}</a></div>
+
+                        <!-- Avatar Group with Tooltip -->
+                        <div class="avatar-group" *ngIf="connectingJobs">
+                          <a href="javascript: void(0);" class="avatar-group-item material-shadow"
+                            *ngFor="let row of connectingJobs" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="{{row.user}}">
+                            <div class="avatar-xxs">
+                              <div class="avatar-title rounded-circle bg-light text-primary">
+                                {{row.user | slice:0:1}}
+                              </div>
+                            </div>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist">
+                <li [ngbNavItem]="1" class="nav-item">
+                  <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                    <i class="ri-file-info-line text-muted align-bottom me-1"></i> Job Info
+                  </a>
+                  <ng-template ngbNavContent>
+                    <app-job-info [id]="id" [goBack]="goBack"></app-job-info>
+                  </ng-template>
+                </li>
+                <li [ngbNavItem]="2" class="nav-item">
+                  <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                    <i class="ri-clipboard-fill text-muted align-bottom me-1"></i> Invoice
+                  </a>
+                  <ng-template ngbNavContent>
+                    <app-job-invoice [id]="id" [goBack]="goBack"></app-job-invoice>
+                  </ng-template>
+                </li>
+                <li [ngbNavItem]="3" class="nav-item">
+                  <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                    <i class="ri-pages-line text-muted align-bottom me-1"></i> Uploaded Receipts
+                  </a>
+                  <ng-template ngbNavContent>
+                    <app-job-receipts [id]="id" [workOrderId]="workOrderInfo?.id"></app-job-receipts>
+                  </ng-template>
+                </li>
+                <li [ngbNavItem]="4" class="nav-item">
+                  <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                    <i class="ri-pages-line text-muted align-bottom me-1"></i> Billing
+                  </a>
+                  <ng-template ngbNavContent>
+                    <app-job-billing [id]="id"></app-job-billing>
+                  </ng-template>
+                </li>
+                <li [ngbNavItem]="5" class="nav-item">
+                  <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                    <i class="ri-attachment-2 text-muted align-bottom me-1"></i> Attachments
+                  </a>
+                  <ng-template ngbNavContent>
+                    <app-job-attachments [id]="id"></app-job-attachments>
+                  </ng-template>
+                </li>
+              </ul>
+            </div>
+            <!-- end card body -->
+          </div>
+        </div>
+        <!-- end card -->
+      </div>
+      <!-- end col -->
+    </div>
+    <!-- end row -->
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="tab-content text-muted">
+          <div [ngbNavOutlet]="customNav"></div>
+        </div>
+      </div>
+      <!-- end col -->
+    </div>
+    <!-- end row -->
+  </div>

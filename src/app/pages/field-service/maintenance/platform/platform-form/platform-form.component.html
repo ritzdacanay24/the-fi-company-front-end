@@ -1,0 +1,54 @@
+<form [formGroup]="form" autocomplete="off">
+  <div class="mb-3">
+    <label class="form-label">Theme Name</label>
+    <input type="text" class="form-control" name="theme" formControlName="theme" placeholder="Enter theme"
+      [ngClass]="{ 'is-invalid': submitted && f.theme.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Configuration</label>
+    <input type="text" class="form-control" name="configuration" formControlName="configuration"
+      placeholder="Enter configuration" [ngClass]="{ 'is-invalid': submitted && f.configuration.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Platform</label>
+    <input type="text" class="form-control" name="platform" formControlName="platform" placeholder="Enter platform"
+      [ngClass]="{ 'is-invalid': submitted && f.platform.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">ETC</label>
+    <input type="text" class="form-control" name="etc" formControlName="etc" placeholder="Enter etc"
+      [ngClass]="{ 'is-invalid': submitted && f.etc.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Unit Price</label>
+    <input type="text" class="form-control" name="unit_price" formControlName="unit_price"
+      placeholder="Enter unit price" [ngClass]="{ 'is-invalid': submitted && f.unit_price.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Customer Name</label>
+    <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.customer.errors }" formControlName="customer">
+      <option selected disabled value="">--SELECT--</option>
+      <option *ngFor="let row of customers" [value]="row.name">{{row.name}}</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <div class="col-md">
+      <label class="form-label">Description</label>
+      <textarea type="text" class="form-control" name="description" formControlName="description" rows="5"
+        placeholder="Enter License notes" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
+    </div>
+  </div>
+
+  <div class="form-check form-switch form-switch-md form-switch-md mt-2">
+    <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+      (change)="setBooleanToNumber('active')">
+    <label class="form-check-label" for="active">Active</label>
+  </div>
+
+</form>

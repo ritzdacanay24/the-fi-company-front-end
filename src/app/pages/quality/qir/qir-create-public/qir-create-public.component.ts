@@ -1,0 +1,128 @@
+import { Component, Input } from '@angular/core';
+import { SharedModule } from '@app/shared/shared.module';
+import { FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
+import moment from 'moment';
+import { QirFormComponent } from '../qir-form/qir-form.component';
+import { NAVIGATION_ROUTE } from '../qir-constant';
+import { QirService } from '@app/core/api/quality/qir.service';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { QirPublicFormComponent } from '../qir-public-form/qir-public-form.component';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+
+@Component({
+  standalone: true,
+  imports: [SharedModule, QirFormComponent, QirPublicFormComponent],
+  selector: 'app-qir-create-public',
+  templateUrl: './qir-create-public.component.html',
+  styleUrls: ['./qir-create-public.component.scss']
+})
+export class QirCreatePublicComponent {
+  constructor(
+    private router: Router,
+    private activatedRoute: ActivatedRoute,
+    private api: QirService,
+    private toastrService: ToastrService,
+    private attachmentsService: AttachmentsService
+  ) { }
+
+  ngOnInit(): void {
+    this.activatedRoute.queryParams.subscribe(params => {
+      this.id = params['id'];
+    });
+
+    if (this.id) this.getData();
+  }
+
+  title = "Quality Incident Request";
+
+  form: FormGroup;
+
+  id = null;
+
+  isLoading = false;
+
+  submitted = false;
+
+  @Input() goBack: Function = () => {
+    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+  }
+
+  onCreateNew() {
+    window.location.reload()
+    this.form.reset();
+    this.form.patchValue({ active: 1, status: 'Open' })
+  }
+
+  data: any;
+
+  setFormEmitter($event) {
+    this.form = $event;
+
+  }
+
+  async getData() {
+    try {
+      this.data = await this.api.getById(this.id);
+      this.form.patchValue(this.data);
+    } catch (err) { }
+  }
+
+  async onSubmit() {
+    this.submitted = true;
+
+    this.form.patchValue({
+      createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+    }, { emitEvent: false })
+
+    if (this.form.invalid) {
+      getFormValidationErrors()
+      return;
+    }
+
+    try {
+
+      SweetAlert.loading("Saving. Please wait.");
+      this.isLoading = true;
+      let res: any = await this.api.createQir(this.form.value);
+
+      if (this.myFiles) {
+        const formData = new FormData();
+        for (var i = 0; i < this.myFiles.length; i++) {
+          formData.append("file", this.myFiles[i]);
+          formData.append("field", "Capa Request");
+          formData.append("uniqueData", `${res.insertId}`);
+          formData.append("folderName", 'capa');
+          try {
+            await this.attachmentsService.uploadfilePublic(formData)
+          } catch (err) { }
+        }
+      }
+
+      this.form.disable()
+      this.isLoading = false;
+      SweetAlert.fire({ text: `Request submitted successfully. Your QIR ID # is ${res.insertId}. ` })
+    } catch (err) {
+      this.submitted = false;
+      SweetAlert.close()
+      this.isLoading = false;
+    }
+  }
+
+  onCancel() {
+    this.goBack()
+  }
+  file: File = null;
+
+  myFiles: string[] = [];
+
+  onFilechange(event: any) {
+    for (var i = 0; i < event.target.files.length; i++) {
+      this.myFiles.push(event.target.files[i]);
+    }
+  }
+
+
+}

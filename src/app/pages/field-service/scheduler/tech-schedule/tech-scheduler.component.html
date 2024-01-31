@@ -1,0 +1,182 @@
+<!-- <app-job-overview [id]="id" *ngIf="id && viewing =='Job'" [active]="active"  [goBack]="goBackToJob" [showJob]="goBackToJob" (setOnSelect)="onSelect($event)" [showTicket]="showTicket" ></app-job-overview>
+
+<app-ticket-overview [id]="workOrderId" (setOnSelect)="onSelect($event)" [active]="active" *ngIf="workOrderId && viewing =='Ticket'" [goBack]="goBackToJob" [showJob]="showJob"></app-ticket-overview>
+ -->
+
+<div class="row">
+  <div class="col-12 col-xl-12 stretch-card">
+    <div class="card overflow-hidden">
+      <div class="card-body p-0">
+        <div class="md-switching-timeline-view-cont" style="height:calc(100vh - 102px);"
+          [ngClass]="{'md-loading-events': isLoading}">
+          <mbsc-eventcalendar #calendar [data]="myEvents" [view]="calView" [resources]="myResources"
+            [headerTemplate]="myHeaderTemplate" [resourceTemplate]="myResourceTemplate"
+            (onPageLoading)="onPageLoading($event)" [options]="calendarOptions" [scheduleEventTemplate]="eventTemplate"
+            [connections]="myConnections" [dragToMove]="true" [dragToResize]="true">
+
+            <ng-template #myHeaderTemplate>
+              <mbsc-calendar-nav class="md-work-week-nav float-end text-end"></mbsc-calendar-nav>
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-primary" (click)="changeView('workweek')">Work Week</button>
+                <button type="button" class="btn btn-primary" (click)="changeView('week')">Week</button>
+                <button type="button" class="btn btn-primary" (click)="changeView('month')">Month</button>
+              </div>
+
+              <mbsc-calendar-prev class="md-work-week-prev"></mbsc-calendar-prev>
+              <mbsc-calendar-today class="md-work-week-today"></mbsc-calendar-today>
+              <mbsc-calendar-next class="md-work-week-next"></mbsc-calendar-next>
+            </ng-template>
+          </mbsc-eventcalendar>
+
+          <!-- <mbsc-select #menu [(ngModel)]="selectValue" type="hidden" [anchor]="menuAnchor" [options]="menuSettings">
+            <mbsc-select-option value="duplicate">Duplicate</mbsc-select-option>
+            <mbsc-select-option value="update">Update</mbsc-select-option>
+            <mbsc-select-option value="delete">Delete</mbsc-select-option>
+          </mbsc-select> -->
+
+          <mbsc-popup class="md-tooltip" #popup [anchor]="anchor" [options]="default" style="z-index: -1;">
+
+            <div *ngIf="currentView?.type_of_event == 'JOB'">
+
+              <div class="md-tooltip-header p-2" [ngStyle]="{background: bgColor, color:textColor}">
+                <span class="md-tooltip-name-age">{{info}}</span>
+              </div>
+              <div class="md-tooltip-info p-2">
+                <div class="md-tooltip-title">
+                  <i class="feather icon-clock me-2"></i> <span
+                    class="md-tooltip-status md-tooltip-text mb-2">{{time}}</span>
+                </div>
+
+                <div class="md-tooltip-title"> <i class="feather icon-map-pin me-2"></i> <span
+                    class="md-tooltip-location md-tooltip-text">{{currentView?.property}}</span></div>
+
+                <div class="md-tooltip-title">
+                  Status: <span class="md-tooltip-status md-tooltip-text">{{status}}</span>
+                </div>
+                <div class="md-tooltip-title">
+                  Customer: <span class="md-tooltip-status md-tooltip-text">{{currentView?.customer}}</span>
+                </div>
+                <div class="md-tooltip-title">
+                  FSID: <span class="md-tooltip-status md-tooltip-text">{{currentView?.fs_scheduler_id}}</span>
+                </div>
+
+                <!-- <ng-select [dropdownPosition]="'top'" [selectOnTab]="true" [items]="connectingJobs"
+                  [(ngModel)]="currentView.group_ids1" [multiple]="true" bindLabel="id" bindValue="id"
+                  placeholder="Select tech name" groupBy="group_id" [clearSearchOnAdd]="true" [closeOnSelect]="false"
+                  [appendTo]="'body'" style="z-index:99999999999">
+
+
+                  <ng-template ng-header-tmp>
+                    <button type="button" (click)="createGroup()" class="btn btn-sm btn-secondary me-1">Create
+                      Group</button>
+                  </ng-template>
+
+                  <ng-template ng-optgroup-tmp let-item="item">
+                    <p style="vertical-align: middle;position:stick;top:0x;background:white">Connecting Job ID: {{item.group_id}}</p>
+                  </ng-template>
+
+                  <ng-template ng-multi-label-tmp let-items="items" let-search="searchTerm" style="z-index:99999999999">
+                    <div class="ng-value p-1" *ngFor="let item of items | slice:0:2">
+                      <p style="margin-left:30px">[{{item['fs_scheduler_id']}}] {{item['customer']}} {{item['property']}}</p>
+                      <p style="margin-left:30px">{{item?.full_request_date}}</p>
+                    </div>
+                    <div class="ng-value" *ngIf="items.length > 2">
+                      <span class="ng-value-label p-1">{{items.length - 2}} more...</span>
+                    </div>
+                  </ng-template>
+
+                  <ng-template ng-option-tmp let-item="item" let-item$="item$" let-index="index"
+                    style="z-index:99999999999">
+                    <div class="row">
+
+                      <p style="margin-left:30px">[{{item['fs_scheduler_id']}}] {{item['customer']}} {{item['property']}}</p>
+                      <p style="margin-left:30px">{{item?.full_request_date}}</p>
+                    </div>
+                  </ng-template>
+
+
+                </ng-select> -->
+
+                <!-- <select class="form-select">
+                  <option *ngFor="let row of connectingJobs">{{row.group_id}}; {{row.fs_scheduler_id}} - {{row.customer}} - {{row.property}}</option>
+                </select> -->
+
+                <!-- <div *ngIf="currentEvent?.group_id">
+                  <h4 class="mb-1">Connecting Jobs</h4>
+                  <div *ngFor="let row of currentEvent?.group_ids">
+                    <p (click)="viewJob(row)" class="pointer ps-2"
+                      [ngClass]="{'bg-primary rounded-2 text-white': currentView?.fs_scheduler_id == row}"> <i
+                        class="feather icon-edit-2"></i>
+                      {{row}}</p>
+                  </div>
+                </div> -->
+
+                <button class="btn btn-gray mt-2 me-2" (click)="viewJob(currentView?.fs_scheduler_id)"><i
+                    class="feather icon-edit-2"></i> Edit</button>
+                <button class="btn btn-success mt-2" (click)="viewTicket(currentView?.ticket_id)"
+                  *ngIf="currentView?.ticket_id"> <i class="feather icon-clipboard"></i> View
+                  Ticket</button>
+                <!-- <button *ngIf="currentView?.fs_scheduler_id" type="button" class="btn btn-warning mt-2 me-2 float-end"
+                  (click)="duplicate(currentView)"><i class="feather icon-trash"></i> Duplicate</button> -->
+              </div>
+            </div>
+
+            <div *ngIf="currentView?.type_of_event == 'TECH'">
+              <div class="md-tooltip-header p-2" [ngStyle]="{background: bgColor, color:textColor}">
+                <span class="md-tooltip-name-age">{{info}}</span>
+              </div>
+              <div class="md-tooltip-info p-2">
+                <div class="md-tooltip-title">
+                  <i class="feather icon-clock me-2"></i> <span
+                    class="md-tooltip-status md-tooltip-text">{{displayTime1(currentView)}}</span>
+                </div>
+                <div class="md-tooltip-title">
+                  Description: <span class="md-tooltip-status md-tooltip-text">{{currentView?.description}}</span>
+                </div>
+
+                <button type="button" class="btn btn-gray mt-2 me-2"
+                  (click)="createEventForTech({event:currentView})"><i class="feather icon-edit-2"></i> Edit</button>
+
+                <!-- <button *ngIf="currentView?.fs_scheduler_id" type="button" class="btn btn-warning mt-2 me-2 float-end"
+                  (click)="duplicate(currentView)"><i class="feather icon-trash"></i> Duplicate</button> -->
+                <button type="button" class="btn btn-danger mt-2 me-2 float-end" (click)="deleteById(currentView)"><i
+                    class="feather icon-trash"></i> Delete</button>
+              </div>
+            </div>
+
+          </mbsc-popup>
+
+          <ng-template #myResourceTemplate let-resource>
+            <div class="employee-shifts-cont">
+              <div class="employee-shifts-name">{{resource.name}}</div>
+              <div class="employee-shifts-title">{{resource.title}}</div>
+              <!--<img class="employee-shifts-avatar rounded" [src]="'assets/images/user-placeholder.png'" />-->
+            </div>
+          </ng-template>
+
+          <ng-template #eventTemplate let-data>
+            <div class="md-timeline-template-event"
+              [ngStyle]="{borderColor: data.original.color, background: data.original.color, color: data.original.textColor}"
+              id="test_{{data.original.id}}" [ngClass]="{'active-hero':this.event_id == data.original.id}">
+              <div class="md-timeline-template-event-cont mbsc-schedule-event-inner"
+                [ngClass]="{'line-through opacity-75':data.original.active == 0}">
+                <span class="md-timeline-template-title">{{data.original.title}}</span>
+                <span class="md-timeline-template-time"> <br /> {{displayTime(data)}} </span>
+                <span class="mdi mdi-{{conatainsTravel(data)}}"></span>
+                <!-- <span class="float-end mdi mdi-share-variant-outline" *ngIf="data.original?.group_id"></span>
+
+                <ng-container *ngIf="data.original.fs_scheduler_id">
+                  <span *ngIf="data.original.resource.length == 1" class="mdi mdi-account"></span>
+                  <span *ngIf="data.original.resource.length > 1" class="mdi mdi-account-multiple"></span>
+                </ng-container> -->
+              </div>
+            </div>
+
+
+          </ng-template>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

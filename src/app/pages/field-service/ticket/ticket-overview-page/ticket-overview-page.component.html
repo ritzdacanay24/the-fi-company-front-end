@@ -1,0 +1,25 @@
+<app-loading [isLoading]="isLoading"></app-loading>
+
+<div class="p-3 text-center" *ngIf="!this.jobInfo && !isLoading">
+  <div class="row d-flex justify-content-center">
+    <div class="col-6">
+      <div class="card">
+        <div class="card-body" style="min-height:110px">
+          <p class="mb-3">Please select job to view.</p>
+          <div class="alert alert-danger" role="alert" *ngIf="!this.jobInfo && id">
+            Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
+          </div>
+
+          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id"
+            [showLabel]="false"></app-job-search>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-job-overview [id]="fsid" (setOnSelect)="onSelect($event)" [active]="active" *ngIf="fsid" [goBack]="goBackToTicket"
+  [showTicket]="goBackToTicket"></app-job-overview>
+
+<app-ticket-overview [id]="id" (setOnSelect)="onSelect($event)" [active]="active" *ngIf="!fsid" [showJob]="showJob"
+  [onNavChange]="onNavChange"></app-ticket-overview>

@@ -1,0 +1,54 @@
+<div class="row">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto">Attachment</h4>
+
+        <label class="btn btn-primary btn-sm mb-0" for="inputGroupFile013">Upload</label>
+        <input type="file" class="form-control form-control" id="inputGroupFile013" [disabled]="loading"
+          (change)="onChange($event)" style="display:none">
+      </div>
+      <div class="card-body p-0 rounded-0" style="height: calc(100vh - 316px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait.</div>
+        <div *ngIf="!data.length && !loading" class="text-center p-3"> No attachments found.</div>
+        <div class="list-group list-group-flush" style="white-space: pre-wrap;text-overflow: ellipsis;">
+          <a (click)="!disabled && openBottom(content)"
+            class="list-group-item list-group-item-action flex-column align-items-start"
+            *ngFor="let row of data;let i = index">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0">
+                <a [href]="row?.link" target="_blank" (click)="$event.stopPropagation()">
+                  <img [errorImage]="'assets/images/no-photo.PNG'" [defaultImage]="'assets/images/loading.PNG'"
+                    [lazyLoad]="row?.link" style="width:50px;height:50px" class="rounded">
+                </a>
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h6 class="mt-0 mb-0">{{row.fileName}} <span class="text-right float-end"></span></h6>
+                <p class="mb-0">{{row?.createdDate}}</p>
+                <p *ngIf="!row?.link" class="text-danger mb-0">No receipt image found.</p>
+              </div>
+            </div>
+            <ng-template #content let-offcanvas>
+              <div class="offcanvas-header">
+                <h4 class="offcanvas-title">{{row.fileName}}</h4>
+              </div>
+              <div class="offcanvas-body">
+                <img [errorImage]="'assets/images/no-photo.PNG'" [defaultImage]="'assets/images/loading.PNG'"
+                  [lazyLoad]="row?.link" style="width:85px;height:85px" class="rounded">
+              </div>
+              <div class="offcanvas-footer m-2">
+                <div class="text-end mb-2">
+                  <button type="button" class="btn btn-gray me-2"
+                    (click)="offcanvas.dismiss('Close click')">Close</button>
+                  <button type="button" class="btn btn-danger" (click)="deleteAttachment(row)">Delete</button>
+                </div>
+              </div>
+            </ng-template>
+          </a>
+        </div>
+        <p class="text-center p-1 bg-light" style="margin-left: 0px;
+      margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+      </div>
+    </div>
+  </div>
+</div>

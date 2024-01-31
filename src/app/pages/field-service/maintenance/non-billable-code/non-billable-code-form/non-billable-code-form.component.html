@@ -1,0 +1,21 @@
+<form [formGroup]="form" autocomplete="off">
+  <div class="mb-3">
+    <label class="form-label">Name</label>
+    <input type="text" class="form-control" name="name" formControlName="name" placeholder="Enter name"
+      [ngClass]="{ 'is-invalid': submitted && f.name.errors }" />
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Description</label>
+    <textarea type="text" class="form-control" name="description" formControlName="description" rows="5"
+      placeholder="Enter description" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+        (change)="setBooleanToNumber('active')">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+</form>

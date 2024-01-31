@@ -64,11 +64,11 @@ $grays: (
 // fusv-enable
 
 // scss-docs-start color-variables
-$blue: #5ea3cb;
+$blue: #2271b1;
 $indigo: #405189;
 $purple: #7084c7;
 $pink: #f672a7;
-$red: #fa896b;
+$red: #ff4545;
 $orange: #f1963b;
 $yellow: #f7b84b;
 $green: #6ada7d;
@@ -816,7 +816,7 @@ $table-variants: (
   "success": shift-color($success, $table-bg-scale),
   "info": shift-color($info, $table-bg-scale),
   "warning": shift-color($warning, $table-bg-scale),
-  "danger": shift-color($danger, $table-bg-scale),
+  "danger": shift-color($red, $table-bg-scale),
   "light": $light,
   "dark": $dark,
 );
@@ -1386,7 +1386,7 @@ $card-title-color: var(--#{$prefix}heading-color);
 $card-subtitle-color: null;
 $card-border-width: 0;
 $card-border-color: var(--#{$prefix}border-color);
-$card-border-radius: var(--#{$prefix}border-radius);
+$card-border-radius: 6px;
 $card-box-shadow: $box-shadow;
 $card-inner-border-radius: $card-border-radius;
 $card-cap-padding-y: $card-spacer-y;

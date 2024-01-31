@@ -1,0 +1,32 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select user from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <app-rma-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-rma-form>
+      </div>
+      <div class="card-footer d-flex d-flex" *ngIf="data && id">
+        <button class="btn btn-gray me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-warning me-3" [disabled]="isLoading" (click)="onPrint()">Print Label</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
+      </div>
+    </div>
+  </div>
+</div>

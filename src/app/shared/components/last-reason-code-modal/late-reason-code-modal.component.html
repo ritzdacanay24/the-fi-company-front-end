@@ -1,0 +1,46 @@
+<div class="modal-header pb-0">
+    <div style="flex-direction:column;">
+        <h4 class="modal-title" id="modal-basic-title">Late Reason Code - {{soLineNumber}}</h4>
+    </div>
+</div>
+
+<div class="modal-body" *ngIf="isLoading">
+    <div class="m-5 text-center">
+        <h4>
+            <div class="spinner-grow text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading Data. Please wait...</p>
+        </h4>
+    </div>
+</div>
+
+<div class="modal-header" *ngIf="!isLoading">
+    <div class="input-group" *ngIf="isAuthorized()">
+        <span class="input-group-text pointer" id="basic-addon1" (click)="addNew()">Add Item</span>
+        <input type="text" class="form-control" placeholder="Enter new item" aria-label=""
+            aria-describedby="basic-addon1" [(ngModel)]="newItem">
+    </div>
+</div>
+
+<div class="modal-body" *ngIf="!isLoading">
+    <ul class="list-group">
+        <li class="list-group-item d-flex justify-content-between align-items-center border-0 p-0 mb-2"
+            *ngFor="let row of data;let i = index">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="optionsRadios" [(ngModel)]="lateReasonCode"
+                    id="optionsRadios-{{i}}" [value]="row.name" [checked]="row.name == lateReasonCode">
+                <label class="form-check-label" for="optionsRadios-{{i}}">
+                    {{row.name}}
+                </label>
+            </div>
+            <button class="btn btn-danger btn-sm" (click)="$event.stopPropagation();remove(row.id)">X</button>
+        </li>
+    </ul>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+    <button (click)="clear()" type="button" class="btn btn-light ms-auto" *ngIf="lateReasonCode">Clear</button>
+    <button (click)="save()" type="button" class="btn btn-primary" [disabled]="lateReasonCode == ''">Save</button>
+</div>

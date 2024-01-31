@@ -1,0 +1,286 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Graphics BOM Information</h4>
+</div>
+
+<div class="modal-body">
+
+  <div *ngIf="isLoading" class="text-center m-5">
+    <div class="spinner-grow text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading data. Please wait..</p>
+  </div>
+
+  <h4 *ngIf="!data?.bomInfo && !isLoading">No Record Found.</h4>
+  <div id="yellowFishWorkOrder" *ngIf="data?.bomInfo && !isLoading" class="px-3">
+    <div class="row justify-content-md-center">
+      <div class="col text-center align-self-center">
+        <img src="https://dashboard.eye-fi.com/attachments/images/fi.png" class="rounded" style="width:100px">
+      </div>
+
+      <div class="col text-center align-self-center">
+        <h3>Work Order</h3>
+        <ngx-barcode6 [bc-value]="data?.woInfo.WO_NBR" [bc-display-value]="true" [bc-height]="20" [bc-width]="1"
+          [bc-font-size]="16" ></ngx-barcode6>
+      </div>
+
+      <div class="col text-center align-self-center">
+        <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
+          alt=" No Image" class="rounded" style="max-width:100px;max-height:100px;width:100px">
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="hr-sect bg-light">Work Order Information</div>
+      <div class="col-lg-6 align-self-center">
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Qty Req</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_QTY_ORD}} </div>
+        </div>
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Qty Comp</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_QTY_COMP}} </div>
+        </div>
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Ordered Date</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_ORD_DATE}} </div>
+        </div>
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Due Date</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_DUE_DATE}} </div>
+        </div>
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Routing</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WR_OP}} {{data?.woInfo.WR_DESC}} </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Status</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_STATUS}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Rmks</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_RMKS}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Part #</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_PART}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Description</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.FULL_DESC}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Client / Part #</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.Account_Vendor}} / {{data?.bomInfo.SKU_Number}} </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="hr-sect bg-light">Digital Info</div>
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Film</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD1_1}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end"># Images</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD1_2}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Printed</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.printed}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">TIF Size</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD1_5}} </div>
+        </div>
+
+      </div>
+      <div class="col-lg-6">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Digital Notes</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD1_6}} </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="hr-sect bg-light">Production Info</div>
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Substrate</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_1}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Size</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_2}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Lighting</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.lighting}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">3M Size</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.threeMSize}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end"># Images</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.numberOfImages}} </div>
+        </div>
+
+      </div>
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">1st</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_7}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">2nd</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_8}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">3rd</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_9}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Prod Notes</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD2_6}} </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="hr-sect bg-light">Assembly Info</div>
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">1st Surf Lam</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_1}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">2nd Surf Lam</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_2}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Mounting</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_3}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Burn</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.burn}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Sign</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.sign}} </div>
+        </div>
+
+      </div>
+      <div class="col-lg-6 align-self-center">
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Meter</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_6}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Trim Cap</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.trimCap}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Cutting Type</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_8}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Template/Die</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD3_9}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Assembly Notes</div>
+          <div class="col-8 mb-2"> {{data?.bomInfo.DD1_7}} </div>
+        </div>
+      </div>
+    </div>
+    <h5 class="text-center my-2">Printed on: {{printDate}}</h5>
+    <div class="row">
+      <div class="hr-sect bg-light1 mb-2"></div>
+      <div class="col-lg-4 text-center align-self-center">
+        <h4>SUBSTRATE</h4>
+        <ngx-barcode6 [bc-value]="data?.woInfo.WO_NBR" [bc-display-value]="true" [bc-height]="20" [bc-width]="1"
+          [bc-font-size]="16" ></ngx-barcode6>
+        <p>{{data?.woInfo?.FULL_DESC}}</p>
+      </div>
+      <div class="col-lg-4 text-center align-self-center">
+        <div>
+          <p>{{data?.bomInfo.DD2_1}}</p>
+          <p>{{data?.bomInfo.DD2_2}}</p>
+          <div>
+            <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
+              alt="No Image" class="rounded"
+              style="max-width:100px;max-height:100px;width:100px;background-color: transparent;">
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 text-center align-self-center">
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Qty</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_QTY_ORD}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Part #</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_PART}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">WO #</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_NBR}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Due</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_DUE_DATE}} </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer d-flex">
+  <button class="btn btn-gray" (click)="dismiss()">Close</button>
+  <button class="btn btn-warning ms-auto" (click)="getData()">Refresh</button>
+  <button class="btn btn-primary" (click)="print()">Print</button>
+</div>

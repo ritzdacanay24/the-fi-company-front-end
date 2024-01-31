@@ -1,0 +1,73 @@
+<div class="modal-header">
+  <h5 class="modal-title" id="exampleModalLabel">FG Label</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+  <div class="row">
+    <div class="col mb-3">
+      <p>PO number: {{poNumber}}</p>
+      <p>Part number: {{customerPartNumber || partNumber}}</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Customer CO#/POR#/SO#</label>
+      <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer CO#/POR#/SO#"
+        [(ngModel)]="customerCo">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Customer Asset Tag #</label>
+      <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer Asset Tag #"
+        [(ngModel)]="customerAssetTagNumber">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">WO #</label>
+      <input type="text" class="form-control" name="customerCo" placeholder="Enter WO #" [(ngModel)]="woNumber">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Pallet Count</label>
+      <input type="text" class="form-control" name="customerCo" placeholder="Enter Pallet Count"
+        [(ngModel)]="palletCount">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Eyefi Serial Tag</label>
+      <input type="text" class="form-control" name="eyefiSerialTag" placeholder="Enter Eyefi Serial Tag"
+        [(ngModel)]="eyefiSerialTag">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Total Labels</label>
+      <input type="text" class="form-control" name="totalLabels" placeholder="Enter Total Labels"
+        [(ngModel)]="totalLabels">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
+      <label class="form-label">Qty Per Label</label>
+      <input type="text" class="form-control" name="qtyPerLabel" placeholder="Enter Qty Per Label"
+        [(ngModel)]="qtyPerLabel">
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="print()" type="button" class="btn btn-primary">Print</button>
+</div>

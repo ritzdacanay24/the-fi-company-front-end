@@ -1,0 +1,58 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+      </div>
+      <div class="card-body">
+
+        <div>
+          <div class="text-center" *ngIf="this.data?.Image_Data">
+            <p>{{form?.value?.Image_Data}}</p>
+            <img [src]="image" class="rounded mx-auto d-block img-thumbnail" style="width:120px;height:120px" *ngIf="!isPdf">
+            <img [src]="image" class="rounded mx-auto d-block img-thumbnail" style="width:120px;height:120px" *ngIf="isPdf">
+            <a [href]="image" target="_blank"> View File </a>
+            <span> | <span class="text-danger pointer" (click)="onDeleteFile()"> Remove File </span></span>
+          </div>
+
+          <div class="text-center" *ngIf="!this.data?.Image_Data">
+            <p>No Image Found</p>
+          </div>
+
+          <div class="input-group mb-3 mt-3">
+            <input #myInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" name="file">
+            <span class="btn btn-danger px-3 pointer" *ngIf="myFiles" (click)="clearUploadFile()">X</span>
+          </div>
+
+          <button (click)="this.onUploadFile()" type="button" class="btn btn-primary mb-3"
+            [disabled]="isLoading || !myFiles">
+            <i class="feather icon-upload"></i> Upload File</button>
+        </div>
+
+        <app-graphics-bom-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-graphics-bom-form>
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
+        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Update</button>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="content-grid col col-lg-12 col-xl-2 col-xxl-5">
+    <pre>{{form?.value | json}}</pre>
+  </div> -->
+</div>

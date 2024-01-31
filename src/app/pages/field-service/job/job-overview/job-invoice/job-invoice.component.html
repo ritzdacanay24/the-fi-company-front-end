@@ -1,0 +1,94 @@
+<div class="row">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header align-items-center d-flex">
+        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+
+        <form [formGroup]="form" autofocus="false" class="row">
+
+          <div class="mb-3">
+            <label class="form-label">Paperwork Location</label>
+            <select class="form-select" formControlName="paper_work_location">
+              <option selected disabled value="">--SELECT--</option>
+              <option *ngFor="let row of ['Field Service', 'Accounting', '3rd Party Contractors']">{{row}}</option>
+            </select>
+          </div>
+
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Vendor Cost</label>
+            <input type="text" class="form-control" placeholder="Vendor Cost" formControlName="vendor_cost">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Invoice Amount</label>
+            <input type="text" class="form-control" placeholder="Invoice Amount" formControlName="invoice">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Invoice number</label>
+            <input type="text" class="form-control" placeholder="Invoice number" formControlName="invoice_number">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Invoice Date</label>
+            <input type="text" placeholder="Enter request date" class="form-control" bsDatepicker
+              formControlName="invoice_date">
+
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Vendor Invoice Number</label>
+            <input type="text" class="form-control" placeholder="Vendor Invoice Number"
+              formControlName="vendor_inv_number">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Account Status</label>
+            <select class="form-select" formControlName="acc_status">
+              <option selected disabled value="">--SELECT--</option>
+              <option *ngFor="let row of ['INVOICED']">{{row}}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Billable Flat Rate / PO</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="billable_flat_rate_or_po"
+                formControlName="billable_flat_rate_or_po" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Contractor Inv Sent To AP</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="contractor_inv_sent_to_ap"
+                formControlName="contractor_inv_sent_to_ap" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Period</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="period" formControlName="period" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Invoice Notes</label>
+            <textarea type="text" class="form-control" placeholder="Invoice Notes" formControlName="invoice_notes"
+              rows="7"></textarea>
+          </div>
+
+        </form>
+
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>

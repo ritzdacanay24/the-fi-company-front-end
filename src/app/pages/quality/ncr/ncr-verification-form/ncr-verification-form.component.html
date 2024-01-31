@@ -1,0 +1,38 @@
+<form [formGroup]="form" autocomplete="off">
+  <div class="row">
+    <div class="col-8 mb-3">
+      <label for="verif_of_ca_by" class="form-label">Verification of CA By:</label>
+      <input type="text" class="form-control" id="verif_of_ca_by" formControlName="verif_of_ca_by"
+        placeholder="Enter name">
+    </div>
+    <div class="col mb-3">
+      <label for="verif_of_ca_dt" class="form-label">Date</label>
+      <input type="date" class="form-control" id="verif_of_ca_dt" formControlName="verif_of_ca_dt">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-8 mb-3">
+      <label for="eff_verif_of_ca_by" class="form-label">Effectiveness Verification of CA
+        By:</label>
+      <input type="text" class="form-control" id="eff_verif_of_ca_by" formControlName="eff_verif_of_ca_by"
+        placeholder="Enter name">
+    </div>
+    <div class="col mb-3">
+      <label for="eff_verif_of_ca_dt" class="form-label">Date</label>
+      <input type="date" class="form-control" id="eff_verif_of_ca_dt" formControlName="eff_verif_of_ca_dt">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-8 mb-3">
+      <label for="cmt_cls_by" class="form-label">Comments/Closure By:</label>
+      <input type="text" class="form-control" id="cmt_cls_by" formControlName="cmt_cls_by" placeholder="Enter name">
+    </div>
+    <div class="col mb-3">
+      <label for="cmt_cls_dt" class="form-label">Date</label>
+      <input type="date" class="form-control" id="cmt_cls_dt" formControlName="cmt_cls_dt">
+    </div>
+  </div>
+
+</form>

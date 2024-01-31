@@ -2,13 +2,25 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "paths": {
-      "tslib" : ["node_modules/tslib/tslib.d.ts"]
+      "tslib": [
+        "node_modules/tslib/tslib.d.ts"
+      ],
+      "@app/*": [
+        "./src/app/*"
+      ],
+      "@environments/*": [
+        "./src/environments/*"
+      ],
+      "@components/*": [
+        "./src/app/pages/*"
+      ]
     },
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "strict": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
@@ -24,7 +36,11 @@
     "lib": [
       "es2020",
       "dom"
-    ]
+    ],
+    "useDefineForClassFields": false,
+    "resolveJsonModule": true,
+    "strictPropertyInitialization": false,
+    "strictNullChecks": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

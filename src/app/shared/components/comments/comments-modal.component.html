@@ -1,0 +1,74 @@
+<div class="modal-header bg-light">
+  <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+</div>
+
+<div class="modal-body bg-light">
+
+  <div class="card">
+    <div class="card-body p-0">
+      <quill-editor [(ngModel)]="htmlText" placeholder="Enter Comments here.." [modules]="quillConfig"
+        (onEditorCreated)="setFocus($event)" style="width:100%;height:200px" class="no-border">
+      </quill-editor>
+    </div>
+  </div>
+
+  <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+
+  <div class="mt-3 mb-3" *ngIf="results1.length > 0">
+    {{results1.length}} Comments
+  </div>
+
+  <div class="card" *ngFor="let row of results1;let i = index">
+    <div class="card-header py-2">
+      <div class="d-flex align-items-center">
+        <div>
+          <p class="mb-0">{{row.userName}}</p>
+          <p class="text-muted mb-0">{{row.createdDate}}</p>
+        </div>
+        <i class="mdi mdi-trash-can-outline-2 text-danger pointer ms-auto" (click)="deleteComment(row.id)"
+          *ngIf="row.userId == userInfo?.id"></i>
+      </div>
+    </div>
+    <div class="card-body" style="position: relative;">
+      <!-- <small style="position: absolute;bottom:17px;right:24px">{{row.pageName}}</small> -->
+      <h5 class="text-success mb-3" *ngIf="row?.insert">New comment just added</h5>
+      <blockquote class="blockquote">
+
+        <p class="mb-3 tx-14" [innerHTML]="row.comments | safeHtml"></p>
+      </blockquote>
+
+      <ul style="list-style: none;">
+        <li *ngFor="let row1 of row.childs" style="padding-top:3px;padding-bottom:3px" class="border-bottom-grey">
+          <span class="feather icon-message-square mr-2 text-success"></span>
+          <blockquote class="blockquote">
+            <span class="mb-3 tx-14 pl-3" [innerHTML]="row1.comments | safeHtml"></span>
+          </blockquote>
+          <span class="text-info"> -
+            {{row1.userName}}</span> <span class="tx-11 text-muted" [class.text-success]="row1.insert">
+            {{row1.createdDate}} </span>
+          <i class="mdi mdi-trash-can-outline-2 text-danger mr-3 float-right pointer"
+            (click)="deleteComment(row1.id, row.childs)" *ngIf="row1.userId == userInfo?.id"></i>
+        </li>
+      </ul>
+      <span *ngIf="row.childs?.length > 0" class="text-muted">{{row.childs?.length}}
+        response(s)</span>
+      <p (click)="row.addAComment = !row.addAComment; setFocus(i)" *ngIf="!row.addAComment"
+        class="pointer text-primary">
+        <i class="feather icon-plus-square text-primary pointer ms-auto"></i> Add a comment
+      </p>
+
+      <quill-editor [(ngModel)]="row.addThreadComment" placeholder="Respond to this thread.." [modules]="quillConfig"
+        (onEditorCreated)="setFocus($event)" [styles]="{height: '300px'}" *ngIf="row.addAComment" style="width:100%" class="bg-light">
+      </quill-editor>
+
+      <button (click)="onSubmit(row.id, row.addThreadComment)" type="button" class="btn btn-primary mr-auto mt-2"
+        *ngIf="row.addAComment" [disabled]="row.addThreadComment == '' || !row.addThreadComment">Submit</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-footer bg-light">
+  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="!htmlText">Save</button>
+</div>

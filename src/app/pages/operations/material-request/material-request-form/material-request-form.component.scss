@@ -1,0 +1,10 @@
+
+::ng-deep body:has(.custom1) .ng-dropdown-panel {
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  opacity: 0;
+  position: absolute;
+  z-index: 1050;
+  width: auto !important;
+  min-width: 235px !important;
+}

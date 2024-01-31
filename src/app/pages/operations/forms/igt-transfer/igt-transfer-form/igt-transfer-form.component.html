@@ -1,0 +1,67 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3">
+    <div style="width:350px">
+      <app-so-search (notifyParent)="notifyParent($event)" [value]="f.so_number?.value"
+        [disabled]="disableSearch"></app-so-search>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-6 mb-3">
+      <p>Sales Order: <b>{{f.so_number.value}}</b></p>
+      <p>Transfer Reference: <b>{{f.transfer_reference.value}}</b></p>
+      <p>Transfer Description: <b>{{f.transfer_reference_description.value}}</b></p>
+      <p>Date: <b>{{f.date.value}}</b></p>
+      <p>IGT Internal transaction: <b>311 to {{f.to_location.value}} </b></p>
+      <p>Email sent on: <b>{{f.email_sent_datetime.value}} </b></p>
+    </div>
+    <div class="col-6 mb-3 text-end">
+      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:120px">
+    </div>
+  </div>
+
+  <ng-container formGroupName="details">
+
+    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-users"></i>
+      Line Details
+    </h4>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle table-bordered" *ngIf="getDetails.length">
+        <thead>
+          <tr>
+            <td>SO Line #</td>
+            <td>Part #</td>
+            <td>Description</td>
+            <td>Qty</td>
+            <td>From/Loc</td>
+            <td>To/Loc</td>
+            <td>Pallet #</td>
+            <td>S/N</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="p-0 m-0 align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+            <td> {{row.value.so_line}} </td>
+            <td> {{row.value.part_number}} </td>
+            <td> {{row.value.description}} </td>
+            <td> {{row.value.qty}} </td>
+            <td> {{f.from_location?.value}} </td>
+            <td> {{f.to_location?.value}} </td>
+            <td>
+              <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
+                placeholder="Enter pallet count" [ngClass]="{ 'is-invalid': submitted && f.pallet_count.errors }" />
+            </td>
+            <td>
+              <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
+                placeholder="Enter serial numbers" [ngClass]="{ 'is-invalid': submitted && f.serial_numbers.errors }" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+
+</form>

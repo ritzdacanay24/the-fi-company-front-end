@@ -1,11 +1,11 @@
 import { Component, OnInit, Output, EventEmitter, TemplateRef, ViewChild } from '@angular/core';
-import { EventService } from '../../core/services/event.service';
 import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { RootReducerState } from 'src/app/store';
 import { Store } from '@ngrx/store';
-import { initialState } from 'src/app/store/layouts/layout-reducers';
 import { getLayoutMode, getLayoutPosition, getLayoutTheme, getLayoutWith, getPreloader, getSidebarColor, getSidebarImage, getSidebarSize, getSidebarView, getSidebarVisibilitye, getTopbarColor } from 'src/app/store/layouts/layout-selector';
 import { changeDataPreloader, changeLayoutPosition, changeLayoutWidth, changeMode, changeSidebarColor, changeSidebarImage, changeSidebarSize, changeSidebarView, changeSidebarVisibility, changeTopbar, changelayout } from 'src/app/store/layouts/layout-action';
+import { ChartService } from 'src/app/core/services/chart.service';
+import { LayoutState } from '@app/store/layouts/layout-reducers';
 
 @Component({
   selector: 'app-rightsidebar',
@@ -35,29 +35,48 @@ export class RightsidebarComponent implements OnInit {
   @ViewChild('filtetcontent') filtetcontent!: TemplateRef<any>;
   @Output() settingsButtonClicked = new EventEmitter();
 
-  constructor(private eventService: EventService, private offcanvasService: NgbOffcanvas,private store: Store<RootReducerState>) { }
+  constructor(
+    private offcanvasService: NgbOffcanvas,
+    private store: Store<RootReducerState>,
+    private chartService: ChartService
+  ) { }
 
+
+  setThemeLayout(data: LayoutState) {
+    console.log(data)
+    this.layout = data.LAYOUT;
+    this.mode = data.LAYOUT_MODE;
+    this.width = data.LAYOUT_WIDTH;
+    this.position = data.LAYOUT_POSITION;
+    this.topbar = data.TOPBAR;
+    this.size = data.SIDEBAR_SIZE;
+    this.sidebarView = data.SIDEBAR_VIEW;
+    this.sidebar = data.SIDEBAR_COLOR;
+    this.sidebarImage = data.SIDEBAR_IMAGE;
+    this.preLoader = data.DATA_PRELOADER;
+    this.sidebarVisibility = data.SIDEBAR_VISIBILITY;
+  }
+
+  initialLoad = false;
   ngOnInit(): void {
-    // setTimeout(() => {
-    //   if (this.offcanvasService.hasOpenOffcanvas() == false) {
-    //     this.openEnd(this.filtetcontent);
-    //   };
-    // }, 1000);
+
+    let keyThemeName = 'eyefi-layout'
+    let theme = JSON.parse(localStorage.getItem(keyThemeName));
+    if (theme) this.setThemeLayout(theme)
 
     this.store.select('layout').subscribe((data) => {
-      this.layout = data.LAYOUT;
-      this.mode = data.LAYOUT_MODE;
-      this.width = data.LAYOUT_WIDTH;
-      this.position = data.LAYOUT_POSITION;
-      this.topbar = data.TOPBAR;
-      this.size = data.SIDEBAR_SIZE;
-      this.sidebarView = data.SIDEBAR_VIEW;
-      this.sidebar = data.SIDEBAR_COLOR;
-      this.sidebarImage = data.SIDEBAR_IMAGE;
-      this.preLoader = data.DATA_PRELOADER;
-      this.sidebarVisibility = data.SIDEBAR_VISIBILITY
+      if (this.initialLoad) {
+        this.setThemeLayout(data)
+        localStorage.setItem('eyefi-layout', JSON.stringify(data))
+      }
     })
+
+    this.initialLoad = true;
+
+    this.chartService.setTheme(this.mode)
+
   }
+
 
   ngAfterViewInit() { }
 
@@ -138,6 +157,7 @@ export class RightsidebarComponent implements OnInit {
     this.store.dispatch(changeMode({ mode }));
     this.store.select(getLayoutMode).subscribe((mode) => {
       document.documentElement.setAttribute('data-bs-theme', mode)
+      document.documentElement.setAttribute('data-sidebar', mode)
     })
     // document.documentElement.setAttribute('data-bs-theme', mode)
   }
@@ -172,7 +192,7 @@ export class RightsidebarComponent implements OnInit {
     this.store.select(getLayoutPosition).subscribe((position) => {
       document.documentElement.setAttribute('data-layout-position', position);
     })
-   
+
   }
 
   // Topbar Change

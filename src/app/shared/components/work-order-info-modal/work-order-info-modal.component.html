@@ -1,0 +1,93 @@
+<div class="modal-header d-flex justify-content-between">
+    <div style="width:300px">
+        <input style="display: none;">
+        <app-qad-wo-search (notifyParent)="notifyParent($event)" [value]="workOrderNumber"
+            [showLabel]="false"></app-qad-wo-search>
+    </div>
+    <h4 class="modal-title" id="modal-basic-title">Work Order Info</h4>
+</div>
+
+
+<div class="modal-body" *ngIf="isLoading">
+    <div class="m-5 text-center">
+        <h4>
+            <div class="spinner-grow text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading Data. Please wait...</p>
+        </h4>
+    </div>
+</div>
+
+
+<div class="modal-body p-0" *ngIf="!isLoading">
+
+    <div class="row p-3 g-0">
+        <div class="col-lg-6 g-0">
+            <ul class="list-group">
+                <li class="list-group-item border-0 p-1"><b>Work Order #:</b> {{workOrderNumber}}</li>
+                <li class="list-group-item border-0 p-1"><b>Part #:</b> {{mainDetails.wo_part}}</li>
+                <li class="list-group-item border-0 p-1"><b>Part Description:</b> {{mainDetails.PT_DESC1}}</li>
+                <li class="list-group-item border-0 p-1"><b>Due Date:</b> {{mainDetails.wo_due_date}}</li>
+                <li class="list-group-item border-0 p-1"><b>Qty Ordered:</b> {{mainDetails.wo_qty_ord}}</li>
+                <li class="list-group-item border-0 p-1"><b>Status:</b> {{mainDetails.wo_status}}</li>
+                <li class="list-group-item border-0 p-1"><b>Remarks:</b> {{mainDetails.wo_rmks}}</li>
+            </ul>
+        </div>
+        <div class="col-lg-6 text-end g-0">
+            <ul class="list-group">
+                <li class="list-group-item border-0 p-1"><b>Percent Completed</b></li>
+                <li class="list-group-item border-0 p-1">{{percentComplete | number : '1.2-2'}}%</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+
+        <h4 class="text-center p-3" *ngIf="!isLoading && !mainDetails">Sorry, no record found.</h4>
+
+        <ag-grid-angular *ngIf="details.length > 0" style="width: 100%; height: calc(100vh - 454px);"
+            class="ag-theme-alpine" [gridOptions]="gridOptions" [rowData]="details">
+        </ag-grid-angular>
+
+        <div id="printSheet" class="d-none d-print-block">
+            <h4 class="mb-3">Work order number: {{workOrderNumber}}</h4>
+            <h4 class="mb-3">Part #: {{mainDetails?.wo_part}}</h4>
+            <h4 class="mb-3">Qty Ordered: {{mainDetails?.wo_qty_ord}}</h4>
+
+            <table class="table table-bordered table-sm text-nowrap">
+                <thead>
+                    <tr>
+                        <th>Part #</th>
+                        <th>Qty Per</th>
+                        <th>Qty Allocated</th>
+                        <th>Qty Issued</th>
+                        <th>Qty Required</th>
+                        <th>Qty On Hand</th>
+                        <th>Qty Available</th>
+                        <th>Line Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of details">
+                        <td>{{row.wod_part}}</td>
+                        <td>{{row.WOD_BOM_QTY}}</td>
+                        <td>{{row.WOD_QTY_ALL}}</td>
+                        <td>{{row.WOD_QTY_ISS}}</td>
+                        <td>{{row.WOD_QTY_REQ}}</td>
+                        <td>{{row.TOTALONHAND}}</td>
+                        <td>{{row.TOTALAVAIL}}</td>
+                        <td>{{row.LINESTATUS | number : '1.2-2'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+<div class="modal-footer d-flex">
+    <button (click)="dismiss()" type="button" class="btn btn-gray">Close</button>
+    <button (click)="getData()" type="button" class="btn btn-warning ms-auto">Refresh</button>
+    <button (click)="print()" type="button" class="btn btn-primary">Print</button>
+</div>
