@@ -1,0 +1,22 @@
+<div class="modal-header">
+  <h4 class="modal-title"> Complete </h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+  <div class="mb-3">
+    <h5>Work Order Information</h5>
+    <p>WO#: {{data?.graphicsWorkOrder}}</p>
+    <p>Item#: {{data?.itemNumber}}</p>
+    <p>Description#: {{data?.description}}</p>
+    <p>Open Qty: {{data?.openQty}}</p>
+  </div>
+  <div class="form-group">
+    <label for="qty">Qty processed</label>
+    <input class="form-control" id="qty" placeholder="Enter completed qty" [(ngModel)]="qtyShipped" autocomplete="off"
+      autofocus>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-light mr-auto" (click)="dismiss()">Close</button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
+</div>

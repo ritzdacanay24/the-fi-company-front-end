@@ -35,6 +35,8 @@ export class ShippingRequestListComponent implements OnInit {
     private activatedRoute: ActivatedRoute,
   ) { }
 
+  disable = false;
+
   ngOnInit(): void {
 
     this.activatedRoute.queryParams.subscribe(params => {
@@ -48,9 +50,14 @@ export class ShippingRequestListComponent implements OnInit {
     });
 
     this.getData();
+
+    if (this.selectedViewType == 'Open') {
+      this.disable = true;
+      this.isAll = true;
+    }
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -63,6 +70,7 @@ export class ShippingRequestListComponent implements OnInit {
       minWidth: 115
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
+    { field: 'createdDate', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
     {
       headerName: 'Contact Info',
       children: [
@@ -75,7 +83,7 @@ export class ShippingRequestListComponent implements OnInit {
       children: [
         { field: 'trackingNumber', headerName: 'Tracking Number', filter: 'agMultiColumnFilter' },
         { field: 'freightCharges', headerName: 'Freight Charges', filter: 'agMultiColumnFilter' },
-        { field: 'phoneNumber', headerName: 'Phone Number', filter: 'agMultiColumnFilter' },
+        { field: 'phoneNumber', headerName: 'Phone Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
         { field: 'saturdayDelivery', headerName: 'Saturday Delivery', filter: 'agMultiColumnFilter' },
         { field: 'sendTrackingNumberTo', headerName: 'Send Tracking Number To', filter: 'agMultiColumnFilter' },
         { field: 'serviceType', headerName: 'Service Type', filter: 'agMultiColumnFilter' },
@@ -101,15 +109,19 @@ export class ShippingRequestListComponent implements OnInit {
         { field: 'completedBy', headerName: 'Completed By', filter: 'agMultiColumnFilter' },
         { field: 'completedDate', headerName: 'Completed Date', filter: 'agMultiColumnFilter' },
         { field: 'createdById', headerName: 'Created By Id', filter: 'agMultiColumnFilter' },
-        { field: 'createdDate', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
         { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
       ]
     },
   ]
 
-  @Input() selectedViewType = 'Active';
+  @Input() selectedViewType = 'Open';
 
   selectedViewOptions = [
+    {
+      name: "Open",
+      value: 0,
+      selected: false
+    },
     {
       name: "Active",
       value: 1,
@@ -192,6 +204,14 @@ export class ShippingRequestListComponent implements OnInit {
   }
 
   async getData() {
+
+    if (this.selectedViewType == 'Open') {
+      this.disable = true;
+      this.isAll = true;
+    } else {
+      this.disable = false;
+    }
+
     try {
       this.gridApi?.showLoadingOverlay()
 

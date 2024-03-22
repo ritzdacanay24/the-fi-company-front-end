@@ -1,0 +1,92 @@
+<div class="modal-header">
+    <h4 class="modal-title">Event Edit</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+    <app-calendar-form (setFormEmitter)="setFormEmitter($event)"></app-calendar-form>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Upload</label>
+        <div class="col-sm-9">
+            <div class="form-group">
+                <input (change)="this.onFilechange($event)" class="form-control" type="file" id="formFile">
+                <button (click)="this.upload()" type="button" class="btn btn-primary mt-3" *ngIf="id">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="id">
+        <h4>Attachments</h4>
+        <p *ngIf="attachments?.length == 0">No Attachment found.
+        <p>
+
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center pointer" (click)="view(row)"
+                *ngFor="let row of attachments; let i = index">
+                {{row.fileName}}
+                <i class="feather icon-trash-2 pointer"
+                    (click)="$event.stopPropagation();removeAttachment(row.id, i)"></i>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button class="btn btn-light" (click)="dismiss()">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="onSubmit()" *ngIf="!id">Save</button>
+    <div class="btn-group" *ngIf="id">
+        <div ngbDropdown container="body">
+            <button type="button" class="btn btn-primary dropdown-toggle-split" id="dropdownBasic1"
+                ngbDropdownToggle>Actions</button>
+            <div class="dropdown-menu" ngbDropdownMenu>
+                <button ngbDropdownItem (click)="onSubmit()"><i class="feather icon-save mr-2 text-success"></i>
+                    Update</button>
+                <button ngbDropdownItem (click)="onReceived()"><i
+                        class="feather icon-check-square mr-2 text-success"></i> {{f['status'].value == 'Open' ?
+                    'Complete': 'Undo Complete'}}</button>
+                <button ngbDropdownItem (click)="onPrint()"><i class="feather icon-printer mr-2 text-info"></i>
+                    Print</button>
+                <div class="dropdown-divider"></div>
+                <button ngbDropdownItem (click)="onDelete()"><i class="feather icon-trash mr-2 text-danger"></i>
+                    Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="print d-none d-print-block" id="print">
+    <h4>Info</h4>
+    <h3>ID# {{data?.id}}</h3>
+
+    <table class="table table-bordered" style="font-size:16px">
+        <tr>
+            <th style="width: 200px">Vendor</th>
+            <td>{{f['title'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">Date</th>
+            <td>{{f['start_date'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">Time</th>
+            <td>{{f['start_time'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">Comments</th>
+            <td>{{f['comments'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">Type</th>
+            <td>{{f['inbound_or_pickup'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">PO#/RMA#</th>
+            <td>{{f['po_number'].value}}</td>
+        </tr>
+        <tr>
+            <th style="width: 200px">Status</th>
+            <td>{{f['status'].value}}</td>
+        </tr>
+    </table>
+</div>

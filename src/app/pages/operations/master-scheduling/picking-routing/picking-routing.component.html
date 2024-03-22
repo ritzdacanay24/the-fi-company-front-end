@@ -1,0 +1,43 @@
+<div class="row">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <div>
+                    <div class="form-icon">
+                        <input type="search" class="form-control form-control-icon" style="width:250px"
+                            (ngModelChange)="this.gridApi.setGridOption('quickFilterText', $event)" [(ngModel)]="query"
+                            placeholder="Search">
+                        <i class="ri-search-2-line"></i>
+                    </div>
+                </div>
+
+                <button class="btn btn-light ms-3" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
+
+                <div class="ms-3">
+                    <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+                        [pageId]="pageId" [value]="this.tableList?.currentView?.id"></app-grid-settings>
+                </div>
+
+                <div class="ms-3">
+                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+                        [pageId]="pageId" [value]="this.tableList?.currentView?.id"></app-grid-filters>
+                </div>
+
+                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer" style="font-size: 14px;">
+                    {{statusCount.pastDue}} Past
+                    Due</span>
+                <span class="badge  bg-warning-subtle me-2 text-warning pointer" style="font-size: 14px;">
+                    {{statusCount.todayDue}} Due Today</span>
+                <span class="badge bg-success-subtle me-2 pointer  text-success" style="font-size: 14px;">
+                    {{statusCount.futureDue}} Future</span>
+                <span class="badge bg-light text-body pointer" style="font-size: 14px;">
+                    {{statusCount.pastDue + statusCount.todayDue + statusCount.futureDue}} Total</span>
+
+            </div>
+            <div class="card-body p-0">
+                <app-master-production (setGridApi)="setGridApi($event)" [pageId]="pageId" [routing]="routing"
+                    [data]="data" [getData]="getData"></app-master-production>
+            </div>
+        </div>
+    </div>
+</div>

@@ -5,6 +5,7 @@ import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 import { FormGroup } from '@angular/forms';
 import { NcrService } from '@app/core/api/quality/ncr-service';
 import { NcrVerificationFormComponent } from '../../ncr-verification-form/ncr-verification-form.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   standalone: true,
@@ -22,7 +23,8 @@ export class NcrVerificationComponent implements OnInit {
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
-    public ncrService: NcrService
+    public ncrService: NcrService,
+    private toastrService: ToastrService,
   ) {
   }
 
@@ -46,8 +48,15 @@ export class NcrVerificationComponent implements OnInit {
 
   submitted = false;
 
-  onSubmit() {
-
+  async onSubmit() {
+    try {
+      this.isLoading = true;
+      await this.ncrService.update(this.id, this.form.value);
+      this.isLoading = false;
+      this.toastrService.success('Successfully Updated');
+    } catch (err) {
+      this.isLoading = false;
+    }
   }
 
   async getData() {

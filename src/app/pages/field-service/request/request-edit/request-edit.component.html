@@ -1,24 +1,24 @@
 <div class="row" *ngIf="addToSchedule">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <app-request-schedule-job [id]="id" [addToSchedule]="addToSchedule"
       [goBack]="goBackToRequest"></app-request-schedule-job>
   </div>
 </div>
 
 <div class="row" *ngIf="!data && !id && !addToSchedule">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
 </div>
 <div class="row" *ngIf="(data && id) && !addToSchedule">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goBack"
@@ -26,16 +26,28 @@
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goToComments"
           (click)="goToComments()">View Comments</button>
         <button class="btn btn-primary btn-sm shadow-none bg-primary rounded border-0 me-2 me-auto"
-          *ngIf="scheduleRequest" (click)="scheduleRequest()">Schedule/View Request</button>
+          *ngIf="scheduleRequest" (click)="scheduleRequest()" [disabled]="this.form.dirty">
+          {{this.form.dirty ? 'Save before scheduling' : 'Schedule/View Request'}}
+        </button>
         <h4 class="text-uppercase text-end ms-auto"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <div class="alert alert-success" role="alert" *ngIf="schedulerInfo">
-          This request is already scheduled.
+      <div class="card-body" style="min-height:300px;height: calc(100vh - 239px);overflow:auto">
+
+        <div *ngIf="schedulerInfo"
+          class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-check-double-line label-icon"></i>This request is scheduled.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
-        <div class="alert alert-danger" role="alert" *ngIf="!schedulerInfo">
-          This request is not scheduled.
+
+
+        <div *ngIf="!schedulerInfo"
+          class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-error-warning-line label-icon"></i>This request is not scheduled.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
+
 
         <div class="border border-info p-2 mb-2">
           <p class="mb-0">Created Date: {{data?.created_date}}</p>
@@ -46,6 +58,9 @@
           <p class="mb-0" *ngIf="schedulerInfo?.published">
             Service date set for <b>{{schedulerInfo?.request_date}} {{schedulerInfo?.start_time}}</b>
           </p>
+          <button class="btn btn-primary btn-sm mt-3"
+            (click)="techScheduleModalService.open(this.data?.date_of_service)">View Tech Schedule</button>
+
         </div>
 
         <app-request-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-request-form>
@@ -55,7 +70,7 @@
             <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
           </div>
         </div>
-        
+
         <div class="mb-3">
           <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary"
             [disabled]="isLoading || myFiles?.length == 0">
@@ -67,18 +82,22 @@
           <h4 class="mb-3">Attachments</h4>
           <ul class="list-group">
             <li class="list-group-item d-flex justify-content-between" *ngFor="let row of attachments; let i = index">
-              <a [href]="UPLOAD_LINK + row.fileName"
-                target="_blank">{{row.fileName}} - {{row.createdDate}}</a> <br />
-                <p></p>
-                <span class="text-danger pointer" (click)="deleteAttachment(row.id)">X</span>
+              <a [href]="UPLOAD_LINK + row.fileName" target="_blank">{{row.fileName}} - {{row.createdDate}}</a> <br />
+              <p></p>
+              <span class="text-danger pointer" (click)="deleteAttachment(row.id)">X</span>
             </li>
           </ul>
         </div>
 
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading || schedulerInfo" (click)="onSubmit()">Update
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <!-- Buttons with Label -->
+
+        <button type="button" class="btn btn-light btn-label waves-effect waves-light  ms-auto me-2"
+          (click)="onPrint()" [disabled]="this.form.dirty"><i class="ri-printer-line label-icon align-middle fs-16 me-2"></i> {{this.form.dirty ? 'Save before printing' : 'Print'}}</button>
+
+        <button class="btn btn-primary" [disabled]="isLoading || schedulerInfo || disabled" (click)="onSubmit()">Update
           Request</button>
       </div>
     </div>
@@ -86,9 +105,12 @@
     <div class="mt-3" *ngIf="form.get('token').value">
       <h4 class="mt-2 mb-2" *ngIf="comments?.length">Comments ({{comments?.length}})</h4>
 
-      <div *ngFor="let row of comments" class="mb-2 card">
+      <div *ngFor="let row of comments" class="card">
         <div class="card-body">
-          <p class="mb-2">- {{row.comment}}</p>
+
+          <blockquote class="blockquote">
+            <p class="mb-3 tx-14" [innerHTML]="row.comment | safeHtml"></p>
+          </blockquote>
           <small>Created Date: {{row.created_date}}</small> <br />
           <small>Created By: {{row.name || 'No name set'}}</small>
         </div>
@@ -103,13 +125,56 @@
           <div class="mb-3">
             <label class="form-label required">Enter comments</label>
             <textarea rows="5" autosize [minRows]="5" class="form-control mb-2"
-              placeholder="If you need to make changes to this request, please specify the change in this comment box."
+              placeholder="Enter any comments. This comment will be emailed to the address listed above."
               [(ngModel)]="comment"></textarea>
           </div>
-          <button class="btn btn-success" (click)="onSubmitComment()">Submit comment</button>
+          <button class="btn btn-primary" (click)="onSubmitComment()">Submit comment</button>
         </div>
       </div>
     </div>
 
   </div>
+</div>
+
+<div class="print d-none d-print-block" id="print">
+  <h4 class="mb-3">Field Service Request Information</h4>
+  <h3 class="mb-3">Request# {{data?.id}}</h3>
+  <table class="table table-bordered text-nowrap" style="font-size:16px">
+    <tr>
+      <th>Requested Date of Service</th>
+      <td>{{data?.dateAndTime}}</td>
+    </tr>
+    <tr>
+      <th>Email</th>
+      <td>{{data?.email}}</td>
+    </tr>
+    <tr>
+      <th>Customer</th>
+      <td>{{data?.customer}}</td>
+    </tr>
+    <tr>
+      <th>Property</th>
+      <td>{{data?.property}}</td>
+    </tr>
+    <tr>
+      <th>Platform</th>
+      <td>{{data?.platform}}</td>
+    </tr>
+    <tr>
+      <th>Requested By</th>
+      <td>{{data?.requested_by}}</td>
+    </tr>
+    <tr>
+      <th>SO #</th>
+      <td>{{data?.so_number}}</td>
+    </tr>
+    <tr>
+      <th>Type Of Service</th>
+      <td>{{data?.type_of_service}}</td>
+    </tr>
+    <tr>
+      <th>Theme</th>
+      <td>{{data?.type_of_sign}}</td>
+    </tr>
+  </table>
 </div>

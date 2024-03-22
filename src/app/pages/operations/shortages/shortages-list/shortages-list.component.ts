@@ -10,11 +10,20 @@ import { NAVIGATION_ROUTE } from '../shortages-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { ShortagesService } from '@app/core/api/operations/shortages/shortages.service'
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service'
-import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
+import { highlightRowView, autoSizeColumns, filterParams, agGridDateFilterdateFilter, agGridDateFilter, copyOrigianlData } from 'src/assets/js/util'
 import { SharedModule } from '@app/shared/shared.module'
 import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
+import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component'
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
+import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
+import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component'
+import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component'
+import { LateReasonCodeModalService } from '@app/shared/components/last-reason-code-modal/late-reason-code-modal.component'
+import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component'
+import { WebsocketService } from '@app/core/services/websocket.service'
 @Component({
   standalone: true,
   imports: [
@@ -22,7 +31,9 @@ import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } fr
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent
+    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-shortages-list',
   templateUrl: './shortages-list.component.html',
@@ -33,8 +44,15 @@ export class ShortagesListComponent implements OnInit {
     public api: ShortagesService,
     public router: Router,
     private activatedRoute: ActivatedRoute,
-    private commentsModalService: CommentsModalService
-  ) { }
+    private commentsModalService: CommentsModalService,
+    private itemInfoModalService: ItemInfoModalService,
+    private workOrderInfoModalService: WorkOrderInfoModalService,
+    private lateReasonCodeModalService: LateReasonCodeModalService,
+    private websocketService: WebsocketService,
+
+
+  ) {
+  }
 
   ngOnInit(): void {
 
@@ -51,6 +69,29 @@ export class ShortagesListComponent implements OnInit {
     this.getData();
   }
 
+  query
+
+  pageId = '/shortages/open-shortages'
+
+
+  openLateReasonCodeService(key, misc, uniqueId, rowData) {
+    misc.userName = "Shortages";
+    const modalRef = this.lateReasonCodeModalService.open(key, misc, uniqueId, 'Shortages');
+    modalRef.result.then((result: any) => {
+      rowData.misc = result;
+      this.updated(rowData, rowData.id, true);
+    });
+  }
+
+  updated(newData: any, uniqueId: number, ws = false) {
+    let updatedData = [];
+    this.gridApi.forEachNode(function (rowNode) {
+      if (rowNode.data.id == uniqueId) {
+        updatedData.push(rowNode);
+      }
+    });
+    this.gridApi.redrawRows({ rowNodes: updatedData });
+  }
 
   viewComment = (id) => {
     let modalRef = this.commentsModalService.open(id, 'Shortage Request')
@@ -60,7 +101,14 @@ export class ShortagesListComponent implements OnInit {
   }
 
 
-  columnDefs:any = [
+  openWorkOrderInfo = (workOrder) => {
+    let modalRef = this.workOrderInfoModalService.open(workOrder)
+    modalRef.result.then((result: any) => {
+    }, () => { });
+  }
+
+
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -74,44 +122,99 @@ export class ShortagesListComponent implements OnInit {
     },
     {
       field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: CommentsRendererComponent,
       cellRendererParams: {
         onClick: (e: any) => this.viewComment(e.rowData.id),
-        value: 'View Comment',
+      }
+      , valueGetter: function (params) {
+        if (params.data)
+          if (params.data.recent_comments?.bg_class_name == 'bg-info') {
+            return 'Has Comments'
+          } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
+            return 'New Comments'
+          } else {
+          return 'No Comments'
+        }
+      },
+    },
+    { field: 'id', headerName: 'ID', filter: 'agNumberColumnFilter' },
+    {
+      field: 'partNumber', headerName: 'Short Item', filter: 'agMultiColumnFilter',
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: e => this.itemInfoModalService.open(e.rowData.partNumber),
         isLink: true
       }
     },
-    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-    { field: 'partNumber', headerName: 'Part Number', filter: 'agMultiColumnFilter' },
-    { field: 'partDesc', headerName: 'Part Description', filter: 'agMultiColumnFilter' },
-    { field: 'assemblyNumber', headerName: 'Assembly Number', filter: 'agMultiColumnFilter' },
-    { field: 'qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
-    { field: 'dueDate', headerName: 'Due Date', filter: 'agMultiColumnFilter' },
-    { field: 'supplier', headerName: 'Supplier', filter: 'agMultiColumnFilter' },
+    {
+      field: 'partDesc', headerName: 'Part Description', filter: 'agMultiColumnFilter'
+    },
+    {
+      field: 'assemblyNumber', headerName: 'Assembly Number', filter: 'agMultiColumnFilter',
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: e => this.itemInfoModalService.open(e.rowData.assemblyNumber),
+        isLink: true
+      }
+    },
+    { field: 'qty', headerName: 'Qty', filter: 'agNumberColumnFilter' },
+    {
+      field: 'dueDate', headerName: 'Due Date',
+      filter: 'agDateColumnFilter',
+      filterParams: agGridDateFilter,
+    },
     { field: 'priority', headerName: 'Priority', filter: 'agMultiColumnFilter' },
-    { field: 'status', headerName: 'Status', filter: 'agMultiColumnFilter' },
-    { field: 'deliveredCompleted', headerName: 'Delivered Completed', filter: 'agMultiColumnFilter' },
+    {
+      field: 'deliveredCompleted', headerName: 'Delivered Completed',
+      filter: 'agDateColumnFilter',
+      filterParams: agGridDateFilter,
+    },
     { field: 'deliveredCompletedBy', headerName: 'Delivered Completed By', filter: 'agMultiColumnFilter' },
-    { field: 'graphicsShortage', headerName: 'Graphics Shortage', filter: 'agMultiColumnFilter' },
     { field: 'jobNumber', headerName: 'Job Number', filter: 'agMultiColumnFilter' },
-    { field: 'mrfId', headerName: 'MRF ID', filter: 'agMultiColumnFilter' },
-    { field: 'mrf_line', headerName: 'MRF Line', filter: 'agMultiColumnFilter' },
-    { field: 'poNumber', headerName: 'PO Number', filter: 'agMultiColumnFilter' },
+    { field: 'mrfId', headerName: 'MRF ID', filter: 'agNumberColumnFilter' },
+    { field: 'mrf_line', headerName: 'MRF Line', filter: 'agNumberColumnFilter' },
+    {
+      field: 'poNumber', headerName: 'PO Number', filter: 'agMultiColumnFilter'
+    },
     { field: 'productionIssuedBy', headerName: 'Production Issued By', filter: 'agMultiColumnFilter' },
     { field: 'productionIssuedDate', headerName: 'Production Issued Date', filter: 'agMultiColumnFilter' },
     { field: 'lineNumber', headerName: 'Line Number', filter: 'agMultiColumnFilter' },
     { field: 'reasonPartNeeded', headerName: 'Reason Part Needed', filter: 'agMultiColumnFilter' },
-    { field: 'receivingCompleted', headerName: 'Receiving Completed', filter: 'agMultiColumnFilter' },
+    {
+      field: 'receivingCompleted', headerName: 'Receiving Completed',
+      filter: 'agDateColumnFilter',
+      filterParams: agGridDateFilter,
+    },
     { field: 'receivingCompletedBy', headerName: 'Receiving Completed By', filter: 'agMultiColumnFilter' },
-    { field: 'supplyCompleted', headerName: 'Supply Completed', filter: 'agMultiColumnFilter' },
+    {
+      field: 'supplyCompleted', headerName: 'Supply Completed',
+      filter: 'agDateColumnFilter',
+      filterParams: agGridDateFilter,
+    },
     { field: 'supplyCompletedBy', headerName: 'Supply Completed By', filter: 'agMultiColumnFilter' },
-    { field: 'woNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter' },
+    {
+      field: 'woNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: (e: any) => this.openWorkOrderInfo(e.rowData.woNumber),
+        isLink: true
+      },
+    },
     { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
     { field: 'active_line', headerName: 'Active Line', filter: 'agMultiColumnFilter' },
     { field: 'createdBy', headerName: 'Created By', filter: 'agMultiColumnFilter' },
-    { field: 'createdDate', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
-    { field: 'comments', headerName: 'Comments', filter: 'agMultiColumnFilter' },
-    { field: 'buyer', headerName: 'Buyer', filter: 'agMultiColumnFilter' },
+    {
+      field: 'createdDate', headerName: 'Created Date',
+      filter: 'agDateColumnFilter',
+      filterParams: agGridDateFilter,
+    }, {
+      field: 'misc.lateReasonCode', headerName: 'Late Reason Code', filter: 'agSetColumnFilter',
+      cellRenderer: LateReasonCodeRendererComponent,
+      cellRendererParams: {
+        onClick: e => {
+          this.openLateReasonCodeService('lateReasonCode', e.rowData.misc, e.rowData.id, e.rowData)
+        }
+      }
+    },
   ]
 
   @Input() selectedViewType = 'Active';
@@ -161,6 +264,7 @@ export class ShortagesListComponent implements OnInit {
     this.getData()
   }
 
+  copiedData
   gridOptions = {
     ...agGridOptions,
     columnDefs: this.columnDefs,
@@ -177,7 +281,7 @@ export class ShortagesListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => this.updateUrl(params),
-    onSortChanged: params => this.updateUrl(params),
+    onSortChanged: params => this.updateUrl(params)
   };
 
   updateUrl = (params) => {

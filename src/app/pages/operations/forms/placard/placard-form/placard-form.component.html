@@ -29,11 +29,6 @@
         form_label="Eyefi WO Number"></app-qad-wo-search>
     </div>
     <div class="col mb-3">
-      <label class="form-label" [ngClass]="formValidator('eyefi_serial_tag')">Eyefi Serial Tag</label>
-      <input type="text" class="form-control" name="eyefi_serial_tag" formControlName="eyefi_serial_tag"
-        placeholder="Enter eyefi serial tag" [ngClass]="{ 'is-invalid': submitted && f.eyefi_serial_tag.errors }" />
-    </div>
-    <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('po_number')">PO Number</label>
       <input type="text" class="form-control" name="po_number" formControlName="po_number" placeholder="Enter PO Number"
         [ngClass]="{ 'is-invalid': submitted && f.po_number.errors }" />
@@ -70,11 +65,22 @@
         [ngClass]="{ 'is-invalid': submitted && f.customer_part_number.errors }"
         [value]="f.customer_part_number.value"></app-qad-customer-part-search>
     </div>
+  </div>
+
+  <div class="row">
     <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('customer_serial_tag')">Customer Serial Tag</label>
-      <input type="text" class="form-control" name="customer_serial_tag" formControlName="customer_serial_tag"
-        placeholder="Enter customer serial tag "
-        [ngClass]="{ 'is-invalid': submitted && f.customer_serial_tag.errors }" />
+      <div class="input-group mb-3">
+        <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
+        <input type="text" class="form-control" name="customer_serial_tag" formControlName="customer_serial_tag"
+          placeholder="Enter customer serial tag "
+          [ngClass]="{ 'is-invalid': submitted && f.customer_serial_tag.errors }" />
+      </div>
+    </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('eyefi_serial_tag')">Eyefi Serial Tag</label>
+      <input type="text" class="form-control" name="eyefi_serial_tag" formControlName="eyefi_serial_tag"
+        placeholder="Enter eyefi serial tag" [ngClass]="{ 'is-invalid': submitted && f.eyefi_serial_tag.errors }" />
     </div>
   </div>
 
@@ -95,7 +101,7 @@
     </div>
     <div class="col-2 mb-3">
       <label class="form-label"></label>
-      <input type="text" class="form-control mt-2 text-center border-0" value="OF" readonly />
+      <input type="text" class="form-control mt-2 text-center border-0" value="OF" readonly disabled/>
     </div>
     <div class="col mb-3">
       <label class="form-label"></label>

@@ -1,0 +1,14 @@
+<div class="modal-header mb-0 pb-0">
+    <h4 class="modal-title" id="modal-basic-title">{{data?.labelName}} - {{data?.labelSize}}</h4>
+</div>
+
+<div class="modal-body">
+    <div class="my-5 text-center">
+        <img [src]="data?.labelImage" style="width:200px" class="img-fluid img-thumbnail">
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
+    <button (click)="onPrint()" type="button" class="btn btn-primary">Print</button>
+</div>

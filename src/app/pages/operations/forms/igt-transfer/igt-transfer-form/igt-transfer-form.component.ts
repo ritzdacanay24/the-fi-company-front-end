@@ -57,8 +57,8 @@ export class IgtTransferFormComponent {
       created_date: new FormControl(''),
       active: new FormControl(1),
       to_location: new FormControl(''),
-      email_sent_datetime: new FormControl(''),
-      email_sent_created_by_name: new FormControl(''),
+      email_sent_datetime: new FormControl(null),
+      email_sent_created_by_name: new FormControl(null),
     }),
     details: this.fb.array([]),
   });
@@ -89,7 +89,6 @@ export class IgtTransferFormComponent {
   async notifyParent($event) {
     this.isIGTOrder = true;
     this.details?.clear()
-    this.form?.reset()
     try {
       this.form.disable()
       let data: any = await this.api.getSoLineDetails($event.sod_nbr);

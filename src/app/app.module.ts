@@ -1,5 +1,5 @@
 import { FormsModule } from '@angular/forms';
-import { ErrorHandler, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 // routing
 import { AppRoutingModule } from './app-routing.module';
@@ -12,8 +12,6 @@ import { LayoutsModule } from "./layouts/layouts.module";
 import { HttpClientModule, HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { environment } from '../environments/environment';
-import { initFirebaseBackend } from './authUtils';
-import { FakeBackendInterceptor } from './core/helpers/fake-backend';
 import { ErrorInterceptor } from './core/helpers/error.interceptor';
 import { JwtInterceptor } from './core/helpers/jwt.interceptor';
 
@@ -31,20 +29,18 @@ import { AuthenticationEffects } from './store/Authentication/authentication.eff
 import { ApiPrefixInterceptor } from './core/helpers/api-prefix-interceptor';
 
 import { provideEnvironmentNgxMask } from 'ngx-mask';
-import { ErrorHandlerService } from './core/services/error-handler.service';
-import { ErrorService } from './core/services/error.service';
 import { ToastrModule } from 'ngx-toastr';
 // import { QuillModule } from 'ngx-quill';
+
+import { ColorPickerModule } from 'ngx-color-picker';
+import { provideRouter, withPreloading } from '@angular/router';
+import { FlagBasedPreloadingStrategy } from './shared/providers/preload';
+
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 
 export function createTranslateLoader(http: HttpClient): any {
   return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
-}
-
-if (environment.defaultauth === 'firebase') {
-  initFirebaseBackend(environment.firebaseConfig);
-} else {
-  FakeBackendInterceptor;
 }
 
 @NgModule({
@@ -76,15 +72,16 @@ if (environment.defaultauth === 'firebase') {
     ]),
     ToastrModule.forRoot({ preventDuplicates: true }),
     // QuillModule.forRoot()
+    ColorPickerModule,
+    ServiceWorkerModule.register('ngsw-worker.js', {
+      enabled: environment.production
+    }),
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: FakeBackendInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
-    provideEnvironmentNgxMask(),
-    ErrorService,
-    { provide: ErrorHandler, useClass: ErrorHandlerService }
+    provideEnvironmentNgxMask()
   ],
   bootstrap: [AppComponent]
 })

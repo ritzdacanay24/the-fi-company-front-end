@@ -1,39 +1,44 @@
-<div class="row" *ngIf="!data && !id">
-  <div class="content-grid col-xxl-8">
-    <div class="card">
-      <div class="card-body" style="min-height:300px">
-        Please select job from list.
-      </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+<div class="p-3 text-center" *ngIf="!data && !id">
+  <div class="row d-flex justify-content-center">
+    <div class="col-6">
+      <div class="card">
+        <div class="card-body" style="min-height:110px">
+          <p class="mb-3">Please select job to view.</p>
+          <div class="alert alert-danger" role="alert" *ngIf="!this.data && id">
+            Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
+          </div>
+          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [showLabel]="false"
+            [autoFocus]="true"></app-job-search>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="row" [hidden]="!data && !id">
-  <div class="content-grid col-xxl-8">
+<div class="row" *ngIf="data && id">
+  <div class="content-grid col-xxl-9">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="onGoBack"
+          (click)="onGoBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <p class="ms-3">FSID: {{data?.id}}</p>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <div class="border border-3 p-3 mb-3" *ngIf="data">
+      <div class="card-body">
+        <!-- <div class="border border-3 p-3 mb-3" *ngIf="data">
           <p class="mb-0">FSID: {{data?.id}}</p>
+          <p class="mb-0">Ticket: <span (click)="viewTicket()">{{this.ticketInfo?.id}}</span></p>
           <p class="mb-0">Created by: {{data?.created_by}}</p>
           <p class="mb-0">Created date: {{data?.created_date}}</p>
           <p class="mb-0" *ngIf="data?.customer_cancelled">Cancellation: {{data?.cancellation_comments}}</p>
-        </div>
-        <app-job-form (setFormElements)="form = $event" (setOnRemoveTech)="setOnRemoveTech($event)"
-          [submitted]="submitted"></app-job-form>
+        </div> -->
+        <app-job-form [ngStyle]="ngStyle" (setFormElements)="form = $event" [removeTech]="removeTech"
+          [submitted]="submitted" [id]="id"></app-job-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onGoBack()">Cancel</button>
         <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
       </div>
     </div>
   </div>
 </div>
-

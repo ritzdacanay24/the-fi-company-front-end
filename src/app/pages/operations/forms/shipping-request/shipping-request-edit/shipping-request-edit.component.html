@@ -1,18 +1,18 @@
 <div class="row" *ngIf="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="row" [hidden]="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
@@ -20,11 +20,28 @@
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <div class="mb-3 border border-primary p-3">
-          <p>Completed Date: {{data?.completedDate}}</p>
-          <p>Completed By: {{data?.completedBy}}</p>
-          <p>Tracking Number: {{data?.trackingNumber}}</p>
+
+        <!-- Light Alert -->
+        <div class="alert alert-info alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="data?.active == 0">
+          <i class=" ri-error-warning-line label-icon"></i><strong>Heads up!</strong> - This request is no longer active.
         </div>
+
+
+        <!-- Success Alert -->
+        <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="data?.completedDate">
+          <i class="ri-checkbox-line label-icon"></i><strong>Completed</strong> - This request was completed on
+          <b>{{data?.completedDate}}</b> by <b>{{data?.completedBy}}</b>. <br /> Your tracking number is
+          <b>{{data?.trackingNumber}}</b>.
+        </div>
+
+        <!-- Success Alert -->
+        <div class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="!data?.completedDate && data?.active == 1">
+          <i class=" ri-spam-line label-icon"></i><strong>In Process</strong>
+        </div>
+
         <app-shipping-request-form (setFormEmitter)="form = $event" [submitted]="submitted"
           [updateTracking]="updateTracking" [showTrackingNumberField]="true"></app-shipping-request-form>
 
@@ -52,7 +69,7 @@
 
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Submit</button>
       </div>
     </div>

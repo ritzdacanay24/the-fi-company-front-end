@@ -20,4 +20,9 @@ export class PlacardService extends DataService<any> {
   getPlacardBySoSearch = async (order: string, partNumber: string, line: string) =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Placard/placard?ReadAll&order=${order}&partNumber=${partNumber}&line=${line}`));
 
+
+  searchSerialNumber(serialNumber) {
+    return firstValueFrom(this.http.get<any>(`/Placard/placard?searchSerialNumber=${serialNumber}`))
+  }
+
 }

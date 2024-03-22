@@ -1,0 +1,23 @@
+<div class="modal-header">
+    <h4 class="modal-title">Create Event</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+    <app-calendar-form (setFormEmitter)="setFormEmitter($event)"></app-calendar-form>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Upload</label>
+        <div class="col-sm-9">
+            <div class="form-group">
+                <input (change)="this.onFilechange($event)" class="form-control" type="file" id="formFile">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal-footer">
+    <button class="btn btn-light" (click)="dismiss()">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="onSubmit()">Save</button>
+</div>

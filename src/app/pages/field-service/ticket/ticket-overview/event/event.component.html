@@ -76,7 +76,7 @@
               </button>
             </div>
           </div>
-          <button class="btn btn-success float-end" (click)="addWorkDetail()" [disabled]="loading">Add More</button>
+          <button class="btn btn-primary float-end" (click)="addWorkDetail()" [disabled]="loading">Add More</button>
         </div>
       </div>
       <div class="card-body">
@@ -134,7 +134,7 @@
                 </td>
               </tr>
               <tr *ngFor="let row of g.games; let i = index" class="fw-normal pointer"
-                (click)="!disabled && openWorkInfo(row.id)" class="{{row.cssClass}}"
+                (click)="openWorkInfo(row.id)" class="{{row.cssClass}}"
                 [ngClass]="{'fw-bolder fst-italic':!row.include_calculation}">
                 <td class="pointer text-nowrap" (click)="_navigate(row.projectStart);$event.stopPropagation()">
                   View

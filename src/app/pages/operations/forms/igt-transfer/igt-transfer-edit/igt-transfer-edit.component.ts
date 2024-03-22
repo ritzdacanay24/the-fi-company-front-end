@@ -110,37 +110,19 @@ export class IgtTransferEditComponent {
       if (!confirm(`You sent an email on ${this.form.value.main.email_sent_datetime}. Would you like to send again?`)) return;
     }
 
-    const { value: printedName, isDismissed } = await SweetAlert.fire({
-      title: 'Enter your name',
-      input: 'text',
-      inputLabel: 'Your name',
-      inputValue: this.authenticationService.currentUserValue.full_name,
-      showCancelButton: true,
-      inputValidator: (value) => {
-        if (!value) {
-          return 'You need to enter your name'
-        }
-        return true;
-      }
-    })
-
-    if (isDismissed) return;
-
     try {
-      console.log({
-        ...this.form.value,
-        printedName
-      })
-
-      this.form.value.main.email_sent_datetime = moment().format('YYYY-MM-DD HH:mm:ss')
-      this.form.value.main.email_sent_created_by_name = this.authenticationService.currentUserValue.full_name
 
       SweetAlert.loading()
-      await this.api.automatedIGTTransfer(this.id, {
-        ...this.form.value,
-        printedName
-      })
-      SweetAlert.close()
+
+      this.form.patchValue({
+        main: {
+          email_sent_datetime: moment().format('YYYY-MM-DD HH:mm:ss'),
+          email_sent_created_by_name: this.authenticationService.currentUserValue.full_name
+        }
+      }, { emitEvent: false })
+
+      await this.api.automatedIGTTransfer(this.id, { ...this.form.value, printedName: this.authenticationService.currentUserValue.full_name })
+      SweetAlert.fire({ text: 'Email sent.' })
     } catch (err) {
       SweetAlert.close()
     }

@@ -48,8 +48,7 @@ export class IgtTransferCreateComponent {
         created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
         created_by: this.authenticationService.currentUserValue.id,
       }
-    }, { emitEvent: false })
-
+    })
   }
 
   async onSubmit() {
@@ -58,7 +57,6 @@ export class IgtTransferCreateComponent {
       getFormValidationErrors()
       return;
     };
-
     try {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);

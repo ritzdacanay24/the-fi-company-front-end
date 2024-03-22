@@ -64,17 +64,17 @@ export class VerticalComponent implements OnInit {
     }
   }
   private handlePreloader(route: any) {
-    if (route !== '/disabled-route') {
-      (document.getElementById("preloader") as HTMLElement).style.opacity = "1";
-      (document.getElementById("preloader") as HTMLElement).style.visibility = "";
-      setTimeout(() => {
-        (document.getElementById("preloader") as HTMLElement).style.opacity = "0";
-        (document.getElementById("preloader") as HTMLElement).style.visibility = "hidden";
-      }, 1000);
-    } else {
-      (document.getElementById("preloader") as HTMLElement).style.opacity = "0";
-      (document.getElementById("preloader") as HTMLElement).style.visibility = "hidden";
-    }
+    // if (route !== '/disabled-route') {
+    //   (document.getElementById("preloader") as HTMLElement).style.opacity = "1";
+    //   (document.getElementById("preloader") as HTMLElement).style.visibility = "";
+    //   setTimeout(() => {
+    //     (document.getElementById("preloader") as HTMLElement).style.opacity = "0";
+    //     (document.getElementById("preloader") as HTMLElement).style.visibility = "hidden";
+    //   }, 1000);
+    // } else {
+    //   (document.getElementById("preloader") as HTMLElement).style.opacity = "0";
+    //   (document.getElementById("preloader") as HTMLElement).style.visibility = "hidden";
+    // }
   }
 
 

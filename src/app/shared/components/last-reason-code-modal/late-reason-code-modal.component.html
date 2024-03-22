@@ -1,7 +1,6 @@
 <div class="modal-header pb-0">
-    <div style="flex-direction:column;">
-        <h4 class="modal-title" id="modal-basic-title">Late Reason Code - {{soLineNumber}}</h4>
-    </div>
+    <h4 class="modal-title" id="modal-basic-title">Late Reason Code - {{soLineNumber}}</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 
 <div class="modal-body" *ngIf="isLoading">
@@ -40,7 +39,7 @@
 </div>
 
 <div class="modal-footer">
-    <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
+    <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
     <button (click)="clear()" type="button" class="btn btn-light ms-auto" *ngIf="lateReasonCode">Clear</button>
     <button (click)="save()" type="button" class="btn btn-primary" [disabled]="lateReasonCode == ''">Save</button>
 </div>

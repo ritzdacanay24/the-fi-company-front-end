@@ -1,12 +1,11 @@
-<div class="modal-header">
+<div class="modal-header pb-0">
   <h5 class="modal-title" id="exampleModalLabel">Owner Transactions</h5>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="close()" aria-label="Close"></button>
 </div>
 <div class="modal-body mh-400">
   <h4 class="mb-3">SO#: {{soNumberAndLineNumber}}</h4>
-  <div *ngIf="!isLoading && data?.length == 0">
-    <h5> No owner transactions </h5>
-  </div>
+
+  <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
   <div *ngIf="!isLoading && data?.length > 0">
     <h6>
@@ -36,5 +35,5 @@
   </div>
 </div>
 <div class="modal-footer">
-  <button type="button" class="btn btn-outline-dark mr-auto" (click)="close()">Close</button>
+  <button type="button" class="btn btn-light mr-auto" (click)="close()">Close</button>
 </div>

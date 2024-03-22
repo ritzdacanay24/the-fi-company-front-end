@@ -6,6 +6,7 @@ import { AuthenticationService } from '../../core/services/auth.service';
 import { login, loginSuccess, loginFailure, logout, logoutSuccess, Register} from './authentication.actions';
 import { Router } from '@angular/router';
 import { environment } from 'src/environments/environment';
+import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 
 @Injectable()
 export class AuthenticationEffects {
@@ -33,9 +34,9 @@ export class AuthenticationEffects {
         return this.AuthenticationService.login(email, password).pipe(
           map((user) => {
             if (user.status === 'success') {
-              sessionStorage.setItem('toast', 'true');
-              sessionStorage.setItem('currentUser', JSON.stringify(user.data));
-              sessionStorage.setItem('token', user.token);
+              localStorage.setItem('toast', 'true');
+              localStorage.setItem(THE_FI_COMPANY_CURRENT_USER, JSON.stringify(user.data));
+              localStorage.setItem('token', user.token);
               this.router.navigate(['/']);
             }
             return loginSuccess({ user });

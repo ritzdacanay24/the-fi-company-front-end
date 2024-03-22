@@ -1,0 +1,25 @@
+<!-- <div class="ms-3">
+    <select class="form-select" (change)="changeSize(gridLayout)" [(ngModel)]="gridLayout">
+        <option *ngFor="let row of sizes" [value]="row.value">{{row.name}}</option>
+    </select>
+</div> -->
+
+<div class="header-item d-none d-sm-flex me-3 p-0">
+    <div class="dropdown header-item " ngbDropdown>
+        <button type="button" class="btn btn-sm p-0" id="page-header-user-dropdown" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+            <span class="d-flex align-items-center">
+                <button type="button"
+                    class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode">
+                    {{ gridLayout | titlecase }}
+                </button>
+            </span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+            <h6 class="mb-2 text-center">Grid Size <span class="badge bg-success">BETA</span> </h6>
+            <a class="dropdown-item pointer" (click)="changeSize(row.value)" *ngFor="let row of sizes" [ngClass]="{'active': gridLayout == row.value}">
+                <span class="align-middle">{{row.name}}</span>
+            </a>
+        </div>
+    </div>
+</div>

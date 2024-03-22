@@ -11,10 +11,15 @@ import { GridApi, ColumnApi } from 'ag-grid-community';
 import moment from 'moment';
 import { GraphicsBomService } from '@app/core/api/operations/graphics/graphics-bom.service';
 import { NAVIGATION_ROUTE } from '../graphics-bom-constant';
+import { ImageRendererComponent } from '@app/shared/ag-grid/cell-renderers/image-renderer/image-renderer.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 
 @Component({
     standalone: true,
-    imports: [SharedModule, AgGridModule, DateRangeComponent],
+    imports: [SharedModule, AgGridModule, DateRangeComponent,
+        GridSettingsComponent,
+        GridFiltersComponent,],
     selector: 'app-graphics-bom-list',
     templateUrl: './graphics-bom-list.component.html',
     styleUrls: []
@@ -40,6 +45,10 @@ export class GraphicsBomListComponent implements OnInit {
 
         this.getData()
     }
+
+    query
+
+    pageId = 'graphics-bom-list'
 
     title = 'Graphics BOM List';
 
@@ -72,7 +81,7 @@ export class GraphicsBomListComponent implements OnInit {
         });
     }
 
-    columnDefs:any = [
+    columnDefs: any = [
         {
             field: "View", headerName: "View", filter: "agMultiColumnFilter",
             pinned: "left",
@@ -87,7 +96,15 @@ export class GraphicsBomListComponent implements OnInit {
         , {
             headerName: 'Basic Info',
             children: [
+
                 { field: 'ID_Product', headerName: 'YFG Part Number', filter: 'agMultiColumnFilter' }
+                , {
+                    field: 'Image_Data', headerName: 'Image', filter: 'agMultiColumnFilter',
+                    cellRenderer: ImageRendererComponent,
+                    cellRendererParams: {
+                        link: 'https://dashboard.eye-fi.com/attachments_mount/Yellowfish/'
+                    }
+                }
                 , { field: 'Product', headerName: 'Product Name', filter: 'agMultiColumnFilter' }
                 , { field: 'Account_Vendor', headerName: 'Account Name', filter: 'agMultiColumnFilter' }
                 , { field: 'SKU_Number', headerName: 'Account Part #', filter: 'agMultiColumnFilter' }

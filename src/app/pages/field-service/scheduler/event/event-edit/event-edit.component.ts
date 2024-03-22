@@ -48,7 +48,6 @@ export class EventEditComponent implements OnInit {
 
   async onSubmit() {
     this.submitted = true;
-
     if (this.form.invalid) return;
 
     try {

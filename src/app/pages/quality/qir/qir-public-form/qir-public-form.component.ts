@@ -66,7 +66,7 @@ export class QirPublicFormComponent {
   }
 
   async getQirSettings() {
-    let formSettings: any = await this.qirSettingsService.getFormSettings({ active: 1 })
+    let formSettings: any = await this.qirSettingsService.getFormSettings({ active: 1, showInPublic: 1 })
 
     let ObjMap = {};
 
@@ -88,34 +88,34 @@ export class QirPublicFormComponent {
     qir: new FormControl(''),
     capaId: new FormControl(''),
     type: new FormControl(null),
-    type1: new FormControl('External - Exisiting in Field', [Validators.required]),
+    type1: new FormControl('External - Exisiting in Field'),
     stakeholder: new FormControl(null),
     owner: new FormControl(''),
-    priority: new FormControl('High', [Validators.required]),
+    priority: new FormControl('High'),
     createdDate: new FormControl(null),
-    active: new FormControl(1, [Validators.required]),
-    status: new FormControl('Open', [Validators.required]),
-    issueComment: new FormControl(null, [Validators.required]),
+    active: new FormControl(1),
+    status: new FormControl('Open'),
+    issueComment: new FormControl(null),
     issue_comment_html: new FormControl(''),
     verifiedBy: new FormControl(''),
-    customerName: new FormControl(null, [Validators.required]),
-    purchaseOrder: new FormControl(null, [Validators.required]),
-    CustomerPartNumber: new FormControl('', [Validators.required]),
-    customerSerialNumber: new FormControl('', [Validators.required]),
-    eyefiPartNumber: new FormControl(null, [Validators.required]),
+    customerName: new FormControl(null),
+    purchaseOrder: new FormControl(null),
+    CustomerPartNumber: new FormControl(''),
+    customerSerialNumber: new FormControl(''),
+    eyefiPartNumber: new FormControl(null),
     confirmationCode: new FormControl(''),
     firstName: new FormControl(''),
     lastName: new FormControl(''),
     source: new FormControl(''),
-    failureType: new FormControl(null, [Validators.required]),
-    qtyAffected: new FormControl(null, [Validators.required]),
+    failureType: new FormControl(null),
+    qtyAffected: new FormControl(null),
     qtyAffected1: new FormControl(null),
-    customerReportedDate: new FormControl(null, [Validators.required]),
+    customerReportedDate: new FormControl(null),
     componentType: new FormControl(null),
     platformType: new FormControl(null),
     qaComments: new FormControl(''),
     supplierName: new FormControl(''),
-    casinoName: new FormControl('', [Validators.required]),
+    casinoName: new FormControl(''),
     typeSub: new FormControl('External Customer Reported'),
     eyefiSerialNumber: new FormControl(''),
     fieldServiceSchedulerId: new FormControl(null),
@@ -123,7 +123,7 @@ export class QirPublicFormComponent {
     first_name: new FormControl('', [Validators.required]),
     last_name: new FormControl('', [Validators.required]),
     email: new FormControl('', [Validators.required]),
-    location: new FormControl(null, [Validators.required]),
+    location: new FormControl(null),
   })
 
   setBooleanToNumber(key) {
@@ -132,7 +132,6 @@ export class QirPublicFormComponent {
   }
 
   notifyParent($event) {
-    console.log($event)
     this.form.patchValue({ location: $event.address.freeformAddress, casinoName: $event.poi?.name })
   }
 

@@ -6,11 +6,15 @@ import { RootReducerState } from '../store';
 import { Store } from '@ngrx/store';
 import { changeMode } from '@app/store/layouts/layout-action';
 import { EventService } from '@app/core/services/event.service';
+import { setOptions } from '@mobiscroll/angular';
+import { WebsocketService } from '@app/core/services/websocket.service';
+import { THE_FI_COMPANY_LAYOUT } from './topbar/topbar.component';
 @Component({
   selector: 'app-layout',
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']
 })
+
 
 /**
  * Layout Component
@@ -19,7 +23,12 @@ export class LayoutComponent implements OnInit {
 
   layoutType!: string;
 
-  constructor(private store: Store<RootReducerState>, private eventService: EventService) { }
+  constructor(
+    private store: Store<RootReducerState>,
+    private eventService: EventService,
+    private websocketService: WebsocketService
+  ) { }
+
 
   setThemeLayout(data) {
     this.layoutType = data.LAYOUT;
@@ -34,12 +43,14 @@ export class LayoutComponent implements OnInit {
     data.LAYOUT == "vertical" || data.LAYOUT == "twocolumn" ? document.documentElement.setAttribute('data-layout-style', data.SIDEBAR_VIEW) : '';
     document.documentElement.setAttribute('data-preloader', data.DATA_PRELOADER)
     document.documentElement.setAttribute('data-sidebar-visibility', data.SIDEBAR_VISIBILITY);
-    document.documentElement.setAttribute('data-sidebar', data.LAYOUT_MODE);
+    document.documentElement.setAttribute('data-sidebar', data.SIDEBAR_COLOR);
 
   }
 
+
+
   ngOnInit(): void {
-    let data = JSON.parse(localStorage.getItem('eyefi-layout'));
+    let data = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
     if (data) {
       this.setThemeLayout(data)
       this.eventService.broadcast('changeMode', data.LAYOUT_MODE);
@@ -49,6 +60,9 @@ export class LayoutComponent implements OnInit {
         this.setThemeLayout(data)
       })
     }
+
+    if (this.websocketService.getWebSocket() === undefined)
+      this.websocketService.connect();
   }
 
 
@@ -60,8 +74,8 @@ export class LayoutComponent implements OnInit {
   }
 
   /**
- * Check if the semibox layout is requested
- */
+  * Check if the semibox layout is requested
+  */
   isSemiboxLayoutRequested() {
     return this.layoutType === 'semibox';
   }

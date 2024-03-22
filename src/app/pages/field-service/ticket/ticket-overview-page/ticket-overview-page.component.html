@@ -1,25 +1,36 @@
 <app-loading [isLoading]="isLoading"></app-loading>
 
-<div class="p-3 text-center" *ngIf="!this.jobInfo && !isLoading">
+<div class="p-3 text-center" *ngIf="(!id && !this.jobInfo) || (!id || !this.workOrderInfo) && !isLoading">
   <div class="row d-flex justify-content-center">
     <div class="col-6">
       <div class="card">
         <div class="card-body" style="min-height:110px">
           <p class="mb-3">Please select job to view.</p>
-          <div class="alert alert-danger" role="alert" *ngIf="!this.jobInfo && id">
-            Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
+
+          <div *ngIf="!this.jobInfo && id"
+            class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+            role="alert">
+            <i class="ri-error-warning-line label-icon"></i>Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
+            <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
           </div>
 
-          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id"
-            [showLabel]="false"></app-job-search>
+
+          <div *ngIf="this.jobInfo && !this.workOrderInfo && id"
+            class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+            role="alert">
+            <i class="ri-error-warning-line label-icon"></i>Ticket not started. Unable to view.
+            <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+          </div>
+
+
+          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [showLabel]="false"
+            [autoFocus]="true"></app-job-search>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<app-job-overview [id]="fsid" (setOnSelect)="onSelect($event)" [active]="active" *ngIf="fsid" [goBack]="goBackToTicket"
-  [showTicket]="goBackToTicket"></app-job-overview>
 
-<app-ticket-overview [id]="id" (setOnSelect)="onSelect($event)" [active]="active" *ngIf="!fsid" [showJob]="showJob"
+<app-ticket-overview [id]="id" (setOnSelect)="onSelect($event)" [active]="active" [showJob]="showJob"
   [onNavChange]="onNavChange"></app-ticket-overview>

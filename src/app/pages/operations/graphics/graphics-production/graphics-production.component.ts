@@ -4,6 +4,12 @@ import { GraphicsService } from '@app/core/api/operations/graphics/graphics.serv
 import { SharedModule } from '@app/shared/shared.module';
 import { QueueSelectionService } from './queue-selection/queue-selection.component';
 import { GraphicsBomModalService } from './graphics-bom-modal/graphics-bom-modal.component';
+import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import { CompleteService } from './complete/complete.component';
+import { WebsocketService } from '@app/core/services/websocket.service';
+
+const GRAPHICS_PRODUCTION = 'GRAPHICS PRODUCTION';
 
 @Component({
     standalone: true,
@@ -19,23 +25,59 @@ export class GraphicsProductionComponent implements OnInit {
         public router: Router,
         public graphicsService: GraphicsService,
         private queueSelectionService: QueueSelectionService,
-        private graphicsBomModalService: GraphicsBomModalService
+        private graphicsBomModalService: GraphicsBomModalService,
+        private commentsModalService: CommentsModalService,
+        private completeService: CompleteService,
+        private websocketService: WebsocketService,
+
     ) {
+        this.websocketService = websocketService;
+
+        //watch for changes if this modal is open
+        //changes will only occur if modal is open and if the modal equals to the same qir number
+        this.websocketService.multiplex(
+            () => ({ subscribe: GRAPHICS_PRODUCTION }),
+            () => ({ unsubscribe: GRAPHICS_PRODUCTION }),
+            (message) => message.type === GRAPHICS_PRODUCTION
+        )
+            .subscribe(data => {
+                this.getData(false);
+            });
     }
 
     ngOnInit(): void {
         this.getData()
     }
 
-    openComplete(item){}
-    openComments(item){}
-    
+    send() {
+        this.websocketService.next({
+            type: GRAPHICS_PRODUCTION
+        });
+    }
+
+    openComplete(item) {
+        const modalRef = this.completeService.open(item, item.queueNames);
+        modalRef.result.then((data: any) => {
+            this.getData(false);
+            this.send();
+        }, () => { });
+
+    }
+
+    openComments(item) {
+        let modalRef = this.commentsModalService.open(item.graphicsWorkOrder, 'Graphics')
+        modalRef.result.then((result: any) => {
+            this.getData(false);
+            this.send();
+        }, () => { });
+    }
+
     data: any
 
     isLoading = false;
-    async getData() {
+    async getData(showIsLoading = true) {
         try {
-            this.isLoading = true;
+            this.isLoading = showIsLoading;
             this.data = await this.graphicsService.getGraphicsProduction();
             this.isLoading = false;
         } catch (err) {
@@ -51,14 +93,16 @@ export class GraphicsProductionComponent implements OnInit {
         const modalRef = this.queueSelectionService.open(row, this.data.queueNames);
 
         modalRef.result.then((result: any) => {
-            this.getData();
+            this.getData(false);
+            this.send();
         }, () => { });
     }
 
     async openGraphicsBom(row) {
         const modalRef = this.graphicsBomModalService.open(row.graphicsWorkOrder);
         modalRef.result.then((result: any) => {
-            this.getData();
+            this.getData(false);
+            this.send();
         }, () => { });
     }
 }

@@ -4,8 +4,6 @@ import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { PlacardFormComponent } from '@app/pages/operations/forms/placard/placard-form/placard-form.component';
-import { IPlacardForm } from '@app/pages/operations/forms/placard/placard-form/placard-form.type';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
 import { PlacardService } from '@app/core/api/operations/placard/placard.service';
 import moment from 'moment';
 import { TokenStorageService } from '@app/core/services/token-storage.service';
@@ -55,9 +53,10 @@ export class PlacardModalComponent {
 
     form: any;
 
+    id
+
     setFormEmitter($event) {
         this.form = $event;
-        console.log(this.form)
         this.form.patchValue({
             created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
             created_by: this.userData.id,
@@ -113,15 +112,56 @@ export class PlacardModalComponent {
             return;
         };
 
+        if(this.id){
+            this.update()
+        }else{
+            this.create()
+        }
+    }
+
+    async create(){
         try {
             this.isLoading = true;
-            await this.api.create(this.form.value);
+            let { insertId } = await this.api.create(this.form.value);
+            this.id = insertId
+            this.onPrint()
             this.isLoading = false;
             this.toastrService.success('Successfully Created');
-            this.close();
         } catch (err) {
             this.isLoading = false;
         }
+    }
+
+    async update(){
+        try {
+            this.isLoading = true;
+             await this.api.update(this.id, this.form.value);
+            this.onPrint()
+            this.isLoading = false;
+            this.toastrService.success('Successfully Updated');
+        } catch (err) {
+            this.isLoading = false;
+        }
+    }
+
+
+    onPrint() {
+        var printContents = document.getElementById('pickSheet').innerHTML;
+        var popupWin = window.open('', '_blank', 'width=1000,height=600');
+        popupWin.document.open();
+        var pathCss = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css';
+        popupWin.document.write(
+            '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
+            pathCss +
+            '" /></head><body onload="window.print()">' +
+            printContents +
+            '</body></html>'
+        );
+        popupWin.document.close();
+        popupWin.onload = function () {
+            popupWin.print();
+            popupWin.close();
+        };
     }
 
 }

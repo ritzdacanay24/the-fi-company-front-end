@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
 import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
-import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
+import { AddTagFn, NgSelectComponent } from '@ng-select/ng-select/lib/ng-select.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { JobService } from '@app/core/api/field-service/job.service';
 
@@ -40,6 +40,7 @@ export class JobSearchComponent implements OnInit {
   @Input() openOnEnter: boolean = false;
   @Input() editableSearchTerm: boolean = false;
   @Input() clearSearch: boolean = false;
+  @Input() autoFocus: boolean = false;
 
   data$: Observable<any[]>;
   dataLoading = false;
@@ -49,7 +50,6 @@ export class JobSearchComponent implements OnInit {
   @Output() notifyParentItsLoading: EventEmitter<any> = new EventEmitter();
 
   getSelectedValue(data) {
-    console.log(data)
     this.notifyParent.emit(data);
 
     if (this.clearSearch)
@@ -58,6 +58,16 @@ export class JobSearchComponent implements OnInit {
       }, 0)
 
   }
+
+  @ViewChild('select') ngSelect: NgSelectComponent;
+  ngAfterViewInit() {
+    if (this.autoFocus) {
+      setTimeout(() => {
+        this.ngSelect.focus();
+      });
+    }
+  }
+
 
   resetCalculations() {
 

@@ -69,11 +69,28 @@ export class WorkOrderInfoModalComponent {
     columnDefs: any = [
         { field: "wod_part", headerName: "Part #", filter: "agMultiColumnFilter" },
         { field: "WOD_QTY_ISS", headerName: "Qty Issued", filter: "agTextColumnFilter" },
-        { field: "WOD_QTY_REQ", headerName: "Qty Required", filter: "agTextColumnFilter" },
+        {
+            field: "WOD_QTY_REQ", headerName: "Qty Required", filter: "agTextColumnFilter",
+            cellClass: params => {
+                return params.value === 0 ? 'text-danger' : '';
+            },
+        },
         { field: "TOTALONHAND", headerName: "Qty On Hand", filter: "agTextColumnFilter" },
         { field: "QTY_OPEN", headerName: "Qty Open", filter: "agTextColumnFilter" },
         { field: "TOTALAVAIL", headerName: "Qty Available", filter: "agTextColumnFilter" },
-        { field: "LINESTATUS", headerName: "% Complete", filter: "agTextColumnFilter", valueFormatter: params => params.data.LINESTATUS.toFixed(2) }
+        {
+            field: "LINESTATUS", headerName: "% Complete", filter: "agTextColumnFilter", valueFormatter: params => params.data.LINESTATUS.toFixed(2),
+            cellClass: params => {
+                if (params.data.WOD_QTY_REQ === 0) {
+                    return ['bg-warning-subtle text-warning'];
+                } else if (params.value === 100) {
+                    return ['bg-success-subtle text-success'];
+                } else if (params.value > 100) {
+                    return ['bg-danger-subtle text-danger'];
+                }
+                return null;
+            }
+        }
     ];
 
     percentComplete = 0.00

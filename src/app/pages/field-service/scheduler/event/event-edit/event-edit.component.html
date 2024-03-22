@@ -1,11 +1,11 @@
 <div class="row" *ngIf="!id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
@@ -29,7 +29,7 @@
         <app-event-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-event-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
       </div>
     </div>

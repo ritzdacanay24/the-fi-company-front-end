@@ -51,6 +51,16 @@ export class NcrOverviewComponent implements OnInit {
 
   title = "NCR Overview";
 
+  onNavChange($event) {
+    this.router.navigate(['.'], {
+      queryParams: {
+        active: $event?.nextId
+      },
+      relativeTo: this.activatedRoute
+      , queryParamsHandling: 'merge'
+    });
+  }
+
   @Input() goBack: Function = () => {
     if (this.goBackUrl) {
       this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge', queryParams: { active: null } });

@@ -5,13 +5,13 @@ import { ToastrService } from 'ngx-toastr';
 import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { IgtTransferService } from '@app/core/api/operations/igt-transfer/igt-transfer.service';
 import { NAVIGATION_ROUTE } from '../rfq-constant';
 import { RfqFormComponent } from '../rfq-form/rfq-form.component';
 import { SoSearchComponent } from '@app/shared/components/so-search/so-search.component';
 import { RfqService } from '@app/core/api/rfq/rfq-service';
 import { first } from 'rxjs';
 import { FormArray, FormBuilder, Validators } from '@angular/forms';
+
 
 @Component({
   standalone: true,
@@ -26,7 +26,7 @@ import { FormArray, FormBuilder, Validators } from '@angular/forms';
 export class RfqCreateComponent {
   constructor(
     private router: Router,
-    private api: IgtTransferService,
+    private api: RfqService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
     private rfqService: RfqService,
@@ -35,6 +35,8 @@ export class RfqCreateComponent {
 
   ngOnInit(): void {
   }
+
+  viewInfo = false;
 
   title = "Create RFQ";
 
@@ -51,13 +53,10 @@ export class RfqCreateComponent {
   }
 
   setFormEmitter($event) {
-    console.log($event)
     this.form = $event;
     this.form.patchValue({
-      main: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id,
-      }
+      created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+      created_by: this.authenticationService.currentUserValue.id
     }, { emitEvent: false })
 
   }
@@ -69,9 +68,19 @@ export class RfqCreateComponent {
       return;
     };
 
+    let data = this.form.value;
+
+    for (const property in data) {
+      if (Array.isArray(data[property])) {
+        data[property] = JSON.stringify(data[property]);
+      } else if (typeof data[property] === 'object' && data[property] !== null) {
+        data[property] = JSON.stringify(data[property]);
+      }
+    }
+
     try {
       this.isLoading = true;
-      let { insertId } = await this.api.create(this.form.value);
+      let { insertId } = await this.api.create(data);
 
       this.isLoading = false;
       this.toastrService.success('Successfully Create');
@@ -90,10 +99,7 @@ export class RfqCreateComponent {
   lines: FormArray;
 
   notifyParent($event) {
-    console.log($event.sod_nbr)
-
     this.rfqService.searchBySoAndSoLine($event.sod_nbr, $event.sod_line).pipe(first()).subscribe(data => {
-
 
       /**
        * Patch values
@@ -148,7 +154,7 @@ export class RfqCreateComponent {
 
   public setSubjectLine() {
     this.setValue('subjectLine', `PICK UP: ${this.form.value.sod_nbr || ''} ${this.form.value.dest_companyName || ''}`)
-    this.setValue('puNumber', `${this.form.value.sod_nbr|| ''}`)
+    this.setValue('puNumber', `${this.form.value.sod_nbr || ''}`)
   }
 
   public setValue(column, value) {

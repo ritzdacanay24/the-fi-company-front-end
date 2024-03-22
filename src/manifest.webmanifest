@@ -1,0 +1,67 @@
+{
+  "name": "dashboard",
+  "short_name": "dashboard",
+  "theme_color": "#2e3230",
+  "background_color": "#2e3230",
+  "display": "standalone",
+  "display_override": ["tabbed"],
+  "permissions": ["tabs"],
+  "id": "/dist/web/",
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://dashboard.eye-fi.com/dist/web/manifest.webmanifest"
+    }
+  ],
+  "url_handlers": [
+    {
+      "origin": "https://dashboard.eye-fi.com"
+    },
+    {
+      "origin": "https://dashboard.eye-fi.com/dist/web"
+    }
+  ],
+  "background": {
+    "scripts": ["assets/js/background.js"]
+  },
+  "scope": ".",
+  "start_url": "./dashboard",
+  "icons": [
+    {
+      "src": "assets/icons/android-icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/android-icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/android-icon-120x120.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/android-icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/android-icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/android-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}

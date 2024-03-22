@@ -1,0 +1,117 @@
+<div class="modal-header">
+    <div class="form-icon w-100">
+        <input (keydown)="keyDown($event)" (keyup.enter)="test()" type="search"
+            class="form-control form-control-icon form-control-lg" placeholder="Search Menu" [(ngModel)]="query"
+            (ngModelChange)="arrowkeyLocation = 0">
+        <i class="ri-search-2-line"></i>
+    </div>
+</div>
+<div class="modal-body mh-250 mt-n3" style="min-height:350px">
+    <div style="max-height:500px;overflow: auto;" *ngIf="query">
+        <ng-container *ngIf="menuItems | filterPeople:query:'link' as result">
+
+            <ul class="list-group">
+                <li class="list-group-item" (click)="go(row)" [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == i}"
+                    (mouseenter)="row.show = true;" (mouseleave)="row.show = false;"
+                    *ngFor="let row of $any(menuItems) | filterPeople:query:'link'; let i = index" id="test_{{i}}">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 avatar-xs">
+                                    <div class="avatar-title bg-primary-subtle text-primary rounded">
+                                        <i class="ri-file-line"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 ms-3">
+                                    <h6 class="fs-14 mb-0">{{row['label'] | translate}}</h6>
+                                    <small data-id="testd_{{i}}">{{row['link']}}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button *ngIf="arrowkeyLocation == i"
+                                class="p-2 py-1 btn rounded-pill btn-ghost-primary waves-effect waves-light material-shadow-none">
+                                <i class="las la-level-up-alt f-14"></i>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="p-5 text-center" *ngIf="result?.length == 0">
+                <i class="h1 las la-search"></i>
+                <h4>No results for "{{query}}"</h4>
+                <p>Please check your search criteria</p>
+            </div>
+        </ng-container>
+    </div>
+
+    <div *ngIf="!query && !searches[0].lines?.length && !searches[1].lines.length ">
+        <div class="p-5 text-center">
+            <p>No recent searches</p>
+        </div>
+    </div>
+    <div *ngIf="!query && (searches[0].lines.length || searches[1].lines.length )"
+        style="max-height:500px;overflow: auto;">
+        <div class="mt-3">
+
+            <ul class="list-group" class="list-group list-group mb-2" *ngFor="let item of searches; let ii = index">
+                <li class="list-group-item text-primary bg-light">{{item.name}}</li>
+
+                <li class="list-group-item" *ngFor="let row of item.lines | filterPeople:query:'link'; let i = index"
+                    id="test_{{row.index}}" (mouseenter)="row.show = true;arrowkeyLocation = row.index"
+                    (mouseleave)="row.show = false;" (click)="go(row)"
+                    [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == row.index }">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 avatar-xs">
+                                    <div class="avatar-title bg-primary-subtle text-primary rounded">
+                                        <i [ngClass]="row.icon"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 ms-3">
+                                    <h6 class="fs-14 mb-0">{{row?.label | translate}}</h6>
+                                    <small data-id="testd_{{row.index}}">{{row['link']}}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+
+                            <button (click)="addFavorite(row, ii, i);$event.stopPropagation()"
+                                *ngIf="item.name == 'Recent Searches'" type="button"
+                                class="p-2 py-1 btn rounded-pill btn-ghost-primary waves-effect waves-light material-shadow-none">
+                                <i class="ri-star-line"></i>
+                            </button>
+                            
+                            <!-- ghost Buttons -->
+                            <button (click)="$event.stopPropagation();removeFavoite(row, ii, i)"
+                                *ngIf="item.name == 'Favorites'" type="button"
+                                class="p-2 py-1 btn rounded-pill btn-ghost-primary waves-effect waves-light material-shadow-none">
+                                <i class="ri-close-line f-14"></i>
+                            </button>
+
+                            <button (click)="$event.stopPropagation();removeRecentSearch(row, ii, i)"
+                                *ngIf="item.name == 'Recent Searches'" type="button"
+                                class="p-2 py-1 btn rounded-pill btn-ghost-primary waves-effect waves-light material-shadow-none">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+
+
+        </div>
+    </div>
+
+
+
+</div>
+<div class="modal-footer d-flex text-center">
+    <span class="badge text-bg-dark"><i class="las la-level-up-alt"></i></span>to select
+    <span class="badge text-bg-dark ms-3"><i class="las la-arrow-up"></i></span>
+    <span class="badge text-bg-dark"><i class="las la-arrow-down"></i></span>to navigate
+    <span class="badge text-bg-dark ms-3">esc</span>to close
+</div>

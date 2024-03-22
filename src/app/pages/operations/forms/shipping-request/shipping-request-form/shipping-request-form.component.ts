@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { IShippingRequestForm } from './shipping-request-form.type';
 import { ControlsOf } from 'src/assets/js/util/_formGroup';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
+import { AutosizeModule } from 'ngx-autosize';
 
 @Component({
   standalone: true,
@@ -16,7 +17,8 @@ import { AddressSearchComponent } from '@app/shared/components/address-search/ad
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    AddressSearchComponent
+    AddressSearchComponent,
+    AutosizeModule
   ],
   selector: 'app-shipping-request-form',
   templateUrl: './shipping-request-form.component.html',
@@ -78,7 +80,7 @@ export class ShippingRequestFormComponent {
     createdDate: new FormControl(''),
     createdById: new FormControl(null),
     serviceType: new FormControl('', [Validators.required]),
-    completedDate: new FormControl(''),
+    completedDate: new FormControl(null),
     completedBy: new FormControl(''),
     trackingNumber: new FormControl(''),
     active: new FormControl(1),
@@ -108,7 +110,7 @@ export class ShippingRequestFormComponent {
 
   notifyParent($event) {
     this.form.patchValue({
-      streetAddress: $event.address?.fullStreetName,
+      streetAddress: $event?.fullStreetName,
       city: $event.address?.municipality,
       state: $event.address?.countrySubdivisionCode || null,
       zipCode: $event.address?.postalCode,

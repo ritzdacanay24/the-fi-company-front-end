@@ -11,6 +11,7 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
+import { TicketModalService } from '../ticket-modal/ticket-modal.component';
 
 @Component({
   standalone: true,
@@ -29,6 +30,7 @@ export class TicketListComponent implements OnInit {
     private api: WorkOrderService,
     public router: Router,
     private activatedRoute: ActivatedRoute,
+    private ticketModalService: TicketModalService
   ) {
   }
 
@@ -50,13 +52,13 @@ export class TicketListComponent implements OnInit {
     {
       field: '', headerName: 'View', filter: 'agNumberColumnFilter', cellRenderer: LinkRendererComponent,
       cellRendererParams: {
-        onClick: e => { this.openWorkOrder(e.rowData.id) },
+        onClick: e => { this.openWorkOrder(e.rowData.fs_scheduler_id) },
         value: "View"
       },
       pinned: 'left',
       maxWidth: 115,
       minWidth: 115,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       floatingFilter: false
     },
     { field: 'id', headerName: 'Ticket ID', filter: 'agMultiColumnFilter' },
@@ -105,6 +107,8 @@ export class TicketListComponent implements OnInit {
       });
     }
   };
+
+  searchName = ''
 
   isAll = false;
 
@@ -199,6 +203,18 @@ export class TicketListComponent implements OnInit {
         gridParams
       }
     });
+
+
+    // this.ticketModalService.open(id)
+    // let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    // this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
+    //   queryParamsHandling: 'merge',
+    //   queryParams: {
+    //     id: id,
+    //     gridParams
+    //   }
+    // });
+
   }
 
 

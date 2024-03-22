@@ -17,7 +17,7 @@
       <p>Email sent on: <b>{{f.email_sent_datetime.value}} </b></p>
     </div>
     <div class="col-6 mb-3 text-end">
-      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:120px">
+      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:138px" class="img-fluid">
     </div>
   </div>
 
@@ -51,11 +51,11 @@
             <td> {{f.to_location?.value}} </td>
             <td>
               <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
-                placeholder="Enter pallet count" [ngClass]="{ 'is-invalid': submitted && f.pallet_count.errors }" />
+                placeholder="Enter pallet count" />
             </td>
             <td>
               <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
-                placeholder="Enter serial numbers" [ngClass]="{ 'is-invalid': submitted && f.serial_numbers.errors }" />
+                placeholder="Enter serial numbers"/>
             </td>
           </tr>
         </tbody>

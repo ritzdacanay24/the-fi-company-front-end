@@ -1,0 +1,248 @@
+<div class="modal-header">
+  <div style="width:350px">
+    <app-so-search (notifyParent)="notifyParent($event)" [value]="soLine" [showLabel]="false"
+      [editableSearchTerm]="true"></app-so-search>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body" *ngIf="isLoading">
+  <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+</div>
+
+
+<div class="modal-body py-0" *ngIf="!isLoading">
+  <div class="row">
+
+    <div class="col-xxl-3 col-lg-3 col-md-3 mb-3 d-none d-lg-block">
+      <div class="list-group  d-flex justify-content-between align-items-center">
+        <button type="button" class="list-group-item list-group-item-action pointer" *ngFor="let row of listOptions"
+          [ngbScrollSpyItem]="[spy, row.ngbScrollSpyItem]">
+          {{row.name}}
+        </button>
+      </div>
+
+    </div>
+    <!-- end col -->
+    <div class="col">
+      <div ngbScrollSpy #spy="ngbScrollSpy" rootMargin="16px" style="height: calc(100vh - 246px);" class="p-3">
+        <form [formGroup]="form">
+
+
+          <div class="row mb-3 d-flex align-items-center" ngbScrollSpyFragment="items-0">
+            <label class="col-sm-3 col-form-label">Hot Order</label>
+            <div class="col-sm-9">
+              <div class="form-check form-check-flat form-check-primary">
+                <label class="form-check-label">
+                  <input type="checkbox" class="form-check-input" formControlName="hot_order">
+                  <i class="input-frame"></i>
+                </label>
+              </div>
+              <small>This order will be highlighted in red and pinned to the top</small>
+            </div>
+          </div>
+
+          <div class="row mb-3" ngbScrollSpyFragment="items-1">
+            <label class="col-sm-3 col-form-label">Owner</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" formControlName="userName" placeholder="Enter owner">
+            </div>
+          </div>
+
+          <div class="row mb-3 d-flex align-items-center" ngbScrollSpyFragment="items-2">
+            <label class="col-sm-3 col-form-label">Clear to build status</label>
+            <div class="col-sm-9">
+              <div class="form-check form-check-flat form-check-primary form-check-inline"
+                *ngFor="let row of ['Miss', 'CTB in Period', 'At Risk', 'NA']">
+                <label class="form-check-label">
+                  <input type="radio" class="form-check-input" name="clear_to_build_status"
+                    id="clear_to_build_status-{{row}}" [value]="row" formControlName="clear_to_build_status">
+                  <i class="input-frame"></i>
+                  {{row}}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3 " ngbScrollSpyFragment="items-3">
+            <label class="col-sm-3 col-form-label">Late Reason Codes</label>
+            <div class="col-sm-9">
+              <ng-select [items]="lastReasonCodes" bindLabel="name" bindValue="name" formControlName="lateReasonCode"
+                placeholder="Select reason code">
+              </ng-select>
+            </div>
+          </div>
+
+          <div class="row mb-3 d-flex align-items-center" ngbScrollSpyFragment="items-4">
+            <label class="col-sm-3 col-form-label">Late Reason Codes (Performance Date)</label>
+            <div class="col-sm-9">
+              <ng-select [items]="lastReasonCodes" bindLabel="name" bindValue="name"
+                formControlName="lateReasonCodePerfDate" placeholder="Select reason code">
+              </ng-select>
+            </div>
+          </div>
+
+          <div class="border border-secondary p-3 mb-3" ngbScrollSpyFragment="items-5">
+            <p class="mb-3 fw-bolder fs-5">Ship Account Info</p>
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Arrival Date</label>
+              <div class="col-sm-9">
+                <input type="date" placeholder="Enter customer reported date" class="form-control"
+                  formControlName="arrivalDate">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Ship via account</label>
+              <div class="col-sm-9">
+                <ng-select [items]="accounts" bindLabel="value" formControlName="shipViaAccount"
+                  placeholder="Select ship account">
+                </ng-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-secondary p-3 mb-3" ngbScrollSpyFragment="items-6">
+            <p class="mb-3 fw-bolder fs-5">Container Info</p>
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Container</label>
+              <div class="col-sm-9">
+                <textarea type="text" class="form-control" formControlName="container" autosize [minRows]="2"
+                  placeholder="Enter container info"></textarea>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Container Due Date</label>
+              <div class="col-sm-9">
+                <input type="text" class="form-control" formControlName="container_due_date">
+              </div>
+            </div>
+          </div>
+
+
+          <div class="border border-secondary p-3 mb-3" ngbScrollSpyFragment="items-7">
+            <p class="mb-3 fw-bolder fs-5">TJ Info</p>
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">TJ PO Number</label>
+              <div class="col-sm-9">
+                <input type="text" class="form-control" formControlName="tj_po_number" placeholder="Enter TJ PO number">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">TJ Due Date</label>
+              <div class="col-sm-9">
+                <input type="date" class="form-control" formControlName="tj_due_date">
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3" ngbScrollSpyFragment="items-8">
+            <label class="col-sm-3 col-form-label">G2E Comments</label>
+            <div class="col-sm-9">
+              <textarea type="text" class="form-control" formControlName="g2e_comments" autosize [minRows]="2"
+                placeholder="Enter G2E comments"></textarea>
+            </div>
+          </div>
+
+          <div class="row mb-3 d-flex align-items-center" ngbScrollSpyFragment="items-9">
+            <label class="col-sm-3 col-form-label">Shortages Review</label>
+            <div class="col-sm-9">
+
+              <div class="form-check form-check-flat form-check-primary">
+                <label class="form-check-label">
+                  <input type="checkbox" class="form-check-input" formControlName="shortages_review">
+                  <i class="input-frame"></i>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3" ngbScrollSpyFragment="items-10">
+            <label class="col-sm-3 col-form-label">Pallet Count</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" formControlName="pallet_count" placeholder="Enter pallet count">
+            </div>
+          </div>
+
+          <div class="border border-secondary p-3 mb-3" ngbScrollSpyFragment="items-11">
+            <p class="mb-3 fw-bolder fs-5">Recovery Info</p>
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Recovery Date</label>
+              <div class="col-sm-9">
+                <input type="date" class="form-control" formControlName="recoveryDate">
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-sm-3 col-form-label">Recovery Comment</label>
+              <div class="col-sm-9">
+                <textarea type="text" class="form-control" formControlName="recoveryDateComment"
+                  placeholder="Enter recovery comment" autosize [minRows]="2"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="border border-secondary p-3" ngbScrollSpyFragment="items-12">
+            <p class="mb-3 fw-bolder fs-5">Inspection Info</p>
+            <div class="row mb-3 d-flex align-items-center">
+              <label class="col-sm-3 col-form-label">Inspection Required?</label>
+              <div class="col-sm-9">
+                <div class="form-check form-check-flat form-check-primary form-check-inline"
+                  *ngFor="let row of ['Yes', 'No', 'NA']">
+                  <label class="form-check-label">
+                    <input type="radio" class="form-check-input" name="source_inspection_required"
+                      id="source_inspection_required-{{row}}" [value]="row"
+                      formControlName="source_inspection_required">
+                    <i class="input-frame"></i>
+                    {{row}}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3 d-flex align-items-center">
+              <label class="col-sm-3 col-form-label">Inspection Completed?</label>
+              <div class="col-sm-9">
+                <div class="form-check form-check-flat form-check-primary form-check-inline"
+                  *ngFor="let row of ['Yes', 'No', 'NA']">
+                  <label class="form-check-label">
+                    <input type="radio" class="form-check-input" name="source_inspection_completed"
+                      id="source_inspection_completed-{{row}}" [value]="row"
+                      formControlName="source_inspection_completed">
+                    <i class="input-frame"></i>
+                    {{row}}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3 d-flex align-items-center">
+              <label class="col-sm-3 col-form-label">Inspection Waived</label>
+              <div class="col-sm-9">
+                <div class="form-check form-check-flat form-check-primary form-check-inline"
+                  *ngFor="let row of ['Yes', 'No', 'NA']">
+                  <label class="form-check-label">
+                    <input type="radio" class="form-check-input" name="source_inspection_waived"
+                      id="source_inspection_waived-{{row}}" [value]="row" formControlName="source_inspection_waived">
+                    <i class="input-frame"></i>
+                    {{row}}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+      </div>
+      <!-- end col -->
+    </div>
+  </div>
+  <!-- end row -->
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-light" (click)="dismiss()">Close</button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="loadingIndicator">
+    Save
+  </button>
+</div>

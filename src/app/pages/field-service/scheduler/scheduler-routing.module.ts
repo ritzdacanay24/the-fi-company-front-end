@@ -6,6 +6,7 @@ import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 import { SchedulerComponent } from './scheduler.component';
 import { CalendarComponent } from './calendar/calendar.component';
 import { TechScheduleComponent } from './tech-schedule/tech-schedule.component';
+import { TechSchedulePageComponent } from './tech-schedule/tech-schedule-page/tech-schedule-page.component';
 
 const routes: Routes = [
   {
@@ -23,7 +24,7 @@ const routes: Routes = [
       },
       {
         path: 'tech-schedule',
-        component: TechScheduleComponent
+        component: TechSchedulePageComponent
       }
     ]
   }

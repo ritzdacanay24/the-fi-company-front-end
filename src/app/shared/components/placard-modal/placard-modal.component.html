@@ -16,7 +16,79 @@
         <app-placard-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-placard-form>
     </div>
     <div class="modal-footer">
-        <button (click)="dismiss()" type="button" class="btn btn-gray">Close</button>
-        <button (click)="onSubmit()" type="button" class="btn btn-primary">Submit</button>
+        <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+        <button (click)="onSubmit()" type="button" class="btn btn-primary">Save & Print</button>
+    </div>
+</div>
+
+<div id="pickSheet" class="d-none d-print-block">
+    <div class="margin-bottom-10" style="margin-bottom:20px">
+        <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+            style="width: 230px;" />
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered" style="font-size:25px; font-weight:600;">
+            <thead>
+                <tr>
+                    <td style="width:43%">Created on</td>
+                    <td>{{form?.value?.created_date}}</td>
+                </tr>
+                <tr>
+                    <td style="width:43%">Customer</td>
+                    <td>{{form?.value?.customer_name}}</td>
+                </tr>
+                <tr>
+                    <td>Eye-Fi W.O.#</td>
+                    <td>{{form?.value?.eyefi_wo_number}}</td>
+                </tr>
+                <tr>
+                    <td>P.O. #</td>
+                    <td>{{form?.value?.po_number}}</td>
+                </tr>
+                <tr>
+                    <td>Eye-Fi S.O.#</td>
+                    <td>{{form?.value?.eyefi_so_number}}</td>
+                </tr>
+                <tr>
+                    <td>Customer CO#/POR#/SO#</td>
+                    <td>{{form?.value?.customer_co_por_so}}</td>
+                </tr>
+                <tr>
+                    <td>Description</td>
+                    <td>{{form?.value?.description}}</td>
+                </tr>
+                <tr>
+                    <td>Eye-Fi P/N</td>
+                    <td>{{form?.value?.eyefi_part_number}}</td>
+                </tr>
+                <tr>
+                    <td>Customer P/N</td>
+                    <td>{{form?.value?.customer_part_number}}</td>
+                </tr>
+                <tr>
+                    <td>Location</td>
+                    <td>{{form?.value?.location}}</td>
+                </tr>
+                <tr>
+                    <td>EyeFi Serial Tag #(s)</td>
+                    <td>{{form?.value?.eyefi_serial_tag}}</td>
+                </tr>
+                <tr>
+                    <td>Customer Serial Tag #(s)</td>
+                    <td>{{form?.value?.customer_serial_tag}}</td>
+                </tr>
+                <tr>
+                    <td>Qty</td>
+                    <td>{{form?.value?.qty}}</td>
+                </tr>
+            </thead>
+            <tr style="border: none;">
+                <td class="text-center" colspan="2" rowspan="3" style="border: none;">
+                    <div>
+                        {{form?.value?.label_count}} of {{form?.value?.total_label_count}}
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 </div>

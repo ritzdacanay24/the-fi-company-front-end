@@ -38,8 +38,6 @@ export class TicketEventCreateComponent {
 
   async onSubmit() {
     this.submitted = true;
-
-    console.log(this.form)
     if (this.form.invalid) return;
 
     try {

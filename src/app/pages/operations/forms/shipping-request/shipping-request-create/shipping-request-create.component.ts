@@ -32,7 +32,7 @@ export class ShippingRequestCreateComponent {
   ngOnInit(): void {
   }
 
-  title = "Create Customer";
+  title = "Create Shipping Request";
 
   form: MyFormGroup<IShippingRequestForm>;
 

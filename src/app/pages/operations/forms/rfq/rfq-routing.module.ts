@@ -4,8 +4,7 @@ import { NgModule } from '@angular/core';
 import { RfqComponent } from './rfq.component';
 import { RfqListComponent } from './rfq-list/rfq-list.component';
 import { RfqCreateComponent } from './rfq-create/rfq-create.component';
-// import { PlacardCreateComponent } from './placard-create/placard-create.component';
-// import { PlacardEditComponent } from './placard-edit/placard-edit.component';
+import { RfqEditComponent } from './rfq-edit/rfq-edit.component';
 
 const routes: Routes = [
   {
@@ -21,10 +20,10 @@ const routes: Routes = [
         path: 'list',
         component: RfqListComponent
       },
-      // {
-      //   path: 'edit',
-      //   component: PlacardEditComponent
-      // },
+      {
+        path: 'edit',
+        component: RfqEditComponent
+      },
       {
         path: 'create',
         component: RfqCreateComponent

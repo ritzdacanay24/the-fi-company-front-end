@@ -8,6 +8,8 @@ import { RmaFormComponent } from '../rma-form/rma-form.component';
 import { NAVIGATION_ROUTE } from '../rma-constant';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { RmaService } from '@app/core/api/quality/rma.service';
 
 @Component({
   standalone: true,
@@ -20,7 +22,7 @@ export class RmaCreateComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
-    private api: CustomerService,
+    private api: RmaService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
   ) { }
@@ -56,17 +58,23 @@ export class RmaCreateComponent {
     } catch (err) { }
   }
 
+  setFormEmitter($event) {
+    this.form = $event;
+    this.form.patchValue({
+      createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+      createdBy: this.authenticationService.currentUserValue.id
+    }, { emitEvent: false })
+  }
+
   async onSubmit() {
     this.submitted = true;
 
-    this.form.patchValue({
-      job: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id
-      }
-    }, { emitEvent: false })
 
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      console.log(this.form)
+      getFormValidationErrors()
+      return
+    }
 
     try {
       this.isLoading = true;

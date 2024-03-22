@@ -1,0 +1,107 @@
+<div class="modal-header align-items-center d-flex">
+  <h4 class="modal-title mb-0" id="modal-basic-title">{{id ? 'Edit Job' : 'Create Job'}} - FSID {{data?.id}}</h4>
+
+  <div class="flex-shrink-0 ms-auto">
+    <div class="dropdown card-header-dropdown" ngbDropdown>
+      <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);" data-bs-toggle="dropdown"
+        aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+        <span class="text-muted"><i class="ri-settings-4-line align-middle me-1 fs-15"></i>Menu</span>
+      </a>
+      <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+        <button ngbDropdownItem (click)="onPrint()">
+          <span class="mdi mdi-printer me-2 text-primary"></span> Print Job
+        </button>
+        <button ngbDropdownItem (click)="duplicateJob()">
+          <span class="mdi mdi-bookmark-box-multiple-outline me-2 text-primary"></span> Duplicate Job
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-body py-0">
+  <!-- <div class="border border-3 p-3 mb-3" *ngIf="data">
+    <p class="mb-0">FSID: {{data?.id}}</p>
+    <p class="mb-0">Created by: {{data?.created_by}}</p>
+    <p class="mb-0">Created date: {{data?.created_date}}</p>
+    <p class="mb-0" *ngIf="data?.customer_cancelled">Cancellation: {{data?.cancellation_comments}}</p>
+  </div> -->
+  <app-job-form [ngStyle]="ngStyle" (setFormElements)="setFormElements($event)" [submitted]="submitted"
+    [removeTech]="removeTech" [id]="id"></app-job-form>
+</div>
+
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-light me-2 ms-auto">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary">Save</button>
+</div>
+
+
+<div class="print  d-none d-print-block" id="print">
+  <h4>Job Information</h4>
+  <h3>FSID# {{id}}</h3>
+  <table class="table table-bordered" style="font-size:16px">
+    <tr>
+      <th style="width: 200px">Install Date</th>
+      <td>{{form.value?.job?.request_date}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Install Time</th>
+      <td>{{form.value?.job?.start_time}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Requested By</th>
+      <td>{{form.value?.job?.requested_by}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sales Order Number</th>
+      <td>{{form.value?.job?.sales_order_number}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Customer CO #</th>
+      <td>{{form.value?.job?.co_number}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Property</th>
+      <td>{{form.value?.job?.property}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Service Type</th>
+      <td>{{form.value?.job?.service_type}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Customer</th>
+      <td>{{form.value?.job?.customer}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">ST</th>
+      <td>{{form.value?.job?.state}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Platform</th>
+      <td>{{form.value?.job?.platform}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sign/Theme</th>
+      <td>{{form.value?.job?.sign_theme}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Sign Type</th>
+      <td>{{form.value?.job?.sign_type}}</td>
+    </tr>
+    <tr>
+      <th style="width: 200px">Team</th>
+      <td>
+        <div *ngFor="let row of form.value?.resource">
+          <p>{{row.user}}</p>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <div class="text-center">
+    <h4>{{form.value?.job?.property}}</h4>
+    <h4>{{form.value?.job?.address1}} {{form.value?.job?.address2}}</h4>
+    <h4>{{form.value?.job?.city}}, {{form.value?.job?.state}} {{form.value?.job?.zip_code}}</h4>
+    <h4>{{form.value?.job?.property_phone}}</h4>
+  </div>
+</div>

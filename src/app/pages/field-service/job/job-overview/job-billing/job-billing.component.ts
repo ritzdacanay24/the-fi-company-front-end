@@ -5,11 +5,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { CORE_SETTINGS } from '@app/core/constants/app.config';
+import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
+import { NAVIGATION_ROUTE } from '../../job-constant';
 
 @Component({
   standalone: true,
   imports: [
-    SharedModule
+    SharedModule,
+    JobSearchComponent
   ],
   selector: 'app-job-billing',
   templateUrl: './job-billing.component.html',
@@ -24,11 +27,31 @@ export class JobBillingComponent implements OnInit {
   isLoading: boolean;
   isDarkMode: boolean;
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['id'].currentValue) {
-      this.getData('', changes['id'].currentValue, false);
+  // ngOnChanges(changes: SimpleChanges) {
+  //   // if (changes['id'].currentValue) {
+  //   //   this.getData('', changes['id'].currentValue, false);
+  //   // }
+
+  // }
+
+  @Input() goBack: Function = () => {
+    this.id = null;
+    this.data = null;
+    if (this.goBackUrl) {
+      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge' });
+    } else {
+      this.router.navigate([NAVIGATION_ROUTE.BILLING], { queryParamsHandling: 'merge', queryParams: { id: this.id, active: 1 } });
     }
   }
+
+  active
+  notifyParent($event) {
+    this.id = $event.id;
+    this.active = 1
+    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { id: this.id, active: 1 } });
+    this.getData('', this.id, false)
+  }
+
 
   data: any;
   scheduledDates: any;
@@ -44,7 +67,8 @@ export class JobBillingComponent implements OnInit {
     private _location: Location,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private activatedRoute: ActivatedRoute,
   ) { }
 
   ngAfterViewChecked() {
@@ -52,7 +76,16 @@ export class JobBillingComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  goBackUrl
+  
   ngOnInit(): void {
+
+    this.activatedRoute.queryParams.subscribe(params => {
+      this.id = params['id'];
+      this.goBackUrl = params['goBackUrl'];
+    });
+
+    if (this.id) this.getData(null, this.id, false);
   }
 
   backClicked() {

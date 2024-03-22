@@ -11,6 +11,9 @@ import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { NgxBarcode6Module } from "ngx-barcode6";
+import { CreateShortageModalService } from "../../shortages/shortage-modal/create-shortage.component";
+import { randomStr } from "src/assets/js/util/randomStr";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Injectable({
     providedIn: 'root'
@@ -43,6 +46,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
         private api: MasterSchedulingService,
         private fb: FormBuilder,
         private authenticationService: AuthenticationService,
+        private createShortageModalService: CreateShortageModalService
     ) {
     }
 
@@ -76,7 +80,47 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
 
     form: FormGroup;
 
+    shortages = []
+    generateShortage() {
+        this.shortages = [];
+        let createdDate = moment().format('YYYY-MM-DD HH:mm:ss');
+        let createdBy = this.authenticationService.currentUserValue.id;
+
+        for (var i = 0; i < this.data.details.length; i++) {
+            if (this.data.details[i].WOD_QTY_REQ - this.data.details[i].WOD_QTY_ISS > 0) {
+
+                let shortQty = this.data.details[i].WOD_QTY_REQ - this.data.details[i].WOD_QTY_ISS;
+                this.shortages.push({
+                    woNumber: this.data.details[i].wod_nbr,
+                    lineNumber: this.data.mainDetails.WO_LINE,
+                    dueDate: this.data.mainDetails.wo_due_date,
+                    createdDate: createdDate,
+                    reasonPartNeeded: 'Shortages',
+                    priority: 'false',
+                    partNumber: this.data.details[i].wod_part,
+                    qty: shortQty,
+                    createdBy: createdBy,
+                    jobNumber: randomStr(20, '12345abcde'),
+                    comments: 'Shortages automatically generated from production.',
+                    partDesc: this.data.details[i].PT_DESC1,
+                    assemblyNumber: this.data.mainDetails.wo_part,
+                    graphicsShortage: 'false',
+                    mrfId: null,
+                    mrf_line: null,
+                    isChecked: true
+                });
+            }
+        }
+
+        const modalRef = this.createShortageModalService.open(this.shortages)
+        modalRef.result.then(async (result: any) => {
+        }, () => { });
+
+
+    }
+
     comments = ""
+
 
     filterOptionns = [
         { name: 'Open Picks', checked: true },
@@ -144,13 +188,22 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
          * Validation
          */
         if (this.data.mainDetails.wo_status != 'R') {
-            alert('Work order must be in R status before printing.')
+            SweetAlert.fire({ text: 'Work order must be in R status before printing.' });
             return;
         } else if (this.errors.length > 0) {
-            alert('One of the items in this work order is not in OPS 100. Please fix before printing.')
+            SweetAlert.fire({ text: 'One of the items in this work order is not in OPS 100. Please fix before printing.' });
             return;
         } else if (this.data?.printDetails?.printedDate) {
-            if (!confirm('Did work order was already printed. You wish to re-print?')) return;
+
+            const { value: accept } = await SweetAlert.confirmV1(
+                {
+                    title: '',
+                    text: 'This work order was already printed. You wish to re-print?',
+                });
+
+
+            if (!accept) return;
+
         }
 
         /**
@@ -167,13 +220,13 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
         }
 
         try {
-            this.isLoading = true;
+            // this.isLoading = true;
             await this.api.printWorkOrder(params);
             this.onPrint();
-            this.isLoading = false;
-            this.ngbActiveModal.close(params);
+            // this.isLoading = false;
+            //this.ngbActiveModal.close(params);
         } catch (err) {
-            this.isLoading = false;
+            // this.isLoading = false;
         }
 
     }

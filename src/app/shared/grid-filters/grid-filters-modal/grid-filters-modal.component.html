@@ -1,0 +1,18 @@
+<div class="modal-header">
+    <h5 class="modal-title" id="exampleModalLabel">Grid Filters</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-250">
+    <div class="mb-3">
+        <label class="form-label">Grid Name</label>
+        <input type="text" class="form-control" [(ngModel)]="name" ngbAutofocus>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input type="text" class="form-control" [(ngModel)]="description">
+    </div>
+</div>
+<div class="modal-footer">
+    <button (click)="close()" type="button" class="btn btn-light">Close</button>
+    <button (click)="save()" type="button" class="btn btn-primary ms-auto">Save</button>
+</div>

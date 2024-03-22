@@ -12,6 +12,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
+import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
 
 @Component({
   standalone: true,
@@ -62,9 +63,8 @@ export class TicketEventReportComponent implements OnInit {
   isLoading = false;
 
   view(fsid) {
-    console.log(fsid)
     let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
-    this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
+    this.router.navigate([TICKET_NAVIGATION_ROUTE.OVERVIEW], {
       queryParamsHandling: 'merge',
       queryParams: {
         id: fsid,
@@ -72,23 +72,25 @@ export class TicketEventReportComponent implements OnInit {
         'start': this.dateFrom,
         'end': this.dateTo,
         goBackUrl: location.pathname,
-        active: 3
+        active: 2
       }
     });
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.view(e.rowData),
+        onClick: (e: any) => this.view(e.rowData.fs_scheduler_id),
         value: 'SELECT'
       },
       maxWidth: 115,
       minWidth: 115
     },
+    { field: 'fs_scheduler_id', headerName: 'FSID', filter: 'agMultiColumnFilter' },
+    { field: 'workOrderId', headerName: 'Ticket ID', filter: 'agMultiColumnFilter' },
     { field: 'label', headerName: 'Label', filter: 'agMultiColumnFilter' },
     { field: 'event_name', headerName: 'Event Name', filter: 'agMultiColumnFilter' },
     { field: 'projectStart', headerName: 'Start', filter: 'agMultiColumnFilter' },
@@ -97,8 +99,7 @@ export class TicketEventReportComponent implements OnInit {
     { field: 'mins', headerName: 'Mins', filter: 'agMultiColumnFilter' },
     { field: 'time', headerName: 'Time', filter: 'agMultiColumnFilter' },
     { field: 'userId', headerName: 'User ID', filter: 'agMultiColumnFilter' },
-    { field: 'workOrderId', headerName: 'Ticket ID', filter: 'agMultiColumnFilter' },
-    { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter' },
+    { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter', maxWidth: 300 },
     { field: 'include_calculation', headerName: 'Invlude in calculation', filter: 'agMultiColumnFilter' },
   ]
 

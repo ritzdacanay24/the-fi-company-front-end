@@ -1,0 +1,93 @@
+<div class="flex-shrink-0">
+    <div class="dropdown card-header-dropdown arrow-none" ngbDropdown container="body" ngbDropdown #myDrop="ngbDropdown"
+        [autoClose]="'outside'">
+
+        <!-- <span class="ri-filter-2-line label-icon align-middle fs-16 me-2 position-absolute top-0 start-100 translate-middle badge border border-light rounded-circle bg-danger p-1"><span class="visually-hidden">unread messages</span></span> -->
+
+        <!-- <button type="button" class="btn btn-light position-relative btn-sm">
+            Alerts <span class="position-absolute top-0 start-100 translate-middle badge border border-light rounded-circle bg-danger p-1"><span class="visually-hidden">unread messages</span></span>
+            </button>
+             -->
+
+        <button type="button" class="arrow-none btn btn-light btn-label waves-effect waves-light position-relative"
+            (click)="openUp()" data-bs-toggle="dropdown" ngbDropdownToggle>
+            <span class="ri-filter-2-line label-icon align-middle fs-16 me-2"
+                (click)="$event.stopPropagation();this.clearFilters();"> </span>
+            <span class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary"
+                *ngIf="(gridApi?.getFilterModel() | json) != '{}'" style="top:13px;right:107px;padding:3px"><span
+                    class="visually-hidden">unread messages</span></span>
+            Grid Filters
+        </button>
+
+        <!-- <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" ngbDropdownToggle (click)="openUp()">
+            <span class="text-muted"><i class="ri-settings-4-line align-middle me-1 fs-15"></i>
+                Grid Filters</span>
+            <span class="text-muted" *ngIf="(gridApi?.getFilterModel() | json) != '{}'"
+                (click)="$event.stopPropagation();this.clearFilters();">
+                <i class="ri-filter-2-line text-warning  align-middle ms-2 fs-15"></i></span>
+
+        </a> -->
+
+        <div class="dropdown-menu dropdown-menu-end py-0" ngbDropdownMenu
+            style="min-width:300px;width:300px;max-height:400px;overflow:auto">
+
+            <li class="bg-light">
+                <h5 class="dropdown-header">Filters</h5>
+            </li>
+
+            <li class="bg-light sticky-top" style="top:2px" *ngIf="defaultFilters?.length">
+                <h5 class="dropdown-header">Defaults</h5>
+            </li>
+
+            <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
+                [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
+                *ngFor="let row of defaultFilters">
+                {{row.table_name || 'No name'}}
+                <small>(Applied Filters {{checkFiltersApplied(row.data)}})</small>
+
+            </button>
+
+            <li class="bg-light sticky-top" style="top:2px" *ngIf="currentUserGrids?.length">
+                <h5 class="dropdown-header">My Filters</h5>
+            </li>
+
+            <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
+                [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
+                *ngFor="let row of currentUserGrids" id="test-{{row.id}}">
+                {{row.table_name || 'No name'}}<br />
+                <small>(Applied Filters {{checkFiltersApplied(row.data)}})</small>
+                <span class="mdi mdi-star  ms-2  float-end  text-warning" *ngIf="row.table_default"
+                    (click)="$event.stopPropagation();saveDefault(row)"></span>
+                <span class="mdi mdi-star-outline ms-2 float-end" *ngIf="!row.table_default"
+                    (click)="$event.stopPropagation();saveDefault(row)"></span>
+            </button>
+
+            <li class="bg-light sticky-top" style="top:2px" *ngIf="otherGrids?.length">
+                <h5 class="dropdown-header">Other Filter</h5>
+            </li>
+
+            <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
+                [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
+                *ngFor="let row of otherGrids" id="test-{{row.id}}">
+                {{row.table_name || 'No name'}} -
+                <small>Created by {{row.created_by_user}}</small>
+            </button>
+
+            <div class="dropdown-divider"></div>
+            <li class="bg-light sticky-top" style="bottom:2px">
+                <button ngbDropdownItem (click)="update();myDrop.close()" [disabled]="!value"><i
+                        class="mdi mdi-content-save me-2"></i> Update Current Filter</button>
+                <button ngbDropdownItem (click)="createNewView();myDrop.close()"><i
+                        class="mdi mdi-content-save-cog me-2"></i> Save as
+                    new filter</button>
+                <button ngbDropdownItem (click)="viewAll();myDrop.close()"><i class="mdi mdi-cogs me-2"></i> View
+                    All</button>
+                <button ngbDropdownItem (click)="clearFilters();myDrop.close()">
+                    Clear Filters
+                </button>
+
+            </li>
+        </div>
+    </div>
+</div>

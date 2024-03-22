@@ -1,5 +1,6 @@
 <div class="modal-header">
   <h4 class="modal-title"> Queue Selection </h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 <div class="modal-body">
   <div class="mb-3">
@@ -22,6 +23,6 @@
   </div>
 </div>
 <div class="modal-footer">
-  <button type="button" class="btn btn-gray" (click)="dismiss()">Cancel</button>
+  <button type="button" class="btn btn-light" (click)="dismiss()">Cancel</button>
   <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
 </div>

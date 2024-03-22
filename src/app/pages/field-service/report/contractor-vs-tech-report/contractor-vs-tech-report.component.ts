@@ -80,17 +80,17 @@ export class ContractorVsTechComponent implements OnInit {
   }
 
   columnDefs:any = [
-    {
-      field: "View", headerName: "View", filter: "agMultiColumnFilter",
-      pinned: "left",
-      cellRenderer: LinkRendererComponent,
-      cellRendererParams: {
-        onClick: (e: any) => this.view(e.rowData.fs_scheduler_id),
-        value: 'SELECT'
-      },
-      maxWidth: 115,
-      minWidth: 115
-    },
+    // {
+    //   field: "View", headerName: "View", filter: "agMultiColumnFilter",
+    //   pinned: "left",
+    //   cellRenderer: LinkRendererComponent,
+    //   cellRendererParams: {
+    //     onClick: (e: any) => this.view(e.rowData.fs_scheduler_id),
+    //     value: 'SELECT'
+    //   },
+    //   maxWidth: 115,
+    //   minWidth: 115
+    // },
     { field: 'request_date', headerName: 'Request Date', filter: 'agMultiColumnFilter' },
     { field: 'contractor', headerName: 'Is Contractor', filter: 'agMultiColumnFilter', cellRenderer: (params: { value: any; }) => params.value ? 'Yes' : 'No' },
     { field: 'contractor_assigned', headerName: 'Jobs Assigned To Contractor', filter: 'agMultiColumnFilter' },

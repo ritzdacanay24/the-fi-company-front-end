@@ -75,7 +75,7 @@ export class SgAssetEditComponent {
   }
 
   onPrint() {
-    let row = this.form.value;
+    let row = this.form.getRawValue();
 
 
     setTimeout(() => {

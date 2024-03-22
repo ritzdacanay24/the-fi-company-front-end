@@ -11,6 +11,11 @@ import { ReportService } from '@app/core/api/operations/report/report.service';
 import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridDateFilterdateFilter, highlightRowView, autoSizeColumns } from 'src/assets/js/util';
+import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GraphicsBomModalService } from '../graphics-production/graphics-bom-modal/graphics-bom-modal.component';
 
 @Component({
     standalone: true,
@@ -18,7 +23,9 @@ import { agGridDateFilterdateFilter, highlightRowView, autoSizeColumns } from 's
         SharedModule,
         AgGridModule,
         NgSelectModule,
-        DateRangeComponent
+        DateRangeComponent,
+        GridSettingsComponent,
+        GridFiltersComponent
     ],
     selector: 'app-graphics-demand',
     templateUrl: './graphics-demand.component.html',
@@ -29,6 +36,8 @@ export class GraphicsDemandComponent implements OnInit {
         public router: Router,
         private api: GraphicsService,
         public activatedRoute: ActivatedRoute,
+        private itemInfoModalService: ItemInfoModalService,
+        private graphicsBomModalService: GraphicsBomModalService,
     ) {
     }
 
@@ -40,27 +49,49 @@ export class GraphicsDemandComponent implements OnInit {
         this.getData()
     }
 
+    pageId = '/graphics/graphics-demand'
+
+    tableList
+
+    query
+
+    defaultFilters
+
     gridApi: any;
 
     gridColumnApi: any;
 
     id = null;
 
-    title = "Graphics Demand"
+    title = "Graphics Demand";
 
-    columnDefs:any = [
+    async openGraphicsBom(row) {
+        const modalRef = this.graphicsBomModalService.open(row);
+        modalRef.result.then((result: any) => {
+            this.getData();
+        }, () => { });
+    }
+
+    columnDefs: any = [
         {
             field: 'woNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter',
             editable: true,
             pinned: 'left',
             lockPinned: true,
-            cellRendererFramework: LinkRendererComponent,
+            cellRenderer: EditIconComponent,
             cellRendererParams: {
                 iconName: 'mdi mdi-pencil'
             },
             cellClass: 'lock-pinned'
         }
-        , { field: 'part', headerName: 'Part Needed', filter: 'agMultiColumnFilter' }
+        , {
+            field: 'part', headerName: 'Part Needed', filter: 'agMultiColumnFilter',
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                isLink: true,
+                onClick: e => this.itemInfoModalService.open(e.rowData.part),
+            }
+        }
         , { field: 'qtyNeeded', headerName: 'Qty Needed', filter: 'agTextColumnFilter', valueFormatter: params => this.formatNumber(params.data.qtyNeeded) }
         , { field: 'id', headerName: 'Id', filter: 'agTextColumnFilter', hide: true }
         , { field: 'pt_bom_code', headerName: 'BOM Code', filter: 'agTextColumnFilter', hide: false }
@@ -77,13 +108,16 @@ export class GraphicsDemandComponent implements OnInit {
         , { field: 'parentComponent', headerName: 'Parent Component', filter: 'agTextColumnFilter' }
         , { field: 'code', headerName: 'Code', filter: 'agTextColumnFilter' }
         , { field: 'so_ord_date', headerName: 'SO Ordered Date', filter: 'agDateColumnFilter', filterParams: agGridDateFilterdateFilter }
-        , { field: 'poNumber', headerName: 'PO Number', filter: 'agSetColumnFilter', hide: true }
-        , { field: 'poEnteredBy', headerName: 'PO Entered By', filter: 'agMultiColumnFilter' }
-        , { field: 'graphicsWorkOrderNumber', headerName: 'Graphics Work #', filter: 'agTextColumnFilter' }
+        , {
+            field: 'graphicsWorkOrderNumber', headerName: 'Graphics Work #', filter: 'agTextColumnFilter',
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                isLink: true,
+                onClick: e => this.openGraphicsBom(e.rowData.graphicsWorkOrderNumber),
+            }
+        }
         , { field: 'graphicsStatus', headerName: 'Graphics Status', filter: 'agSetColumnFilter' }
         , { field: 'graphicsSalesOrder', headerName: 'Graphics Sales #', filter: 'agTextColumnFilter', hide: true }
-        , { field: 'COMMENTS', headerName: 'Comments', filter: 'agSetColumnFilter', hide: true }
-        , { field: 'COMMENTSMAX', headerName: 'Recent Comment', filter: 'agTextColumnFilter', hide: true }
         , { field: 'SOItem', headerName: 'View Work Order Routing', filter: 'agTextColumnFilter' }
         , { field: 'parent_ps_end', headerName: 'PS End', filter: 'agTextColumnFilter' }
         , { field: 'so_ship', headerName: 'Ship To', filter: 'agTextColumnFilter' }

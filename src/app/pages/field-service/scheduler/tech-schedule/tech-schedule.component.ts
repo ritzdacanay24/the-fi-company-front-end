@@ -1,23 +1,27 @@
 import { CalendarEventService } from '@app/core/api/field-service/calendar-event.service';
-import { ChangeDetectorRef, Component, Input, OnInit, ViewChild } from '@angular/core';
-import { MbscEventcalendarView, MbscCalendarEvent, MbscModule, MbscEventcalendarOptions, MbscEventcalendar, MbscPopup, formatDate, MbscPopupOptions, MbscSelectOptions } from '@mobiscroll/angular';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { MbscEventcalendarView, MbscCalendarEvent, MbscModule, MbscEventcalendarOptions, MbscEventcalendar, formatDate, setOptions, MbscResource, MbscPopup, MbscPopupOptions } from '@mobiscroll/angular';
 import moment from 'moment';
-import tippy from 'tippy.js';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
-import { FieldServiceMobileService } from '@app/core/api/field-service/field-service-mobile.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TicketOverviewComponent } from '../../ticket/ticket-overview/ticket-overview.component';
 import { JobOverviewComponent } from '../../job/job-overview/job-overview.component';
-import { NAVIGATION_ROUTE } from '../../job/job-constant';
-import { NAVIGATION_ROUTE_TICKET } from '../../ticket/ticket-constant';
-import { JobModalService } from '../../job/job-modal/job-modal.service';
+import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { RootReducerState } from '@app/store';
+import { Store } from '@ngrx/store';
+import { EventModalService } from '../event/event-modal/event-modal.component';
+import { JobModalCreateService } from '../../job/job-modal-create/job-modal-create.component';
+
+import tippy from 'tippy.js';
+import { EventMenuModalService } from './event-menu-modal/event-menu-modal.component';
+import { EventModalCreateService } from '../event/event-modal-create/event-modal-create.component';
+import { isArray } from 'lodash';
+import { JobEditComponent } from '../../job/job-edit/job-edit.component';
+
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
-
-
-const today = new Date();
 
 @Component({
   standalone: true,
@@ -26,279 +30,215 @@ const today = new Date();
     MbscModule,
     NgSelectModule,
     TicketOverviewComponent,
-    JobOverviewComponent
+    JobOverviewComponent,
+    JobEditComponent
   ],
   selector: 'app-resource-by-tech',
   templateUrl: `./tech-scheduler.component.html`,
   styleUrls: [`./tech-scheduler.component.scss`]
 })
 export class TechScheduleComponent implements OnInit {
-  @ViewChild('calendar') calendarInstance: MbscEventcalendar;
-  @Input() public pageView: "hour-by-hour" | "by-day" = "by-day";
-  @Input() public view: string | any;
-  previous_fsid: any = -1;
-  instancess: any;
-
-  createGroup() {
-
-  }
-
-  onSubmitForm = () => {
-
-  }
 
   @ViewChild('popup', { static: false })
   tooltip!: MbscPopup;
-  groups: any;
-  currentView: any;
-  textColor: any;
-  default: MbscPopupOptions;
-  previousArg: string | any;
-  selectValue: string;
 
+  formatDate = formatDate;
   constructor(
     private api: SchedulerService,
     private cdref: ChangeDetectorRef,
     private router: Router,
     public activatedRoute: ActivatedRoute,
-    private fieldServiceMobileService: FieldServiceMobileService,
     private calendarEventService: CalendarEventService,
-    private jobModalService: JobModalService
+    private jobModalCreateService: JobModalCreateService,
+    private store: Store<RootReducerState>,
+    private eventModalService: EventModalService,
+    private eventMenuModalService: EventMenuModalService,
+    private eventModalCreateService: EventModalCreateService,
+    private jobModalEditService: JobModalService
   ) { }
 
-  connectingJobs: any = []
-
-  createEventForTech = ({ event }) => {
-    // this.tooltip?.close()
-    // let modalRef = this.creatEventService.open({ id: event?.id, start: event.start, end: event.end, techName: event.resource, resource_contractor: event.resoruce_title == 'Vendor' ? 1 : 0 })
-
-    // modalRef.result.then((result: Comment) => {
-    //   this.getData(false);
-    // }, () => {
-    //   this.myEvents = [...this.myEvents]
-    // });
-  }
-
-  getOccuppancy(events: any) {
-    let occuppancy: any = 0;
-    if (events) {
-      var resourceIds = [];
-      var nr = 0;
-      for (const event of events) {
-        if (resourceIds.indexOf(event.resource) < 0) {
-          nr++;
-          resourceIds = [...resourceIds, event.resource];
-        }
-      }
-      occuppancy = (nr * 100 / this.myResources.length).toFixed(0);
-    }
-    return occuppancy;
-  }
-
-  conatainsTravel(data) {
-    if (data.original?.title?.toLowerCase().includes('drive') || data.original?.title?.toLowerCase().includes('driving')) return 'car';
-    if (data.original?.title?.toLowerCase().includes('fly')) return 'airplane';
-    return ''
-  }
-
-  displayTime(data) {
-    if (data.original.totalJobs > 1) {
-      return `${data.original.totalJobs} jobs ${moment(data.original.start).format('M/D')} to ${moment(data.original.end).format('M/D')}`
-    } else {
-      return data.original.allDay ? 'All Day' : data.start
-    }
-  }
-  displayTime1(data) {
-    if (data.totalJobs > 1) {
-      return `${data.totalJobs} jobs ${moment(data.start).format('M/D')} to ${moment(data.end).format('M/D')}`
-    } else {
-      return data.allDay ? 'All Day' : data.start
-    }
-  }
-
-  isLoading = false;
   ngAfterContentChecked() {
     this.cdref?.detectChanges();
   }
 
-  myEvents: MbscCalendarEvent[] = [];
-  myResources: any = [];
+  @Input() ngStyle = { 'height': 'calc(100vh - 102px)' }
 
-  calView: MbscEventcalendarView | any = {
-    timeline: {
-      currentTimeIndicator: true,
-    },
-    eventList: {
-      type: 'month',
-      scrollable: true
+  ngOnInit(): void {
+    this.store.select('layout').subscribe((data) => {
+      setOptions({
+        theme: 'ios',
+        themeVariant: data.LAYOUT_MODE
+      });
+    })
+
+  }
+
+  @Input() condense = true
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['stadrt']) {
+      this.start = changes['start'].currentValue;
     }
+    if (changes['id']) {
+      this.id = changes['id'].currentValue;
+      if (!this.id) this.clearEventOverlay()
+      this.scrollTo()
+    }
+
+
+  }
+
+  connectingJobs: any = []
+
+  @ViewChild('calendar') calendarInstance: MbscEventcalendar;
+
+  @Output() calenderEmitter: EventEmitter<any> = new EventEmitter();
+  @Output() dateChangeEmitter: EventEmitter<any> = new EventEmitter();
+
+  isLoading = false;
+
+  myEvents: MbscCalendarEvent[] = [];
+  myResources: MbscResource[] = [];
+
+  @Input() view: MbscEventcalendarView = {
+    timeline: {
+      type: 'week',
+      size: 5,
+      eventList: true,
+      maxEventStack: 'all',
+      virtualScroll: true
+      // resolutionVertical: 'day',
+      //virtualScroll: true,
+    },
+
   };
 
+  currentView
+  @Input() id = null
+  workOrderId = null
   isStartFound: any;
   initalLoad = false;
 
-  isJsonString(str) {
-    try {
-      JSON.parse(str);
-    } catch (e) {
-      return false;
-    }
-    return true;
-  }
-
-  event_id
-  _start
-  _end
-
   active = 1
-  ngOnInit(): void {
-    //this.calView = this.isJsonString(this.routeService.queryParam('calendarView')) || this.calView;
 
-    //this.view = this.routeService.queryParam('typeOfView') || this.view;
+  @Input() start: any;
+  end: any;
 
-    this.calView.timeline.eventList = this.pageView == 'by-day' ? true : false;
-
-    this.activatedRoute.queryParams.subscribe((params: any) => {
-      this.previous_fsid = params.previous_fsid || -1
-      this.event_id = params.event_id || -1
-      this._start = params.start
-      this._end = params.end
-      this.workOrderId = params.workOrderId
-      this.id = params.id
-      this.active = Number(params['active']) || this.active;
-      this.viewing = params.viewing || ''
-      this.calView = JSON.parse(params.calView)
-      this.view = params.viewing || ''
-
-
-      // if (this.view == 'month' && params.view == 1)
-      //   this.view = 'week';
-    });
-
-
-
+  eventInstance: any
+  onPageLoading = async (args: any) => {
+    await this.getData(args.firstDay, args.lastDay)
   }
 
 
-  createJob(event) {
-    console.log(event)
-    let modalRef = this.jobModalService.open(null, moment(event.start).format('YYYY-MM-DD'), event.end, event.resource)
+  myResourcesCount = 0
+  allEmployees = []
+  myInvalids = []
+  async getData(firstDay, lastDay, clearData = true) {
 
-    modalRef.result.then((result: Comment) => {
-      this.getData()
-    }, () => { });
-  }
-
-  ngAfterViewInit() {
-
-  }
-
-  isObjEmpty(obj) {
-    return Object.keys(obj).length === 0;
-  }
-
-  start: moment.MomentInput;
-  end: moment.MomentInput;
-
-  eventInstance
-  onPageLoading = async (event: any) => {
-
-
-    this.eventInstance = event
-    //this.isStartFound = this.routeService.allQueryParams;
-
-
-    console.log(this._start, 'ffff')
-
-
-    let start = event.firstDay;
-    let end = event.lastDay;
-
-    if (!this.initalLoad && (this._start && this._end)) {
-      start = this._start
-      end = this._end
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      colors: []
     }
+    this.myInvalids = []
 
-
-    this.start = start;
-    this.end = end;
-
-
-    event.inst.navigate(start);
-
-    await this.getData()
-    this.initalLoad = true;
-
-  }
-
-  myConnections = []
-  async getData(refresh = true) {
-
-    this.tooltip?.close();
-
-    //this.myEvents = [];
+    if (clearData) this.myEvents = [];
     try {
       this.isLoading = true;
-      const start = moment(this.start).format('YYYY-MM-DD');
-      const end = moment(this.end).format('YYYY-MM-DD');
-
-
-      this.router.navigate([], {
-        queryParams: {
-          start: start,
-          end: end
-        },
-        queryParamsHandling: 'merge'
-      });
-
-
-      //this.routeService.setParams({ start, end });
+      const start = moment(firstDay).format('YYYY-MM-DD');
+      const end = moment(lastDay).format('YYYY-MM-DD');
 
       let data: any = await this.api.fsTechCalendar(start, end);
 
-
-
       for (const event of data.info) {
+        event.start = event.start ? event.start : event.start;
+        event.end = event.end ? event.end : event.end;
+        event.id = event.id
+        event.techs = event.techs
+        event.backgroundColor = event.backgroundColor
+        event.tooltip = `FSID: ${event.id} \n${event.title} \n${moment(event.start).format('HH:mm')} to ${moment(event.end).format('HH:mm')} \n${event.techs || ''}`
 
-        // event.group_id = event?.group_id?.split(",");
-        // convert dates to date objects
-        event.start = event.start ? new Date(event.start) : event.start;
-        event.end = event.end ? new Date(event.end) : event.end;
-        event.id = event.resource_id
-
-        console.log(event)
-        // mark past events as fixed by setting the event.editable property to false
-        //event.editable = event.start && today < event.start;
-        if (this.previous_fsid == event.fs_scheduler_id) {
-
-
-          // let s = {
-          //   date:event.start,
-          //   background: 'orange'
-          // }
-
-          // this.calendarOptions.colors.push(s)
-        }
-
-        event.tooltip = `${event.title} \n${event.property || ''} \n${moment(event.start).format('HH:mm')} to ${moment(event.end).format('HH:mm')}`
       }
 
+      this.allEmployees = data.info1
+
+
+      let contractors = [];
+      let employeess = [];
+      let inactive = [];
+
+      this.myResourcesCount = 0
+      for (const event of data.info1) {
+        if (event.active == 0) {
+          inactive.push(event)
+        } else if (event.title == 'Installer') {
+          this.myResourcesCount++
+          employeess.push(event)
+        } else {
+          contractors.push(event)
+        }
+      }
+
+
+
+      let resources = [{
+        id: 'employees',
+        name: 'Employees',
+        collapsed: false,
+        eventCreation: false,
+        children: employeess,
+      }, {
+        id: 'contractors',
+        name: 'Contractors',
+        collapsed: false,
+        eventCreation: false,
+        children: contractors,
+      }, {
+        id: 'inactive',
+        name: 'Inactive',
+        collapsed: false,
+        eventCreation: false,
+        children: inactive,
+
+      }]
       this.myEvents = data.info;
-      this.myResources = data.info1;
-      this.myConnections = data.myConnections
+      this.myResources = resources;
+
+      if (this.id && clearData)
+        this.scrollTo();
 
 
 
-      if (refresh)
-        setTimeout(() => {
-          var plant = document.getElementById(`test_${this.event_id}`);
+      this.calendarOptions = {
+        ...this.calendarOptions,
+        colors: [{
+          start: moment().startOf('day').format('YYYY-MM-DD'),
+          end: moment().startOf('day').format('YYYY-MM-DD'),
+          title: 'Available to book',
+          cssClass: 'md-available-to-book-class text-center',
+          recurring: {
+            repeat: 'weekly',
+            weekDays: 'MO,TU,WE,TH,FR',
+          },
+          resource: data.allUsers
+        }]
+      }
 
-          if (plant)
-            plant.scrollIntoView({ block: 'center', behavior: 'smooth' });
-
-        }, 500);
+      this.myInvalids = [
+        {
+          start: '00:00',
+          end: '23:59',
+          recurring: {
+            repeat: 'weekly',
+            weekDays: 'SA,SU',
+          },
+          cssClass: 'md-lunch-break-class mbsc-flex',
+        },
+      ];
+      this.calenderEmitter.emit(this.calendarInstance);
 
       this.isLoading = false;
+
+
     } catch (er) {
       this.isLoading = false;
 
@@ -306,446 +246,38 @@ export class TechScheduleComponent implements OnInit {
   }
 
   instances: any;
+  event_id
 
-  calendarOptions: MbscEventcalendarOptions = {
-    theme: 'ios',
-    themeVariant: 'light',
-    clickToCreate: true,
-    dragToCreate: false,
-    dragToMove: true,
-    dragToResize: false,
-    eventDelete: true,
-    showEventTooltip: true,
-    colors: [{
-      start: '00:00',
-      end: '24:00',
-      recurring: {
-        repeat: 'weekly',
-        weekDays: 'SU, SA'
-      },
-      cssClass: 'bg-light-gray'
-    }],
-    // invalid: [{
-    //   recurring: {
-    //     repeat: 'daily',
-    //     until: today,
-    //   },
-    //   cssClass: 'bg-dark-gray'
-    // }],
-    onEventCreateFailed: (event) => {
-      if (!event.originEvent) {
-        //this.toasterService.showError('Can\'t create event in the past');
+  onCellClick = (args) => {
+    this.clearEventOverlay()
+    let modalRef = this.eventMenuModalService.open()
+    modalRef.result.then((result) => {
+      if (result == 'event') {
+        this.onEventEventCreated(args)
+      } else if (result == 'job') {
+        this.onEventCreate(args)
       }
-    },
 
-    onEventUpdated: async (event, inst) => {
-
-
-
-      this.router.navigate([], {
-        queryParamsHandling: 'merge',
-        queryParams: {
-          'event_id': event.event.id
-        }
-      })
-
-      this.event_id = event.event.id
-
-      try {
-        await this.calendarEventService.update(event.event.id, {
-          event: {
-            start_date: moment(event.event.start).format('YYYY-MM-DD HH:mm'),
-            end_date: moment(event.event.end).format('YYYY-MM-DD HH:mm'),
-            resource: event.event?.resource ? event.event?.resource.toString() : ""
-          }
-        });
-        this.getData(false);
-      } catch (err) {
-
-        this.myEvents = [...this.myEvents]
-      }
-    },
-
-    onEventCreate: (args) => {
-
-
-      const oldEvent = args.originEvent;
-      const start = oldEvent && oldEvent.start ? oldEvent.start : null;
-
-      // handle recurring events
-      if (start && start < today) {
-        //this.toasterService.showError('Can\'t create event in the past');
-
-        return false;
-      } else {
-        return true;
-      }
-    },
-
-
-    onCellClick: (args, inst) => {
-
-      this.router.navigate([], {
-        queryParamsHandling: 'merge',
-        queryParams: {
-          'event_id': null
-        }
-      })
-
-      this.event_id = null
-
-      document.querySelectorAll('.selected-event.light-blue').forEach(e => e.classList.remove("light-blue"));
-
-      args.target.className += " selected-event light-blue"
-
-      this.tooltip.close();
-    },
-    onCellHoverOut(args, inst) {
-      args.target.className += " "
-
-    },
-    onEventCreated: async (args: any, inst) => {
-
-      this.default = this.popupOptions1
-      const event: any = args.event;
-      event.id = null;
-
-      this.currentView = {
-        type_of_event: 'CREATE_NEW'
-      };
-
-      // clearTimeout(this.timer);
-      // this.timer = null;
-
-      // this.anchor = args.target;
-      // this.tooltip.open();
-
-      const resource: any = this.myResources.find(dr => dr.id === event.resource);
-
-      args.event.resoruce_title = resource.title
-
-      console.log(event)
-
-      //this.createEventForTech(args)
-
-      this.createJob(event)
-    },
-    onEventDoubleClick: (event, inst) => {
-      if (event.event['fs_scheduler_id']) {
-        //this.createEventModalService.open(event.event.fs_scheduler_id, 'Job')
-        this.viewJob(event.event['fs_scheduler_id'])
-      } else if (event.event.id) {
-        //this.createTechEventModalService.open(event.event.id)
-        this.createEventForTech(event)
-        return;
-      }
-    },
-    onEventClick: async (args: any, inst) => {
-      this.default = this.popupOptions
-      const event: any = args.event;
-      const resource: any = this.myEvents.find(dr => dr.id === event.id);
-
-
-      this.groups = resource?.group_id;
-      const time = formatDate('hh:mm A', new Date(event.start)) + ' - ' + formatDate('hh:mm A', new Date(event.end));
-
-
-      this.currentEvent = event;
-
-      this.status = resource.status;
-
-
-      event.group_ids = (typeof event.group_ids == "string") ? event?.group_ids?.split() : event?.group_ids;
-
-
-      this.bgColor = resource?.color;
-      this.textColor = resource?.textColor;
-      this.info = event.title
-      this.time = time;
-      this.reason = event.reason;
-      this.location = event.location;
-      this.currentView = event;
-
-
-      //this.currentView.group_ids = event?.group_ids ? event?.group_ids?.split() : [];
-
-
-      // clearTimeout(this.timer);
-      // this.timer = null;
-
-      let e = args.domEvent.target
-
-      this.anchor = args.domEvent.target;
-
-      //getusers
-      let ee: any = this.myEvents
-      this.connectingJobs = await this.api.getConnectingJobsByTech(args.resource, moment(args.date).subtract(1, 'w').format(), moment(args.date).add(1, 'w').format())
-
-      this.router.navigate([], {
-        queryParamsHandling: 'merge',
-        queryParams: {
-          'event_id': event.id
-        }
-      })
-
-      this.event_id = event.id
-
-      this.tooltip.open();
-
-      // if (event.event.fs_scheduler_id) {
-      //   //this.createEventModalService.open(event.event.fs_scheduler_id, 'Job')
-      //   this.viewJob(event.event.fs_scheduler_id)
-      // } else if (event.event.id) {
-      //   //this.createTechEventModalService.open(event.event.id)
-      //   this.createEventForTech(event)
-      //   return;
-      // }
-
-
-    },
-
-    // onEventHoverIn: (args, inst) => {
-    //   this.default = this.popupOptions
-    //   const event: any = args.event;
-    //   const resource: any = this.myEvents.find(dr => dr.id === event.id);
-
-    //   this.groups = resource?.group_id;
-    //   const time = formatDate('hh:mm A', new Date(event.start)) + ' - ' + formatDate('hh:mm A', new Date(event.end));
-
-    //   this.currentEvent = event;
-
-    //   this.status = resource.status;
-
-    //   this.bgColor = resource?.color;
-    //   this.textColor = resource?.textColor;
-    //   this.info = event.title
-    //   this.time = time;
-    //   this.reason = event.reason;
-    //   this.location = event.location;
-    //   this.currentView = event;
-
-    //   clearTimeout(this.timer);
-    //   this.timer = null;
-
-    //   this.anchor = args.domEvent.target;
-    //   this.tooltip.open();
-    // },
-    // onEventHoverOut: (r) => {
-    //   if (!this.timer) {
-    //     this.timer = setTimeout(() => {
-    //       this.tooltip.close();
-    //     }, 200);
-    //   }
-    // },
-
-    onEventRightClick: (args) => {
-      // args.domEvent.preventDefault();
-      // this.menuAnchor = args.domEvent.target;
-      // setTimeout(() => {
-      //   this.menu.open();
-      // });
-    },
+    }, () => { });
   }
 
+  @Input() colors = []
 
-  @ViewChild('menu', { static: false })
-  menu!: any;
+  currentEvent
 
-  testBtn = () => {
-    alert('sdfasdf')
-  }
+  viewFile(){}
+  anchor?: HTMLElement;
 
-  async deleteById(event) {
-
-    try {
-      await this.calendarEventService.delete(event.id);
-      this.getData(false);
-    } catch (err) {
-
-      this.myEvents = [...this.myEvents]
-    }
-
-  }
-
-  async duplicate() {
-
-    // try {
-    //   await this.calendarEventService.create(event.id);
-    //   this.getData();
-    // } catch (err) {
-
-    //   this.myEvents = [...this.myEvents]
-    // }
-
-  }
-
-  menuAnchor
-  menuSettings: MbscSelectOptions = {
-    touchUi: false,
-    display: 'anchored',
-    buttons: [],
-    onChange: (args) => {
-      if (args.value === 'update') {
-        //this.updateSelectedEvents();
-      } else if (args.value === 'delete') {
-        //this.deleteSelectedEvents(this.mySelectedEvents);
-      } else if (args.value === 'duplicate') {
-        //this.deleteSelectedEvents(this.mySelectedEvents);
-      }
-    },
-    onClose: () => {
-      // clear selection
-      this.selectValue = '';
-    }
-  };
-
-  currentEvent: any;
-  status = '';
-  buttonText = '';
-  buttonType = '';
-  bgColor = '';
-  info = '';
-  time = '';
-  reason = '';
-  location = '';
-  anchor: HTMLElement | undefined;
   timer: any;
-
-
-
-  showJob = ($event) => {
-
-    this.viewing = 'Job'
-
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { viewing: this.viewing } });
-
-
-  }
-
-  showTicket = ($event) => {
-
-    this.viewing = 'Ticket'
-
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { viewing: this.viewing } });
-
-
-  }
-
-  id = null
-  data
-  viewing = ''
-  viewJob = (fsid) => {
-    this.tooltip.close();
-
-    this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
-      queryParamsHandling: 'merge',
-      queryParams: {
-        id: this.currentView.fs_scheduler_id,
-        goBackUrl: location.pathname,
-      }
-    });
-
-  }
-
-  workOrderId = null
-  viewTicket = (ticket_id) => {
-
-    this.tooltip.close();
-    this.router.navigate([NAVIGATION_ROUTE_TICKET.OVERVIEW], {
-      queryParamsHandling: 'merge',
-      queryParams: {
-        id: this.currentView.ticket_id,
-        goBackUrl: location.pathname,
-      }
-    });
-
-  }
-
-  goBackCalendar = () => {
-    this.id = null
-    this.active = null
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { id: this.id, active: null } });
-  }
-
-
-  @Input() goBackToJob: Function = () => {
-    this.viewing = null
-    this.workOrderId = null
-    this.active = null
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { workOrderId: this.workOrderId, active: null, viewing: null, id: null } });
-  }
-
-
-  onSelect($event) {
-    this.router.navigate(['.'], {
-      queryParams: {
-        active: $event
-      },
-      relativeTo: this.activatedRoute
-      , queryParamsHandling: 'merge'
-    });
-  }
-
-  get eventList() {
-    return this.pageView == 'by-day' ? true : false
-  }
-
-
-  changeView(view): void {
-    this.view = view;
-    switch (this.view) {
-      case 'hour':
-        this.calView = {
-          timeline: {
-            type: 'month',
-            size: 1,
-            resolutionHorizontal: 'hour',
-          }
-        };
-
-        break;
-      case 'day':
-        this.calView = {
-          timeline: { eventList: this.eventList, type: 'day' }
-        };
-
-        break;
-      case 'workweek':
-        this.calView = {
-          timeline: {
-            eventList: this.eventList,
-            type: 'week',
-            startDay: 1,
-            endDay: 5
-          }
-        };
-
-        break;
-      case 'week':
-        this.calView = {
-          timeline: {
-            eventList: this.eventList,
-            type: 'week',
-            rowHeight: 'variable'
-          }
-        };
-
-        break;
-      case 'month':
-        this.calView = {
-          timeline: {
-            eventList: this.eventList,
-            type: 'month'
-          }
-        };
-        break;
-    }
-
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { view: this.view, calView: JSON.stringify(this.calView) } });
-
-    //this.routeService.setParams({ typeOfView: this.view, calendarView: JSON.stringify(this.calView) });
-  }
-
+  popupOptions: MbscPopupOptions = {
+    display: 'anchored',
+    touchUi: false,
+    showOverlay: false,
+    contentPadding: false,
+    closeOnOverlayClick: false,
+    width: 350,
+    scrollLock:true
+  };
 
   mouseEnter(): void {
     if (this.timer) {
@@ -755,73 +287,352 @@ export class TechScheduleComponent implements OnInit {
   }
 
   mouseLeave(): void {
-    if (this.currentView.type_of_event == "CREATE_NEW") return;
     this.timer = setTimeout(() => {
       this.tooltip.close();
     }, 200);
   }
 
-  setStatus(): void {
-    // const index = this.appointments.findIndex((item: any) => item.id === this.currentEvent.id);
-    // this.appointments[index].confirmed = !this.appointments[index].confirmed;
-    // this.tooltip.close();
-    // this.notify.toast({
-    //   message: 'Appointment ' + (this.currentEvent.confirmed ? 'confirmed' : 'canceled')
-    // });
+  @Input() calendarOptions: MbscEventcalendarOptions = {
+    noEventsText: "To title set",
+    colorEventList: true,
+    clickToCreate: true,
+    dragToCreate: false,
+    dragToMove: false,
+    dragToResize: false,
+    eventDelete: false,
+    showEventTooltip: false,
+    onEventUpdated: this.onEventUpdated.bind(this),
+    onEventClick: this.onEventClick.bind(this),
+    onSelectedDateChange: this.onSelectedDateChange.bind(this),
+    onEventCreate: this.onEventCreate.bind(this),
+    onCellClick: this.onCellClick.bind(this),
+    onEventHoverIn: (args: any, inst) => {
+
+      const event: any = args.event;
+      const resource: MbscResource = this.allEmployees.find((dr) => dr.id === event.resource)!;
+      const time = formatDate('hh:mm A', new Date(event.start as string)) + ' - ' + formatDate('hh:mm A', new Date(event.end as string));
+
+
+      this.currentEvent = event;
+      this.currentEvent.time = time;
+
+      const el1: any = document.querySelectorAll(`[id="${args.event.id}"]`);
+
+
+      if (args.event.id && el1?.length > 1) {
+        const love: any = document.querySelectorAll(`.md-timeline-template-event`);
+        for (let i = 0; i < love.length; i++) {
+          let row = love[i]
+          row.classList.remove('opacity-100');
+          //row.classList.add('opacity-75');
+          row.style.borderLeft = "unset";
+          row.style.fontWeight = "unset";
+        };
+        for (let i = 0; i < el1.length; i++) {
+          let row = el1[i]
+
+          row.classList.add('calendar-active');
+          row.classList.add('opacity-100');
+          row.style.borderLeft = "5px solid red";
+          row.style.fontWeight = "400";
+          row.style.paddingLeft = "3px";
+        };
+
+      }
+      
+      clearTimeout(this.timer);
+      this.timer = null;
+
+      this.anchor = args.domEvent.target;
+      this.tooltip.open();
+
+    },
+    onEventHoverOut: (args: any, inst) => {
+      if (!this.timer) {
+        this.timer = setTimeout(() => {
+          this.tooltip.close();
+        }, 200);
+      }
+
+      const el1: any = document.querySelectorAll(`.md-timeline-template-event`);
+      for (let i = 0; i < el1.length; i++) {
+        let row = el1[i]
+        row.classList.add('opacity-100');
+        row.style.borderLeft = "unset";
+        row.style.fontWeight = "unset";
+      };
+
+    },
   }
 
-  viewFile(): void {
-    // this.tooltip.close();
-    // this.notify.toast({
-    //   message: 'View file'
-    // });
+
+  @Input() onSelectedDateChange(args) {
+    this.start = moment(args.date).format('YYYY-MM-DD');
+    this.dateChangeEmitter.emit(this.start)
   }
 
-  deleteApp(): void {
-    // this.appointments = this.appointments.filter((item: any) => item.id !== this.currentEvent.id);
-    // this.tooltip.close();
-    // this.notify.toast({
-    //   message: 'Appointment deleted'
-    // });
+  onEventEventCreated(args) {
+    this.clearEventOverlay()
+
+    const mappedData = this.allEmployees.filter((row) => row.id === args.resource)
+
+    let _data = {
+      start: moment(args.date).format('YYYY-MM-DD'),
+      end: moment(args.date).format('YYYY-MM-DD'),
+      allDay: true,
+      techRelated: true,
+      title: [mappedData[0].name],
+      resource_id: [mappedData[0].id]
+    }
+    let modalRef = this.eventModalCreateService.open(_data)
+    modalRef.result.then((result: Comment) => {
+      this.getData(args.inst._firstDay, args.inst._lastDay, false)
+    }, () => { });
   }
 
-  popupOptions: MbscPopupOptions = {
-    display: 'anchored',
-    touchUi: false,
-    anchorAlign: 'center',
-    showOverlay: false,
-    contentPadding: false,
-    closeOnOverlayClick: false,
-    width: 350,
-    showArrow: true,
-    closeOnScroll: true,
-    scrollLock: true,
+  onEventCreate(args) {
+    this.clearEventOverlay()
+    let _data = {
+      job: {
+        request_date: moment(args.date).format('YYYY-MM-DD'),
+        original_request_date: moment(args.date).format('YYYY-MM-DD'),
+        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+      },
+      resource: args.resource
+    }
+    let modalRef = this.jobModalCreateService.open(_data)
+    modalRef.result.then((result: any) => {
+      this.getData(args.inst._firstDay, args.inst._lastDay, false);
+    }, () => {
+      this.myEvents = [...this.myEvents];
+    });
+  }
 
-  };
-  popupOptions1: MbscPopupOptions = {
-    display: 'anchored',
-    touchUi: false,
-    showOverlay: false,
-    anchorAlign: 'center',
-    contentPadding: false,
-    closeOnOverlayClick: false,
-    width: 350,
-    showArrow: false,
-    closeOnScroll: true,
-    scrollLock: true,
-    onClose: (args) => {
-      if (args.type == 'onClose') {
+  async onEventUpdated(args) {
+    this.clearEventOverlay()
+    this.router.navigate([], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        'event_id': args.event.id
+      }
+    })
+    this.event_id = args.event.id;
+    try {
+      await this.calendarEventService.update(args.event.id, {
+        event: {
+          start_date: moment(args.event.start).format('YYYY-MM-DD HH:mm'),
+          end_date: moment(args.event.end).format('YYYY-MM-DD HH:mm'),
+          resource: args.event?.resource ? args.event?.resource.toString() : ""
+        }
+      });
+      this.getData(args.inst._firstDay, args.inst._lastDay, false);
+    } catch (err) {
 
-        this.myEvents = [...this.myEvents]
+      this.myEvents = [...this.myEvents]
+    }
+  }
+
+  getAttribut() {
+
+    if (this.previousId)
+      setTimeout(() => {
+        const el1: any = document.querySelectorAll(`[data-id="${this.previousId}"]`);
+
+        if (el1) {
+          for (let i = 0; i < el1.length; i++) {
+            // let row = el1[i]
+            // let el: any = row.querySelectorAll(`.mbsc-ios .mbsc-timeline-event-background`)[0]
+            // el.style.borderLeft = "3px solid red";
+            // el.style.opacity = "1";
+            // row.style.fontWeight = "800";
+            // row.scrollIntoViewIfNeeded(true);
+          };
+
+          if (el1[0]) {
+            el1[0].style.fontWeight = "800";
+            el1[0].scrollIntoViewIfNeeded(true);
+          };
+        }
+
+      }, 0);
+  }
+
+
+  clearEventOverlay() {
+    this.id = null;
+    // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+    //   queryParamsHandling: 'merge',
+    //   queryParams: {
+    //     id: null,
+    //   }
+    // })
+
+    const love: any = document.querySelectorAll(`.md-timeline-template-event`);
+    for (let i = 0; i < love.length; i++) {
+      let row = love[i]
+      row.classList.remove('opacity-75');
+      row.classList.remove('opacity-100');
+      row.style.borderLeft = "unset";
+      row.style.fontWeight = "unset";
+    };
+  }
+
+  setEventOverlay() {
+    const love: any = document.querySelectorAll(`.md-timeline-template-event`);
+    for (let i = 0; i < love.length; i++) {
+      let row = love[i]
+      //row.classList.add('opacity-75');
+      row.classList.remove('opacity-100');
+      row.style.borderLeft = "unset";
+      row.style.fontWeight = "unset";
+    };
+  }
+  setEventOverlay100() {
+    const love: any = document.querySelectorAll(`.md-timeline-template-event`);
+    for (let i = 0; i < love.length; i++) {
+      let row = love[i]
+      row.classList.add('opacity-100');
+      row.style.borderLeft = "unset";
+      row.style.fontWeight = "unset";
+    };
+  }
+
+  showEventSelected(id = this.id, enableScroll = true) {
+    const el1: any = document.querySelectorAll(`[id="${id}"]`);
+    for (let i = 0; i < el1.length; i++) {
+      let row = el1[i]
+
+      row.style.borderLeft = "5px solid red";
+      row.style.fontWeight = "400";
+      row.style.paddingLeft = "3px";
+      row.classList.add('calendar-active');
+      row.classList.add('opacity-100');
+    };
+
+    if (enableScroll)
+      el1[0].scrollIntoViewIfNeeded();
+
+  }
+
+  scrollTo() {
+
+    if (this.id)
+      setTimeout(() => {
+
+        this.setEventOverlay()
+        this.showEventSelected()
+
+      }, 0);
+  }
+
+  previousId
+  async onEventClick(args) {
+    this.clearEventOverlay()
+    if (args.event.type_of_event == 'EVENT') {
+      this.onEventEventCreate(args)
+      return
+    };
+
+    this.id = args.event.id
+
+    this.previousId = args.event.id;
+
+    // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+    //   queryParamsHandling: 'merge',
+    //   queryParams: {
+    //     id: args.event.id,
+    //     start: moment(args.date).format('YYYY-MM-DD'),
+    //     previousId: args.event.id,
+    //   }
+    // });
+
+
+
+    let modalRef = this.jobModalEditService.open(this.id)
+    modalRef.result.then((result: any) => {
+      this.getData(args.inst._firstDay, args.inst._lastDay, false)
+    }, () => {
+      this.myEvents = [...this.myEvents];
+    });
+  }
+
+  onEventEventCreate(data) {
+    let modalRef = this.eventModalService.open(data.event.id)
+    modalRef.result.then((result: Comment) => {
+      this.getData(data.inst._firstDay, data.inst._lastDay, false)
+    }, () => { });
+  }
+
+  ticketId = null;
+  showTicket = (id) => {
+    this.id = null;
+    this.ticketId = id;
+  }
+
+  getStartDateFromPreviousId() {
+    for (let i = 0; i < this.myEvents.length; i++) {
+      if (this.myEvents[i].id == Number(this.previousId)) {
+        return moment(this.myEvents[i].start).format('YYYY-MM-DD')
+        break;
       }
     }
+    return null
+  }
+  goBack = () => {
+    this.id = null;
+    this.ticketId = null;
 
-  };
+    this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        id: null,
+        ticketId: null,
+        start: this.start,
+      }
+    }).then(() => {
+      this.getAttribut();
+    });
 
-  closeCreate() {
-
-    this.myEvents = [...this.myEvents]
-    this.tooltip.close()
   }
 
+  getOccuppancy(events: any) {
+    let occuppancy: any = 0;
+    if (events) {
+      var resourceIds = [];
+      var nr = 0;
+      for (const event of events) {
+        let e = isArray(event?.resource) ? event?.resource?.flat() : event?.resource
+        if (resourceIds.indexOf(e) < 0) {
+          nr++;
+          resourceIds = [...resourceIds, e];
+        }
+      }
+      occuppancy = (nr * 100 / this.allEmployees.length).toFixed(0);
+      if (occuppancy > 100) occuppancy = 100
+    }
+    return occuppancy;
+  }
+
+  getEventOccurrence(args: any): any {
+    let eventOccurrence = 'none';
+    if (moment(args.date).format('YYYY-MM-DD') == moment().format('YYYY-MM-DD')) {
+      eventOccurrence = 'today';
+    } else {
+      if (args.events) {
+        var eventNr = args.events.length;
+        if (eventNr >= this.allEmployees.length) {
+          eventOccurrence = 'close';
+        } else if (eventNr === 0) {
+          eventOccurrence = 'none';
+        } else if (eventNr === 1) {
+          eventOccurrence = 'one';
+        } else if (eventNr < 4) {
+          eventOccurrence = 'few';
+        } else {
+          eventOccurrence = 'more';
+        }
+      }
+    }
+    return eventOccurrence;
+  }
 }

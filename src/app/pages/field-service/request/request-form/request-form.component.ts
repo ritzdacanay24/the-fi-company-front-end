@@ -12,6 +12,10 @@ import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
 import { Observable, Subject, concat, of, debounceTime, distinctUntilChanged, tap, switchMap, catchError } from 'rxjs';
 import { validateEmail } from 'src/assets/js/util/validateEmail';
 import { states } from '@app/core/data/states';
+import { Store } from '@ngrx/store';
+import { RootReducerState } from '@app/store';
+import { getLayoutMode } from '@app/store/layouts/layout-selector';
+import { EventService } from '@app/core/services/event.service';
 
 setOptions({
   theme: 'ios',
@@ -45,10 +49,19 @@ export class RequestFormComponent {
     private api: SchedulerService,
     public router: ActivatedRoute,
     public route: Router,
+    private store: Store<RootReducerState>,
+    private eventService: EventService
   ) { }
 
   ngOnInit(): void {
 
+
+    this.eventService.subscribe('changeMode', (mode) => {
+      setOptions({ themeVariant: mode })
+    })
+    this.store.select(getLayoutMode).subscribe((mode) => {
+      setOptions({ themeVariant: mode })
+    })
     this.form.controls['dateAndTime'].valueChanges.subscribe(value => {
 
       if (value)
@@ -74,6 +87,8 @@ export class RequestFormComponent {
 
   myLabels = [];
   myInvalid = [];
+
+  @Input() showCaptcha = true
 
   myDatepickerOptions: any = {
     controls: ['date'],
@@ -155,6 +170,8 @@ export class RequestFormComponent {
     sign_manufacture: ["", Validators.required],
     customer_product_number: [null],
     active: [1],
+    site_survey_requested: [''],
+    created_by: ['']
   })
 
   get f() {

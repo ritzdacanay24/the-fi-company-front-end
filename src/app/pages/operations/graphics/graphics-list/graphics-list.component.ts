@@ -34,14 +34,15 @@ export class GraphicsListComponent implements OnInit {
             this.dateTo = params['dateTo'] || this.dateTo;
             this.dateRange = [this.dateFrom, this.dateTo];
             this.id = params['id'];
-
         });
-
-
         this.getData()
     }
 
-    title = 'Shipped Orders Report';
+    query: any;
+
+    setFilter = (q: string) => this.gridApi.setGridOption('quickFilterText', q)
+
+    title = 'Graphics List';
 
     dateFrom = moment().subtract(0, 'months').startOf('month').format('YYYY-MM-DD');;
     dateTo = moment().endOf('month').format('YYYY-MM-DD');
@@ -72,7 +73,7 @@ export class GraphicsListComponent implements OnInit {
         });
     }
 
-    columnDefs:any = [
+    columnDefs: any = [
         {
             field: "View", headerName: "View", filter: "agMultiColumnFilter",
             pinned: "left",

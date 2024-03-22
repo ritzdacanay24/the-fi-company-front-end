@@ -1,8 +1,37 @@
+<!-- <div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body p-0" style="width: 100%;height: calc(100vh - 98px);">
+        <mbsc-eventcalendar [selectedDate]="start" #myTimeline [data]="myEvents" [options]="eventSettings"
+          [view]="calView"></mbsc-eventcalendar>
+      </div>
+    </div>
+  </div>
+</div> -->
+
 <div class="row">
   <div class="col-12 col-xl-12">
     <div class="card">
-      <div class="card-body p-0" style="width: 100%; height: calc(100vh - 166px);overflow: auto;">
-        <full-calendar #calendar [options]='calendarOptions' [deepChangeDetection]="true"></full-calendar>
+      <div class="card-header d-flex">
+        <div class="btn-group" role="group" aria-label="Basic example">
+          <button class="btn btn-sm btn-light" (click)="set('JOBS')"
+            [ngClass]="{' text-primary ':this.currentView == 'JOBS'}">Jobs Only</button>
+          <button class="btn btn-sm btn-light" (click)="set('EVENTS')"
+            [ngClass]="{' text-primary ':this.currentView == 'EVENTS'}">Events Only</button>
+          <button class="btn btn-sm btn-light" (click)="set('CONFIRMED')"
+            [ngClass]="{' text-primary ':this.currentView == 'CONFIRMED'}">Confirmed Only</button>
+          <button class="btn btn-sm btn-light" (click)="set('ALL')"
+            [ngClass]="{' text-primary ':this.currentView == 'ALL'}">ALL</button>
+        </div>
+
+        <div style="width:500px" class="ms-3">
+          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [clearSearch]="false"
+            [editableSearchTerm]="false" [showLabel]="false"></app-job-search>
+        </div>
+      </div>
+      <div class="card-body p-0" style="width: 100%;height: calc(100vh - 170px);">
+        <mbsc-eventcalendar [(selectedDate)]="start" #myTimeline [data]="myEvents" [options]="eventSettings"
+          [view]="calView" [(selectedEvents)]="mySelectedEvent"></mbsc-eventcalendar>
       </div>
     </div>
   </div>

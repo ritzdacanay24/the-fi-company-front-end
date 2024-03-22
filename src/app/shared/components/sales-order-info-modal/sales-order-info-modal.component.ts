@@ -107,6 +107,10 @@ export class SalesOrderInfoModalComponent {
       this.gridColumnApi = params.columnApi;
     },
     sideBar: false,
+    defaultColDef: {
+        ...agGridOptions.defaultColDef,
+        floatingFilter: false
+    },
   };
 
   print() {
@@ -204,6 +208,10 @@ export class SalesOrderInfoModalComponent {
       this.gridColumnApi1 = params.columnApi;
     },
     sideBar: false,
+    defaultColDef: {
+        ...agGridOptions.defaultColDef,
+        floatingFilter: false
+    },
   };
 
   /**
@@ -271,6 +279,10 @@ export class SalesOrderInfoModalComponent {
       this.gridColumnApi2 = params.columnApi;
     },
     sideBar: false,
+    defaultColDef: {
+        ...agGridOptions.defaultColDef,
+        floatingFilter: false
+    },
   };
 
   getTransactions() {

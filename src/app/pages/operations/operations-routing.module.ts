@@ -50,6 +50,10 @@ const routes: Routes = [
     path: 'master-scheduling',
     loadChildren: () => import('./master-scheduling/master-scheduling-routing.module').then(m => m.MasterSchedulingRoutingModule)
   },
+  {
+    path: 'labels',
+    loadChildren: () => import('./labels/labels-routing.module').then(m => m.LabelsRoutingModule)
+  },
 ]
 
 @NgModule({

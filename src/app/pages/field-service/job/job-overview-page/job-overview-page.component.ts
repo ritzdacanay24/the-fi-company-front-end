@@ -68,7 +68,6 @@ export class JobOverviewPageComponent implements OnInit {
   }
 
   onNavChange($event) {
-    console.log($event)
     this.router.navigate(['.'], {
       queryParams: {
         active: $event.nextId

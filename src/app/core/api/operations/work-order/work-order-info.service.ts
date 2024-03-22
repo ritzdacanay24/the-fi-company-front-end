@@ -14,4 +14,8 @@ export class WorkOrderInfoService {
     getWipReport(): Observable<any> {
         return this.http.get<any>(`/WipReport/index`);
     }
+
+    getCompletedWorkers() {
+        return this.http.get<any>(`/work_order_view/completedWorkOrders`).toPromise();
+    }
 }

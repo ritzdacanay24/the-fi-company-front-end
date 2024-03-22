@@ -1,26 +1,41 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { QueryService } from '@app/core/api/query/query.service';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { first } from 'rxjs';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { QuillModule } from 'ngx-quill';
+
+import { AceModule } from 'ngx-ace-wrapper';
+import 'brace';
+import 'brace/mode/plain_text';
+import 'brace/theme/merbivore_soft';
+import 'brace/theme/tomorrow';
+import { RootReducerState } from '@app/store';
+import { getLayoutMode } from '@app/store/layouts/layout-selector';
+import { Store } from '@ngrx/store';
 
 @Component({
     standalone: true,
-    imports: [SharedModule, AgGridModule, QuillModule],
+    imports: [SharedModule, AgGridModule, AceModule],
     selector: 'app-query',
     templateUrl: './query.component.html',
     styleUrls: []
 })
 export class QueryComponent implements OnInit {
 
+    aceConfig: any = {
+        maxLines: 21,
+        minLines: 21,
+        printMargin: false,
+        autoScrollEditorIntoView: true,
+        showInvisibles: false,
+        tabSize: 3,
+        newLineMode: "windows",
+        fontSize: 16,
+        useSoftTabs: true
+    };
 
-    quillConfig = {
-        toolbar: false,
-        spellcheck: false
-    }
-
+    value
 
     //query info
     gridApi: any;
@@ -63,11 +78,15 @@ export class QueryComponent implements OnInit {
     ];
 
     constructor(
-        private queryService: QueryService
+        private queryService: QueryService,
+        private store: Store<RootReducerState>,
     ) {
 
         this.mode = 'plain_text';
 
+        this.store.select(getLayoutMode).subscribe((mode) => {
+            this.aceTheme = mode == 'dark' ? 'merbivore_soft' : 'tomorrow';;
+        })
     }
 
     ngOnInit(): void {
@@ -82,7 +101,6 @@ export class QueryComponent implements OnInit {
 
     onChange(code) {
         this.text = code;
-        //console.log("new code", code);
     }
 
     setColumnGrid(row) {
@@ -100,11 +118,32 @@ export class QueryComponent implements OnInit {
         }, error => { });
     }
 
+    @HostListener('window:keydown', ['$event'])
+    onKeyPress($event: KeyboardEvent) {
+        if ($event.ctrlKey && $event.key === 'Enter') {
+            this.submit()
+        }
+    }
+
+    keyUpFunction(event) {
+        if (event.ctrlKey && event.key === 'Enter') {
+            this.submit()
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+        }
+    }
+
     loading: boolean;
     submit() {
         this.loading = true;
+        var lines = this.text.split(/\r\n/);
+        for (var j = 0; j < lines.length; j++) {
+            lines[j] = lines[j] + ' '
+        }
 
-        this.queryService.getData(this.text.replace(/(<([^>]+)>)/gi, "")).pipe(first()).subscribe(data => {
+        let e = lines.join("");
+
+        this.queryService.getData(e.replace(/(<([^>]+)>)/gi, "")).pipe(first()).subscribe(data => {
             this.loading = false;
             this.data = data;
 

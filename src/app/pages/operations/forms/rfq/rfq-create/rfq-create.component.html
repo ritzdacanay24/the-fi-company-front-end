@@ -10,11 +10,15 @@
         <div class="mb-3">
           <app-so-search (notifyParent)="notifyParent($event)" [value]=""></app-so-search>
         </div>
-        <app-rfq-form (setFormEmitter)="setFormEmitter($event)"
-          [submitted]="submitted"></app-rfq-form>
+        <app-rfq-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-rfq-form>
+
+        <pre *ngIf="viewInfo">
+          {{form.value | json}}
+        </pre>
       </div>
-      <div class="card-footer d-flex d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+      <div class="card-footer d-flex d-flex">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light ms-auto me-2" [disabled]="isLoading" (click)="viewInfo =! viewInfo">View Info</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
       </div>
     </div>

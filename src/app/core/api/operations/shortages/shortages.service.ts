@@ -20,4 +20,15 @@ export class ShortagesService extends DataService<any> {
     return await firstValueFrom(this.http.get<any[]>(`${url}/getList${result}`));
   }
 
+
+  createShortages(params) {
+    params.createShortages = 1;
+    return firstValueFrom(this.http.post<any>(`/Shortages/index`, params))
+  }
+
+
+  updateById(params: any) {
+    return firstValueFrom(this.http.post<any>(`/Shortages/index`, params))
+  }
+
 }

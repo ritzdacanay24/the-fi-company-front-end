@@ -6,6 +6,7 @@ import { NcrFormComponent } from '../../ncr-form/ncr-form.component';
 import { FormGroup } from '@angular/forms';
 import { NcrService } from '@app/core/api/quality/ncr-service';
 import { NcrCorrectiveActionFormComponent } from '../../ncr-corrective-action-form/ncr-corrective-action-form.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   standalone: true,
@@ -23,7 +24,8 @@ export class NcrCorrectiveAcrionComponent implements OnInit {
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
-    public ncrService: NcrService
+    public ncrService: NcrService,
+    private toastrService: ToastrService,
   ) {
   }
 
@@ -47,8 +49,15 @@ export class NcrCorrectiveAcrionComponent implements OnInit {
 
   submitted = false;
 
-  onSubmit() {
-
+  async onSubmit() {
+    try {
+      this.isLoading = true;
+      await this.ncrService.update(this.id, this.form.value);
+      this.isLoading = false;
+      this.toastrService.success('Successfully Updated');
+    } catch (err) {
+      this.isLoading = false;
+    }
   }
 
   async getData() {

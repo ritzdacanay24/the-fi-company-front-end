@@ -102,7 +102,7 @@ export class ReceiptCategoryListComponent implements OnInit {
     }
   ]
 
-  title = 'Platforms';
+  title = 'Receipt Categories';
 
   gridApi: GridApi;
 

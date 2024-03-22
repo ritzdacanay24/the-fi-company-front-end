@@ -1,5 +1,6 @@
 <div class="modal-header">
   <h4 class="modal-title" id="modal-basic-title">Graphics BOM Information</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 
 <div class="modal-body">
@@ -15,18 +16,20 @@
   <div id="yellowFishWorkOrder" *ngIf="data?.bomInfo && !isLoading" class="px-3">
     <div class="row justify-content-md-center">
       <div class="col text-center align-self-center">
-        <img src="https://dashboard.eye-fi.com/attachments/images/fi.png" class="rounded" style="width:100px">
+        <img src="https://dashboard.eye-fi.com/attachments/images/fi.png" class="object-fit-sm-contain border rounded"
+          style="width:100px">
       </div>
 
       <div class="col text-center align-self-center">
         <h3>Work Order</h3>
         <ngx-barcode6 [bc-value]="data?.woInfo.WO_NBR" [bc-display-value]="true" [bc-height]="20" [bc-width]="1"
-          [bc-font-size]="16" ></ngx-barcode6>
+          [bc-font-size]="16"></ngx-barcode6>
       </div>
 
       <div class="col text-center align-self-center">
         <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
-          alt=" No Image" class="rounded" style="max-width:100px;max-height:100px;width:100px">
+          alt=" No Image" class="object-fit-sm-contain border rounded"
+          style="max-width:100px;max-height:100px;width:100px">
       </div>
     </div>
 
@@ -235,11 +238,11 @@
     </div>
     <h5 class="text-center my-2">Printed on: {{printDate}}</h5>
     <div class="row">
-      <div class="hr-sect bg-light1 mb-2"></div>
+      <div class="hr-sect bg-light mb-2"></div>
       <div class="col-lg-4 text-center align-self-center">
         <h4>SUBSTRATE</h4>
         <ngx-barcode6 [bc-value]="data?.woInfo.WO_NBR" [bc-display-value]="true" [bc-height]="20" [bc-width]="1"
-          [bc-font-size]="16" ></ngx-barcode6>
+          [bc-font-size]="16"></ngx-barcode6>
         <p>{{data?.woInfo?.FULL_DESC}}</p>
       </div>
       <div class="col-lg-4 text-center align-self-center">
@@ -248,7 +251,7 @@
           <p>{{data?.bomInfo.DD2_2}}</p>
           <div>
             <img src="https://dashboard.eye-fi.com/attachments_mount/Yellowfish/{{data?.bomInfo.Image_Data}}"
-              alt="No Image" class="rounded"
+              alt="No Image" class="object-fit-sm-contain border rounded"
               style="max-width:100px;max-height:100px;width:100px;background-color: transparent;">
           </div>
         </div>
@@ -280,7 +283,7 @@
 </div>
 
 <div class="modal-footer d-flex">
-  <button class="btn btn-gray" (click)="dismiss()">Close</button>
-  <button class="btn btn-warning ms-auto" (click)="getData()">Refresh</button>
-  <button class="btn btn-primary" (click)="print()">Print</button>
+  <button class="btn btn-light" (click)="dismiss()">Close</button>
+  <button class="btn btn-light ms-auto" (click)="getData()" [disabled]="isLoading">Refresh</button>
+  <button class="btn btn-primary" (click)="print()" [disabled]="isLoading">Print</button>
 </div>

@@ -5,7 +5,7 @@
         Please select user from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
@@ -23,7 +23,7 @@
         <app-user-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
       </div>
     </div>

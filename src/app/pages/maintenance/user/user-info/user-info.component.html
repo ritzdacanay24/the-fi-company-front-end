@@ -1,0 +1,91 @@
+<div class="row">
+    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+            </div>
+            <div class="card-body" style="min-height:300px">
+
+                <form [formGroup]="form" autocomplete="off">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">First Name</label>
+                            <input type="text" class="form-control" name="first" formControlName="first"
+                                placeholder="Enter first name"
+                                [ngClass]="{ 'is-invalid': submitted && f.first.errors }" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required">Last Name</label>
+                            <input type="text" class="form-control" name="last" formControlName="last"
+                                placeholder="Enter last name"
+                                [ngClass]="{ 'is-invalid': submitted && f.last.errors }" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required">Email</label>
+                        <input type="text" class="form-control" name="email" formControlName="email"
+                            placeholder="Enter email name" [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md mb-3">
+                            <label class="form-label required">Title</label>
+                            <input type="text" class="form-control" name="title" formControlName="title"
+                                placeholder="Enter title" [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md mb-3">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" name="area" formControlName="area"
+                                placeholder="Enter area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Work Phone</label>
+                        <input type="text" class="form-control" name="workPhone" formControlName="workPhone"
+                            placeholder="Enter work phone"
+                            [ngClass]="{ 'is-invalid': submitted && f.workPhone.errors }" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Login Attempts</label>
+                        <input type="text" class="form-control" name="attempts" formControlName="attempts"
+                            placeholder="Enter attempts" [ngClass]="{ 'is-invalid': submitted && f.attempts.errors }" />
+                        <small>Set attempts to 0 if user is locked out of dashboard </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Access</label>
+                        <input type="text" class="form-control" name="access" formControlName="access"
+                            placeholder="Enter access" [ngClass]="{ 'is-invalid': submitted && f.access.errors }" />
+                        <small>Set access to 1 to login to dashboard</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch form-switch-md">
+                            <input class="form-check-input" type="checkbox" id="leadInstaller"
+                                formControlName="leadInstaller" (change)="setBooleanToNumber('leadInstaller')">
+                            <label class="form-check-label" for="leadInstaller">Lead Installer</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch form-switch-md">
+                            <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+                                (change)="setBooleanToNumber('active')">
+                            <label class="form-check-label" for="active">Active</label>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="card-footer d-flex  d-flex justify-content-between">
+                <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>

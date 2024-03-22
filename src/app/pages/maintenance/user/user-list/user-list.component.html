@@ -7,11 +7,11 @@
           style="width:150px" class="ms-2 me-2">
         </ng-select>
 
-        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-alpine no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
-          style="width: 100%;height: calc(100vh - 170px);">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
+          style="width: 100%;height: calc(100vh - 150px);">
         </ag-grid-angular>
       </div>
     </div>

@@ -49,7 +49,7 @@ export class RequestsListComponent implements OnInit {
       pinned: 'left',
       maxWidth: 115,
       minWidth: 115,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       floatingFilter: false
     },
     { field: 'id', headerName: 'Request ID', filter: 'agMultiColumnFilter' },
@@ -60,14 +60,14 @@ export class RequestsListComponent implements OnInit {
       , cellRenderer: params => {
         return (params.data.fs_scheduler_id || params.data.active == null) ? '-' : params.value
       }
-      , cellStyle: params => {
+      , cellClass: params => {
         if (!params.data.fs_scheduler_id && params.data.active == 1) {
           if (params.value == 0) {
-            return { backgroundColor: 'green', color: '#fff' }
+            return ['bg-success bg-opacity-50'];
           } else if (params.value >= 2) {
-            return { backgroundColor: 'red', color: '#fff' }
+            return ['bg-danger bg-opacity-75'];
           } else if (params.value == 1) {
-            return { backgroundColor: 'yellow', color: '#000' }
+            return ['bg-warning bg-opacity-50'];
           }
         } else {
           return {}
@@ -138,6 +138,8 @@ export class RequestsListComponent implements OnInit {
       });
     }
   };
+
+  searchName = "";
 
   selectedViewType = 'Open';
 

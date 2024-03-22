@@ -501,7 +501,7 @@ export class CreditCardComponent implements OnInit {
       checkboxSelection: true,
       width: 50,
       maxWidth: 50,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       floatingFilter: false,
       pinned: isMobile() ? null : 'left',
     },

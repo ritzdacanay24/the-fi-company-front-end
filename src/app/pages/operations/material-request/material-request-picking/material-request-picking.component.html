@@ -1,14 +1,13 @@
-
 <div *ngIf="isLoading" class="text-center m-5">
   <div class="spinner-grow text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+    <span class="visually-hidden">Loading...</span>
   </div>
   <p>Loading data. Please wait..</p>
 </div>
 
 
 <div *ngIf="!isLoading && !data?.length" class="p-5 text-center text-success">
-  <p class="mb-3">All caught up. No picks found.</p>
+  <p class="mb-5">All caught up. No picks found.</p>
   <button class="btn btn-primary" (click)="getData()">Refresh</button>
 </div>
 
@@ -18,12 +17,12 @@
     <button class="btn btn-primary mb-2" (click)="getData()" *ngIf="data?.length > 0">Refresh</button>
     <div class="card mb-3" *ngFor="let row of data">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h4>Material Request #: <b>{{row.id}}</b></h4>
+        <h5 class="card-title mb-0 flex-grow-1">Material Request #: <b>{{row.id}}</b></h5>
+
         <div ngbDropdown container="body">
-          <button type="button" class="btn btn-primary btn-sm" id="dropdownBasic1" ngbDropdownToggle>
+          <button type="button" class="btn btn btn-light dropdown-toggle" id="dropdownBasic1" ngbDropdownToggle>
             Menu
           </button>
-
           <div ngbDropdownMenu>
             <p class="text-center">Menu</p>
             <div class="dropdown-divider"></div>
@@ -33,6 +32,15 @@
         </div>
       </div>
       <div class="card-body">
+
+
+        <div class="alert alert-warning" role="alert" *ngIf="!row.active || !row.validated">
+          <h4 class="alert-heading">Warning!</h4>
+          <p>It appears this work order was removed.</p>
+          <hr>
+          <p class="mb-0">This work order will be removed once this page is refreshed.</p>
+        </div>
+
         <p style="font-size:14px;color:red" *ngIf="row.printedDate && !row.pickCompletedDate">
           Elapsed picking time: {{row.timeDiff}}
         </p>
@@ -48,49 +56,52 @@
         <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
       </div>
       <div class="card-body">
-        <table class="table align-middle table-sm table-bordered">
-          <thead>
-            <tr>
-              <th>Line #</th>
-              <th>Part Number</th>
-              <th>Description</th>
-              <th>Locations/OH Qty</th>
-              <th>Qty Required</th>
-              <th>Qty Picked</th>
-              <th>Transaction</th>
-              <th>Account Code</th>
-              <th>Comments</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of row.details">
-              <td>{{item.id}}</td>
-              <td>{{item.partNumber}}</td>
-              <td>{{item.itemDescription}}</td>
-              <td>
-                <p *ngIf="!item.locations">No Locations Found</p>
-                <table class="table table-sm table-bordered" *ngIf="item.locations">
-                  <tbody>
-                    <tr *ngFor="let location of item.locations">
-                      <td class="p-0 px-2">{{location.LD_LOC}}</td>
-                      <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-              <td>{{item.qty}}</td>
-              <td>
-                <input (click)="$any($event.target).select()" type="number" name="qtyPicked" class="form-control"
-                  placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked"
-                  style="min-width:100px">
+        <div class="table-responsive">
+          <table class="table align-middle table-bordered text-nowrap">
+            <thead>
+              <tr>
+                <th>Line #</th>
+                <th>Part Number</th>
+                <th>Description</th>
+                <th>Locations/OH Qty</th>
+                <th>Qty Required</th>
+                <th>Qty Picked</th>
+                <th>Transaction</th>
+                <th>Account Code</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of row.details">
+                <td>{{item.id}}</td>
+                <td>{{item.partNumber}}</td>
+                <td>{{item.itemDescription}}</td>
+                <td>
+                  <p *ngIf="!item.locations">No Locations Found</p>
+                  <table class="table table-sm table-bordered mb-0 pb-0" *ngIf="item.locations">
+                    <tbody>
+                      <tr *ngFor="let location of item.locations">
+                        <td class="p-0 px-2">{{location.LD_LOC}}</td>
+                        <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+                <td>{{item.qty}}</td>
+                <td>
+                  
+                  <input (click)="$any($event.target).select()" type="number" name="qtyPicked" class="form-control"
+                    placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked" [disabled]="row.disabled"
+                    style="min-width:100px">
 
-              </td>
-              <td>{{item.trType}}</td>
-              <td>{{item.ac_code}}</td>
-              <td>{{item.notes}}</td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td>{{item.trType}}</td>
+                <td>{{item.ac_code}}</td>
+                <td>{{item.notes}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!--Print-->
@@ -129,8 +140,7 @@
               <td>{{item.id}}</td>
               <td>
                 <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="true"
-                  [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"
-                  ></ngx-barcode6>
+                  [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"></ngx-barcode6>
               </td>
               <td>{{item.itemDescription}}</td>
               <td>
@@ -154,8 +164,8 @@
       </div>
 
       <div class="card-footer border-top-0">
-        <button class="btn btn-warning me-2" (click)="onPrint(row)">Print</button>
-        <button class="btn btn-primary" (click)="onComplete(row)" [disabled]="!row.printedDate">Complete</button>
+        <button class="btn btn-warning me-2" (click)="onPrint(row)" [disabled]="row.disabled">Print</button>
+        <button class="btn btn-primary" (click)="onComplete(row)" [disabled]="!row.printedDate || row.disabled">Complete</button>
       </div>
     </div>
   </div>

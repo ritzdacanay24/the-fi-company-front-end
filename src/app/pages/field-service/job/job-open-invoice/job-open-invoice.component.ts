@@ -106,7 +106,7 @@ export class JobOpenInvoiceComponent implements OnInit {
         gridParams,
         'start': this.dateFrom,
         'end': this.dateTo,
-        goBackUrl: '/field-service/job/job-open-invoice',
+        goBackUrl: NAVIGATION_ROUTE.INVOICE,
         active: 2
       }
     });

@@ -1,14 +1,16 @@
 <div class="row">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="card-title mb-0 flex-grow-1"> Create </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-ncr-form (setFormElements)="form = $event" [submitted]="submitted"></app-ncr-form>
+        <app-ncr-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-ncr-form>
+
+        {{form?.value | json}}
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading">Cancel</button>
         <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
       </div>
     </div>

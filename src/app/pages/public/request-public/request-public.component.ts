@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import moment from 'moment';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,11 +13,12 @@ import { getFormValidationErrors } from 'src/assets/js/util';
 import { AutosizeModule } from 'ngx-autosize';
 
 @Component({
+  encapsulation: ViewEncapsulation.None,
   standalone: true,
   imports: [SharedModule, RequestFormComponent, AutosizeModule],
   selector: 'app-request-public',
   templateUrl: './request-public.component.html',
-  styleUrls: []
+  styleUrls: ['./request-public.component.scss']
 })
 export class RequestPublicComponent implements OnInit {
 

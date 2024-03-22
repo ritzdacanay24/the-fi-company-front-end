@@ -9,10 +9,23 @@ import { AgGridModule } from 'ag-grid-angular';
 import { GridApi, ColumnApi } from 'ag-grid-community';
 import moment from 'moment';
 import { currencyFormatter, autoSizeColumns } from 'src/assets/js/util';
+import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
+import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
+import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, DateRangeComponent],
+  imports: [
+    SharedModule,
+    AgGridModule,
+    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent
+  ],
   selector: 'app-shipped-orders-report',
   templateUrl: './shipped-orders-report.component.html',
   styleUrls: []
@@ -21,7 +34,10 @@ export class ShippedOrdersReportComponent implements OnInit {
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
-    public reportService: ReportService
+    public reportService: ReportService,
+    private commentsModalService: CommentsModalService,
+    private itemInfoModalService: ItemInfoModalService,
+    private salesOrderInfoModalService: SalesOrderInfoModalService,
   ) {
   }
 
@@ -36,6 +52,17 @@ export class ShippedOrdersReportComponent implements OnInit {
     this.getData()
   }
 
+
+  pageId = '/pulse/shipped-orders'
+
+  searchName = "";
+
+  onFilterTextBoxChanged(value: any) {
+    //setQuickFilter
+    this.gridApi.setGridOption('quickFilterText', value);
+  }
+
+
   title = 'Shipped Orders Report';
 
   dateFrom = moment().subtract(0, 'months').startOf('month').format('YYYY-MM-DD');;
@@ -48,20 +75,43 @@ export class ShippedOrdersReportComponent implements OnInit {
     this.getData()
   }
 
+  viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+    let modalRef = this.commentsModalService.open(salesOrderLineNumber, 'Sales Order')
+    modalRef.result.then((result: any) => {
+      let rowNode = this.gridApi.getRowNode(id);
+      rowNode.data.recent_comments = result;
+      this.gridApi.redrawRows({ rowNodes: [rowNode] });
+    }, () => { });
+  }
+
   gridApi: GridApi;
 
   gridColumnApi: ColumnApi;
 
   data: any[];
 
-  columnDefs:any = [
+  columnDefs: any = [
     { field: "STATUS", headerName: "Status" },
-    { field: "SOD_PART", headerName: "Part", filter: "agTextColumnFilter" },
+    {
+      field: "SOD_PART", headerName: "Part", filter: "agTextColumnFilter",
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: e => this.itemInfoModalService.open(e.rowData.SOD_PART),
+        isLink: true
+      }
+    },
     { field: "FULLDESC", headerName: "Desc", filter: "agTextColumnFilter" },
     { field: "CP_CUST_PART", headerName: "Cust Part #", filter: "agTextColumnFilter" },
-    { field: "SOD_NBR", headerName: "SO #", filter: "agTextColumnFilter", pinned: "left" },
+    {
+      field: "SOD_NBR", headerName: "SO #", filter: "agTextColumnFilter", pinned: "left",
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: e => this.salesOrderInfoModalService.open(e.rowData.SOD_NBR),
+        isLink: true
+      }
+    },
     { field: "SOD_LINE", headerName: "Line #", filter: "agSetColumnFilter" },
-    { field: "SOD_CONTR_ID", headerName: "PO #", filter: "agTextColumnFilter" },
+    { field: "SOD_CONTR_ID", headerName: "PO #", filter: "agTextColumnFilter", cellDataType: 'text' },
     { field: "SO_CUST", headerName: "Cust", filter: "agMultiColumnFilter" },
     { field: "SO_SHIP", headerName: "Ship To", filter: "agTextColumnFilter" },
     { field: "SOD_QTY_ORD", headerName: "Qty Ordered", filter: "agTextColumnFilter" },
@@ -74,8 +124,14 @@ export class ShippedOrdersReportComponent implements OnInit {
     { field: "SO_ORD_DATE", headerName: "Ordered Date", filter: "agSetColumnFilter" },
     { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter" },
     { field: "WORKORDERS", headerName: "WO #", filter: "agTextColumnFilter" },
-    { field: "add_comments", headerName: "Comments", filter: "agSetColumnFilter" },
-    { field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter" },
+    {
+      field: "add_comments", headerName: "Comments", filter: "agSetColumnFilter",
+      cellRenderer: CommentsRendererComponent,
+      cellRendererParams: {
+        onClick: (params: any) => this.viewComment(params.rowData.SOD_NBR + '-' + params.rowData.SOD_LINE, params.rowData.id, params.rowData.SOD_NBR),
+      }
+    },
+    { field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter", maxWidth: 300 },
     { field: "CMT_CMMT", headerName: "QAD Comments", filter: "agTextColumnFilter" },
     { field: "OWNER", headerName: "Owner", filter: "agSetColumnFilter" },
     { field: "ABS_SHIP_QTY", headerName: "Qty Shipped", filter: "agTextColumnFilter" },

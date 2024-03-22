@@ -1,6 +1,3 @@
-<div class="mb-2">
-  <h4>Welcome to Dashboard</h4>
-</div>
 <ngx-simplebar class="me-3 border-0 mb-2">
   <div class="container-fluid">
     <div class="d-flex flex-row flex-nowrap">
@@ -14,7 +11,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Requests</h4>
               <p class="card-text">Requests submitted by customers with no fsid assigned.</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/field-service/request/list']" [queryParams]="{selectedViewType: 'Open'}"
+              <a [routerLink]="['/dashboard/field-service/request/list']" [queryParams]="{selectedViewType: 'Open'}"
                 class="btn btn-primary mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Requests
               </a>
@@ -32,7 +29,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Jobs</h4>
               <p class="card-text">Jobs are considered open if job is in Pending or Confirmed status</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/field-service/job/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
+              <a [routerLink]="['/dashboard/field-service/jobs/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
                 class="btn btn-primary  mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Open Jobs
               </a>
@@ -50,7 +47,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Tickets</h4>
               <p class="card-text">Tickets are considered open if ticket is created and not submitted.</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/field-service/ticket/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
+              <a [routerLink]="['/dashboard/field-service/ticket/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
                 class="btn btn-primary  mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Open Tickets
               </a>
@@ -68,7 +65,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Invoices</h4>
               <p class="card-text">Tickets submitted without an invoice date</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/field-service/job/job-open-invoice']" [queryParams]="{isAll:true}"
+              <a [routerLink]="['/dashboard/field-service/jobs/job-open-invoice']" [queryParams]="{isAll:true}"
                 class=" btn btn-primary mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Open Invoices
               </a>
@@ -82,7 +79,7 @@
 
 
 <div class="row">
-  <div class="col-sm-12 mb-4">
+  <div class="col-sm-12">
     <div class="card">
       <div class="card-header">
         <div class="d-flex align-items-center">
@@ -90,7 +87,7 @@
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
               [displayOptions]="true"></app-date-range>
           </div>
-          <button class="btn btn-primary me-3" [routerLink]="['/field-service/reports/invoice-report']">
+          <button class="btn btn-primary me-3" [routerLink]="['/dashboard/field-service/reports/invoice-report']">
             <i class="mdi mdi-chart-box-outline"></i> View Details
           </button>
           <div class="ms-auto">
@@ -114,7 +111,7 @@
 </div>
 
 <div class="row">
-  <div class="col-sm-12 mb-4">
+  <div class="col-sm-12">
     <div class="card">
       <div class="card-header">
         <div class="d-flex align-items-center">
@@ -122,7 +119,7 @@
             <app-date-range (setDateRange)="onChangeDate1($event)" [value]="dateRange1"
               [displayOptions]="true"></app-date-range>
           </div>
-          <button class="btn btn-primary me-3" [routerLink]="['/field-service/reports/service-report']">
+          <button class="btn btn-primary me-3" [routerLink]="['/dashboard/field-service/reports/service-report']">
             <i class="mdi mdi-chart-box-outline"></i> View Details
           </button>
           <div class="ms-auto">

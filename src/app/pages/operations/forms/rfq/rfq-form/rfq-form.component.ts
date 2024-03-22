@@ -10,6 +10,7 @@ import { RfqService } from '@app/core/api/rfq/rfq-service';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { must_be_email } from 'src/assets/js/util';
 import rfqFormJson from './rfq-form.json';
+import { validateEmail } from 'src/assets/js/util/validateEmail';
 
 @Component({
   standalone: true,
@@ -35,7 +36,7 @@ export class RfqFormComponent {
   /**
    * how many inputs should generate when page loads.
    */
-  palletInputCount: number = 3;
+  palletInputCount: number = 1;
 
   constructor(
     private fb: FormBuilder,
@@ -62,7 +63,7 @@ export class RfqFormComponent {
    */
   public createPallet(): FormGroup {
     return this.fb.group({
-      size: ['']
+      size: ['', Validators.required]
     });
   }
 
@@ -76,7 +77,7 @@ export class RfqFormComponent {
       /**
        * email Info
        */
-      full_name: [null, Validators.required],
+      full_name: [null],
       emailToSendTo: [null, Validators.required],
       ccEmails: [null, Validators.required],
       bbEmails: [''],
@@ -129,6 +130,8 @@ export class RfqFormComponent {
       insuranceIncluded: [true],
       freightClass: ['', Validators.required],
       specialRequirements: [''],
+      created_date: [''],
+      created_by: [''],
       /**
        * Sales order line information
        */
@@ -144,13 +147,6 @@ export class RfqFormComponent {
     this.form = this.fb.group(this.createFbGroup());
 
     this.setFormEmitter.emit(this.form);
-
-    /**
-     * Create 5 extra pallet inputs
-     */
-    for (let i = 0; i < this.palletInputCount; i++) {
-      this.addPallets()
-    }
 
     /**
      * Vendor is an object
@@ -199,7 +195,13 @@ export class RfqFormComponent {
   };
 
   addEmail($event) {
-    console.log($event)
+    let ee = validateEmail($event);
+
+    if (!ee) {
+      alert('Not valid email.')
+      return false;
+    }
+
     return $event;
   }
 

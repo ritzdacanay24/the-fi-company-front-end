@@ -56,7 +56,6 @@ export class ExpenseReportComponent implements OnInit {
     }
 
     setTimeout(() => {
-      console.log('jjj')
       this.chart.update(5)
     }, 1000);
   }

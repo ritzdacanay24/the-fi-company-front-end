@@ -2,7 +2,7 @@
   <div class="card-header d-flex justify-content-between align-items-center">
     <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
       (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-    <h4 class="card-title mb-0 flex-grow-1"> Schedule/View Request </h4>
+    <h4 class="card-title mb-0 flex-grow-1 text-end"> Schedule/View Request </h4>
   </div>
   <div class="card-body" style="min-height:300px">
     <div class="border border-3 p-3 mb-3" *ngIf="jobInfo">
@@ -16,8 +16,11 @@
     <app-job-form (setFormElements)="form = $event" [submitted]="submitted"
       (setOnRemoveTech)="setOnRemoveTech($event)"></app-job-form>
   </div>
-  <div class="card-footer d-flex  d-flex justify-content-between">
-    <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-    <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
+  <div class="card-footer d-flex">
+    <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+    <button class="btn btn-primary ms-auto me-2" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
+    <button class="btn btn-primary" (click)="onSubmitConfirmationEmail()" [disabled]="isLoading">Submit & Send
+      Confirmation
+      Email</button>
   </div>
 </div>

@@ -61,6 +61,21 @@ export class MaterialRequestEditComponent {
 
   details: FormArray;
 
+  checkDuplicate(partNumber) {
+    let items: any = this.form.get('details').value;
+    let isDup = false;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].partNumber == partNumber) {
+        isDup = true;
+        break;
+      }
+    }
+    return isDup;
+  }
+
+  enableEdit = false
+
+  currentInfo
   async getData() {
     try {
 
@@ -68,13 +83,15 @@ export class MaterialRequestEditComponent {
       this.form?.reset()
 
       this.isLoading = true;
-      let data: any = await this.api.getById(this.id);
+      let data = this.currentInfo = await this.api.getById(this.id);
       this.data = await this.materialRequestDetailService.find({ mrf_id: data.id });
 
       if (this.data) {
         this.details = this.form.get('details') as FormArray;
         for (let i = 0; i < this.data.length; i++) {
           let row = this.data[i];
+          row.isDuplicate = this.checkDuplicate(row.partNumber);
+
           this.details.push(this.fb.group(row))
         }
       }

@@ -29,7 +29,7 @@
       <label for="ca_due_dt" class="form-label">Complaint Code</label>
       <select class="form-select" formControlName="complaint_code">
         <option selected disabled value="">--SELECT--</option>
-        <option *ngFor="let row of complaint_codes">{{row.name}} - {{row.id}}</option>
+        <option *ngFor="let row of complaint_codes" [value]="row.name">{{row.name}} - {{row.id}}</option>
       </select>
     </div>
   </div>

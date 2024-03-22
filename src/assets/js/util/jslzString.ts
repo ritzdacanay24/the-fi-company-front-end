@@ -13,7 +13,7 @@ export function _decompressFromEncodedURIComponent(data, params) {
     let e = JSON.parse(JSLZString.decompressFromEncodedURIComponent(data));
 
     if (e?.columnState)
-      params.columnApi.applyColumnState({
+      params.api.applyColumnState({
         state: e?.columnState,
         applyOrder: true,
       });

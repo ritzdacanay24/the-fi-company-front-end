@@ -6,7 +6,7 @@
   [(ngModel)]="value" [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
   [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
   [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="Property not found"
-  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter">
+  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter" [ngClass]="ngClass">
 
   <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
     <div>

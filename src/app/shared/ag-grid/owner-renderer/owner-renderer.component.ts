@@ -25,9 +25,9 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
 
     if (!isEmpty(this.data) && this.data.userName != '') {
       if (isEmpty(this.params.data.recent_owner_changes)) {
-        this.iconColor = 'text-info';
+        this.iconColor = 'text-info-emphasis';
       } else if (!isEmpty(this.params.data.recent_owner_changes)) {
-        this.iconColor = 'text-success';
+        this.iconColor = 'text-success-emphasis';
       }
 
       tippy(params.eGridCell, {
@@ -47,7 +47,7 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
         trigger: 'mouseenter'
       })
     } else if (!isEmpty(this.data) && !isEmpty(this.params.data.recent_owner_changes)) {
-      this.iconColor = 'text-success';
+      this.iconColor = 'text-success-emphasis';
 
       tippy(params.eGridCell, {
         content: `

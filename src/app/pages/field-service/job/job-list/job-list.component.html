@@ -3,13 +3,18 @@
     <div class="card">
       <div class="card-header">
         <div class="d-flex align-items-center">
+          <div class="form-icon me-3">
+            <input type="search" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="this.gridApi.setGridOption('quickFilterText', $event)" [(ngModel)]="query" placeholder="Search">
+            <i class="ri-search-2-line"></i>
+          </div>
           <div class="me-3">
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
               [displayOptions]="true"></app-date-range>
           </div>
           <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
-            [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
-            (change)="getData()" style="width:150px" class="me-3" [appendTo]="'body'">
+            [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
+            style="width:150px" class="me-3" [appendTo]="'body'">
           </ng-select>
           <div class="form-check form-switch form-switch-md">
             <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
@@ -22,8 +27,8 @@
         </div>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-alpine no-border" style="height: calc(100vh - 170px);"
-          [rowData]="data" [columnDefs]="columnDefs">
+        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+          style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
         </ag-grid-angular>
       </div>
     </div>

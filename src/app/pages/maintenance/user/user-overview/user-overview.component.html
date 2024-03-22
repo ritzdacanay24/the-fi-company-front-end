@@ -1,0 +1,93 @@
+<div class="row" *ngIf="!data && !id">
+    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+        <div class="card">
+            <div class="card-body" style="min-height:300px">
+                Please select user from list.
+            </div>
+            <div class="card-footer d-flex  d-flex justify-content-between">
+                <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="id && this.data">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card mt-n4 mx-n4 rounded-0">
+                <div class="bg-dark-subtle">
+                    <div class="card-body pb-0 px-4">
+                        <div class="row">
+                            <div class="col-md mb-3">
+                                <div class="row align-items-center g-3">
+                                    <div class="col-md-auto">
+                                        <div class="avatar-md">
+                                            <div class="avatar-title bg-white rounded-circle">
+                                                <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md mb-3">
+                                        <div>
+                                            <div class="d-flex mb-2 align-middle">
+                                                <button class="btn btn-light btn-sm me-2" (click)="goBack()">
+                                                    Go Back</button>
+                                                <h4 class="fw-bold mb-0 pb-0">{{title}}</h4>
+                                            </div>
+                                            <div class="hstack gap-3 flex-wrap">
+                                                <div>
+                                                    <i class="ri-building-line align-bottom me-1"></i>
+                                                    {{data?.first}} {{data?.last}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
+                                class="nav nav-tabs-custom border-bottom-0" role="tablist">
+                                <li [ngbNavItem]="1" class="nav-item">
+                                    <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                                        <i class="ri-file-info-line text-muted align-bottom me-1"></i> User Info
+                                    </a>
+                                    <ng-template ngbNavContent>
+                                        <app-user-info [id]="id"></app-user-info>
+                                    </ng-template>
+                                </li>
+                                <li [ngbNavItem]="3" class="nav-item">
+                                    <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                                        <i class="ri-file-info-line text-muted align-bottom me-1"></i> Update Password
+                                    </a>
+                                    <ng-template ngbNavContent>
+                                        <app-user-password [id]="id"></app-user-password>
+                                    </ng-template>
+                                </li>
+                                <li [ngbNavItem]="4" class="nav-item">
+                                    <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                                        <i class="ri-file-info-line text-muted align-bottom me-1"></i> Permissions
+                                    </a>
+                                    <ng-template ngbNavContent>
+                                        <app-user-permissions [id]="id"></app-user-permissions>
+                                    </ng-template>
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- end card body -->
+                    </div>
+                </div>
+                <!-- end card -->
+            </div>
+            <!-- end col -->
+        </div>
+        <!-- end row -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="tab-content text-muted">
+                    <div [ngbNavOutlet]="customNav"></div>
+                </div>
+            </div>
+            <!-- end col -->
+        </div>
+        <!-- end row -->
+    </div>

@@ -4,7 +4,8 @@
         <app-qad-wo-search (notifyParent)="notifyParent($event)" [value]="workOrderNumber"
             [showLabel]="false"></app-qad-wo-search>
     </div>
-    <h4 class="modal-title" id="modal-basic-title">Work Order Info</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+
 </div>
 
 
@@ -22,16 +23,18 @@
 
 <div class="modal-body p-0" *ngIf="!isLoading">
 
+    <h4 class="modal-title p-2 ps-3">Work Order Info</h4>
+
     <div class="row p-3 g-0">
         <div class="col-lg-6 g-0">
             <ul class="list-group">
-                <li class="list-group-item border-0 p-1"><b>Work Order #:</b> {{workOrderNumber}}</li>
-                <li class="list-group-item border-0 p-1"><b>Part #:</b> {{mainDetails.wo_part}}</li>
-                <li class="list-group-item border-0 p-1"><b>Part Description:</b> {{mainDetails.PT_DESC1}}</li>
-                <li class="list-group-item border-0 p-1"><b>Due Date:</b> {{mainDetails.wo_due_date}}</li>
-                <li class="list-group-item border-0 p-1"><b>Qty Ordered:</b> {{mainDetails.wo_qty_ord}}</li>
-                <li class="list-group-item border-0 p-1"><b>Status:</b> {{mainDetails.wo_status}}</li>
-                <li class="list-group-item border-0 p-1"><b>Remarks:</b> {{mainDetails.wo_rmks}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Work Order #:</b> {{workOrderNumber}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part #:</b> {{mainDetails.wo_part}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part Description:</b> {{mainDetails.PT_DESC1}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Due Date:</b> {{mainDetails.wo_due_date}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Qty Ordered:</b> {{mainDetails.wo_qty_ord}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Status:</b> {{mainDetails.wo_status}}</li>
+                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Remarks:</b> {{mainDetails.wo_rmks}}</li>
             </ul>
         </div>
         <div class="col-lg-6 text-end g-0">
@@ -42,12 +45,12 @@
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive rounded-0">
 
         <h4 class="text-center p-3" *ngIf="!isLoading && !mainDetails">Sorry, no record found.</h4>
 
-        <ag-grid-angular *ngIf="details.length > 0" style="width: 100%; height: calc(100vh - 454px);"
-            class="ag-theme-alpine" [gridOptions]="gridOptions" [rowData]="details">
+        <ag-grid-angular *ngIf="details.length > 0" style="width: 100%;"
+            class="ag-theme-quartz rounded-0" [gridOptions]="gridOptions" [rowData]="details" [domLayout]="'autoHeight'">
         </ag-grid-angular>
 
         <div id="printSheet" class="d-none d-print-block">
@@ -87,7 +90,7 @@
 
 </div>
 <div class="modal-footer d-flex">
-    <button (click)="dismiss()" type="button" class="btn btn-gray">Close</button>
-    <button (click)="getData()" type="button" class="btn btn-warning ms-auto">Refresh</button>
-    <button (click)="print()" type="button" class="btn btn-primary">Print</button>
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+    <button (click)="getData()" type="button" class="btn btn-light ms-auto">Refresh</button>
+    <button (click)="print()" type="button" class="btn btn-primary" [disabled]="isLoading">Print</button>
 </div>

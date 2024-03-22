@@ -9,14 +9,14 @@
 
   <div class="row">
     <div class="col-md-6 mb-3">
-      <label class="form-label">Start Date</label>
+      <label class="form-label required">Start Date</label>
       <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-        mbsc-datepicker formControlName="start" />
+        mbsc-datepicker formControlName="start"  [ngClass]="{ 'is-invalid': submitted && f.start.errors }"/>
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label">End Time</label>
+      <label class="form-label required">End Time</label>
       <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-        mbsc-datepicker formControlName="end" />
+        mbsc-datepicker formControlName="end"  [ngClass]="{ 'is-invalid': submitted && f.end.errors }" />
     </div>
   </div>
 
@@ -34,30 +34,30 @@
     <label class="form-label">Tech Name</label>
     <ng-select [items]="users$" formControlName="title" [multiple]="false" bindLabel="user" bindValue="user"
       placeholder="Select tech name" placeholder="--Select--" [clearSearchOnAdd]="true" [closeOnSelect]="true"
-      (open)="getUserService()">
+      (open)="getUserService()" [multiple]="true" [closeOnSelect]="false" (change)="onTechSelectChange($event)">
     </ng-select>
   </div>
 
   <div class="mb-3" *ngIf="!form.get('techRelated').value">
     <label class="form-label">Title</label>
-    <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title"
+    <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title" ngbAutofocus
       [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
   </div>
 
   <div class="mb-3" *ngIf="form.get('techRelated').value">
     <label class="form-label">Title</label>
-    <textarea type="text" class="form-control" placeholder="Ex: Unavailable, PTO, Traveling to NM (Fly)" rows="2"
-      formControlName="type"></textarea>
+    <textarea type="text" class="form-control" placeholder="Ex: Unavailable, PTO, Traveling to NM (Fly)" autosize
+      [minRows]="2" formControlName="type"></textarea>
   </div>
 
   <div class="mb-3">
     <label class="form-label">Description</label>
-    <textarea type="text" class="form-control" name="description" formControlName="description" rows="5"
+    <textarea type="text" class="form-control" name="description" formControlName="description" autosize [minRows]="2"
       placeholder="Enter description" [ngClass]="{ 'is-invalid': submitted && f.description.errors }"></textarea>
   </div>
 
   <div class="row">
-    <div class="col-md-12 col-md-3 mb-3">
+    <div class="col-sm-12 col-md-6 mb-3">
       <label class="form-label required">Background Color</label>
       <div class="input-group">
         <input class="form-control" [cpOutputFormat]="'hex'" [cpDisableInput]="true" [cpPosition]="'top'"
@@ -65,7 +65,7 @@
           formControlName="backgroundColor" (colorPickerChange)="setValue('backgroundColor', $event)" />
       </div>
     </div>
-    <div class="col-md-12 col-md-3 mb-3">
+    <div class="col-sm-12 col-md-6 mb-3">
       <label class="form-label required">Text Color</label>
       <div class="input-group">
         <input class="form-control" [cpOutputFormat]="'hex'" [cpDisableInput]="true" [cpPosition]="'top'"
@@ -81,7 +81,7 @@
     </div>
   </div>
 
-  <div class="form-check form-switch mt-2">
+  <div class="form-check form-switch mt-2 form-switch-md">
     <input class="form-check-input" type="checkbox" id="active" formControlName="active"
       (change)="setBooleanToNumber('active')">
     <label class="form-check-label" for="active">Active</label>

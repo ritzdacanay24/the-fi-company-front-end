@@ -15,11 +15,18 @@ import { AttachmentsService } from '@app/core/api/attachments/attachments.servic
 import { FIELD_SERVICE } from '../../field-service-constant';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { getFormValidationErrors } from 'src/assets/js/util';
-import {AutosizeModule} from 'ngx-autosize';
+import { AutosizeModule } from 'ngx-autosize';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
+import { TechScheduleModalService } from '../../scheduler/tech-schedule/tech-schedule-modal/tech-schedule-modal.component';
+import { JobModalCreateService } from '../../job/job-modal-create/job-modal-create.component';
+import { JobService } from '@app/core/api/field-service/job.service';
+import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
+import fa from '@mobiscroll/angular/dist/js/i18n/fa';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, RequestFormComponent, JobFormComponent, RequestScheduleJobComponent, AutosizeModule],
+  imports: [SharedModule, RequestFormComponent, JobFormComponent, RequestScheduleJobComponent, AutosizeModule, SafeHtmlPipe],
   selector: 'app-request-edit',
   templateUrl: './request-edit.component.html',
   styleUrls: ['./request-edit.component.scss']
@@ -33,13 +40,22 @@ export class RequestEditComponent {
     private schedulerService: SchedulerService,
     private commentsService: CommentsService,
     private cdref: ChangeDetectorRef,
-    private attachmentsService: AttachmentsService
-  ) { }
+    private attachmentsService: AttachmentsService,
+    private authenticationService: AuthenticationService,
+    public techScheduleModalService: TechScheduleModalService,
+    private jobModalCreateService: JobModalCreateService,
+    private jobService: JobService,
+    private jobModalEditService: JobModalService,
+  ) {
+
+    this.name = this.authenticationService.currentUserValue.full_name
+  }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
       this.addToSchedule = params['addToSchedule']
+      this.viewComment = params['viewComment']
     });
 
     if (this.id) this.getData();
@@ -49,6 +65,7 @@ export class RequestEditComponent {
     this.cdref.detectChanges();
   }
 
+  viewComment = false;
 
   title = "Edit Request";
 
@@ -136,6 +153,8 @@ export class RequestEditComponent {
     }
   }
 
+  disabled = false;
+
   async getData() {
     try {
       this.data = await this.requestService.getById(this.id);
@@ -159,6 +178,10 @@ export class RequestEditComponent {
       await this.getAttachments()
 
       await this.getComments();
+
+      if (this.viewComment) {
+        this.goToComments()
+      }
 
     } catch (err) { }
   }
@@ -187,7 +210,8 @@ export class RequestEditComponent {
       await this.requestService.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Updated');
-      this.goBack();
+      //this.goBack();
+      this.form.markAsPristine()
     } catch (err) {
       this.isLoading = false;
     }
@@ -220,7 +244,7 @@ export class RequestEditComponent {
         created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
       });
       this.comment = "";
-      this.getComments();
+      await this.getComments();
       SweetAlert.close()
     } catch (err) {
       alert(`Something went wrong. Please contact administrator`)
@@ -239,15 +263,114 @@ export class RequestEditComponent {
   addToSchedule = false;
   jobInfo;
   async scheduleRequest() {
-    this.addToSchedule = true;
+    try {
 
-    this.router.navigate(['.'], {
-      queryParams: {
-        addToSchedule: this.addToSchedule
-      },
-      relativeTo: this.activatedRoute
-      , queryParamsHandling: 'merge'
-    });
+      this.jobInfo = await this.jobService.findOne({ request_id: this.id })
 
+      if (this.jobInfo) {
+        let modalRef = this.jobModalEditService.open(this.jobInfo.id)
+        modalRef.result.then(async (result: any) => {
+          await this.getData()
+        }, () => {
+        });
+        return;
+      }
+
+
+      let res = await this.requestService.getById(this.id)
+
+      let d = {
+        job: {
+          request_date: res.date_of_service,
+          origina_request_date: res.date_of_service,
+          start_time: res.start_time,
+          service_type: res.type_of_service,
+          requested_by: res.requested_by,
+          customer: res.customer,
+          billable: 'Yes',
+          onsite_customer_name: res.onsite_customer_name,
+          onsite_customer_phone_number: res.onsite_customer_phone_number,
+          licensing_required: res.licensing_required,
+          sign_jacks: res.sign_jacks,
+          platform: res.platform,
+          city: res.city,
+          eyefi_customer_sign_part: res.eyefi_customer_sign_part,
+          property: res.property,
+          state: res.state,
+          zip_code: res.zip,
+          address1: res.address1,
+          address2: res.address2,
+          ceiling_height: res.ceiling_height,
+          sign_theme: res.sign_theme,
+          sign_type: res.type_of_sign,
+          sales_order_number: res.so_number,
+          co_number: res.customer_co_number,
+          bolt_to_floor: res.bolt_to_floor,
+          request_id: this.id,
+          site_survey_requested: res.site_survey_requested,
+          comments: `
+${res.special_instruction || 'No Comments'}
+
+-------
+
+Serial #: ${res.serial_number || ''}
+Customer Sign Part #: ${res.eyefi_customer_sign_part || ''}
+Sign Manufacture: ${res.sign_manufacture || ''}
+Customer Product #: ${res.customer_product_number || ''}
+          `,
+          sign_responsibility: 'N/A'
+
+        }
+      };
+
+      let modalRef = this.jobModalCreateService.open(d)
+      modalRef.result.then(async (result: any) => {
+        this.disabled = true
+        try {
+          this.comment = "This has been added to the calendar."
+          await this.onSubmitComment()
+        } catch (err) {
+          alert('Unable to send confirmation message')
+        } finally {
+          this.getData()
+        }
+      }, () => {
+
+      });
+    } catch (err) {
+    }
+  }
+
+  onPrint() {
+    setTimeout(() => {
+      var printContents = document.getElementById('print').innerHTML;
+      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      popupWin.document.open();
+
+      popupWin.document.write(`
+      <html>
+        <head>
+          <title>Material Request Picking</title>
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+          <style>
+          @page {
+            size: portrait;
+            padding: 5 !important;
+          }
+          </style>
+        </head>
+        <body onload="window.print();window.close()">${printContents}</body>
+      </html>`
+      );
+
+      popupWin.document.close();
+
+      popupWin.onfocus = function () {
+        setTimeout(function () {
+          popupWin.focus();
+          popupWin.document.close();
+        }, 300);
+      };
+    }, 200);
   }
 }

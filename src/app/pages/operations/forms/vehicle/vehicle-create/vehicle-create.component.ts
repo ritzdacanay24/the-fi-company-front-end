@@ -33,7 +33,7 @@ export class VehicleCreateComponent {
 
   upload(){}
 
-  title = "Create Customer";
+  title = "Create Vehicle";
 
   form: MyFormGroup<IVehicleForm>;
 

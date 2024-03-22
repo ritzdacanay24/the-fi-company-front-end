@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgbModule, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModule, NgbNavModule, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
 import { WorkOrderService } from '@app/core/api/field-service/work-order.service';
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -20,6 +20,10 @@ import { PropertySearchComponent } from '@app/shared/components/property-search/
 import { PlatformService } from '@app/core/api/field-service/platform.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { states } from '@app/core/data/states';
+import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
+import { AttachmentService } from '@app/core/api/field-service/attachment.service';
+import { DatePickerService } from '@app/shared/date-picker/date-picker.component';
+import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 
 export const timeNow = () => {
   return moment().format('YYYY-MM-DD HH:mm:ss')
@@ -34,7 +38,10 @@ export const timeNow = () => {
     MbscModule,
     NgbModule,
     AutosizeModule,
-    PropertySearchComponent
+    PropertySearchComponent,
+    NgbScrollSpyModule,
+    DatePickerService,
+    JobSearchComponent
   ],
   selector: 'app-job-form',
   templateUrl: `./job-form.component.html`,
@@ -54,12 +61,83 @@ export class JobFormComponent implements OnInit {
     private serviceTypeService: ServiceTypeService,
     private statusCategoryService: StatusCategoryService,
     private customerService: CustomerService,
-    private platformService: PlatformService
+    private platformService: PlatformService,
+    private publicAttachment: PublicAttachment,
+    private attachmentService: AttachmentService,
   ) {
   }
 
-  ngOnInit(): void {
+  @Input() ngStyle = { 'height': 'calc(100vh - 262px)' }
 
+  currentSection = 'item-3'
+
+
+
+  listOptions: any = [
+    {
+      name: "Request Date",
+      ngbScrollSpyItem: 'items-1',
+      icon: 'mdi-calendar',
+      active: true
+    },
+    {
+      name: "Techs",
+      ngbScrollSpyItem: 'items-2',
+      icon: 'mdi-account-plus-outline',
+      active: true
+    },
+    {
+      name: "Job Info",
+      ngbScrollSpyItem: 'items-3',
+      icon: 'mdi-folder-information-outline',
+      active: true
+    },
+    {
+      name: "Address",
+      ngbScrollSpyItem: 'items-4',
+      icon: 'mdi-map-marker-multiple-outline',
+      active: true
+    },
+    {
+      name: "Additional Info",
+      ngbScrollSpyItem: 'items-5',
+      icon: 'mdi-layers-outline',
+      active: true
+    },
+    {
+      name: "Rates",
+      ngbScrollSpyItem: 'items-6',
+      icon: 'mdi-account-cash-outline',
+      active: true
+    },
+    {
+      name: "Invoice",
+      ngbScrollSpyItem: 'items-7',
+      icon: 'mdi-clipboard-text-play-outline',
+      active: true
+    },
+    {
+      name: "Attachments",
+      ngbScrollSpyItem: 'items-8',
+      icon: 'mdi-paperclip',
+      active: true
+    },
+    {
+      name: "Receipts",
+      ngbScrollSpyItem: 'items-9',
+      icon: 'mdi-receipt',
+      active: true
+    },
+    {
+      name: "Activate/Publish",
+      ngbScrollSpyItem: 'items-10',
+      icon: 'mdi-shield-lock-outline',
+      active: true
+    }
+  ]
+
+
+  ngOnInit(): void {
     this.getUserService();
     this.getStatusType();
     this.getNonBillableCodeService()
@@ -107,14 +185,43 @@ export class JobFormComponent implements OnInit {
 
     this.setFormElements?.emit(this.form);
 
+    if (this.id) {
+      this.getAttachments()
+    } else {
+      for (let i = 0; i < this.listOptions.length; i++) {
+        if (
+          this.listOptions[i].name == 'Attachments' ||
+          this.listOptions[i].name == 'Receipts' ||
+          this.listOptions[i].name == 'Invoice'
+        ) {
+          this.listOptions[i].active = false
+        }
+      }
+    }
+
+
   }
+
 
   @Output() setFormElements: EventEmitter<any> = new EventEmitter()
   @Output() setOnRemoveTech: EventEmitter<any> = new EventEmitter()
+  @Output() setAttachments: EventEmitter<any> = new EventEmitter()
+  @Output() setReceipts: EventEmitter<any> = new EventEmitter()
 
   @Input() public non_billable_code_options = []
 
   @Input() submitted = false;
+  @Input() removeTech: Function = ($event, value) => {
+    this.teams.removeAt($event.index);
+  };
+
+  @Input() scrollToItem: Function;
+
+  @Input() id = null;
+
+  viewAttachment(url) {
+    window.open(url, '_blank');
+  }
 
   timeNow = timeNow();
 
@@ -130,9 +237,8 @@ export class JobFormComponent implements OnInit {
   }
 
   myDatepickerOptions = {
-    controls: ['date'],
+    controls: ['calendar'],
     dateFormat: "YYYY-MM-DD",
-    headerText: "{value}",
     placeholder: "Please Select...",
     display: "anchored",
     returnFormat: "moment",
@@ -212,17 +318,20 @@ export class JobFormComponent implements OnInit {
     this.setOnRemoveTech.emit(data)
   }
 
+  getTurnover($event) {
+  }
+
   teams: FormArray;
   addMoreTechs(n) {
     this.teams = this.form.get('resource') as FormArray;
     for (let i = 0; i < n; i++) {
       this.teams.push(this.fb.group({
         user: null,
-        user_rate: 0,
         fs_det_id: "",
         lead_tech: 0,
-        id: "",
-        contractor_code: null
+        id: null,
+        contractor_code: null,
+        title: null
       }))
     }
   }
@@ -251,7 +360,7 @@ export class JobFormComponent implements OnInit {
       requested_by: [''],
       status: ['Pending'],
       sales_order_number: [''],
-      service_type: [null],
+      service_type: [null, [Validators.required]],
       customer: [null, [Validators.required]],
       out_of_state: [''],
       sign_theme: [''],
@@ -259,7 +368,7 @@ export class JobFormComponent implements OnInit {
       platform: [null, [Validators.required]],
       comments: [''],
       notes: [''],
-      created_date: [''],
+      created_date: [moment().format('YYYY-MM-DD HH:mm:ss')],
       created_by: [''],
       vendor_cost: [''],
       invoice: [''],
@@ -279,8 +388,8 @@ export class JobFormComponent implements OnInit {
       cancellation_comments: [''],
       cancelled_type: [''],
       mark_up_percent: [30],
-      ef_hourly_rate: [95],
-      ef_overtime_hourly_rate: [142.50],
+      ef_hourly_rate: [47.50],
+      ef_overtime_hourly_rate: [71.25],
       compliance_license_notes: [''],
       published: [0],
       property_id: [null],
@@ -289,7 +398,7 @@ export class JobFormComponent implements OnInit {
       title: [''],
       schedule_later: [''],
       non_billable_code: [null],
-      property: [null],
+      property: [null, [Validators.required]],
       address1: [''],
       address2: [''],
       city: [''],
@@ -306,6 +415,9 @@ export class JobFormComponent implements OnInit {
       ceiling_height: [''],
       bolt_to_floor: [''],
       sign_jacks: [''],
+      site_survey_requested: [''],
+      per_tech_rate: [33.50],
+      per_tech_rate_ot: [49.60]
     }),
     resource: this.fb.array([]),
   })
@@ -404,5 +516,107 @@ export class JobFormComponent implements OnInit {
         out_of_state: $event.out_of_town
       }
     }, { emitEvent: false })
+  }
+
+
+  @ViewChild('myInput')
+  myInputVariable: ElementRef;
+
+  resetInput() {
+    this.myInputVariable.nativeElement.value = "";
+  }
+
+  /**attachments */
+  file: File = null;
+
+  myFiles: string[] = [];
+
+  onFilechange(event: any) {
+    for (var i = 0; i < event.target.files.length; i++) {
+      this.myFiles.push(event.target.files[i]);
+      this.onUploadAttachments();
+    }
+
+    this.setAttachments.emit(this.myFiles)
+    event.target.value = null;
+  }
+
+  attachments: any = []
+  receipts: any = []
+  async getAttachments() {
+    this.attachments = []
+    this.receipts = []
+    let data: any = await this.attachmentService.getAllRelatedAttachments(this.id)
+    for (let i = 0; i < data.length; i++) {
+      let row = data[i];
+      if (row.field == 'Field Service Receipts') {
+        this.receipts.push(row)
+      } else {
+        this.attachments.push(row)
+      }
+    }
+
+  }
+
+  async onUploadAttachments() {
+    if (this.myFiles && this.id) {
+      let totalAttachments = 0;
+      this.isLoading = true;
+      const formData = new FormData();
+      for (var i = 0; i < this.myFiles.length; i++) {
+        formData.append("file", this.myFiles[i]);
+        formData.append("field", 'Field Service Scheduler');
+        formData.append("uniqueData", `${this.id}`);
+        formData.append("folderName", 'fieldService');
+        try {
+          await this.publicAttachment.uploadfile(formData);
+          totalAttachments++
+        } catch (err) {
+        }
+      }
+      this.resetInput()
+      this.getAttachments();
+      this.isLoading = false;
+    }
+  }
+
+  async onDeleteAttachment(id, index, array) {
+    if (!confirm('Are you sure you want to delete?')) return;
+    await this.publicAttachment.delete(id);
+    array.splice(index, 1)
+  }
+
+
+  /**receipts */
+  isLoading
+  myReceiptFiles: string[] = [];
+  onReceiptchange(event: any) {
+    for (var i = 0; i < event.target.files.length; i++) {
+      this.myReceiptFiles.push(event.target.files[i]);
+      this.onUploadReceipts()
+    }
+    event.target.value = null;
+  }
+
+  async onUploadReceipts() {
+    if (this.myReceiptFiles && this.id) {
+      let totalAttachments = 0;
+      this.isLoading = true;
+      const formData = new FormData();
+      for (var i = 0; i < this.myReceiptFiles.length; i++) {
+        formData.append("file", this.myReceiptFiles[i]);
+        formData.append("field", 'Field Service Receipts');
+        formData.append("uniqueData", `${this.id}`);
+        formData.append("folderName", 'fieldService');
+        try {
+          await this.publicAttachment.uploadfile(formData);
+          totalAttachments++
+        } catch (err) {
+        }
+      }
+      this.resetInput()
+      this.getAttachments();
+      this.isLoading = false;
+    }
   }
 }

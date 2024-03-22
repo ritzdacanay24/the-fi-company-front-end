@@ -38,6 +38,8 @@ export class PropertySearchComponent implements OnInit {
   @Input() placeholder: string = "Search by property name";
   @Input() openOnEnter: boolean = false;
   @Input() editableSearchTerm: boolean = false;
+  @Input() ngClass: string | any;
+
 
   data$: Observable<any[]>;
   dataLoading = false;

@@ -1,5 +1,5 @@
 export class NAVIGATION_ROUTE {
-  public static readonly CREATE = '/quality/rma/create';
-  public static readonly LIST = '/quality/rma/list';
-  public static readonly EDIT = '/quality/rma/edit';
+  public static readonly CREATE = '/dashboard/quality/rma/create';
+  public static readonly LIST = '/dashboard/quality/rma/list';
+  public static readonly EDIT = '/dashboard/quality/rma/edit';
 }

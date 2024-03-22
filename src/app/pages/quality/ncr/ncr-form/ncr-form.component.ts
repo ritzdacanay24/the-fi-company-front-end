@@ -45,7 +45,6 @@ export class NcrFormComponent {
   }
 
   async setOrkOrderNumber($event) {
-    console.log($event, 'ffff')
     this.form.patchValue({ wo_nbr: $event.wo_nbr });
   }
 
@@ -82,6 +81,9 @@ export class NcrFormComponent {
     icm_dspn_dt: [null],
     complaint_code: [null],
     qir_number: [null],
+    created_by: [null],
+    created_date: [null],
+    updated_by: [null],
   })
 
   setBooleanToNumber(key) {

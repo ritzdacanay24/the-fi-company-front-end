@@ -26,6 +26,5 @@ export class JobStatusComponent implements OnInit {
   icon = 'mdi-cogs';
 
   onNavChange($event){
-    console.log($event)
   }
 }

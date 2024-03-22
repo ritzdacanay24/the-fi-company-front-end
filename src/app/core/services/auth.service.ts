@@ -8,6 +8,7 @@ import { Store } from '@ngrx/store';
 import { catchError, map } from 'rxjs/operators';
 import { RegisterSuccess, loginFailure, loginSuccess, logout, logoutSuccess } from 'src/app/store/Authentication/authentication.actions';
 import { TokenStorageService } from './token-storage.service';
+import { THE_FI_COMPANY_CURRENT_USER } from '../guards/admin.guard';
 
 
 const AUTH_API = GlobalComponent.AUTH_API;
@@ -27,7 +28,7 @@ export class AuthenticationService {
     private currentUserSubject: BehaviorSubject<User>;
 
     constructor(private http: HttpClient, private store: Store, private tokenStorageService: TokenStorageService) {
-        this.currentUserSubject = new BehaviorSubject<User>(JSON.parse(sessionStorage.getItem('currentUser')!));
+        this.currentUserSubject = new BehaviorSubject<User>(JSON.parse(localStorage.getItem(THE_FI_COMPANY_CURRENT_USER)!));
         // this.currentUser = this.currentUserSubject.asObservable();
     }
     /**
@@ -106,8 +107,8 @@ export class AuthenticationService {
         this.store.dispatch(logout());
         // logout the user
         // return getFirebaseBackend()!.logout();
-        sessionStorage.removeItem('currentUser');
-        sessionStorage.removeItem('token');
+        localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
+        localStorage.removeItem('token');
         this.currentUserSubject.next(null!);
 
         return of(undefined).pipe(

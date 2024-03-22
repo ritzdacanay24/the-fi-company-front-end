@@ -1,12 +1,32 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+            <div class="card-header d-flex align-items-center">
+
+                <div>
+                    <div class="form-icon">
+                        <input type="text" class="form-control form-control-icon" style="width:250px"
+                            (ngModelChange)="this.gridApi.setGridOption('quickFilterText', $event)" [(ngModel)]="query"
+                            placeholder="Search">
+                        <i class="ri-search-2-line"></i>
+                    </div>
+                </div>
+
+                <div class="ms-3">
+                    <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+                        [pageId]="pageId" [value]="this.tableList?.currentView?.id"></app-grid-settings>
+                </div>
+
+                <div class="ms-3">
+                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+                        [pageId]="pageId" [value]="this.tableList?.currentView?.id"></app-grid-filters>
+                </div>
+
+                <h4 class="card-title mb-0 ms-auto"> {{title}} </h4>
             </div>
             <div class="card-body p-0">
-                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-alpine no-border"
-                    style="height: calc(100vh - 157px);" [rowData]="data" [columnDefs]="columnDefs">
+                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+                    style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
                 </ag-grid-angular>
             </div>
         </div>

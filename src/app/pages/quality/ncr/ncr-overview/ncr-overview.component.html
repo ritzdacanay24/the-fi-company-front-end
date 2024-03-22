@@ -1,11 +1,11 @@
 <div class="row" *ngIf="!id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
@@ -43,7 +43,7 @@
               </div>
             </div>
 
-            <ul ngbNav #customNav="ngbNav" [activeId]="1" class="nav nav-tabs-custom border-bottom-0" role="tablist">
+            <ul ngbNav #customNav="ngbNav" [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist" (navChange)="onNavChange($event)">
               <li [ngbNavItem]="1" class="nav-item">
                 <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                   <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Main

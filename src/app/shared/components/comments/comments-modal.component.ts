@@ -17,12 +17,52 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { stripHtml } from 'src/assets/js/util';
 import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
 
+
+import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+  standalone: true,
+  name: 'dateAgo',
+  pure: true
+})
+export class DateAgoPipe implements PipeTransform {
+
+  transform(value: any, args?: any): any {
+    if (value) {
+      const seconds = Math.floor((+new Date() - +new Date(value)) / 1000);
+      if (seconds < 29) // less than 30 seconds ago will show as 'Just now'
+        return 'Just now';
+      const intervals: { [key: string]: number } = {
+        'year': 31536000,
+        'month': 2592000,
+        'week': 604800,
+        'day': 86400,
+        'hour': 3600,
+        'minute': 60,
+        'second': 1
+      };
+      let counter;
+      for (const i in intervals) {
+        counter = Math.floor(seconds / intervals[i]);
+        if (counter > 0)
+          if (counter === 1) {
+            return counter + ' ' + i + ' ago'; // singular (1 day ago)
+          } else {
+            return counter + ' ' + i + 's ago'; // plural (2 days ago)
+          }
+      }
+    }
+    return value;
+  }
+
+}
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     QuillModule,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    DateAgoPipe
   ],
   selector: 'app-comments',
   templateUrl: './comments-modal.component.html',
@@ -103,13 +143,35 @@ export class CommentsModalComponent implements OnInit {
     }
   }
 
+  sortDirection: 'Asc' | 'Desc' = 'Asc';
+
+  sortComments(results) {
+
+    let sortDirection;
+    if (this.sortDirection == 'Desc') {
+      sortDirection = 'Asc'
+    } else {
+      sortDirection = 'Desc'
+    }
+
+    if (sortDirection == 'Desc') {
+      results = results.sort((a, b) => moment(b.createdDate, 'YYYY-MM-DD HH:mm:ss').diff(moment(a.createdDate, 'YYYY-MM-DD HH:mm:ss')))
+    } else {
+      results = results.sort((a, b) => moment(a.createdDate, 'YYYY-MM-DD HH:mm:ss').diff(moment(b.createdDate, 'YYYY-MM-DD HH:mm:ss')))
+    }
+
+    this.results1 = getNestedChildren(results)
+
+    this.sortDirection = sortDirection;
+  }
 
   results1 = [];
   public getData = async () => {
     try {
       this.isLoading = true;
       let results = await this.commentsService.find({ orderNum: this.orderNum, type: this.type })
-      this.results1 = getNestedChildren(results)
+      this.sortComments(results)
+      //this.results1 = results
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -153,7 +215,11 @@ export class CommentsModalComponent implements OnInit {
     try {
       this.isLoading = true;
       await this.commentsService.createComment(saveParams)
-      this.ngbActiveModal.close(saveParams)
+      this.ngbActiveModal.close({
+        ...saveParams,
+        bg_class_name: 'bg-success',
+        color_class_name: 'text-success',
+      })
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;

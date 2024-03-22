@@ -42,7 +42,7 @@ export class QadPartSearchComponent implements OnInit {
   @Input() clearSearch: boolean = false;
   @Input() ngClass: string | any;
 
-
+  
 
   data$: Observable<any[]>;
   dataLoading = false;

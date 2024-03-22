@@ -1,12 +1,25 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { UserService } from '@app/core/api/field-service/user.service';
 import { cpPresetColors, cpPresetColorsText } from '@app/core/data/scheduler';
 import { SharedModule } from '@app/shared/shared.module';
 import { MbscModule } from '@mobiscroll/angular';
 import { NgSelectModule } from '@ng-select/ng-select';
 import moment from 'moment';
+import { AutosizeModule } from 'ngx-autosize';
 import { ColorPickerModule } from 'ngx-color-picker';
+
+export const dateValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const start = control.get('start');
+  const end = control.get('end');
+
+  if (moment(start.value).format('YYYY-MM-DD') > moment(end.value).format('YYYY-MM-DD')) {
+    start.setErrors({ 'invalid': true });
+  } else {
+    start.setErrors(null);
+  }
+  return null
+}
 
 @Component({
   standalone: true,
@@ -15,7 +28,8 @@ import { ColorPickerModule } from 'ngx-color-picker';
     ReactiveFormsModule,
     MbscModule,
     ColorPickerModule,
-    NgSelectModule
+    NgSelectModule,
+    AutosizeModule,
   ],
   selector: 'app-event-form',
   templateUrl: './event-form.component.html',
@@ -28,9 +42,10 @@ export class EventFormComponent {
     private userService: UserService,
   ) { }
 
-  ngOnInit(): void {
+  techChange($event) {
+  }
 
-    this.setFormEmitter.emit(this.form)
+  ngOnInit(): void {
 
     this.form.get('allDay').valueChanges.subscribe(val => {
       if (val) {
@@ -62,10 +77,13 @@ export class EventFormComponent {
       }
     });
 
+    this.setFormEmitter.emit(this.form);
+    this.getUserService()
+
   }
 
-  onTechRelatedChange(){
-    this.form.get('title').patchValue(null, { emitEvent: false })
+  onTechRelatedChange() {
+    //this.form.get('title').patchValue(null, { emitEvent: false })
     this.form.get('type').patchValue(null, { emitEvent: false })
   }
 
@@ -82,17 +100,20 @@ export class EventFormComponent {
 
   form = this.fb.group({
     title: [''],
-    start: [''],
-    end: [''],
+    start: ['', Validators.required],
+    end: ['', Validators.required],
     description: [''],
     allDay: [''],
-    backgroundColor: [''],
-    borderColor: [''],
-    textColor: [''],
+    backgroundColor: ['#fff078'],
+    borderColor: ['#fff078'],
+    textColor: ['#000'],
     type: [''],
     techRelated: [''],
     active: [1],
-  })
+    resource_id: [],
+    created_date: '',
+    created_by: ''
+  }, { validators: dateValidator })
 
   myDatepickerOptions = {
     controls: ['datetime'],
@@ -108,6 +129,17 @@ export class EventFormComponent {
 
   public setValue(column, value) {
     this.form.get(column).patchValue(value, { emitEvent: false })
+  }
+
+  onRemove(event: any) {
+  }
+
+  onTechSelectChange($event) {
+    let resource_ids = []
+    for (let i = 0; i < $event.length; i++) {
+      resource_ids.push($event[i].id)
+    }
+    this.setValue('resource_id', resource_ids)
   }
 
   users$: any;

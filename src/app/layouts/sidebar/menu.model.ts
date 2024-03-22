@@ -9,4 +9,7 @@ export interface MenuItem {
   parentId?: number;
   isLayout?: boolean;
   isCollapsed?: any;
+  showStar?: boolean | any;
+  showStarColor?: boolean | any;
+  description?: string
 }

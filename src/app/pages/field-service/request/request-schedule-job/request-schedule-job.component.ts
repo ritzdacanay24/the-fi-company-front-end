@@ -8,6 +8,7 @@ import { RequestService } from '@app/core/api/field-service/request.service';
 import { JobFormComponent } from '../../job/job-form/job-form.component';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { TeamService } from '@app/core/api/field-service/fs-team.service';
+import { RequestConfirmationEmailModalService } from '../request-confirmation-email-modal/request-confirmation-email-modal.component';
 
 @Component({
   standalone: true,
@@ -23,6 +24,7 @@ export class RequestScheduleJobComponent {
     private teamService: TeamService,
     private fb: FormBuilder,
     private requestService: RequestService,
+    private requestConfirmationEmailModalService: RequestConfirmationEmailModalService
   ) { }
 
   ngOnInit(): void {
@@ -131,6 +133,7 @@ export class RequestScheduleJobComponent {
           co_number: this.data.customer_co_number,
           bolt_to_floor: this.data.bolt_to_floor,
           request_id: this.id,
+          site_survey_requested: this.data.site_survey_requested,
           comments: `
 ${this.data.special_instruction || 'No Comments'}
 
@@ -149,6 +152,10 @@ Customer Product #: ${this.data.customer_product_number || ''}
     } catch (err) {
     }
 
+  }
+
+  onSubmitConfirmationEmail() {
+    this.requestConfirmationEmailModalService.open(this.data)
   }
 
 }

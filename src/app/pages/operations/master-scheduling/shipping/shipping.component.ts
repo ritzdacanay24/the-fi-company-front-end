@@ -1,15 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { ColumnApi, GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 import moment from 'moment';
-import { agGridDateFilterdateFilter, currencyFormatter, highlightRowView, autoSizeColumns, isEmpty } from 'src/assets/js/util';
+import { agGridDateFilter, currencyFormatter, highlightRowView, highlightRowViewV1, isEmpty } from 'src/assets/js/util';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
@@ -26,6 +26,23 @@ import { PorLabelPrintModalService } from '@app/shared/components/por-label-prin
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
 import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component';
 import { LateReasonCodeModalService } from '@app/shared/components/last-reason-code-modal/late-reason-code-modal.component';
+import { NotesModalService } from '@app/shared/components/notes-modal/notes-modal.component';
+import { NotesRendererComponent } from '@app/shared/ag-grid/notes-renderer/notes-renderer.component';
+import { RfqModalService } from '@app/shared/components/rfq-modal/rfq-modal.component';
+import { ShippingMiscModalService } from '@app/shared/components/shipping-misc-modal/shipping-misc-modal.component';
+import { ShipAccountRendererComponent } from '@app/shared/ag-grid/cell-renderers/ship-account-renderer/ship-account-renderer.component';
+import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { TableSettingsService } from '@app/core/api/table-settings/table-settings.service';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { WebsocketService } from '@app/core/services/websocket.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import { CheckboxRendererComponent } from '@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component';
+import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.component';
+
+const SALES_ORDER = 'Sales Order';
+const WS_SHIPPING = 'WS_SHIPPING';
 
 @Component({
     standalone: true,
@@ -33,12 +50,67 @@ import { LateReasonCodeModalService } from '@app/shared/components/last-reason-c
         SharedModule,
         AgGridModule,
         NgSelectModule,
-        DateRangeComponent
+        DateRangeComponent,
+        NgbDropdownModule,
+        GridSettingsComponent,
+        GridFiltersComponent,
+        DateRangeComponent,
+        GridLayoutComponent
     ],
     selector: 'app-shipping',
     templateUrl: './shipping.component.html',
 })
 export class ShippingComponent implements OnInit {
+
+    pastDue() {
+        this.gridApi!
+            .setColumnFilterModel("STATUS", {
+                "values": [
+                    "Past Due"
+                ],
+                "filterType": "set"
+            })
+            .then(() => {
+                this.gridApi!.onFilterChanged();
+            });
+    }
+
+    dueToday() {
+        this.gridApi!
+            .setColumnFilterModel("STATUS", {
+                "values": [
+                    "Due Today"
+                ],
+                "filterType": "set"
+            })
+            .then(() => {
+                this.gridApi!.onFilterChanged();
+            });
+    }
+
+
+    future() {
+        this.gridApi!
+            .setColumnFilterModel("STATUS", {
+                "values": [
+                    "Future Order"
+                ],
+                "filterType": "set"
+            })
+            .then(() => {
+                this.gridApi!.onFilterChanged();
+            });
+    }
+
+
+
+    all() {
+        this.gridApi!
+            .setColumnFilterModel("STATUS", null)
+            .then(() => {
+                this.gridApi!.onFilterChanged();
+            });
+    }
 
     constructor(
         public router: Router,
@@ -54,21 +126,118 @@ export class ShippingComponent implements OnInit {
         private itemInfoModalService: ItemInfoModalService,
         private porLabelPrintModalService: PorLabelPrintModalService,
         private placardModalService: PlacardModalService,
-        private lateReasonCodeModalService: LateReasonCodeModalService
+        private lateReasonCodeModalService: LateReasonCodeModalService,
+        private notesModalService: NotesModalService,
+        private rfqModalService: RfqModalService,
+        private shippingMiscModalService: ShippingMiscModalService,
+        private tableSettingsService: TableSettingsService,
+        private websocketService: WebsocketService,
+        private authenticationService: AuthenticationService
     ) {
+
+        this.websocketService = websocketService;
+
+        //watch for changes if this modal is open
+        //changes will only occur if modal is open and if the modal equals to the same qir number
+        const ws_observable = this.websocketService.multiplex(
+            () => ({ subscribe: WS_SHIPPING }),
+            () => ({ unsubscribe: WS_SHIPPING }),
+            (message) => message.type === WS_SHIPPING
+        );
+
+        //if changes are found, patch new values
+        ws_observable.subscribe((data: any) => {
+            if (Array.isArray(data?.message)) {
+                this.gridApi.applyTransaction({ update: data?.message });
+                this.gridApi.redrawRows();
+
+            } else {
+                var rowNode = this.gridApi.getRowNode(data.message.id);
+                this.gridApi.applyTransaction({ update: [data.message] });
+                this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+                this.refreshCells([rowNode]);
+            }
+        });
+
     }
+
+    statusCount = {
+        pastDue: 0,
+        todayDue: 0,
+        futureDue: 0
+    }
+
+    private calculateStatus() {
+        let statusCount = {
+            pastDue: 0,
+            todayDue: 0,
+            futureDue: 0
+        };
+
+        let data = this.data;
+        for (let i = 0; i < data.length; i++) {
+            let status = data[i].STATUS;
+            if (status == 'Past Due') {
+                statusCount.pastDue++;
+            } else if (status == 'Due Today') {
+                statusCount.todayDue++;
+            } else {
+                statusCount.futureDue++;
+            }
+        }
+
+        return statusCount;
+    }
+
+    public refreshCells(rowNode) {
+        this.gridApi.flashCells({
+            rowNodes: rowNode,
+            flashDelay: 3000,
+            fadeDelay: 2000,
+        });
+    }
+
+    comment
 
     ngOnInit(): void {
         this.activatedRoute.queryParams.subscribe(params => {
             this.id = params['id'];
+            this.gridFilterId = params['gridFilterId'];
+            this.gridViewId = params['gridViewId'];
+            this.comment = params['comment'];
         })
 
         this.getData()
+
+        if (this.comment) {
+            this.viewComment(this.comment, null);
+        }
+
+
     }
 
-    gridApi: any;
+    dateFrom = moment().subtract(12, 'months').startOf('month').format('YYYY-MM-DD');;
+    dateTo = moment().endOf('month').format('YYYY-MM-DD');
+    dateRange = [this.dateFrom, this.dateTo];
 
-    gridColumnApi: any;
+    onChangeDate($event: { [x: string]: string; }) {
+        this.dateFrom = $event['dateFrom']
+        this.dateTo = $event['dateTo']
+        this.getData()
+    }
+
+    viewFilter() {
+        const savedModel = this.gridApi.getFilterModel();
+    }
+
+    gridFilterId
+
+    gridViewId
+
+    gridApi: GridApi;
+
+    gridColumnApi: ColumnApi;
 
     id = null;
 
@@ -79,10 +248,40 @@ export class ShippingComponent implements OnInit {
             (data.source_inspection_completed == "No" || data.source_inspection_completed == "" || data.source_inspection_completed == null)
     }
 
-    viewComment = (workOrderNumber) => {
-        let modalRef = this.commentsModalService.open(workOrderNumber, 'Sales Order')
+    viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+        let modalRef = this.commentsModalService.open(salesOrderLineNumber, 'Sales Order')
         modalRef.result.then((result: any) => {
-        }, () => { });
+            let rowNode = this.gridApi.getRowNode(id);
+            rowNode.data.recent_comments = result;
+            this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+            this.websocketService.next({
+                actions: {
+                    time: moment().format("h:mm A"),
+                    icon: "feather icon-message-square",
+                    link: `/master-scheduling/shipping?comment=${rowNode.data.SALES_ORDER_LINE_NUMBER}`,
+                    info: `Comment added by ${this.authenticationService.currentUserValue.full_name} on SO#: ${rowNode.data.SALES_ORDER_LINE_NUMBER} Comment: ${rowNode.data.recent_comments.comments_html}`,
+                },
+                message: rowNode.data,
+                type: WS_SHIPPING
+            });
+            this.router.navigate([`.`], {
+                relativeTo: this.activatedRoute,
+                queryParamsHandling: 'merge',
+                queryParams: {
+                    comment: null
+                }
+            });
+        }, () => {
+
+            this.router.navigate([`.`], {
+                relativeTo: this.activatedRoute,
+                queryParamsHandling: 'merge',
+                queryParams: {
+                    comment: null
+                }
+            });
+        });
     }
 
     viewRouting = (partNumber) => {
@@ -100,18 +299,68 @@ export class ShippingComponent implements OnInit {
     viewReasonCode = (key, misc, soLineNumber, rowData) => {
         let modalRef = this.lateReasonCodeModalService.open(key, misc, soLineNumber, "Shipping")
         modalRef.result.then((result: any) => {
+            rowData.misc = result;
+            this.sendAndUpdate(rowData, rowData.id);
+        }, () => { });
+    }
+
+    viewNotes = (e: { rowData: any }) => {
+        const uniqueId = `${e.rowData.SOD_NBR}`
+        let modalRef = this.notesModalService.open(uniqueId, 'Sales Order')
+        modalRef.result.then((result: any) => {
+            e.rowData.misc = result;
+            this.sendAndUpdate(e.rowData, e.rowData.id);
+        }, () => { });
+    }
+
+    vewRfq = (e: { rowData: any }) => {
+        let modalRef = this.rfqModalService.open(e.rowData.SOD_NBR, e.rowData.SOD_LINE)
+        modalRef.result.then((result: any) => {
             this.getData();
         }, () => { });
     }
 
+    openMisc(soLine, rowData) {
+        const modalRef = this.shippingMiscModalService.open(soLine);
+        modalRef.result.then((result: any) => {
+            rowData.misc = result;
+            this.sendAndUpdate(rowData, rowData.id);
+        });
+    }
+
+    searchName = "";
+
+    onFilterTextBoxChanged(value: any) {
+        this.gridApi.setGridOption('quickFilterText', value);
+    }
 
     columnDefs: any = [{
-        field: "shipAccountEdit", headerName: "Ship Account Edit", filter: "agSetColumnFilter"
+        field: "Misc Edit", headerName: "Misc Edit", filter: false
         , valueGetter: (params) => {
             return `SO#: ${params?.data?.sales_order_line_number}`;
+        },
+        cellRenderer: ShipAccountRendererComponent,
+        cellRendererParams: {
+            onClick: e => this.openMisc(`${e.rowData.SOD_NBR}-${e.rowData.SOD_LINE}`, e.rowData)
+        },
+        maxWidth: 120,
+        suppressHeaderMenuButton: false
+    },
+    {
+        field: "STATUS", headerName: "Status", filter: "agSetColumnFilter",
+        cellRenderer: (params: any) => {
+            if (params.data) {
+                if (params.value == 'Future Order')
+                    return `<span class="badge bg-success-subtle text-success mb-0">${params.value}</span>`;
+                if (params.value == 'Past Due')
+                    return `<span class="badge bg-danger-subtle text-danger mb-0">${params.value}</span>`
+                if (params.value == 'Due Today')
+                    return `<span class="badge bg-warning-subtle text-warning mb-0">${params.value}</span>`
+                return params.value;
+            }
+            return null
         }
     },
-    { field: "STATUS", headerName: "Status", filter: "agSetColumnFilter" },
     {
         field: "SOD_PART", headerName: "Part", filter: "agMultiColumnFilter",
         cellRenderer: LinkRendererComponent,
@@ -134,7 +383,7 @@ export class ShippingComponent implements OnInit {
             isLink: true
         }
     },
-    { field: "SOD_LINE", headerName: "Line #", filter: "agSetColumnFilter" },
+    { field: "SOD_LINE", headerName: "Line #", filter: "agNumberColumnFilter" },
     { field: "SOD_CONTR_ID", headerName: "PO #", filter: "agMultiColumnFilter" },
     { field: "SO_CUST", headerName: "Customer", filter: "agMultiColumnFilter" },
     {
@@ -151,9 +400,9 @@ export class ShippingComponent implements OnInit {
     { field: "QTYOPEN", headerName: "Qty Open", filter: "agNumberColumnFilter" },
     {
         field: "LD_QTY_OH", headerName: "Qty OH", filter: "agSetColumnFilter",
-        cellStyle: (e) => {
+        cellClass: (e) => {
             if (e.data && e.data.LD_QTY_OH <= 0)
-                return { "background-color": "#B22222", color: "#fff" }
+                return ['border-start border-danger'];
             return null
         }, filterParams: {
             valueGetter: params => {
@@ -167,7 +416,7 @@ export class ShippingComponent implements OnInit {
     },
     {
         field: "SOD_DUE_DATE", headerName: "Due Date", filter: "agDateColumnFilter",
-        filterParams: agGridDateFilterdateFilter,
+        filterParams: agGridDateFilter,
         cellStyle: params => {
             if (params.data && this.isInspection(params.data?.misc)) {
                 return {
@@ -206,23 +455,48 @@ export class ShippingComponent implements OnInit {
     },
     {
         field: "SO_ORD_DATE", headerName: "Ordered Date", filter: "agDateColumnFilter",
-        filterParams: agGridDateFilterdateFilter
+        filterParams: agGridDateFilter
     },
     { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter" },
     {
         field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
         cellRenderer: CommentsRendererComponent,
         cellRendererParams: {
-            onClick: (e: any) => this.viewComment(e.rowData.sales_order_line_number),
+            onClick: (params: any) => this.viewComment(params.rowData.sales_order_line_number, params.rowData.id, params.rowData.SOD_NBR),
         }
-        , valueGetter: function (params) {
-            return {
-                title: `SO#: ${params.data.sales_order_line_number}`,
+        , valueGetter: (params) => {
+            if (params.data)
+                if (params.data.recent_comments?.bg_class_name == 'bg-info') {
+                    return 'Has Comments'
+                } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
+                    return 'New Comments'
+                } else {
+                return 'No Comments'
             }
         },
+        // , valueGetter: (params) => {
+        //   if (params.data) {
+        //     return {
+        //       title: `SO#: ${params.data.SOD_NBR}-${params.data.SOD_LINE}`,
+        //       description: `${params.data.SOD_PART}`
+        //     }
+        //   }
+        // },
+        filterParams: {
+            valueGetter: params => {
+                let data = params.value;
+                if (data !== '') {
+                    return 'Has Comments'
+                } else {
+                    return 'No Comments';
+                }
+            }
+        }
     },
-
-    { field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter", autoHeight: false, wrapText: false, maxWidth: 300 },
+    {
+        field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter",
+        autoHeight: false, wrapText: false, maxWidth: 300
+    },
     {
         field: "CMT_CMMT", headerName: "QAD Comments", filter: "agMultiColumnFilter",
         filterParams: {
@@ -237,7 +511,12 @@ export class ShippingComponent implements OnInit {
         }
     },
     {
-        field: "misc.userName", headerName: "Owner", filter: "agMultiColumnFilter"
+        field: "misc.userName", headerName: "Owner", filter: "agMultiColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
     },
     {
         field: "ownerTransactions", headerName: "Owner Transactions", filter: "agSetColumnFilter",
@@ -255,7 +534,6 @@ export class ShippingComponent implements OnInit {
             }
         }
     },
-    { field: "shippingChanges", headerName: "Shipping Changes", filter: "agSetColumnFilter" },
     {
         field: "SOD_LIST_PR", headerName: "List Price", filter: "agSetColumnFilter", valueFormatter: currencyFormatter, aggFunc: "sum", filterParams: {
             valueGetter: params => {
@@ -294,10 +572,17 @@ export class ShippingComponent implements OnInit {
     },
     { field: "LEADTIME", headerName: "Lead Time", filter: "agTextColumnFilter" },
     { field: "AGE", headerName: "Age", filter: "agSetColumnFilter" },
-    { field: "RFQ", headerName: "RFQ", filter: "agSetColumnFilter" },
+    {
+        field: "RFQ", headerName: "RFQ", filter: "agSetColumnFilter",
+        cellRenderer: IconRendererComponent,
+        cellRendererParams: {
+            onClick: e => { this.vewRfq(e) },
+            iconName: 'mdi mdi-printer'
+        }
+    },
     {
         field: "misc.arrivalDate", headerName: "Arrival Date", filter: "agDateColumnFilter",
-        filterParams: agGridDateFilterdateFilter
+        filterParams: agGridDateFilter
     },
     { field: "misc.shipViaAccount", headerName: "Ship Via Account", filter: "agSetColumnFilter" },
     { field: "sod_acct", headerName: "Sod Account", filter: "agSetColumnFilter" },
@@ -310,28 +595,11 @@ export class ShippingComponent implements OnInit {
         }
     },
     {
-        field: "misc.source_Inspection", headerName: "Source Inspection", filter: "agSetColumnFilter"
-        , valueGetter: (params) => {
-            if (params.data) return `SO#: ${params.data.sales_order_line_number}`;
-            return null;
-        }
-    },
-    {
-        field: "misc.source_inspection_required", headerName: "Source Inspection Required", filter: "agSetColumnFilter",
-        cellRenderer: (params) => {
-            if (params.data) {
-                if (params.data.misc.source_inspection_required == "Yes" &&
-                    (params.data.misc.source_inspection_completed == "Yes")
-                ) {
-                    return `${params.data.misc.source_inspection_waived === 'true' ? 'Completed & Waived' : 'Completed!'}`;
-                } else {
-                    return params.data.misc.source_inspection_required
-                }
-            }
-        }
-    },
-    {
         field: "recent_notes.notes", headerName: "Notes", filter: "agSetColumnFilter",
+        cellRenderer: NotesRendererComponent,
+        cellRendererParams: {
+            onClick: this.viewNotes.bind(this)
+        },
         filterParams: {
             valueGetter: params => {
                 let isEMpty = isEmpty(params.data.recent_notes);
@@ -344,11 +612,46 @@ export class ShippingComponent implements OnInit {
         }
     },
     { field: "SO_SHIPVIA", headerName: "Ship Via", filter: "agMultiColumnFilter" },
-    { field: "misc.container", headerName: "Container", filter: "agMultiColumnFilter" },
-    { field: "misc.container_due_date", headerName: "Container due date", filter: "agSetColumnFilter" },
-    { field: "misc.tj_po_number", headerName: "TJ PO #", filter: "agMultiColumnFilter" },
-    { field: "misc.tj_due_date", headerName: "TJ Due Date", filter: "agSetColumnFilter" },
-    { field: "misc.pallet_count", headerName: "Pallet Count", filter: "agSetColumnFilter" },
+    {
+        field: "misc.container", headerName: "Container", filter: "agMultiColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
+    {
+        field: "misc.container_due_date", headerName: "Container due date", filter: "agSetColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
+    {
+        field: "misc.tj_po_number", headerName: "TJ PO #", filter: "agSetColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
+    {
+        field: "misc.tj_due_date", headerName: "TJ Due Date", filter: "agSetColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
+    {
+        field: "misc.pallet_count", headerName: "Pallet Count", filter: "agSetColumnFilter",
+        editable: true,
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
     {
         field: "FG-Label", headerName: "FG Label", filter: "agSetColumnFilter",
         cellRenderer: IconRendererComponent,
@@ -365,16 +668,22 @@ export class ShippingComponent implements OnInit {
             iconName: 'mdi mdi-printer'
         }
     },
-    { field: "misc.g2e_comments", headerName: "G2E", filter: "agMultiColumnFilter" },
+    {
+        field: "misc.g2e_comments", headerName: "G2E", filter: "agMultiColumnFilter",
+        cellRenderer: EditIconComponent,
+        editable: true,
+        cellRendererParams: {
+            iconName: 'mdi mdi-pencil'
+        },
+    },
     {
         field: 'misc.shortages_review',
         headerName: 'Shortages Review',
-        filter: 'agSetColumnFilter'
-    },
-    {
-        field: 'misc.recoveryDate',
-        headerName: 'Production Commit date',
-        filter: 'agSetColumnFilter'
+        filter: 'agSetColumnFilter',
+        cellRenderer: CheckboxRendererComponent,
+        cellRendererParams: {
+            onClick: e => this.update(e.rowData),
+        }
     },
     {
         field: 'misc.lateReasonCodePerfDate',
@@ -399,13 +708,8 @@ export class ShippingComponent implements OnInit {
         }
     },
     {
-        field: 'misc.supplyReview',
-        headerName: 'Supply Review',
-        filter: 'agSetColumnFilter'
-    },
-    {
         field: 'misc.clear_to_build_status',
-        headerName: 'Clear to build status',
+        headerName: 'CTB in Period',
         filter: 'agSetColumnFilter',
         cellEditor: 'agRichSelectCellEditor',
         editable: true,
@@ -417,20 +721,20 @@ export class ShippingComponent implements OnInit {
                 return '--Select status--'
             }
         },
-        cellStyle: (params: any) => {
-            if (params.value == 'Clear To Build') {
-                return { 'background-color': '#32de84' };
+        cellClass: (params: any) => {
+            if (params.value == 'CTB in Period') {
+                return ['bg-success bg-opacity-50'];
             } else if (params.value == 'At Risk') {
-                return { 'background-color': '#AA0000' };
+                return ['bg-danger bg-opacity-75'];
             } else if (params.value == 'Miss') {
-                return { 'background-color': '#c90016', color: 'white' };
+                return ['bg-warning bg-opacity-50'];
             } else {
-                return { 'background-color': 'unset' };
+                return [];
             }
         },
 
         cellEditorParams: {
-            values: ['Clear To Build', 'At Risk', 'Miss', 'NA'],
+            values: ['CTB in Period', 'At Risk', 'Miss', 'NA'],
             cellEditorPopup: false,
         },
 
@@ -441,7 +745,7 @@ export class ShippingComponent implements OnInit {
     },
     {
         field: 'clear_to_build_period',
-        headerName: 'Clear to build period',
+        headerName: 'CTB Report Period',
         filter: 'agMultiColumnFilter',
         cellRenderer: (params) => {
             return moment(params?.data?.SOD_DUE_DATE).format('MM-YYYY')
@@ -452,31 +756,168 @@ export class ShippingComponent implements OnInit {
     },
     { field: 'sod_type', headerName: 'SOD Type', filter: 'agSetColumnFilter' },
     { field: 'oid_ordered_dateTime', headerName: 'SO Ordered Date & Time', filter: 'agTextColumnFilter' },
-    { field: 'OID_SO_MSTR', headerName: 'OID SO MSTR', filter: 'agTextColumnFilter' },
     { field: 'sod_per_date', headerName: 'Performance Date', filter: 'agDateColumnFilter' },
-    { field: "sod_req_date", headerName: "Request Date", filter: "agDateColumnFilter", filterParams: agGridDateFilterdateFilter },
+    { field: "sod_req_date", headerName: "Request Date", filter: "agDateColumnFilter", filterParams: agGridDateFilter },
     { field: "REQ_DUE_DIFF", headerName: "Request and Due Date Diff", filter: "agMultiColumnFilter" }
     ];
 
+
+    pageId = '/master-scheduling/shipping'
+
+    tableList: any;
+    currentTableView: any
+    async getTableSettings() {
+        this.tableList = await this.tableSettingsService.getTableByUserId({ pageId: this.pageId });
+        this.gridApi.applyColumnState({
+            state: this.tableList.currentView.data,
+            applyOrder: true,
+        });
+    }
+
+    defaultFilters = [
+        {
+            id: -1,
+            name: "Future Orders",
+            data: {
+                "STATUS": {
+                    "values": [
+                        "Future Order"
+                    ],
+                    "filterType": "set"
+                }
+            }
+        },
+        {
+            id: -2,
+            name: "Past Due Orders",
+            data: {
+                "STATUS": {
+                    "values": [
+                        "Past Due"
+                    ],
+                    "filterType": "set"
+                }
+            }
+        }
+    ]
+
+    emitFilter($event) {
+        this.router.navigate([`.`], {
+            relativeTo: this.activatedRoute,
+            queryParamsHandling: 'merge',
+            queryParams: {
+                gridFilterId: $event
+            }
+        });
+    }
+
+    emitGrid($event) {
+        this.router.navigate([`.`], {
+            relativeTo: this.activatedRoute,
+            queryParamsHandling: 'merge',
+            queryParams: {
+                gridViewId: $event
+            }
+        });
+    }
+
+
+    dataRenderered = false;
+
     gridOptions: GridOptions = {
         ...agGridOptions,
-        rowBuffer: 0,
         animateRows: true,
         columnDefs: [],
+        suppressColumnMoveAnimation: true,
+        getRowId: (data: any) => data?.data.id,
         onGridReady: (params: any) => {
             this.gridApi = params.api;
             this.gridColumnApi = params.columnApi;
-
-            let data = this.activatedRoute.snapshot.queryParams['gridParams']
-            _decompressFromEncodedURIComponent(data, params);
         },
         onFirstDataRendered: (params) => {
-            highlightRowView(params, 'id', this.id);
-            autoSizeColumns(params)
+            this.dataRenderered = true;
+            if (this.comment) {
+                highlightRowViewV1(params, 'id', this.comment.replace('-', ''));
+                this.gridApi.ensureColumnVisible('Comments', 'end')
+            } else {
+                highlightRowView(params, 'id', this.id);
+            }
+            this.setPinnedRows()
         },
-        onFilterChanged: params => this.updateUrl(params),
-        onSortChanged: params => this.updateUrl(params),
+        // onFilterChanged: params => this.updateUrl(params),
+        // onSortChanged: params => this.updateUrl(params),
+        onCellEditingStopped: (event) => {
+            if (event.oldValue == event.newValue || event.value === undefined) return;
+            this.update(event.data);
+        },
+        getRowClass: (params: any) => {
+            if (params.data.SALES_ORDER_LINE_NUMBER === this.comment) {
+                return ['bg-primary-subtle']
+            } else if (params.data.misc?.hot_order) {
+                return ['border border-danger bg-opacity-10 bg-danger']
+            }
+            return null;
+        },
     };
+
+
+    public showHideOverlay(isShow) {
+        if (this.gridApi) {
+            isShow ? this.gridApi.showLoadingOverlay() : this.gridApi.hideOverlay();
+        }
+    }
+
+    public async update(data: any) {
+
+        data.misc.shippingMisc = 1;
+        data.misc.so = data.sales_order_line_number; //add on insert since so is not available yet
+
+        /**
+         * this data should be the full data object!!
+         */
+
+        /**
+         *  Save data to database
+        */
+
+        try {
+            this.showHideOverlay(true);
+            let res = await this.api.saveMisc(data.misc)
+            data.misc = res;
+            this.sendAndUpdate(data, data.id);
+            this.showHideOverlay(false);
+        } catch (err) {
+            this.showHideOverlay(false)
+        }
+
+        // let res = await this.api
+        //     .saveMisc(data.misc)
+        //     .pipe(first())
+        //     .subscribe((res) => {
+        //         data.misc = res;
+        //         this.sendAndUpdate(data, data.id);
+        //         this.showHideOverlay(false);
+        //     }, () => this.showHideOverlay(false));
+
+    }
+
+
+    public sendAndUpdate(newData: any, id: any) {
+        /**
+         * newData MUST be the complete data object
+         */
+        let rowNode = this.gridApi.getRowNode(id);
+        rowNode.data = newData;
+        this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+        this.setPinnedRows()
+
+        this.websocketService.next({
+            message: newData,
+            type: WS_SHIPPING
+        });
+    }
+
 
     updateUrl = (params) => {
         let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
@@ -489,11 +930,30 @@ export class ShippingComponent implements OnInit {
         });
     }
 
+    getAllRows() {
+        let rowData = [];
+        this.gridApi.forEachNode(node => rowData.push(node.data));
+        return rowData;
+    }
+
+    setPinnedRows() {
+        let data = this.getAllRows()
+        let res = []
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].misc?.hot_order) {
+                res.push(data[i])
+            }
+        }
+        this.gridApi.setGridOption('pinnedTopRowData', res)
+    }
+
     data: any;
     async getData() {
         try {
             this.gridApi?.showLoadingOverlay()
             this.data = await this.api.getShipping();
+            this.statusCount = this.calculateStatus();
+            this.setPinnedRows()
             this.gridApi?.hideOverlay();
         } catch (err) {
             this.gridApi?.hideOverlay()

@@ -1,0 +1,24 @@
+<div class="modal-header d-flex align-items-center d-flex justify-content-between">
+
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Day'}"
+            (click)="set('Day')">Day</button>
+        <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Hourly'}"
+            (click)="set('Hourly')">Hourly</button>
+        <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Weekly'}"
+            (click)="set('Weekly')">Weekly</button>
+        <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Monthly'}"
+            (click)="set('Monthly')">Monthly</button>
+    </div>
+
+    <h4 class="modal-title" id="modal-basic-title ms-auto text-end">Tech Schedule - {{start_date}}</h4>
+</div>
+
+<div class="modal-body bg-light py-0">
+    <app-resource-by-tech [colors]="colors" [ngStyle]="ngStyle" [start]="start_date"
+        [view]="view" (calenderEmitter)="calenderEmitter($event)" [condense]="false"></app-resource-by-tech>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+</div>

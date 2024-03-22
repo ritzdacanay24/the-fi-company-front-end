@@ -8,6 +8,9 @@
     "MENU": {
       "TEXT": "MENU"
     },
+    "DASHBOARD": {
+      "TEXT": "Dashboard"
+    },
     "ADMIN": {
       "NAME": "Admin",
       "QUERY": "Query"
@@ -21,6 +24,11 @@
     "OPERATIONS": {
       "TEXT": "Operations",
       "OVERVIEW": "Dashboard",
+      "LABELS": "Labels",
+      "LOGISTICS": {
+        "NAME": "Logistics",
+        "CALENDAR": "Calendar"
+      },
       "SHIPPING_REQUEST": {
         "NAME": "Shipping Request",
         "LIST": "List SR",
@@ -68,7 +76,10 @@
       "MASTER_SCHEDULING": {
         "NAME": "Master Scheduling",
         "SHIPPING": "Shipping",
-        "MASTER_PRODUCTION": "Master Production"
+        "ALL_ROUTING": "Master Production",
+        "PICKING_ROUTING": "Picking",
+        "PRODUCTION_ROUTING": "Production",
+        "QC_ROUTING": "Final/Test QC"
       },
       "REPORTS": {
         "NAME": "Reports",
@@ -76,7 +87,7 @@
         "REVENUE": "Revenue",
         "REVENUE_BY_CUSTOMER": "Revenue By Customer",
         "WIP_REPORT": "WIP Report",
-        "TRANSIT_LOCATION_VALUE_REPORT": "Transaction Location",
+        "TRANSIT_LOCATION_VALUE_REPORT": "In Transit Report",
         "FG_VALUE_REPORT": "FG Value Report",
         "JX_VALUE_REPORT": "JX Value Report",
         "LV_RAW_MATERIAL": "LV Raw Material",
@@ -85,8 +96,9 @@
         "NEGATIVE_LOCATION_REPORT": "Negative Locations",
         "EMPTY_LOCATION_REPORT": "Empty Locations",
         "INVENTORY_REPORT": "Inventory",
-        "ONE_SKU_LOCATION_REPORT": "One SKU Location",
-        "ITEM_CONSOLIDATION_REPORT": "Item Consolidation"
+        "ONE_SKU_LOCATION_REPORT": "One SKU Location", 
+        "ITEM_CONSOLIDATION_REPORT": "Item Consolidation", 
+        "WORK_ORDER_VARIANCE": "Work Order Variance"
       },
       "GRAPHICS": {
         "NAME": "Graphics",
@@ -157,7 +169,8 @@
         "CREATE": "Create Job",
         "EDIT": "Edit Job",
         "OVERVIEW": "Job Overview",
-        "OPEN_INVOICES": "Open Invoices"
+        "OPEN_INVOICES": "Open Invoices",
+        "BILLING": "Billing"
       },
       "REQUEST": {
         "NAME": "Requests",
@@ -172,7 +185,9 @@
       },
       "SCHEDULING": {
         "NAME": "Scheduling",
-        "SCHEDULER": "Scheduler"
+        "CALENDAR": "Calendar",
+        "TECHSCHEDULE": "Tech Schedule",
+        "MAP": "Map"
       },
       "REPORTS": {
         "NAME": "Reports",

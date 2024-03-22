@@ -50,7 +50,7 @@ export class NcrListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -65,9 +65,9 @@ export class NcrListComponent implements OnInit {
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: "ncr_type", headerName: "Type", filter: "agTextColumnFilter" },
     { field: "initiated_by", headerName: "Initiated By", filter: "agTextColumnFilter" },
-    { field: "wo_nbr", headerName: "WO#", filter: "agTextColumnFilter" },
+    { field: "wo_nbr", headerName: "WO#", filter: "agTextColumnFilter", cellDataType: 'text' },
     { field: "submitted_date", headerName: "Submitted Date", filter: "agTextColumnFilter" },
-    { field: "po_nbr", headerName: "PO #", filter: "agTextColumnFilter" },
+    { field: "po_nbr", headerName: "PO #", filter: "agTextColumnFilter", cellDataType: 'text' },
     { field: "pt_nbr", headerName: "Part #", filter: "agTextColumnFilter" },
     { field: "created_date", headerName: "Created Date", filter: "agTextColumnFilter" },
     { field: "created_by", headerName: "Created By", filter: "agTextColumnFilter" },
@@ -92,7 +92,7 @@ export class NcrListComponent implements OnInit {
     }
   ]
 
-  title = 'RMA List';
+  title = 'NCR List';
 
   gridApi: GridApi;
 

@@ -1,0 +1,42 @@
+<div class="modal-header bg-light">
+  <h4 class="modal-title" id="modal-basic-title">
+    <span class="mdi mdi-note text-warning"></span> Notes
+  </h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+
+</div>
+<div class="modal-body bg-light">
+
+  <h4 class="mb-3">SO#: {{data.orderNum}}</h4>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <quill-editor [(ngModel)]="htmlText" placeholder="Enter Comments here.." [modules]="quillConfig"
+        style="width:100%;height:200px" class="no-border">
+      </quill-editor>
+    </div>
+  </div>
+
+  <div class="m-3">
+    {{results?.length}} Notes
+  </div>
+
+  <div class="card rounded mb-2" *ngFor="let row of results">
+    <div class="card-header py-2">
+      <div class="d-flex align-items-center">
+        <div>
+          <p class="mb-0">{{row.createdByName}}</p>
+          <p class="text-muted mb-0">{{row.createdDate}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="mb-3 tx-14" [innerHTML]="row.notes | safeHtml"></p>
+    </div>
+  </div>
+</div>
+<div class="modal-footer bg-light">
+  <button (click)="dismiss()" type="button" class="btn btn-light mr-auto">Close</button>
+  <button (click)="saveComment()" type="button" class="btn btn-primary"
+    [disabled]="htmlText == '' || !htmlText || loadingIndicator">Save</button>
+</div>

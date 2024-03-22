@@ -2,7 +2,7 @@
     <div class="col-md-12 mb-3">
         <div class="card">
             <div class="card-header">
-                <h4>Open Revenue by Customer</h4>
+                <h4 class="card-title mb-0 flex-grow-1">Open Revenue by Customer</h4>
             </div>
 
             <div *ngIf="isLoading" class="p-5 card-body text-center">
@@ -16,9 +16,9 @@
 
             <div class="card-body" *ngIf="data && !isLoading">
                 <div class="table-responsive">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-hover">
                         <thead class="table-primary">
-                            <tr>
+                            <tr class="text-nowrap">
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
                                     [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">{{ item.key
                                     }}</th>
@@ -29,7 +29,7 @@
                                     [ngClass]="{'text-end pointer': i != 0, 'bg-primary text-white': column.key == d}"
                                     (click)="getData1(column.key)">
                                     <span *ngIf="i == 0">{{ column.value }}</span>
-                                    <span *ngIf="i != 0">{{ column.value | currency }}</span>
+                                    <span *ngIf="i != 0" [ngClass]="{'bg-success-subtle' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">{{ column.value | currency }}</span>
                                 </td>
                             </tr>
                         </tbody>
@@ -49,22 +49,23 @@
         </div>
     </div>
 </div>
+
 <div class="row" *ngIf="data1?.chart1">
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
-                <h4>Open revenue by customer and week {{d}}</h4>
+                <h4 class="card-title mb-0 flex-grow-1">Open revenue by customer and week {{d}}</h4>
             </div>
             <div class="card-body">
-                <table class="table table-bordered mb-2" *ngFor="let item of data1?.chart1 | keyvalue">
+                <table class="table table-bordered mb-2" *ngFor="let item of data1?.chart1 | keyvalue as any">
                     <tbody>
                         <tr>
                             <th colspan="2">{{item.key}}</th>
                         </tr>
-                        <!-- <tr *ngFor="let r of item.value">
+                        <tr *ngFor="let r of $any(item?.value)">
                             <td>{{r.week}}</td>
-                            <td>{{r.value | currency}}</td>
-                        </tr> -->
+                            <td class="text-end">{{r.value | currency}}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -73,14 +74,14 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
-                <h4>Open revenue by week {{d}}</h4>
+                <h4 class="card-title mb-0 flex-grow-1">Open revenue by week {{d}}</h4>
             </div>
             <div class="card-body">
                 <table class="table table-bordered">
                     <tbody>
-                        <tr *ngFor="let item of data1?.chart2 | keyvalue">
+                        <tr *ngFor="let item of data1?.chart2 | keyvalue as any">
                             <td>{{item.key}}</td>
-                            <td>{{item.value}}</td>
+                            <td class="text-end">{{$any(item.value) | currency}}</td>
                         </tr>
                     </tbody>
                 </table>

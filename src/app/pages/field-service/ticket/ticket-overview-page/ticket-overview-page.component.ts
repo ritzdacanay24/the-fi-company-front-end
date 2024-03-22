@@ -27,18 +27,21 @@ export class TicketOverviewPageComponent implements OnInit {
   ) {
   }
 
+  goBackUrl
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
       this.active = Number(params['active']) || this.active;
       this.fsid = params['fsid'];
+      this.goBackUrl = params['goBackUrl']
     });
 
     if (this.id) this.getData();
   }
 
+
+
   notifyParent($event) {
-    console.log($event)
     this.id = $event.id;
     this.active = 1
     this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { id: this.id, active: 1 } });
@@ -62,8 +65,8 @@ export class TicketOverviewPageComponent implements OnInit {
   getData = async () => {
     try {
       this.isLoading = true;
-      this.workOrderInfo = await this.workOrderService.getById(this.id)
-      this.jobInfo = await this.jobService.getById(this.workOrderInfo.fs_scheduler_id)
+      this.jobInfo = await this.jobService.getById(this.id)
+      this.workOrderInfo = await this.workOrderService.findOne({ fs_scheduler_id: this.id })
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -81,7 +84,6 @@ export class TicketOverviewPageComponent implements OnInit {
   }
 
   onNavChange($event) {
-    console.log($event)
     this.router.navigate(['.'], {
       queryParams: {
         active: $event.nextId
@@ -92,7 +94,12 @@ export class TicketOverviewPageComponent implements OnInit {
   }
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { active: null } });
+    if (this.goBackUrl) {
+      this.router.navigateByUrl(this.goBackUrl);
+    } else {
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { active: null } });
+    }
+
   }
 
 

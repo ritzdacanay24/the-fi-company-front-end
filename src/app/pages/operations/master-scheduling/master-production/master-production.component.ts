@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
@@ -7,7 +7,6 @@ import { AgGridModule } from 'ag-grid-angular';
 import { GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
-import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 import { WorkOrderPickSheetModalService } from '../work-order-pick-sheet-modal/work-order-pick-sheet-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
@@ -18,6 +17,7 @@ import { agGridDateFilterdateFilter, highlightRowView, isEmpty } from 'src/asset
 import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component';
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { PickSheetRendererComponent } from '@app/shared/ag-grid/pick-sheet-renderer/pick-sheet-renderer.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 
 @Component({
     standalone: true,
@@ -25,7 +25,8 @@ import { PickSheetRendererComponent } from '@app/shared/ag-grid/pick-sheet-rende
         SharedModule,
         AgGridModule,
         NgSelectModule,
-        DateRangeComponent
+        DateRangeComponent,
+        GridSettingsComponent
     ],
     selector: 'app-master-production',
     templateUrl: './master-production.component.html',
@@ -34,7 +35,6 @@ export class MasterProductionComponent implements OnInit {
 
     constructor(
         public router: Router,
-        private api: MasterSchedulingService,
         public activatedRoute: ActivatedRoute,
         private workOrderPickSheetModalService: WorkOrderPickSheetModalService,
         private workOrderInfoModalService: WorkOrderInfoModalService,
@@ -45,13 +45,21 @@ export class MasterProductionComponent implements OnInit {
     ) {
     }
 
-    ngOnInit(): void {
-        this.activatedRoute.queryParams.subscribe(params => {
-            this.id = params['id'];
-        })
+    ngOnInit(): void { }
 
-        this.getData()
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['data']) {
+            this.data = changes['data'].currentValue;
+        }
     }
+
+    @Output() setGridApi: EventEmitter<any> = new EventEmitter();
+    @Output() setDataRenderered: EventEmitter<any> = new EventEmitter();
+    @Input({ required: true }) routing;
+    @Input({ required: true }) pageId;
+    @Input({ required: true }) data: any;
+    @Input({ required: true }) getData: Function;
+    @Input({ required: false }) ngStyles: string | any = "height: calc(100vh - 170px)";
 
     gridApi: any;
 
@@ -127,7 +135,19 @@ export class MasterProductionComponent implements OnInit {
             },
             filterParams: this.pickingFilterParams
         },
-        { field: "status_info.status_text", headerName: "Status", filter: "agSetColumnFilter" },
+        { field: "status_info.status_text", headerName: "Status", filter: "agSetColumnFilter",
+        cellRenderer: (params: any) => {
+            if (params.data) {
+                if (params.value == 'Future Order')
+                    return `<span class="badge bg-success-subtle text-success">${params.value}</span>`;
+                if (params.value == 'Past Due')
+                    return `<span class="badge bg-danger-subtle text-danger">${params.value}</span>`
+                if (params.value == 'Due Today')
+                    return `<span class="badge bg-warning-subtle text-warning">${params.value}</span>`
+                return params.value;
+            }
+            return null
+        } },
         {
             field: "WR_NBR", headerName: "Work #", filter: "agMultiColumnFilter", cellRenderer: LinkRendererComponent,
             cellRendererParams: {
@@ -161,10 +181,10 @@ export class MasterProductionComponent implements OnInit {
             },
         },
         { field: "FULLDESC", headerName: "Desc", filter: "agTextColumnFilter" },
-        { field: "WR_QTY_ORD", headerName: "Qty Ordered", filter: "agTextColumnFilter" },
-        { field: "WR_QTY_COMP", headerName: "Qty Completed", filter: "agTextColumnFilter" },
-        { field: "WR_QTY_OUTQUE", headerName: "Qty Out Queue", filter: "agTextColumnFilter" },
-        { field: "OPENQTY", headerName: "Qty Open", filter: "agTextColumnFilter" },
+        { field: "WR_QTY_ORD", headerName: "Qty Ordered", filter: "agNumberColumnFilter" },
+        { field: "WR_QTY_COMP", headerName: "Qty Completed", filter: "agNumberColumnFilter" },
+        { field: "WR_QTY_OUTQUE", headerName: "Qty Out Queue", filter: "agNumberColumnFilter" },
+        { field: "OPENQTY", headerName: "Qty Open", filter: "agNumberColumnFilter" },
         { field: "WR_WKCTR", headerName: "Work Center", filter: "agSetColumnFilter" },
         { field: "WR_OP", headerName: "Work OP", filter: "agSetColumnFilter" },
         { field: "WO_SO_JOB", headerName: "Sales Order", filter: "agSetColumnFilter", cellRenderer: function (e) { return e.data && 1 == e.data.DROPINCLASS ? '<span class="badge badge-danger">DROP IN</span>' : e.value } },
@@ -172,9 +192,9 @@ export class MasterProductionComponent implements OnInit {
         { field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter" },
         { field: "print_details.assignedTo", headerName: "Pick Assigned To", filter: "agSetColumnFilter" },
         { field: "WO_STATUS", headerName: "WO status", filter: "agSetColumnFilter" },
-        { field: "WO_QTY_COMP", headerName: "WO Qty Completed", filter: "agSetColumnFilter" },
-        { field: "WR_QTY_INQUE", headerName: "In Queue", filter: "agSetColumnFilter" },
-        { field: "WR_QTY_OUTQUE", headerName: "Out Queue", filter: "agSetColumnFilter" },
+        { field: "WO_QTY_COMP", headerName: "WO Qty Completed", filter: "agNumberColumnFilter" },
+        { field: "WR_QTY_INQUE", headerName: "In Queue", filter: "agNumberColumnFilter" },
+        { field: "WR_QTY_OUTQUE", headerName: "Out Queue", filter: "agNumberColumnFilter" },
         {
             field: 'misc.lateReasonCode', headerName: 'Late Reason Code', filter: 'agSetColumnFilter',
             cellRenderer: LateReasonCodeRendererComponent,
@@ -185,48 +205,26 @@ export class MasterProductionComponent implements OnInit {
             }
         },
         { field: "misc.shipping_db_status", headerName: "Shipping DB Status", filter: "agSetColumnFilter" },
-
+        { field: "TOTAL_LINES", headerName: "Total Lines", filter: "agNumberColumnFilter" },
     ];
 
-    gridOptions: GridOptions = {
+    dataRendered = false;
+
+    gridOptions: any = {
         ...agGridOptions,
-        rowBuffer: 0,
-        animateRows: true,
+        // rowBuffer: 0,
+        // animateRows: true,
         columnDefs: [],
-        onGridReady: (params: any) => {
+        onGridReady: async (params: any) => {
             this.gridApi = params.api;
             this.gridColumnApi = params.columnApi;
-
-            let data = this.activatedRoute.snapshot.queryParams['gridParams']
-            _decompressFromEncodedURIComponent(data, params);
+            this.setGridApi.emit(params);
         },
         onFirstDataRendered: (params) => {
+            this.dataRendered = true;
+            this.setDataRenderered.emit(this.dataRendered)
             highlightRowView(params, 'id', this.id);
         },
-        onFilterChanged: params => this.updateUrl(params),
-        onSortChanged: params => this.updateUrl(params),
     };
-
-    updateUrl = (params) => {
-        let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
-        this.router.navigate([`.`], {
-            relativeTo: this.activatedRoute,
-            queryParamsHandling: 'merge',
-            queryParams: {
-                gridParams
-            }
-        });
-    }
-
-    data: any;
-    async getData() {
-        try {
-            this.gridApi?.showLoadingOverlay()
-            this.data = await this.api.getMasterProduction();
-            this.gridApi?.hideOverlay();
-        } catch (err) {
-            this.gridApi?.hideOverlay()
-        }
-    }
 
 }

@@ -10,6 +10,7 @@ import { AttachmentsService } from '@app/core/api/attachments/attachments.servic
 import { FIELD_SERVICE } from '../../field-service-constant';
 import moment from 'moment';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -23,7 +24,8 @@ export class RequestCreateComponent {
     private router: Router,
     private requestService: RequestService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService
+    private attachmentsService: AttachmentsService,
+    private authenticationService: AuthenticationService
   ) { }
 
   ngOnInit(): void {
@@ -35,10 +37,30 @@ export class RequestCreateComponent {
 
   isLoading = false;
 
+  sendEmail = true
+
   submitted = false;
+
+  showCaptcha = false;
 
   @Input() goBack: Function = (id?: string) => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { id: id } });
+  }
+
+  setFormEmitter($event) {
+    this.form = $event;
+    this.form.patchValue({
+      email: this.authenticationService.currentUserValue.email,
+      created_by: this.authenticationService.currentUserValue.id,
+      created_date: moment().format('YYYY-MM-DD HH:mm:ss')
+    })
+
+    if (!this.showCaptcha) {
+      this.form.get('g-recaptcha-response').clearValidators();
+      this.form.get('g-recaptcha-response').updateValueAndValidity();
+      this.form.get('g-recaptcha-response').disable();
+    }
+
   }
 
   async onSubmit() {
@@ -53,14 +75,14 @@ export class RequestCreateComponent {
 
     try {
       this.isLoading = true;
-      let data: any = await this.requestService.createFieldServiceRequest(this.form.value);
+      let data: any = await this.requestService.createFieldServiceRequest(this.form.value, this.sendEmail);
 
       if (this.myFiles) {
         const formData = new FormData();
         for (var i = 0; i < this.myFiles.length; i++) {
           formData.append("file", this.myFiles[i]);
           formData.append("field", FIELD_SERVICE.UPLOAD_FIELD_NAME);
-          formData.append("uniqueData", `${data.insertId}`);
+          formData.append("uniqueData", `${data.id}`);
           formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
           try {
             await this.attachmentsService.uploadfile(formData)

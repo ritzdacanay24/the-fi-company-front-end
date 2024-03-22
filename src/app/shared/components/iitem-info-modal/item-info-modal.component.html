@@ -4,7 +4,7 @@
         <app-qad-part-search (notifyParent)="notifyParent($event)" [value]="partNumber"
             [showLabel]="false"></app-qad-part-search>
     </div>
-    <h4 class="modal-title" id="modal-basic-title">Item Info</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 
 <div class="modal-body" *ngIf="isLoading">
@@ -12,6 +12,8 @@
 </div>
 
 <div class="modal-body bg-light" *ngIf="!isLoading">
+
+    <h4 class="modal-title mb-2" id="modal-basic-title">Item Info</h4>
 
     <div class="row" *ngIf="itemInfo">
         <div class="col">
@@ -60,7 +62,7 @@
             </div>
         </div>
         <div class="card-body p-0">
-            <ag-grid-angular *ngIf="locationDet.length > 0" class="ag-theme-alpine no-border w-100"
+            <ag-grid-angular *ngIf="locationDet.length > 0" class="ag-theme-quartz no-border w-100"
                 [gridOptions]="gridOptions" [rowData]="locationDet">
             </ag-grid-angular>
         </div>
@@ -74,7 +76,7 @@
             <h4 class="card-title mb-0 flex-grow-1">Open Shortage Request Details</h4>
         </div>
         <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="shortages?.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="shortages"
+            <ag-grid-angular *ngIf="shortages?.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="shortages"
                 [gridOptions]="gridOptions5">
             </ag-grid-angular>
         </div>
@@ -88,7 +90,7 @@
             <h4 class="card-title mb-0 flex-grow-1">Purchase Order Details</h4>
         </div>
         <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="poResults.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="poResults"
+            <ag-grid-angular *ngIf="poResults.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="poResults"
                 [gridOptions]="gridOptions2">
             </ag-grid-angular>
         </div>
@@ -102,7 +104,7 @@
             <h4 class="card-title mb-0 flex-grow-1">Work Order Details</h4>
         </div>
         <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="woResults.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="woResults"
+            <ag-grid-angular *ngIf="woResults.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="woResults"
                 [gridOptions]="gridOptions3">
             </ag-grid-angular>
         </div>
@@ -116,7 +118,7 @@
             <h4 class="card-title mb-0 flex-grow-1">Order Demand Details</h4>
         </div>
         <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="demand?.length > 0" class="ag-theme-alpine no-border w-100" [rowData]="demand"
+            <ag-grid-angular *ngIf="demand?.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="demand"
                 [gridOptions]="gridOptions4">
             </ag-grid-angular>
         </div>
@@ -151,6 +153,6 @@
     </div>
 </div>
 <div class="modal-footer">
-    <button (click)="dismiss()" type="button" [disabled]="isLoading" class="btn btn-gray me-auto">Close</button>
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
     <button (click)="getData()" type="button" [disabled]="isLoading" class="btn btn-primary">Refresh</button>
 </div>

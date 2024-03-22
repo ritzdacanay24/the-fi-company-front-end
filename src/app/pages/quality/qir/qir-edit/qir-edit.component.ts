@@ -60,12 +60,12 @@ export class QirEditComponent {
   }
 
   async onSubmit() {
-    this.submitted = true;
 
-    if (this.form.invalid) {
+    if (this.form.invalid && this.form.value.active == 1) {
+      this.submitted = true;
       getFormValidationErrors();
       return
-    };
+    } else { }
 
     try {
       this.isLoading = true;

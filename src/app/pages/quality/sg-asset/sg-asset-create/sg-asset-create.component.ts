@@ -47,6 +47,16 @@ export class SgAssetCreateComponent {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
   }
 
+  setFormEmitter($event) {
+    this.form = $event;
+    this.form.patchValue({
+      inspectorName: this.authenticationService.currentUserValue.full_name,
+      timeStamp: moment().format('YYYY-MM-DD HH:mm:ss'),
+      created_by: this.authenticationService.currentUserValue.id,
+      lastUpdate: moment().format('YYYY-MM-DD HH:mm:ss'),
+    }, { emitEvent: false })
+  }
+
   data: any;
 
   async getData() {
@@ -58,13 +68,6 @@ export class SgAssetCreateComponent {
 
   async onSubmit() {
     this.submitted = true;
-
-    this.form.patchValue({
-      job: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id
-      }
-    }, { emitEvent: false })
 
     if (this.form.invalid) return;
 

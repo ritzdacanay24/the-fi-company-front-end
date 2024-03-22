@@ -4,7 +4,10 @@ import { NgModule } from '@angular/core';
 
 import { ShippingComponent } from './shipping/shipping.component';
 import { MasterSchedulingComponent } from './master-scheduling.component';
-import { MasterProductionComponent } from './master-production/master-production.component';
+import { PickingRoutingComponent } from './picking-routing/picking-routing.component';
+import { QcRoutingComponent } from './qc-routing/qc-routing.component';
+import { ProductionRoutingComponent } from './production-routing/production-routing.component';
+import { AllRoutingComponent } from './all-routing/all-routing.component';
 
 const routes: Routes = [
   {
@@ -21,8 +24,20 @@ const routes: Routes = [
         component: ShippingComponent
       },
       {
-        path: 'master-production',
-        component: MasterProductionComponent
+        path: 'all-routing',
+        component: AllRoutingComponent
+      },
+      {
+        path: 'picking-routing',
+        component: PickingRoutingComponent
+      },
+      {
+        path: 'production-routing',
+        component: ProductionRoutingComponent
+      },
+      {
+        path: 'qc-routing',
+        component: QcRoutingComponent
       },
     ]
   }

@@ -5,7 +5,7 @@
         Please select job from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
@@ -24,10 +24,10 @@
               <span class="text-muted"><i class="ri-settings-4-line align-middle me-1 fs-15"></i>Settings</span>
             </a>
             <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-              <button ngbDropdownItem class="py-2" (click)="print()" [disabled]="!id">
+              <button ngbDropdownItem (click)="print()" [disabled]="!id">
                 <span class="mdi mdi-printer me-2 text-primary"></span>Print Job
               </button>
-              <button ngbDropdownItem class="py-2" (click)="duplicate()" [disabled]="!id">
+              <button ngbDropdownItem (click)="duplicate()" [disabled]="!id">
                 <i class="mdi mdi-content-copy me-2 text-warning"></i>Duplicate Job
               </button>
             </div>
@@ -35,17 +35,17 @@
         </div>
       </div>
       <div class="card-body" style="min-height:300px">
-        <div class="border border-3 p-3 mb-3" *ngIf="data">
+        <!-- <div class="border border-3 p-3 mb-3" *ngIf="data">
           <p class="mb-0">FSID: {{data?.id}}</p>
           <p class="mb-0">Created by: {{data?.created_by}}</p>
           <p class="mb-0">Created date: {{data?.created_date}}</p>
           <p class="mb-0" *ngIf="data?.customer_cancelled">Cancellation: {{data?.cancellation_comments}}</p>
-        </div>
+        </div> -->
         <app-job-form (setFormElements)="form = $event" (setOnRemoveTech)="setOnRemoveTech($event)"
           [submitted]="submitted"></app-job-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
       </div>
     </div>

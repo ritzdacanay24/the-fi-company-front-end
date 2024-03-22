@@ -5,9 +5,11 @@ import { NAVIGATION_ROUTE } from '../job-constant';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { JobService } from '@app/core/api/field-service/job.service';
-import { getFormValidationErrors } from 'src/assets/js/util';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
-import { FormGroup } from '@angular/forms';
+import { FormArray, FormGroup } from '@angular/forms';
+import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import moment from 'moment';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,
@@ -22,12 +24,15 @@ export class JobCreateComponent implements OnInit {
     private router: Router,
     private api: JobService,
     private toastrService: ToastrService,
+    private publicAttachment: PublicAttachment,
+    private authenticationService: AuthenticationService,
   ) {
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+  }
 
-  title = "Job Create";
+  title = "Create Job";
 
   isLoading = false;
 
@@ -39,10 +44,21 @@ export class JobCreateComponent implements OnInit {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { id } });
   }
 
+  setFormElements = async ($event) => {
+    this.form = $event;
+    this.form.patchValue({
+      job: {
+        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        created_by: this.authenticationService.currentUserValue.id
+      }
+    }, { emitEvent: false })
+
+  }
+  @Input() ngStyle = { 'height': 'calc(100vh - 254px   )' }
+
   onSubmit = async () => {
     this.submitted = true;
-
-    if (this.form.invalid && this.form.value.active == 1) {
+    if (this.form.invalid) {
       getFormValidationErrors()
       return
     };
@@ -56,7 +72,11 @@ export class JobCreateComponent implements OnInit {
     } catch (err) {
       this.isLoading = false;
     }
+  }
 
+  teams: FormArray;
+  removeTech = ($event) => {
+    this.teams.removeAt($event.index);
   }
 
 }

@@ -76,9 +76,10 @@ export class MaterialRequestValidateComponent {
             partNumber: new FormControl(row.partNumber, Validators.required),
             reasonCode: new FormControl(row.reasonCode, Validators.required),
             qty: new FormControl(row.qty, Validators.required),
-            trType: new FormControl(row.trType, Validators.required),
-            ac_code: new FormControl(row.ac_code, Validators.required),
+            trType: new FormControl(row.trType),
+            ac_code: new FormControl(row.ac_code),
             notes: new FormControl(row.notes),
+            availableQty: new FormControl(row.availableQty),
           }))
 
         }
@@ -134,7 +135,7 @@ export class MaterialRequestValidateComponent {
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully sent to picking.');
-      this.goBack();
+      this.goBack(true);
     } catch (err) {
       this.isLoading = false;
     }

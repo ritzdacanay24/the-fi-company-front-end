@@ -68,7 +68,7 @@ $blue: #2271b1;
 $indigo: #405189;
 $purple: #7084c7;
 $pink: #f672a7;
-$red: #ff4545;
+$red: #f06548;
 $orange: #f1963b;
 $yellow: #f7b84b;
 $green: #6ada7d;
@@ -460,7 +460,7 @@ $position-values: (
 //
 // Settings for the `<body>` element.
 
-$body-bg: #f1f1f1;
+$body-bg: #e9ecef;
 $body-color: $gray-900;
 $body-text-align: null;
 
@@ -513,7 +513,7 @@ $grid-breakpoints: (
   md: 768px,
   lg: 992px,
   xl: 1200px,
-  xxl: 1400px
+  xxl: 1600px
 );
 // scss-docs-end grid-breakpoints
 
@@ -536,7 +536,6 @@ $container-max-widths: (
 // scss-docs-end container-max-widths
 
 @include _assert-ascending($container-max-widths, "$container-max-widths");
-
 
 // Grid columns
 //
@@ -566,7 +565,7 @@ $border-widths: (
 );
 $border-style: solid;
 $border-color: $gray-300;
-$border-color-translucent: $gray-400;
+$border-color-translucent: $gray-300;
 // scss-docs-end border-variables
 
 // scss-docs-start border-radius-variables
@@ -806,7 +805,7 @@ $table-group-separator-color: currentcolor;
 
 $table-caption-color: var(--#{$prefix}secondary-color);
 
-$table-bg-scale: -80%;
+$table-bg-scale: 15%;
 // scss-docs-end table-variables
 
 // scss-docs-start table-loop
@@ -987,7 +986,7 @@ $form-check-transition: null;
 $form-check-input-active-filter: brightness(90%);
 
 $form-check-input-bg: $input-bg;
-$form-check-input-border: var(--#{$prefix}border-width) solid var(--#{$prefix}border-color-translucent);
+$form-check-input-border: var(--#{$prefix}border-width) solid $gray-500;
 $form-check-input-border-radius: .25em;
 $form-check-radio-border-radius: 50%;
 $form-check-input-focus-border: $input-focus-border-color;
@@ -1555,7 +1554,7 @@ $modal-content-box-shadow-xs: $box-shadow-sm;
 $modal-content-box-shadow-sm-up: $box-shadow;
 
 $modal-backdrop-bg: $black;
-$modal-backdrop-opacity: .5;
+$modal-backdrop-opacity: .7;
 
 $modal-header-border-color: var(--#{$prefix}border-color);
 $modal-header-border-width: 0;

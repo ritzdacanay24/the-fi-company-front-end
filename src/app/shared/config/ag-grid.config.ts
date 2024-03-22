@@ -6,7 +6,7 @@ export const agGridOptions: GridOptions = {
   singleClickEdit: true,
   columnDefs: [],
   rowData: null,
-  suppressMenuHide: true,
+  suppressMenuHide: false,
   suppressCopyRowsToClipboard: true,
   enableRangeSelection: true,
   rowSelection: 'multiple',
@@ -38,6 +38,7 @@ export const agGridOptions: GridOptions = {
   pagination: false,
   onGridReady: function (params: any) { },
   suppressChangeDetection: true,
+  columnMenu: "new",
   sideBar: {
     toolPanels: [
       {

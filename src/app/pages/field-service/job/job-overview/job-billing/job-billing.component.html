@@ -1,481 +1,502 @@
-<div *ngIf="isLoading" class="text-center card">
-  <div class="card-body p-5" style="height: calc(100vh - 209px);overflow: auto;">
-    <div class="spinner-grow text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+<div class="row" *ngIf="isLoading">
+  <div class="content-grid col-xxl-8">
+    <div class="text-center card">
+      <div class="card-body p-5" style="height: calc(100vh - 209px);overflow: auto;">
+        <div class="spinner-grow text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4>Loading.. Please wait.</h4>
+      </div>
     </div>
-    <h4>Loading.. Please wait.</h4>
   </div>
 </div>
 
-<div *ngIf="!data?.jobInfo && !isLoading" class="text-center card">
-  <div class="card-body" style="height: calc(100vh - 209px);overflow: auto;">
-    <h4>No record found.</h4>
+<div class="p-3 text-center" *ngIf="!data?.jobInfo && !isLoading">
+  <div class="row d-flex justify-content-center">
+    <div class="col-6">
+      <div class="card">
+        <div class="card-body" style="min-height:110px">
+          <p class="mb-3">Please select job to view.</p>
+          <!-- <div class="alert alert-danger" role="alert" *ngIf="!data.jobInfo && id">
+            Unable to find FSID {{id}}. Please ensure you have the correct FSID number. 
+          </div> -->
+
+          <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [showLabel]="false"
+            [autoFocus]="true"></app-job-search>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div *ngIf="data && !isLoading" class="card">
+<div class="row" *ngIf="data && !isLoading">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-center"> Service Job Cost & Billing Sheet </h4>
+        <button class="btn btn-primary btn-sm ms-auto" (click)="print()">
+          <i class="feather icon-printer"></i>
+          PRINT</button>
+      </div>
 
 
-  <div class="card-header align-items-center d-flex">
-    <h4 class="card-title mb-0 flex-grow-1"> Service Job Cost & Billing Sheet</h4>
-    <button class="btn btn-primary btn-sm ms-auto" (click)="print()">
-      <i class="feather icon-printer"></i>
-      PRINT</button>
-  </div>
+      <div class="card-body">
+        <div id="workOrder">
+          <div>
 
-  <div class="card-body">
-
-    <div class="row m-0 m-0 d-flex justify-content-center" style="margin-left:0 !important;margin-right:0 !important">
-      <div class="col-xl-9" id="workOrder">
-        <div>
-
-          <h4 style="text-align:center" class="d-none d-print-block">
-            Service Job Cost & Billing Sheet
-          </h4>
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="bg-light p-2 text-center h3">
-                Travel Expense Report
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-0">
-            <div class="col-lg-12 col-sm-12" style="text-align:center;margin:10px;position:relative">
-              <div class="pull-left" *ngIf="data.jobInfo.dateSubmitted == null">
-                Work Order Status: <span class="text-danger" style="font-weight: bold;">Not
-                  Completed</span>
-              </div>
-              <div class="pull-left" *ngIf="data.jobInfo.dateSubmitted != null">
-                Work Order Submitted On: <span class="text-success"
-                  style="font-weight: bold;">{{data.jobInfo.dateSubmitted}}</span>
-              </div>
-              <div class="pull-right">Invoice Date: {{data.jobInfo.InvoiceDate}}</div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-lg-6 col-sm-6">
-              <table class="table table-bordered table-sm">
-                <tbody>
-                  <tr>
-                    <th>Project </th>
-                    <td class="light-grey text-start"
-                      style="text-overflow: ellipsis;white-space:nowrap;overflow: hidden">
-                      {{data.jobInfo.property}}</td>
-                    <td class="light-grey text-end" style="width:70px;">{{data.jobInfo.customer}}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>S/O #</th>
-                    <td colspan="2" class="light-grey text-end">{{data.jobInfo.sales_order_number}}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Project</th>
-                    <td colspan="2" class="light-grey text-end"
-                      style="text-overflow: ellipsis;white-space:nowrap;overflow: hidden">
-                      {{data.jobInfo.sign_theme}}</td>
-                  </tr>
-                  <tr>
-                    <th>Serial #</th>
-                    <td colspan="2" class="light-grey text-end">{{data.jobInfo.customerAsset}}</td>
-                  </tr>
-                  <tr>
-                    <th>EYE-FI Asset #</th>
-                    <td colspan="2" class="light-grey text-end">{{data.jobInfo.eyeFiAsset}}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="col-lg-6 col-sm-6">
-              <table class="table table-bordered table-sm">
-                <tbody>
-                  <tr>
-                    <td colspan="1">FSID/JOB: {{data.jobInfo.fullWorkOrderId}}
-                    </td>
-                    <td class="text-center">Start</td>
-                    <td class="text-center">Finish</td>
-                  </tr>
-                  <tr>
-                    <th>Date </th>
-                    <td class="light-grey text-center">{{data.startDate}}</td>
-                    <td class="light-grey text-center">{{data.finishedDate}}</td>
-                  </tr>
-                  <tr>
-                    <th>Job Completed</th>
-                    <td colspan="2" class="light-grey text-end">{{data.jobInfo.dateSubmitted}}</td>
-                  </tr>
-                  <tr>
-                    <th>Local?</th>
-                    <td colspan="2" class="light-grey text-end">
-                      {{data.jobInfo.out_of_state == 'Yes' ? 'No' : 'Yes'}}</td>
-                  </tr>
-                  <tr>
-                    <th>Billable?</th>
-                    <td colspan="2" class="light-grey text-end">{{data.jobInfo.billable}}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <br />
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="bg-light p-2 text-center h3">
-                Travel & Install Hours
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-lg-12">
-              <div style="padding:10px">
-                <span style="font-weight:bold">Installers &nbsp;&nbsp;</span>
-                <span class="light-grey me-2" style="padding:0px 50px;">{{data.jobInfo.total_techs}}</span>
-                <span class="float-end"><span style="font-weight:bold">Service:&nbsp;&nbsp;</span>
-                  {{data.jobInfo.service_type}}</span>
+            <h4 style="text-align:center" class="d-none d-print-block">
+              Service Job Cost & Billing Sheet
+            </h4>
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="bg-light p-2 text-center h3">
+                  Travel Expense Report
+                </div>
               </div>
             </div>
 
-          </div>
-          <div class="row">
-            <div class="col-lg-12">
-              <table class="table table-bordered table-sm">
-                <tbody>
-                  <tr>
-                    <th colspan="0"></th>
-                    <th colspan="3" class="text-center" style="width:42%">Cost</th>
-                    <th colspan="3" class="text-center" style="width:42%">Billing</th>
-                  </tr>
-                  <tr>
-                    <th class="text-center"></th>
-                    <th class="text-center">Hours</th>
-                    <th class="text-center">Hourly</th>
-                    <th class="text-center">Total</th>
-                    <th class="text-center">Hours</th>
-                    <th class="text-center">Hourly</th>
-                    <th class="text-center">Total</th>
-                  </tr>
-                  <tr *ngFor="let row of data.laborSummary.details">
-                    <td>{{row.typeOf}}</td>
-                    <td class="text-end">
-                      {{row.total_hrs | number : '1.2-2'}}</td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{row.cost_rate | number : '1.2-2'}}
-                      </div>
-                    </td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{row.cost_total | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end"> {{row.total_hrs | number : '1.2-2'}}</td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{row.billing_rate | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end">
-
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:80%;">
-                        {{row.billing_total | number : '1.2-2'}}
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th colspan="7">&nbsp;</th>
-                  </tr>
-                  <tr>
-                    <th colspan="0"></th>
-                    <th colspan="2" class="text-center">Total Payroll:-</th>
-                    <th class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:80%;">
-                        {{data.laborSummary.payroll | number : '1.2-2'}}
-                      </div>
-                    </th>
-
-                    <th colspan="2" class="text-center">Total Billable Labor:-</th>
-                    <th class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:80%;">
-                        {{data.laborSummary.billable | number : '1.2-2'}}
-                      </div>
-                    </th>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <br />
-
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="bg-light p-2 text-center h3">
-                Install Details by Date
+            <div class="row g-0">
+              <div class="col-lg-12 col-sm-12" style="text-align:center;margin:10px;position:relative">
+                <div class="pull-left" *ngIf="data.jobInfo.dateSubmitted == null">
+                  Work Order Status: <span class="text-danger" style="font-weight: bold;">Not
+                    Completed</span>
+                </div>
+                <div class="pull-left" *ngIf="data.jobInfo.dateSubmitted != null">
+                  Work Order Submitted On: <span class="text-success"
+                    style="font-weight: bold;">{{data.jobInfo.dateSubmitted}}</span>
+                </div>
+                <div class="pull-right">Invoice Date: {{data.jobInfo.InvoiceDate}}</div>
               </div>
             </div>
-          </div>
-          <br />
 
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="table-reponsive" style="overflow: auto;">
-                <table class="table table-bordered table-sm text-nowrap">
+            <div class="row">
+              <div class="col-lg-6 col-sm-6">
+                <table class="table table-bordered table-sm">
                   <tbody>
                     <tr>
-                      <th class="text-center">Date</th>
-                      <th class="text-center">Travel</th>
-                      <th class="text-center">Travel (OT)</th>
-                      <th class="text-center">Install</th>
-                      <th class="text-center">Install (OT)</th>
-                      <!-- <th class="text-center">Break</th> -->
-                      <th class="text-center">OT</th>
-                      <th class="text-center">Total Hrs</th>
-                    </tr>
-                    <tr *ngIf="data.laborCostAndBilling.details.length == 0">
-                      <td class="text-center" colspan="7">No work info recorded</td>
-                    </tr>
-                    <tr *ngFor="let d of data.laborCostAndBilling.details;let ii = index;">
-                      <td class="text-start weekendText"
-                        [ngStyle]="d.isWeekEnd == '1' && {'background-color':'purple', 'color':'white'}">
-                        {{d.start}}
+                      <th>Project </th>
+                      <td class="light-grey text-start"
+                        style="text-overflow: ellipsis;white-space:nowrap;overflow: hidden">
+                        {{data.jobInfo.property}}</td>
+                      <td class="light-grey text-end" style="width:70px;">{{data.jobInfo.customer}}
                       </td>
-                      <td class="text-end">
-                        {{d.travel | number : '1.2-2'}}</td>
-                      <td class="text-end">
-                        {{d.travel_overtime | number : '1.2-2'}}</td>
-                      <td class="text-end">
-                        {{d.install | number : '1.2-2'}}</td>
-                      <td class="text-end">
-                        {{d.install_overtime | number : '1.2-2'}}</td>
-                      <!-- <td class="text-end">
-                    {{d.break | number : '1.2-2'}}</td> -->
-                      <td class="text-end">
-                        {{d.total_overtime | number : '1.2-2'}}
-                      </td>
-                      <td class="text-end">
-                        {{d.total | number : '1.2-2'}}</td>
                     </tr>
                     <tr>
-                      <td class="text-start" colspan="8">&nbsp;</td>
+                      <th>S/O #</th>
+                      <td colspan="2" class="light-grey text-end">{{data.jobInfo.sales_order_number}}
+                      </td>
                     </tr>
+                    <tr>
+                      <th>Project</th>
+                      <td colspan="2" class="light-grey text-end"
+                        style="text-overflow: ellipsis;white-space:nowrap;overflow: hidden">
+                        {{data.jobInfo.sign_theme}}</td>
+                    </tr>
+                    <tr>
+                      <th>Serial #</th>
+                      <td colspan="2" class="light-grey text-end">{{data.jobInfo.customerAsset}}</td>
+                    </tr>
+                    <tr>
+                      <th>EYE-FI Asset #</th>
+                      <td colspan="2" class="light-grey text-end">{{data.jobInfo.eyeFiAsset}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
+              <div class="col-lg-6 col-sm-6">
+                <table class="table table-bordered table-sm">
+                  <tbody>
                     <tr>
-                      <th colspan="0">Summary</th>
-                      <th colspan="1" class="text-center">Total Travel:-</th>
-                      <th class="text-end">
-                        {{data.laborCostAndBilling.total_travel | number : '1.2-2'}}</th>
-                      <th colspan="1" class="text-center">Total Install:-</th>
-                      <th class="text-end">
-                        {{data.laborCostAndBilling.total_install | number : '1.2-2'}}</th>
-                      <th colspan="1" class="text-center">Total Hrs:-</th>
-                      <th colspan="2" class="text-end">
-                        {{data.laborCostAndBilling.total_hrs | number : '1.2-2'}}</th>
+                      <td colspan="1">FSID/JOB: {{data.jobInfo.fullWorkOrderId}}
+                      </td>
+                      <td class="text-center">Start</td>
+                      <td class="text-center">Finish</td>
+                    </tr>
+                    <tr>
+                      <th>Date </th>
+                      <td class="light-grey text-center">{{data.startDate}}</td>
+                      <td class="light-grey text-center">{{data.finishedDate}}</td>
+                    </tr>
+                    <tr>
+                      <th>Job Completed</th>
+                      <td colspan="2" class="light-grey text-end">{{data.jobInfo.dateSubmitted}}</td>
+                    </tr>
+                    <tr>
+                      <th>Local?</th>
+                      <td colspan="2" class="light-grey text-end">
+                        {{data.jobInfo.out_of_state == 'Yes' ? 'No' : 'Yes'}}</td>
+                    </tr>
+                    <tr>
+                      <th>Billable?</th>
+                      <td colspan="2" class="light-grey text-end">{{data.jobInfo.billable}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <br />
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="bg-light p-2 text-center h3">
+                  Travel & Install Hours
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-12">
+                <div style="padding:10px">
+                  <span style="font-weight:bold">Installers &nbsp;&nbsp;</span>
+                  <span class="light-grey me-2" style="padding:0px 50px;">{{data.jobInfo.total_techs}}</span>
+                  <span class="float-end"><span style="font-weight:bold">Service:&nbsp;&nbsp;</span>
+                    {{data.jobInfo.service_type}}</span>
+                </div>
+              </div>
+
+            </div>
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="table-reponsive" style="overflow: auto;">
+                  <table class="table table-bordered table-sm text-nowrap">
+                    <tbody>
+                      <tr>
+                        <th colspan="0"></th>
+                        <th colspan="3" class="text-center" style="width:42%">Cost</th>
+                        <th colspan="3" class="text-center" style="width:42%">Billing</th>
+                      </tr>
+                      <tr>
+                        <th class="text-center"></th>
+                        <th class="text-center">Hours</th>
+                        <th class="text-center">Hourly</th>
+                        <th class="text-center">Total</th>
+                        <th class="text-center">Hours</th>
+                        <th class="text-center">Hourly</th>
+                        <th class="text-center">Total</th>
+                      </tr>
+                      <tr *ngFor="let row of data.laborSummary.details">
+                        <td>{{row.typeOf}}</td>
+                        <td class="text-end">
+                          {{row.total_hrs | number : '1.2-2'}}</td>
+                        <td class="text-end">
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:50%;">
+                            {{row.cost_rate | number : '1.2-2'}}
+                          </div>
+                        </td>
+                        <td class="text-end">
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:50%;">
+                            {{row.cost_total | number : '1.2-2'}}</div>
+                        </td>
+                        <td class="text-end"> {{row.total_hrs | number : '1.2-2'}}</td>
+                        <td class="text-end">
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:50%;">
+                            {{row.billing_rate | number : '1.2-2'}}</div>
+                        </td>
+                        <td class="text-end">
+
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:80%;">
+                            {{row.billing_total | number : '1.2-2'}}
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th colspan="7">&nbsp;</th>
+                      </tr>
+                      <tr>
+                        <th colspan="0"></th>
+                        <th colspan="2" class="text-center">Total Payroll:-</th>
+                        <th class="text-end">
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:80%;">
+                            {{data.laborSummary.payroll | number : '1.2-2'}}
+                          </div>
+                        </th>
+
+                        <th colspan="2" class="text-center">Total Billable Labor:-</th>
+                        <th class="text-end">
+                          <div style="float:left;font-weight:bold">$</div>
+                          <div style="float:right;width:80%;">
+                            {{data.laborSummary.billable | number : '1.2-2'}}
+                          </div>
+                        </th>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <br />
+
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="bg-light p-2 text-center h3">
+                  Install Details by Date
+                </div>
+              </div>
+            </div>
+            <br />
+
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="table-reponsive" style="overflow: auto;">
+                  <table class="table table-bordered table-sm text-nowrap">
+                    <tbody>
+                      <tr>
+                        <th class="text-center">Date</th>
+                        <th class="text-center">Travel</th>
+                        <th class="text-center">Travel (OT)</th>
+                        <th class="text-center">Install</th>
+                        <th class="text-center">Install (OT)</th>
+                        <!-- <th class="text-center">Break</th> -->
+                        <th class="text-center">OT</th>
+                        <th class="text-center">Total Hrs</th>
+                      </tr>
+                      <tr *ngIf="data.laborCostAndBilling.details.length == 0">
+                        <td class="text-center" colspan="7">No work info recorded</td>
+                      </tr>
+                      <tr *ngFor="let d of data.laborCostAndBilling.details;let ii = index;">
+                        <td class="text-start weekendText"
+                          [ngStyle]="d.isWeekEnd == '1' && {'background-color':'purple', 'color':'white'}">
+                          {{d.start}}
+                        </td>
+                        <td class="text-end">
+                          {{d.travel | number : '1.2-2'}}</td>
+                        <td class="text-end">
+                          {{d.travel_overtime | number : '1.2-2'}}</td>
+                        <td class="text-end">
+                          {{d.install | number : '1.2-2'}}</td>
+                        <td class="text-end">
+                          {{d.install_overtime | number : '1.2-2'}}</td>
+                        <!-- <td class="text-end">
+                    {{d.break | number : '1.2-2'}}</td> -->
+                        <td class="text-end">
+                          {{d.total_overtime | number : '1.2-2'}}
+                        </td>
+                        <td class="text-end">
+                          {{d.total | number : '1.2-2'}}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-start" colspan="8">&nbsp;</td>
+                      </tr>
+
+                      <tr>
+                        <th colspan="0">Summary</th>
+                        <th colspan="1" class="text-center">Total Travel:-</th>
+                        <th class="text-end">
+                          {{data.laborCostAndBilling.total_travel | number : '1.2-2'}}</th>
+                        <th colspan="1" class="text-center">Total Install:-</th>
+                        <th class="text-end">
+                          {{data.laborCostAndBilling.total_install | number : '1.2-2'}}</th>
+                        <th colspan="1" class="text-center">Total Hrs:-</th>
+                        <th colspan="2" class="text-end">
+                          {{data.laborCostAndBilling.total_hrs | number : '1.2-2'}}</th>
+                      </tr>
+
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <br />
+
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="bg-light p-2 text-center h3">
+                  Trip Expenses
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-lg-12">
+                <div style="padding:10px">
+                  <span style="font-weight:bold">Mark UP %: &nbsp;&nbsp;</span>
+                  <!-- <span class="light-grey" style="padding:0px 50px;">{{row.mark_up_percent}}%</span> -->
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-lg-12">
+                <table class="table table-bordered table-sm text-nowrap">
+
+                  <tbody>
+                    <tr>
+                      <th colspan="1" style="width:25%"></th>
+                      <th class="text-center">Cost</th>
+                      <th class="text-center">Mark Up</th>
+                      <th class="text-center">Billing</th>
+                    </tr>
+                    <tr *ngFor="let item of data.expenseDetails.expenseDetails; let tripExpenseIndex = index">
+                      <td class="text-start" style="width:25%">{{item.name}}</td>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{item.total_cost || 0.00 | number : '1.2-2'}}</div>
+                      </td>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{item.mark_up || 0.00 | number : '1.2-2'}}</div>
+                      </td>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{item.billing || 0.00 | number : '1.2-2'}}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th colspan="7">&nbsp;</th>
+                    </tr>
+                    <tr>
+                      <th class="text-start" style="max-width:50px">Totals</th>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{data.expenseDetails.cost | number : '1.2-2'}}</div>
+                      </td>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{data.expenseDetails.mark_up | number : '1.2-2'}}</div>
+                      </td>
+                      <td class="text-end">
+                        <div style="float:left;font-weight:bold">$</div>
+                        <div style="float:right;width:50%;">
+                          {{data.expenseDetails.billing | number : '1.2-2'}}</div>
+                      </td>
                     </tr>
 
                   </tbody>
                 </table>
               </div>
             </div>
-          </div>
-          <br />
-
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="bg-light p-2 text-center h3">
-                Trip Expenses
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-lg-12">
-              <div style="padding:10px">
-                <span style="font-weight:bold">Mark UP %: &nbsp;&nbsp;</span>
-                <!-- <span class="light-grey" style="padding:0px 50px;">{{row.mark_up_percent}}%</span> -->
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-lg-12">
-              <table class="table table-bordered table-sm text-nowrap">
-
-                <tbody>
-                  <tr>
-                    <th colspan="1" style="width:25%"></th>
-                    <th class="text-center">Cost</th>
-                    <th class="text-center">Mark Up</th>
-                    <th class="text-center">Billing</th>
-                  </tr>
-                  <tr *ngFor="let item of data.expenseDetails.expenseDetails; let tripExpenseIndex = index">
-                    <td class="text-start" style="width:25%">{{item.name}}</td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{item.total_cost || 0.00 | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{item.mark_up || 0.00 | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{item.billing || 0.00 | number : '1.2-2'}}</div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th colspan="7">&nbsp;</th>
-                  </tr>
-                  <tr>
-                    <th class="text-start" style="max-width:50px">Totals</th>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{data.expenseDetails.cost | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{data.expenseDetails.mark_up | number : '1.2-2'}}</div>
-                    </td>
-                    <td class="text-end">
-                      <div style="float:left;font-weight:bold">$</div>
-                      <div style="float:right;width:50%;">
-                        {{data.expenseDetails.billing | number : '1.2-2'}}</div>
-                    </td>
-                  </tr>
-
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <br />
-
-
-          <div style="page-break-inside: avoid;">
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="bg-light p-2 text-center h3">
-                  Job Summary
-                </div>
-              </div>
-            </div>
-
             <br />
 
-            <div class="row">
-              <div class="col-lg-12">
 
-                <div class="row">
-                  <div class="col-lg-6 col-sm-6">
-                    <table class="table table-bordered table-sm">
-                      <tbody>
-                        <tr>
-                          <th colspan="1" style="max-width:50px"></th>
-                          <th class="text-center">Expenses
-                          </th>
-                          <th class="text-center">Revenue
-                          </th>
-                        </tr>
-                        <tr>
-                          <td class="text-start" style="max-width:50px">Payroll</td>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.expenses.payroll | number : '1.2-2'}}
-                            </div>
-                          </td>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.revenue.payroll | number : '1.2-2'}}
-                            </div>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td class="text-start" style="max-width:50px">Trip</td>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.expenses.trip | number : '1.2-2'}}</div>
-                          </td>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.revenue.trip | number : '1.2-2'}}
-                            </div>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th class="text-start" style="max-width:50px">Totals</th>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.expenses.total | number : '1.2-2'}}
-                            </div>
-                          </td>
-                          <td class="text-end">
-                            <div style="float:left;font-weight:bold">$</div>
-                            <div style="float:right;width:80%;">
-                              {{data.summary.revenue.total | number : '1.2-2'}}
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="col-lg-6 col-sm-6">
-                    <table class="table table-bordered table-sm">
-                      <tbody>
-                        <tr>
-                          <th class="text-center">Mark Up %
-                          </th>
-                          <th class="text-center">GPM %
-                          </th>
-                        </tr>
-                        <tr>
-                          <td class="text-end">
-                            {{ data.summary.mark_up_percent | number : '1.2-2'}}
-                            %
-                          </td>
-                          <td class="text-end">
-                            {{ data.summary.gpm | number : '1.2-2'}} %
-                        </tr>
-
-                      </tbody>
-                    </table>
+            <div style="page-break-inside: avoid;">
+              <div class="row">
+                <div class="col-lg-12">
+                  <div class="bg-light p-2 text-center h3">
+                    Job Summary
                   </div>
                 </div>
               </div>
-            </div>
 
-            <br />
-            <br />
+              <br />
 
-            <div class="row">
-              <div class="col-lg-12 text-end totalBill">
-                <div>
-                  <span style="font-weight:bold">Total to Bill: &nbsp;&nbsp;</span>
-                  {{data.summary.total_bill | currency}}
+              <div class="row">
+                <div class="col-lg-12">
+
+                  <div class="row">
+                    <div class="col-lg-6 col-sm-6">
+                      <table class="table table-bordered table-sm">
+                        <tbody>
+                          <tr>
+                            <th colspan="1" style="max-width:50px"></th>
+                            <th class="text-center">Expenses
+                            </th>
+                            <th class="text-center">Revenue
+                            </th>
+                          </tr>
+                          <tr>
+                            <td class="text-start" style="max-width:50px">Payroll</td>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.expenses.payroll | number : '1.2-2'}}
+                              </div>
+                            </td>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.revenue.payroll | number : '1.2-2'}}
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="text-start" style="max-width:50px">Trip</td>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.expenses.trip | number : '1.2-2'}}</div>
+                            </td>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.revenue.trip | number : '1.2-2'}}
+                              </div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th class="text-start" style="max-width:50px">Totals</th>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.expenses.total | number : '1.2-2'}}
+                              </div>
+                            </td>
+                            <td class="text-end">
+                              <div style="float:left;font-weight:bold">$</div>
+                              <div style="float:right;width:80%;">
+                                {{data.summary.revenue.total | number : '1.2-2'}}
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="col-lg-6 col-sm-6">
+                      <table class="table table-bordered table-sm">
+                        <tbody>
+                          <tr>
+                            <th class="text-center">Mark Up %
+                            </th>
+                            <th class="text-center">GPM %
+                            </th>
+                          </tr>
+                          <tr>
+                            <td class="text-end">
+                              {{ data.summary.mark_up_percent | number : '1.2-2'}}
+                              %
+                            </td>
+                            <td class="text-end">
+                              {{ data.summary.gpm | number : '1.2-2'}} %
+                          </tr>
+
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <br />
 
-            <div class="row hide-print">
-              <div class="col-lg-12 text-end" style="padding-right:25px">
-                <div>
-                  <button class="btn btn-primary" (click)="print()"><i class="me-2 mdi mdi-printer"></i>
-                    PRINT</button>
+              <br />
+              <br />
+
+              <div class="row">
+                <div class="col-lg-12 text-end totalBill">
+                  <div>
+                    <span style="font-weight:bold">Total to Bill: &nbsp;&nbsp;</span>
+                    {{data.summary.total_bill | currency}}
+                  </div>
+                </div>
+              </div>
+              <br />
+
+              <div class="row hide-print">
+                <div class="col-lg-12 text-end" style="padding-right:25px">
+                  <div>
+                    <button class="btn btn-primary" (click)="print()"><i class="me-2 mdi mdi-printer"></i>
+                      PRINT</button>
+                  </div>
                 </div>
               </div>
             </div>

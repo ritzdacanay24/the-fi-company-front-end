@@ -44,7 +44,7 @@ export class UserListComponent implements OnInit {
 
   view(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
-    this.router.navigate(['/field-service/tech-overview/jobs'], {
+    this.router.navigate(['/dashboard/field-service/tech-overview/jobs'], {
       queryParamsHandling: 'merge',
       queryParams: {
         user_id: id,

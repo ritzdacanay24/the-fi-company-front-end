@@ -2,7 +2,7 @@
 
   <ng-container formGroupName="main">
 
-    <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-12 col-xxxl-12">
 
       <div class="row">
         <div class="col mb-3">
@@ -63,20 +63,51 @@
     </div>
   </ng-container>
 
+  <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase">
+    Line Details
+  </h4>
 
-  <ng-container formGroupName="details">
 
-    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase">
-      Line Details
-    </h4>
+  <div *ngIf="enableEdit">
+    <p class="mb-1">
+      One &nbsp;<span class="text-primary"><u>PART NUMBER</u></span> &nbsp; and &nbsp;<span
+        class="text-success"><u>QTY</u></span> &nbsp;
+      per
+      line.
+    </p>
 
+    Example:
+    <ul class="list-unstyled">
+      <li><span class="text-primary"><u>EYE12794</u>&nbsp;&nbsp;</span> <span class="text-success"><u>25</u></span>
+      </li>
+      <li><span class="text-primary"><u>ELE-44581-424</u>&nbsp;&nbsp;</span> <span class="text-success"><u>3</u></span>
+      </li>
+      <li><span class="text-primary"><u>EYE12795</u>&nbsp;&nbsp;</span> <span class="text-success"><u>5</u></span></li>
+    </ul>
+
+    <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"
+      [(ngModel)]="reasonCode" [ngModelOptions]="{standalone: true}" bindLabel="value" bindValue="value"
+      placeholder="Select reason code" [clearable]="true" [editableSearchTerm]="true" class="mb-3">
+    </ng-select>
+
+    <div class="mb-3">
+      <ace [config]="aceConfig" [mode]="'plain_text'" [theme]="aceTheme" [(value)]="value"
+        (textChanged)="onChange($event)" #editor class="border border-light mb-3"></ace>
+      <button class="btn btn-primary" (click)="onValidate()" [disabled]="this.form?.disabled">Validate</button>
+    </div>
+  </div>
+
+
+  <ng-container formGroupName="details" *ngIf="getDetails.length">
     <div class="table-responsive">
-      <table class="table table-sm align-middle" *ngIf="getDetails.length">
+      <table class="table align-middle table-bordered">
         <thead>
-          <tr>
-            <th>Part #</th>
-            <th>Reason</th>
-            <th>Qty *</th>
+          <tr class="text-nowrap">
+            <th>Status</th>
+            <th>Part # <span class="text-danger">*</span></th>
+            <th>Reason <span class="text-danger">*</span></th>
+            <th>Qty <span class="text-danger">*</span></th>
+            <th>Available Qty</th>
             <th>Transaction</th>
             <th>Account Code</th>
             <th>Comments</th>
@@ -84,29 +115,45 @@
           </tr>
         </thead>
         <tbody>
-          <tr class="p-0 m-0 align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+          <tr class="p-0 m-0 align-middle text-center text-nowrap" *ngFor="let row of getDetails.controls; let i=index"
+            [formGroupName]="i">
 
+            <td class="text-center h4">
+              <i *ngIf="!isLoading && !row.value.message && !row.value.isDuplicate"
+                class=" text-success ri-checkbox-circle-line"> </i>
+              <i *ngIf="!isLoading && row.value.message" class="text-danger text-center ri-error-warning-line"
+                title="Part number not found in QAD"></i>
+              <i *ngIf="!isLoading && row.value.isDuplicate" class="text-warning text-center ri-file-copy-line"
+                title="This a duplicate part number."></i>
+              <div class="spinner-border text-primary" role="status" *ngIf="isLoading">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </td>
             <td style="min-width:200px">
-              <app-qad-part-search (notifyParent)="notifyParent($event, i, row)" [value]="row.value.partNumber"
-                [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true" 
+              <app-qad-part-search appendToBody="body" (notifyParent)="notifyParent($event, i, row)"
+                [value]="row.value.partNumber" [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true"
                 [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled"
-                [ngClass]="{ 'is-invalid': submitted && row.get('partNumber').errors }"></app-qad-part-search>
+                [ngClass]="{ 'is-invalid': isValidating && row.get('partNumber').errors }"></app-qad-part-search>
             </td>
             <td style="min-width:200px">
               <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"
                 formControlName="reasonCode" bindLabel="value" bindValue="value" placeholder="Select reason code"
-                [clearable]="true" [editableSearchTerm]="true" 
-                [ngClass]="{ 'is-invalid': submitted && row.get('reasonCode').errors }">
+                [clearable]="true" [editableSearchTerm]="true"
+                [ngClass]="{ 'is-invalid': isValidating && row.get('reasonCode').errors }">
               </ng-select>
             </td>
             <td style="min-width:100px">
               <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty needed"
-                [ngClass]="{ 'is-invalid': submitted && row.get('qty').errors }" />
+                [ngClass]="{ 'is-invalid': isValidating && row.get('qty').errors }" />
+            </td>
+            <td style="min-width:100px" class="text-nowrap">
+              <input type="text" class="form-control" placeholder="Available Qty" readonly [value]="row.value.availableQty"/>
             </td>
             <td style="min-width:200px">
               <ng-select appendTo="body" [items]="materialRequestForm.transactionType" [searchable]="true"
                 formControlName="trType" bindLabel="TrType" bindValue="TrType" placeholder="Select transaction type"
-                [clearable]="false"  [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': submitted && row.get('trType').errors }" >
+                [clearable]="false" [editableSearchTerm]="true"
+                [ngClass]="{ 'is-invalid': isValidating && row.get('trType').errors }">
                 <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
                   <div>{{item.TrType}}</div>
                   <div>{{item.Description}}</div>
@@ -116,7 +163,8 @@
             <td style="min-width:200px">
               <ng-select appendTo="body" [items]="materialRequestForm.accountCodes" [searchable]="true"
                 formControlName="ac_code" bindLabel="ac_code" bindValue="ac_code" placeholder="Select account code"
-                [clearable]="false"  [editableSearchTerm]="true"  [ngClass]="{ 'is-invalid': submitted && row.get('ac_code').errors }">
+                [clearable]="false" [editableSearchTerm]="true"
+                [ngClass]="{ 'is-invalid': isValidating && row.get('ac_code').errors }">
                 <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
                   <div>{{item.ac_code}}</div>
                   <div>{{item.ac_desc}}</div>
@@ -129,15 +177,12 @@
             </td>
             <td>
               <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)" [disabled]="form.disabled">
-                <i class="feather icon-trash"></i>
+                <i class="ri-delete-bin-line"></i>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
-      <button class="btn btn-primary mt-3 mb-3" (click)="addMoreItems()" [disabled]="form.disabled">
-        <i class="feather icon-plus"></i> Add More
-      </button>
     </div>
   </ng-container>
 

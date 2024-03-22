@@ -18,7 +18,7 @@ export class FgLabelPrintModalService {
     ) { }
 
     open(customerPartNumber: string, poNumber: string, partNumber: string, description?: string, description1?: string, row?: any) {
-        this.modalRef = this.modalService.open(FgLabelPrintModalComponent, { size: 'md', fullscreen: false, backdrop: 'static', scrollable: true, centered: true, keyboard: false });
+        this.modalRef = this.modalService.open(FgLabelPrintModalComponent, { size: 'lg', fullscreen: false, backdrop: 'static', scrollable: true, centered: true, keyboard: false });
         this.modalRef.componentInstance.customerPartNumber = customerPartNumber;
         this.modalRef.componentInstance.poNumber = poNumber;
         this.modalRef.componentInstance.partNumber = partNumber;
@@ -70,7 +70,6 @@ export class FgLabelPrintModalComponent {
         this.monthYear = moment().format('MM/DD/YYYY');
         this.totalLabels = 1;
         this.qtyPerLabel = 1;
-        console.log(this.row)
     }
 
     dismiss() {

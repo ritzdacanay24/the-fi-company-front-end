@@ -1,5 +1,5 @@
 <div class="modal-header">
-  <h5 class="modal-title" id="exampleModalLabel">{{addressCode}}</h5>
+  <h4 class="modal-title">Ship To Info</h4>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 <div class="modal-body mh-250">
@@ -22,6 +22,6 @@
 
 </div>
 <div class="modal-footer">
-  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
-  <button (click)="getData()" type="button" class="btn btn-primary">Refresh</button>
+  <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+  <button (click)="getData()" type="button" class="btn btn-primary" [disabled]="isLoading">Refresh</button>
 </div>

@@ -60,7 +60,7 @@ export class DateModalService {
     </div>
 
     <div class="modal-footer">
-      <button (click)="close()" type="button" class="btn btn-gray mr-auto">Close</button>
+      <button (click)="close()" type="button" class="btn btn-light mr-auto">Close</button>
     </div>
 
   `,

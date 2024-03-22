@@ -7,7 +7,7 @@ import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { MaterialRequestFormComponent } from '../material-request-form/material-request-form.component';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
-import { FormArray, FormBuilder, FormControl, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MyFormGroup } from 'src/assets/js/util/_formGroup';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
@@ -32,13 +32,15 @@ export class MaterialRequestCreateComponent {
 
   title = "Create Material Request";
 
-  form: MyFormGroup<any>;
+  form: FormGroup;
 
   id = null;
 
   isLoading = false;
 
   submitted = false;
+
+  @Input() showItemCreat
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
@@ -59,13 +61,30 @@ export class MaterialRequestCreateComponent {
 
   disableValidation = true
 
+
+  resetTags() {
+    let arr = this.form.get('details') as FormArray;
+    while (0 !== arr.length) {
+      arr.removeAt(0);
+    }
+  }
+
+  value
+
   async onSubmit() {
     this.submitted = true;
+
+
     if (this.form.invalid) {
       getFormValidationErrors()
       return;
     };
 
+    if (!this.form.controls['details']['controls'].length) {
+      alert('No items found in this request. ')
+      return
+    }
+    
     try {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
@@ -74,6 +93,9 @@ export class MaterialRequestCreateComponent {
       this.toastrService.success('Successfully Create');
 
       this.form.reset();
+      this.resetTags()
+      this.value = ""
+      this.submitted = false;
 
     } catch (err) {
       this.isLoading = false;
@@ -87,19 +109,7 @@ export class MaterialRequestCreateComponent {
   details: FormArray;
 
   addMoreItems = () => {
-
     this.details = this.form.get('details') as FormArray;
-
-    let lastIndex = this.details.value[this.details?.value?.length - 1];
-    this.details.push(this.fb.group({
-      partNumber: new FormControl(null, Validators.required),
-      reasonCode: new FormControl(lastIndex?.reasonCode || null, Validators.required),
-      qty: new FormControl(null, Validators.required),
-      trType: new FormControl({ value: null, disabled: true }),
-      ac_code: new FormControl({ value: null, disabled: true }),
-      notes: new FormControl(''),
-    }))
-
   }
 
   onDeleteItem = async ($event, index) => {

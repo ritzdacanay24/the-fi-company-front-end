@@ -2,10 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { WebsocketService } from '@app/core/services/websocket.service';
 import { SharedModule } from '@app/shared/shared.module';
 import moment from 'moment';
 import { NgxBarcode6Module } from 'ngx-barcode6';
 import { Subscription, interval } from 'rxjs';
+import { MaterialPickingValidationModalService } from '../material-picking-validation-modal/material-picking-validation-modal.component';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+
+const MATERIAL_PICKING_TRANSACTION = 'MATERIAL_PICKING_TRANSACTION';
+const VALIDATE_ADD_TRANSACTION = 'VALIDATE_ADD_TRANSACTION';
+const PICKING_ADD_TRANSACTION = 'PICKING_ADD_TRANSACTION';
 
 @Component({
   standalone: true,
@@ -21,8 +28,38 @@ export class MaterialRequestPickingComponent implements OnInit {
     public route: ActivatedRoute,
     public router: Router,
     public api: MaterialRequestService,
-    public authenticationService: AuthenticationService
+    public authenticationService: AuthenticationService,
+    private websocketService: WebsocketService,
+    private materialPickingValidationModalService: MaterialPickingValidationModalService
   ) {
+
+    /**
+     * Subscribe to current view.
+     * Add subscription
+     * If data is found in the array, assign it to the new data
+     * If data is not found, push new data
+     * 
+     */
+    this.websocketService.multiplex(
+      () => ({ subscribe: PICKING_ADD_TRANSACTION }),
+      () => ({ unsubscribe: PICKING_ADD_TRANSACTION }),
+      (message) => message.type === PICKING_ADD_TRANSACTION
+    ).subscribe((data: any) => {
+      var index = this.data.findIndex(x => x.id == data.data.id);
+      index === -1 ? this.data.push(data.data) : this.data = this.data.map(el => (el.id === data.data.id ? data.data : el))
+    });
+
+    /**
+     * This should already receive the new array of data
+     */
+    this.websocketService.multiplex(
+      () => ({ subscribe: MATERIAL_PICKING_TRANSACTION }),
+      () => ({ unsubscribe: MATERIAL_PICKING_TRANSACTION }),
+      (message) => message.type === MATERIAL_PICKING_TRANSACTION
+    ).subscribe((data: any) => {
+      this.data = this.data.map(el => (el.id === data.data.id ? data.data : el))
+    })
+
   }
 
   ngOnInit(): void {
@@ -62,6 +99,12 @@ export class MaterialRequestPickingComponent implements OnInit {
       row.printedBy = null;
       row.printedDate = null;
 
+      this.websocketService.next({
+        message: 'Cleared print',
+        data: row,
+        type: MATERIAL_PICKING_TRANSACTION
+      });
+
 
     } catch (err) {
 
@@ -72,10 +115,27 @@ export class MaterialRequestPickingComponent implements OnInit {
     try {
       this.isLoading = true;
       await this.api.sendBackToValidation(row);
-      await this.getData()
+      await this.getData(false)
+
+      row.validated = null
+      row.disabled = true
+
+      this.websocketService.next({
+        message: 'Removed from picking queue',
+        type: MATERIAL_PICKING_TRANSACTION,
+        data: row,
+      });
+
+      this.websocketService.next({
+        message: 'Material request returned back to the validation queue.',
+        type: VALIDATE_ADD_TRANSACTION,
+        data: row
+      });
+
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
+      row.disabled = false
     }
 
   }
@@ -87,9 +147,9 @@ export class MaterialRequestPickingComponent implements OnInit {
       this.subscription.unsubscribe();
   }
 
-  async getData() {
+  async getData(showLoading = true) {
     try {
-      this.isLoading = true;
+      this.isLoading = showLoading;
       let data: any = await this.api.getPicking();
       this.data = data.result;
 
@@ -164,9 +224,38 @@ export class MaterialRequestPickingComponent implements OnInit {
         };
       }, 200);
 
+
+      this.websocketService.next({
+        message: 'Material pick sheet printed',
+        data: row,
+        type: MATERIAL_PICKING_TRANSACTION
+      });
+
     } catch (err) {
       row.isLoading = false;
     }
+  }
+
+  getLineItemShortages(row) {
+    let shortageItemsFound = [];
+    for (let i = 0; i < row.details.length; i++) {
+      // if value is null convert it to 0
+      if (row.details[i].active == 1) {
+
+        row.details[i].qtyPicked = row.details[i].qtyPicked == null ? 0 : row.details[i].qtyPicked;
+
+        let qtyRequired = parseInt(row.details[i].qty);
+        let qtyPicked = parseInt(row.details[i].qtyPicked);
+
+        let openBalance = qtyRequired - qtyPicked;
+        if (openBalance > 0) {
+          shortageItemsFound.push(row.details[i]);
+          row.details[i].shortageQty = openBalance;
+        }
+      }
+    }
+
+    return shortageItemsFound;
   }
 
   async onComplete(row) {
@@ -174,18 +263,40 @@ export class MaterialRequestPickingComponent implements OnInit {
       alert('The user who printed this MR is the only person who can complete this MR.')
       return;
     }
-
-    row.pickedCompletedDate = moment().format('YYYY-MM-DD HH:mm:ss');
+    if (row.pickedCompletedDate) {
+      alert('This MR is already completed.')
+      return;
+    }
 
     for (let i = 0; i < row.details.length; i++) {
       row.details[i].shortageCreatedBy = this.authenticationService.currentUserValue.id
     }
 
-    try {
-      await this.api.completePicking(row);
-      await this.getData()
-    } catch (err) {
-    }
+    let itemShortagesFound = this.getLineItemShortages(row);
+
+    const modalRef = this.materialPickingValidationModalService.open(row);
+    modalRef.componentInstance.shortages = itemShortagesFound;
+
+    modalRef.result.then(async (result: any) => {
+      try {
+
+        row.pickedCompletedDate = moment().format('YYYY-MM-DD HH:mm:ss');
+        await this.api.completePicking(row);
+
+        this.websocketService.next({
+          message: 'Material pick sheet completed',
+          data: row,
+          type: MATERIAL_PICKING_TRANSACTION
+        });
+
+        this.data = this.data.filter(x => x.id !== row.id);
+
+
+        SweetAlert.toast({ title: "Pick completed" })
+      } catch (err) {
+      }
+    }, () => { });
+
   }
 
 }

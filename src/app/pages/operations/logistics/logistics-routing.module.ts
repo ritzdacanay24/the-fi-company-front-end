@@ -4,6 +4,7 @@ import { NgModule } from '@angular/core';
 
 import { DailyReportComponent } from './daily-report/daily-report.component';
 import { LogisticsComponent } from './logistics.component';
+import { CalendarComponent } from './calendar/calendar.component';
 
 const routes: Routes = [
   {
@@ -18,6 +19,10 @@ const routes: Routes = [
       {
         path: 'daily-report',
         component: DailyReportComponent
+      },
+      {
+        path: 'calendar',
+        component: CalendarComponent
       },
     ]
   }

@@ -4,7 +4,7 @@
       <div class="card-header d-flex align-items-center">
         <h4 class="float-start me-auto">QIR</h4>
 
-        <button class="btn btn-success float-end" (click)="open(content)" [disabled]="loading">Add More</button>
+        <button class="btn btn-primary float-end" (click)="open(content)" [disabled]="loading">Add More</button>
 
       </div>
       <div class="card-body p-0" style="height: calc(100vh - 382px);overflow: auto;">
@@ -62,9 +62,9 @@
   </div>
   <div class="offcanvas-footer p-2 mb-2">
     <div class="text-end">
-      <button type="button" class="btn btn-gray me-2" (click)="offcanvasService.dismiss()">Close</button>
+      <button type="button" class="btn btn-light me-2" (click)="offcanvasService.dismiss()">Close</button>
       <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="editInfo.id">Delete</button>
-      <button type="button" class="btn btn-success" (click)="onSubmit()"
+      <button type="button" class="btn btn-primary" (click)="onSubmit()"
         [disabled]="editInfo.name == ''">Save</button>
     </div>
   </div>

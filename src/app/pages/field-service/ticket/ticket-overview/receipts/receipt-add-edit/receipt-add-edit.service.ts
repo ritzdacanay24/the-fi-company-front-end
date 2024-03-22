@@ -11,8 +11,9 @@ export class ReceiptAddEditService {
     public modalService: NgbModal
   ) { }
 
-  open(workOrderId, typeOfClick?, id?) {
+  open(fsId, workOrderId, typeOfClick?, id?) {
     let modalRef = this.modalService.open(ReceiptAddEditComponent, { size: 'md', fullscreen: false });
+    modalRef.componentInstance.fsId = fsId;
     modalRef.componentInstance.workOrderId = workOrderId;
     modalRef.componentInstance.id = id;
     modalRef.componentInstance.typeOfClick = typeOfClick;

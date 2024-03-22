@@ -32,6 +32,5 @@ export class DailyReportComponent implements OnInit {
 
   async getData() {
     this.data = await this.logisiticsDailyReportService.getDailyReport();
-    console.log(this.data, 'ddd')
   }
 }

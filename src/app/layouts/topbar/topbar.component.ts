@@ -1,11 +1,9 @@
-import { Component, OnInit, EventEmitter, Output, Inject, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Inject, ViewChild, TemplateRef, HostListener } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { EventService } from '../../core/services/event.service';
 
 //Logout
-import { environment } from '../../../environments/environment';
 import { AuthenticationService } from '../../core/services/auth.service';
-import { AuthfakeauthenticationService } from '../../core/services/authfake.service';
 import { Router } from '@angular/router';
 import { TokenStorageService } from '../../core/services/token-storage.service';
 
@@ -21,6 +19,13 @@ import { ChartService } from 'src/app/core/services/chart.service';
 import { RootReducerState } from 'src/app/store';
 import { Store } from '@ngrx/store';
 import { changeMode } from 'src/app/store/layouts/layout-action';
+import { setOptions } from '@mobiscroll/angular';
+import { MENU } from '../sidebar/menu';
+import { SearchModalService } from '@app/shared/search/search-modal.component';
+import { initialState } from '@app/store/layouts/layout-reducers';
+import { setThemeColor } from '@app/app.component';
+
+export const THE_FI_COMPANY_LAYOUT = 'THE_FI_COMPANY_LAYOUT';
 
 @Component({
   selector: 'app-topbar',
@@ -47,14 +52,26 @@ export class TopbarComponent implements OnInit {
   isDropdownOpen = false;
   @ViewChild('removenotification') removenotification !: TemplateRef<any>;
   notifyId: any;
+  menuItems
+
+  @HostListener('window:keydown.control.k', ['$event'])
+  bigFont(e: KeyboardEvent) {
+    e.preventDefault();
+    if ((e.key === 'k')) {
+      this.openSearch()
+    }
+  }
+
 
   constructor(@Inject(DOCUMENT) private document: any, private eventService: EventService, public languageService: LanguageService, private modalService: NgbModal,
-    public _cookiesService: CookieService, public translate: TranslateService, private authService: AuthenticationService, private authFackservice: AuthfakeauthenticationService,
+    public _cookiesService: CookieService, public translate: TranslateService, private authService: AuthenticationService,
     private router: Router, private TokenStorageService: TokenStorageService,
     private chartService: ChartService,
-    private store: Store<RootReducerState>,) { }
+    private store: Store<RootReducerState>,
+    private searchModalService: SearchModalService,) { }
 
   ngOnInit(): void {
+
     this.userData = this.TokenStorageService.getUser();
     this.element = document.documentElement;
 
@@ -78,6 +95,27 @@ export class TopbarComponent implements OnInit {
       var item_price = item.quantity * item.price
       this.total += item_price
     });
+
+    this.menuItems = MENU;
+
+    window.addEventListener('storage', (e: any) => {
+      if (e.key == 'THE_FI_COMPANY_LAYOUT') {
+        let ee = JSON.parse(e.newValue)
+        this.changeMode(ee.LAYOUT_MODE, ee.SIDEBAR_COLOR == 'dark' && ee.LAYOUT_MODE == 'light' ? true : false)
+        setThemeColor(ee.LAYOUT_MODE)
+      }
+    });
+
+  }
+
+  changeModeZoom(row) {
+    // @ts-ignore comment
+    document.body.style.zoom = row + "%" 
+
+  }
+
+  openSearch() {
+    this.searchModalService.open()
   }
 
   /**
@@ -136,25 +174,45 @@ export class TopbarComponent implements OnInit {
   /**
   * Topbar Light-Dark Mode Change
   */
-  changeMode(mode: string) {
+  changeMode(mode: string, semi = false) {
+
     this.mode = mode;
     this.eventService.broadcast('changeMode', mode);
     this.store.dispatch(changeMode({ mode }));
 
-    switch (mode) {
-      case 'light':
-        document.documentElement.setAttribute('data-bs-theme', "light");
-        document.documentElement.setAttribute('data-sidebar', "light");
-        break;
-      case 'dark':
-        document.documentElement.setAttribute('data-bs-theme', "dark");
-        document.documentElement.setAttribute('data-sidebar', "dark");
-        break;
-      default:
-        document.documentElement.setAttribute('data-bs-theme', "light");
-        document.documentElement.setAttribute('data-sidebar', "light");
-        break;
+    let theme = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT)) || JSON.parse(JSON.stringify(initialState));;
+
+    if (semi) {
+      document.documentElement.setAttribute('data-bs-theme', "light");
+      document.documentElement.setAttribute('data-sidebar', "dark");
+      theme.SIDEBAR_COLOR = 'dark';
+    } else {
+
+      switch (mode) {
+        case 'light':
+          document.documentElement.setAttribute('data-bs-theme', "light");
+          document.documentElement.setAttribute('data-sidebar', "light");
+          theme.SIDEBAR_COLOR = 'light';
+          break;
+        case 'dark':
+          document.documentElement.setAttribute('data-bs-theme', "dark");
+          document.documentElement.setAttribute('data-sidebar', "dark");
+          theme.SIDEBAR_COLOR = 'dark';
+          break;
+        default:
+          document.documentElement.setAttribute('data-bs-theme', "light");
+          document.documentElement.setAttribute('data-sidebar', "light");
+          theme.SIDEBAR_COLOR = 'light';
+          break;
+      }
     }
+
+    theme.LAYOUT_MODE = mode;
+    localStorage.setItem(THE_FI_COMPANY_LAYOUT, JSON.stringify(theme))
+    setOptions({
+      theme: 'ios',
+      themeVariant: theme.LAYOUT_MODE
+    });
 
     //set theme for chart.js
 
@@ -195,13 +253,13 @@ export class TopbarComponent implements OnInit {
   }
 
   windowScroll() {
-    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
-      (document.getElementById("back-to-top") as HTMLElement).style.display = "block";
-      document.getElementById('page-topbar')?.classList.add('topbar-shadow');
-    } else {
-      (document.getElementById("back-to-top") as HTMLElement).style.display = "none";
-      document.getElementById('page-topbar')?.classList.remove('topbar-shadow');
-    }
+    // if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+    //   (document.getElementById("back-to-top") as HTMLElement).style.display = "block";
+    //   document.getElementById('page-topbar')?.classList.add('topbar-shadow');
+    // } else {
+    //   (document.getElementById("back-to-top") as HTMLElement).style.display = "none";
+    //   document.getElementById('page-topbar')?.classList.remove('topbar-shadow');
+    // }
   }
 
   // Delete Item
@@ -294,7 +352,6 @@ export class TopbarComponent implements OnInit {
           checkedVal.push(result);
         }
       }
-      console.log(checkedVal)
       this.checkedValGet = checkedVal;
     }
     checkedVal.length > 0 ? (document.getElementById("notification-actions") as HTMLElement).style.display = 'block' : (document.getElementById("notification-actions") as HTMLElement).style.display = 'none';

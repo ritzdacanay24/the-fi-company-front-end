@@ -26,6 +26,7 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util'
+import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
 
 /**
  * Sanitize HTML
@@ -200,13 +201,13 @@ export class UploadedReceiptComponent implements OnInit {
 
     setTimeout(() => {
       const printContent = document.getElementById("printDiv");
-      const WindowPrt = window.open('', '', 'left=0,top=0,width=900,height=900,toolbar=0,scrollbars=0,status=0');
+      const WindowPrt = window.open('', '');
       WindowPrt.document.write(printContent.innerHTML);
       WindowPrt.document.close();
       WindowPrt.focus();
       WindowPrt.print();
       WindowPrt.close();
-    }, 500);
+    }, 1000);
 
 
   }
@@ -360,14 +361,14 @@ export class UploadedReceiptComponent implements OnInit {
   }
 
   create(typeOfClick) {
-    const modalRef = this.receiptAddEditService.open(this.fsId)
+    const modalRef = this.receiptAddEditService.open(this.fsId, this.workOrderId, typeOfClick)
     modalRef.result.then(async (result: any) => {
       await this.getData();
     }, () => { });
   }
 
   edit(id, typeOfClick) {
-    const modalRef = this.receiptAddEditService.open(this.fsId, id);
+    const modalRef = this.receiptAddEditService.open(this.fsId, this.workOrderId, typeOfClick, id);
     modalRef.result.then(async (result: any) => {
       await this.getData();
     }, () => { });
@@ -526,7 +527,7 @@ export class UploadedReceiptComponent implements OnInit {
   }
 
   viewReceipt(row, link) {
-    //window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
+    window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
 
   }
 
@@ -544,9 +545,11 @@ export class UploadedReceiptComponent implements OnInit {
         width: 50,
         maxWidth: 50,
         suppressMenu: true,
-        floatingFilter: false,
         pinned: isMobile() ? null : 'left',
-        checkboxSelection: true
+        checkboxSelection: true,
+        floatingFilterComponentParams: { suppressFilterButton: true },
+        enableFilter: false,
+
 
       },
       {
@@ -574,13 +577,10 @@ export class UploadedReceiptComponent implements OnInit {
         headerName: 'Reason Code',
         filter: 'agMultiColumnFilter',
         editable: true,
-        cellRenderer: params => {
-          if (params.data) {
-            if (params.value) {
-              return params.value
-            }
-            return 'Enter reason code'
-          }
+        cellRenderer: EditIconComponent,
+        cellRendererParams: {
+          iconName: 'mdi mdi-pencil',
+          placeholder: "Enter reason code"
         },
       },
       {

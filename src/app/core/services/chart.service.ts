@@ -75,7 +75,6 @@ export class ChartService {
      * Cookie Language set
      */
     public setTheme(mode: any) {
-        console.log(mode)
         this.themeService.setColorschemesOptions(this.map[mode]);
     }
 

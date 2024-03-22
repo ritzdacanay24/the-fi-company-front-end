@@ -3,6 +3,7 @@ import { first } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ShippingService } from '@app/core/api/operations/shipping/shipping.service';
+import { SharedModule } from '@app/shared/shared.module';
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +25,8 @@ export class OwnerTransactionsService {
 }
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-owner-transactions',
   templateUrl: './owner-transactions.component.html',
   styleUrls: []

@@ -14,8 +14,8 @@ export class RequestService extends DataService<any> {
     super(url, http);
   }
 
-  createFieldServiceRequest(params) {
-    return firstValueFrom(this.http.post(`https://dashboard.eye-fi.com/tasks/createFsRequest.php`, params))
+  createFieldServiceRequest(params, sendEmail = false) {
+    return firstValueFrom(this.http.post<{ message: string, id?: number }>(`https://dashboard.eye-fi.com/tasks/createFsRequest.php?sendEmail=${sendEmail}`, params))
   }
 
   getByToken(token) {

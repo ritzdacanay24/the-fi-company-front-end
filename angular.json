@@ -6,7 +6,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "velzon": {
+    "fi": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -23,7 +23,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/velzon",
+            "outputPath": "dist/web",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -31,7 +31,10 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/.htaccess",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "node_modules/shepherd.js/dist/css/shepherd.css",
@@ -49,6 +52,7 @@
               "node_modules/slick-carousel/slick/slick.min.js"
             ],
             "allowedCommonJsDependencies": [
+              "metismenujs",
               "ev-emitter/ev-emitter",
               "can-use-dom",
               "core-js/modules/es.array.filter",
@@ -92,7 +96,9 @@
               "core-js/modules/es.string.replace.js",
               "core-js/modules/es.weak-map.js",
               "core-js/modules/web.dom-collections.iterator.js"
-            ]
+            ],
+            "serviceWorker": true,
+            "ngswConfigPath": "ngsw-config.json"
           },
           "configurations": {
             "production": {
@@ -114,6 +120,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
+              "baseHref": "/dist/web/",
               "outputHashing": "all",
               "optimization": {
                 "scripts": true,
@@ -138,10 +145,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "velzon:build:production"
+              "buildTarget": "fi:build:production"
             },
             "development": {
-              "buildTarget": "velzon:build:development"
+              "buildTarget": "fi:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -149,7 +156,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "velzon:build"
+            "buildTarget": "fi:build"
           }
         },
         "test": {
@@ -162,7 +169,8 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "src/styles.scss"

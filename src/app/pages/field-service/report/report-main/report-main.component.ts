@@ -31,7 +31,6 @@ export class ReportMainComponent implements OnInit {
   ]
 
   goToView(link) {
-    console.log(link)
     this.router.navigate([link])
   }
 }

@@ -1,5 +1,5 @@
 export class NAVIGATION_ROUTE {
-  public static readonly CREATE = '/operations/graphics/create';
-  public static readonly LIST = '/operations/graphics/list';
-  public static readonly EDIT = '/operations/graphics/edit';
+  public static readonly CREATE = '/dashboard/operations/graphics/create';
+  public static readonly LIST = '/dashboard/operations/graphics/list';
+  public static readonly EDIT = '/dashboard/operations/graphics/edit';
 }

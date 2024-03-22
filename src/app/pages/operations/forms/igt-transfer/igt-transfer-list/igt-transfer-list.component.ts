@@ -92,7 +92,9 @@ export class IgtTransferListComponent implements OnInit {
     }
   ]
 
-  title = 'Placard List';
+  searchName = '';
+
+  title = 'IGT Transfer List';
 
   gridApi: GridApi;
 

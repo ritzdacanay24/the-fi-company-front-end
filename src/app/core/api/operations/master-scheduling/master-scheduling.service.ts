@@ -17,13 +17,17 @@ export class MasterSchedulingService extends DataService<any> {
   getShipping = async () =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/Shipping/index?runOpenShippingReport`));
 
-  getMasterProduction = async () =>
-    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/MasterControl/index?getMasterProductionReport`));
+  getMasterProduction = async (routing) =>
+    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/MasterControl/index?getMasterProductionReportByRouting&routing=${routing}`));
 
   getPickingByWorkOrderId = async (workOrderId: number, filteredSections: any = ['Open Picks']) =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/MasterControl/index?workOrderNumber=${workOrderId}&filteredSections=${filteredSections}&getPickDetailsByWorkOrderNumber=1`));
 
   printWorkOrder(params: any) {
     return firstValueFrom(this.http.post(`/MasterControl/index`, params));
+  }
+
+  saveMisc(params: any) {
+    return firstValueFrom(this.http.post(`/Shipping/index`, params));
   }
 }

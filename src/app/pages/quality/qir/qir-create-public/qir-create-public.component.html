@@ -1,17 +1,31 @@
-<div class="jumbotron">
-  <div class="container-fluid py-4">
+<div class="jumbotron" *ngIf="closeWindow">
+  <div class="container-fluid py-4 text-center">
     <div class="row justify-content-center">
       <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+        <img src="assets/images/fi-color.png" style="width: 140px;">
+        <p>QIR submitted. You may close the window. </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="jumbotron" *ngIf="!closeWindow">
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10">
         <div class="card">
           <div class="card-header d-flex align-items-center justify-content-between">
             <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
-            <button class="btn btn-primary" (click)="onCreateNew()">Create New QIR</button>
           </div>
-          <div class="card-body" style="min-height:300px">
-            <div class="mb-3"><img src="assets/images/fi-color.png" style="width: 140px;"></div>
-            <app-qir-public-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-qir-public-form>
+          <div class="card-body p-4" style="min-height:300px">
+            <div class="mb-3">
+              <img src="assets/images/fi-color.png" style="width: 140px;">
+            </div>
+            <app-qir-public-form (setFormEmitter)="setFormEmitter($event)"
+              [submitted]="submitted"></app-qir-public-form>
             <div class="mb-3 mt-3">
               <div class="form-group">
+                <label class="form-label">Photos or any reference </label>
                 <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple
                   name="file">
               </div>

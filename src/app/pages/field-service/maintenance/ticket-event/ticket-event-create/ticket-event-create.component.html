@@ -8,7 +8,7 @@
         <app-ticket-event-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-ticket-event-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading">Cancel</button>
         <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
       </div>
     </div>

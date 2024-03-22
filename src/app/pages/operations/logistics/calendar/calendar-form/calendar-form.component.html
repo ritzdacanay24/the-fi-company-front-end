@@ -1,0 +1,62 @@
+<form [formGroup]="form">
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label required">Vendor</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control" name="title" formControlName="title"
+                [ngClass]="{ 'is-invalid': submitted && f['title'].errors }" placeholder="Enter vendor name">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label required">Type</label>
+        <div class="col-sm-9">
+            <select class="form-control" formControlName="inbound_or_pickup"
+                [ngClass]="{ 'is-invalid': submitted && f['inbound_or_pickup'].errors }">
+                <option *ngFor="let row of ['Inbound', 'Outbound', 'Pick Up', 'PTO']">{{row}}</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label required">Start Date</label>
+        <div class="col-sm-9">
+            <input type="date" placeholder="Enter request date" class="form-control" formControlName="start_date"
+                [ngClass]="{ 'is-invalid': submitted && f['start_date'].errors }">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label required">End Date</label>
+        <div class="col-sm-9">
+            <input type="date" placeholder="Enter request date" class="form-control" formControlName="end_date"
+                [ngClass]="{ 'is-invalid': submitted && f['end_date'].errors }">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label required">Time</label>
+        <div class="col-sm-9">
+            <input formControlName="start_time" class="form-control" type="time" id="start-time" name="start-time"
+                [ngClass]="{ 'is-invalid': submitted && f['start_time'].errors }">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">PO#/RMA#</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control" name="po_number" formControlName="po_number"
+                [ngClass]="{ 'is-invalid': submitted && f['po_number'].errors }" placeholder="Enter PO#/RMA#">
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="col-sm-3 col-form-label">Comments</label>
+        <div class="col-sm-9">
+            <textarea type="text" class="form-control" name="comments" formControlName="comments"
+                [ngClass]="{ 'is-invalid': submitted && f['comments'].errors }" autosize [minRows]="2"
+                placeholder="Enter any comments"></textarea>
+        </div>
+    </div>
+
+</form>

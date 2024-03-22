@@ -10,7 +10,7 @@
 
   <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
     <div class="text-left" style="text-align: left !important;">
-      <h5 *ngIf="item.poi?.name">{{item.poi?.name}}</h5>
+      <h6 *ngIf="item.poi?.name">{{item.poi?.name}}</h6>
       <p>{{ item.address.freeformAddress }}</p>
     </div>
   </ng-template>

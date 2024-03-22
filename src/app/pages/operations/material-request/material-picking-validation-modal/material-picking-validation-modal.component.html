@@ -1,0 +1,48 @@
+<div class="modal-header">
+  <h4 class="modal-title">Shortages</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="activeModal.dismiss('Cross click')"
+    aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+  <div class="alert alert-success" role="alert"  *ngIf="shortages.length == 0">
+    No shortages found.
+  </div>
+
+  <div *ngIf="shortages.length > 0" class="mt-0">
+    <div class="alert alert-danger" role="alert">
+      <h4>Shortages found!</h4>
+      <p class="mb-2">Listed below are shortages found on this order. These item(s) will be added to the shortage log
+        automatically. Click on the submit button below to continue.</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered" style="white-space:nowrap">
+        <thead>
+          <tr>
+            <th>Line #</th>
+            <th>Part Number</th>
+            <th>Qty Requested</th>
+            <th>Qty Picked</th>
+            <th>Qty Short</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let det of shortages; index as i;">
+            <td class="align-middle">{{det.id}}</td>
+            <td class="align-middle">
+              <span *ngIf="det.active == 1">{{det.active == 1 ? det.partNumber : 'Item Deleted'}}</span>
+            </td>
+            <td class="align-middle">{{det.qty}}</td>
+            <td class="align-middle">{{det.qtyPicked}}</td>
+            <td class="align-middle bg-danger">{{det.shortageQty}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-light" (click)="activeModal.dismiss('Cross click')">Close</button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
+</div>

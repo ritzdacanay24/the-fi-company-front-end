@@ -23,7 +23,7 @@
     <label class="col-sm-3 col-form-label required">To emails</label>
     <div class="col-sm-9">
       <ng-select [addTag]="addEmail" [multiple]="true" formControlName='emailToSendTo'
-        [ngClass]="{ 'is-invalid': submitted && f['emailToSendTo'].errors }">
+        [ngClass]="{ 'is-invalid': submitted && f['emailToSendTo'].errors }" placeholder="Enter email address">
       </ng-select>
       <small>List of email that will be sent to</small>
     </div>
@@ -33,7 +33,7 @@
     <label class="col-sm-3 col-form-label required">CC Emails</label>
     <div class="col-sm-9">
       <ng-select [addTag]="addEmail" [multiple]="true" formControlName='ccEmails'
-        [ngClass]="{ 'is-invalid': submitted && f['ccEmails'].errors }">
+        [ngClass]="{ 'is-invalid': submitted && f['ccEmails'].errors }" placeholder="Enter email address">
       </ng-select>
     </div>
   </div>
@@ -54,27 +54,27 @@
     </div>
   </div>
 
-  <div class="row mb-3">
-    <label class="col-sm-3 col-form-label required">Address</label>
+  <div class="row mb-3 border-secondary">
+    <label class="col-sm-3 col-form-label">Address Info</label>
     <div class="col-sm-9">
       <div class="row mt-2">
         <div class="col-12 mb-3">
-          <label for="inputAddress" class="form-label">Address</label>
+          <label for="inputAddress" class="form-label required">Address 1</label>
           <input type="text" class="form-control" placeholder="Enter address" formControlName="address"
             [ngClass]="{ 'is-invalid': submitted && f['address'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label for="inputCity" class="form-label">City</label>
+          <label for="inputCity" class="form-label required">City</label>
           <input type="text" class="form-control" placeholder="Enter city" formControlName="city"
             [ngClass]="{ 'is-invalid': submitted && f['city'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label">State</label>
+          <label class="form-label required">State</label>
           <input type="text" class="form-control" placeholder="Enter state" formControlName="state"
             [ngClass]="{ 'is-invalid': submitted && f['state'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label">Zip</label>
+          <label class="form-label required">Zip</label>
           <input type="text" class="form-control" placeholder="Enter zip code" formControlName="zip"
             [ngClass]="{ 'is-invalid': submitted && f['zip'].errors }">
         </div>
@@ -183,10 +183,9 @@
   <div class="row mb-3">
     <label class="col-sm-3 col-form-label required">BOL goes to fax/email</label>
     <div class="col-sm-9">
-      <tag-input formControlName='bolFaxEmail' theme="bootstrap" [modelAsStrings]="true"
-        [ngClass]="{ 'is-invalid': submitted && f['bolFaxEmail'].errors }" secondaryPlaceholder="+ Add emails"
-        placeholder="+ Add more emails" [errorMessages]="errorMessages" [validators]="validators">
-      </tag-input>
+      <ng-select [addTag]="addEmail" [multiple]="true" formControlName='bolFaxEmail'
+        [ngClass]="{ 'is-invalid': submitted && f['bolFaxEmail'].errors }" placeholder="Enter email address">
+      </ng-select>
     </div>
   </div>
 
@@ -203,12 +202,12 @@
     </div>
   </div>
 
-  <div class="row mb-3">
-    <label class="col-sm-3 col-form-label required">Address</label>
+  <div class="row mb-3 border border-secondary">
+    <label class="col-sm-3 col-form-label">Address Info</label>
     <div class="col-sm-9">
       <div class="row mt-2">
         <div class="col-12 mb-3">
-          <label for="inputAddress" class="form-label">Address</label>
+          <label for="inputAddress" class="form-label required">Address 1</label>
           <input type="text" class="form-control" placeholder="Enter address" formControlName="dest_address"
             [ngClass]="{ 'is-invalid': submitted && f['dest_address'].errors }">
         </div>
@@ -218,22 +217,22 @@
             [ngClass]="{ 'is-invalid': submitted && f['dest_address2'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label for="inputCity" class="form-label">City</label>
+          <label for="inputCity" class="form-label required">City</label>
           <input type="text" class="form-control" placeholder="Enter city" formControlName="dest_city"
             [ngClass]="{ 'is-invalid': submitted && f['dest_city'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label">State</label>
-          <input type="text" class="form-control" placeholder="Enter state" formControlName="dest_state"
+          <label class="form-label required">State</label>
+          <input type="text" class="form-control required" placeholder="Enter state" formControlName="dest_state"
             [ngClass]="{ 'is-invalid': submitted && f['dest_state'].errors }">
         </div>
         <div class="col-md-4 mb-3">
-          <label class="form-label">Zip</label>
+          <label class="form-label required">Zip</label>
           <input type="text" class="form-control" placeholder="Enter zip code" formControlName="dest_zip"
             [ngClass]="{ 'is-invalid': submitted && f['dest_zip'].errors }">
         </div>
         <div class="col-12 mb-3">
-          <label class="form-label">Country</label>
+          <label class="form-label required">Country</label>
           <input type="text" class="form-control" placeholder="Enter country" formControlName="dest_country"
             [ngClass]="{ 'is-invalid': submitted && f['dest_country'].errors }">
         </div>
@@ -321,7 +320,7 @@
     <div class="row mb-3" formArrayName="palletSizeInformationSendInfo"
       *ngFor="let item of form.get('palletSizeInformationSendInfo')['controls']; let i = index;">
       <label class="col-sm-3 col-form-label required">Pallet size ({{i + 1}})</label>
-      <div class="col-sm-9">
+      <div class="col-sm-9" [formGroupName]="i">
         <div class="input-group">
           <input type="text" class="form-control" placeholder="Enter size information" formControlName="size"
             [ngClass]="{ 'is-invalid': submitted && item.get('size').errors }">
@@ -378,7 +377,7 @@
   </div>
 
   <div class="row mb-3">
-    <label class="col-sm-3 col-form-label required">Special Requirements</label>
+    <label class="col-sm-3 col-form-label">Special Requirements</label>
     <div class="col-sm-9">
       <textarea type="text" class="form-control" placeholder="Enter special requirments" rows="10"
         formControlName="specialRequirements"
@@ -391,7 +390,7 @@
   <h6 class="mb-3 bg-light p-3 text-center">Line Information</h6>
 
   <div class="table-responsive">
-    <table class="table" style="max-height:400px;overflow:auto">
+    <table class="table table-bordered" style="max-height:400px;overflow:auto">
       <thead>
         <tr>
           <th>Part</th>

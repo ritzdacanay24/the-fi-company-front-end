@@ -3,8 +3,8 @@
     <div *ngIf="isPdf(row.fileName)" style="page-break-after: always">
       <div>
         <p style="line-height:0.4">Type: {{row.name}}</p>
-        <p style="line-height:0.4">Date of Receipt: {{row.date !== "null" && row.date ? row.date : ''}} {{row.time !==
-          "null" && row.time ? row.time : ''}}</p>
+        <p style="line-height:0.4">Date of Receipt: {{row.date !== "null" && row.date ? row.date : ''}}
+          {{row.time !== "null" && row.time ? row.time : ''}}</p>
         <p style="line-height:0.4">Vendor: {{row.vendor_name}}</p>
         <p style="line-height:0.4">Created By: {{row.created_by_name}}</p>
         <p style="line-height:0.4">Amunt: {{row.cost}}</p>
@@ -21,12 +21,14 @@
       <div class="card-header d-flex align-items-center">
         <!--<h4 class="float-start">Receipts</h4>-->
 
-        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active" class="nav justify-content-end nav-tabs-custom rounded card-header-tabs border-bottom-0"
+        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active"
+          class="nav justify-content-end nav-tabs-custom rounded card-header-tabs border-bottom-0"
           (navChange)="onNavChange($event)">
           <li [ngbNavItem]="'Receipts'" class="nav-item">
-            <a ngbNavLink  class="nav-link" data-bs-toggle="tab" role="tab"><i class="mdi mdi-receipt-text"></i> Uploaded Receipts</a>
+            <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab"><i class="mdi mdi-receipt-text"></i> Uploaded
+              Receipts</a>
             <ng-template ngbNavContent>
-              <ag-grid-angular class="ag-theme-alpine no-border" [gridOptions]="gridOptions" [rowData]="data"
+              <ag-grid-angular class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data"
                 style="width: 100%;height: calc(100vh - 395px);">
               </ag-grid-angular>
 
@@ -35,11 +37,11 @@
      margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
             </ng-template>
           </li>
-          <li [ngbNavItem]="'Transactions'"  class="nav-item">
-            <a ngbNavLink  class="nav-link" data-bs-toggle="tab" role="tab"> Transactions</a>
+          <li [ngbNavItem]="'Transactions'" class="nav-item">
+            <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab"> Transactions</a>
             <ng-template ngbNavContent>
 
-              <ag-grid-angular class="ag-theme-alpine no-border" [gridOptions]="gridOptions" [rowData]="transactions"
+              <ag-grid-angular class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="transactions"
                 style="width: 100%;height: calc(100vh - 395px);">
               </ag-grid-angular>
 
@@ -72,7 +74,7 @@
           <button class="btn btn-warning  btn-sm m-0" *ngIf="active != 'Transactions'" (click)="create('Folder')">
             Upload Receipt
           </button>
-          <button class="btn btn-success btn-sm m-0" (click)="printReceipts()"
+          <button class="btn btn-primary btn-sm m-0" (click)="printReceipts()"
             [disabled]="this.gridApi?.getSelectedRows()?.length == 0 ">Print Receipts</button>
 
         </div>

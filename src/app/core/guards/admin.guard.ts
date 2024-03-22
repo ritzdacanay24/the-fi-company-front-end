@@ -3,38 +3,33 @@ import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/ro
 
 // Auth Services
 import { AuthenticationService } from '../services/auth.service';
-import { AuthfakeauthenticationService } from '../services/authfake.service';
-import { environment } from '../../../environments/environment';
+
+
+export const THE_FI_COMPANY_CURRENT_USER = 'THE_FI_COMPANY_CURRENT_USER';
 
 @Injectable({ providedIn: 'root' })
-export class AdminGuard  {
+export class AdminGuard {
     constructor(
         private router: Router,
         private authenticationService: AuthenticationService,
-        private authFackservice: AuthfakeauthenticationService
     ) { }
 
     canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
-        if (environment.defaultauth === 'firebase') {
-            const currentUser = this.authenticationService.currentUser();
-            if (currentUser) {
-                // logged in so return true
-                return true;
-            }
-        } else {
-            const currentUser = this.authFackservice.currentUserValue;
-            console.log(currentUser, 'admin guard')
-            if (currentUser) {
-                // logged in so return true
-                return true;
-            }
-            // check if user data is in storage is logged in via API.
-            if(sessionStorage.getItem('currentUser')) {
-                return true;
-            }
+        const currentUser = this.authenticationService.currentUserValue;
+
+        if (currentUser) {
+            if (currentUser?.isAdmin == 1) return true;
+            return false;
+            // logged in so return true
+
         }
+        // check if user data is in storage is logged in via API.
+        if (localStorage.getItem(THE_FI_COMPANY_CURRENT_USER)) {
+            return true;
+        }
+
         // not logged in so redirect to login page with the return url
-        this.router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
+        this.router.navigate(['/dashboard/dashboard'], { queryParams: { returnUrl: state.url } });
         return false;
     }
 }

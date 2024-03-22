@@ -50,7 +50,7 @@ export class PlacardListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -65,13 +65,13 @@ export class PlacardListComponent implements OnInit {
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'eyefi_part_number', headerName: 'Eyefi Part Number', filter: 'agMultiColumnFilter' },
     { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter' },
-    { field: 'eyefi_serial_tag', headerName: 'Eyefi Serial Tag', filter: 'agMultiColumnFilter' },
+    { field: 'eyefi_serial_tag', headerName: 'Eyefi Serial Tag', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'eyefi_so_number', headerName: 'Eyefi SO Number', filter: 'agMultiColumnFilter' },
     { field: 'eyefi_wo_number', headerName: 'Eyefi WO Number', filter: 'agMultiColumnFilter' },
     { field: 'line_number', headerName: 'Line Number', filter: 'agMultiColumnFilter' },
     { field: 'location', headerName: 'Location', filter: 'agMultiColumnFilter' },
-    { field: 'po_number', headerName: 'PO Number', filter: 'agMultiColumnFilter' },
-    { field: 'qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
+    { field: 'po_number', headerName: 'PO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
+    { field: 'qty', headerName: 'Qty', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'customer_co_por_so', headerName: 'Customer CP/POR/SO', filter: 'agMultiColumnFilter' },
     { field: 'customer_name', headerName: 'Customer Name', filter: 'agMultiColumnFilter' },
     { field: 'customer_part_number', headerName: 'Customer Part Number', filter: 'agMultiColumnFilter' },
@@ -101,6 +101,8 @@ export class PlacardListComponent implements OnInit {
       selected: false
     }
   ]
+
+  searchName = ''
 
   title = 'Placard List';
 

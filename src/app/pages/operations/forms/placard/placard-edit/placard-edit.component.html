@@ -1,18 +1,18 @@
 <div class="row" *ngIf="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="row" [hidden]="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-7">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
@@ -23,8 +23,8 @@
         <app-placard-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-placard-form>
       </div>
       <div class="card-footer d-flex" *ngIf="data && id">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-warning ms-auto me-3" [disabled]="isLoading" (click)="onPrint()"> Print</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light ms-auto me-3" [disabled]="isLoading" (click)="onPrint()"> Print</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Update </button>
       </div>
     </div>

@@ -44,6 +44,7 @@ export class SgAssetFormComponent {
     lastUpdate: [''],
     active: [1],
     manualUpdate: [''],
+    created_by: [''],
   })
 
   setBooleanToNumber(key) {

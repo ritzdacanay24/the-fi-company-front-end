@@ -50,7 +50,7 @@ export class VehicleListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -63,6 +63,20 @@ export class VehicleListComponent implements OnInit {
       minWidth: 115
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
+    {
+      field: "expiresInDays", headerName: "Days before expired", pinned: 'right',
+      cellClass: (e) => {
+        if (e.data && e.data.expiresInDays >= 20) {
+          return ['bg-success bg-opacity-50'];
+        } else if (e.data && e.data.expiresInDays >= 18) {
+          return ['bg-danger bg-opacity-75'];
+        } else if (e.data && e.data.expiresInDays >= 0) {
+          return ['bg-warning bg-opacity-50'];
+        } else {
+          return null
+        }
+      }
+    },
     { field: 'department', headerName: 'Department', filter: 'agMultiColumnFilter' },
     { field: 'exp', headerName: 'Expiration Date', filter: 'agMultiColumnFilter' },
     { field: 'fuelType', headerName: 'Fuel Type', filter: 'agMultiColumnFilter' },
@@ -73,7 +87,7 @@ export class VehicleListComponent implements OnInit {
     { field: 'vehicleMake', headerName: 'Vehicle Make', filter: 'agMultiColumnFilter' },
     { field: 'vehicleNumber', headerName: 'Vehicle Number', filter: 'agMultiColumnFilter' },
     { field: 'vin', headerName: 'VIN', filter: 'agMultiColumnFilter' },
-    { field: 'year', headerName: 'Year', filter: 'agMultiColumnFilter' },
+    { field: 'year', headerName: 'Year', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'createdBy', headerName: 'Created By', filter: 'agMultiColumnFilter' },
     { field: 'createdDate', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
     { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
@@ -97,6 +111,8 @@ export class VehicleListComponent implements OnInit {
       selected: false
     }
   ]
+
+  searchName = '';
 
   title = 'Vehicle List';
 

@@ -6,6 +6,8 @@ import { NAVIGATION_ROUTE } from '../event-constant';
 import { FormGroup } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { SchedulerEventService } from '@app/core/api/field-service/scheduler-event.service';
+import moment from 'moment';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -21,13 +23,14 @@ export class EventCreateComponent implements OnInit {
     public router: Router,
     private toastrService: ToastrService,
     private api: SchedulerEventService,
+    private authenticationService: AuthenticationService,
   ) {
   }
 
   ngOnInit(): void {
   }
 
-  title = "Create"
+  title = "Create Event"
 
   form: FormGroup;
 
@@ -46,6 +49,9 @@ export class EventCreateComponent implements OnInit {
 
     try {
       this.isLoading = true;
+      this.form.value.created_date = moment().format('YYYY-MM-DD HH:mm:ss');
+      this.form.value.created_by = this.authenticationService.currentUserValue.id;
+
       let data = await this.api.create(this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Created');

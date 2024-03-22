@@ -34,6 +34,10 @@ export class ShippingService {
     return this.http.get<ShippingMisc>(`/userTrans/getUserTransByFieldName.php?so=${soNumberAndLineNumber}`);
   }
 
+  getMiscAysnc(soNumberAndLineNumber: string) {
+    return this.http.get<ShippingMisc>(`/userTrans/getUserTransByFieldName.php?so=${soNumberAndLineNumber}`).toPromise();
+  }
+
   getShippingChanges(soNumberAndLineNumber: string) {
     return this.http.get(`/Shipping/index?shippingChangesAll=${soNumberAndLineNumber}`);
   }

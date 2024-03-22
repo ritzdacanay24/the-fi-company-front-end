@@ -3,6 +3,14 @@
     <div class="card">
       <div class="card-header">
         <div class="d-flex align-items-center">
+
+          <div class="form-icon me-3">
+            <input type="search" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="this.gridApi?.setQuickFilter($event);" [value]="searchName" [(ngModel)]="searchName"
+              placeholder="Search">
+            <i class="ri-search-2-line"></i>
+          </div>
+
           <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
             [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
             style="width:150px" class="me-3" [appendTo]="'body'">
@@ -13,8 +21,8 @@
         </div>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-alpine no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
-          style="width: 100%;height: calc(100vh - 172px);">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 172px);">
         </ag-grid-angular>
       </div>
     </div>

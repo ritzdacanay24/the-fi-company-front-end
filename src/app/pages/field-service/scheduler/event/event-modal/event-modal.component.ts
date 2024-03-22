@@ -10,7 +10,7 @@ export class EventModalService {
   ) { }
 
   open(id) {
-    let modalRef = this.modalService.open(EventModalComponent, { size: 'lg', fullscreen: false, scrollable: true, backdrop:false });
+    let modalRef = this.modalService.open(EventModalComponent, { size: 'lg', fullscreen: false, scrollable: true });
     modalRef.componentInstance.id = id;
     return modalRef;
   }
@@ -22,6 +22,7 @@ import { EventFormComponent } from "../event-form/event-form.component";
 import { FormGroup } from "@angular/forms";
 import { SchedulerEventService } from "@app/core/api/field-service/scheduler-event.service";
 import { SharedModule } from "@app/shared/shared.module";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
   standalone: true,
@@ -46,7 +47,7 @@ export class EventModalComponent implements OnInit {
 
   @Input() id = null
 
-  title = "Event Modal";
+  title = "Edit Event";
 
   icon = "mdi-calendar-text";
 
@@ -61,8 +62,11 @@ export class EventModalComponent implements OnInit {
   }
 
 
-
+  submitted
   async onSubmit() {
+
+    this.submitted = true;
+
     if (this.id) {
       this.update()
 
@@ -83,10 +87,22 @@ export class EventModalComponent implements OnInit {
 
   async update() {
     try {
+
+      if (this.form.invalid) {
+        getFormValidationErrors()
+        return
+      }
+
+      let data = this.form.value;
+
+      if (data.techRelated == 1 && data['title'])
+        data['title'] = data['title'].toString();
+      if (data.techRelated == 1 && data['resource_id'])
+        data['resource_id'] = data['resource_id'].toString();
+
       await this.schedulerEventService.update(this.id, this.form.value)
       this.close()
     } catch (err) {
-
     }
   }
 
@@ -102,7 +118,13 @@ export class EventModalComponent implements OnInit {
 
   async getData() {
     try {
-      let data = await this.schedulerEventService.getById(this.id)
+      let data = await this.schedulerEventService.getById(this.id);
+
+      if (data.techRelated == 1 && data['title'])
+        data['title'] = data['title'].split(',');
+      if (data.techRelated == 1 && data['resource_id'])
+        data['resource_id'] = data['resource_id'].toString().split(',');
+
       this.form.patchValue(data)
     } catch (err) {
 

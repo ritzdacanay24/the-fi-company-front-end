@@ -54,7 +54,7 @@ export class TagsComponent implements OnInit {
       filter: false,
       headerCheckboxSelectionFilteredOnly: true,
       headerCheckboxSelection: true,
-      suppressMenu: true,
+      suppressHeaderMenuButton: true,
       cellClass: 'lock-pinned'
     }
     , {

@@ -11,6 +11,7 @@ import { SchedulerService } from '@app/core/api/field-service/scheduler.service'
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { byteConverter } from 'src/assets/js/util/byteConverter';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -25,6 +26,7 @@ import { byteConverter } from 'src/assets/js/util/byteConverter';
 export class ReceiptAddEditComponent implements OnInit {
 
   @Input() public id: any;
+  @Input() public fsId: any;
   @Input() public workOrderId: any;
   @Input() public typeOfClick: any = 'Front';
 
@@ -56,6 +58,8 @@ export class ReceiptAddEditComponent implements OnInit {
     locale: null,
     date: null,
     time: null,
+    created_by: null,
+    fs_scheduler_id: null,
   })
 
   link: any;
@@ -65,21 +69,21 @@ export class ReceiptAddEditComponent implements OnInit {
     private ngbActiveModal: NgbActiveModal,
     private api: TripExpenseService,
     public schedulerService: SchedulerService,
+    public authenticationService: AuthenticationService,
   ) {
   }
 
   async getData() {
     let data: any = await this.api.getById(this.id);
-    this.link = data.link;
     this.form.patchValue(data)
+    this.link = data.link;
   }
 
   ngOnInit(): void {
     if (this.id) {
       this.getData();
-      this.getConnectingJobs()
     } else {
-      this.form.patchValue({ 'workOrderId': this.workOrderId });
+      this.form.patchValue({ fs_scheduler_id: this.fsId, workOrderId: this.workOrderId, created_by: this.authenticationService.currentUserValue.id });
 
       if (this.typeOfClick == 'Front') {
         let e = (<HTMLInputElement>document.getElementById("front"))
@@ -281,12 +285,6 @@ export class ReceiptAddEditComponent implements OnInit {
     } else {
       this.create()
     }
-  }
-
-
-  connectingJobs: any
-  async getConnectingJobs() {
-    this.connectingJobs = await this.schedulerService.getConnectingJobs(this.workOrderId);
   }
 
 }

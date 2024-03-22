@@ -1,0 +1,211 @@
+$mbsc-ios-accent: $primary; // Accent color
+$mbsc-ios-background: #f7f7f7; // Background color
+$mbsc-ios-text: #000000; // Text color
+
+$mbsc-ios-dark-accent: $primary; // Dark Accent color
+$mbsc-ios-dark-background: hsl(0, 0%, 0%); // Dark Background color
+$mbsc-ios-dark-text: #ffffff; // Dark Text color
+
+$mbsc-ios-primary: red; // Primary color
+$mbsc-ios-secondary: #90979e; // Secondary color
+$mbsc-ios-success: #43be5f; // Success color
+$mbsc-ios-danger: #f5504e; // Danger color
+$mbsc-ios-warning: #f8b042; // Warning color
+$mbsc-ios-info: #5bb7c5; // Info color
+$mbsc-ios-light: #ffffff; // Light color
+$mbsc-ios-dark: #47494a; // Dark color
+
+[data-bs-theme="light"], [data-bs-theme="semi-dark"] {
+    .mbsc-ios.mbsc-calendar-label-background {
+        opacity: 1 !important;
+    }
+
+    .mbsc-ios.mbsc-timeline-event-background {
+        opacity: 1 !important;
+    }
+
+    .mbsc-calendar-controls {
+        border-bottom: 1px solid #cccccc;
+    }
+}
+
+[data-bs-theme="dark"] {
+
+    .mbsc-ios.mbsc-calendar-label-background {
+        opacity: 0.7 !important;
+    }
+
+    .mbsc-ios.mbsc-timeline-event-background {
+        opacity: 0.7 !important;
+    }
+
+
+    .mbsc-ios.mbsc-calendar-label-text {
+        color: #fff !important;
+    }
+
+    .mbsc-calendar-controls {
+        border-bottom: 1px solid #515d66;
+    }
+
+}
+
+.mbsc-ios .mbsc-schedule-event-title {
+    color: #fff !important
+}
+
+.mbsc-ios .mbsc-schedule-event-range {
+    color: #fff !important
+}
+
+.md-date-header-day {
+    text-align: center;
+    line-height: 20px;
+    border-radius: 8px;
+    margin: 4px;
+}
+
+.md-date-header-day-name {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.md-date-header-day-nr {
+    font-size: 14px;
+    text-align: center;
+}
+
+.md-date-header-events-one {
+    background: #e9f5e4;
+    color: #000000;
+}
+
+.md-date-header-events-few {
+    background: #d0e3c6;
+    color: #000000;
+}
+
+.md-date-header-events-more {
+    background: #8ca77e;
+}
+
+.md-date-header-events-close {
+    background: #4a5843;
+}
+
+.md-date-header-events-today {
+    background: $primary;
+    color: $white
+}
+
+.mbsc-timeline-day {
+    position: relative;
+    min-width: 9em;
+    box-sizing: border-box;
+    // text-align: center !important;
+}
+
+.employee-shifts-day {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.6;
+}
+
+.employee-shifts-popup .mbsc-popup .mbsc-popup-header {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.employee-shifts-cont {
+    position: relative;
+    padding-left: 42px;
+    max-height: 40px;
+}
+
+.employee-shifts-avatar {
+    position: absolute;
+    max-height: 40px;
+    max-width: 40px;
+    top: 18px;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    left: 20px;
+}
+
+.employee-shifts-name {
+    font-size: 15px;
+}
+
+.employee-shifts-title {
+    font-size: 12px;
+}
+
+.md-employee-shifts .mbsc-timeline-resource,
+.md-employee-shifts .mbsc-timeline-resource-col {
+    width: 200px;
+    align-items: center;
+    display: flex;
+}
+
+.mbsc-ios .mbsc-ltr .mbsc-timeline-resource .mbsc-timeline-row {
+    padding-left: 0px !important;
+}
+
+.md-employee-shifts .mbsc-schedule-event {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+}
+
+.md-custom-range-view-controls {
+    display: flex;
+    flex: 1 0 auto;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.mbsc-material .mbsc-calendar-title {
+    font-size: 1.428572em;
+    font-weight: 400;
+    text-transform: none;
+    line-height: 1.4em;
+}
+
+// .mbsc-schedule-event-all-day-background.mbsc-schedule-event-background {
+//     top: 0px;
+//     bottom: 4px !important
+// }
+
+
+.mbsc-timeline-resource {
+    align-items: center !important;
+    display: flex;
+}
+
+//
+.mbsc-timeline-day {
+    position: relative;
+    min-width: 9em;
+    box-sizing: border-box;
+}
+
+.mbsc-timeline-footer-date,
+.mbsc-timeline-header-date {
+    min-width: 9em;
+}
+
+.mbsc-timeline-column,
+.mbsc-timeline-header-column {
+    min-width: 9em;
+}
+
+.md-timetable-event-title {
+    margin-top: 2px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden
+}
+
+@import '@mobiscroll/angular/dist/css/mobiscroll.scss';

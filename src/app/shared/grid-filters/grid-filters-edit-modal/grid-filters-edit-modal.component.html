@@ -1,0 +1,21 @@
+<div class="modal-header">
+    <h5 class="modal-title" id="exampleModalLabel">Grid Settings</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="close()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-250">
+    <ul class="list-group">
+        <li class="list-group-item d-flex align-items-center" *ngFor="let row of list; let i = index">
+            <input type="test" class="form-control me-3" [(ngModel)]="row.table_name" (blur)="save(row)">
+
+            <div class="form-check form-switch form-switch-md ms-2">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="row.tf_active" (change)="save(row)">
+            </div>
+
+            <span class="badge bg-danger rounded-pill ms-3 pointer" (click)="onDelete(row, i)">X</span>
+
+        </li>
+    </ul>
+</div>
+<div class="modal-footer">
+    <button (click)="close()" type="button" class="btn btn-light me-auto">Close</button>
+</div>

@@ -53,4 +53,8 @@ export class MaterialRequestService extends DataService<any> {
     return firstValueFrom(this.http.post(`${url}/completePicking`, params))
   }
 
+  searchByItem(itemNumber: any[]) {
+    return firstValueFrom(this.http.get<any[]>(`/Material/index?searchItemByQadPartNumber=${JSON.stringify(itemNumber)}`));
+  }
+
 }

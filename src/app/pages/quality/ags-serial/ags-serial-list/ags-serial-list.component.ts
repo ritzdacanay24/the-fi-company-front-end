@@ -66,8 +66,8 @@ export class AgsSerialListComponent implements OnInit {
     { field: 'generated_SG_asset', headerName: 'Asset Number', filter: 'agMultiColumnFilter' },
     { field: 'inspectorName', headerName: 'Inspector Name', filter: 'agMultiColumnFilter' },
     { field: 'lastUpdate', headerName: 'Last Update', filter: 'agMultiColumnFilter' },
-    { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter' },
-    { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter' },
+    { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter', cellDataType: 'text' },
+    { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'property_site', headerName: 'Property Site', filter: 'agMultiColumnFilter' },
     { field: 'serialNumber', headerName: 'Serial Number', filter: 'agMultiColumnFilter' },
     { field: 'sgPartNumber', headerName: 'AGS Part Number', filter: 'agMultiColumnFilter' },
@@ -94,7 +94,7 @@ export class AgsSerialListComponent implements OnInit {
     }
   ]
 
-  title = 'QIR List';
+  title = 'AGS List';
 
   gridApi: GridApi;
 

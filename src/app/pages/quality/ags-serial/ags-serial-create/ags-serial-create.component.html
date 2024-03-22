@@ -1,5 +1,5 @@
 <div class="row">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
@@ -12,10 +12,11 @@
           AGS serial number will automatically generate after submitting form.
         </div>
 
-        <app-ags-serial-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-ags-serial-form>
+        <app-ags-serial-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-ags-serial-form>
+
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
       </div>
     </div>

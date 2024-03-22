@@ -33,5 +33,9 @@ export class AttachmentsService extends DataService<any> {
   uploadfilePublic(file: any) {
     return this.http.post(`https://dashboard.eye-fi.com/tasks/upload/index.php`, file).toPromise();
   }
+  
+  getAttachmentByQirId(id: any) {
+    return this.http.get(`https://dashboard.eye-fi.com/tasks/quality/qir/getAttachmentById.php?id=${id}`).toPromise();
+  }
 
 }

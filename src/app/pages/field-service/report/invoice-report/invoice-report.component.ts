@@ -26,7 +26,6 @@ export class InvoiceReportComponent implements OnInit {
     public router: Router,
     public reportService: ReportService
   ) {
-    console.log(activatedRoute.snapshot)
   }
 
   ngOnInit(): void {

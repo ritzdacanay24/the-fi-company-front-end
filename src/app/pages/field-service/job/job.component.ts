@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { HeaderComponent } from './header/header.component';
 import { SharedModule } from '@app/shared/shared.module';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, HeaderComponent],
+  imports: [SharedModule],
   selector: 'app-job',
   templateUrl: './job.component.html',
   styleUrls: []

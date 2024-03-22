@@ -10,7 +10,7 @@
         <app-service-type-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-service-type-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
       </div>
     </div>

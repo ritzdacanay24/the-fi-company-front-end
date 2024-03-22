@@ -7,6 +7,7 @@ import { JobMapComponent } from './job-map/job-map.component';
 import { JobEditComponent } from './job-edit/job-edit.component';
 import { JobOverviewPageComponent } from './job-overview-page/job-overview-page.component';
 import { JobOpenInvoiceComponent } from './job-open-invoice/job-open-invoice.component';
+import { JobBillingComponent } from './job-overview/job-billing/job-billing.component';
 
 const routes: Routes = [
   {
@@ -38,12 +39,16 @@ const routes: Routes = [
         path: 'map',
         component: JobMapComponent
       },
+      {
+        path: 'billing',
+        component: JobBillingComponent
+      },
     ]
   },
-  {
-    path: 'overview',
-    component: JobOverviewPageComponent
-  },
+  // {
+  //   path: 'overview',
+  //   component: JobOverviewPageComponent
+  // },
 ]
 
 @NgModule({

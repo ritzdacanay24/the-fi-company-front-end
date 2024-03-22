@@ -1,0 +1,31 @@
+<div class="row">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-header d-flex py-2">
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Day'}"
+                        (click)="set('Day')">Day</button>
+                    <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Hourly'}"
+                        (click)="set('Hourly')">Hourly</button>
+                    <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Weekly'}"
+                        (click)="set('Weekly')">Weekly</button>
+                    <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Monthly'}"
+                        (click)="set('Monthly')">Monthly</button>
+                    <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == '3Months'}"
+                        (click)="set('3Months')">3 Months</button>
+
+                </div>
+                <div style="width:500px" class="ms-3">
+                    <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [showLabel]="false"
+                        [value]="id" [clearSearch]="false" [editableSearchTerm]="false"></app-job-search>
+                </div>
+            </div>
+
+            <div class="card-body p-0" [ngStyle]="ngStyle">
+                <app-resource-by-tech [condense]="condense" (dateChangeEmitter)="onSelectedDateChange($event)"
+                    (calenderEmitter)="calenderEmitter($event)" [colors]="colors" [ngStyle]="ngStyle" [start]="start"
+                    [view]="view" [id]="id"></app-resource-by-tech>
+            </div>
+        </div>
+    </div>
+</div>

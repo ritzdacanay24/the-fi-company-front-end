@@ -13,6 +13,7 @@ import { JobReceiptsComponent } from './job-receipts/job-receipts.component';
 import { JobAttachmentsComponent } from './job-attachments/job-attachments.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { TeamService } from '@app/core/api/field-service/fs-team.service';
+import { JobFormComponent } from '../job-form/job-form.component';
 
 @Component({
   standalone: true,
@@ -25,7 +26,8 @@ import { TeamService } from '@app/core/api/field-service/fs-team.service';
     JobReceiptsComponent,
     JobBillingComponent,
     NgbDropdownModule,
-    JobAttachmentsComponent
+    JobAttachmentsComponent,
+    JobFormComponent
   ],
   selector: 'app-job-overview',
   templateUrl: './job-overview.component.html',
@@ -33,6 +35,7 @@ import { TeamService } from '@app/core/api/field-service/fs-team.service';
 })
 export class JobOverviewComponent implements OnInit {
 
+  removeTech
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
@@ -42,6 +45,16 @@ export class JobOverviewComponent implements OnInit {
     private teamService: TeamService,
   ) {
   }
+  data
+  form
+  setFormElements = async ($event) => {
+    this.form = $event;
+    this.form.patchValue({ job: this.data?.job }, { emitEvent: false })
+
+    if (this.data.resource) {
+    }
+  }
+
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
@@ -83,7 +96,7 @@ export class JobOverviewComponent implements OnInit {
       this.jobInfo = await this.jobService.getById(this.id)
       this.workOrderInfo = await this.workOrderService.findOne({ fs_scheduler_id: this.id })
 
-      await this.getConnectingJobs()
+      //await this.getConnectingJobs()
 
       this.isLoading = false;
     } catch (err) {
@@ -100,11 +113,11 @@ export class JobOverviewComponent implements OnInit {
   }
 
   @Input() goBack: Function = () => {
-    if (this.goBackUrl) {
-      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge', queryParams: { active: null } });
-    } else {
-      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { active: null } });
-    }
+    // if (this.goBackUrl) {
+    //   this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge', queryParams: { active: null } });
+    // } else {
+    //   this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { active: null } });
+    // }
   }
 
   @Input() showTicket: Function
@@ -112,7 +125,6 @@ export class JobOverviewComponent implements OnInit {
   connectingJobs: any = []
   async getConnectingJobs() {
     this.connectingJobs = await this.teamService.find({ fs_det_id: this.id });
-    console.log(this.connectingJobs)
   }
 
 }

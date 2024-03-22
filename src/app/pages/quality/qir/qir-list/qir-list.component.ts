@@ -106,7 +106,7 @@ export class QirListComponent implements OnInit {
     }
   ]
 
-  title = 'RMA List';
+  title = 'QIR List';
 
   gridApi: GridApi;
 

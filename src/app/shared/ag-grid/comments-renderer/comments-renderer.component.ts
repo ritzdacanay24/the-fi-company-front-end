@@ -4,6 +4,9 @@ import { isEmpty } from 'src/assets/js/util';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import tippy from 'tippy.js';
 
+tippy.setDefaultProps({ delay: 0 });
+tippy.setDefaultProps({ animation: false });
+
 @Component({
   selector: 'app-comments-renderer',
   templateUrl: './comments-renderer.component.html'
@@ -27,31 +30,37 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
 
     if (!isEmpty(this.recent_comments) && this.recent_comments) {
       this.icon = this.recent_comments?.color_class_name == 'text-info' || this.recent_comments?.color_class_name == 'text-success' ? 'mdi-comment-text' : this.icon;
-      this.icon_color = this.recent_comments?.color_class_name == 'text-info' ? 'text-info' : this.recent_comments?.color_class_name == 'text-success' ? 'text-success' : null;
+      this.icon_color = this.recent_comments?.color_class_name == 'text-info' ? 'text-info-emphasis' : this.recent_comments?.color_class_name == 'text-success' ? 'text-success-emphasis' : null;
       if (this.atRisk) {
         this.icon = "mdi mdi-comment-alert";
-        this.icon_color = "text-danger";
+        this.icon_color = "text-danger-emphasis";
         this.recent_comments.bg_class_name = "bg-danger";
       }
       tippy(params.eGridCell, {
         // animateFill:false,
-        arrow:false,
+        arrow: false,
         content: `
           <div class="card shadow-lg">
-          <div class="card-header d-flex align-items-center">
-          <h4 class="card-title mb-0">${this.params.value?.title}</h4>
+            <div class="card-header d-flex align-items-center">
+              <h4 class="card-title mb-0">${this.params.value?.title || 'Recent Comment'}</h4>
               ${this.params.value?.description ? `<p>${this.params.value?.description}</p>` : ''}
             </div>
-            
-            <div class="card-body" style="overflow:hidden">
-              <h6 class="mb-2">Recent comment</h6>
-              ${this.recent_comments?.comments}
-
+            <div class="card-body" style="overflow:hidden;">
+             <div style="text-overflow: ellipsis;white-space: normal;
+             -webkit-box-orient: vertical;
+              display: -webkit-box;
+              -webkit-line-clamp: 4;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: normal;"  
+              class="blockquote p-0 ps-2 mb-0">
+                <p>${this.recent_comments?.comments}</p>
+                </div>
             </div>
             <div class="card-footer">
-            <p><b>Comment date: </b> ${this.recent_comments?.createdDate}</p>
-            <p><b>Created by: </b> ${this.recent_comments?.created_by_name}</p>
-            <p class="text-secondary">Click on the <i class="mdi ${this.icon} icon-ml ${this.icon_color}"></i> icon to add a comment.</p>
+              <p><b>Comment date: </b> ${this.recent_comments?.createdDate}</p>
+              <p><b>Created by: </b> ${this.recent_comments?.created_by_name}</p>
+              <p class="text-secondary">Click on the <i class="mdi ${this.icon} icon-ml ${this.icon_color}"></i> icon to add a comment.</p>
             </div>
           </div>
         `,
@@ -64,15 +73,14 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
     } else {
       tippy(params.eGridCell, {
         // animateFill:false,
-        arrow:false,
+        arrow: false,
         content: `
           <div class="card shadow-lg">
           <div class="card-header d-flex align-items-center">
-          <h4 class="card-title mb-0">${this.params.value?.title}</h4>
+          <h4 class="card-title mb-0">${this.params.value?.title || 'No comments found'}</h4>
               ${this.params.value?.description ? `<p>${this.params.value?.description}</p>` : ''}
             </div>
             <div class="card-body" style="overflow:hidden">
-              <h6 class="mb-2">Recent comment</h6>
               <p>No comments found.</p>
               <p class="text-secondary">Click on the <i class="mdi ${this.icon} icon-ml"></i> icon to add a comment.</p>
             </div>

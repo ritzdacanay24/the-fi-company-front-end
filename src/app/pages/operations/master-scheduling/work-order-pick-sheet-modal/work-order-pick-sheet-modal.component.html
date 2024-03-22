@@ -1,5 +1,6 @@
 <div class="modal-header">
     <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 
 <div class="modal-body">
@@ -12,33 +13,55 @@
         </h4>
     </div>
 
-    <div *ngIf="!isLoading">
-        <div class="alert alert-success" role="alert" *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines">
-            No parts to pick on this order. Verify parts then perform the operation transactions.
+    <div [hidden]="isLoading">
+
+        <!-- Success Alert -->
+        <div *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines"
+            class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+            role="alert">
+            <i class="ri-alert-line label-icon"></i> No parts to pick on this order.
+            Verify parts then perform the operation transactions.
+            <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
 
-        <div class="alert alert-warning" role="alert" *ngIf="!data?.doesOrderHaveLines">
-            No Lines Found! This order does not have any lines to be picked.
+        <!-- Success Alert -->
+        <div *ngIf="!data?.doesOrderHaveLines"
+            class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+            role="alert">
+            <i class="ri-check-double-line label-icon"></i><strong>Success</strong> - No Lines Found! This order does
+            not have any lines to be picked.
+            <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
 
-        <div class="alert alert-primary" role="alert" *ngIf="data?.openWorkOrderCount > 0">
+
+        <!-- Secondary Alert -->
+        <div *ngIf="data?.openWorkOrderCount > 0"
+            class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+            role="alert">
+            <i class="ri-error-warning-line label-icon"></i><strong>Info</strong> -
             {{data?.openWorkOrderCount}} line(s) to be picked.
             {{data?.completedWorkOrderCount}} / {{data?.totalWorkOrderCount}} lines picked
             ({{data?.workOrderPercentComplete | number : '1.2-2'}}% percent Completed)
+            <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
+
 
         <div id="pickSheet">
             <div class="row">
                 <div class="col mb-3">
                     <ul class="list-group">
-                        <li class="list-group-item border-0 p-0">
+                        <!-- <li class="list-group-item border-0 p-0">
                             <ngx-barcode6 [bc-value]="data?.mainDetails?.wo_nbr" [bc-display-value]="true"
                                 [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="0"
                                 [bc-text-align]="'center'">
                             </ngx-barcode6>
+                        </li> -->
+                        <li class="list-group-item border-0 p-0">
+                            WO #: <b>{{data?.mainDetails?.wo_nbr}}</b>
                         </li>
                         <li class="list-group-item border-0 p-0">Qty Completed:
-                            <b>{{data?.mainDetails?.wo_qty_comp}}/{{data?.mainDetails?.wo_qty_ord}}</b></li>
+                            <b>{{data?.mainDetails?.wo_qty_comp}}/{{data?.mainDetails?.wo_qty_ord}}</b>
+                        </li>
                         <li class="list-group-item border-0 p-0">WO Due By: <b>{{data?.mainDetails?.wo_due_date}}</b>
                         </li>
                         <li class="list-group-item border-0 p-0">WO Status: <b>{{data?.mainDetails?.wo_status}}</b></li>
@@ -91,23 +114,28 @@
                         </tr>
                     </thead>
                     <tbody class="align-middle">
-                        <tr *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines"
-                            class="table-success d-print-none">
+                        <tr *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines" class="d-print-none">
                             <td colspan="9" class="p-2"> All lines picked</td>
                         </tr>
-                        <tr *ngIf="!data?.doesOrderHaveLines" class="table-danger d-print-none text-white">
+                        <tr *ngIf="!data?.doesOrderHaveLines" class="d-print-none text-white">
                             <td colspan="9" class="p-2"> No Lines Found</td>
                         </tr>
-                        <tr *ngIf="data?.totalWorkOrderCount == 0 " class="table-danger d-print-none">
+                        <!-- <tr *ngIf="data?.totalWorkOrderCount == 0 " class="table-danger d-print-none">
                             <td colspan="9" class="p-2"> No records found.</td>
-                        </tr>
+                        </tr> -->
                         <tr *ngFor="let row of data?.details" class="align-middle">
                             <td>
-                                <ngx-barcode6 [bc-value]="row.wod_part" [bc-display-value]="true" [bc-height]="20"
-                                    [bc-width]="1" [bc-font-size]="14" [bc-margin-left]="0" [bc-text-align]="'center'"
-                                    >
-                                </ngx-barcode6>
-                                <small>{{row.PT_DESC1}}</small>
+                                <div class="d-none d-print-block">
+                                    <ngx-barcode6 [bc-value]="row.wod_part" [bc-display-value]="true" [bc-height]="20"
+                                        [bc-width]="1" [bc-font-size]="14" [bc-margin-left]="0"
+                                        [bc-text-align]="'center'">
+                                    </ngx-barcode6>
+                                    <small>{{row.PT_DESC1}}</small>
+                                </div>
+                                <div class="d-print-none">
+                                    <p>{{row.wod_part}}</p>
+                                    <p>{{row.PT_DESC1}}</p>
+                                </div>
                             </td>
                             <td>
                                 <ul class="list-unstyled align-middle m-0 p-0">
@@ -132,7 +160,9 @@
 </div>
 
 <div class="modal-footer">
-    <button (click)="dismiss()" type="button" class="btn btn-gray me-auto" [disabled]="isLoading">Close</button>
-    <button (click)="getData()" type="button" class="btn btn-warning ms-auto">Refresh</button>
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+    <button (click)="getData()" type="button" class="btn btn-light  me-auto">Refresh</button>
+    <button type="button" class="btn btn-warning ms-auto" (click)="generateShortage()"
+        [disabled]="isLoading">Generate Shortages</button>
     <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="isLoading">Print</button>
 </div>

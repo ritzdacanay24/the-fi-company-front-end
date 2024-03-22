@@ -81,11 +81,10 @@ export class TicketOverviewComponent implements OnInit {
   getData = async () => {
     try {
       this.isLoading = true;
-      this.ticketInfo = await this.workOrderService.getById(this.id)
-      if (this.ticketInfo?.fs_scheduler_id) {
-        this.schedulerInfo = await this.schedulerService.getById(this.ticketInfo?.fs_scheduler_id)
-        this.connectingJobs = this.schedulerInfo?.installers?.split(', ')
-      }
+      this.schedulerInfo = await this.schedulerService.getById(this.id)
+
+      this.ticketInfo = await this.workOrderService.findOne({ fs_scheduler_id: this.id });
+
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -103,10 +102,11 @@ export class TicketOverviewComponent implements OnInit {
     this.getData()
   }
 
+  
 
   @Input() goBack: Function = () => {
     if (this.goBackUrl) {
-      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge', queryParams: { active: null } });
+      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge' });
     } else {
       this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { active: null } });
     }

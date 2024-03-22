@@ -6,6 +6,7 @@ import { getLayoutMode, getLayoutPosition, getLayoutTheme, getLayoutWith, getPre
 import { changeDataPreloader, changeLayoutPosition, changeLayoutWidth, changeMode, changeSidebarColor, changeSidebarImage, changeSidebarSize, changeSidebarView, changeSidebarVisibility, changeTopbar, changelayout } from 'src/app/store/layouts/layout-action';
 import { ChartService } from 'src/app/core/services/chart.service';
 import { LayoutState } from '@app/store/layouts/layout-reducers';
+import { THE_FI_COMPANY_LAYOUT } from '../topbar/topbar.component';
 
 @Component({
   selector: 'app-rightsidebar',
@@ -43,7 +44,6 @@ export class RightsidebarComponent implements OnInit {
 
 
   setThemeLayout(data: LayoutState) {
-    console.log(data)
     this.layout = data.LAYOUT;
     this.mode = data.LAYOUT_MODE;
     this.width = data.LAYOUT_WIDTH;
@@ -60,14 +60,13 @@ export class RightsidebarComponent implements OnInit {
   initialLoad = false;
   ngOnInit(): void {
 
-    let keyThemeName = 'eyefi-layout'
-    let theme = JSON.parse(localStorage.getItem(keyThemeName));
+    let theme = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
     if (theme) this.setThemeLayout(theme)
 
     this.store.select('layout').subscribe((data) => {
       if (this.initialLoad) {
         this.setThemeLayout(data)
-        localStorage.setItem('eyefi-layout', JSON.stringify(data))
+        localStorage.setItem(THE_FI_COMPANY_LAYOUT, JSON.stringify(data))
       }
     })
 

@@ -1,18 +1,18 @@
 <div class="row" *ngIf="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-body" style="min-height:300px">
         Please select user from list.
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="row" [hidden]="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-10 col-xxl-8">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
@@ -22,9 +22,9 @@
       <div class="card-body" style="min-height:300px">
         <app-rma-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-rma-form>
       </div>
-      <div class="card-footer d-flex d-flex" *ngIf="data && id">
-        <button class="btn btn-gray me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-warning me-3" [disabled]="isLoading" (click)="onPrint()">Print Label</button>
+      <div class="card-footer d-flex" *ngIf="data && id">
+        <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light me-2" [disabled]="isLoading" (click)="onPrint()">Print Label</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
       </div>
     </div>

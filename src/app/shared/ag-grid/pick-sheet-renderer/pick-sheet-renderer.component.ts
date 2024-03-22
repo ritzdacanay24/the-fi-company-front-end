@@ -43,11 +43,12 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
       }
 
       content = `
-        <div class="card tooltip-card tooltip-card-no-shadow p-2">
-          <div class="card-header p-2 rounded ${this.iconBgColor} text-white">
-            <h5>${this.params.value}</h5>
+      <div class="shadow-lg p-3">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title mb-0 flex-grow-1">${this.params.value}</h4>
           </div>
-          <div class="card-body p-2" style="overflow:hidden">
+          <div class="card-body" style="overflow:hidden">
             <h6 class="mb-2">Print Details</h6>
             <p><b>Assigned to:</b> ${this.printDetails?.assignedTo} </p>
             <p><b>Printed date:</b> ${this.printDetails?.printedDate} </p>
@@ -55,17 +56,20 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
             ${this.params.data.LINESTATUS ? `<p><b>Qty to pick: </b> ${this.params.data.LINESTATUS}</p>` : 'Pick Complete'}
             <p class="mt-2">Click on the <i class="mdi ${this.icon} ${this.iconColor} icon-mm"></i> icon to view/print pick sheet.</p>
           </div>
-          <div class="card-footer p-2">
+          <div class="card-footer">
             <p><b>Printed by: </b> ${this.printDetails?.createdByName}</p>
           </div>
         </div>
+        </duv>
       `
 
     } else {
       content = `
-          <div class="card tooltip-card tooltip-card-no-shadow">
-            <div class="card-header p-2"><h5>${this.params.value}</h5></div>
-            <div class="card-body p-2" style="overflow:hidden">
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title mb-0 flex-grow-1">${this.params.value}</h4>
+            </div>
+            <div class="card-body" style="overflow:hidden">
               <h6 class="mb-2">Print Details</h6>
               ${this.params.data.LINESTATUS ? `<p><b>Qty to pick: </b> ${this.params.data.LINESTATUS}</p>` : 'Pick Complete'}
               <p>This is not printed yet.</p>
@@ -76,6 +80,7 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
     }
 
     tippy(params.eGridCell, {
+      theme: 'tomato',
       // animateFill: false,
       arrow: false,
       content: content,

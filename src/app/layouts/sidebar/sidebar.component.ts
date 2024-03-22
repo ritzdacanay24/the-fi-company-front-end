@@ -5,6 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { MENU } from './menu';
 import { MenuItem } from './menu.model';
 import { environment } from 'src/environments/environment';
+import { FavoriteService } from '@app/core/api/favorites/favorites.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -18,21 +19,37 @@ export class SidebarComponent implements OnInit {
   menuItems: MenuItem[] = [];
   @ViewChild('sideMenu') sideMenu!: ElementRef;
   @Output() mobileMenuButtonClicked = new EventEmitter();
+  maxFavs = 5
+  favs = [];
 
-  constructor(private router: Router, public translate: TranslateService) {
+  searchMenu
+
+  recentSearches = []
+  constructor(
+    private router: Router,
+    public translate: TranslateService,
+    private favoriteService: FavoriteService,
+  ) {
     translate.setDefaultLang('en');
-  }
+    this.favoriteService.getData$.subscribe(() => {
+      this.favs = this.favoriteService.getFavorites();
+    });
 
-  ngOnInit(): void {
-    // Menu Items
-    this.menuItems = MENU;
     this.router.events.subscribe((event) => {
       if (document.documentElement.getAttribute('data-layout') != "twocolumn") {
         if (event instanceof NavigationEnd) {
           this.initActiveMenu();
+
         }
       }
     });
+
+  }
+
+  initalLoad = false;
+  ngOnInit(): void {
+    // Menu Items
+    this.menuItems = MENU;
   }
 
   /***
@@ -51,7 +68,7 @@ export class SidebarComponent implements OnInit {
     });
   }
 
-  
+
   toggleItem(item: any) {
     this.menuItems.forEach((menuItem: any) => {
 
@@ -99,6 +116,70 @@ export class SidebarComponent implements OnInit {
     });
   }
 
+  updateActiveFavorite(event: any) {
+    const ul = document.getElementById("navbar-nav1");
+    if (ul) {
+      const items = Array.from(ul.querySelectorAll("a.nav-link"));
+      this.removeActivation(items);
+    }
+    this.activateParentDropdown(event.target);
+    this.toggleItemFavorite()
+
+    const ul1 = document.getElementById("navbar-nav");
+    if (ul1) {
+      const items = Array.from(ul1.querySelectorAll("a.nav-link"));
+      this.removeActivation(items);
+    }
+  }
+
+
+  toggleItemFavorite() {
+    this.menuItems.forEach((menuItem: any) => {
+
+      menuItem.isCollapsed = true
+
+      if (menuItem.subItems) {
+        menuItem.subItems.forEach((subItem: any) => {
+          subItem.isCollapsed = true
+          if (subItem.subItems) {
+            subItem.subItems.forEach((childitem: any) => {
+              childitem.isCollapsed = true
+              if (childitem.subItems) {
+                childitem.subItems.forEach((childrenitem: any) => {
+                  childrenitem.isCollapsed = true
+                })
+              }
+            })
+          }
+        })
+      }
+    });
+  }
+
+  isCollapsed = true
+  mouseHovering(e) {
+    e.showStar = true
+    e.showStarColor = false
+    this.favs.forEach((menuItem: any) => {
+      if (e.label == menuItem.label) {
+        e.showStarColor = true
+      }
+    })
+  }
+
+  saveAsFavorite(item) {
+    item.showStarColor = true
+    this.favoriteService.onSave(item)
+  }
+  removeAsFavorite(item) {
+    item.showStarColor = false
+    this.favoriteService.removeByLabel(item.label)
+  }
+
+  mouseLeft(item) {
+    item.showStar = false
+    item.showStarColor = false;
+  }
 
   // remove active items of two-column-menu
   activateParentDropdown(item: any) {
@@ -119,12 +200,29 @@ export class SidebarComponent implements OnInit {
           parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.closest(".collapse").previousElementSibling.classList.add("active");
         }
       }
+
+
+
+      if (!this.initalLoad)
+        setTimeout(() => {
+          parentCollapseDiv.parentElement.scrollIntoView({ block: "center" });
+        }, 500);
+
+      this.initalLoad = true;
       return false;
     }
     return false;
   }
 
   updateActive(event: any) {
+    this.isCollapsed = true;
+
+    const ul1 = document.getElementById("navbar-nav1");
+    if (ul1) {
+      const items = Array.from(ul1.querySelectorAll("a.nav-link"));
+      this.removeActivation(items);
+    }
+
     const ul = document.getElementById("navbar-nav");
     if (ul) {
       const items = Array.from(ul.querySelectorAll("a.nav-link"));
@@ -139,6 +237,7 @@ export class SidebarComponent implements OnInit {
     if (environment.production) {
       // Modify pathName for production build
       pathName = pathName.replace('/velzon/angular/modern', '');
+      pathName = pathName.replace('/dist/web', '');
     }
 
     const active = this.findMenuItem(pathName, this.menuItems)
@@ -153,6 +252,7 @@ export class SidebarComponent implements OnInit {
         if (environment.production) {
           let path = x.pathname
           path = path.replace('/velzon/angular/modern', '');
+          path = path.replace('/dist/web', '');
           return path === pathName;
         } else {
           return x.pathname === pathName;
@@ -163,6 +263,7 @@ export class SidebarComponent implements OnInit {
         this.activateParentDropdown(matchingMenuItem);
       }
     }
+
   }
 
   private findMenuItem(pathname: string, menuItems: any[]): any {
@@ -181,7 +282,7 @@ export class SidebarComponent implements OnInit {
 
     return null;
   }
-  
+
   /**
    * Returns true or false if given menu item has child or not
    * @param item menuItem

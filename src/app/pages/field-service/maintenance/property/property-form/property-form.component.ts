@@ -62,7 +62,6 @@ export class PropertyFormComponent {
   }
 
   notifyParent($event) {
-    console.log($event)
     this.form.patchValue({
       address1: $event?.fullStreetName,
       city: $event?.address?.municipality,

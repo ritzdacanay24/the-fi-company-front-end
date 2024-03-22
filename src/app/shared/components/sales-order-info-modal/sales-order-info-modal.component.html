@@ -1,16 +1,21 @@
 <div class="modal-header border-bottom">
-  <h5 class="modal-title" id="modal-basic-title">Sales Info: {{salesOrderNumber}}</h5>
+  <div style="width:350px">
+    <app-so-search (notifyParent)="notifyParent($event)" [value]="salesOrderNumber" [showLabel]="false"></app-so-search>
+  </div>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
+
 
 <div class="modal-body" *ngIf="isLoading">
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 </div>
 
+
 <div class="modal-body bg-light" *ngIf="!isLoading">
 
+  <h4 class="modal-title mb-2" id="modal-basic-title">Sales Order Info</h4>
 
-  <div class="mb-3">
+  <div class="mb-3" *ngIf="!salesOrderNumber">
     <div style="width:350px">
       <app-so-search (notifyParent)="notifyParent($event)" [value]="salesOrderNumber"></app-so-search>
     </div>
@@ -190,7 +195,7 @@
           </div>
           <div class="card-body p-0">
             <ag-grid-angular *ngIf="data?.mainDetails" style="width: 100%;height:500px"
-              class="ag-theme-alpine no-border" [gridOptions]="gridOptions" [rowData]="data?.mainDetails">
+              class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data?.mainDetails">
             </ag-grid-angular>
           </div>
         </div>
@@ -203,7 +208,7 @@
             Ship Details
           </div>
           <div class="card-body p-0">
-            <ag-grid-angular *ngIf="data?.ship" style="width: 100%;height:500px" class="ag-theme-alpine no-border"
+            <ag-grid-angular *ngIf="data?.ship" style="width: 100%;height:500px" class="ag-theme-quartz no-border"
               [gridOptions]="gridOptions1" [rowData]="data?.ship">
             </ag-grid-angular>
           </div>
@@ -223,7 +228,7 @@
             Order Transactions
           </div>
           <div class="card-body p-0">
-            <ag-grid-angular *ngIf="transactions" style="width: 100%;height:500px" class="ag-theme-alpine no-border"
+            <ag-grid-angular *ngIf="transactions" style="width: 100%;height:500px" class="ag-theme-quartz no-border"
               [gridOptions]="gridOptions2" [rowData]="transactions">
             </ag-grid-angular>
           </div>
@@ -233,7 +238,7 @@
   </div>
 </div>
 <div class="modal-footer border-top">
-  <button (click)="dismiss()" type="button" class="btn btn-gray">Close</button>
-  <button (click)="!isLoading && getData()" type="button" class="btn btn-primary">{{isLoading ?
+  <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+  <button (click)="!isLoading && getData()" type="button" class="btn btn-primary" [disabled]="isLoading">{{isLoading ?
     'Loading...' : 'Refresh'}}</button>
 </div>

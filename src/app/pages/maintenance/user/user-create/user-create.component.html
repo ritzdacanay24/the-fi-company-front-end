@@ -7,7 +7,61 @@
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-user-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-form>
+
+        <form [formGroup]="form" autocomplete="off">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">First Name</label>
+              <input type="text" class="form-control" name="first" formControlName="firstName"
+                placeholder="Enter first name" [ngClass]="{ 'is-invalid': submitted && f.firstName.errors }" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">Last Name</label>
+              <input type="text" class="form-control" name="lastName" formControlName="lastName" placeholder="Enter last name"
+                [ngClass]="{ 'is-invalid': submitted && f.lastName.errors }" />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label required">Email</label>
+            <input type="text" class="form-control" name="email" formControlName="email" placeholder="Enter email name"
+              [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label required">Password</label>
+            <input type="password" class="form-control" name="password" formControlName="password"
+              placeholder="Enter password" [ngClass]="{ 'is-invalid': submitted && f.password.errors }" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Confirm Password</label>
+            <input type="password" class="form-control" name="confirmPassword" formControlName="confirmPassword"
+              placeholder="Repeat password" [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" />
+          </div>
+
+          <div class="row">
+            <div class="col-md mb-3">
+              <label class="form-label required">Title</label>
+              <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title"
+                [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md mb-3">
+              <label class="form-label">Department</label>
+              <input type="text" class="form-control" name="area" formControlName="area" placeholder="Enter area"
+                [ngClass]="{ 'is-invalid': submitted && f.area.errors }" />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Work Phone</label>
+            <input type="text" class="form-control" name="workPhone" formControlName="workPhone"
+              placeholder="Enter work phone" [ngClass]="{ 'is-invalid': submitted && f.workPhone.errors }" />
+          </div>
+
+        </form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>

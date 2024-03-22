@@ -50,7 +50,7 @@ export class MaterialRequestListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -64,12 +64,13 @@ export class MaterialRequestListComponent implements OnInit {
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'assemblyNumber', headerName: 'Assembly Number', filter: 'agMultiColumnFilter' },
-    { field: 'pickList', headerName: 'Pick List', filter: 'agMultiColumnFilter' },
+    { field: 'pickList', headerName: 'Pick List', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'lineNumber', headerName: 'Line Number', filter: 'agMultiColumnFilter' },
     { field: 'dueDate', headerName: 'Due Date', filter: 'agMultiColumnFilter' },
-    { field: 'priority', headerName: 'Priority', filter: 'agMultiColumnFilter' },
+    {
+      field: 'priority', headerName: 'Priority', filter: 'agMultiColumnFilter', cellDataType: 'text'
+    },
     { field: 'info', headerName: 'Info', filter: 'agMultiColumnFilter' },
-    { field: 'isCableRequest', headerName: 'Is Cable Request', filter: 'agMultiColumnFilter' },
     { field: 'pickedCompletedDate', headerName: 'Picked Completed Date', filter: 'agMultiColumnFilter' },
     { field: 'requestor', headerName: 'Requestor', filter: 'agMultiColumnFilter' },
     { field: 'specialInstructions', headerName: 'Special Instructions', filter: 'agMultiColumnFilter' },
@@ -101,7 +102,9 @@ export class MaterialRequestListComponent implements OnInit {
     }
   ]
 
-  title = 'Placard List';
+  query = '';
+
+  title = 'Material Request List';
 
   gridApi: GridApi;
 
@@ -177,6 +180,8 @@ export class MaterialRequestListComponent implements OnInit {
       }
 
       this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
+
+      console.log(this.data, 'ttttt')
 
       this.router.navigate(['.'], {
         queryParams: {

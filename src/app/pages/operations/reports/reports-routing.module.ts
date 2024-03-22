@@ -17,6 +17,7 @@ import { InventoryReportComponent } from './inventory-report/inventory-report.co
 import { OneSkuLocationReportComponent } from './one-sku-location-report/one-sku-location-report.component';
 import { ItemConsolidationReportComponent } from './item-consolidation-report/item-consolidation-report.component';
 import { RevenueComponent } from './revenue/revenue.component';
+import { WorkOrderVarianceReport } from './work-order-variance-report/work-order-variance-report.component';
 
 const routes: Routes = [
   {
@@ -87,6 +88,10 @@ const routes: Routes = [
       {
         path: 'revenue',
         component: RevenueComponent
+      },
+      {
+        path: 'work-order-variance-report',
+        component: WorkOrderVarianceReport
       },
     ]
   },

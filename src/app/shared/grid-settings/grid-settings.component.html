@@ -1,0 +1,65 @@
+<div class="flex-shrink-0-">
+    <div class="dropdown card-header-dropdown" ngbDropdown container="body" #myDrop="ngbDropdown"
+        [autoClose]="'outside'">
+
+        <!-- Buttons with Label -->
+        <button type="button" class="arrow-none btn btn-light btn-label waves-effect waves-light" (click)="openUp()"
+            data-bs-toggle="dropdown" ngbDropdownToggle>
+            <i class="ri-settings-4-line label-icon align-middle fs-16 me-2"></i> Grid Settings</button>
+
+        <!-- <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" ngbDropdownToggle (click)="openUp()">
+            <span class="text-muted"><i class="ri-settings-4-line align-middle me-1 fs-15"
+                    [ngClass]="{'text-primary':myView}"></i>Grid
+                Settings</span>
+        </a> -->
+        <div class="dropdown-menu dropdown-menu-end py-1 px-1" ngbDropdownMenu
+            style="min-width:290px;max-height:400px;overflow:auto">
+
+            <button ngbDropdownItem class="py-2" (click)="updateToDefault()" [ngClass]="{'active': !value}">
+                Default View
+            </button>
+
+            <li class="bg-light sticky-top" style="top:2px">
+                <h5 class="dropdown-header mb-1 mt-1">My Grids</h5>
+            </li>
+
+            <button ngbDropdownItem class="py-2" (click)="selectTable(row)" [ngClass]="{'active': value == row.id}"
+                *ngFor="let row of currentUserGrids; let i = index" id="test-{{row.id}}">
+                {{row.table_name || 'No name'}} {{row.id}}
+                <span class="mdi mdi-star me-2 float-end  text-warning" *ngIf="row.table_default"
+                    (click)="$event.stopPropagation();saveDefault(row)"></span>
+                <span class="mdi mdi-star-outline me-2 float-end" *ngIf="!row.table_default"
+                    (click)="$event.stopPropagation();saveDefault(row)"></span>
+            </button>
+
+            <li class="bg-light sticky-top" style="top:2px" *ngIf="otherGrids?.length">
+                <h5 class="dropdown-header">Other Grids</h5>
+            </li>
+
+            <div class="form-icon p-2" *ngIf="otherGrids?.length">
+                <input type="text" class="form-control form-control-icon" [(ngModel)]="query" placeholder="Search user">
+                <i class="ri-search-2-line"></i>
+            </div>
+
+            <button ngbDropdownItem class="py-2" (click)="selectTable(row)" [ngClass]="{'active': value == row.id}"
+                *ngFor="let row of otherGrids | fullTextSearch:query:'created_by_user'; let i = index"
+                id="test-{{row.id}}">
+                {{row.table_name || 'No name'}} -
+                <small>Created by {{row.created_by_user}}</small>
+            </button>
+
+            <div class="dropdown-divider"></div>
+            <li class="sticky-top" style="bottom:2px">
+                <button ngbDropdownItem (click)="update();myDrop.close()" *ngIf="value">
+                    <i class="mdi mdi-content-save me-2"></i> Update <span
+                        class="text-primary">"{{currentView?.table_name}}"</span> View </button>
+                <button ngbDropdownItem (click)="createNewView();myDrop.close()"><i
+                        class="mdi mdi-content-save-cog me-2"></i> Save as
+                    New View</button>
+                <button ngbDropdownItem (click)="viewAll();myDrop.close()"><i class="mdi mdi-cogs me-2"></i> View
+                    All</button>
+            </li>
+        </div>
+    </div>
+</div>

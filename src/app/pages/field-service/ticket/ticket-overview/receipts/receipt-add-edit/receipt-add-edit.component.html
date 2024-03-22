@@ -39,7 +39,7 @@
               aria-describedby="customFileInput" (change)="handleFileInput($any($event.target).files)">
             <i class="feather icon-folder"></i> Library
           </label>
-          <label class="btn btn-success btn-attach btn-block btn-md" for="front" style="line-height: 1.2rem;">
+          <label class="btn btn-primary btn-attach btn-block btn-md" for="front" style="line-height: 1.2rem;">
             <input capture="environment" type="file" accept="image/*" class="custom-file-input d-none" id="front"
               aria-describedby="front" (change)="handleFileInput($any($event.target).files)" #fileInput>
             <i class="feather icon-camera"></i> Take Photo
@@ -88,43 +88,33 @@
         formControlName="vendor_name">
     </div>
 
-    <div class="mb-3">
-      <label class="form-label required w-100">Receipt Date
-        <span *ngIf="predictInfo" class="float-end text-success"
-          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.date?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.date?.confidence
-          * 100
-          || 0}}%</span>
-      </label>
-      <input type="date" class="form-control" placeholder="Date" formControlName="date">
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label required w-100">Receipt Time
-        <span *ngIf="predictInfo" class="float-end text-success"
-          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.time?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.time?.confidence
-          * 100
-          || 0}}%</span>
-      </label>
-      <input step="600" type="time" class="form-control" id="time" placeholder="time"
-        formControlName="time">
-    </div>
-
-    <div *ngFor="let row of connectingJobs;let i = index">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" id="flexCheckDefault-{{i}}">
-        <label class="form-check-label" for="flexCheckDefault-{{i}}">
-          {{row.fsId}} - {{row.property}}
+    <div class="row">
+      <div class="col">
+        <label class="form-label required w-100">Receipt Date
+          <span *ngIf="predictInfo" class="float-end text-success"
+            [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.date?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.date?.confidence
+            * 100
+            || 0}}%</span>
         </label>
+        <input type="date" class="form-control" placeholder="Date" formControlName="date">
+      </div>
+      <div class="col">
+        <label class="form-label required w-100">Receipt Time
+          <span *ngIf="predictInfo" class="float-end text-success"
+            [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.time?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.time?.confidence
+            * 100
+            || 0}}%</span>
+        </label>
+        <input step="600" type="time" class="form-control" id="time" placeholder="time" formControlName="time">
       </div>
     </div>
-
-
-
+    
+    
   </form>
 </div>
 
 <div class="modal-footer">
-  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto btn-md">Close</button>
-  <button (click)="deleteTripExpense()" type="button" class="btn btn-danger btn-md" *ngIf="id">Delete</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-success btn-md">Save</button>
+  <button (click)="deleteTripExpense()" type="button" class="btn btn-danger me-auto" *ngIf="id">Delete</button>
+  <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary">Save</button>
 </div>

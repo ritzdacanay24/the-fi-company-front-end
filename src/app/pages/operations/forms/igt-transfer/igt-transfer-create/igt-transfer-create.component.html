@@ -11,7 +11,7 @@
           [submitted]="submitted"></app-igt-transfer-form>
       </div>
       <div class="card-footer d-flex d-flex justify-content-between">
-        <button class="btn btn-gray" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading || !this.form.value.details?.length" (click)="onSubmit()">Submit</button>
       </div>
     </div>

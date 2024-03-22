@@ -63,22 +63,16 @@ export class RfqListComponent implements OnInit {
       minWidth: 115
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-    { field: 'eyefi_part_number', headerName: 'Eyefi Part Number', filter: 'agMultiColumnFilter' },
-    { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter' },
-    { field: 'eyefi_serial_tag', headerName: 'Eyefi Serial Tag', filter: 'agMultiColumnFilter' },
-    { field: 'eyefi_so_number', headerName: 'Eyefi SO Number', filter: 'agMultiColumnFilter' },
-    { field: 'eyefi_wo_number', headerName: 'Eyefi WO Number', filter: 'agMultiColumnFilter' },
-    { field: 'line_number', headerName: 'Line Number', filter: 'agMultiColumnFilter' },
-    { field: 'location', headerName: 'Location', filter: 'agMultiColumnFilter' },
-    { field: 'po_number', headerName: 'PO Number', filter: 'agMultiColumnFilter' },
-    { field: 'qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
-    { field: 'customer_co_por_so', headerName: 'Customer CP/POR/SO', filter: 'agMultiColumnFilter' },
-    { field: 'customer_name', headerName: 'Customer Name', filter: 'agMultiColumnFilter' },
-    { field: 'customer_part_number', headerName: 'Customer Part Number', filter: 'agMultiColumnFilter' },
-    { field: 'customer_serial_tag', headerName: 'Customer Serial Tag', filter: 'agMultiColumnFilter' },
-    { field: 'label_count', headerName: 'Label Count', filter: 'agMultiColumnFilter' },
-    { field: 'total_label_count', headerName: 'Total Label Count', filter: 'agMultiColumnFilter' },
-    { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
+    { field: 'subjectLine', headerName: 'Subject Line', filter: 'agMultiColumnFilter' },
+    { field: 'address', headerName: 'Address', filter: 'agMultiColumnFilter' },
+    { field: 'appointmentRequired', headerName: 'Appointment Required', filter: 'agMultiColumnFilter' },
+    { field: 'descriptionOfProduct', headerName: 'Description Of Product', filter: 'agMultiColumnFilter' },
+    { field: 'puNumber', headerName: 'PU Number', filter: 'agMultiColumnFilter' },
+    { field: 'poNumber', headerName: 'PO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
+    { field: 'readyDateTime', headerName: 'Ready Date Time', filter: 'agMultiColumnFilter' },
+    { field: 'requestorName', headerName: 'Requestor Name', filter: 'agMultiColumnFilter' },
+    { field: 'value', headerName: 'Value', filter: 'agMultiColumnFilter' },
+    { field: 'weight', headerName: 'Weight', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'created_by', headerName: 'Created By', filter: 'agMultiColumnFilter' },
     { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
   ]
@@ -102,6 +96,8 @@ export class RfqListComponent implements OnInit {
     }
   ]
 
+  searchName = "";
+  
   title = 'Placard List';
 
   gridApi: GridApi;

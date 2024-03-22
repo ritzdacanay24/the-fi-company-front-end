@@ -6,6 +6,7 @@ import { AgGridModule } from 'ag-grid-angular';
 import { AG_THEME, TABLE_GRID_CONFIG, agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { currencyFormatter } from 'src/assets/js/util';
+import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 
 @Component({
     standalone: true,
@@ -20,6 +21,7 @@ export class DailyReportComponent implements OnInit {
     sub: any;
 
     today = moment().format('YYYY-MM-DD')
+    todayAsOf = moment().format('YYYY-MM-DD HH:mm:ss')
 
     theme = AG_THEME;
 
@@ -35,7 +37,7 @@ export class DailyReportComponent implements OnInit {
     };
 
 
-    columnDefs:any = [
+    columnDefs: any = [
         { field: "createdDate", headerName: "Recorded Date/Time", filter: "agMultiColumnFilter" },
         { field: "data.shipping_open_overdue_and_due_today_value", headerName: "Lines Shipped", filter: "agMultiColumnFilter", valueFormatter: currencyFormatter },
         { field: "data.shipping_total_shipped_value", headerName: "Lines Shipped Value", filter: "agMultiColumnFilter", valueFormatter: currencyFormatter },
@@ -67,6 +69,7 @@ export class DailyReportComponent implements OnInit {
     constructor(
         private api: ReportService,
         private sweetAlert: SweetAlert,
+        private logisiticsDailyReportService: LogisiticsDailyReportService,
     ) { }
 
     ngOnInit(): void {
@@ -74,11 +77,14 @@ export class DailyReportComponent implements OnInit {
     }
 
     isLoading = false;
+    logistics
     async getData() {
         try {
             this.isLoading = true;
             this.data = await this.api.getDailyReport();
             this.isLoading = false;
+            this.logistics = await this.logisiticsDailyReportService.getDailyReport()
+
         } catch (err) {
             this.isLoading = false;
         }

@@ -4,6 +4,7 @@ import { AgGridModule } from 'ag-grid-angular';
 import { GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../job-constant';
+import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
@@ -51,7 +52,7 @@ export class JobListComponent implements OnInit {
 
   previous_fsid;
 
-  theme = 'ag-theme-alpine';
+  theme = 'ag-theme-quartz';
 
   gridApi: any;
 
@@ -104,16 +105,47 @@ export class JobListComponent implements OnInit {
 
   view(fsid) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
-    this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
+    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {
         id: fsid,
         gridParams,
         dateFrom: this.dateFrom,
-        dateTo: this.dateTo
+        dateTo: this.dateTo,
+        goBackUrl: NAVIGATION_ROUTE.LIST,
       }
     });
   }
+
+  viewTicket(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    this.router.navigate([TICKET_NAVIGATION_ROUTE.OVERVIEW], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        id: id,
+        gridParams,
+        dateFrom: this.dateFrom,
+        dateTo: this.dateTo,
+        goBackUrl: NAVIGATION_ROUTE.LIST,
+      }
+    });
+  }
+
+  viewBilling(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    this.router.navigate([NAVIGATION_ROUTE.BILLING], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        id: id,
+        gridParams,
+        dateFrom: this.dateFrom,
+        dateTo: this.dateTo,
+        goBackUrl: NAVIGATION_ROUTE.LIST,
+      }
+    });
+  }
+
+  query
 
   columnDefs: any = [
     {
@@ -129,6 +161,22 @@ export class JobListComponent implements OnInit {
     },
     { field: 'customer', headerName: 'Customer', filter: 'agMultiColumnFilter' },
     { field: 'id', headerName: 'FSID', filter: 'agMultiColumnFilter' },
+    {
+      field: 'workOrderTicketId', headerName: 'Work Order ID', filter: 'agMultiColumnFilter',
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        isLink: true,
+        onClick: (e: any) => this.viewTicket(e.rowData.id),
+      },
+    },
+    {
+      field: 'id', headerName: 'Billing', filter: 'agMultiColumnFilter',
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        isLink: true,
+        onClick: (e: any) => this.viewBilling(e.rowData.id),
+      },
+    },
     { field: 'property', headerName: 'Property', filter: 'agMultiColumnFilter' },
     { field: 'state', headerName: 'State', filter: 'agMultiColumnFilter' },
     { field: 'status', headerName: 'Status', filter: 'agSetColumnFilter' },
@@ -142,6 +190,7 @@ export class JobListComponent implements OnInit {
       valueFormatter: currencyFormatter
     },
     { field: 'active', headerName: 'Active', filter: 'agSetColumnFilter' },
+    { field: 'notice_email_date', headerName: 'Notice Email Date', filter: 'agSetColumnFilter' },
   ];
 
   gridOptions: GridOptions = {

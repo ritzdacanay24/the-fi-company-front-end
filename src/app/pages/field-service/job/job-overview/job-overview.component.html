@@ -7,17 +7,13 @@
             <div class="row">
               <div class="col-md mb-3">
                 <div class="row align-items-center g-3">
-                  <div class="col-md-auto">
-                    <div class="avatar-md">
-                      <div class="avatar-title bg-white rounded-circle">
-                        <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
-                      </div>
-                    </div>
-                  </div>
                   <div class="col-md mb-3">
                     <div>
-                      <h4 class="fw-bold">{{title}}</h4>
-                      <div class="hstack gap-3 flex-wrap">
+                      <div class="d-flex mb-2 align-middle">
+                        <button class="btn btn-light btn-sm me-2" (click)="goBack()">Go Back</button>
+                        <h4 class="fw-bold mb-0 pb-0">{{title}}</h4>
+                      </div>
+                      <div class="hstack gap-3 flex-wrap" style="margin-left:70px">
                         <div><i class="ri-building-line align-bottom me-1"></i> {{jobInfo?.property}}</div>
                         <div class="vr"></div>
                         <div>FSID : <span class="fw-medium">{{jobInfo?.id}}</span></div>
@@ -25,7 +21,8 @@
                         <div>Service Type : <span class="fw-medium">{{jobInfo?.service_type}}</span></div>
                         <div class="vr"></div>
                         <div>Ticket ID : <a class="fw-medium pointer"
-                            (click)="showTicket && showTicket()">{{this.workOrderInfo?.id || 'NA'}}</a></div>
+                            (click)="showTicket && showTicket(this.workOrderInfo?.id)">{{this.workOrderInfo?.id ||
+                            'NA'}}</a></div>
 
                         <!-- Avatar Group with Tooltip -->
                         <div class="avatar-group" *ngIf="connectingJobs">
@@ -45,7 +42,8 @@
                 </div>
               </div>
 
-              <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist">
+              <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
+                class="nav nav-tabs-custom border-bottom-0" role="tablist">
                 <li [ngbNavItem]="1" class="nav-item">
                   <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                     <i class="ri-file-info-line text-muted align-bottom me-1"></i> Job Info

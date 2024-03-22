@@ -1,155 +1,163 @@
-<form [formGroup]="form" autofocus="false">
+<div class="row g-0">
+  <div class="col-xxl-3 col-lg-3 col-md-3 mb-3 d-none d-lg-block">
 
-  <ng-container formGroupName="job">
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidator('request_date')">Start Date</label>
-        <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-          mbsc-datepicker formControlName="request_date" [ngClass]="formClass('request_date')" readonly />
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidator('start_time')">Start Time</label>
-        <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptionsTime" class="form-control"
-          mbsc-datepicker formControlName="start_time" [ngClass]="formClass('start_time')" readonly />
-      </div>
+    <div class="list-group  d-flex justify-content-between align-items-center">
+      <button type="button" class="list-group-item list-group-item-action pointer" *ngFor="let row of listOptions"
+        [ngbScrollSpyItem]="[spy, row.ngbScrollSpyItem]" [disabled]="!row.active">
+        <i class="mdi  align-middle lh-1 me-2" [ngClass]="row.icon"></i>
+        {{row.name}}
+      </button>
     </div>
 
-  </ng-container>
+  </div>
+  <!-- end col -->
 
-  <ng-container formGroupName="resource">
 
-    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-users"></i>
-      Tech Information
-    </h4>
+  <div class="col p-3" ngbScrollSpy #spy="ngbScrollSpy" rootMargin="10px" [ngStyle]="ngStyle">
+    <form [formGroup]="form" autofocus="false">
 
-    <table class="table table" *ngIf="getTeams.length">
-      <thead>
-        <tr>
-          <td>#</td>
-          <td>Lead Tech</td>
-          <td>Tech Name</td>
-          <td></td>
-        </tr>
-      </thead>
-      <tbody *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
-        <tr class="p-0 m-0">
-          <td width="100" class="align-middle">Tech# {{i+1}}</td>
-          <td width="100" class="align-middle text-center">
-            <div class="form-check form-check-flat form-check-primary" tite="Lead Tech?">
-              <label class="form-check-label" title="Lead Tech?">
-                <input type="checkbox" class="form-check-input" formControlName="lead_tech">
-                <i class="input-frame"></i>
-              </label>
-            </div>
-          </td>
-          <td>
-            <div>
-              <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user" bindValue="user"
-                placeholder="Select installer" (change)="onTechChange($event, i)">
-                <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-                  {{item.user}}
-                </ng-template>
-              </ng-select>
-            </div>
-            <div *ngIf="row.value.id == 0 && row.value.user != null || row.value.contractor_code" class="mt-2">
-              <ng-select [items]="resource_code_options" [selectOnTab]="true" formControlName="contractor_code"
-                bindLabel="name" placeholder="--Select--" bindValue="value" placeholder="--Select resource code--">
-              </ng-select>
-            </div>
-          </td>
-          <td width="100" class="text-end align-middle">
-            <button type="button" class="btn btn-danger btn-icon shadow-none" (click)="remove(i, row.value)">
-              <i class="mdi mdi-trash-can-outline"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <ng-container formGroupName="job">
+        <div class="row" ngbScrollSpyFragment="items-1">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('request_date')">Start Date</label>
+            <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
+              mbsc-datepicker formControlName="request_date" [ngClass]="formClass('request_date')" readonly />
+            <!-- <app-date-picker [mbscOptions]="myDatepickerOptions" [value]="this.form.value.job.request_date"
+          [ngClass]="formClass('request_date')"></app-date-picker> -->
+          </div>
 
-    <button class="btn btn-primary mt-3 mb-2" (click)="addMoreTechs(1)" type="button">
-      Add More Techs
-    </button>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidator('start_time')">Start Time</label>
+            <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptionsTime"
+              class="form-control" mbsc-datepicker formControlName="start_time" [ngClass]="formClass('start_time')"
+              readonly />
+          </div>
+        </div>
 
-  </ng-container>
+      </ng-container>
 
-  <ng-container formGroupName="job">
-    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-archive"></i>
-      Job Information
-    </h4>
+      <ng-container formGroupName="resource">
 
-    <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidatorJob('status')">Status</label>
-      <ng-select [items]="statusType$" [selectOnTab]="true" formControlName="status" bindLabel="name"
-        placeholder="--Select--" bindValue="name" (open)="getStatusType()" [ngClass]="formClassJob('status')">
-      </ng-select>
-    </div>
+        <h4 ngbScrollSpyFragment="items-2" #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center">
+          <i class="mdi mdi-account-plus-outline me-2"></i>
+          Tech Information
+        </h4>
 
-    <div *ngIf="this.form?.value?.job?.status?.includes('Cancelled')" class="border border-danger p-2 mb-3">
-      <div class="mb-3">
-        <label class="form-label required" [ngClass]="formValidator('customer_cancelled')">
-          Cancellation Code
-        </label>
-        <select class="form-select" formControlName="customer_cancelled">
-          <option *ngFor="let row of ['Customer', 'Eye-Fi']">{{row}}</option>
-        </select>
-      </div>
+        <table class="table table text-nowrap" *ngIf="getTeams.length">
+          <thead>
+            <tr>
+              <td>#</td>
+              <td>Lead Tech</td>
+              <td>Tech Name</td>
+              <td></td>
+            </tr>
+          </thead>
+          <tbody *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
+            <tr class="p-0 m-0">
+              <td width="100" class="align-middle">Tech# {{i+1}}</td>
+              <td width="100" class="align-middle text-center">
+                <div class="form-check form-check-flat form-check-primary" tite="Lead Tech?">
+                  <label class="form-check-label" title="Lead Tech?">
+                    <input type="checkbox" class="form-check-input" formControlName="lead_tech">
+                    <i class="input-frame"></i>
+                  </label>
+                </div>
+              </td>
+              <td>
+                <div>
+                  <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
+                    bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
+                    <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                      {{item.user}}
+                    </ng-template>
+                  </ng-select>
+                </div>
+                <div *ngIf="row.value.title == 'Vendor'" class="mt-2">
+                  <ng-select [items]="resource_code_options" [selectOnTab]="true" formControlName="contractor_code"
+                    bindLabel="name" placeholder="--Select--" bindValue="value" placeholder="--Select resource code--">
+                  </ng-select>
+                </div>
+              </td>
+              <td width="100" class="text-end align-middle">
+                <button type="button" class="btn btn-soft-danger btn-icon shadow-none"
+                  (click)="removeTech(i, row.value)">
+                  <i class="mdi mdi-trash-can-outline btn-sm"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      <div>
-        <label class="form-label required" [ngClass]="formValidator('cancellation_comments')">
-          Cancellation Comment
-        </label>
-        <textarea type="text" class="form-control" formControlName="cancellation_comments"
-          [ngClass]="formClass('cancellation_comments')" autosize [minRows]="1"></textarea>
-      </div>
-    </div>
+        <button class="btn btn-primary mt-3 mb-2" (click)="addMoreTechs(1)" type="button">
+          Add More Techs
+        </button>
 
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('service_type')">Service Type</label>
-        <ng-select [items]="serviceTypes$" bindLabel="name" bindValue="name" formControlName="service_type"
-          placeholder="--Select--" [ngClass]="formClassJob('service_type')" (open)="getServiceTypes()"
-          [selectOnTab]="true">
-        </ng-select>
-      </div>
-    </div>
+      </ng-container>
 
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('requested_by')">Request By</label>
-        <input type="text" class="form-control" formControlName="requested_by" placeholder="Enter requested by name"
-          [ngClass]="formClassJob('requested_by')">
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('customer')">Company</label>
-        <ng-select [items]="company$" [selectOnTab]="true" bindLabel="name" bindValue="name" placeholder="--Select--"
-          formControlName="customer" [ngClass]="formClassJob('customer')" (open)="getCompany()">
-        </ng-select>
-      </div>
-    </div>
+      <ng-container formGroupName="job">
+        <h4 ngbScrollSpyFragment="items-3" #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center">
+          <i class="mdi mdi-folder-information-outline me-2"></i>
+          Job Information
+        </h4>
 
-    <div class="row">
-      <div class="col-md-7 mb-4">
-        <label class="form-label" [ngClass]="formValidatorJob('turnover_fsid')">Tunrover ID</label>
-        <ng-select [virtualScroll]="true" [items]="jobs$" bindLabel="id" bindValue="id" placeholder="--Select--"
-          formControlName="turnover_fsid" [ngClass]="formClassJob('turnover_fsid')" (open)="getJobs()">
+        <div class="mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('status')">Status</label>
+          <ng-select [items]="statusType$" [selectOnTab]="true" formControlName="status" bindLabel="name"
+            placeholder="--Select--" bindValue="name" (open)="getStatusType()" [ngClass]="formClassJob('status')">
+          </ng-select>
+        </div>
 
-          <ng-template ng-label-tmp let-item="item">
-            <p>{{item.id}} - {{item.customer}} {{item.service_type}} {{item.platform}}</p>
-          </ng-template>
+        <div *ngIf="this.form?.value?.job?.status?.includes('Cancelled')" class="border border-danger p-2 mb-3">
+          <div class="mb-3">
+            <label class="form-label required" [ngClass]="formValidator('customer_cancelled')">
+              Cancellation Code
+            </label>
+            <select class="form-select" formControlName="customer_cancelled">
+              <option *ngFor="let row of ['Customer', 'Eye-Fi']">{{row}}</option>
+            </select>
+          </div>
 
-          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-            <div class="row">
-              <div class="col-md-12">
-                <p>{{item.request_date | date:'shortDate'}} {{item.start_time}} <span class="float-end">FSID#
-                    {{item.id}}</span></p>
-                <p>{{item.customer}} {{item.service_type}} {{item.platform}}</p>
-                <p>{{item.status}}</p>
-              </div>
-            </div>
-          </ng-template>
-        </ng-select>
-      </div>
-      <!-- <div class="col-md-5 mb-4">
+          <div>
+            <label class="form-label required" [ngClass]="formValidator('cancellation_comments')">
+              Cancellation Comment
+            </label>
+            <textarea type="text" class="form-control" formControlName="cancellation_comments"
+              [ngClass]="formClass('cancellation_comments')" autosize [minRows]="1"></textarea>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('service_type')">Service Type</label>
+            <ng-select [items]="serviceTypes$" bindLabel="name" bindValue="name" formControlName="service_type"
+              placeholder="--Select--" [ngClass]="formClassJob('service_type')" (open)="getServiceTypes()"
+              [selectOnTab]="true">
+            </ng-select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('requested_by')">Request By</label>
+            <input type="text" class="form-control" formControlName="requested_by" placeholder="Enter requested by name"
+              [ngClass]="formClassJob('requested_by')">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('customer')">Company</label>
+            <ng-select [items]="company$" [selectOnTab]="true" bindLabel="name" bindValue="name"
+              placeholder="--Select--" formControlName="customer" [ngClass]="formClassJob('customer')"
+              (open)="getCompany()">
+            </ng-select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-4">
+            <label class="form-label" [ngClass]="formValidatorJob('turnover_fsid')">Tunover ID</label>
+            <app-job-search [showLabel]="false" [value]="form?.value?.job?.turnover_fsid"
+              (notifyParent)="getTurnover($event)" [ngClass]="formClassJob('turnover_fsid')"></app-job-search>
+          </div>
+          <!-- <div class="col-md-5 mb-4">
         <label class="form-label" [ngClass]="formValidatorJob('group_id')">Group ID</label>
         <div class="input-group">
           <ng-select [virtualScroll]="true" [items]="jobs$" bindLabel="id" bindValue="id" formControlName="group_id"
@@ -173,286 +181,448 @@
           <span class="input-group-text pointer" id="basic-addon2" (click)="createGroup()">or Create Group</span>
         </div>
       </div> -->
-    </div>
-
-    <div class="row">
-      <div class="col-md mb-3" [ngClass]="formClassJob('billable')">
-        <label class="form-label me-3" [ngClass]="formValidatorJob('billable')">Billable</label>
-        <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
-          <label class="form-check-label">
-            <input type="radio" class="form-check-input" name="billable" id="billable{{i}}" [value]="row"
-              formControlName="billable" [ngClass]="formClassJob('billable')">
-            <i class="input-frame"></i>
-            {{row}}
-          </label>
         </div>
-      </div>
-    </div>
 
-    <div class="row" *ngIf="getJob.billable.value == 'No'">
-      <div class="col-md mb-3">
-        <label class="form-label required" [ngClass]="formValidatorJob('non_billable_code')">Non-Billable Code</label>
-        <ng-select [items]="non_billable_code_options" bindValue="code" bindLabel="name"
-          formControlName="non_billable_code" [ngClass]="formClassJob('non_billable_code')" placeholder="--Select--">
-          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-            <h6>{{item.name}}</h6>
-            <small>- {{item.description}}</small>
-          </ng-template>
-        </ng-select>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md mb-3" [ngClass]="formClassJob('sign_responsibility')">
-        <label class="form-label me-3" [ngClass]="formValidatorJob('sign_responsibility')">Sign Responsibility</label>
-        <div class="form-check form-check-inline" *ngFor="let row of ['EyeFi', 'Customer', 'N/A']; let i = index">
-          <label class="form-check-label">
-            <input type="radio" class="form-check-input" name="sign_responsibility" id="sign_responsibility{{i}}"
-              [value]="row" formControlName="sign_responsibility" [ngClass]="formClassJob('sign_responsibility')">
-            <i class="input-frame"></i>
-            {{row}}
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-map-pin"></i>
-      Address
-    </h4>
-
-    <div class="row">
-      <div class="col-md-12 mb-3">
-
-        <app-property-search (notifyParent)="notifyParent($event)" [value]="this.form.value.job.property" [editableSearchTerm]="true"></app-property-search>
-
-        <!-- <label class="form-label" [ngClass]="formValidatorJob('property')">Property</label>
-        <div style="max-height: 300px !important; overflow: auto;">
-          <ng-template #rt let-r="result" let-t="term" class="p-0 m-0">
-            <div class="border-bottom-1">
-              <p>Property: {{r.property}}</p>
-              <address class="m-0 p-0">
-                {{r.address1}} {{r.address2}}
-                {{r.city}}, {{r.state}} {{r.zip_code}}
-                <span *ngIf="r.phone_number">Phone # {{r.phone_number}}</span>
-              </address>
+        <div class="row">
+          <div class="col-md mb-3" [ngClass]="formClassJob('billable')">
+            <label class="form-label me-3" [ngClass]="formValidatorJob('billable')">Billable</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
+              <label class="form-check-label">
+                <input type="radio" class="form-check-input" name="billable" id="billable{{i}}" [value]="row"
+                  formControlName="billable" [ngClass]="formClassJob('billable')">
+                <i class="input-frame"></i>
+                {{row}}
+              </label>
             </div>
-          </ng-template>
+          </div>
         </div>
 
-        <input container="body" autocomplete="new-password" type="search" name="new-password" class="form-control"
-          formControlName="property" [ngbTypeahead]="searchClientAddress" [inputFormatter]="inputFormatBandListValue"
-          [resultTemplate]="rt" placeholder="Search address" [editable]="true" (selectItem)="selectAddress($event)"
-          [ngClass]="formClassJob('property')" />-->
-      </div>
-    </div>
-
-    <div *ngIf="selectedProperty" class="border border-warning p-2 mb-3 border-2">
-      <p>License Required: {{selectedProperty.license_required || '-'}}</p>
-      <p>License Notes: {{selectedProperty.license_notes || '-'}}</p>
-    </div>
-
-    <div class="row">
-      <div class="col mb-3">
-        <label class="form-label">Onsite Customer Name:</label>
-        <input type="text" class="form-control" placeholder="Enter onsite customer name"
-          formControlName="onsite_customer_name" [ngClass]="formClassJob('onsite_customer_name')">
-      </div>
-      <div class="col mb-3">
-        <label class="form-label">Onsite Customer Phone #:</label>
-        <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
-          formControlName="onsite_customer_phone_number" [ngClass]="formClassJob('onsite_customer_phone_number')"
-          prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-8 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('address1')">Address</label>
-        <input type="text" class="form-control" formControlName="address1" placeholder="Enter address"
-          [ngClass]="formClassJob('address1')">
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('address2')">Suite</label>
-        <input type="text" class="form-control" formControlName="address2" placeholder="Enter Suite"
-          [ngClass]="formClassJob('address2')">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('city')">City</label>
-        <input type="text" class="form-control" formControlName="city" placeholder="Enter City"
-          [ngClass]="formClassJob('city')">
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('state')">State</label>
-        <select class="form-select" formControlName="state" [ngClass]="formClassJob('state')">
-          <option disabled selected value="">--Select state--</option>
-          <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
-        </select>
-      </div>
-      <div class="col-md-2 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('zip_code')">Zip Code</label>
-        <input type="tel" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
-          [ngClass]="formClassJob('zip_code')" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md mb-3" [ngClass]="formClassJob('out_of_state')">
-        <label class="form-label me-3" [ngClass]="formValidatorJob('out_of_state')">Out Of State</label>
-        <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
-          <label class="form-check-label">
-            <input type="radio" class="form-check-input" name="out_of_state" id="out_of_state{{i}}" [value]="row"
-              formControlName="out_of_state" [ngClass]="formClassJob('out_of_state')">
-            <i class="input-frame"></i>
-            {{row}}
-          </label>
+        <div class="row" *ngIf="getJob.billable.value == 'No'">
+          <div class="col-md mb-3">
+            <label class="form-label required" [ngClass]="formValidatorJob('non_billable_code')">Non-Billable
+              Code</label>
+            <ng-select [items]="non_billable_code_options" bindValue="code" bindLabel="name"
+              formControlName="non_billable_code" [ngClass]="formClassJob('non_billable_code')"
+              placeholder="--Select--">
+              <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                <h6>{{item.name}}</h6>
+                <small>- {{item.description}}</small>
+              </ng-template>
+            </ng-select>
+          </div>
         </div>
-      </div>
-    </div>
 
-  </ng-container>
+        <div class="row">
+          <div class="col-md mb-3" [ngClass]="formClassJob('sign_responsibility')">
+            <label class="form-label me-3" [ngClass]="formValidatorJob('sign_responsibility')">Sign
+              Responsibility</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['EyeFi', 'Customer', 'N/A']; let i = index">
+              <label class="form-check-label">
+                <input type="radio" class="form-check-input" name="sign_responsibility" id="sign_responsibility{{i}}"
+                  [value]="row" formControlName="sign_responsibility" [ngClass]="formClassJob('sign_responsibility')">
+                <i class="input-frame"></i>
+                {{row}}
+              </label>
+            </div>
+          </div>
+        </div>
 
-  <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-paperclip"></i>
-    Additional Information
-  </h4>
+        <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-4">
+          <i class="mdi mdi-map-marker-multiple-outline me-2"></i>
+          Address
+        </h4>
 
-  <ng-container formGroupName="job">
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('sales_order_number')">Sales Order Number</label>
-        <input type="text" class="form-control" placeholder="Enter sales order number"
-          formControlName="sales_order_number" [ngClass]="formClassJob('sales_order_number')">
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('co_number')">Customer CO #</label>
-        <input type="text" class="form-control" placeholder="Enter customer CO #" formControlName="co_number"
-          [ngClass]="formClassJob('co_number')">
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <app-property-search (notifyParent)="notifyParent($event)" [value]="this.form.value.job.property"
+              [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': submitted && getJob.property.errors }"
+              [required]="true"></app-property-search>
+          </div>
+        </div>
 
-    <div class="row">
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('mark_up_percent')">Mark Up %</label>
-        <input type="text" class="form-control" placeholder="Enter Mark Up %" formControlName="mark_up_percent"
-          [ngClass]="formClassJob('mark_up_percent')">
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('ef_hourly_rate')">Hourly Rate</label>
-        <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="ef_hourly_rate"
-          [ngClass]="formClassJob('ef_hourly_rate')">
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('ef_overtime_hourly_rate')">OT Hourly Rate</label>
-        <input type="text" class="form-control" placeholder="Enter OT hourly rate"
-          formControlName="ef_overtime_hourly_rate" [ngClass]="formClassJob('ef_overtime_hourly_rate')">
-      </div>
-    </div>
+        <div *ngIf="selectedProperty" class="border border-warning p-2 mb-3 border-2">
+          <p>License Required: {{selectedProperty.license_required || '-'}}</p>
+          <p>License Notes: {{selectedProperty.license_notes || '-'}}</p>
+        </div>
 
-    <div class="row">
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('platform')">Platform</label>
-        <ng-select [items]="platforms$" bindLabel="platform" bindValue="platform" formControlName="platform"
-          placeholder="--Select--" [ngClass]="formClassJob('platform')" [dropdownPosition]="'auto'"
-          (open)="getlatforms()">
-        </ng-select>
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('sign_type')">Configuration</label>
-        <input class="form-control" formControlName="sign_type" placeholder="Enter Configuration"
-          [ngClass]="formClassJob('sign_type')" />
-      </div>
-      <div class="col-md-4 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('sign_theme')">Sign/Theme</label>
-        <input type="text" class="form-control" placeholder="Enter Sign/Theme" formControlName="sign_theme"
-          [ngClass]="formClassJob('sign_theme')">
-      </div>
-    </div>
+        <div class="row">
+          <div class="col mb-3">
+            <label class="form-label">Onsite Customer Name:</label>
+            <input type="text" class="form-control" placeholder="Enter onsite customer name"
+              formControlName="onsite_customer_name" [ngClass]="formClassJob('onsite_customer_name')">
+          </div>
+          <div class="col mb-3">
+            <label class="form-label">Onsite Customer Phone #:</label>
+            <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
+              formControlName="onsite_customer_phone_number" [ngClass]="formClassJob('onsite_customer_phone_number')"
+              prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true">
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('licensing_required')"
-          formControlName="licensing_required">
-        <label class="form-check-label">
-          Licensing Required
-        </label>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('address1')">Address</label>
+            <input type="text" class="form-control" formControlName="address1" placeholder="Enter address"
+              [ngClass]="formClassJob('address1')">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('address2')">Suite</label>
+            <input type="text" class="form-control" formControlName="address2" placeholder="Enter Suite"
+              [ngClass]="formClassJob('address2')">
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('bolt_to_floor')"
-          formControlName="bolt_to_floor">
-        <label class="form-check-label">
-          Bolt to Floor
-        </label>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('city')">City</label>
+            <input type="text" class="form-control" formControlName="city" placeholder="Enter City"
+              [ngClass]="formClassJob('city')">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('state')">State</label>
+            <select class="form-select" formControlName="state" [ngClass]="formClassJob('state')">
+              <option disabled selected value="">--Select state--</option>
+              <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
+            </select>
+          </div>
+          <div class="col-md-2 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('zip_code')">Zip Code</label>
+            <input type="tel" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
+              [ngClass]="formClassJob('zip_code')" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000"
+              [showMaskTyped]="true">
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('sign_jacks')"
-          formControlName="sign_jacks">
-        <label class="form-check-label">
-          Sign Jacks
-        </label>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md mb-3" [ngClass]="formClassJob('out_of_state')">
+            <label class="form-label me-3" [ngClass]="formValidatorJob('out_of_state')">Out Of State</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
+              <label class="form-check-label">
+                <input type="radio" class="form-check-input" name="out_of_state" id="out_of_state{{i}}" [value]="row"
+                  formControlName="out_of_state" [ngClass]="formClassJob('out_of_state')">
+                <i class="input-frame"></i>
+                {{row}}
+              </label>
+            </div>
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <label class="form-label">Ceiling Height:</label>
-      <input type="text" class="form-control" placeholder="Enter ceiling height" formControlName="ceiling_height"
-        [ngClass]="formClassJob('ceiling_height')">
-    </div>
+      </ng-container>
+
+      <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-5">
+        <i class="mdi mdi-layers-outline me-2"></i>
+        Additional Information
+      </h4>
+
+      <ng-container formGroupName="job">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('sales_order_number')">Sales Order Number</label>
+            <input type="text" class="form-control" placeholder="Enter sales order number"
+              formControlName="sales_order_number" [ngClass]="formClassJob('sales_order_number')">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('co_number')">Customer CO #</label>
+            <input type="text" class="form-control" placeholder="Enter customer CO #" formControlName="co_number"
+              [ngClass]="formClassJob('co_number')">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('platform')">Platform</label>
+            <textarea autosize [minRows]="1" class="form-control" formControlName="platform"
+              placeholder="Enter Platform" [ngClass]="formClassJob('platform')"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('sign_type')">Configuration</label>
+            <textarea autosize [minRows]="1" class="form-control" formControlName="sign_type"
+              placeholder="Enter Configuration" [ngClass]="formClassJob('sign_type')"></textarea>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('sign_theme')">Sign/Theme</label>
+            <textarea autosize [minRows]="1" type="text" class="form-control" placeholder="Enter Sign/Theme"
+              formControlName="sign_theme" [ngClass]="formClassJob('sign_theme')"></textarea>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('licensing_required')"
+              formControlName="licensing_required">
+            <label class="form-check-label">
+              Licensing Required
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('bolt_to_floor')"
+              formControlName="bolt_to_floor">
+            <label class="form-check-label">
+              Bolt to Floor
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('sign_jacks')"
+              formControlName="sign_jacks">
+            <label class="form-check-label">
+              Sign Jacks
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" formControlName="site_survey_requested">
+            <label class="form-check-label">
+              Site Survey Requested
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Ceiling Height:</label>
+          <input type="text" class="form-control" placeholder="Enter ceiling height" formControlName="ceiling_height"
+            [ngClass]="formClassJob('ceiling_height')">
+        </div>
 
 
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('notes')">Notes: These notes can be seen by the
-          techs</label>
-        <textarea autosize [minRows]="1" [value]="getJob.notes.value" [placeholder]="'Enter Notes'" class="form-control"
-          formControlName="notes"></textarea>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('notes')">Notes: These notes can be seen by the
+              techs</label>
+            <textarea autosize [minRows]="1" [value]="getJob.notes.value" [placeholder]="'Enter Notes'"
+              class="form-control" formControlName="notes"></textarea>
+          </div>
+        </div>
 
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('comments')">Comments</label>
-        <textarea autosize [minRows]="1" [value]="getJob.comments.value" [placeholder]="'Enter Comments'"
-          class="form-control" formControlName="comments"></textarea>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('comments')">Comments</label>
+            <textarea autosize [minRows]="1" [value]="getJob.comments.value" [placeholder]="'Enter Comments'"
+              class="form-control" formControlName="comments"></textarea>
+          </div>
+        </div>
 
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label" [ngClass]="formValidatorJob('compliance_license_notes')">Compliance/Licensing
-          Notes</label>
-        <textarea autosize [minRows]="1" [value]="getJob.compliance_license_notes.value" [placeholder]="'Enter Info'"
-          class="form-control" formControlName="compliance_license_notes"></textarea>
-      </div>
-    </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('compliance_license_notes')">Compliance/Licensing
+              Notes</label>
+            <textarea autosize [minRows]="1" [value]="getJob.compliance_license_notes.value"
+              [placeholder]="'Enter Info'" class="form-control" formControlName="compliance_license_notes"></textarea>
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <div class="form-check form-switch form-switch-md">
-        <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-        <label class="form-check-label" for="active">Active</label>
-      </div>
-    </div>
+        <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-6">
+          <i class="mdi mdi-account-cash-outline me-2"></i>
+          Rates
+        </h4>
 
-    <div class="mb-3">
-      <div class="form-check form-switch form-switch-md">
-        <input class="form-check-input" type="checkbox" id="published" formControlName="published">
-        <label class="form-check-label" for="published">Publish</label>
-      </div>
-    </div>
+        <h6>Billing Rate</h6>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('mark_up_percent')">Mark Up %</label>
+            <input type="text" class="form-control" placeholder="Enter Mark Up %" formControlName="mark_up_percent"
+              [ngClass]="formClassJob('mark_up_percent')">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('ef_hourly_rate')">Hourly Rate</label>
+            <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="ef_hourly_rate"
+              [ngClass]="formClassJob('ef_hourly_rate')">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('ef_overtime_hourly_rate')">OT Hourly Rate</label>
+            <input type="text" class="form-control" placeholder="Enter OT hourly rate"
+              formControlName="ef_overtime_hourly_rate" [ngClass]="formClassJob('ef_overtime_hourly_rate')">
+          </div>
+        </div>
 
-    <div class="mb-3">
-      <div class="form-check form-switch form-switch-md">
-        <input class="form-check-input" type="checkbox" id="schedule_later" formControlName="schedule_later">
-        <label class="form-check-label" for="schedule_later">Schedule Later</label>
-      </div>
-    </div>
+        <h6>Standard Tech Rate</h6>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate')">Hourly Rate</label>
+            <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="per_tech_rate"
+              [ngClass]="formClassJob('per_tech_rate')">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate_ot')">OT Hourly Rate</label>
+            <input type="text" class="form-control" placeholder="Enter OT hourly rate"
+              formControlName="per_tech_rate_ot" [ngClass]="formClassJob('per_tech_rate_ot')">
+          </div>
+        </div>
 
-  </ng-container>
-</form>
+
+
+        <ng-template [ngIf]="id">
+          <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-7">
+            <i class="mdi mdi-clipboard-text-play-outline me-2"></i>
+            Invoice
+          </h4>
+
+          <div class="mb-3">
+            <label class="form-label">Paperwork Location</label>
+            <select class="form-select" formControlName="paper_work_location">
+              <option selected disabled value="">--SELECT--</option>
+              <option *ngFor="let row of ['Field Service', 'Accounting', '3rd Party Contractors']">{{row}}</option>
+            </select>
+          </div>
+
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Vendor Cost</label>
+              <input type="text" class="form-control" placeholder="Vendor Cost" formControlName="vendor_cost">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Vendor Invoice Number</label>
+              <input type="text" class="form-control" placeholder="Vendor Invoice Number"
+                formControlName="vendor_inv_number">
+            </div>
+          </div>
+
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Invoice Amount</label>
+              <input type="text" class="form-control" placeholder="Invoice Amount" formControlName="invoice">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Invoice number</label>
+              <input type="text" class="form-control" placeholder="Invoice number" formControlName="invoice_number">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Invoice Date</label>
+              <input type="text" placeholder="Enter request date" class="form-control" bsDatepicker
+                formControlName="invoice_date">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Account Status</label>
+            <select class="form-select" formControlName="acc_status">
+              <option selected disabled value="">--SELECT--</option>
+              <option *ngFor="let row of ['INVOICED']">{{row}}</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Billable Flat Rate / PO</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="billable_flat_rate_or_po"
+                formControlName="billable_flat_rate_or_po" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Contractor Inv Sent To AP</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="contractor_inv_sent_to_ap"
+                formControlName="contractor_inv_sent_to_ap" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label me-4">Period</label>
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input class="form-check-input" type="radio" name="period" formControlName="period" [value]="row">
+              <label class="form-check-label">{{row}}</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Invoice Notes</label>
+            <textarea type="text" class="form-control" placeholder="Invoice Notes" formControlName="invoice_notes"
+              autosize [minRows]="1"></textarea>
+          </div>
+        </ng-template>
+
+
+        <!-- Secondary Alert -->
+        <div *ngIf="!id"
+          class="alert alert-primary alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-information-line label-icon"></i><strong>Heads up</strong> - You will be able to attach documents
+          after you create the job.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+
+
+        <ng-template [ngIf]="id">
+          <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-8">
+            <i class="mdi mdi-paperclip me-2"></i>
+            Attachments
+          </h4>
+
+          <div class="mb-3">
+            <div class="input-group">
+              <input #myInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple
+                name="file">
+            </div>
+          </div>
+
+          <ul class="list-group align-middle">
+            <li class="list-group-item d-flex justify-content-between align-middle"
+              *ngFor="let row of attachments; let i = index" (click)="viewAttachment(row.link)">
+              {{row.fileName}}
+              <i class="h6 pointer mdi mdi-trash-can text-end text-danger"
+                (click)="$event.stopPropagation();onDeleteAttachment(row.id, i, attachments)"></i>
+            </li>
+          </ul>
+
+          <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-9">
+            <i class="mdi mdi-receipt me-2"></i>
+            Receipts
+          </h4>
+
+          <div class="mb-3">
+            <div class="input-group">
+              <input #myInput (change)="this.onReceiptchange($event)" class="form-control" type="file" id="file"
+                multiple name="file">
+            </div>
+          </div>
+
+          <ul class="list-group align-middle">
+            <li class="list-group-item d-flex justify-content-between align-middle"
+              *ngFor="let row of receipts;let i = index" (click)="viewAttachment(row.link)">
+              {{row.fileName}}
+              <i class="h6 pointer mdi mdi-trash-can text-end text-danger"
+                (click)="$event.stopPropagation();onDeleteAttachment(row.id,i, receipts)"></i>
+            </li>
+          </ul>
+        </ng-template>
+
+
+        <div ngbScrollSpyFragment="items-10">
+          <div class="mb-3 ms-1">
+            <div class="form-check form-switch form-switch-md">
+              <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+              <label class="form-check-label" for="active">Active</label>
+            </div>
+          </div>
+
+          <div class="mb-3 ms-1">
+            <div class="form-check form-switch form-switch-md">
+              <input class="form-check-input" type="checkbox" id="published" formControlName="published">
+              <label class="form-check-label" for="published">Publish</label>
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
+    </form>
+  </div>
+</div>

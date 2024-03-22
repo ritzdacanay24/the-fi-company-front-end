@@ -1,8 +1,9 @@
-<div class="modal-header bg-light">
+<div class="modal-header bg-light ">
   <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
 
-<div class="modal-body bg-light">
+<div class="modal-body bg-light pt-0">
 
   <div class="card">
     <div class="card-body p-0">
@@ -14,8 +15,16 @@
 
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
-  <div class="mt-3 mb-3" *ngIf="results1.length > 0">
-    {{results1.length}} Comments
+  <div class="d-flex mt-2 mb-3" *ngIf="results1.length > 0">
+    <div>
+      {{results1.length}} Comments
+    </div>
+
+    <div class="ms-3">
+      <span class="las la-caret-down pointer" *ngIf="sortDirection == 'Desc'" (click)="sortComments(results1)"></span>
+      <span class="las la-caret-up pointer" *ngIf="sortDirection == 'Asc'" (click)="sortComments(results1)"></span>
+    </div>
+
   </div>
 
   <div class="card" *ngFor="let row of results1;let i = index">
@@ -25,15 +34,15 @@
           <p class="mb-0">{{row.userName}}</p>
           <p class="text-muted mb-0">{{row.createdDate}}</p>
         </div>
-        <i class="mdi mdi-trash-can-outline-2 text-danger pointer ms-auto" (click)="deleteComment(row.id)"
+        <span class="ms-auto">{{row.createdDate | dateAgo}} </span>
+        <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row.id)"
           *ngIf="row.userId == userInfo?.id"></i>
       </div>
     </div>
-    <div class="card-body" style="position: relative;">
+    <div class="card-body">
       <!-- <small style="position: absolute;bottom:17px;right:24px">{{row.pageName}}</small> -->
       <h5 class="text-success mb-3" *ngIf="row?.insert">New comment just added</h5>
       <blockquote class="blockquote">
-
         <p class="mb-3 tx-14" [innerHTML]="row.comments | safeHtml"></p>
       </blockquote>
 
@@ -45,20 +54,22 @@
           </blockquote>
           <span class="text-info"> -
             {{row1.userName}}</span> <span class="tx-11 text-muted" [class.text-success]="row1.insert">
-            {{row1.createdDate}} </span>
+            {{row1.createdDate | dateAgo}} </span>
           <i class="mdi mdi-trash-can-outline-2 text-danger mr-3 float-right pointer"
             (click)="deleteComment(row1.id, row.childs)" *ngIf="row1.userId == userInfo?.id"></i>
         </li>
       </ul>
       <span *ngIf="row.childs?.length > 0" class="text-muted">{{row.childs?.length}}
         response(s)</span>
+
       <p (click)="row.addAComment = !row.addAComment; setFocus(i)" *ngIf="!row.addAComment"
         class="pointer text-primary">
         <i class="feather icon-plus-square text-primary pointer ms-auto"></i> Add a comment
       </p>
 
       <quill-editor [(ngModel)]="row.addThreadComment" placeholder="Respond to this thread.." [modules]="quillConfig"
-        (onEditorCreated)="setFocus($event)" [styles]="{height: '300px'}" *ngIf="row.addAComment" style="width:100%" class="bg-light">
+        (onEditorCreated)="setFocus($event)" [styles]="{height: '300px'}" *ngIf="row.addAComment" style="width:100%"
+        class="bg-light">
       </quill-editor>
 
       <button (click)="onSubmit(row.id, row.addThreadComment)" type="button" class="btn btn-primary mr-auto mt-2"
@@ -69,6 +80,6 @@
 </div>
 
 <div class="modal-footer bg-light">
-  <button (click)="dismiss()" type="button" class="btn btn-gray me-auto">Close</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="!htmlText">Save</button>
+  <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="!htmlText || isLoading">Save</button>
 </div>

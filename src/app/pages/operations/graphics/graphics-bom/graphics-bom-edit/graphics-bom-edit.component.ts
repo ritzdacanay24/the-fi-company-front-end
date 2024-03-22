@@ -53,8 +53,13 @@ export class GraphicsBomEditComponent {
     return this.form?.value?.Image_Data?.includes('PDF');
   }
 
+  onDuplicate() {
+    this.id = null;
+    this.form.patchValue({ Image_Data: null, ID_Product: null })
+  }
+
   image = null;
-  
+
   async getData() {
     try {
       this.isLoading = true;
@@ -70,17 +75,49 @@ export class GraphicsBomEditComponent {
   async onSubmit() {
     this.submitted = true;
 
+    if (this.id) {
+      this.update()
+    } else {
+      this.create()
+    }
+  }
+
+  async update() {
     if (this.form.invalid) {
       getFormValidationErrors()
       return;
     }
-
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Updated');
       this.goBack();
+    } catch (err) {
+      this.isLoading = false;
+    }
+  }
+
+  async create() {
+    if (this.form.invalid) {
+      getFormValidationErrors()
+      return;
+    }
+    try {
+      this.isLoading = true;
+      let data = await this.api.create(this.form.value);
+      this.id = data.insertId
+      this.isLoading = false;
+      this.router.navigate([NAVIGATION_ROUTE.EDIT], { queryParamsHandling: 'merge', queryParams: { id: data.insertId } });
+      this.getData();
+      this.toastrService.success('Successfully Created');
+
+      window.scroll({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      });
+
     } catch (err) {
       this.isLoading = false;
     }

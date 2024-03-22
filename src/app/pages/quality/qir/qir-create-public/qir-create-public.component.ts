@@ -11,6 +11,7 @@ import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErr
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { QirPublicFormComponent } from '../qir-public-form/qir-public-form.component';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { LocationStrategy } from '@angular/common';
 
 @Component({
   standalone: true,
@@ -24,9 +25,17 @@ export class QirCreatePublicComponent {
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: QirService,
-    private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService
-  ) { }
+    private attachmentsService: AttachmentsService,
+    private location: LocationStrategy
+  ) {
+
+    history.pushState(null, null, window.location.href);
+    // check if back or forward button is pressed.
+    this.location.onPopState(() => {
+      history.pushState(null, null, window.location.href);
+    });
+
+  }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
@@ -34,9 +43,10 @@ export class QirCreatePublicComponent {
     });
 
     if (this.id) this.getData();
+
   }
 
-  title = "Quality Incident Request";
+  title = "Quality Incident Report";
 
   form: FormGroup;
 
@@ -52,8 +62,6 @@ export class QirCreatePublicComponent {
 
   onCreateNew() {
     window.location.reload()
-    this.form.reset();
-    this.form.patchValue({ active: 1, status: 'Open' })
   }
 
   data: any;
@@ -64,12 +72,17 @@ export class QirCreatePublicComponent {
   }
 
   async getData() {
+
+
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
+      await this.getAttachments();
+      this.form.disable();
     } catch (err) { }
   }
 
+  closeWindow = false;
   async onSubmit() {
     this.submitted = true;
 
@@ -101,9 +114,25 @@ export class QirCreatePublicComponent {
         }
       }
 
-      this.form.disable()
-      this.isLoading = false;
-      SweetAlert.fire({ text: `Request submitted successfully. Your QIR ID # is ${res.insertId}. ` })
+
+      let value = await SweetAlert.fire({
+        icon: 'success',
+        text: `Request submitted successfully. Your QIR ID # is ${res.insertId}. `,
+        confirmButtonText: 'Create New QIR',
+        cancelButtonText: `Close`,
+        denyButtonText: `Close`,
+        showCancelButton: true,
+      })
+
+      //user does not want to create new qir
+      if (value.isConfirmed) {
+        this.onCreateNew()
+        //create new qir
+      } else if (value.isDismissed) {
+        this.closeWindow = true;
+        this.form.disable()
+      }
+
     } catch (err) {
       this.submitted = false;
       SweetAlert.close()
@@ -124,5 +153,9 @@ export class QirCreatePublicComponent {
     }
   }
 
+  attachments: any = []
+  async getAttachments() {
+    this.attachments = await this.attachmentsService.getAttachmentByQirId(this.id)
+  }
 
 }

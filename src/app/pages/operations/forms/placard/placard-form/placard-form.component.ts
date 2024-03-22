@@ -120,4 +120,10 @@ export class PlacardFormComponent {
     this.form.patchValue({ customer_part_number: $event.cp_cust_part })
   }
 
+  serialNumber: string;
+  async getSerialNumberInfo() {
+    let data: any = await this.placardService.searchSerialNumber(this.form.value.customer_serial_tag);
+    this.form.get('eyefi_serial_tag').setValue(data.serialNumber);
+  }
+
 }
