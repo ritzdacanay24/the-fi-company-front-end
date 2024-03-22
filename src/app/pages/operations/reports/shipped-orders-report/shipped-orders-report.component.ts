@@ -16,6 +16,8 @@ import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.c
 import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
+import { FgLabelPrintModalService } from '@app/shared/components/fg-label-print-modal/fg-label-print-modal.component';
+import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-renderer.component';
 
 @Component({
   standalone: true,
@@ -38,6 +40,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     private commentsModalService: CommentsModalService,
     private itemInfoModalService: ItemInfoModalService,
     private salesOrderInfoModalService: SalesOrderInfoModalService,
+    private fgLabelPrintModal: FgLabelPrintModalService,
   ) {
   }
 
@@ -120,7 +123,14 @@ export class ShippedOrdersReportComponent implements OnInit {
     { field: "LD_QTY_OH", headerName: "Qty OH", filter: "agTextColumnFilter" },
     { field: "SOD_DUE_DATE", headerName: "Due Date", filter: "agSetColumnFilter" },
     { field: "SOD_ORDER_CATEGORY", headerName: "Customer CO #", filter: "agTextColumnFilter" },
-    { field: "FG-Label", headerName: "FG Label", filter: "agSetColumnFilter" },
+    {
+      field: "FG-Label", headerName: "FG Label", filter: "agSetColumnFilter",
+      cellRenderer: IconRendererComponent,
+      cellRendererParams: {
+        onClick: e => { this.fgLabelPrintModal.open(e.rowData.CP_CUST_PART, e.rowData.SOD_CONTR_ID, e.rowData.SOD_PART, e.rowData.PT_DESC1, e.rowData.PT_DESC2, e.rowData) },
+        iconName: 'mdi mdi-printer'
+      }
+    },
     { field: "SO_ORD_DATE", headerName: "Ordered Date", filter: "agSetColumnFilter" },
     { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter" },
     { field: "WORKORDERS", headerName: "WO #", filter: "agTextColumnFilter" },

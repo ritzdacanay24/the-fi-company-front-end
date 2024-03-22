@@ -1,4 +1,4 @@
-<div class="flex-shrink-0">
+<div class="flex-shrink-0-">
     <div class="dropdown card-header-dropdown arrow-none" ngbDropdown container="body" ngbDropdown #myDrop="ngbDropdown"
         [autoClose]="'outside'">
 
@@ -29,12 +29,8 @@
 
         </a> -->
 
-        <div class="dropdown-menu dropdown-menu-end py-0" ngbDropdownMenu
+        <div class="dropdown-menu dropdown-menu-end  py-1 px-1" ngbDropdownMenu
             style="min-width:300px;width:300px;max-height:400px;overflow:auto">
-
-            <li class="bg-light">
-                <h5 class="dropdown-header">Filters</h5>
-            </li>
 
             <li class="bg-light sticky-top" style="top:2px" *ngIf="defaultFilters?.length">
                 <h5 class="dropdown-header">Defaults</h5>
@@ -44,19 +40,19 @@
                 [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
                 *ngFor="let row of defaultFilters">
                 {{row.table_name || 'No name'}}
-                <small>(Applied Filters {{checkFiltersApplied(row.data)}})</small>
+                <small>(Filters {{checkFiltersApplied(row.data)}})</small>
 
             </button>
 
             <li class="bg-light sticky-top" style="top:2px" *ngIf="currentUserGrids?.length">
-                <h5 class="dropdown-header">My Filters</h5>
+                <h5 class="dropdown-header mb-1 text-center">My Filters</h5>
             </li>
 
             <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
                 [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
                 *ngFor="let row of currentUserGrids" id="test-{{row.id}}">
                 {{row.table_name || 'No name'}}<br />
-                <small>(Applied Filters {{checkFiltersApplied(row.data)}})</small>
+                <small>(Filters {{checkFiltersApplied(row.data)}})</small>
                 <span class="mdi mdi-star  ms-2  float-end  text-warning" *ngIf="row.table_default"
                     (click)="$event.stopPropagation();saveDefault(row)"></span>
                 <span class="mdi mdi-star-outline ms-2 float-end" *ngIf="!row.table_default"
@@ -75,9 +71,10 @@
             </button>
 
             <div class="dropdown-divider"></div>
-            <li class="bg-light sticky-top" style="bottom:2px">
-                <button ngbDropdownItem (click)="update();myDrop.close()" [disabled]="!value"><i
-                        class="mdi mdi-content-save me-2"></i> Update Current Filter</button>
+            <li class="sticky-top" style="bottom:2px">
+                <button ngbDropdownItem (click)="update();myDrop.close()" *ngIf="value"><i
+                        class="mdi mdi-content-save me-2"></i> Update <span
+                        class="text-primary">"{{currentView?.table_name}}"</span> Filter</button>
                 <button ngbDropdownItem (click)="createNewView();myDrop.close()"><i
                         class="mdi mdi-content-save-cog me-2"></i> Save as
                     new filter</button>

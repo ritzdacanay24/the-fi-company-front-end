@@ -17,16 +17,16 @@
             style="min-width:290px;max-height:400px;overflow:auto">
 
             <button ngbDropdownItem class="py-2" (click)="updateToDefault()" [ngClass]="{'active': !value}">
-                Default View
+                Use Default View
             </button>
 
             <li class="bg-light sticky-top" style="top:2px">
-                <h5 class="dropdown-header mb-1 mt-1">My Grids</h5>
+                <h5 class="dropdown-header mb-1 mt-1 text-center">My Grids</h5>
             </li>
 
             <button ngbDropdownItem class="py-2" (click)="selectTable(row)" [ngClass]="{'active': value == row.id}"
                 *ngFor="let row of currentUserGrids; let i = index" id="test-{{row.id}}">
-                {{row.table_name || 'No name'}} {{row.id}}
+                {{row.table_name || 'No name'}}
                 <span class="mdi mdi-star me-2 float-end  text-warning" *ngIf="row.table_default"
                     (click)="$event.stopPropagation();saveDefault(row)"></span>
                 <span class="mdi mdi-star-outline me-2 float-end" *ngIf="!row.table_default"

@@ -45,6 +45,7 @@ export class GridFiltersComponent implements OnInit {
     @Input() data = [];
     @Input() afterData = [];
     @Input() defaultFilters = [];
+    currentView;
 
     getOtherGridByUsers = async () => {
         this.currentUserGrids = []
@@ -67,6 +68,8 @@ export class GridFiltersComponent implements OnInit {
                 this.current = row;
             }
         }
+
+
 
 
     }
@@ -95,6 +98,7 @@ export class GridFiltersComponent implements OnInit {
 
         if (this.current) {
             this.value = this.current?.id
+            this.currentView = this.current;
             this.gridApi.setFilterModel(JSON.parse(this.current.data))
 
         }
@@ -164,6 +168,7 @@ export class GridFiltersComponent implements OnInit {
             this.gridApi.setFilterModel(e)
             this.value = row.id;
             //this.emitFilter.emit(this.value);
+            this.currentView = row;
 
         } catch (err) { }
     }
@@ -194,6 +199,7 @@ export class GridFiltersComponent implements OnInit {
     updateToDefault() {
         this.gridApi?.showLoadingOverlay()
         this.value = null;
+        this.currentView = null;
 
         setTimeout(() => {
             this.gridColumnApi.resetColumnState();
@@ -208,6 +214,7 @@ export class GridFiltersComponent implements OnInit {
         let inst = this.gridFiltersModalService.open(savedState, this.pageId);
         inst.result.then((result) => {
             this.value = result.id;
+            this.currentView = result;
             this.currentUserGrids.push(result)
         }, () => { });
     }

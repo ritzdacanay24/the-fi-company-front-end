@@ -171,8 +171,6 @@ export class GridSettingsComponent implements OnInit {
             this.gridApi?.hideOverlay()
         }, 500);
         this.emitGrid.emit(this.value);
-
-        console.log(this.value)
     }
 
     createNewView() {
