@@ -29,27 +29,40 @@ export class TechSchedulePageComponent implements OnInit {
 
     condense = false;
 
+    submittedTickets = false
+
+
+    onSubmittedWO() {
+        this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+            queryParamsHandling: 'merge',
+            queryParams: {
+                submittedTickets: this.submittedTickets,
+            }
+        });
+    }
+
+
     setCondensed() {
         this.condense = !this.condense
 
         if (this.condense) {
 
             this.view = {
-                ...this.view, 
+                ...this.view,
                 timeline: {
-                    ...this.view.timeline, 
+                    ...this.view.timeline,
                     eventList: false,
-                    allDay:true
+                    allDay: true
                 }
             }
         } else {
 
             this.view = {
-                ...this.view, 
+                ...this.view,
                 timeline: {
-                    ...this.view.timeline, 
+                    ...this.view.timeline,
                     eventList: true,
-                    allDay:true
+                    allDay: true
                 }
             }
 
@@ -71,7 +84,6 @@ export class TechSchedulePageComponent implements OnInit {
     @Input() start = moment().format('YYYY-MM-DD')
 
     ngStyle = { 'height': 'calc(100vh - 154px  )', 'margin': '0px' }
-
 
     onSelectedDateChange = (e) => {
         this.id = null
@@ -218,9 +230,11 @@ export class TechSchedulePageComponent implements OnInit {
         this.activatedRoute.queryParams.subscribe((params: any) => {
             this.id = params['id'] || this.id;
             this.previousId = params['previousId'];
-            this.start = params['start'];
+            this.start = params['start']; 
             this.currentView = params['currentView'] || this.currentView
+            this.submittedTickets = params['submittedTickets'] == "true"
 
+            console.log(this.submittedTickets)
             if (this.currentView) {
                 this.set(this.currentView)
             }

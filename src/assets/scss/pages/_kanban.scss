@@ -8,8 +8,9 @@
     align-items: stretch;
 
     .tasks-list {
-        min-width: 300px;
-        margin-right: 24px;
+        min-width: 200px;
+        max-width: 200px;
+        margin-right: 20px;
     }
 
     &::-webkit-scrollbar {
@@ -25,7 +26,7 @@
     }
 
     &::-webkit-scrollbar-thumb {
-        background-color: rgba(var(--#{$prefix}dark-rgb), .075);
+        background-color: rgba(var(--#{$prefix}dark-rgb), .55);
         border-radius: 8px;
     }
 

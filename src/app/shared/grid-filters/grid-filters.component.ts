@@ -222,8 +222,13 @@ export class GridFiltersComponent implements OnInit {
     viewAll() {
         let inst = this.gridFiltersEditModalService.open(this.pageId);
         inst.result.then((result) => {
-            console.log(result)
             this.currentUserGrids = result;
+
+            result.map((pilot) => {
+                if (this.value == pilot.id)
+                    this.currentView = pilot;
+                return pilot
+            })
         }, () => { });
 
     }

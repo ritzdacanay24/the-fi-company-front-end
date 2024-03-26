@@ -62,6 +62,7 @@ export class TechScheduleComponent implements OnInit {
   }
 
   @Input() ngStyle = { 'height': 'calc(100vh - 102px)' }
+  @Input() submittedTickets = true
 
   ngOnInit(): void {
     this.store.select('layout').subscribe((data) => {
@@ -76,7 +77,7 @@ export class TechScheduleComponent implements OnInit {
   @Input() condense = true
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['stadrt']) {
+    if (changes['start']) {
       this.start = changes['start'].currentValue;
     }
     if (changes['id']) {
@@ -84,8 +85,33 @@ export class TechScheduleComponent implements OnInit {
       if (!this.id) this.clearEventOverlay()
       this.scrollTo()
     }
+    if (changes['submittedTickets']) {
+      this.submittedTickets = changes['submittedTickets'].currentValue
+      this.runFilteredData()
+
+    }
+
+  }
 
 
+  runFilteredData() {
+
+    let newData: any = this.copiedEvents;
+
+    let e = []
+    for (let i = 0; i < newData?.length; i++) {
+      if (!newData[i].dateSubmitted && !this.submittedTickets) {
+        e.push(newData[i])
+      }
+    }
+
+    if (!this.submittedTickets) {
+      this.myEvents = e
+
+    } else {
+      this.myEvents = this.copiedEvents
+
+    }
   }
 
   connectingJobs: any = []
@@ -133,6 +159,7 @@ export class TechScheduleComponent implements OnInit {
   myResourcesCount = 0
   allEmployees = []
   myInvalids = []
+  copiedEvents
   async getData(firstDay, lastDay, clearData = true) {
 
     this.calendarOptions = {
@@ -155,6 +182,7 @@ export class TechScheduleComponent implements OnInit {
         event.id = event.id
         event.techs = event.techs
         event.backgroundColor = event.backgroundColor
+        event.dateSubmitted = event.dateSubmitted
         event.tooltip = `FSID: ${event.id} \n${event.title} \n${moment(event.start).format('HH:mm')} to ${moment(event.end).format('HH:mm')} \n${event.techs || ''}`
 
       }
@@ -180,28 +208,39 @@ export class TechScheduleComponent implements OnInit {
 
 
 
-      let resources = [{
-        id: 'employees',
-        name: 'Employees',
-        collapsed: false,
-        eventCreation: false,
-        children: employeess,
-      }, {
-        id: 'contractors',
-        name: 'Contractors',
-        collapsed: false,
-        eventCreation: false,
-        children: contractors,
-      }, {
-        id: 'inactive',
-        name: 'Inactive',
-        collapsed: false,
-        eventCreation: false,
-        children: inactive,
+      let resources = [
+        {
+          id: 'Unassigned',
+          name: 'Unassigned',
+          color: '#c8cdcf',
+          fixed: true,
+        }, {
 
-      }]
+          id: 'employees',
+          name: 'Employees',
+          collapsed: false,
+          eventCreation: false,
+          children: employeess,
+        }, {
+          id: 'contractors',
+          name: 'Contractors',
+          collapsed: false,
+          eventCreation: false,
+          children: contractors,
+        }, {
+          id: 'inactive',
+          name: 'Inactive',
+          collapsed: false,
+          eventCreation: false,
+          children: inactive,
+
+        }]
       this.myEvents = data.info;
+
+      this.copiedEvents = data.info;
       this.myResources = resources;
+
+      this.runFilteredData()
 
       if (this.id && clearData)
         this.scrollTo();
@@ -265,7 +304,7 @@ export class TechScheduleComponent implements OnInit {
 
   currentEvent
 
-  viewFile(){}
+  viewFile() { }
   anchor?: HTMLElement;
 
   timer: any;
@@ -276,7 +315,7 @@ export class TechScheduleComponent implements OnInit {
     contentPadding: false,
     closeOnOverlayClick: false,
     width: 350,
-    scrollLock:true
+    scrollLock: true
   };
 
   mouseEnter(): void {
@@ -339,7 +378,7 @@ export class TechScheduleComponent implements OnInit {
         };
 
       }
-      
+
       clearTimeout(this.timer);
       this.timer = null;
 
@@ -525,35 +564,41 @@ export class TechScheduleComponent implements OnInit {
       }, 0);
   }
 
+  viewRequest(id){
+    window.open("https://dashboard.eye-fi.com/dist/web/dashboard/field-service/request/edit?selectedViewType=Open&id=" + id, "_blank"); // Open new tab
+
+  }
+
   previousId
   async onEventClick(args) {
     this.clearEventOverlay()
     if (args.event.type_of_event == 'EVENT') {
       this.onEventEventCreate(args)
       return
-    };
+    } else if (args.event.type_of_event == 'JOB') {
 
-    this.id = args.event.id
+      this.id = args.event.id
 
-    this.previousId = args.event.id;
+      this.previousId = args.event.id;
 
-    // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
-    //   queryParamsHandling: 'merge',
-    //   queryParams: {
-    //     id: args.event.id,
-    //     start: moment(args.date).format('YYYY-MM-DD'),
-    //     previousId: args.event.id,
-    //   }
-    // });
+      // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+      //   queryParamsHandling: 'merge',
+      //   queryParams: {
+      //     id: args.event.id,
+      //     start: moment(args.date).format('YYYY-MM-DD'),
+      //     previousId: args.event.id,
+      //   }
+      // });
 
 
 
-    let modalRef = this.jobModalEditService.open(this.id)
-    modalRef.result.then((result: any) => {
-      this.getData(args.inst._firstDay, args.inst._lastDay, false)
-    }, () => {
-      this.myEvents = [...this.myEvents];
-    });
+      let modalRef = this.jobModalEditService.open(this.id)
+      modalRef.result.then((result: any) => {
+        this.getData(args.inst._firstDay, args.inst._lastDay, false)
+      }, () => {
+        this.myEvents = [...this.myEvents];
+      });
+    }
   }
 
   onEventEventCreate(data) {

@@ -6,6 +6,7 @@
 </div>
 
 <div class="graphics-production" style="overflow:auto;height: calc(100vh - 91px);" *ngIf="!isLoading">
+    <button class="btn btn-primary mb-2 btn-sm" (click)="getData()">Refresh</button>
     <div class="d-flex flex-nowrap">
         <div style="min-width:230px;" class="me-2 mb-2" *ngFor="let row of data?.queues;let i = index">
             <div class="sticky-top bg-light">

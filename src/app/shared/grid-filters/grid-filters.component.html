@@ -29,8 +29,7 @@
 
         </a> -->
 
-        <div class="dropdown-menu dropdown-menu-end  py-1 px-1" ngbDropdownMenu
-            style="min-width:300px;width:300px;max-height:400px;overflow:auto">
+        <div class="dropdown-menu dropdown-menu-end  py-1 px-1" ngbDropdownMenu>
 
             <li class="bg-light sticky-top" style="top:2px" *ngIf="defaultFilters?.length">
                 <h5 class="dropdown-header">Defaults</h5>
@@ -48,16 +47,18 @@
                 <h5 class="dropdown-header mb-1 text-center">My Filters</h5>
             </li>
 
-            <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
-                [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
-                *ngFor="let row of currentUserGrids" id="test-{{row.id}}">
-                {{row.table_name || 'No name'}}<br />
-                <small>(Filters {{checkFiltersApplied(row.data)}})</small>
-                <span class="mdi mdi-star  ms-2  float-end  text-warning" *ngIf="row.table_default"
-                    (click)="$event.stopPropagation();saveDefault(row)"></span>
-                <span class="mdi mdi-star-outline ms-2 float-end" *ngIf="!row.table_default"
-                    (click)="$event.stopPropagation();saveDefault(row)"></span>
-            </button>
+            <div style="min-width:300px;width:300px;max-height:300px;overflow:auto">
+                <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
+                    [ngClass]="{'active  border-start border-primary border-3': value == row.id}"
+                    *ngFor="let row of currentUserGrids" id="test-{{row.id}}">
+                    {{row.table_name || 'No name'}}<br />
+                    <small>(Filters {{checkFiltersApplied(row.data)}})</small>
+                    <span class="mdi mdi-star  ms-2  float-end  text-warning" *ngIf="row.table_default"
+                        (click)="$event.stopPropagation();saveDefault(row)"></span>
+                    <span class="mdi mdi-star-outline ms-2 float-end" *ngIf="!row.table_default"
+                        (click)="$event.stopPropagation();saveDefault(row)"></span>
+                </button>
+            </div>
 
             <li class="bg-light sticky-top" style="top:2px" *ngIf="otherGrids?.length">
                 <h5 class="dropdown-header">Other Filter</h5>

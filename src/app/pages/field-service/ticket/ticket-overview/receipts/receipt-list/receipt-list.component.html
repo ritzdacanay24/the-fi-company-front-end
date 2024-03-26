@@ -9,7 +9,7 @@
         <p style="line-height:0.4">Created By: {{row.created_by_name}}</p>
         <p style="line-height:0.4">Amunt: {{row.cost}}</p>
       </div>
-      <img style="width:80%;height:80%;" class="rounded" [src]="row?.link" id="img{{i}}">
+      <img style="width:50%;height:50%;" class="rounded" [src]="row?.link" id="img{{i}}">
     </div>
   </div>
 </div>
@@ -74,8 +74,7 @@
           <button class="btn btn-warning  btn-sm m-0" *ngIf="active != 'Transactions'" (click)="create('Folder')">
             Upload Receipt
           </button>
-          <button class="btn btn-primary btn-sm m-0" (click)="printReceipts()"
-            [disabled]="this.gridApi?.getSelectedRows()?.length == 0 ">Print Receipts</button>
+          <button class="btn btn-primary btn-sm m-0" (click)="printReceipts()">Print Receipts</button>
 
         </div>
       </div>

@@ -37,6 +37,7 @@ import { provideRouter, withPreloading } from '@angular/router';
 import { FlagBasedPreloadingStrategy } from './shared/providers/preload';
 
 import { ServiceWorkerModule } from '@angular/service-worker';
+import { LightboxModule } from 'ngx-lightbox';
 
 
 export function createTranslateLoader(http: HttpClient): any {
@@ -76,6 +77,7 @@ export function createTranslateLoader(http: HttpClient): any {
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: environment.production
     }),
+    LightboxModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },

@@ -1,0 +1,14 @@
+<div class="modal-header">
+    <h4 class="modal-title">Edit</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-250">
+
+    <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+
+    <app-kanban-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-kanban-form>
+</div>
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="isLoading">Submit</button>
+</div>

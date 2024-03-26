@@ -29,6 +29,10 @@ export class ReportService {
   getShippedOrdersReport = async (dateFrom, dateTo) =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/shipped_orders/shipped_orders?getGroupedOrders&dateFrom=${dateFrom}&dateTo=${dateTo}`));
 
+  getShippedOrdersChart(dateFrom, dateTo, typeOfView, showCustomers) {
+    return firstValueFrom(this.http.get<any>(`/Charts/read?getDynamicData=1&dateFrom=${dateFrom}&dateTo=${dateTo}&typeOfView=${typeOfView}&showCustomers=${showCustomers}`));
+  }
+
   getDailyReport() {
     return this.http.get<any>(`/DailyReport/read`).toPromise()
   }

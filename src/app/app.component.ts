@@ -9,6 +9,7 @@ import { SwUpdate } from '@angular/service-worker'
 import { interval } from 'rxjs';
 import { SweetAlert } from './shared/sweet-alert/sweet-alert.service';
 import { THE_FI_COMPANY_LAYOUT } from './layouts/topbar/topbar.component';
+import { LightboxConfig } from 'ngx-lightbox';
 
 
 export function setThemeColor(data) {
@@ -29,11 +30,23 @@ export class AppComponent {
     private titleService: TitleService,
     private router: Router,
     private swUpdate: SwUpdate,
+    private _lightboxConfig: LightboxConfig
+    
   ) {
     ngbModalConfig.backdrop = 'static';
     ngbModalConfig.keyboard = false;
     ngbModalConfig.centered = true;
     ngbModalConfig.scrollable = true;
+
+    
+    _lightboxConfig.centerVertically = true;
+    _lightboxConfig.showZoom = false;
+    _lightboxConfig.showDownloadButton = false;
+    _lightboxConfig.wrapAround = true;
+    _lightboxConfig.disableScrolling = true;
+    _lightboxConfig.showRotate = false;
+    _lightboxConfig.fitImageInViewPort = true;
+
     this.titleService.init();
 
 

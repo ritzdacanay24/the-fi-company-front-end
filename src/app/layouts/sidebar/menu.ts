@@ -24,6 +24,16 @@ export const MENU: MenuItem[] = [
         description: "Labels"
       },
       {
+        label: 'MENUITEMS.OPERATIONS.ORDER_LOOKUP',
+        link: '/dashboard/operations/order-lookup',
+        description: "Order Lookup"
+      },
+      {
+        label: 'MENUITEMS.OPERATIONS.PART_LOOKUP',
+        link: '/dashboard/operations/part-lookup',
+        description: "Part Lookup"
+      },
+      {
         label: 'MENUITEMS.OPERATIONS.LOGISTICS.NAME',
         isCollapsed: true,
         subItems: [
@@ -61,6 +71,11 @@ export const MENU: MenuItem[] = [
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.QC_ROUTING',
             link: '/dashboard/operations/master-scheduling/qc-routing',
+            description: "QC"
+          },
+          {
+            label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.KANBAN',
+            link: '/dashboard/operations/master-scheduling/kanban',
             description: "QC"
           }
         ]

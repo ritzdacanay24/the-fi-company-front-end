@@ -352,6 +352,8 @@ export class UploadedReceiptComponent implements OnInit {
       let data: any = await this.workOrderService.getById(this.workOrderId)
       this.fsId = data?.fs_scheduler_id
       this.data = await this.tripExpenseService.getByFsId(data?.fs_scheduler_id)
+
+      
       this.getTripExenses(this.data)
       this.setColumDef1();
 
@@ -528,7 +530,6 @@ export class UploadedReceiptComponent implements OnInit {
 
   viewReceipt(row, link) {
     window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
-
   }
 
   gridApi: any
@@ -537,90 +538,90 @@ export class UploadedReceiptComponent implements OnInit {
 
   setColumDef() {
 
-    this.gridApi.setColumnDefs([
-      {
-        field: '',
-        headerCheckboxSelection: true,
-        headerCheckboxSelectionFilteredOnly: true,
-        width: 50,
-        maxWidth: 50,
-        suppressMenu: true,
-        pinned: isMobile() ? null : 'left',
-        checkboxSelection: true,
-        floatingFilterComponentParams: { suppressFilterButton: true },
-        enableFilter: false,
-
-
-      },
-      {
-        field: 'link',
-        headerName: 'Image',
-        filter: 'agMultiColumnFilter',
-        cellRenderer: LinksImageRendererComponent,
-        suppressMenu: true,
-        floatingFilter: false,
-        cellRendererParams: {
-          onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
-          iconName: 'mdi mdi-view-list',
-          classColor: 'text-info'
+    this.gridApi.updateGridOptions({
+      columnDefs: [
+        {
+          field: '',
+          headerCheckboxSelection: true,
+          headerCheckboxSelectionFilteredOnly: true,
+          width: 50,
+          maxWidth: 50,
+          suppressHeaderMenuButton: true,
+          pinned: isMobile() ? null : 'left',
+          checkboxSelection: true,
+          floatingFilterComponentParams: { suppressFilterButton: true },
+          enableFilter: false,
         },
-      },
-      {
-        headerName: 'Possible Count',
-        field: 'possibleCount',
-        filter: 'agMultiColumnFilter',
-        hide: true
-      },
-
-      {
-        field: 'reason_code',
-        headerName: 'Reason Code',
-        filter: 'agMultiColumnFilter',
-        editable: true,
-        cellRenderer: EditIconComponent,
-        cellRendererParams: {
-          iconName: 'mdi mdi-pencil',
-          placeholder: "Enter reason code"
+        {
+          field: 'link',
+          headerName: 'Image',
+          filter: 'agMultiColumnFilter',
+          cellRenderer: LinksImageRendererComponent,
+          suppressHeaderMenuButton: true,
+          floatingFilter: false,
+          cellRendererParams: {
+            onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
+            iconName: 'mdi mdi-view-list',
+            classColor: 'text-info'
+          },
         },
-      },
-      {
-        headerName: 'First Name',
-        field: 'Cardholder_First_Name',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Last Name',
-        field: 'Cardholder_Last_Name',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Merchant Name',
-        field: 'Original_Merchant_Name',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Post Date',
-        field: 'Post_Date',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Purchase Type',
-        field: 'Purchase_Type',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Transaction Date',
-        field: 'Transaction_Date',
-        filter: 'agMultiColumnFilter'
-      },
-      {
-        headerName: 'Amount',
-        field: 'Transaction_Amount',
-        filter: 'agMultiColumnFilter',
-        pinned: 'right',
-        valueFormatter: currencyFormatter
-      },
-    ])
+        {
+          headerName: 'Possible Count',
+          field: 'possibleCount',
+          filter: 'agMultiColumnFilter',
+          hide: true
+        },
+
+        {
+          field: 'reason_code',
+          headerName: 'Reason Code',
+          filter: 'agMultiColumnFilter',
+          editable: true,
+          cellRenderer: EditIconComponent,
+          cellRendererParams: {
+            iconName: 'mdi mdi-pencil',
+            placeholder: "Enter reason code"
+          },
+        },
+        {
+          headerName: 'First Name',
+          field: 'Cardholder_First_Name',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Last Name',
+          field: 'Cardholder_Last_Name',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Merchant Name',
+          field: 'Original_Merchant_Name',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Post Date',
+          field: 'Post_Date',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Purchase Type',
+          field: 'Purchase_Type',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Transaction Date',
+          field: 'Transaction_Date',
+          filter: 'agMultiColumnFilter'
+        },
+        {
+          headerName: 'Amount',
+          field: 'Transaction_Amount',
+          filter: 'agMultiColumnFilter',
+          pinned: 'right',
+          valueFormatter: currencyFormatter
+        },
+      ]
+    })
   }
 
   gridOptions = {
@@ -665,55 +666,57 @@ export class UploadedReceiptComponent implements OnInit {
 
   setColumDef1() {
 
-    this.gridApi.setColumnDefs([
-      {
-        field: '',
-        headerCheckboxSelection: true,
-        headerCheckboxSelectionFilteredOnly: true,
-        width: 50,
-        maxWidth: 50,
-        suppressMenu: true,
-        floatingFilter: false,
-        pinned: isMobile() ? null : 'left',
-        checkboxSelection: true
-      },
-      {
-        field: 'link',
-        headerName: 'Image',
-        suppressMenu: true,
-        floatingFilter: false,
-        filter: 'agMultiColumnFilter',
-        cellRenderer: LinkImageRendererComponent,
-        cellRendererParams: {
-          onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
-          iconName: 'mdi mdi-view-list',
-          classColor: 'text-info'
+    this.gridApi.updateGridOptions({
+      columnDefs: [
+        {
+          field: '',
+          headerCheckboxSelection: true,
+          headerCheckboxSelectionFilteredOnly: true,
+          width: 50,
+          maxWidth: 50,
+          suppressHeaderMenuButton: true,
+          floatingFilter: false,
+          pinned: isMobile() ? null : 'left',
+          checkboxSelection: true
         },
-      },
-      {
-        field: 'Edit',
-        headerName: 'Edit',
-        filter: 'agMultiColumnFilter',
-        cellRenderer: LinkRendererComponent,
-        cellRendererParams: {
-          onClick: e => this.edit(e.rowData.id, null),
-          iconName: 'mdi mdi-view-list',
-          classColor: 'text-info',
-          value: 'Edit',
+        {
+          field: 'link',
+          headerName: 'Image',
+          suppressHeaderMenuButton: true,
+          floatingFilter: false,
+          filter: 'agMultiColumnFilter',
+          cellRenderer: LinkImageRendererComponent,
+          cellRendererParams: {
+            onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
+            iconName: 'mdi mdi-view-list',
+            classColor: 'text-info'
+          },
+        },
+        {
+          field: 'Edit',
+          headerName: 'Edit',
+          filter: 'agMultiColumnFilter',
+          cellRenderer: LinkRendererComponent,
+          cellRendererParams: {
+            onClick: e => this.edit(e.rowData.id, null),
+            iconName: 'mdi mdi-view-list',
+            classColor: 'text-info',
+            value: 'Edit',
 
+          },
         },
-      },
-      { field: 'vendor_name', headerName: 'Vendor Name', filter: 'agMultiColumnFilter' },
-      {
-        field: 'cost', headerName: 'Cost', filter: 'agMultiColumnFilter',
-        valueFormatter: currencyFormatter
-      },
-      { field: 'date', headerName: 'Receipt Date', filter: 'agMultiColumnFilter' },
-      { field: 'name', headerName: 'Name', filter: 'agMultiColumnFilter' },
-      { field: 'time', headerName: 'Receipt Time', filter: 'agMultiColumnFilter' },
-      { field: 'created_by_name', headerName: 'Created By', filter: 'agMultiColumnFilter' },
-      { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' }
-    ])
+        { field: 'vendor_name', headerName: 'Vendor Name', filter: 'agMultiColumnFilter' },
+        {
+          field: 'cost', headerName: 'Cost', filter: 'agMultiColumnFilter',
+          valueFormatter: currencyFormatter
+        },
+        { field: 'date', headerName: 'Receipt Date', filter: 'agMultiColumnFilter' },
+        { field: 'name', headerName: 'Name', filter: 'agMultiColumnFilter' },
+        { field: 'time', headerName: 'Receipt Time', filter: 'agMultiColumnFilter' },
+        { field: 'created_by_name', headerName: 'Created By', filter: 'agMultiColumnFilter' },
+        { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' }
+      ]
+    })
   }
 
 

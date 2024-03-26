@@ -62,7 +62,7 @@ export class IgtTransferCreateComponent {
       let { insertId } = await this.api.create(this.form.value);
 
       this.isLoading = false;
-      this.toastrService.success('Successfully Create');
+      this.toastrService.success('Successfully Created');
 
       this.router.navigate([NAVIGATION_ROUTE.EDIT], { queryParamsHandling: 'merge', queryParams: { id: insertId } });
 

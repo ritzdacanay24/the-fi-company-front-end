@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
-            <div class="card-header d-flex py-2">
+            <div class="card-header d-flex py-2  align-items-center">
                 <div class="btn-group" role="group" aria-label="Basic example">
                     <button class="btn btn-sm btn-light" [ngClass]="{' text-primary ':this.currentView == 'Day'}"
                         (click)="set('Day')">Day</button>
@@ -19,12 +19,17 @@
                     <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [showLabel]="false"
                         [value]="id" [clearSearch]="false" [editableSearchTerm]="false"></app-job-search>
                 </div>
+
+                <div class="form-check form-switch ms-3">
+                    <input class="form-check-input" type="checkbox" [(ngModel)]="submittedTickets" (ngModelChange)="onSubmittedWO()">
+                    <label class="form-check-label">Include Submitted WO's</label>
+                </div>
             </div>
 
             <div class="card-body p-0" [ngStyle]="ngStyle">
                 <app-resource-by-tech [condense]="condense" (dateChangeEmitter)="onSelectedDateChange($event)"
                     (calenderEmitter)="calenderEmitter($event)" [colors]="colors" [ngStyle]="ngStyle" [start]="start"
-                    [view]="view" [id]="id"></app-resource-by-tech>
+                    [view]="view" [id]="id" [submittedTickets]="submittedTickets"></app-resource-by-tech>
             </div>
         </div>
     </div>

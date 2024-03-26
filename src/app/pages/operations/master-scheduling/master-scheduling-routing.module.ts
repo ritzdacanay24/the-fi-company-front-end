@@ -8,6 +8,7 @@ import { PickingRoutingComponent } from './picking-routing/picking-routing.compo
 import { QcRoutingComponent } from './qc-routing/qc-routing.component';
 import { ProductionRoutingComponent } from './production-routing/production-routing.component';
 import { AllRoutingComponent } from './all-routing/all-routing.component';
+import { KanbanComponent } from './kanban/kanban.component';
 
 const routes: Routes = [
   {
@@ -38,6 +39,10 @@ const routes: Routes = [
       {
         path: 'qc-routing',
         component: QcRoutingComponent
+      },
+      {
+        path: 'kanban',
+        component: KanbanComponent
       },
     ]
   }

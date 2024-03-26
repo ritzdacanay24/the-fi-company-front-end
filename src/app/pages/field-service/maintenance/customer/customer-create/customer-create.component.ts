@@ -71,7 +71,7 @@ export class CustomerCreateComponent {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastservice.show('Successfully Create');
+      this.toastservice.show('Successfully Created');
       this.goBack();
     } catch (err) {
       this.isLoading = false;

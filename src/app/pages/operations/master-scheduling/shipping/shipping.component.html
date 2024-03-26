@@ -25,13 +25,15 @@
                         (emitFilter)="emitFilter($event)"></app-grid-filters>
                 </div>
 
-                
-                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer" style="font-size: 14px;" (click)="pastDue()">
+                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer" style="font-size: 14px;"
+                    (click)="pastDue()">
                     {{statusCount.pastDue}} Past
                     Due</span>
-                <span class="badge  bg-warning-subtle me-2 text-warning pointer" style="font-size: 14px;" (click)="dueToday()">
+                <span class="badge  bg-warning-subtle me-2 text-warning pointer" style="font-size: 14px;"
+                    (click)="dueToday()">
                     {{statusCount.todayDue}} Due Today</span>
-                <span class="badge bg-success-subtle me-2 pointer  text-success" style="font-size: 14px;" (click)="future()">
+                <span class="badge bg-success-subtle me-2 pointer  text-success" style="font-size: 14px;"
+                    (click)="future()">
                     {{statusCount.futureDue}} Future</span>
                 <span class="badge bg-light text-body pointer" style="font-size: 14px;" (click)="all()">
                     {{statusCount.pastDue + statusCount.todayDue + statusCount.futureDue}} Total</span>

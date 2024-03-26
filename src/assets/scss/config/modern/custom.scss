@@ -25,6 +25,52 @@ File: Custom Css File
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
 
+.tasks-board:has(.center-task) {
+    display: unset !important;
+    justify-content: center;
+    width:500px;
+}
+
+.tasks-board:has(.center-task) > .tasks-list {
+    min-width:400px;
+}
+
+.form-select:focus {
+    border-color: var(--vz-primary-border-subtle);
+    outline: 0;
+    box-shadow: unset !important
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    border-radius: 5px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    color: var(--vz-dropdown-link-hover-color);
+    background-color: var(--vz-dropdown-link-hover-bg);
+}
+
+
+.dropdown-item.active {
+    border-radius: 5px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    color: var(--vz-dropdown-link-active-color);
+    text-decoration: none;
+    background-color: var(--vz-dropdown-link-active-bg);
+    border-left: 3px solid $primary !important;
+}
+
+button.dropdown-item:hover {
+    border-left: 3px solid $primary !important;
+}
+
+
+button.dropdown-item {
+    border-left: 3px solid transparent;
+    margin-bottom: 1px
+}
+
 
 body.swal2-shown:has(.show-blur)>[aria-hidden="true"] {
     filter: blur(10px);
@@ -541,23 +587,6 @@ ng-select {
 // }
 
 
-
-.dropdown-item.active {
-    color: var(--vz-dropdown-link-active-color);
-    text-decoration: none;
-    background-color: var(--vz-dropdown-link-active-bg);
-    border-left: 3px solid $primary !important;
-}
-
-button.dropdown-item:hover {
-    border-left: 3px solid $primary !important;
-}
-
-
-button.dropdown-item {
-    border-left: 3px solid transparent;
-}
-
 .mention {
     border-radius: 6px;
     height: 12px;
@@ -566,5 +595,5 @@ button.dropdown-item {
     -webkit-user-select: all;
     user-select: all;
     width: 65px;
-    font-size:12px
+    font-size: 12px
 }

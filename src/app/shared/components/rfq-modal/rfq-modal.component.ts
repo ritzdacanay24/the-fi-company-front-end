@@ -11,6 +11,8 @@ import { first } from 'rxjs';
 import { FormArray, FormBuilder, Validators } from '@angular/forms';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { ToastrService } from 'ngx-toastr';
 
 @Injectable({
   providedIn: 'root'
@@ -47,6 +49,7 @@ export class RfqModalComponent {
     private ngbActiveModal: NgbActiveModal,
     private fb: FormBuilder,
     private authenticationService: AuthenticationService,
+    private toastrService: ToastrService
   ) { }
 
   @Input() public so: string = '';
@@ -146,5 +149,36 @@ export class RfqModalComponent {
   }
 
   submitted = false;
+
+  async onSubmit() {
+
+    this.submitted = true;
+    if (this.form.invalid) {
+      getFormValidationErrors()
+      return;
+    };
+
+    let data = this.form.value;
+
+    for (const property in data) {
+      if (Array.isArray(data[property])) {
+        data[property] = JSON.stringify(data[property]);
+      } else if (typeof data[property] === 'object' && data[property] !== null) {
+        data[property] = JSON.stringify(data[property]);
+      }
+    }
+
+    try {
+      this.isLoading = true;
+      await this.api.create(data);
+
+      this.isLoading = false;
+      this.toastrService.success('Successfully Created');
+      this.close();
+
+    } catch (err) {
+      this.isLoading = false;
+    }
+  }
 
 }

@@ -72,7 +72,7 @@ export class QirSettingsCreateComponent {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Create');
+      this.toastrService.success('Successfully Created');
       //this.form.reset()
       //this.goBack();
     } catch (err) {

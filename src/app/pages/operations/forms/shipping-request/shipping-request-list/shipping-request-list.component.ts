@@ -106,7 +106,7 @@ export class ShippingRequestListComponent implements OnInit {
       children: [
         { field: 'requestorName', headerName: 'Requestor Name', filter: 'agMultiColumnFilter' },
         { field: 'emailAddress', headerName: 'Email Address', filter: 'agMultiColumnFilter' },
-        { field: 'completedBy', headerName: 'Completed By', filter: 'agMultiColumnFilter' },
+        { field: 'completedBy', headerName: 'Completed By', filter: 'agMultiColumnFilter', cellDataType: 'text' },
         { field: 'completedDate', headerName: 'Completed Date', filter: 'agMultiColumnFilter' },
         { field: 'createdById', headerName: 'Created By Id', filter: 'agMultiColumnFilter' },
         { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },

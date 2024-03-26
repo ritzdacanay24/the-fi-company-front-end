@@ -1,0 +1,49 @@
+<form [formGroup]="form" autocomplete="off">
+
+    <div class="row">
+        <div class="col mb-3">
+            <app-qad-wo-search [ngClass]="{ 'is-invalid': submitted && f['wo_nbr'].errors }" (notifyParent)="notifyParent($event)" [value]="f['wo_nbr'].value"></app-qad-wo-search>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
+            <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter name"
+                [ngClass]="{ 'is-invalid': submitted && f['qty'].errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('due_date')">Due Date</label>
+            <input type="date" class="form-control" name="due_date" formControlName="due_date" placeholder="Enter name"
+                [ngClass]="{ 'is-invalid': submitted && f['due_date'].errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('so_nbr')">So Number</label>
+            <input type="text" class="form-control" name="so_nbr" formControlName="so_nbr" placeholder="Enter name"
+                [ngClass]="{ 'is-invalid': submitted && f['so_nbr'].errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('staging_bay')">Staging Bay</label>
+            <input type="text" class="form-control" name="staging_bay" formControlName="staging_bay"
+                placeholder="Enter name" [ngClass]="{ 'is-invalid': submitted && f['staging_bay'].errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('prod_line')">Prod Line</label>
+            <input type="text" class="form-control" name="prod_line" formControlName="prod_line"
+                placeholder="Enter name" [ngClass]="{ 'is-invalid': submitted && f['prod_line'].errors }" />
+        </div>
+    </div>
+
+</form>

@@ -18,6 +18,7 @@ import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-i
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { FgLabelPrintModalService } from '@app/shared/components/fg-label-print-modal/fg-label-print-modal.component';
 import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-renderer.component';
+import { ShippedOrdersChartComponent } from './shipped-orders-chart/shipped-orders-chart.component';
 
 @Component({
   standalone: true,
@@ -26,7 +27,8 @@ import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-re
     AgGridModule,
     DateRangeComponent,
     GridSettingsComponent,
-    GridFiltersComponent
+    GridFiltersComponent,
+    ShippedOrdersChartComponent
   ],
   selector: 'app-shipped-orders-report',
   templateUrl: './shipped-orders-report.component.html',
@@ -53,6 +55,7 @@ export class ShippedOrdersReportComponent implements OnInit {
 
 
     this.getData()
+    this.getChartData();
   }
 
 
@@ -68,8 +71,8 @@ export class ShippedOrdersReportComponent implements OnInit {
 
   title = 'Shipped Orders Report';
 
-  dateFrom = moment().subtract(0, 'months').startOf('month').format('YYYY-MM-DD');;
-  dateTo = moment().endOf('month').format('YYYY-MM-DD');
+  dateFrom = moment().format('YYYY-MM-DD');
+  dateTo = moment().format('YYYY-MM-DD');
   dateRange = [this.dateFrom, this.dateTo];
 
   onChangeDate($event) {
@@ -186,6 +189,8 @@ export class ShippedOrdersReportComponent implements OnInit {
 
   async getData() {
     try {
+
+
       this.gridApi?.showLoadingOverlay();
       let data: any = await this.reportService.getShippedOrdersReport(this.dateFrom, this.dateTo)
       this.data = data.orderInfo;
@@ -203,5 +208,37 @@ export class ShippedOrdersReportComponent implements OnInit {
       this.gridApi?.hideOverlay();
     }
 
+  }
+
+
+  typeOfView = 'Daily';
+  isLoading = false;
+  dataChart
+  showCustomers = 'Show All';
+
+  dateFrom1 = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
+  dateTo1 = moment().add(7, 'days').endOf('month').format('YYYY-MM-DD');
+  dateRange1 = [this.dateFrom1, this.dateTo1];
+
+
+  onChangeDate1($event) {
+    this.dateFrom1 = $event['dateFrom']
+    this.dateTo1 = $event['dateTo']
+    this.getChartData()
+  }
+
+  async getChartData() {
+
+    // var a = moment(this.dateFrom1);
+    // var b = moment(this.dateTo1);
+    // if (b.diff(a, 'days') > 120 && this.typeOfView == 'Daily') {
+    //   alert('Daily view range cannot be larger than 120 days.')
+    //   return
+    // }
+
+    this.isLoading = true;
+    let data = await this.reportService.getShippedOrdersChart(this.dateFrom1, this.dateTo1, this.typeOfView, this.showCustomers);
+    this.dataChart = data;
+    this.isLoading = false
   }
 }

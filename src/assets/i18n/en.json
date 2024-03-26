@@ -25,6 +25,8 @@
       "TEXT": "Operations",
       "OVERVIEW": "Dashboard",
       "LABELS": "Labels",
+      "ORDER_LOOKUP": "Order Lookup",
+      "PART_LOOKUP": "Part Lookup",
       "LOGISTICS": {
         "NAME": "Logistics",
         "CALENDAR": "Calendar"
@@ -79,7 +81,8 @@
         "ALL_ROUTING": "Master Production",
         "PICKING_ROUTING": "Picking",
         "PRODUCTION_ROUTING": "Production",
-        "QC_ROUTING": "Final/Test QC"
+        "QC_ROUTING": "Final/Test QC",
+        "KANBAN": "Kanban"
       },
       "REPORTS": {
         "NAME": "Reports",

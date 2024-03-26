@@ -9,6 +9,7 @@ import { AttachmentsService } from '@app/core/api/attachments/attachments.servic
 import { IQirForm } from '../qir-form/qir-form-type';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { MyFormGroup } from 'src/assets/js/util/_formGroup';
+import { Lightbox } from 'ngx-lightbox';
 
 @Component({
   standalone: true,
@@ -23,8 +24,8 @@ export class QirEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: QirService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService
-
+    private attachmentsService: AttachmentsService,
+    private lightbox: Lightbox
   ) { }
 
   ngOnInit(): void {
@@ -82,9 +83,35 @@ export class QirEditComponent {
     this.goBack()
   }
 
+  images
   attachments: any = []
   async getAttachments() {
+    this.images = []
     this.attachments = await this.attachmentsService.find({ field: 'Capa Request', uniqueId: this.id })
+
+    for (let i = 0; i <= this.attachments.length; i++) {
+      let row = this.attachments[i]
+      const src = 'https://dashboard.eye-fi.com/attachments/capa/' + row.fileName;
+      const caption = 'Image ' + i + '- ' + row.createdDate;
+      const thumb = 'https://dashboard.eye-fi.com/attachments/capa/' + row.fileName;
+      const item = {
+        src: src,
+        caption: caption,
+        thumb: thumb
+      };
+      this.images.push(item);
+    }
+
+  }
+
+  open(index: number): void {
+    // open lightbox
+    this.lightbox.open(this.images, index, {});
+  }
+
+  close(): void {
+    // close lightbox programmatically
+    this.lightbox.close();
   }
 
   async deleteAttachment(id, index) {

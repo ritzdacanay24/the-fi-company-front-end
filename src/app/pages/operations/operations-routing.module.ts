@@ -3,6 +3,8 @@ import { Routes, RouterModule } from '@angular/router';
 import { NgModule } from '@angular/core';
 
 import { OverviewComponent } from './overview/overview.component';
+import { OrderLookupPageComponent } from './order-lookup-page/order-lookup-page.component';
+import { PartLookupPageComponent } from './part-lookup-page/part-lookup-page.component';
 
 const routes: Routes = [
   {
@@ -13,6 +15,14 @@ const routes: Routes = [
   {
     path: 'overview',
     component: OverviewComponent
+  },
+  {
+    path: 'order-lookup',
+    component: OrderLookupPageComponent
+  },
+  {
+    path: 'part-lookup',
+    component: PartLookupPageComponent
   },
   {
     path: 'reports',

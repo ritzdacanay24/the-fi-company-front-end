@@ -105,6 +105,7 @@
           <tr class="text-nowrap">
             <th>Status</th>
             <th>Part # <span class="text-danger">*</span></th>
+            <th>Description</th>
             <th>Reason <span class="text-danger">*</span></th>
             <th>Qty <span class="text-danger">*</span></th>
             <th>Available Qty</th>
@@ -136,6 +137,10 @@
                 [ngClass]="{ 'is-invalid': isValidating && row.get('partNumber').errors }"></app-qad-part-search>
             </td>
             <td style="min-width:200px">
+              <p class="text-start text text-truncate mb-0" title="{{row.value.description}}">{{row.value.description ||
+                'No Description Found'}}</p>
+            </td>
+            <td style="min-width:200px">
               <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"
                 formControlName="reasonCode" bindLabel="value" bindValue="value" placeholder="Select reason code"
                 [clearable]="true" [editableSearchTerm]="true"
@@ -147,7 +152,8 @@
                 [ngClass]="{ 'is-invalid': isValidating && row.get('qty').errors }" />
             </td>
             <td style="min-width:100px" class="text-nowrap">
-              <input type="text" class="form-control" placeholder="Available Qty" readonly [value]="row.value.availableQty"/>
+              <input type="text" class="form-control" placeholder="Available Qty" readonly
+                [value]="row.value.availableQty" />
             </td>
             <td style="min-width:200px">
               <ng-select appendTo="body" [items]="materialRequestForm.transactionType" [searchable]="true"
@@ -180,6 +186,10 @@
                 <i class="ri-delete-bin-line"></i>
               </button>
             </td>
+          </tr>
+          <tr class="p-0 m-0 align-top text-center text-nowrap" *ngFor="let row of getDetails.controls; let i=index"
+            [formGroupName]="i">
+            <td></td>
           </tr>
         </tbody>
       </table>

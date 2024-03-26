@@ -62,7 +62,7 @@ export class VendorCreateComponent {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Create');
+      this.toastrService.success('Successfully Created');
       this.goBack();
     } catch (err) {
       this.isLoading = false;

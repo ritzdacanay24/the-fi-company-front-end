@@ -62,6 +62,11 @@ const WS_SHIPPING = 'WS_SHIPPING';
 })
 export class ShippingComponent implements OnInit {
 
+
+    onBtExport() {
+        this.gridApi!.exportDataAsExcel();
+    }
+
     pastDue() {
         this.gridApi!
             .setColumnFilterModel("STATUS", {

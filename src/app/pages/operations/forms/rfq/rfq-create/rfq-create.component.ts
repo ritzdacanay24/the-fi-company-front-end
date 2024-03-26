@@ -83,7 +83,7 @@ export class RfqCreateComponent {
       let { insertId } = await this.api.create(data);
 
       this.isLoading = false;
-      this.toastrService.success('Successfully Create');
+      this.toastrService.success('Successfully Created');
 
       this.router.navigate([NAVIGATION_ROUTE.EDIT], { queryParamsHandling: 'merge', queryParams: { id: insertId } });
 

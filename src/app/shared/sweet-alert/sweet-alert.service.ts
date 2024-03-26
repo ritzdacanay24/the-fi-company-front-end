@@ -27,9 +27,9 @@ export class SweetAlert {
 
   static async fire(options: SweetAlertOptions | any) {
     return await swalWithBootstrapButtons.fire({
+      ...this.imageInfo,
       ...options,
       allowOutsideClick: false,
-      ...this.imageInfo,
     });
   }
 

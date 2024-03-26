@@ -1,0 +1,41 @@
+<div class="container" *ngIf="!hasDataEmitter">
+    <div class="row justify-content-md-center">
+        <div class="col col-lg-6">
+            <div class="card card-body text-center">
+                <div class="avatar-sm mx-auto mb-3 mt-3">
+                    <div class="avatar-title bg-info-subtle text-info rounded">
+                        <i class="h2 bx bx bx-search mt-2 ms-1"></i>
+                    </div>
+                </div>
+                <h2 class="card-title2">Part Number Lookup</h2>
+                <div class="my-4">
+                    <app-qad-part-search [autoFocus]="true" [appendToBody]="'body'"
+                        (notifyParent)="notifyParent($event)" [value]="partNumber"
+                        [showLabel]="false"></app-qad-part-search>
+                </div>
+
+                <div class="text-center" *ngIf="partNumber && isLoading">
+                    <p>Gathering data for part number "{{partNumber}}"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="container">
+    <div class="row " *ngIf="hasDataEmitter">
+        <div class="col mb-3">
+            <div style="width:350px">
+                <app-qad-part-search (notifyParent)="notifyParent($event)" [value]="partNumber"
+                    [showLabel]="false"></app-qad-part-search>
+            </div>
+        </div>
+        <div class="col mb-3 text-end  align-middle">
+            <h5>Part Number Lookup</h5>
+        </div>
+    </div>
+    <app-part-lookup [partNumber]="partNumber" (isLoadingEmitter)="isLoading = $event"
+        (hasDataEmitter)="hasDataEmitter = $event;"></app-part-lookup>
+</div>
