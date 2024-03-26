@@ -7,6 +7,7 @@ import { AddressInfoService } from '@app/core/api/address-info/address-info.serv
 import { SharedModule } from '@app/shared/shared.module';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -40,7 +41,8 @@ export class KanbanQueueModalComponent {
     private addressInfoService: AddressInfoService,
     private ngbActiveModal: NgbActiveModal,
     private kanbanConfigApiService: KanbanConfigApiService,
-    private kanbanApiService: KanbanApiService
+    private kanbanApiService: KanbanApiService,
+    private authenticationService: AuthenticationService
   ) { }
 
   @Input() public data: any;
@@ -91,8 +93,9 @@ export class KanbanQueueModalComponent {
     }
 
     try {
-      await this.kanbanApiService.update(this.data.id, {
-        kanban_ID: this.currentSelection
+      await this.kanbanApiService.moveQueue(this.data.id, {
+        kanban_ID: this.currentSelection,
+        created_by: this.authenticationService.currentUserValue.id
       })
       this.isLoading = false;
 

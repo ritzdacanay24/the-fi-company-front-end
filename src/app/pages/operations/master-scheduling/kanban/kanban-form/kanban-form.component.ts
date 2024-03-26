@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { states } from '@app/core/data/states';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 import { SharedModule } from '@app/shared/shared.module';
@@ -21,9 +22,11 @@ export class KanbanFormComponent {
 
     constructor(
         private fb: FormBuilder,
+        private kanbanConfigApiService: KanbanConfigApiService
     ) { }
 
     ngOnInit(): void {
+        this.getKanbanConfig()
         this.setFormEmitter.emit(this.form);
     }
 
@@ -43,7 +46,7 @@ export class KanbanFormComponent {
             qty: $event.wo_qty_ord
         })
 
-        
+
     }
 
     states = states;
@@ -69,6 +72,14 @@ export class KanbanFormComponent {
         const validator = this.form.get(key)?.validator({} as AbstractControl);
         if (validator && validator['required']) return 'required';
         return ''
+    }
+
+    queues
+    async getKanbanConfig() {
+        try {
+            this.queues = await this.kanbanConfigApiService.getAll()
+        } catch (err) {
+        }
     }
 
 }

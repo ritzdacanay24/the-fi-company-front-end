@@ -8,7 +8,7 @@ import { fetchKanbanListData } from 'src/app/store/Task/task_action';
 import { RootReducerState } from 'src/app/store';
 import { Store } from '@ngrx/store';
 import { selectKanbanData, selectTaskLoading } from 'src/app/store/Task/task_selector';
-import { Observable } from 'rxjs';
+import { Observable, Subscription, interval } from 'rxjs';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { SharedModule } from '@app/shared/shared.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -28,6 +28,8 @@ import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { Pipe, PipeTransform } from '@angular/core';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import moment from 'moment';
 
 @Pipe({
     standalone: true,
@@ -91,6 +93,11 @@ export class KanbanComponent implements OnInit {
     alltask?: any;
     searchTerm: any;
 
+
+    isShowing(data, key) {
+        return data?.show_data?.indexOf(key) !== -1 || data?.show_data == ''
+    }
+
     constructor(private modalService: NgbModal,
         private store: Store<{ data: RootReducerState }>,
         private kanbanApiService: KanbanApiService,
@@ -103,6 +110,7 @@ export class KanbanComponent implements OnInit {
         private kanbanConfigApiService: KanbanConfigApiService,
         public activatedRoute: ActivatedRoute,
         public router: Router,
+        public authenticationService: AuthenticationService,
 
     ) {
         this.websocketService = websocketService;
@@ -138,6 +146,11 @@ export class KanbanComponent implements OnInit {
          * Data Get Function
          */
         this._fetchData();
+    }
+
+    ngOnDestroy() {
+        if (this.subscription)
+            this.subscription.unsubscribe();
     }
 
 
@@ -197,10 +210,7 @@ export class KanbanComponent implements OnInit {
      * @param item item dragged
      * @param list list from item dragged
      */
-    filteredListCopy
     async onDragged(item: any, list: any[]) {
-
-        this.filteredListCopy = list
         const index = list.indexOf(item);
         list.splice(index, 1);
     }
@@ -238,8 +248,29 @@ export class KanbanComponent implements OnInit {
     * Data Fetch
     */
     // 
-    private async _fetchData() {
+
+
+    updateClock = () => {
+        for (let i = 0; i < this.data.queues.length; i++) {
+            for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                let row = this.data.queues[i].details[ii]
+                if (row.last_transaction_date) {
+                    row.timeDiff = timeUntil(row.last_transaction_date, row.timeDiff);
+                } else {
+                    row.timeDiff = '';
+                }
+            }
+        }
+    };
+
+    subscription: Subscription;
+    public async _fetchData() {
+
+        this.subscription?.unsubscribe();
         this.data = await this.kanbanApiService.getProduction();
+
+        const source = interval(1000);
+        this.subscription = source.subscribe(val => this.updateClock());
 
     }
 
@@ -280,8 +311,6 @@ export class KanbanComponent implements OnInit {
   * Confirmation mail model
   */
     confirm(ev: any, task) {
-        console.log(task)
-
         SweetAlert.fire({
             title: 'Are you sure ?',
             text: 'Are you sure you want to remove this job ?',
@@ -315,9 +344,34 @@ export class KanbanComponent implements OnInit {
         try {
             this.queues = await this.kanbanConfigApiService.getAll()
             this.queues.push({ name: 'All' })
-            console.log(this.queues)
+            //console.log(this.queues)
         } catch (err) {
         }
     }
+
+}
+
+
+function timeUntil(s, timeToStart) {
+    const now = moment();
+    const expiration = moment(s);
+
+    // get the difference between the moments
+    const diff = expiration.diff(now);
+
+    //express as a duration
+    const diffDuration = moment.duration(diff);
+
+    // display
+    let days = Math.abs(diffDuration.days());
+    let hours = Math.abs(diffDuration.hours());
+    let mintues = Math.abs(diffDuration.minutes());
+    let seconds = Math.abs(diffDuration.seconds());
+
+    let e = '';
+    if (hours > 0){
+        e += hours + 'hours '
+    }
+        return e + mintues + '  min ' + seconds + ' sec '
 
 }

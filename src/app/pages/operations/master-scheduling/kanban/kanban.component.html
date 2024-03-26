@@ -5,22 +5,24 @@
                 style="width:300px" [(ngModel)]="searchTerm">
             <i class="ri-search-line search-icon"></i>
         </div>
-
-        <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Kanban</button>
         <select class="form-select ms-3" [(ngModel)]="currentQueueView" (ngModelChange)="onChangeCurrentQueueView()"
             style="width:300px">
-            <option *ngFor="let row of data?.queues" [value]="row.name">
+            <option *ngFor="let row of data?.queues" [value]="row.id">
                 {{row.name}} - {{row.details.length}}
             </option>
             <option [value]="'All'"> All </option>
         </select>
+
+        <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Kanban</button>
+
+        <button class="btn btn-light ms-3" (click)="_fetchData()">Refresh</button>
     </div><!--end card-body-->
 </div><!--end card-->
 
 <div class="tasks-board" id="kanbanboard" style="overflow:auto;height: calc(100vh - 169px);">
     <div class="tasks-list" *ngFor="let tasks of data?.queues"
         [ngClass]="{'center-task m-auto' : currentQueueView != 'All'}">
-        <ng-container *ngIf="currentQueueView == tasks.name || currentQueueView == 'All'">
+        <ng-container *ngIf="currentQueueView == tasks.id || currentQueueView == 'All'">
             <div class="d-flex mb-3 sticky-top" style="z-index:1">
                 <div class="flex-grow-1 text-center bg-light p-3 rounded">
                     <h6 class="fs-14 text-uppercase fw-bold mb-0">{{tasks?.name}} <small
@@ -36,11 +38,10 @@
                         dndPlaceholderRef>Place here</div>
                     @for(task of tasks.details | myfilter:searchTerm;track $index){
                     <div [dndDraggable]="task" dndEffectAllowed="move" (dndMoved)="onDragged(task, tasks.details)"
-                        (onBeforeDrop)="onBeforeDrop(task)" [dndDisableIf]="tasks.disable == 'true'">
-
-                        <ng-template [ngTemplateOutlet]="ready" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'ready'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="picking" [ngTemplateOutletContext]="{task:task}"
+                        (onBeforeDrop)="onBeforeDrop(task)" [dndDisableIf]="true">
+                        <ng-template [ngTemplateOutlet]="ready"
+                            [ngTemplateOutletContext]="{task:task, header:tasks}"></ng-template>
+                        <!-- <ng-template [ngTemplateOutlet]="picking" [ngTemplateOutletContext]="{task:task}"
                             *ngIf="tasks.task_content == 'picking'"></ng-template>
                         <ng-template [ngTemplateOutlet]="staging" [ngTemplateOutletContext]="{task:task}"
                             *ngIf="tasks.task_content == 'staging'"></ng-template>
@@ -53,7 +54,7 @@
                         <ng-template [ngTemplateOutlet]="logistics" [ngTemplateOutletContext]="{task:task}"
                             *ngIf="tasks.task_content == 'logistics'"></ng-template>
                         <ng-template [ngTemplateOutlet]="completed" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'completed'"></ng-template>
+                            *ngIf="tasks.task_content == 'completed'"></ng-template> -->
                     </div>
                     }
                 </div>
@@ -64,8 +65,9 @@
 </div><!--end task-board-->
 
 <!-- Task  -->
-<ng-template #ready let-task='task'>
+<ng-template #ready let-task='task' let-header='header'>
     <div class="card tasks-box">
+        <div class="card-header py-1 text-danger text-center">{{task.timeDiff || 'Loading time'}}</div>
         <div class="card-body">
             <div class="d-flex mb-2">
                 <h6 class="fs-15 mb-0 flex-grow-1 text-truncate">
@@ -84,7 +86,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -92,15 +94,26 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted"
+                *ngIf="isShowing(header, 'printed_date') && task.print_details?.printedDate">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
-                <div class="flex-grow-1">
+                <div class="flex-grow-1 text-danger">
+                    <!-- <small>{{task.timeDiff}}</small> -->
                 </div>
                 <div class="flex-shrink-0">
+
                     <ul class="link-inline mb-0">
                         <li class="list-inline-item" (click)="openQueueSelection(task)">
                             <a href="javascript:void(0)" class="text-muted"><i class="ri-eye-line align-bottom"></i>
@@ -119,7 +132,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #picking let-task='task'>
+<ng-template #picking let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -147,13 +160,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
-            <p class="text-muted align-middle position-relative ps-3">
-                <i class="ri-printer-line position-absolute" style="top:0px;left:-3px"></i>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
                 {{task.print_details?.printedDate | date:'short' || 'No started'}}
             </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -178,7 +195,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #staging let-task='task'>
+<ng-template #staging let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -198,7 +215,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -206,10 +223,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Staging Bay: {{task.staging_bay}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -234,7 +258,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #production let-task='task'>
+<ng-template #production let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -254,7 +278,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -262,10 +286,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Prod Line: {{task.prod_line}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -290,7 +321,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #proto let-task='task'>
+<ng-template #proto let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -310,7 +341,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -318,10 +349,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Prod Line: {{task.prod_line}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -346,7 +384,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #qa let-task='task'>
+<ng-template #qa let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -366,7 +404,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -374,10 +412,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Prod Line: {{task.prod_line}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -402,7 +447,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #logistics let-task='task'>
+<ng-template #logistics let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -422,7 +467,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -430,10 +475,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Prod Line: {{task.prod_line}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -458,7 +510,7 @@
 </ng-template>
 
 <!-- Task  -->
-<ng-template #completed let-task='task'>
+<ng-template #completed let-task='task' let-header='header'>
     <div class="card tasks-box">
         <div class="card-body">
             <div class="d-flex mb-2">
@@ -478,7 +530,7 @@
                         <li (click)="editKanban(task.id)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
-                        </li>       
+                        </li>
                         <li (click)="confirm($event, task)" class="pointer">
                             <a class="dropdown-item" data-bs-toggle="modal">
                                 <i class="ri-delete-bin-5-line align-bottom me-2 text-muted"></i> Delete</a>
@@ -486,10 +538,17 @@
                     </ul>
                 </div>
             </div>
-            <p class="text-muted">Prod Line: {{task.prod_line}}</p>
-            <p class="text-muted">SO: {{task.so_nbr}}</p>
-            <p class="text-muted">Qty: {{task.qty}}</p>
-            <p class="text-muted">Due Date: {{task.due_date}}</p>
+
+            <p class="text-muted" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'so_nbr')">SO: {{task.so_nbr}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
+            <p class="text-muted" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
+            <p class="fs-14 mb-0 text-muted" *ngIf="isShowing(header, 'printed_date')">
+                <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                {{task.print_details?.printedDate | date:'short' || 'No started'}}
+            </p>
+
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">

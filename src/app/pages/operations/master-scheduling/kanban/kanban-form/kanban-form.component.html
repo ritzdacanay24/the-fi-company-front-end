@@ -2,7 +2,19 @@
 
     <div class="row">
         <div class="col mb-3">
-            <app-qad-wo-search [ngClass]="{ 'is-invalid': submitted && f['wo_nbr'].errors }" (notifyParent)="notifyParent($event)" [value]="f['wo_nbr'].value"></app-qad-wo-search>
+            <app-qad-wo-search [ngClass]="{ 'is-invalid': submitted && f['wo_nbr'].errors }"
+                (notifyParent)="notifyParent($event)" [value]="f['wo_nbr'].value"></app-qad-wo-search>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('kanban_ID')">Queue</label>
+            <select class="form-select" formControlName="kanban_ID">
+                <option *ngFor="let row of queues" [value]="row.id">
+                    {{row.name}}
+                </option>
+            </select>
         </div>
     </div>
 
