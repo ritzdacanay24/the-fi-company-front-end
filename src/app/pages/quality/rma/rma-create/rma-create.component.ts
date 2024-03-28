@@ -71,7 +71,6 @@ export class RmaCreateComponent {
 
 
     if (this.form.invalid) {
-      console.log(this.form)
       getFormValidationErrors()
       return
     }

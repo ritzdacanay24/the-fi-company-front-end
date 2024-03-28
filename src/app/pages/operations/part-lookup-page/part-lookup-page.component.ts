@@ -29,7 +29,6 @@ export class PartLookupPageComponent {
     }
 
     isLoadingEmitter($event) {
-        console.log($event)
     }
 
     hasDataEmitter = false;

@@ -198,8 +198,8 @@ export class ShippingComponent implements OnInit {
     public refreshCells(rowNode) {
         this.gridApi.flashCells({
             rowNodes: rowNode,
-            flashDelay: 3000,
-            fadeDelay: 2000,
+            flashDuration: 3000,
+            fadeDuration: 2000,
         });
     }
 

@@ -28,7 +28,6 @@ export class OrderLookupPageComponent {
   }
 
   isLoadingEmitter($event){
-    console.log($event)
   }
 
   hasDataEmitter = false;

@@ -22,9 +22,9 @@ export class RfqService extends DataService<any> {
         return this.http.get<any>(`/Rfq/rfq?so=${soNumber}&line=${lineNumber}`);
     }
 
-    sendEmail(params): Observable<any> {
+    async sendEmail(id, params) {
         params.SendFormEmail = 1;
-        return this.http.post(`/Rfq/send_email`, params);
+        return await firstValueFrom(this.http.post(`/Rfq/send_email?id=${id}`, params));
     }
 
 }

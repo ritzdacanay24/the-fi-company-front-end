@@ -5,12 +5,39 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { QadCustomerPartSearchComponent } from '@app/shared/components/qad-customer-part-search/qad-customer-part-search.component';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 import { TagInputModule } from 'ngx-chips';
-import { ActivatedRoute, Router } from '@angular/router';
-import { RfqService } from '@app/core/api/rfq/rfq-service';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { must_be_email } from 'src/assets/js/util';
 import rfqFormJson from './rfq-form.json';
 import { validateEmail } from 'src/assets/js/util/validateEmail';
+import { isJsonString } from 'src/assets/js/util/isJsonString';
+
+
+function jsonParse(data) {
+  for (const property in data) {
+    if (isJsonString(data[property])) {
+      data[property] = JSON.parse(data[property])
+    }
+  }
+  return data;
+}
+
+export function onFormatDataBeforeEmail(data) {
+
+  data = jsonParse(data)
+
+  let params = {
+    'SendFormEmail': 1
+    , 'details': data
+    , 'infoCustomerView': data.vendor
+    , 'palletSizeInformationSendInfo': data.palletSizeInformationSendInfo
+    , 'salesOrder': data['sod_nbr']
+    , 'customerSelected': data.vendor
+    , 'emailToSendTo': data['emailToSendTo'].toString()
+    , 'lineInfoEachShow': data['lines'] //apparently this needs to be at the end because php will not see the rest of the properties in this object
+  }
+
+  return params;
+}
 
 @Component({
   standalone: true,

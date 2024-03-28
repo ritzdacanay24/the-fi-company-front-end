@@ -185,7 +185,6 @@ export class MaterialRequestListComponent implements OnInit {
 
       this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
 
-      console.log(this.data, 'ttttt')
 
       this.router.navigate(['.'], {
         queryParams: {

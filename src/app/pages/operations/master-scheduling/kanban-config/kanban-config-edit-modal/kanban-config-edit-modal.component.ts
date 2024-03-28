@@ -67,7 +67,6 @@ export class KanbanConfigEditModalComponent {
     }
 
     ngOnInit() {
-        console.log(this.id)
         if (this.id) {
             this.getData();
         }

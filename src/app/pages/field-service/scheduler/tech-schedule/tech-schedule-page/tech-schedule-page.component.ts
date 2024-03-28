@@ -234,7 +234,6 @@ export class TechSchedulePageComponent implements OnInit {
             this.currentView = params['currentView'] || this.currentView
             this.submittedTickets = params['submittedTickets'] == "true"
 
-            console.log(this.submittedTickets)
             if (this.currentView) {
                 this.set(this.currentView)
             }

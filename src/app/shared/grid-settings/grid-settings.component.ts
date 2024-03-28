@@ -186,7 +186,6 @@ export class GridSettingsComponent implements OnInit {
     viewAll() {
         let inst = this.gridSettingsEditModalService.open(this.pageId);
         inst.result.then((result) => {
-            console.log(result)
             this.currentUserGrids = result;
 
             result.map((pilot) => {

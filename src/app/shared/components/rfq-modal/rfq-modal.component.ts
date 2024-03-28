@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AddressInfoService } from '@app/core/api/address-info/address-info.service';
 import { SharedModule } from '@app/shared/shared.module';
-import { RfqFormComponent } from '@app/pages/operations/forms/rfq/rfq-form/rfq-form.component';
+import { RfqFormComponent, onFormatDataBeforeEmail } from '@app/pages/operations/forms/rfq/rfq-form/rfq-form.component';
 import { RfqService } from '@app/core/api/rfq/rfq-service';
 import { first } from 'rxjs';
 import { FormArray, FormBuilder, Validators } from '@angular/forms';
@@ -13,6 +13,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { ToastrService } from 'ngx-toastr';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Injectable({
   providedIn: 'root'
@@ -140,10 +141,8 @@ export class RfqModalComponent {
   setFormEmitter($event) {
     this.form = $event;
     this.form.patchValue({
-      main: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id,
-      }
+      created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+      created_by: this.authenticationService.currentUserValue.id,
     }, { emitEvent: false })
 
   }
@@ -168,17 +167,53 @@ export class RfqModalComponent {
       }
     }
 
-    try {
-      this.isLoading = true;
-      await this.api.create(data);
 
-      this.isLoading = false;
-      this.toastrService.success('Successfully Created');
-      this.close();
+    SweetAlert.fire({
+      title: 'Are you sure you want to send email?',
+      text: "Email will be sent to " + data['emailToSendTo'].toString(),
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: `Send Email`,
+    }).then(async (result) => {
+      /* Read more about isConfirmed, isDenied below */
+      if (result.isConfirmed) {
 
-    } catch (err) {
-      this.isLoading = false;
-    }
+        let insertId;
+
+
+        try {
+          this.isLoading = true;
+          let res = await this.api.create(data);
+          insertId = res.insertId;
+        } catch (err) {
+          this.isLoading = false;
+        }
+
+        if (insertId) {
+          try {
+            let params = onFormatDataBeforeEmail(this.form.value)
+
+            let res: any = await this.api.sendEmail(insertId, params);
+
+            if (res?.message) {
+              this.toastrService.error("Record created however, we were unable to send the email. Email Access denied")
+            } else {
+              this.toastrService.success('Record created and email sent successfully', 'Successful')
+            }
+
+            this.close();
+
+          } catch (err) {
+            this.isLoading = false;
+          }
+        }
+
+
+
+      }
+    })
+
   }
+
 
 }

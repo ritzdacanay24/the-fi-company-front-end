@@ -393,7 +393,6 @@ export class KanbanComponent implements OnInit {
         try {
             this.queues = await this.kanbanConfigApiService.getAll()
             this.queues.push({ name: 'All' })
-            //console.log(this.queues)
         } catch (err) {
         }
     }

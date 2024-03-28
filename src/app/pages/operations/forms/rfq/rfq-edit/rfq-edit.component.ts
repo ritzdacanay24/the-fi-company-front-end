@@ -3,10 +3,13 @@ import { SharedModule } from '@app/shared/shared.module';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { RfqFormComponent } from '../rfq-form/rfq-form.component';
+import { RfqFormComponent, onFormatDataBeforeEmail } from '../rfq-form/rfq-form.component';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NAVIGATION_ROUTE } from '../rfq-constant';
 import { RfqService } from '@app/core/api/rfq/rfq-service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { isJsonString } from 'src/assets/js/util/isJsonString';
+import moment from 'moment';
 
 function _json_parse(data) {
   return JSON.parse(data);
@@ -100,6 +103,17 @@ export class RfqEditComponent {
     }
   }
 
+  jsonStringify(data) {
+    for (const property in data) {
+      if (Array.isArray(data[property])) {
+        data[property] = JSON.stringify(data[property]);
+      } else if (typeof data[property] === 'object' && data[property] !== null) {
+        data[property] = JSON.stringify(data[property]);
+      }
+    }
+  }
+
+
   async onSubmit() {
     this.submitted = true;
 
@@ -108,21 +122,15 @@ export class RfqEditComponent {
       return;
     }
 
-    let data = this.form.value;
-    for (const property in data) {
-      if (Array.isArray(data[property])) {
-        data[property] = JSON.stringify(data[property]);
-      } else if (typeof data[property] === 'object' && data[property] !== null) {
-        data[property] = JSON.stringify(data[property]);
-      }
-    }
+    this.jsonStringify(this.form.value)
 
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Updated');
-      this.goBack();
+      this.form.markAsPristine();
+      //this.goBack();
     } catch (err) {
       this.isLoading = false;
     }
@@ -150,4 +158,48 @@ export class RfqEditComponent {
       popupWin.close();
     };
   }
+
+
+  /**
+   * If validation is passed send email
+   */
+  public async onSendEmail($event?) {
+
+    if (this.form.dirty) {
+      alert('Please save before sending email.')
+      return;
+    }
+
+    if (this.data.email_sent_date) {
+      if (!confirm('Email was sent on ' + this.data.email_sent_date + '. Are you sure you want to resend?')) return;
+    }
+
+    let params = onFormatDataBeforeEmail(this.form.value)
+
+    SweetAlert.fire({
+      title: 'Are you sure you want to send email?',
+      text: "Email will be sent to " + params['emailToSendTo'].toString(),
+      showDenyButton: false,
+      showCancelButton: true,
+      confirmButtonText: `Send Email`,
+    }).then(async (result) => {
+      /* Read more about isConfirmed, isDenied below */
+      if (result.isConfirmed) {
+        try {
+          let res: any = await this.api.sendEmail(this.id, params)
+          this.data.email_sent_date = moment().format('YYYY-MM-DD HH:mm:ss')
+          if (res?.message) {
+            this.toastrService.error("Access denied")
+          } else {
+            this.toastrService.success('Email sent', 'Successful')
+          }
+        } catch (err) {
+        }
+
+      }
+    })
+  }
+
+
+
 }

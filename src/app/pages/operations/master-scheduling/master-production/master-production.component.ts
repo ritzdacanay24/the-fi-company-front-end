@@ -199,7 +199,6 @@ export class MasterProductionComponent implements OnInit {
     addToKanban(data, wo_nbr) {
         let modalRef = this.kanbanAddModalService.open(null, wo_nbr)
         modalRef.result.then((result: any) => {
-            console.log(result, 'ddd')
             data.kanban_info.id = true
             this.sendAndUpdate(data, data.SO);
 
