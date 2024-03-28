@@ -219,7 +219,7 @@ export let labelData = [
         zebraCode: `
             ^XA
             ^FWR
-            ^FO0,100^A0,700,600^FDB&H^FS
+            ^FO0,190^A0,700,600^FDCOI^FS
             ^XZ
         `
     },

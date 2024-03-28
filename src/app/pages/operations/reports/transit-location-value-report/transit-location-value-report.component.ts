@@ -61,7 +61,7 @@ export class TransitLocationValueReportComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     columnDefs: [],
-    getRowId: data => data.data.id,
+    // getRowId: data => data.data.id,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
       this.gridColumnApi = params.columnApi;

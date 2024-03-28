@@ -84,7 +84,7 @@ export class MaterialRequestCreateComponent {
       alert('No items found in this request. ')
       return
     }
-    
+
     try {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
@@ -92,7 +92,15 @@ export class MaterialRequestCreateComponent {
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
 
-      this.form.reset();
+      this.form.reset({
+        main: {
+          createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+          createdBy: this.authenticationService.currentUserValue.id,
+          requestor: this.authenticationService.currentUserValue.full_name,
+          active: 1,
+          priority: 'Low'
+        }
+      });
       this.resetTags()
       this.value = ""
       this.submitted = false;

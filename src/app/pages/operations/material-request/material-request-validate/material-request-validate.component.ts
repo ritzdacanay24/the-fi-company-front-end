@@ -80,6 +80,7 @@ export class MaterialRequestValidateComponent {
             ac_code: new FormControl(row.ac_code),
             notes: new FormControl(row.notes),
             availableQty: new FormControl(row.availableQty),
+            description: new FormControl(row.description),
           }))
 
         }

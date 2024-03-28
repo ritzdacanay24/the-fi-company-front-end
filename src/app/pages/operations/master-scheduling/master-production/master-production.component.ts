@@ -18,6 +18,15 @@ import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-render
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { PickSheetRendererComponent } from '@app/shared/ag-grid/pick-sheet-renderer/pick-sheet-renderer.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { CheckboxRendererComponent } from '@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component';
+import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
+import { KanbanAddModalService } from '../kanban/kanban-add-modal/kanban-add-modal.component';
+import { WebsocketService } from '@app/core/services/websocket.service';
+import { KANBAN } from '../kanban/kanban.component';
+import { KanbanRendererComponent } from '@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component';
+
+const MASTER_PRODUCTION = 'MASTER_PRODUCTION';
+
 
 @Component({
     standalone: true,
@@ -41,8 +50,44 @@ export class MasterProductionComponent implements OnInit {
         private itemInfoModalService: ItemInfoModalService,
         private commentsModalService: CommentsModalService,
         private lateReasonCodeModalService: LateReasonCodeModalService,
+        private api: MasterSchedulingService,
+        private kanbanAddModalService: KanbanAddModalService,
+        private websocketService: WebsocketService,
 
     ) {
+        this.websocketService = websocketService;
+
+        //watch for changes if this modal is open
+        //changes will only occur if modal is open and if the modal equals to the same qir number
+        const ws_observable = this.websocketService.multiplex(
+            () => ({ subscribe: MASTER_PRODUCTION }),
+            () => ({ unsubscribe: MASTER_PRODUCTION }),
+            (message) => message.type === MASTER_PRODUCTION
+        );
+
+        //if changes are found, patch new values
+        ws_observable.subscribe((data: any) => {
+            if (Array.isArray(data?.message)) {
+                this.gridApi.applyTransaction({ update: data?.message });
+                this.gridApi.redrawRows();
+
+            } else {
+                var rowNode = this.gridApi.getRowNode(data.message.id);
+                this.gridApi.applyTransaction({ update: [data.message] });
+                this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+                this.refreshCells([rowNode]);
+            }
+        });
+
+    }
+
+    public refreshCells(rowNode) {
+        this.gridApi.flashCells({
+            rowNodes: rowNode,
+            flashDelay: 3000,
+            fadeDelay: 2000,
+        });
     }
 
     ngOnInit(): void { }
@@ -68,6 +113,20 @@ export class MasterProductionComponent implements OnInit {
     id = null;
 
     title = "Master Production";
+
+    public sendAndUpdate(newData: any, id: any) {
+        /**
+         * newData MUST be the complete data object
+         */
+        let rowNode = this.gridApi.getRowNode(id);
+        rowNode.data = newData;
+        this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+        this.websocketService.next({
+            message: newData,
+            type: MASTER_PRODUCTION
+        });
+    }
 
     openPickSheet = (workOrder) => {
         let modalRef = this.workOrderPickSheetModalService.open(workOrder)
@@ -125,7 +184,44 @@ export class MasterProductionComponent implements OnInit {
         }
     };
 
+    public async update(data: any) {
+
+        data.shippingMisc = 1;
+        data.so = data.WR_NBR; //add on insert since so is not available yet
+
+        try {
+            let res = await this.api.saveMisc(data)
+        } catch (err) {
+        }
+    }
+
+
+    addToKanban(data, wo_nbr) {
+        let modalRef = this.kanbanAddModalService.open(null, wo_nbr)
+        modalRef.result.then((result: any) => {
+            console.log(result, 'ddd')
+            data.kanban_info.id = true
+            this.sendAndUpdate(data, data.SO);
+
+
+        }, () => { });
+
+    }
+
+
     columnDefs: any = [
+        {
+            field: 'kanban_info.wo_nbr',
+            headerName: 'Add To Kanban',
+            filter: 'agSetColumnFilter',
+            cellRenderer: KanbanRendererComponent,
+            pinned: 'left',
+            cellRendererParams: {
+                onClick: e => this.addToKanban(e.rowData, e.rowData.WR_NBR),
+                isLink: true,
+                value: "Add"
+            }
+        },
         {
             field: "WR_NBR", headerName: "Pick Sheet", filter: "agSetColumnFilter",
             cellRenderer: PickSheetRendererComponent,
@@ -135,19 +231,21 @@ export class MasterProductionComponent implements OnInit {
             },
             filterParams: this.pickingFilterParams
         },
-        { field: "status_info.status_text", headerName: "Status", filter: "agSetColumnFilter",
-        cellRenderer: (params: any) => {
-            if (params.data) {
-                if (params.value == 'Future Order')
-                    return `<span class="badge bg-success-subtle text-success">${params.value}</span>`;
-                if (params.value == 'Past Due')
-                    return `<span class="badge bg-danger-subtle text-danger">${params.value}</span>`
-                if (params.value == 'Due Today')
-                    return `<span class="badge bg-warning-subtle text-warning">${params.value}</span>`
-                return params.value;
+        {
+            field: "status_info.status_text", headerName: "Status", filter: "agSetColumnFilter",
+            cellRenderer: (params: any) => {
+                if (params.data) {
+                    if (params.value == 'Future Order')
+                        return `<span class="badge bg-success-subtle text-success">${params.value}</span>`;
+                    if (params.value == 'Past Due')
+                        return `<span class="badge bg-danger-subtle text-danger">${params.value}</span>`
+                    if (params.value == 'Due Today')
+                        return `<span class="badge bg-warning-subtle text-warning">${params.value}</span>`
+                    return params.value;
+                }
+                return null
             }
-            return null
-        } },
+        },
         {
             field: "WR_NBR", headerName: "Work #", filter: "agMultiColumnFilter", cellRenderer: LinkRendererComponent,
             cellRendererParams: {
@@ -214,6 +312,7 @@ export class MasterProductionComponent implements OnInit {
         ...agGridOptions,
         // rowBuffer: 0,
         // animateRows: true,
+        getRowId: (data: any) => data?.data.SO,
         columnDefs: [],
         onGridReady: async (params: any) => {
             this.gridApi = params.api;

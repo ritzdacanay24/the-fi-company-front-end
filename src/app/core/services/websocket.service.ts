@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { AuthenticationService } from './auth.service';
 import { CORE_SETTINGS } from '../constants/app.config';
+import { ToastrService } from 'ngx-toastr';
 
 @Injectable({
     providedIn: 'root',
@@ -13,7 +14,8 @@ export class WebsocketService {
     userInfo: any;
     showDialog: boolean;
     constructor(
-        public authenticationService: AuthenticationService
+        public authenticationService: AuthenticationService,
+        private toastrService: ToastrService
     ) {
         this.userInfo = this.authenticationService.currentUserValue;
     }
@@ -21,6 +23,12 @@ export class WebsocketService {
     sendDialog() {
         setTimeout(() => {
             this.connect()
+        }, 5000);
+    }
+
+    sendClose() {
+        setTimeout(() => {
+            this.close()
         }, 5000);
     }
 
@@ -37,6 +45,8 @@ export class WebsocketService {
                     //console.log("connection closed");
                     // console.log(closeEvent, 'closeEvent');
                     //this.sendDialog()
+                    this.toastrService.warning("Websockets disconnected.Please refresh browser", "", { disableTimeOut: true })
+
                 }
             },
         })

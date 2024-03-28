@@ -156,7 +156,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
     }
 
     close() {
-        this.ngbActiveModal.close()
+        this.ngbActiveModal.close(this.newData)
     }
 
     errors = [];
@@ -173,6 +173,8 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
     }
 
     submitted = false;
+
+    newData
 
     async onSubmit() {
 
@@ -209,7 +211,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
         /**
      * Save to database and print work order
      */
-        let params: any = {
+        let params: any = this.newData = {
             assignedTo: this.form.value.assignedTo,
             createdBy: this.authenticationService.currentUserValue.id,
             createdByName: this.authenticationService.currentUserValue.full_name,

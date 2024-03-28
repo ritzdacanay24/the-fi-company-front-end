@@ -31,14 +31,14 @@ export class AppComponent {
     private router: Router,
     private swUpdate: SwUpdate,
     private _lightboxConfig: LightboxConfig
-    
+
   ) {
     ngbModalConfig.backdrop = 'static';
     ngbModalConfig.keyboard = false;
     ngbModalConfig.centered = true;
     ngbModalConfig.scrollable = true;
 
-    
+
     _lightboxConfig.centerVertically = true;
     _lightboxConfig.showZoom = false;
     _lightboxConfig.showDownloadButton = false;
@@ -94,7 +94,6 @@ export class AppComponent {
 
         await this.showNewVersionMessage();
 
-
       }
 
       if (event.type === 'VERSION_READY') {
@@ -118,9 +117,10 @@ export class AppComponent {
     let { isConfirmed } = await SweetAlert.fire({
       title: `A new version of the dashboard is available`,
       showCloseButton: false,
-      showCancelButton: false,
+      showCancelButton: true,
       focusConfirm: true,
       confirmButtonText: `Update dashboard`,
+      cancelButtonText: `Update Later`,
       showClass: {
         popup: `
           show-blur

@@ -2,7 +2,7 @@ import * as JSLZString from 'lz-string'
 
 export function _compressToEncodedURIComponent(api, columnApi) {
   return JSLZString.compressToEncodedURIComponent(JSON.stringify({
-    columnState: columnApi.getColumnState()
+    columnState: api.getColumnState()
     , filterState: api.getFilterModel()
   }))
 }

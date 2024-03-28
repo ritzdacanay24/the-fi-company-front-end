@@ -5,8 +5,18 @@
     <p>Loading data. Please wait..</p>
 </div>
 
-<div class="graphics-production" style="overflow:auto;height: calc(100vh - 91px);" *ngIf="!isLoading">
-    <button class="btn btn-primary mb-2 btn-sm" (click)="getData()">Refresh</button>
+
+<div class="row mb-2" *ngIf="!isLoading">
+    <div class=" d-flex">
+        <button class="btn btn-primary btn-sm" (click)="getData()">Refresh</button>
+        <div class="input-group  w-25  ms-2">
+            <input type="search" class="form-control" placeholder="Enter work order number"
+                [(ngModel)]="searchWorkOrder">
+        </div>
+    </div>
+</div>
+<div class="graphics-production" style="overflow:auto;height: calc(100vh - 122px);" *ngIf="!isLoading">
+
     <div class="d-flex flex-nowrap">
         <div style="min-width:230px;" class="me-2 mb-2" *ngFor="let row of data?.queues;let i = index">
             <div class="sticky-top bg-light">
@@ -19,7 +29,8 @@
                     </div>
                 </div>
             </div>
-            <div class="card {{item.classColors}} mb-2" *ngFor="let item of row.orderStatus; let ii = index">
+            <div class="card {{item.classColors}} mb-2"
+                *ngFor="let item of row.orderStatus | filterlist:searchWorkOrder; let ii = index">
 
                 <div class="card-header p-2 d-flex align-items-center px-4 pe-2 {{item.classColors}}">
                     <h4 class="card-title mb-0 flex-grow-1 text-start text-white"> {{item.graphicsWorkOrder}} </h4>

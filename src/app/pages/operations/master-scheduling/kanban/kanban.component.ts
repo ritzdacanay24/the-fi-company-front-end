@@ -30,6 +30,27 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Pipe, PipeTransform } from '@angular/core';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
+import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
+import { WorkOrderRoutingByWoModalService } from '@app/shared/components/work-order-routing-by-wo-modal/work-order-routing-by-wo-modal.component';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { KanbanConfigEditModalService } from '../kanban-config/kanban-config-edit-modal/kanban-config-edit-modal.component';
+
+@Pipe({
+    standalone: true,
+    name: 'filterlist'
+})
+export class FilterlistPipe implements PipeTransform {
+
+    transform(value: any, args?: any): any {
+        if (!args || args.indexOf('All') > -1)
+            return value;
+        return value?.filter(
+            item => {
+                return args.indexOf(item?.name?.toString()) > -1
+            }
+        );
+    }
+}
 
 @Pipe({
     standalone: true,
@@ -49,7 +70,7 @@ export class MyFilterPipe implements PipeTransform {
     }
 }
 
-const KANBAN = 'KANBAN';
+export const KANBAN = 'KANBAN';
 
 @Component({
     standalone: true,
@@ -68,7 +89,9 @@ const KANBAN = 'KANBAN';
         FlatpickrModule,
         CountUpModule,
         SharedModule,
-        MyFilterPipe
+        MyFilterPipe,
+        NgSelectModule,
+        FilterlistPipe
     ],
     selector: 'app-kanban',
     templateUrl: './kanban.component.html',
@@ -92,7 +115,7 @@ export class KanbanComponent implements OnInit {
     TaskList!: Observable<Task[]>;
     alltask?: any;
     searchTerm: any;
-
+    showLess = false
 
     isShowing(data, key) {
         return data?.show_data?.indexOf(key) !== -1 || data?.show_data == ''
@@ -111,6 +134,9 @@ export class KanbanComponent implements OnInit {
         public activatedRoute: ActivatedRoute,
         public router: Router,
         public authenticationService: AuthenticationService,
+        public workOrderInfoModalService: WorkOrderInfoModalService,
+        public workOrderRoutingByWoModalService: WorkOrderRoutingByWoModalService,
+        private kanbanConfigEditModalService: KanbanConfigEditModalService
 
     ) {
         this.websocketService = websocketService;
@@ -131,7 +157,7 @@ export class KanbanComponent implements OnInit {
 
     ngOnInit(): void {
         this.activatedRoute.queryParams.subscribe(params => {
-            this.currentQueueView = params['currentQueueView'] || 'All';
+            this.currentQueueView = params['currentQueueView']?.split(',') || null;
         })
 
         /**
@@ -153,6 +179,10 @@ export class KanbanComponent implements OnInit {
             this.subscription.unsubscribe();
     }
 
+    isInArray(id) {
+        return this.currentQueueView.indexOf(id?.toString()) !== -1
+    }
+
 
     send() {
         this.websocketService.next({
@@ -160,6 +190,14 @@ export class KanbanComponent implements OnInit {
         });
     }
 
+    openKanbanConfig(id) {
+        let modalRef = this.kanbanConfigEditModalService.open(id)
+        modalRef.result.then((result: any) => {
+            this._fetchData()
+            this.send();
+        }, () => { });
+
+    }
 
     viewComment = (task: any, id?: string) => {
         let modalRef = this.commentsModalService.open(task.wo_nbr, 'kanban')
@@ -178,7 +216,7 @@ export class KanbanComponent implements OnInit {
 
     }
 
-    editKanban(id) {
+    editKanban(id, task) {
         let modalRef = this.kanbanEditModalService.open(id)
         modalRef.result.then((result: any) => {
             this._fetchData()
@@ -188,7 +226,6 @@ export class KanbanComponent implements OnInit {
     }
 
     openEdit = (task) => {
-        console.log(task)
         let modalRef = this.kanbanEditModalService.open(task.id)
         modalRef.result.then((result: any) => {
         }, () => { });
@@ -202,7 +239,6 @@ export class KanbanComponent implements OnInit {
     }
 
     onBeforeDrop(item) {
-        console.log(item)
     }
 
     /**
@@ -256,6 +292,7 @@ export class KanbanComponent implements OnInit {
                 let row = this.data.queues[i].details[ii]
                 if (row.last_transaction_date) {
                     row.timeDiff = timeUntil(row.last_transaction_date, row.timeDiff);
+                    row.timeDiffMins = timeUntil1(row.last_transaction_date, row.timeDiff);
                 } else {
                     row.timeDiff = '';
                 }
@@ -328,15 +365,27 @@ export class KanbanComponent implements OnInit {
         });
     }
 
-    currentQueueView = 'All'
+    currentQueueView: any = null
     onChangeCurrentQueueView() {
+        if (this.currentQueueView == '') {
+            this.currentQueueView = null
+        }
         this.router.navigate([`.`], {
             relativeTo: this.activatedRoute,
             queryParamsHandling: 'merge',
             queryParams: {
-                currentQueueView: this.currentQueueView
+                currentQueueView: this.currentQueueView?.toString()
             }
         });
+    }
+
+    clear(item) {
+        for (let i = 0; i < this.currentQueueView.length; i++) {
+            if (this.currentQueueView[i] == item.name) {
+                this.currentQueueView.splice(i, 1)
+            }
+        }
+
     }
 
     queues
@@ -369,9 +418,29 @@ function timeUntil(s, timeToStart) {
     let seconds = Math.abs(diffDuration.seconds());
 
     let e = '';
-    if (hours > 0){
+    if (hours > 0) {
         e += hours + 'hours '
     }
-        return e + mintues + '  min ' + seconds + ' sec '
+    return e + mintues + '  min ' + seconds + ' sec '
+
+}
+
+function timeUntil1(s, timeToStart) {
+    const now = moment();
+    const expiration = moment(s);
+
+    // get the difference between the moments
+    const diff = expiration.diff(now);
+
+    //express as a duration
+    const diffDuration: any = moment.duration(diff);
+
+    // display
+    let days = Math.abs(diffDuration.days());
+    let hours = Math.abs(diffDuration.hours());
+    let mintues = Math.abs(diffDuration.minutes());
+    let seconds = Math.abs(diffDuration.seconds());
+
+    return Math.abs((diffDuration.valueOf() / 1000) / 60)
 
 }

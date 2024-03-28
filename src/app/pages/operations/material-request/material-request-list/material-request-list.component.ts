@@ -65,7 +65,7 @@ export class MaterialRequestListComponent implements OnInit {
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'assemblyNumber', headerName: 'Assembly Number', filter: 'agMultiColumnFilter' },
     { field: 'pickList', headerName: 'Pick List', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-    { field: 'lineNumber', headerName: 'Line Number', filter: 'agMultiColumnFilter' },
+    { field: 'lineNumber', headerName: 'Line Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'dueDate', headerName: 'Due Date', filter: 'agMultiColumnFilter' },
     {
       field: 'priority', headerName: 'Priority', filter: 'agMultiColumnFilter', cellDataType: 'text'
@@ -102,7 +102,11 @@ export class MaterialRequestListComponent implements OnInit {
     }
   ]
 
-  query = '';
+  search() {
+    this.gridApi.setGridOption('quickFilterText', this.query);
+  }
+
+  query = null;
 
   title = 'Material Request List';
 

@@ -149,4 +149,37 @@ export class ShippingRequestEditComponent {
     }
   }
 
+  onPrint() {
+    setTimeout(() => {
+      var printContents = document.getElementById('print').innerHTML;
+      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      popupWin.document.open();
+
+      popupWin.document.write(`
+      <html>
+        <head>
+          <title>Material Request Picking</title>
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+          <style>          
+          @page {
+            size: portrait;
+            padding: 5 !important; 
+          }
+          </style>
+        </head>
+        <body onload="window.print();window.close()">${printContents}</body>
+      </html>`
+      );
+
+      popupWin.document.close();
+
+      popupWin.onfocus = function () {
+        setTimeout(function () {
+          popupWin.focus();
+          popupWin.document.close();
+        }, 300);
+      };
+    }, 200);
+  }
+
 }

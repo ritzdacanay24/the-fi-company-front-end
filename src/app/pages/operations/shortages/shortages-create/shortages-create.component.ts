@@ -66,7 +66,11 @@ export class ShortagesCreateComponent {
       this.toastrService.success('Successfully Created');
 
       if (submitAnother) {
-        this.form.reset()
+        this.form.reset({
+          createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+          createdBy: this.authenticationService.currentUserValue.id,
+          active_line: 1,
+        })
       } else {
         this.router.navigate([NAVIGATION_ROUTE.EDIT], { queryParamsHandling: 'merge', queryParams: { id: insertId } });
       }

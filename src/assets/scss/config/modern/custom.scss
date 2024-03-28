@@ -25,14 +25,19 @@ File: Custom Css File
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
 
-.tasks-board:has(.center-task) {
-    display: unset !important;
-    justify-content: center;
-    width:500px;
+@media (min-width: 768px) {
+    :is([data-layout=vertical], [data-layout=semibox])[data-sidebar-size=sm] {
+         min-height: unset; 
+    }
 }
 
-.tasks-board:has(.center-task) > .tasks-list {
-    min-width:400px;
+.ng-select .ng-select-container {
+    min-height: 38px;
+}
+
+.center-task {
+    min-width: 400px !important;
+    overflow: hidden;
 }
 
 .form-select:focus {

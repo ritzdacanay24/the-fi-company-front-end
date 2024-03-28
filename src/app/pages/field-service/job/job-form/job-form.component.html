@@ -287,9 +287,8 @@
           </div>
           <div class="col-md-2 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('zip_code')">Zip Code</label>
-            <input type="tel" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
-              [ngClass]="formClassJob('zip_code')" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000"
-              [showMaskTyped]="true">
+            <input type="text" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
+              [ngClass]="formClassJob('zip_code')" >
           </div>
         </div>
 
@@ -464,7 +463,8 @@
 
 
         <ng-template [ngIf]="id">
-          <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-7">
+          <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center"
+            ngbScrollSpyFragment="items-7">
             <i class="mdi mdi-clipboard-text-play-outline me-2"></i>
             Invoice
           </h4>

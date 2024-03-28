@@ -11,4 +11,9 @@ export class WorkOrderRoutingService {
     getDataByItem(partNumber: string): Observable<any> {
         return this.http.get<any>(`/work_order_routing/work_order_routing?ReadSingle=${partNumber}`);
     }
+    getRoutingByWoNumber(wo_nbr: string): Observable<any> {
+        return this.http.get<any>(`/work_order_routing/getRoutingByWoNumber?wo_nbr=${wo_nbr}`);
+    }
+
+    
 }

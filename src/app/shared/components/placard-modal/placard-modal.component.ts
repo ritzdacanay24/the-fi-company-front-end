@@ -96,7 +96,8 @@ export class PlacardModalComponent {
                     customer_part_number: data.SOD_CUSTPART || null,
                     po_number: data.SO_PO,
                     eyefi_so_number: data.SOD_NBR,
-                    eyefi_part_number: data.SOD_PART
+                    eyefi_part_number: data.SOD_PART,
+                    customer_co_por_so:data.MISC
                 })
 
             this.isLoading = false;

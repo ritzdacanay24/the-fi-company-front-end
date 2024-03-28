@@ -6,6 +6,7 @@ import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-w
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import moment from 'moment';
+import { AutosizeModule } from 'ngx-autosize';
 import { ControlsOf } from 'src/assets/js/util/_formGroup';
 
 @Component({
@@ -14,12 +15,13 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
         SharedModule,
         ReactiveFormsModule,
         NgSelectModule,
-        QadWoSearchComponent
+        QadWoSearchComponent,
+        AutosizeModule
     ],
-    selector: 'app-kanban-form',
-    templateUrl: './kanban-form.component.html',
+    selector: 'app-kanban-config-form',
+    templateUrl: './kanban-config-form.component.html',
 })
-export class KanbanFormComponent {
+export class KanbanConfigFormComponent {
 
     constructor(
         private fb: FormBuilder,
@@ -29,14 +31,13 @@ export class KanbanFormComponent {
     ngOnInit(): void {
         this.getKanbanConfig()
 
-        this.form.get('hot_order').valueChanges.subscribe(val => {
+        this.form.get('name').valueChanges.subscribe(val => {
             if (val) {
-                this.form.get('hot_order').setValue(moment().format('YYYY-MM-DD HH:mm:ss'))
+                this.form.get('value').setValue(val.replace(/ /g,"_")?.toLowerCase())
             } else {
-                this.form.get('hot_order').setValue(null)
+                this.form.get('value').setValue(null)
             }
         });
-
         this.setFormEmitter.emit(this.form);
     }
 
@@ -48,33 +49,19 @@ export class KanbanFormComponent {
         return this.form.controls
     }
 
-    notifyParent($event) {
-        this.form.patchValue({
-            wo_nbr: $event.wo_nbr,
-            due_date: $event.wo_due_date,
-            prod_line: $event.wo_line,
-            qty: $event.wo_qty_ord,
-            item_number: $event.wo_part,
-            item_description: $event.description
-        })
-
-
-    }
-
     states = states;
 
     form = new FormGroup<ControlsOf<any>>({
-        kanban_ID: new FormControl(1),
-        wo_nbr: new FormControl(null),
-        qty: new FormControl(''),
-        due_date: new FormControl(''),
-        so_nbr: new FormControl(''),
-        staging_bay: new FormControl(''),
-        prod_line: new FormControl(''),
-        seq: new FormControl(''),
-        item_number: new FormControl(''),
-        item_description: new FormControl(''),
-        hot_order: new FormControl(null),
+        name: new FormControl(''),
+        queue: new FormControl(null),
+        task_content: new FormControl(null),
+        value: new FormControl(null),
+        disable: new FormControl(null),
+        enable_validation: new FormControl(null),
+        show_column: new FormControl(null),
+        show_data: new FormControl(null),
+        seq: new FormControl(null),
+        description: new FormControl(null),
     });
 
     setBooleanToNumber(key) {

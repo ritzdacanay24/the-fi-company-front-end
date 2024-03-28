@@ -16,6 +16,9 @@ import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.compo
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GraphicsBomModalService } from '../graphics-production/graphics-bom-modal/graphics-bom-modal.component';
+import moment from 'moment';
+import { first } from 'rxjs';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
     standalone: true,
@@ -38,6 +41,7 @@ export class GraphicsDemandComponent implements OnInit {
         public activatedRoute: ActivatedRoute,
         private itemInfoModalService: ItemInfoModalService,
         private graphicsBomModalService: GraphicsBomModalService,
+        private authenticationService: AuthenticationService,
     ) {
     }
 
@@ -82,7 +86,8 @@ export class GraphicsDemandComponent implements OnInit {
             cellRendererParams: {
                 iconName: 'mdi mdi-pencil'
             },
-            cellClass: 'lock-pinned'
+            cellClass: 'lock-pinned',
+            cellDataType: 'text'
         }
         , {
             field: 'part', headerName: 'Part Needed', filter: 'agMultiColumnFilter',
@@ -132,6 +137,7 @@ export class GraphicsDemandComponent implements OnInit {
     gridOptions: GridOptions = {
         ...agGridOptions,
         columnDefs: [],
+        getRowId: data => data?.data.id,
         onGridReady: (params: any) => {
             this.gridApi = params.api;
             this.gridColumnApi = params.columnApi;
@@ -145,7 +151,58 @@ export class GraphicsDemandComponent implements OnInit {
         },
         onFilterChanged: params => this.updateUrl(params),
         onSortChanged: params => this.updateUrl(params),
+        onCellEditingStarted: (event) => { },
+        onCellEditingStopped: (event) => {
+            if (event.oldValue === event.newValue || event.value === undefined) return;
+            this.update(event.data);
+        },
     };
+
+    async update(data: any) {
+        let uniqueId = `${data.sod_nbr}-${data.sod_line}-${data.parentComponent}-${data.part}`;
+
+        let params: any = {
+            createOrUpdate: 1,
+            id: data.checkedId,
+            so: data.sod_nbr,
+            line: data.sod_line,
+            part: data.part,
+            parentComponent: data.parentComponent,
+            uniqueId: uniqueId,
+            poNumber: data.poNumber,
+            checked: data.checked,
+            graphicsWorkOrderNumber: data.graphicsWorkOrderNumber || '',
+            graphicsSalesOrder: data.graphicsSalesOrder || '',
+            woNumber: data.woNumber,
+            createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+            createdBy: this.authenticationService.currentUserValue.id,
+            active: 1,
+            lastModBy: this.authenticationService.currentUserValue.id,
+            lastModDate: moment().format('YYYY-MM-DD HH:mm:ss')
+        }
+
+        /**
+         *  Save data to database
+        */
+        try {
+            this.gridApi.showLoadingOverlay()
+            let res: any = await this.api.saveGraphicsDemand(params)
+            var rowNode = this.gridApi.getRowNode(data.id);
+            rowNode.data.checked = data.checked;
+            rowNode.data.checkedId = parseFloat(res.idLast)
+            rowNode.data.graphicsWorkOrderNumber = res.graphicsWorkOrderNumber;
+            rowNode.data.graphicsStatus = res.graphicsStatus;
+            rowNode.data.poEnteredBy = this.authenticationService.currentUserValue.full_name
+
+            this.gridApi.applyTransaction({ update: [rowNode.data] });
+            this.gridApi.hideOverlay()
+        } catch (err) {
+            this.gridApi.hideOverlay()
+
+        }
+
+
+    }
 
     updateUrl = (params) => {
         let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);

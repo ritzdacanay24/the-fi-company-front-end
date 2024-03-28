@@ -20,33 +20,46 @@
 
     <div class="row">
         <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
-            <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter name"
-                [ngClass]="{ 'is-invalid': submitted && f['qty'].errors }" />
+            <label class="form-label" [ngClass]="formValidator('item_number')">Item Number</label>
+            <input type="text" class="form-control" name="item_number" formControlName="item_number"
+                placeholder="Enter item" [ngClass]="{ 'is-invalid': submitted && f['item_number'].errors }" />
         </div>
     </div>
 
     <div class="row">
         <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('item_description')">Item Description</label>
+            <input type="text" class="form-control" name="item_description" formControlName="item_description"
+                placeholder="Enter description"
+                [ngClass]="{ 'is-invalid': submitted && f['item_description'].errors }" />
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
+            <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty"
+                [ngClass]="{ 'is-invalid': submitted && f['qty'].errors }" />
+        </div>
+        <div class="col mb-3">
             <label class="form-label" [ngClass]="formValidator('due_date')">Due Date</label>
-            <input type="date" class="form-control" name="due_date" formControlName="due_date" placeholder="Enter name"
-                [ngClass]="{ 'is-invalid': submitted && f['due_date'].errors }" />
+            <input type="date" class="form-control" name="due_date" formControlName="due_date"
+                placeholder="Enter due date" [ngClass]="{ 'is-invalid': submitted && f['due_date'].errors }" />
         </div>
     </div>
 
     <div class="row">
         <div class="col mb-3">
             <label class="form-label" [ngClass]="formValidator('so_nbr')">So Number</label>
-            <input type="text" class="form-control" name="so_nbr" formControlName="so_nbr" placeholder="Enter name"
+            <input type="text" class="form-control" name="so_nbr" formControlName="so_nbr" placeholder="Enter so number"
                 [ngClass]="{ 'is-invalid': submitted && f['so_nbr'].errors }" />
         </div>
-    </div>
-
-    <div class="row">
         <div class="col mb-3">
             <label class="form-label" [ngClass]="formValidator('staging_bay')">Staging Bay</label>
             <input type="text" class="form-control" name="staging_bay" formControlName="staging_bay"
-                placeholder="Enter name" [ngClass]="{ 'is-invalid': submitted && f['staging_bay'].errors }" />
+                placeholder="Enter so number" placeholder="Enter staging bay"
+                [ngClass]="{ 'is-invalid': submitted && f['staging_bay'].errors }" />
         </div>
     </div>
 
@@ -54,8 +67,13 @@
         <div class="col mb-3">
             <label class="form-label" [ngClass]="formValidator('prod_line')">Prod Line</label>
             <input type="text" class="form-control" name="prod_line" formControlName="prod_line"
-                placeholder="Enter name" [ngClass]="{ 'is-invalid': submitted && f['prod_line'].errors }" />
+                placeholder="Enter prod line" [ngClass]="{ 'is-invalid': submitted && f['prod_line'].errors }" />
         </div>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault"  formControlName="hot_order">
+        <label class="form-check-label" for="flexSwitchCheckDefault">Hot Order</label>
     </div>
 
 </form>

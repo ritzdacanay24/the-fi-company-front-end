@@ -11,9 +11,26 @@ import { WebsocketService } from '@app/core/services/websocket.service';
 
 const GRAPHICS_PRODUCTION = 'GRAPHICS PRODUCTION';
 
+import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+    standalone: true,
+    name: 'filterlist'
+})
+export class FilterlistPipe implements PipeTransform {
+
+    transform(value: any, args?: any): any {
+        if (!args)
+            return value;
+        return value.filter(
+            item => item.graphicsWorkOrder.toString().indexOf(args.toString()) > -1
+        );
+    }
+}
+
 @Component({
     standalone: true,
-    imports: [SharedModule],
+    imports: [SharedModule, FilterlistPipe],
     selector: 'app-graphics-production',
     templateUrl: './graphics-production.component.html',
     styleUrls: ['./graphics-production.component.scss'],
@@ -48,6 +65,8 @@ export class GraphicsProductionComponent implements OnInit {
     ngOnInit(): void {
         this.getData()
     }
+
+    searchWorkOrder = ""
 
     send() {
         this.websocketService.next({

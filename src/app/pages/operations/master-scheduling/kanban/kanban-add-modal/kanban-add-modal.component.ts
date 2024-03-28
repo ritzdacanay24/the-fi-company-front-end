@@ -10,6 +10,7 @@ import { KanbanApiService } from '@app/core/api/kanban';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
 import moment from 'moment';
+import { QadService } from '@app/core/api/qad/sales-order-search.service';
 
 @Injectable({
     providedIn: 'root'
@@ -21,9 +22,10 @@ export class KanbanAddModalService {
         public modalService: NgbModal
     ) { }
 
-    open(id: string) {
-        this.modalRef = this.modalService.open(KanbanAddModalComponent, { size: 'md', fullscreen: false, backdrop: 'static', scrollable: true, centered: true, keyboard: false });
+    open(id: string, wo_nbr?) {
+        this.modalRef = this.modalService.open(KanbanAddModalComponent, { size: 'lg' });
         this.modalRef.componentInstance.id = id;
+        this.modalRef.componentInstance.wo_nbr = wo_nbr;
         return this.modalRef;
     }
 
@@ -43,11 +45,13 @@ export class KanbanAddModalComponent {
         private addressInfoService: AddressInfoService,
         private ngbActiveModal: NgbActiveModal,
         private kanbanConfigApiService: KanbanConfigApiService,
-        private kanbanApiService: KanbanApiService
+        private kanbanApiService: KanbanApiService,
+        private qadService: QadService
     ) { }
 
     @Input() public id: any;
     @Input() public data: any;
+    @Input() public wo_nbr: any;
 
     isLoading = true;
     queues
@@ -59,6 +63,7 @@ export class KanbanAddModalComponent {
             this.data = await this.kanbanApiService.getById(this.id)
             this.isLoading = false;
         } catch (err) {
+            this.isLoading = false;
         }
     }
 
@@ -76,7 +81,32 @@ export class KanbanAddModalComponent {
     }
 
     ngOnInit() {
-        this.getData();
+
+        if (this.wo_nbr) {
+            this.getWo()
+        } else {
+            this.getData();
+        }
+    }
+
+    async getWo() {
+        try {
+            this.isLoading = true;
+
+            let data: any = await this.qadService.asyncSearchWoNumber(this.wo_nbr)
+            data = data[0]
+            this.form.patchValue({
+                wo_nbr: data.wo_nbr,
+                due_date: data.wo_due_date,
+                prod_line: data.wo_line,
+                qty: data.wo_qty_ord,
+                item_number: data.wo_part,
+                item_description: data.description
+            })
+            this.isLoading = false;
+        } catch (err) {
+            this.isLoading = false;
+        }
     }
 
     dismiss() {

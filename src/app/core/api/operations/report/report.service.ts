@@ -20,6 +20,9 @@ export class ReportService {
   getFgValueReport = async () =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/JiaxingLocationValue/read?name=FG`));
 
+  getJxValueReport = async () =>
+    await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/JiaxingLocationValue/read?name=JX01`));
+
   getLasVegasRawMaterial = async () =>
     await firstValueFrom(this.http.get<any[]>(`https://dashboard.eye-fi.com/server/Api/inventory_by_prod_line/las_vegas_raw_material`));
 

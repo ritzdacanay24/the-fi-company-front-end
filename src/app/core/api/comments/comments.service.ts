@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 let url = 'comments';
 
@@ -22,5 +22,8 @@ export class CommentsService extends DataService<any> {
     return this.http.post(`https://dashboard.eye-fi.com/server/Api/Comment/index`, params).toPromise()
   }
 
+  deleteComment(comment: any): Observable<any> {
+    return this.http.post(`/Comment/index`, comment)
+  }
 
 }

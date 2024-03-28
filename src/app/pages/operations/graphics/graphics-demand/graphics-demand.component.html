@@ -13,6 +13,10 @@
                 </div>
 
                 <div class="ms-3">
+                    <button class="btn btn-light" (click)="getData()">Refresh</button>
+                </div>
+
+                <div class="ms-3">
                     <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
                         [pageId]="pageId" [value]="this.tableList?.currentView?.id"></app-grid-settings>
                 </div>

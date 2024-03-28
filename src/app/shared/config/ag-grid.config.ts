@@ -21,13 +21,13 @@ export const agGridOptions: GridOptions = {
     enableRowGroup: true,
     enablePivot: false,
     floatingFilter: true,
-    filterParams: {
-      buttons: ['reset'],
-      inRangeInclusive: true,
-      debounceMs: 200,
-      applyMiniFilterWhileTyping: true,
-      defaultToNothingSelected: true
-    },
+    // filterParams: {
+    //   buttons: ['reset'],
+    //   inRangeInclusive: true,
+    //   debounceMs: 200,
+    //   applyMiniFilterWhileTyping: true,
+    //   defaultToNothingSelected: true
+    // },
     cellRenderer: (params: any) => {
       if (params.valueFormatted) return params.valueFormatted
       return params.value !== null && params.value !== '' ? params.value : '-'

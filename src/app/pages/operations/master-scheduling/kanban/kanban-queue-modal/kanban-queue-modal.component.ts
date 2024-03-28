@@ -20,7 +20,7 @@ export class KanbanQueueModalService {
   ) { }
 
   open(data: string) {
-    this.modalRef = this.modalService.open(KanbanQueueModalComponent, { size: 'md', fullscreen: false, backdrop: 'static', scrollable: true, centered: true, keyboard: false });
+    this.modalRef = this.modalService.open(KanbanQueueModalComponent, { size: 'md' });
     this.modalRef.componentInstance.data = data;
     return this.modalRef;
   }
@@ -43,6 +43,7 @@ export class KanbanQueueModalComponent {
     private kanbanConfigApiService: KanbanConfigApiService,
     private kanbanApiService: KanbanApiService,
     private authenticationService: AuthenticationService
+
   ) { }
 
   @Input() public data: any;
@@ -50,11 +51,13 @@ export class KanbanQueueModalComponent {
   isLoading = true;
   queues
   currentSelection
+  staging_bay = ''
 
   async getKanbanConfig() {
     this.isLoading = true;
     try {
       this.queues = await this.kanbanConfigApiService.getAll()
+      this.checkNextSelectQueue()
       this.isLoading = false;
     } catch (err) {
     }
@@ -62,12 +65,21 @@ export class KanbanQueueModalComponent {
 
   getData = async () => {
     this.queues = await this.kanbanConfigApiService.getById(this.data.id)
+
   }
 
+  checkNextSelectQueue() {
+    for (let i = 0; i < this.queues.length; i++) {
+      if (this.data.kanban_ID == this.queues[i].id) {
+        this.currentSelection = this.queues[i + 1].id
+      }
+    }
+
+  }
 
   ngOnInit() {
-    console.log(this.data)
     this.currentSelection = this.data.kanban_ID;
+    this.staging_bay = this.data.staging_bay;
     this.getKanbanConfig();
   }
 
@@ -80,26 +92,43 @@ export class KanbanQueueModalComponent {
   }
 
   async onSubmit() {
+    if (this.staging_bay == '' && this.currentSelection == '3') {
+      alert('Enter staging bay')
+      return;
+    }
+
     this.isLoading = true;
+
 
     //picking
     if (this.data.kanban_ID == 2) {
-      let e: any = await this.checkIfPickComplete(this.data.wo_nbr);
-      if (e?.results.total !== 0 && e?.results_wr_status != 'C' && e?.checkValidation?.enable_validation) {
-        alert('Work Order is not pick complete and wr routing is not completed')
+      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 10);
+      if (e?.errorMessage) {
+        alert(e?.errorMessage)
+        this.isLoading = false;
+        return;
+      }
+    } else if (this.data.kanban_ID == 3) {
+      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 20);
+      if (e?.errorMessage) {
+        alert(e?.errorMessage)
         this.isLoading = false;
         return;
       }
     }
 
     try {
-      await this.kanbanApiService.moveQueue(this.data.id, {
+      await this.kanbanApiService.update(this.data.id, {
+        staging_bay: this.staging_bay,
+      })
+
+      let d = await this.kanbanApiService.moveQueue(this.data.id, {
         kanban_ID: this.currentSelection,
-        created_by: this.authenticationService.currentUserValue.id
+        created_by: this.authenticationService.currentUserValue.id,
       })
       this.isLoading = false;
 
-      this.close({ ...this.data, kanban_ID: this.currentSelection })
+      this.close(d)
     } catch (err) {
       this.isLoading = false;
 
@@ -108,8 +137,8 @@ export class KanbanQueueModalComponent {
   }
 
   //hardstops 
-  async checkIfPickComplete(wo_nbr) {
-    return await this.kanbanApiService.checkIfPickComplete(wo_nbr);
+  async checkIfPickComplete(wo_nbr, route) {
+    return await this.kanbanApiService.checkIfPickComplete(wo_nbr, route);
   }
 
 }

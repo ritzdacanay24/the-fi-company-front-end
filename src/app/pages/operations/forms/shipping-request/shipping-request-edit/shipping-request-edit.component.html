@@ -17,6 +17,7 @@
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end" *ngIf="id"> ID: {{id}} </h4>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
@@ -24,7 +25,8 @@
         <!-- Light Alert -->
         <div class="alert alert-info alert-dismissible material-shadow alert-label-icon label-arrow fade show"
           role="alert" *ngIf="data?.active == 0">
-          <i class=" ri-error-warning-line label-icon"></i><strong>Heads up!</strong> - This request is no longer active.
+          <i class=" ri-error-warning-line label-icon"></i><strong>Heads up!</strong> - This request is no longer
+          active.
         </div>
 
 
@@ -70,8 +72,88 @@
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-light ms-auto me-2" (click)="onPrint()"> Print </button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Submit</button>
       </div>
     </div>
   </div>
+</div>
+
+
+<div class="print d-none d-print-block" id="print">
+  <h4 class="mb-4">Shipping Request #{{data?.id}}</h4>
+  <table class="table table-bordered" style="font-size:16px">
+    <tr>
+      <th>Requestor</th>
+      <td>{{data?.requestorName}}</td>
+    </tr>
+    <tr>
+      <th>Email</th>
+      <td>{{data?.emailAddress}}</td>
+    </tr>
+    <tr>
+      <th>Company Name</th>
+      <td>{{data?.companyName}}</td>
+    </tr>
+    <tr>
+      <th>Street Address</th>
+      <td>{{data?.streetAddress}}</td>
+    </tr>
+    <tr>
+      <th>City</th>
+      <td>{{data?.city}}</td>
+    </tr>
+    <tr>
+      <th>State</th>
+      <td>{{data?.state}}</td>
+    </tr>
+    <tr>
+      <th>Zip Code</th>
+      <td>{{data?.zipCode}}</td>
+    </tr>
+    <tr>
+      <th>Contact Name</th>
+      <td>{{data?.contactName}}</td>
+    </tr>
+    <tr>
+      <th>Phone Number</th>
+      <td>{{data?.phoneNumber}}</td>
+    </tr>
+    <tr>
+      <th>Freight Charges</th>
+      <td>{{data?.freightCharges}}</td>
+    </tr>
+    <tr>
+      <th>Thrid Party Account Number</th>
+      <td>{{data?.thridPartyAccountNumber}}</td>
+    </tr>
+    <tr>
+      <th>Service Type</th>
+      <td>{{data?.serviceType}}</td>
+    </tr>
+    <tr>
+      <th>Service Type Name</th>
+      <td>{{data?.serviceTypeName}}</td>
+    </tr>
+    <tr>
+      <th>Saturday Delivery</th>
+      <td>{{data?.saturdayDelivery}}</td>
+    </tr>
+    <tr>
+      <th>Cost</th>
+      <td>{{data?.cost}}</td>
+    </tr>
+    <tr>
+      <th>Send Tracking Number To</th>
+      <td>{{data?.sendTrackingNumberTo}}</td>
+    </tr>
+    <tr>
+      <th style="min-width:300px">Comments</th>
+      <td>{{data?.comments}}</td>
+    </tr>
+    <tr>
+      <th>Tracking Number</th>
+      <td>{{data?.trackingNumber}}</td>
+    </tr>
+  </table>
 </div>

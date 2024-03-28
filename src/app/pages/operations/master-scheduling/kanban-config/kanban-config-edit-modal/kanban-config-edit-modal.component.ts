@@ -3,18 +3,15 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AddressInfoService } from '@app/core/api/address-info/address-info.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
-import moment from 'moment';
+import { KanbanConfigFormComponent } from '../kanban-config-form/kanban-config-form.component';
 
 @Injectable({
     providedIn: 'root'
 })
-export class KanbanEditModalService {
+export class KanbanConfigEditModalService {
     modalRef: any;
 
     constructor(
@@ -22,7 +19,7 @@ export class KanbanEditModalService {
     ) { }
 
     open(id: string) {
-        this.modalRef = this.modalService.open(KanbanEditModalComponent, { size: 'lg'});
+        this.modalRef = this.modalService.open(KanbanConfigEditModalComponent, { size: 'lg' });
         this.modalRef.componentInstance.id = id;
         return this.modalRef;
     }
@@ -31,39 +28,35 @@ export class KanbanEditModalService {
 
 @Component({
     standalone: true,
-    imports: [SharedModule, KanbanFormComponent],
-    selector: 'app-kanban-edit-modal',
-    templateUrl: `./kanban-edit-modal.component.html`,
+    imports: [SharedModule, KanbanConfigFormComponent],
+    selector: 'app-kanban-config-edit-modal',
+    templateUrl: `./kanban-config-edit-modal.component.html`,
     styleUrls: []
 })
 
-export class KanbanEditModalComponent {
+export class KanbanConfigEditModalComponent {
 
     constructor(
-        private addressInfoService: AddressInfoService,
         private ngbActiveModal: NgbActiveModal,
         private kanbanConfigApiService: KanbanConfigApiService,
-        private kanbanApiService: KanbanApiService
+        private kanbanApiService: KanbanApiService,
     ) { }
 
     @Input() public id: any;
     @Input() public data: any;
 
     isLoading = true;
-    queues
-    currentSelection
 
     async getData() {
         this.isLoading = true;
         try {
-            this.data = await this.kanbanApiService.getById(this.id)
+            this.data = await this.kanbanConfigApiService.getById(this.id)
             this.form.patchValue(this.data)
-            this.form.get('wo_nbr').disable()
             this.isLoading = false;
         } catch (err) {
+            this.isLoading = false;
         }
     }
-
 
     form: any;
 
@@ -74,7 +67,10 @@ export class KanbanEditModalComponent {
     }
 
     ngOnInit() {
-        this.getData();
+        console.log(this.id)
+        if (this.id) {
+            this.getData();
+        }
     }
 
     dismiss() {
@@ -88,13 +84,11 @@ export class KanbanEditModalComponent {
     async onSubmit() {
         this.isLoading = true;
         try {
-            await this.kanbanApiService.update(this.id, this.form.value)
+            await this.kanbanConfigApiService.update(this.id, this.form.value)
             this.isLoading = false;
-
-            this.close(this.form.value)
+            this.close(this.data)
         } catch (err) {
             this.isLoading = false;
-
             this.data = { ...this.data }
         }
     }

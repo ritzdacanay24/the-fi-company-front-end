@@ -5,8 +5,8 @@
         <div class="d-flex align-items-center">
 
           <div class="form-icon me-3">
-            <input type="search" class="form-control form-control-icon" style="width:250px"
-              (ngModelChange)="this.gridApi.setGridOption('quickFilterText', query);" [(ngModel)]="query" placeholder="Search">
+            <input type="text" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="search()" [(ngModel)]="query" placeholder="Search">
             <i class="ri-search-2-line"></i>
           </div>
 

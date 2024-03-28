@@ -32,4 +32,9 @@ export class GraphicsService extends DataService<any> {
         return firstValueFrom(this.http.get<any>(`Graphics/GraphicsSearch/graphics_search?ReadAll&dateFrom=${dateFrom}&dateTo=${dateTo}`));
     }
 
+    saveGraphicsDemand(params: any) {
+        return firstValueFrom(this.http.post(`/Graphics/graphicsDemand`, params));
+    }
+
+
 }

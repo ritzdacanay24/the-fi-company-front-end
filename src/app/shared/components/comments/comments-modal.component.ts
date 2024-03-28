@@ -19,6 +19,7 @@ import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
 
 
 import { Pipe, PipeTransform } from '@angular/core';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Pipe({
   standalone: true,
@@ -124,7 +125,40 @@ export class CommentsModalComponent implements OnInit {
 
   url
 
-  deleteComment(id, arrayData?) { }
+  async deleteComment(id, childRow?) {
+
+    const { value: accept } = await SweetAlert.confirm();
+
+    if (!accept) return;
+    this.isLoading = true;
+
+    let params = {
+      deleteComment: 1,
+      active: 0,
+      id: id
+    }
+    this.commentsService.deleteComment(params).subscribe(
+      (data: any) => {
+        //this.commentsWsService.sendMessage(saveParams, null, 'New comment added');
+
+        if (childRow) {
+          var index1 = childRow.map(x => {
+            return x.id;
+          }).indexOf(id);
+          childRow.splice(index1, 1);
+        } else {
+          var index = this.results1.map(x => {
+            return x.id;
+          }).indexOf(id);
+          this.results1.splice(index, 1);
+        }
+
+        this.isLoading = false;
+      }, error => {
+        this.isLoading = false;
+      });
+
+  }
 
   quillConfig: QuillModules = {};
 
@@ -169,7 +203,7 @@ export class CommentsModalComponent implements OnInit {
   public getData = async () => {
     try {
       this.isLoading = true;
-      let results = await this.commentsService.find({ orderNum: this.orderNum, type: this.type })
+      let results = await this.commentsService.find({ orderNum: this.orderNum, type: this.type, active: 1 })
       this.sortComments(results)
       //this.results1 = results
       this.isLoading = false;
@@ -224,8 +258,6 @@ export class CommentsModalComponent implements OnInit {
     } catch (err) {
       this.isLoading = false;
     }
-
-
   }
 }
 

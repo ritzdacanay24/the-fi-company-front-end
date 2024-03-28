@@ -61,7 +61,7 @@ export class JxValueReportComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     columnDefs: [],
-    getRowId: data => data.data.id,
+    // getRowId: data => data.data.id,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
       this.gridColumnApi = params.columnApi;
@@ -92,7 +92,7 @@ export class JxValueReportComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay()
-      this.data = await this.api.getFgValueReport();
+      this.data = await this.api.getJxValueReport();
       this.gridApi?.hideOverlay();
 
       this.sumTotal(this.data)

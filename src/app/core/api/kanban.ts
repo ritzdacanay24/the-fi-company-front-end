@@ -17,8 +17,8 @@ export class KanbanApiService extends DataService<any> {
     async getProduction() {
         return await firstValueFrom(this.http.get(`${url}/production`))
     }
-    async checkIfPickComplete(wo_nbr) {
-        return await firstValueFrom(this.http.get(`${url}/checkIfPickComplete?wo_nbr=${wo_nbr}`))
+    async checkIfPickComplete(wo_nbr, route?) {
+        return await firstValueFrom(this.http.get(`${url}/checkIfPickComplete?wo_nbr=${wo_nbr}&route=${route}`))
     }
 
     async updateMass(data) {
@@ -29,5 +29,4 @@ export class KanbanApiService extends DataService<any> {
         return await firstValueFrom(this.http.put(`${url}/moveQueue?id=${id}`, data))
     }
 
-    
 }
