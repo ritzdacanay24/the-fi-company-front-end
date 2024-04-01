@@ -4,7 +4,6 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { WorkOrderPickSheetModalService } from '../work-order-pick-sheet-modal/work-order-pick-sheet-modal.component';
@@ -18,11 +17,9 @@ import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-render
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { PickSheetRendererComponent } from '@app/shared/ag-grid/pick-sheet-renderer/pick-sheet-renderer.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
-import { CheckboxRendererComponent } from '@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component';
 import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 import { KanbanAddModalService } from '../kanban/kanban-add-modal/kanban-add-modal.component';
 import { WebsocketService } from '@app/core/services/websocket.service';
-import { KANBAN } from '../kanban/kanban.component';
 import { KanbanRendererComponent } from '@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component';
 
 const MASTER_PRODUCTION = 'MASTER_PRODUCTION';

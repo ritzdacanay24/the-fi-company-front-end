@@ -9,7 +9,6 @@ import { NgSelectModule } from '@ng-select/ng-select'
 import { Pipe, PipeTransform } from '@angular/core';
 import { LazyLoadImageModule } from 'ng-lazyload-image';
 import { AgGridModule } from 'ag-grid-angular'
-import printJS from 'print-js';
 
 // Angular
 import { DomSanitizer, SafeHtml, SafeStyle, SafeScript, SafeUrl, SafeResourceUrl } from '@angular/platform-browser';
@@ -141,7 +140,7 @@ export class CreditCardComponent implements OnInit {
     this.printedReceipts = [row]
 
     if (!this.isPdf(row.link)) {
-      printJS({ printable: row.link, type: 'pdf', showModal: true })
+      // printJS({ printable: row.link, type: 'pdf', showModal: true })
       // let win = window.open(row.link, "_blank")
 
       // win.focus();

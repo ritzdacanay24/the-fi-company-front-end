@@ -24,7 +24,7 @@
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="goToComments"
-          (click)="goToComments()">View Comments</button>
+          (click)="goToComments()">View Comments ({{comments?.length}})</button>
         <button class="btn btn-primary btn-sm shadow-none bg-primary rounded border-0 me-2 me-auto"
           *ngIf="scheduleRequest" (click)="scheduleRequest()" [disabled]="this.form.dirty">
           {{this.form.dirty ? 'Save before scheduling' : 'Schedule/View Request'}}
@@ -94,8 +94,9 @@
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <!-- Buttons with Label -->
 
-        <button type="button" class="btn btn-light btn-label waves-effect waves-light  ms-auto me-2"
-          (click)="onPrint()" [disabled]="this.form.dirty"><i class="ri-printer-line label-icon align-middle fs-16 me-2"></i> {{this.form.dirty ? 'Save before printing' : 'Print'}}</button>
+        <button type="button" class="btn btn-light btn-label waves-effect waves-light  ms-auto me-2" (click)="onPrint()"
+          [disabled]="this.form.dirty"><i class="ri-printer-line label-icon align-middle fs-16 me-2"></i>
+          {{this.form.dirty ? 'Save before printing' : 'Print'}}</button>
 
         <button class="btn btn-primary" [disabled]="isLoading || schedulerInfo || disabled" (click)="onSubmit()">Update
           Request</button>
@@ -177,4 +178,22 @@
       <td>{{data?.type_of_sign}}</td>
     </tr>
   </table>
+
+  <div class="mb-5">
+    Special Instructions: <br>
+    {{data?.special_instruction}}
+  </div>
+
+  <div>
+    <p class="mb-2">Comment History:</p>
+
+    <div *ngFor="let row of comments">
+      <blockquote class="blockquote p-2">
+        <p class="mb-3 tx-14">{{row.comment}}</p>
+        <small>Created Date: {{row.created_date}}</small> <br />
+        <small>Created By: {{row.name || 'No name set'}}</small>
+      </blockquote>
+    </div>
+
+  </div>
 </div>

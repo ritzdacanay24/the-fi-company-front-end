@@ -21,27 +21,31 @@
 </div>
 
 
-<div class="modal-body p-0" *ngIf="!isLoading">
+<div class="modal-body" *ngIf="!isLoading">
 
-    <h4 class="modal-title p-2 ps-3">Work Order Info</h4>
+    <div class="p-0 mb-3">
+        <h4 class="modal-title mb-2">Work Order Info</h4>
 
-    <div class="row p-3 g-0">
-        <div class="col-lg-6 g-0">
-            <ul class="list-group">
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Work Order #:</b> {{workOrderNumber}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part #:</b> {{mainDetails.wo_part}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part Description:</b> {{mainDetails.PT_DESC1}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Due Date:</b> {{mainDetails.wo_due_date}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Qty Ordered:</b> {{mainDetails.wo_qty_ord}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Status:</b> {{mainDetails.wo_status}}</li>
-                <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Remarks:</b> {{mainDetails.wo_rmks}}</li>
-            </ul>
-        </div>
-        <div class="col-lg-6 text-end g-0">
-            <ul class="list-group">
-                <li class="list-group-item border-0 p-1"><b>Percent Completed</b></li>
-                <li class="list-group-item border-0 p-1">{{percentComplete | number : '1.2-2'}}%</li>
-            </ul>
+        <div class="row g-0">
+            <div class="col-lg-6 g-0">
+                <ul class="list-group">
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Work Order #:</b> {{workOrderNumber}}</li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part #:</b> {{mainDetails.wo_part}}</li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Part Description:</b> {{mainDetails.PT_DESC1}}
+                    </li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Due Date:</b> {{mainDetails.wo_due_date}}</li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Qty Ordered:</b> {{mainDetails.wo_qty_ord}}
+                    </li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Status:</b> {{mainDetails.wo_status}}</li>
+                    <li class="list-group-item border-0 p-1 mb-0 pb-0"><b>Remarks:</b> {{mainDetails.wo_rmks}}</li>
+                </ul>
+            </div>
+            <div class="col-lg-6 text-end g-0">
+                <ul class="list-group">
+                    <li class="list-group-item border-0 p-1"><b>Percent Completed</b></li>
+                    <li class="list-group-item border-0 p-1">{{percentComplete | number : '1.2-2'}}%</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -49,8 +53,8 @@
 
         <h4 class="text-center p-3" *ngIf="!isLoading && !mainDetails">Sorry, no record found.</h4>
 
-        <ag-grid-angular *ngIf="details.length > 0" style="width: 100%;"
-            class="ag-theme-quartz rounded-0" [gridOptions]="gridOptions" [rowData]="details" [domLayout]="'autoHeight'">
+        <ag-grid-angular *ngIf="details.length > 0" style="width: 100%;" class="ag-theme-quartz rounded-0"
+            [gridOptions]="gridOptions" [rowData]="details" [domLayout]="'autoHeight'">
         </ag-grid-angular>
 
         <div id="printSheet" class="d-none d-print-block">

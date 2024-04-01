@@ -26,13 +26,13 @@ export class MenuComponent implements OnInit {
     {
       name: "Las Vegas",
       children: [
+        { name: 'Operations Dashboard', link: '/dashboard/operations' },
         { name: 'Field Service Dashboard', link: '/dashboard/field-service' },
-        { name: 'FS App', link: 'https://dashboard.eye-fi.com/dist/fsm-mobile/assignments' },
         { name: 'Quality Dashboard', link: '/dashboard/quality' },
-        { name: 'Operations Dashboard', link: 'https://dashboard.eye-fi.com/dist/v1/dashboard' },
-        { name: 'Operations Dashboard V1', link: '/dashboard/operations' },
+        { name: 'Shipping Request Form', link: '/dashboard/operations/forms/shipping-request/create' },
         { name: 'Field Service Request Form', link: '/request' },
         { name: 'Quality Incident Request Form', link: '/quality-incident-request' },
+        { name: 'FS App', link: 'https://dashboard.eye-fi.com/dist/fsm-mobile/assignments' },
         { name: 'MRO', link: 'https://mro.swstms.com/users/sign_in' },
       ]
     },

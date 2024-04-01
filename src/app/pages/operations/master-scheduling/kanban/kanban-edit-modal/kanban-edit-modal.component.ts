@@ -59,6 +59,7 @@ export class KanbanEditModalComponent {
             this.data = await this.kanbanApiService.getById(this.id)
             this.form.patchValue(this.data)
             this.form.get('wo_nbr').disable()
+            this.form.get('kanban_ID').disable()
             this.isLoading = false;
         } catch (err) {
         }

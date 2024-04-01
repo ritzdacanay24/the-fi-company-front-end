@@ -19,13 +19,13 @@
                 </div>
 
 
-                <div class="ms-3">
+                <div class="ms-3 me-3">
                     <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
                         [pageId]="pageId" [value]="gridFilterId" [dataRenderered]="dataRenderered"
                         (emitFilter)="emitFilter($event)"></app-grid-filters>
                 </div>
 
-                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer" style="font-size: 14px;"
+                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer ms-3" style="font-size: 14px;"
                     (click)="pastDue()">
                     {{statusCount.pastDue}} Past
                     Due</span>

@@ -1,6 +1,5 @@
 import { Component, Input, OnInit, SimpleChanges, TemplateRef, ViewChild } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
-import { ActivatedRoute } from '@angular/router'
 import { TripExpenseService } from '@app/core/api/field-service/trip-expense.service'
 import { NgbActiveModal, NgbActiveOffcanvas, NgbDropdownModule, NgbNavModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap'
 import { TripExpenseTransactionsService } from '@app/core/api/field-service/trip-expense-transactions'
@@ -11,7 +10,6 @@ import { LazyLoadImageModule } from 'ng-lazyload-image';
 
 import moment from 'moment'
 import { AgGridModule } from 'ag-grid-angular'
-import printJS from 'print-js';
 
 // Angular
 import { DomSanitizer, SafeHtml, SafeStyle, SafeScript, SafeUrl, SafeResourceUrl } from '@angular/platform-browser';
@@ -27,6 +25,7 @@ import { SharedModule } from '@app/shared/shared.module'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util'
 import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
+import printJS from 'print-js'
 
 /**
  * Sanitize HTML
@@ -159,20 +158,6 @@ export class UploadedReceiptComponent implements OnInit {
     this.printedReceipts = [row]
 
     if (!this.isPdf(row.link)) {
-      printJS({ printable: row.link, type: 'pdf', showModal: true })
-      // let win = window.open(row.link, "_blank")
-
-      // win.focus();
-      // win.addEventListener(
-      //   "load",
-      //   () => {
-      //     setTimeout(() => {
-      //       //to give time for the browser to load the pdf
-      //       win.window.print();
-      //     }, 500);
-      //   },
-      //   true
-      // );
 
     } else {
       setTimeout(() => {
@@ -199,15 +184,26 @@ export class UploadedReceiptComponent implements OnInit {
 
     this.printedReceipts = selectedData;
 
-    setTimeout(() => {
-      const printContent = document.getElementById("printDiv");
-      const WindowPrt = window.open('', '');
-      WindowPrt.document.write(printContent.innerHTML);
-      WindowPrt.document.close();
-      WindowPrt.focus();
-      WindowPrt.print();
-      WindowPrt.close();
-    }, 1000);
+    let print = []
+    selectedData.forEach((element) => print.push(element.link));
+
+
+    printJS({
+      printable: print,
+      type: 'image',
+      header: 'FSID: ' + this.fsId,
+      imageStyle: 'width:50%;margin-bottom:20px;'
+    })
+
+    // setTimeout(() => {
+    //   const printContent = document.getElementById("printDiv");
+    //   let WindowPrt = window.open('', '_blank', 'top=0,left=0,height=100%,width=auto');
+    //   WindowPrt.document.write(printContent.innerHTML);
+    //   WindowPrt.document.close();
+    //   WindowPrt.focus();
+    //   WindowPrt.print();
+    //   WindowPrt.close();
+    // }, 0);
 
 
   }
@@ -353,7 +349,7 @@ export class UploadedReceiptComponent implements OnInit {
       this.fsId = data?.fs_scheduler_id
       this.data = await this.tripExpenseService.getByFsId(data?.fs_scheduler_id)
 
-      
+
       this.getTripExenses(this.data)
       this.setColumDef1();
 

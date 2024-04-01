@@ -705,6 +705,7 @@ export class ShippingComponent implements OnInit {
         field: 'misc.lateReasonCode',
         headerName: 'Late Reason Code',
         filter: 'agSetColumnFilter',
+        
         cellRenderer: LateReasonCodeRendererComponent,
         cellRendererParams: {
             onClick: e => {
@@ -760,7 +761,6 @@ export class ShippingComponent implements OnInit {
         }
     },
     { field: 'sod_type', headerName: 'SOD Type', filter: 'agSetColumnFilter' },
-    { field: 'oid_ordered_dateTime', headerName: 'SO Ordered Date & Time', filter: 'agTextColumnFilter' },
     { field: 'sod_per_date', headerName: 'Performance Date', filter: 'agDateColumnFilter' },
     { field: "sod_req_date", headerName: "Request Date", filter: "agDateColumnFilter", filterParams: agGridDateFilter },
     { field: "REQ_DUE_DIFF", headerName: "Request and Due Date Diff", filter: "agMultiColumnFilter" }

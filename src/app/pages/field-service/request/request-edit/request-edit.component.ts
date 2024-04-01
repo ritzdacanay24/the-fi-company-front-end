@@ -22,7 +22,6 @@ import { TechScheduleModalService } from '../../scheduler/tech-schedule/tech-sch
 import { JobModalCreateService } from '../../job/job-modal-create/job-modal-create.component';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
-import fa from '@mobiscroll/angular/dist/js/i18n/fa';
 
 @Component({
   standalone: true,
@@ -53,9 +52,10 @@ export class RequestEditComponent {
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+      this.id = params['request_id'] || params['id'];
       this.addToSchedule = params['addToSchedule']
       this.viewComment = params['viewComment']
+      this.goBackUrl = params['goBackUrl']
     });
 
     if (this.id) this.getData();
@@ -66,6 +66,7 @@ export class RequestEditComponent {
   }
 
   viewComment = false;
+  goBackUrl;
 
   title = "Edit Request";
 
@@ -80,7 +81,11 @@ export class RequestEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    if (this.goBackUrl) {
+      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge' });
+    } else {
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    }
   }
   @Input() goBackToRequest: Function = () => {
     this.addToSchedule = false;

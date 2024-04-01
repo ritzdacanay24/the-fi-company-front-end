@@ -5,6 +5,9 @@ import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { ItemService } from '@app/core/api/operations/item/item.service';
 import { QadPartSearchComponent } from '../qad-part-search/qad-part-search.component';
+import { SalesOrderInfoModalService } from '../sales-order-info-modal/sales-order-info-modal.component';
+import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
+import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
 
 
 @Component({
@@ -27,6 +30,7 @@ export class PartLookupComponent {
     @Output() setData: EventEmitter<any> = new EventEmitter();
     @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
     @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
+    @Output() getDataEmitter: EventEmitter<any> = new EventEmitter();
 
     notifyParent($event) {
         this.partNumber = $event.pt_nbr
@@ -85,7 +89,8 @@ export class PartLookupComponent {
         { field: "po_shipvia", headerName: "Ship Via", filter: "agTextColumnFilter" },
         { field: "po_vend", headerName: "Vendor", filter: "agTextColumnFilter" },
         { field: "pod_qty_ord", headerName: "Ordered Qty", filter: "agTextColumnFilter" },
-        { field: "pod_qty_rcvd", headerName: "Qty Rec", filter: "agTextColumnFilter" }
+        { field: "po_rmks", headerName: "Remarks", filter: "agTextColumnFilter" },
+        { field: "po_buyer", headerName: "Buyer", filter: "agTextColumnFilter" }
     ];
 
     gridApi2: any;
@@ -115,7 +120,14 @@ export class PartLookupComponent {
         { field: "WR_QTY_COMP", headerName: "Qty Completed", filter: "agTextColumnFilter" },
         { field: "WR_QTY_ORD", headerName: "Qty Ordered", filter: "agTextColumnFilter" },
         { field: "WR_STATUS", headerName: "Status", filter: "agTextColumnFilter" },
-        { field: "wr_nbr", headerName: "Work Order #", filter: "agTextColumnFilter" }
+        {
+            field: "wr_nbr", headerName: "Work Order #", filter: "agTextColumnFilter",
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: e => this.workOrderInfoModalService.open(e.rowData.wr_nbr),
+                isLink: true
+            }
+        }
     ];
 
     gridApi3: any;
@@ -144,7 +156,14 @@ export class PartLookupComponent {
      * Demand
      */
     demandcolumnDefs: any = [
-        { field: "sod_nbr", headerName: "SO #", filter: "agTextColumnFilter" },
+        {
+            field: "sod_nbr", headerName: "SO #", filter: "agTextColumnFilter",
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: e => this.salesOrderInfoModalService.open(e.rowData.sod_nbr),
+                isLink: true
+            }
+        },
         { field: "SOD_DUE_DATE", headerName: "Due Date", filter: "agTextColumnFilter" },
         { field: "TOTALORDERED", headerName: "Ordered", filter: "agTextColumnFilter" },
         { field: "OPENBALANCE", headerName: "Open", filter: "agTextColumnFilter" },
@@ -242,7 +261,10 @@ export class PartLookupComponent {
 
     constructor(
         private api: ItemService,
-    ) { }
+        public salesOrderInfoModalService: SalesOrderInfoModalService,
+        private workOrderInfoModalService: WorkOrderInfoModalService
+    ) {
+    }
 
 
     @Input() public typeOfItemSearch: string;
@@ -307,7 +329,7 @@ export class PartLookupComponent {
         return total;
     }
 
-    async getData() {
+    getData = async () => {
 
         try {
             this.isLoading = true;
@@ -343,6 +365,8 @@ export class PartLookupComponent {
             this.getData();
             this.setData.emit(this.getData)
         }
+
+        this.getDataEmitter.emit(this.getData)
     }
 
     public dismiss() {

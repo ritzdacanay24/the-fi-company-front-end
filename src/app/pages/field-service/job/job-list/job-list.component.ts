@@ -5,6 +5,7 @@ import { GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../job-constant';
 import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
+import { NAVIGATION_ROUTE as REQUEST_NAVIGATION_ROUTE } from '../../request/request-constant';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
@@ -145,6 +146,23 @@ export class JobListComponent implements OnInit {
     });
   }
 
+  viewRequest(id, request_id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    this.router.navigate([REQUEST_NAVIGATION_ROUTE.EDIT], {
+      queryParamsHandling: 'merge',
+      queryParams: {
+        id: id,
+        request_id: request_id,
+        gridParams,
+        dateFrom: this.dateFrom,
+        dateTo: this.dateTo,
+        goBackUrl: NAVIGATION_ROUTE.LIST,
+      }
+    });
+  }
+
+
+
   query
 
   columnDefs: any = [
@@ -161,6 +179,14 @@ export class JobListComponent implements OnInit {
     },
     { field: 'customer', headerName: 'Customer', filter: 'agMultiColumnFilter' },
     { field: 'id', headerName: 'FSID', filter: 'agMultiColumnFilter' },
+    {
+      field: 'request_id', headerName: 'Request ID', filter: 'agMultiColumnFilter',
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        isLink: true,
+        onClick: (e: any) => this.viewRequest(e.rowData.id, e.rowData.request_id),
+      },
+    },
     {
       field: 'workOrderTicketId', headerName: 'Work Order ID', filter: 'agMultiColumnFilter',
       cellRenderer: LinkRendererComponent,

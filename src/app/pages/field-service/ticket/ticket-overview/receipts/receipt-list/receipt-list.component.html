@@ -7,7 +7,8 @@
           {{row.time !== "null" && row.time ? row.time : ''}}</p>
         <p style="line-height:0.4">Vendor: {{row.vendor_name}}</p>
         <p style="line-height:0.4">Created By: {{row.created_by_name}}</p>
-        <p style="line-height:0.4">Amunt: {{row.cost}}</p>
+        <p style="line-height:0.4">Amount: {{row.cost}}</p>
+        <p style="line-height:0.4">Link: {{row?.link}}</p>
       </div>
       <img style="width:50%;height:50%;" class="rounded" [src]="row?.link" id="img{{i}}">
     </div>
