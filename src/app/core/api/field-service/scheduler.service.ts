@@ -66,6 +66,13 @@ export class SchedulerService extends DataService<any> {
   fsCalendar(dateFrom, dateTo) {
     return firstValueFrom(this.http.get(`${url}/fsCalendar.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
+
+  
+  fsCalendarMap(dateFrom, dateTo) {
+    return firstValueFrom(this.http.get(`${url}/fsCalendarMap.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
+  }
+
+  
   fsTechCalendar(dateFrom, dateTo) {
     return firstValueFrom(this.http.get(`${url}/fsTechCalendar.php?dateFrom=${dateFrom}&dateTo=${dateTo}`))
   }
@@ -78,5 +85,9 @@ export class SchedulerService extends DataService<any> {
   searchByQadPartNumber(q: string, currentCompanySelection): Observable<any> {
     let apiURL = `https://dashboard.eye-fi.com/tasks/fieldService/customer_item_search.php?q=${q}&currentCompanySelection=${currentCompanySelection}`;
     return this.http.get(apiURL)
+  }
+
+  getMap(dateFrom, dateTo) {
+    return firstValueFrom(this.http.get<any>(`${url}/getMap?dateFrom=${dateFrom}&dateTo=${dateTo}`));
   }
 }

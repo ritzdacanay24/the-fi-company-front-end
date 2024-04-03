@@ -1,6 +1,7 @@
 import { Routes, RouterModule } from '@angular/router';
 import { NgModule } from '@angular/core';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { MapComponent } from './map/map.component';
 
 const routes: Routes = [
   {
@@ -11,6 +12,10 @@ const routes: Routes = [
   {
     path: 'overview',
     loadChildren: () => import('./overview/overview-routing.module').then(m => m.OverviewRoutingModule)
+  },
+  {
+    path: 'map',
+    component: MapComponent
   },
   {
     path: 'reports',

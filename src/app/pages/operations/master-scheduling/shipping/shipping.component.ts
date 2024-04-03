@@ -500,7 +500,7 @@ export class ShippingComponent implements OnInit {
     },
     {
         field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter",
-        autoHeight: false, wrapText: false, maxWidth: 300
+        autoHeight: false, wrapText: false, width: 300, tooltipField: "recent_comments.comments_html",
     },
     {
         field: "CMT_CMMT", headerName: "QAD Comments", filter: "agMultiColumnFilter",
@@ -705,7 +705,7 @@ export class ShippingComponent implements OnInit {
         field: 'misc.lateReasonCode',
         headerName: 'Late Reason Code',
         filter: 'agSetColumnFilter',
-        
+
         cellRenderer: LateReasonCodeRendererComponent,
         cellRendererParams: {
             onClick: e => {
@@ -832,6 +832,7 @@ export class ShippingComponent implements OnInit {
     gridOptions: GridOptions = {
         ...agGridOptions,
         animateRows: true,
+        tooltipShowDelay: 0,
         columnDefs: [],
         suppressColumnMoveAnimation: true,
         getRowId: (data: any) => data?.data.id,

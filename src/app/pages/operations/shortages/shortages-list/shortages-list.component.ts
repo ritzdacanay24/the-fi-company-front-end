@@ -48,9 +48,6 @@ export class ShortagesListComponent implements OnInit {
     private itemInfoModalService: ItemInfoModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
     private lateReasonCodeModalService: LateReasonCodeModalService,
-    private websocketService: WebsocketService,
-
-
   ) {
   }
 

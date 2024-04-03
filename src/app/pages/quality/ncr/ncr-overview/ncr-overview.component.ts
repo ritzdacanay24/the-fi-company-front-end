@@ -7,6 +7,7 @@ import { NcrMainComponent } from './ncr-main/ncr-main.component';
 import { NcrCorrectiveAcrionComponent } from './ncr-corrective-action/ncr-corrective-action.component';
 import { NcrVerificationComponent } from './ncr-verification/ncr-verification.component';
 import { NAVIGATION_ROUTE } from '../ncr-constant';
+import { NcrAttachmentsListComponent } from './ncr-attachments-list/ncr-attachments-list.component';
 
 @Component({
   standalone: true,
@@ -15,7 +16,8 @@ import { NAVIGATION_ROUTE } from '../ncr-constant';
     NgbNavModule,
     NcrMainComponent,
     NcrCorrectiveAcrionComponent,
-    NcrVerificationComponent
+    NcrVerificationComponent,
+    NcrAttachmentsListComponent
   ],
   selector: 'app-ncr-overview',
   templateUrl: './ncr-overview.component.html',

@@ -59,14 +59,25 @@ export class GridFiltersComponent implements OnInit {
         this.current = ""
         for (let i = 0; i < this.afterData.length; i++) {
             let row = this.afterData[i];
-            this.currentUserGrids.push(row)
 
+            if (row.userId != this.authenticationService.currentUserValue.id) {
+                this.otherGrids.push(row)
+            } else {
+                this.currentUserGrids.push(row)
+            }
 
             if (this.value && this.value == row.id) {
                 this.current = row;
             } else if (row.table_default && !this.value) {
                 this.current = row;
             }
+        }
+
+        if (this.current) {
+            this.value = this.current.id
+            this.currentView = this.current;
+
+            this.gridApi.setFilterModel(JSON.parse(this.current.data))
         }
 
 

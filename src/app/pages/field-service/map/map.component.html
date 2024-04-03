@@ -1,0 +1,67 @@
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <div id="map" class="map" style="width:100%;height:calc(100vh - 130px);overflow:hidden"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div>
+            <div class="d-flex text-nowrap mb-3">
+                <app-date-range (setDateRange)="dateChanged($event)" [value]="dateRange1"
+                    [displayOptions]="true"></app-date-range>
+
+                <button class="btn btn-primary btn-sm ms-3" (click)="showAll()">Show All</button>
+            </div>
+
+            <div ngbAccordion [closeOthers]="true" style="height:calc(100vh - 153px);overflow:auto">
+                <div ngbAccordionItem [destroyOnHide]="false" [collapsed]="activeIds.indexOf(row.id) !== 0"
+                    *ngFor="let row of listData;let i = index">
+
+                    <h2 ngbAccordionHeader class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
+                        <button ngbAccordionButton (click)="viewTech(row.username)">{{row.username}} <span
+                                class="text-end ms-1"> -
+                                {{row.total_jobs}}</span></button>
+                    </h2>
+                    <div ngbAccordionCollapse>
+
+                        <!-- <button class="btn btn-light m-2 btn-sm" (click)="viewTech(row.username)">View Tech
+                            {{active}}</button> -->
+
+                        <div class="list-group list-group-flush">
+                            <a href="javascript:void(0);" ngbAccordionBody (click)="item.fs_lat && viewJob(item, i)"
+                                [ngClass]="{'bg-primary-subtle text-primary':active == item.fs_scheduler_id || fs_scheduler_id == item.fs_scheduler_id}"
+                                class="list-group-item list-group-item-action test-{{item.fs_scheduler_id}}"
+                                *ngFor="let item of row.details; let i = index">
+                                <div class="float-end">
+                                    {{item.fs_scheduler_id}}
+                                </div>
+                                <div class="d-flex mb-2 align-items-center">
+                                    <div class="flex-grow-1 ms-3">
+                                        <!-- <h5 class="list-title fs-15 mb-0">{{i}}</h5> -->
+                                        <h5 class="list-title fs-15 mb-0">Request Date: {{item.start}}</h5>
+                                        <p class="list-text mb-0 fs-12">Service Type: {{item.service_type}}</p>
+                                        <p class="list-text mb-0 fs-12">Techs: {{item.techs}}</p>
+                                        <p class="list-text mb-0 fs-12">{{item.cordFound}}</p>
+                                        <p class="list-text mb-0 fs-12">Status: {{item?.status}}</p>
+
+                                        <p class="list-text mb-0 fs-12 pointer">
+                                            <u (click)="$event.stopPropagation();viewJobInfo(item.fs_scheduler_id)">View
+                                                Job</u>
+                                        </p>
+                                        <p class="list-text mb-0 fs-12 pointer">
+                                            <u (click)="item.fs_lat && viewJob(item, i)">Go to marker</u>
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

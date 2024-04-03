@@ -25,7 +25,7 @@ export class WorkOrderRoutingModalService {
     ) { }
 
     public open(partNumber: string) {
-        this.modalRef = this.modalService.open(WorkOrderRoutingComponent, { size: 'xl', backdrop: 'static', scrollable: true, centered: true, keyboard: false });
+        this.modalRef = this.modalService.open(WorkOrderRoutingComponent, { size: 'lg', backdrop: 'static', scrollable: true, centered: true, keyboard: false });
         this.modalRef.componentInstance.partNumber = partNumber;
         return this.modalRef;
     }

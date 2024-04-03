@@ -44,6 +44,7 @@
     "@ngx-translate/http-loader": "^8.0.0",
     "@nicky-lenaers/ngx-scroll-to": "^14.0.0",
     "@popperjs/core": "^2.11.8",
+    "@tomtom-international/web-sdk-maps": "^6.25.0",
     "@types/google.maps": "^3.54.10",
     "@types/jasmine": "^5.1.4",
     "@types/prismjs": "^1.26.3",

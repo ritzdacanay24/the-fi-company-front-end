@@ -331,7 +331,8 @@ export class JobFormComponent implements OnInit {
         lead_tech: 0,
         id: null,
         contractor_code: null,
-        title: null
+        title: null,
+        user_id: null
       }))
     }
   }
@@ -346,7 +347,7 @@ export class JobFormComponent implements OnInit {
     }
     //this.setOnRemoveTech.emit(e)
     this.teams = this.form.get('resource') as FormArray;
-    ((this.form.get('resource') as FormArray).at(i) as FormGroup).patchValue({ ...e });
+    ((this.form.get('resource') as FormArray).at(i) as FormGroup).patchValue({ ...e, user_id: e.id });
   }
 
   form = this.fb.group({
@@ -391,7 +392,7 @@ export class JobFormComponent implements OnInit {
       ef_hourly_rate: [47.50],
       ef_overtime_hourly_rate: [71.25],
       compliance_license_notes: [''],
-      published: [0],
+      published: [null],
       property_id: [null],
       queue: [null],
       queus_status: [null],
@@ -417,7 +418,9 @@ export class JobFormComponent implements OnInit {
       sign_jacks: [''],
       site_survey_requested: [''],
       per_tech_rate: [33.50],
-      per_tech_rate_ot: [49.60]
+      per_tech_rate_ot: [49.60],
+      fs_lat: [''],
+      fs_lon: ['']
     }),
     resource: this.fb.array([]),
   })

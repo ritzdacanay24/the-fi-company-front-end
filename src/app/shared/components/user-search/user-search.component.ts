@@ -39,7 +39,8 @@ export class UserSearchComponent implements OnInit {
   @Input() openOnEnter: boolean = false;
   @Input() editableSearchTerm: boolean = true;
   @Input() ngClass: string | any;
-  
+  @Input() showLabel: boolean = true;
+
   data$: Observable<any[]>;
   dataLoading = false;
   dataInput$ = new Subject<string>();

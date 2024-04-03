@@ -14,6 +14,7 @@ export const agGridOptions: GridOptions = {
   // undoRedoCellEditingLimit: 5,
   suppressDragLeaveHidesColumns: false,
   defaultColDef: {
+    cellDataType: false,
     sortable: true,
     filter: true,
     resizable: true,

@@ -11,7 +11,7 @@
             [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
             (change)="getData()" style="width:150px" class="me-2"  [appendTo]="'body'">
           </ng-select>
-          <div class="form-check form-switch form-switch-md">
+          <div class="form-check form-switch form-switch-md ms-3">
             <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
               (change)="getData()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>

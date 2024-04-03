@@ -158,9 +158,10 @@ export class KanbanComponent implements OnInit {
     ngOnInit(): void {
         this.activatedRoute.queryParams.subscribe(params => {
             this.currentQueueView = params['currentQueueView']?.split(',') || null;
+            this.autoRefresh = params['autoRefresh'] || this.autoRefresh;
         })
 
-        /**
+        /** 
         * BreadCrumb
         */
         this.breadCrumbItems = [
@@ -172,11 +173,32 @@ export class KanbanComponent implements OnInit {
          * Data Get Function
          */
         this._fetchData();
+
+        //this.onAutoRefresh();
+    }
+
+    autoRefresh: boolean | string = true;
+    autoRefreshTimer = 5000;
+    interval
+
+    onAutoRefresh() {
+        if (this.autoRefresh) {
+            console.log('huh??')
+            this.interval = setInterval(() => {
+                this._fetchData();
+            }, this.autoRefreshTimer);
+        } else {
+            clearInterval(this.interval);
+        }
     }
 
     ngOnDestroy() {
         if (this.subscription)
             this.subscription.unsubscribe();
+        if (this.interval) {
+            this.interval.unsubscribe();
+            clearInterval(this.interval);
+        }
     }
 
     isInArray(id) {

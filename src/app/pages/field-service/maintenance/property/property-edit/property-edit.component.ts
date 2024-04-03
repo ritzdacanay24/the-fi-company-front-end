@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PropertyService } from '@app/core/api/field-service/property.service';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../property-constant';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,
@@ -55,8 +56,10 @@ export class PropertyEditComponent {
 
   async onSubmit() {
     this.submitted = true;
-
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      getFormValidationErrors()
+      return
+    }
 
     try {
       this.isLoading = true;

@@ -33,11 +33,10 @@ import { ToastrModule } from 'ngx-toastr';
 // import { QuillModule } from 'ngx-quill';
 
 import { ColorPickerModule } from 'ngx-color-picker';
-import { provideRouter, withPreloading } from '@angular/router';
-import { FlagBasedPreloadingStrategy } from './shared/providers/preload';
 
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { LightboxModule } from 'ngx-lightbox';
+import { FlatpickrModule } from 'angularx-flatpickr';
 
 
 export function createTranslateLoader(http: HttpClient): any {
@@ -77,7 +76,8 @@ export function createTranslateLoader(http: HttpClient): any {
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: environment.production
     }),
-    LightboxModule
+    LightboxModule,
+    FlatpickrModule.forRoot(),
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },

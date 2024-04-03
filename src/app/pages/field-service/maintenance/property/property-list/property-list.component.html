@@ -2,16 +2,36 @@
   <div class="col-lg-12">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
+
+        <div>
+          <div class="form-icon">
+            <input type="search" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+              placeholder="Search">
+            <i class="ri-search-2-line"></i>
+          </div>
+        </div>
+
         <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
-          [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()" style="width:150px"
-          class="ms-2 me-2">
+          [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
+          style="width:150px" class="ms-2 me-2">
         </ng-select>
+
+        <button class="btn btn-light" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
+
+        <div class="ms-2">
+          <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-settings>
+        </div>
+
+        <div class="ms-2">
+          <app-grid-filters [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-filters>
+        </div>
 
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
-          style="width: 100%;height: calc(100vh - 172px);">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 172px);">
         </ag-grid-angular>
       </div>
     </div>

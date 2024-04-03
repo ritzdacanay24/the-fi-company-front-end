@@ -1,0 +1,87 @@
+@import "@tomtom-international/web-sdk-maps";
+
+.list-group li.active p,
+.list-group li.active span {
+  color: #fff !important
+}
+
+#map {
+  width: 100%;
+}
+
+.map {
+  height: calc(100vh - 120px);
+  width: 100%;
+}
+
+body:has(.map) .map-list {
+  height: calc(100vh - 119px);
+  overflow: hidden;
+  width: 100%
+}
+
+.map1 {
+  height: calc(100vh - 160px);
+  width: 100%;
+}
+
+body:has(.map1) .map-list {
+  height: calc(100vh - 160px);
+  overflow: hidden;
+  width: 100%
+}
+
+
+.marker-icon {
+  background-position: center;
+  background-size: 22px 22px;
+  border-radius: 50%;
+  height: 22px;
+  left:2px;
+  position: absolute;
+  text-align: center;
+  top: 3px;
+  transform: rotate(45deg);
+  width: 22px;
+  border: 1px solid transparent
+}
+
+.marker {
+  height: 30px;
+  width: 30px;
+}
+
+.marker-content {
+  background: #c30b82;
+  border-radius: 50% 50% 50% 0;
+  height: 30px;
+  left: 50%;
+  margin: -15px 0 0 -15px;
+  position: absolute;
+  top: 50%;
+  transform: rotate(-45deg);
+  width: 30px;
+  border: 1px solid transparent
+}
+
+.marker-content::before {
+  opacity: 1;
+  z-index: -1;
+  border-radius: 50%;
+  content: "";
+  height: 19px;
+  margin: 6px 0 0 6px;
+  position: absolute;
+  width: 19px;
+}
+
+
+.mapboxgl-popup {
+  max-width: 400px !important;
+}
+
+// .mapboxgl-ctrl-top-right {
+//   top: 0;
+//   right: 504px !important;
+
+// }

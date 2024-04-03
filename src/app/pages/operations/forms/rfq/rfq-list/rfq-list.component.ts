@@ -75,6 +75,7 @@ export class RfqListComponent implements OnInit {
     { field: 'weight', headerName: 'Weight', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'created_by', headerName: 'Created By', filter: 'agMultiColumnFilter' },
     { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
+    { field: 'email_sent_date', headerName: 'Email Sent Date', filter: 'agMultiColumnFilter' },
   ]
 
   @Input() selectedViewType = 'Active';

@@ -102,14 +102,14 @@ export class KanbanQueueModalComponent {
 
     //picking
     if (this.data.kanban_ID == 2) {
-      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 10);
+      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 10, this.data.kanban_ID);
       if (e?.errorMessage) {
         alert(e?.errorMessage)
         this.isLoading = false;
         return;
       }
     } else if (this.data.kanban_ID == 3) {
-      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 20);
+      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 20, this.data.kanban_ID);
       if (e?.errorMessage) {
         alert(e?.errorMessage)
         this.isLoading = false;
@@ -137,8 +137,8 @@ export class KanbanQueueModalComponent {
   }
 
   //hardstops 
-  async checkIfPickComplete(wo_nbr, route) {
-    return await this.kanbanApiService.checkIfPickComplete(wo_nbr, route);
+  async checkIfPickComplete(wo_nbr, route, queue) {
+    return await this.kanbanApiService.checkIfPickComplete(wo_nbr, route, queue);
   }
 
 }

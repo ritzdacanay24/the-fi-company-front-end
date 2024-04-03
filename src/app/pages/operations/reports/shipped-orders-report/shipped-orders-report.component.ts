@@ -125,7 +125,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     { field: "QTYOPEN", headerName: "Qty Open", filter: "agTextColumnFilter" },
     { field: "LD_QTY_OH", headerName: "Qty OH", filter: "agTextColumnFilter" },
     { field: "SOD_DUE_DATE", headerName: "Due Date", filter: "agSetColumnFilter" },
-    { field: "SOD_ORDER_CATEGORY", headerName: "Customer CO #", filter: "agTextColumnFilter" },
+    { field: "SOD_ORDER_CATEGORY", headerName: "Customer CO #", filter: "agTextColumnFilter", cellDataType: 'text' },
     {
       field: "FG-Label", headerName: "FG Label", filter: "agSetColumnFilter",
       cellRenderer: IconRendererComponent,
@@ -193,7 +193,7 @@ export class ShippedOrdersReportComponent implements OnInit {
 
       this.gridApi?.showLoadingOverlay();
       let data: any = await this.reportService.getShippedOrdersReport(this.dateFrom, this.dateTo)
-      this.data = data.orderInfo;
+      this.data = data?.orderInfo ? data?.orderInfo : [];
       this.router.navigate(['.'], {
         queryParams: {
           dateFrom: this.dateFrom,

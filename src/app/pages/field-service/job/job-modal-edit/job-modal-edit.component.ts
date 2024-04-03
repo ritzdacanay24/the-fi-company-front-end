@@ -182,6 +182,12 @@ export class JobModalEditComponent implements OnInit {
       }
     }, { emitEvent: false });
 
+    //clear fsid in resoruce
+    this.teams = this.form.get('resource') as FormArray;
+    for (let i = 0; i < this.teams['controls'].length; i++) {
+      this.teams['controls'][i].patchValue({ fs_det_id: null, id: null })
+    }
+
     this.form.enable();
   }
 

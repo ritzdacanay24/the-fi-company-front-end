@@ -1,15 +1,22 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
+import { UserService } from '@app/core/api/field-service/user.service';
 import { states } from '@app/core/data/states';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
+import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
 import { SharedModule } from '@app/shared/shared.module';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { merge } from 'rxjs';
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     ReactiveFormsModule,
-    AddressSearchComponent
+    AddressSearchComponent,
+    UserSearchComponent,
+    NgSelectModule
   ],
   selector: 'app-property-form',
   templateUrl: './property-form.component.html',
@@ -19,11 +26,42 @@ export class PropertyFormComponent {
 
   constructor(
     private fb: FormBuilder,
+    private sanitizer: DomSanitizer,
+    private userService: UserService
   ) { }
 
+  currentUrlAddress
   ngOnInit(): void {
 
+
+    merge(
+      this.form.get('address1').valueChanges,
+      this.form.get('address2').valueChanges,
+      this.form.get('state').valueChanges,
+      this.form.get('city').valueChanges,
+      this.form.get('zip_code').valueChanges
+    )
+      .subscribe(data => {
+        var values = [];
+        values.push(this.form.get('address1').value);
+        values.push(this.form.get('address2').value);
+        values.push(this.form.get('state').value);
+        values.push(this.form.get('city').value);
+        values.push(this.form.get('zip_code').value);
+        let a = values.filter(x => x).join(', ');
+        this.currentUrlAddress = a
+        this.getUrlView(a);
+      });
+
     this.setFormEmitter.emit(this.form)
+    this.getUserService()
+  }
+
+  urlView
+
+  getUrlView(address) {
+    if (!address) return null;
+    return this.urlView = this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.google.com/maps?saddr=36.071997, -115.262847&daddr=${address}&t=&ie=UTF8&iwloc=&output=embed&`);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
@@ -39,21 +77,25 @@ export class PropertyFormComponent {
 
   form = this.fb.group({
     active: [1],
-    address1: [null],
+    address1: [null, [Validators.required]],
     address2: [''],
-    city: [''],
-    country: ['United States'],
+    city: ['', [Validators.required]],
+    country: ['United States', [Validators.required]],
     license_notes: [''],
     license_required: [''],
     out_of_town: [''],
-    property: [''],
+    property: [null, [Validators.required]],
     property_phone: [''],
-    state: [''],
-    zip_code: [''],
+    state: ['', [Validators.required]],
+    zip_code: ['', [Validators.required]],
     zone_code: [''],
     notes: [''],
-    lat: [''],
-    lon: [''],
+    lat: ['', [Validators.required]],
+    lon: ['', [Validators.required]],
+    license_expired_date: null,
+    licensed_techs: [null],
+    created_by: [null],
+    created_date: [null]
   })
 
   setBooleanToNumber(key) {
@@ -74,4 +116,22 @@ export class PropertyFormComponent {
     })
   }
 
+  onTechSelectChange($event) {
+    let resource_ids = []
+    for (let i = 0; i < $event.length; i++) {
+      resource_ids.push($event[i].id)
+    }
+
+    this.form.patchValue({
+      licensed_techs: resource_ids
+    })
+  }
+
+
+  users$: any;
+  getUserService = async () => {
+    try {
+      this.users$ = await this.userService.getUserWithTechRate();
+    } catch (err) { }
+  }
 }

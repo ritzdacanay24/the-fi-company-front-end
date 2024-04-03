@@ -76,7 +76,12 @@ export const MENU: MenuItem[] = [
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.KANBAN',
             link: '/dashboard/operations/master-scheduling/kanban',
-            description: "QC"
+            description: "Kanban"
+          },
+          {
+            label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.CABLES',
+            link: '/dashboard/operations/master-scheduling/cables',
+            description: "Cables"
           }
         ]
       },
@@ -545,6 +550,11 @@ export const MENU: MenuItem[] = [
         label: 'MENUITEMS.FIELDSERVICE.OVERVIEW',
         link: '/dashboard/field-service/overview/summary',
         description: "Field Service Overview"
+      },
+      {
+        label: 'MENUITEMS.FIELDSERVICE.MAP',
+        link: '/dashboard/field-service/map',
+        description: "Field Service Map"
       },
       {
         label: 'MENUITEMS.FIELDSERVICE.SCHEDULING.CALENDAR',

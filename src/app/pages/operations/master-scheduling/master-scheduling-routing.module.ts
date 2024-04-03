@@ -9,6 +9,7 @@ import { QcRoutingComponent } from './qc-routing/qc-routing.component';
 import { ProductionRoutingComponent } from './production-routing/production-routing.component';
 import { AllRoutingComponent } from './all-routing/all-routing.component';
 import { KanbanComponent } from './kanban/kanban.component';
+import { CablesComponent } from './cables/cables.component';
 
 const routes: Routes = [
   {
@@ -43,6 +44,10 @@ const routes: Routes = [
       {
         path: 'kanban',
         component: KanbanComponent
+      },
+      {
+        path: 'cables',
+        component: CablesComponent
       },
     ]
   }

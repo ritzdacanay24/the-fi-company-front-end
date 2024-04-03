@@ -82,7 +82,8 @@
         "PICKING_ROUTING": "Picking",
         "PRODUCTION_ROUTING": "Production",
         "QC_ROUTING": "Final/Test QC",
-        "KANBAN": "Kanban"
+        "KANBAN": "Kanban",
+        "CABLES": "Cables"
       },
       "REPORTS": {
         "NAME": "Reports",
@@ -166,6 +167,7 @@
     "FIELDSERVICE": {
       "TEXT": "Field Service",
       "OVERVIEW": "Dashboard",
+      "MAP": "Map",
       "JOB": {
         "NAME": "Jobs",
         "LIST": "List Jobs",

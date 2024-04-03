@@ -148,7 +148,8 @@ export class JobEditComponent implements OnInit {
             lead_tech: 0,
             id: data.id,
             contractor_code: null,
-            title: data.title
+            title: data.title,
+            user_id: data.user_id
           }))
         }
       }

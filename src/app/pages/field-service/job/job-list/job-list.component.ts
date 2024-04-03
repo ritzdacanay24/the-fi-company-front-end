@@ -14,6 +14,8 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { currencyFormatter, highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 
 @Component({
   standalone: true,
@@ -21,12 +23,16 @@ import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } fr
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent
+    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-job-list',
   templateUrl: './job-list.component.html',
 })
 export class JobListComponent implements OnInit {
+
+  pageId = '/field-service/list-jobs'
 
   constructor(
     public router: Router,
@@ -205,6 +211,8 @@ export class JobListComponent implements OnInit {
     },
     { field: 'property', headerName: 'Property', filter: 'agMultiColumnFilter' },
     { field: 'state', headerName: 'State', filter: 'agMultiColumnFilter' },
+    { field: 'fs_lat', headerName: 'Latitude', filter: 'agMultiColumnFilter' },
+    { field: 'fs_lon', headerName: 'Longitude', filter: 'agMultiColumnFilter' },
     { field: 'status', headerName: 'Status', filter: 'agSetColumnFilter' },
     { field: 'request_date', headerName: 'Request Date', filter: 'agSetColumnFilter' },
     { field: 'start_time', headerName: 'Start Time', filter: 'agSetColumnFilter' },

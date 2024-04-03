@@ -1,0 +1,29 @@
+<div class="row">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+
+                    <div class="form-group">
+                        <div class="input-group">
+                            <input (change)="this.onFilechange($event)" class="form-control form-control-sm" type="file" id="file"
+                                multiple name="file">
+                            <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary btn-sm"
+                                [disabled]="isLoading || myFiles?.length == 0">
+                                <i class="mdi mdi-upload"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="ms-auto">
+                        <h4 class="card-title mb-0 flex-grow-1"> Attachments </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+                    style="height: calc(100vh - 301px);" [rowData]="data" [columnDefs]="columnDefs">
+                </ag-grid-angular>
+            </div>
+        </div>
+    </div>
+</div>

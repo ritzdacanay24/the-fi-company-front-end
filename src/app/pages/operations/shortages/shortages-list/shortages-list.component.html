@@ -15,6 +15,7 @@
             [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
             style="width:150px" class="me-3" [appendTo]="'body'">
           </ng-select>
+          
           <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
             [clearable]="false" [items]="selectedQueueOptions" [(ngModel)]="selectedQueueType" (change)="getData()"
             style="width:150px" class="me-3" [appendTo]="'body'">

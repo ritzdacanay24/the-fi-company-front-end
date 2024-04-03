@@ -41,7 +41,8 @@ export class AddressSearchComponent implements OnInit {
   @Input() editableSearchTerm: boolean = false;
   @Input() clearSearch: boolean = false;
   @Input() addTagText: string = "Add address: ";
-
+  @Input() showCategories: boolean = false;
+  
   data$: Observable<any[]>;
   dataLoading = false;
   dataInput$ = new Subject<string>();

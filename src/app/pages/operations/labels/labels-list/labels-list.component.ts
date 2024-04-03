@@ -21,6 +21,8 @@ import tippy from 'tippy.js';
 import { IssueToWorkOrderLabelModalService } from '../issue-to-work-order-label-modal/issue-to-work-order-label-modal.component';
 import { PartInformationLabelLgModalService } from '../part-information-label-lg-modal/part-information-label-lg-modal..component';
 import { AgsLabelModalService } from '../ags-label-modal/ags-label-modal.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -32,11 +34,15 @@ tippy.setDefaultProps({ animation: false });
     AgGridModule,
     NgSelectModule,
     DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-labels-list',
   templateUrl: './labels-list.component.html',
 })
 export class LabelsListComponent implements OnInit {
+
+  pageId = '/list-labels'
 
   constructor(
     public router: Router,

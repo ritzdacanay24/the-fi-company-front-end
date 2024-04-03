@@ -43,50 +43,53 @@
           Tech Information
         </h4>
 
-        <table class="table table text-nowrap" *ngIf="getTeams.length">
-          <thead>
-            <tr>
-              <td>#</td>
-              <td>Lead Tech</td>
-              <td>Tech Name</td>
-              <td></td>
-            </tr>
-          </thead>
-          <tbody *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
-            <tr class="p-0 m-0">
-              <td width="100" class="align-middle">Tech# {{i+1}}</td>
-              <td width="100" class="align-middle text-center">
-                <div class="form-check form-check-flat form-check-primary" tite="Lead Tech?">
-                  <label class="form-check-label" title="Lead Tech?">
-                    <input type="checkbox" class="form-check-input" formControlName="lead_tech">
-                    <i class="input-frame"></i>
-                  </label>
-                </div>
-              </td>
-              <td>
-                <div>
-                  <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
-                    bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
-                    <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-                      {{item.user}}
-                    </ng-template>
-                  </ng-select>
-                </div>
-                <div *ngIf="row.value.title == 'Vendor'" class="mt-2">
-                  <ng-select [items]="resource_code_options" [selectOnTab]="true" formControlName="contractor_code"
-                    bindLabel="name" placeholder="--Select--" bindValue="value" placeholder="--Select resource code--">
-                  </ng-select>
-                </div>
-              </td>
-              <td width="100" class="text-end align-middle">
-                <button type="button" class="btn btn-soft-danger btn-icon shadow-none"
-                  (click)="removeTech(i, row.value)">
-                  <i class="mdi mdi-trash-can-outline btn-sm"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsives" *ngIf="getTeams.length">
+          <table class="table table text-nowrap">
+            <thead>
+              <tr>
+                <td>#</td>
+                <td>Lead Tech</td>
+                <td>Tech Name</td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
+              <tr class="p-0 m-0">
+                <td width="100" class="align-middle">Tech# {{i+1}}</td>
+                <td width="100" class="align-middle text-center">
+                  <div class="form-check form-check-flat form-check-primary" tite="Lead Tech?">
+                    <label class="form-check-label" title="Lead Tech?">
+                      <input type="checkbox" class="form-check-input" formControlName="lead_tech">
+                      <i class="input-frame"></i>
+                    </label>
+                  </div>
+                </td>
+                <td>
+                  <div style="min-width:200px">
+                    <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
+                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
+                      <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                        {{item.user}}
+                      </ng-template>
+                    </ng-select>
+                  </div>
+                  <div *ngIf="row.value.title == 'Vendor'" class="mt-2">
+                    <ng-select [items]="resource_code_options" [selectOnTab]="true" formControlName="contractor_code"
+                      bindLabel="name" placeholder="--Select--" bindValue="value"
+                      placeholder="--Select resource code--">
+                    </ng-select>
+                  </div>
+                </td>
+                <td width="100" class="text-end align-middle">
+                  <button type="button" class="btn btn-soft-danger btn-icon shadow-none"
+                    (click)="removeTech(i, row.value)">
+                    <i class="mdi mdi-trash-can-outline btn-sm"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <button class="btn btn-primary mt-3 mb-2" (click)="addMoreTechs(1)" type="button">
           Add More Techs
@@ -246,12 +249,12 @@
         </div>
 
         <div class="row">
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label">Onsite Customer Name:</label>
             <input type="text" class="form-control" placeholder="Enter onsite customer name"
               formControlName="onsite_customer_name" [ngClass]="formClassJob('onsite_customer_name')">
           </div>
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label">Onsite Customer Phone #:</label>
             <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
               formControlName="onsite_customer_phone_number" [ngClass]="formClassJob('onsite_customer_phone_number')"
@@ -288,7 +291,20 @@
           <div class="col-md-2 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('zip_code')">Zip Code</label>
             <input type="text" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
-              [ngClass]="formClassJob('zip_code')" >
+              [ngClass]="formClassJob('zip_code')">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('fs_lat')">Latitude</label>
+            <input type="text" class="form-control" formControlName="fs_lat" placeholder="Enter Latitude"
+              [ngClass]="formClassJob('fs_lat')">
+          </div>
+          <div class="col-sm mb-3">
+            <label class="form-label" [ngClass]="formValidatorJob('fs_lon')">Longitude</label>
+            <input type="text" class="form-control" formControlName="fs_lon" placeholder="Enter Longitude"
+              [ngClass]="formClassJob('fs_lon')">
           </div>
         </div>
 
@@ -427,7 +443,7 @@
           Rates
         </h4>
 
-        <h6>Billing Rate</h6>
+        <h6 class="bolder"><u>Billing Rate</u></h6>
         <div class="row">
           <div class="col-md-4 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('mark_up_percent')">Mark Up %</label>
@@ -446,7 +462,7 @@
           </div>
         </div>
 
-        <h6>Standard Tech Rate</h6>
+        <h6 class="bolder"><u>Standard Tech Rate</u></h6>
         <div class="row">
           <div class="col-md-4 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate')">Hourly Rate</label>

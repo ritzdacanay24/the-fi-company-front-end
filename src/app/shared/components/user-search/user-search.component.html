@@ -1,4 +1,4 @@
-<label class="form-label">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
+<label class="form-label" *ngIf="showLabel">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
 
 <ng-select bindLabel="username" [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag"
   [multiple]="multiple" [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength"

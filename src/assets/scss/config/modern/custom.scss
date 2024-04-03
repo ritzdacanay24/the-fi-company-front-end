@@ -27,7 +27,7 @@ File: Custom Css File
 
 @media (min-width: 768px) {
     :is([data-layout=vertical], [data-layout=semibox])[data-sidebar-size=sm] {
-         min-height: unset; 
+        min-height: unset;
     }
 }
 
@@ -431,6 +431,10 @@ ng-select {
     color: var(--vz-body-color);
 }
 
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-placeholder {
+    top: 7px
+}
+
 .ng-select .ng-select-container:hover {
     box-shadow: unset;
 }
@@ -565,6 +569,7 @@ ng-select {
 @import "quill-mention/dist/quill.mention.min.css";
 @import "../../plugins/quill-mention";
 @import "../../plugins/mobiscroll";
+@import "../../plugins/map";
 // @import "./node_modules/metismenujs/scss/metismenujs.scss";
 
 //@import "tippy.js/dist/tippy.css";

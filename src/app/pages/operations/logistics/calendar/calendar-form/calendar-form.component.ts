@@ -37,7 +37,7 @@ export class CalendarFormComponent {
         start_date: ['', [Validators.required]],
         start_time: ['', [Validators.required]],
         end_date: ['', [Validators.required]],
-        po_number: ['', [Validators.required]],
+        po_number: [''],
         comments: [''],
         created_by: ['', [Validators.required]],
         created_date: [],

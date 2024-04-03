@@ -68,7 +68,14 @@
                   <app-ncr-verification [id]="id"></app-ncr-verification>
                 </ng-template>
               </li>
-
+              <li [ngbNavItem]="4" class="nav-item">
+                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Attachments
+                </a>
+                <ng-template ngbNavContent>
+                  <app-ncr-attachments-list [id]="id"></app-ncr-attachments-list>
+                </ng-template>
+              </li>
             </ul>
           </div>
           <!-- end card body -->

@@ -1,4 +1,3 @@
-
 <div class="row">
   <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
     <div class="card">
@@ -8,7 +7,11 @@
       <div class="card-body" style="min-height:300px">
         <app-ncr-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-ncr-form>
 
-        {{form?.value | json}}
+        <div class="alert alert-info alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-check-double-line label-icon"></i> You can upload attachments after creating NCR.
+        </div>
+
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
         <button class="btn btn-light" [disabled]="isLoading">Cancel</button>
