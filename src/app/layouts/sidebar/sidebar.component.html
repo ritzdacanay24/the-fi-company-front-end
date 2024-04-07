@@ -85,7 +85,7 @@
               <i class="{{ item.icon }} icon nav-icon" class=""></i>
               <span class=""> {{ item.label | translate }}</span>
               @if(item.badge){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text
-                | translate}}</span>}
+                }}</span>}
             </a>
 
             <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="item.isCollapsed">

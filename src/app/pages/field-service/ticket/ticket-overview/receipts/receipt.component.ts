@@ -21,6 +21,7 @@ import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { AgGridModule } from 'ag-grid-angular'
 import moment from 'moment'
 import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util'
+import { Lightbox } from 'ngx-lightbox'
 
 /**
  * Sanitize HTML
@@ -269,6 +270,7 @@ export class ReceiptComponent implements OnInit {
     private offcanvasService: NgbOffcanvas,
     private tripExpenseTransactionsService: TripExpenseTransactionsService,
     private domSanitizer: DomSanitizer,
+    private lightbox: Lightbox
   ) {
   }
 

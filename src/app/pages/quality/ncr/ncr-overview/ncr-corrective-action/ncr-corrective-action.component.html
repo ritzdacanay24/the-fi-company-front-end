@@ -4,11 +4,44 @@
       <div class="card-header d-flex align-items-center">
         <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-ncr-corrective-action-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-ncr-corrective-action-form>
+      <div class="card-body" style="min-height:300px;height: calc(100vh - 363px);overflow:auto">
+
+        <div *ngIf="this.form?.value?.ca_action_req == 'Yes' && this.form?.value?.ca_submitted_date && !isLoading"
+          class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-checkbox-line label-icon"></i>
+          This corrective action was submitted on {{this.form?.value?.ca_submitted_date}}. No action needed.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <div *ngIf="this.form?.value?.ca_action_req == 'Yes' && !this.form?.value?.ca_submitted_date && !isLoading"
+          class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-error-warning-line label-icon"></i>
+          This Corrective Action is issued to <b>{{form.value?.ca_iss_to}}</b> on <b><u>{{form.value?.iss_dt || 'No Issued Date'}}</u></b> by <b>{{form.value?.iss_by}}</b> and must
+          be
+          completed before or on <b><u>{{form.value?.ca_due_dt}}</u></b>
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <div *ngIf="( this.form?.value?.ca_action_req == 'No' || !this.form?.value?.ca_action_req )&& !isLoading"
+          class="alert alert-info alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-error-warning-line label-icon"></i>
+          Corrective action not required
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <h5 class="mb-3" *ngIf="this.form?.value?.ca_action_req == 'Yes' && !isLoading">
+          Corrective action must be completed within the due date and forwarded to the quaility assurance manager.
+        </h5>
+
+        <app-ncr-corrective-action-form (setFormEmitter)="setFormEmitter($event)"
+          [submitted]="submitted"></app-ncr-corrective-action-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit Corrective Action</button>
+        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">Update</button>
+        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitReview()">Update & Submit For Review</button>
       </div>
     </div>
   </div>

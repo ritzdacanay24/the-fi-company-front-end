@@ -1,4 +1,39 @@
 <div class="row">
+  <div class="col-4 col-xl-4">
+    <div class="card">
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th class="text-end">Open</th>
+              <th class="text-end">CA Open</th>
+              <th class="text-end">Verify Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of summaryInfo?.data">
+              <td>{{row?.department}}</td>
+              <td class="text-end">{{row?.total_open}}</td>
+              <td class="text-end">{{row?.total_open_corrective_action}}</td>
+              <td class="text-end">{{row?.total_open_verification}}</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr class="bg-light">
+              <td>Summary</td>
+              <td class="text-end">{{summaryInfo?.totalOpen}}</td>
+              <td class="text-end">{{summaryInfo?.totalOpenCA}}</td>
+              <td class="text-end">{{summaryInfo?.totalOpenVerifiation}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
   <div class="col-12 col-xl-12">
     <div class="card">
       <div class="card-header">
@@ -8,22 +43,28 @@
               [displayOptions]="true"></app-date-range>
           </div>
           <ng-select [dropdownPosition]="'bottom'" [searchable]="false" bindLabel="name" bindValue="name"
-            [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType"
-            (change)="getData()" style="width:150px" class="me-2"  [appendTo]="'body'">
+            [clearable]="false" [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()"
+            style="width:150px" class="me-2" [appendTo]="'body'">
           </ng-select>
           <div class="form-check form-switch form-switch-md ms-3">
             <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="isAll"
               (change)="getData()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
           </div>
-          <div class="ms-auto">
-            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+
+          <div class="ms-3 ms-auto">
+            <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+              [pageId]="pageId"></app-grid-settings>
+          </div>
+
+          <div class="ms-3">
+            <app-grid-filters [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-filters>
           </div>
         </div>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border" style="height: calc(100vh - 170px);"
-          [rowData]="data" [columnDefs]="columnDefs">
+        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+          style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
         </ag-grid-angular>
       </div>
     </div>

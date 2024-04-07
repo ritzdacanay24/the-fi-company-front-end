@@ -29,7 +29,10 @@
                   </div>
                   <div class="col-md">
                     <div>
-                      <h4 class="fw-bold">{{title}}</h4>
+                      <div class="hstack gap-1 flex-wrap mb-2">
+                        <button class="btn btn-light btn-sm me-2" (click)="goBack()">Go Back</button>
+                        <h4 class="fw-bold mt-2">{{title}}</h4>
+                      </div>
                       <div class="hstack gap-3 flex-wrap">
                         <div>NCR ID : <span class="fw-medium">{{data?.id}}</span></div>
                         <div class="vr"></div>
@@ -43,29 +46,32 @@
               </div>
             </div>
 
-            <ul ngbNav #customNav="ngbNav" [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist" (navChange)="onNavChange($event)">
+            <ul ngbNav #customNav="ngbNav" [activeId]="active" class="nav nav-tabs-custom border-bottom-0 text-nowrap overflow-auto"
+              role="tablist" (navChange)="onNavChange($event)">
               <li [ngbNavItem]="1" class="nav-item">
                 <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                   <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Main
                 </a>
                 <ng-template ngbNavContent>
-                  <app-ncr-main [id]="id"></app-ncr-main>
+                  <app-ncr-main [id]="id" (setFormEmitterParent)="setFormEmitterParent($event)"></app-ncr-main>
                 </ng-template>
               </li>
               <li [ngbNavItem]="2" class="nav-item">
                 <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Corrective Actions
+                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Corrective Action
                 </a>
                 <ng-template ngbNavContent>
-                  <app-ncr-corrective-action [id]="id"></app-ncr-corrective-action>
+                  <app-ncr-corrective-action [id]="id"
+                    (setFormEmitterParent)="setFormEmitterParent($event)"></app-ncr-corrective-action>
                 </ng-template>
               </li>
               <li [ngbNavItem]="3" class="nav-item">
                 <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Verifications
+                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Verification
                 </a>
                 <ng-template ngbNavContent>
-                  <app-ncr-verification [id]="id"></app-ncr-verification>
+                  <app-ncr-verification [id]="id"
+                    (setFormEmitterParent)="setFormEmitterParent($event)"></app-ncr-verification>
                 </ng-template>
               </li>
               <li [ngbNavItem]="4" class="nav-item">

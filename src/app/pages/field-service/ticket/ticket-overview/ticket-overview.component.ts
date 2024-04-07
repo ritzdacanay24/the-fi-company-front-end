@@ -12,6 +12,7 @@ import { QirComponent } from './qir/qir.component';
 import { WorkOrderComponent } from './work-order/work-order.component';
 import { NAVIGATION_ROUTE } from '../ticket-constant';
 import { SharedModule } from '@app/shared/shared.module';
+import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
 
 @Component({
   standalone: true,
@@ -37,7 +38,9 @@ export class TicketOverviewComponent implements OnInit {
     public activatedRoute: ActivatedRoute,
     public router: Router,
     public workOrderService: WorkOrderService,
-    public schedulerService: SchedulerService
+    public schedulerService: SchedulerService,
+    private jobModalEditService: JobModalService
+
   ) {
   }
 
@@ -78,6 +81,13 @@ export class TicketOverviewComponent implements OnInit {
   @Input() isLoading = false;
 
 
+  viewJobInfo() {
+    let modalRef = this.jobModalEditService.open(this.id)
+    modalRef.result.then((result: any) => {
+    }, () => {
+    });
+  }
+
   getData = async () => {
     try {
       this.isLoading = true;
@@ -102,7 +112,7 @@ export class TicketOverviewComponent implements OnInit {
     this.getData()
   }
 
-  
+
 
   @Input() goBack: Function = () => {
     if (this.goBackUrl) {

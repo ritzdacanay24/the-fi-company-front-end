@@ -11,9 +11,9 @@
 
         <button type="button" class="arrow-none btn btn-light btn-label waves-effect waves-light position-relative"
             (click)="openUp()" data-bs-toggle="dropdown" ngbDropdownToggle>
-            <span class="ri-filter-2-line label-icon align-middle fs-16 me-2"
+            <span class="ri-filter-2-line label-icon align-middle fs-16 me-2 border-end"
                 (click)="$event.stopPropagation();this.clearFilters();"> </span>
-            <span class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary"
+            <span class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary border-end"
                 *ngIf="(gridApi?.getFilterModel() | json) != '{}'" style="top:13px;right:107px;padding:3px"><span
                     class="visually-hidden">unread messages</span></span>
             Grid Filters
@@ -43,9 +43,15 @@
 
             </button>
 
-            <li class="bg-light" *ngIf="currentUserGrids?.length">
+            <li class="bg-light">
                 <h5 class="dropdown-header mb-1 text-center">My Filters</h5>
             </li>
+
+            <li class="text-center" *ngIf="!currentUserGrids?.length">
+                No custom filters found.
+            </li>
+
+
 
             <div style="min-width:300px;width:300px;max-height:300px;overflow:auto">
                 <button ngbDropdownItem class="py-2" (click)="selectTable(row)"
@@ -81,7 +87,8 @@
                     new filter</button>
                 <button ngbDropdownItem (click)="viewAll();myDrop.close()"><i class="mdi mdi-cogs me-2"></i> View
                     All</button>
-                <button ngbDropdownItem (click)="clearFilters();myDrop.close()">
+                <button ngbDropdownItem (click)="clearFilters();myDrop.close()"
+                    *ngIf="(gridApi?.getFilterModel() | json) != '{}'">
                     Clear Filters
                 </button>
 

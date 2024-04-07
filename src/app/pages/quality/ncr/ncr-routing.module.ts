@@ -5,6 +5,7 @@ import { NcrComponent } from './ncr.component';
 import { NcrListComponent } from './ncr-list/ncr-list.component';
 import { NcrOverviewComponent } from './ncr-overview/ncr-overview.component';
 import { NcrCreateComponent } from './ncr-create/ncr-create.component';
+import { CanDeactivateGuard } from '@app/core/guards/CanDeactivateGuard';
 
 const routes: Routes = [
   {
@@ -22,13 +23,15 @@ const routes: Routes = [
       },
       {
         path: 'create',
-        component: NcrCreateComponent
+        component: NcrCreateComponent,
+        canDeactivate: [CanDeactivateGuard],
       },
     ]
   },
   {
     path: 'overview',
-    component: NcrOverviewComponent
+    component: NcrOverviewComponent,
+    canDeactivate: [CanDeactivateGuard],
   },
 ]
 

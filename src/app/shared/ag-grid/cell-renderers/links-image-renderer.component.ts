@@ -9,7 +9,7 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
   selector: 'app-links-image-renderer',
   template: `
   <span *ngFor="let row of params.data?.links">
-    <a  *ngIf="isPdf(row) && row" (click)="viewReceipt(row)"><img src='{{row}}' style="width:25px;height:25px" class="rounded"></a>
+    <a  *ngIf="isPdf(row) && row" (click)="onClick($event, row)"><img src='{{row}}' style="width:25px;height:25px" class="rounded"></a>
     <a  *ngIf="!isPdf(row) && row" (click)="viewReceipt(row)"><i class="mdi mdi-file-pdf-box text-danger" style="font-size:30px;margin-left: -2px;"></i></a>
   </span>
 
@@ -41,8 +41,8 @@ export class LinksImageRendererComponent implements ICellRendererAngularComp {
 
   viewReceipt(row) {
     window.open(row, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
-
   }
+
 
 
   onClick($event: any, row) {
@@ -51,7 +51,8 @@ export class LinksImageRendererComponent implements ICellRendererAngularComp {
       const params = {
         row: row,
         event: $event,
-        rowData: this.params.node.data
+        rowData: this.params.node.data,
+        index: this.params.rowIndex
       }
       this.params.onClick(params);
     }

@@ -14,6 +14,8 @@ import moment from 'moment'
 import { NAVIGATION_ROUTE } from '../material-request-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service'
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
 
 @Component({
   standalone: true,
@@ -22,12 +24,15 @@ import { MaterialRequestService } from '@app/core/api/operations/material-reques
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent
+    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-material-request-list',
   templateUrl: './material-request-list.component.html',
 })
 export class MaterialRequestListComponent implements OnInit {
+  pageId = '/material-request/list-material-request'
 
   constructor(
     public api: MaterialRequestService,
@@ -106,7 +111,7 @@ export class MaterialRequestListComponent implements OnInit {
     this.gridApi.setGridOption('quickFilterText', this.query);
   }
 
-  query = null;
+  query = '';
 
   title = 'Material Request List';
 

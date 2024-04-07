@@ -56,6 +56,7 @@ export class MaterialRequestValidateComponent {
   data: any;
 
   details: FormArray;
+  header
 
   async getData() {
     try {
@@ -64,7 +65,8 @@ export class MaterialRequestValidateComponent {
       this.form?.reset()
 
       this.isLoading = true;
-      let data: any = await this.api.getById(this.id);
+      let data: any = this.header = await this.api.getById(this.id);
+      console.log(data)
       this.data = await this.materialRequestDetailService.find({ mrf_id: data.id });
 
       if (this.data) {

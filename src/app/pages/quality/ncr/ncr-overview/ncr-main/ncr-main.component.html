@@ -4,11 +4,32 @@
       <div class="card-header d-flex align-items-center">
         <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-ncr-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-ncr-form>
+      <div class="card-body" style="min-height:300px300px;height: calc(100vh - 363px);overflow:auto">
+
+        <div *ngIf="(this.form?.value?.created_by != currentUserId) && !this.form?.value?.submitted_date && !isLoading"
+          class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-error-warning-line label-icon"></i>
+          The user that created this request is the only user that can modify this NCR.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <div *ngIf="this.form?.value?.submitted_date && !isLoading"
+          class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert">
+          <i class="ri-checkbox-line label-icon"></i>
+          This NCR was submitted on {{this.form?.value?.submitted_date}}.
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+
+        <app-ncr-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-ncr-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update NCR</button>
+        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">Update
+          NCR</button>
+        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">Update & Close
+          NCR</button>
       </div>
     </div>
   </div>

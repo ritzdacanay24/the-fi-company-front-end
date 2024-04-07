@@ -154,8 +154,6 @@ export class MapComponent implements OnInit {
 
         markerElement.addEventListener('click', (e) => {
             this.fs_scheduler_id = popupText.fs_scheduler_id
-
-            console.log(popupText.techId?.split(','), '====')
             this.activeIds = popupText.techId?.split(',')
             this.scroll(popupText.fs_scheduler_id)
         });
@@ -330,7 +328,6 @@ export class MapComponent implements OnInit {
 
         if (this._marker) this._marker.remove();
 
-        console.log(this._marker)
         this.map.easeTo({
             center: [data.fs_lon, data.fs_lat],
             zoom: 5

@@ -56,6 +56,7 @@ export class UserInfoComponent {
         title: [''],
         workPhone: [''],
         pass: ['', Validators.required],
+        department: [''],
     })
 
     setBooleanToNumber(key) {

@@ -49,6 +49,7 @@ export class UserFormComponent {
     title: [''],
     workPhone: [''],
     pass: ['', Validators.required],
+    department: [''],
   })
 
   setBooleanToNumber(key) {

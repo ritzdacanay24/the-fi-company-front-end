@@ -40,6 +40,7 @@ export class NcrVerificationFormComponent {
     eff_verif_of_ca_dt: [null],
     cmt_cls_by: [''],
     cmt_cls_dt: [null],
+    submitted_date: [null],
   })
 
   setBooleanToNumber(key) {

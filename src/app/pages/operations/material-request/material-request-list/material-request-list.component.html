@@ -4,11 +4,11 @@
       <div class="card-header">
         <div class="d-flex align-items-center">
 
-          <div class="form-icon me-3">
+          <!-- <div class="form-icon me-3">
             <input type="text" class="form-control form-control-icon" style="width:250px"
               (ngModelChange)="search()" [(ngModel)]="query" placeholder="Search">
             <i class="ri-search-2-line"></i>
-          </div>
+          </div> -->
 
           <div class="me-3">
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
@@ -23,9 +23,16 @@
               (change)="getData()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
           </div>
-          <div class="ms-auto">
-            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+
+          <div class="ms-3 ms-auto">
+            <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+              [pageId]="pageId"></app-grid-settings>
           </div>
+
+          <div class="ms-3">
+            <app-grid-filters [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-filters>
+          </div>
+
         </div>
       </div>
       <div class="card-body p-0">

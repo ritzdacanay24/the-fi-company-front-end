@@ -14,6 +14,8 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
 
 @Component({
   standalone: true,
@@ -23,11 +25,15 @@ import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } fr
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-qir-list',
   templateUrl: './qir-list.component.html',
 })
 export class QirListComponent implements OnInit {
+
+  pageId = '/qir/list-qir'
 
   constructor(
     public api: QirService,
@@ -50,7 +56,7 @@ export class QirListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",

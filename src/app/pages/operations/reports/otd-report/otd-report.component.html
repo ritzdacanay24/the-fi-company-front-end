@@ -1,0 +1,120 @@
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card card-body">
+      <div class="d-flex align-items-center">
+        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
+          [displayOptions]="true"></app-date-range>
+
+        <div class="ms-3">
+          <select class="form-select" [(ngModel)]="typeOfView" (change)="getData()">
+            <option *ngFor="let row of ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually']" [value]="row">
+              {{row}}</option>
+          </select>
+        </div>
+
+        <div class="form-check ms-3">
+          <input class="form-check-input" type="checkbox"
+            [disabled]="this.displayCustomers == 'Show All' && this.showAll" [(ngModel)]="showAll" id="displayCustomers"
+            (ngModelChange)="onChange()">
+          <label class="form-check-label" for="displayCustomers">
+            Show All
+          </label>
+        </div>
+        <h4 class="card-title mb-0 ms-auto">OTD Based On Performance Date</h4>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body" style="max-height:470px;min-height:470px;overflow:auto">
+        <div *ngIf="isLoading" class="p-5 card-body text-center">
+          <h4>
+            <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading Data. Please wait...</p>
+          </h4>
+        </div>
+        <div [hidden]="isLoading">
+
+          <app-otd-chart [data]="dataChart?.chartnew" [labels]="dataChart?.obj?.label" [title]="displayCustomers"
+            [average]="average" [stacked]="true">
+          </app-otd-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0 flex-grow-1"> OTD Summary </h4>
+      </div>
+      <div class="card-body" style="max-height:417px;min-height:417px;overflow:auto">
+          <table class="table table-sm table-hover text-nowarap">
+            <thead class="sticky-top bg-light" style="top:-17px;z-index: 1">
+              <tr>
+                <th>Rank</th>
+                <th>Customer</th>
+                <!-- <th class="text-end">Late</th> -->
+                <th class="text-end">On Time</th>
+                <th class="text-end">Total</th>
+                <th class="text-end">OTD %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of summary; let i = index" class="pointer" (click)="onCustomerChange(row)"
+                [ngClass]="{'bg-primary-subtle text-primary':displayCustomers == row.label}">
+                <td>{{i+1}}</td>
+                <td><a class="text-decoration-underline pointer link-primary">{{row.label}}</a> </td>
+                <!-- <td class="text-end">{{row.total_shipped_late}}</td> -->
+                <td class="text-end">{{row.total_shipped_on_time}}</td>                
+                <td class="text-end">{{row.total_lines}}</td>
+                <td class="text-end"
+                  [ngClass]="{'bg-success-subtle text-success': row.value >=75,'bg-danger-subtle text-danger': row.value < 75}">
+                  {{row.value | number: '1.0-0'}} %</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex align-items-center">
+          <div class="form-icon">
+            <input type="search" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+              placeholder="Search">
+            <i class="ri-search-2-line"></i>
+          </div>
+
+          <div class="ms-3">
+            <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+              [pageId]="pageId"></app-grid-settings>
+          </div>
+
+
+          <div class="ms-3">
+            <app-grid-filters [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-filters>
+          </div>
+
+          <div class="ms-auto">
+            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
+        </ag-grid-angular>
+      </div>
+    </div>
+  </div>
+</div>

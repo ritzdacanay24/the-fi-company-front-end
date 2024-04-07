@@ -26,6 +26,7 @@ import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util'
 import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
 import printJS from 'print-js'
+import { Lightbox } from 'ngx-lightbox'
 
 /**
  * Sanitize HTML
@@ -286,7 +287,8 @@ export class UploadedReceiptComponent implements OnInit {
     private offcanvasService: NgbOffcanvas,
     private tripExpenseTransactionsService: TripExpenseTransactionsService,
     private domSanitizer: DomSanitizer,
-    private workOrderService: WorkOrderService
+    private workOrderService: WorkOrderService,
+    private lightbox: Lightbox
   ) {
   }
 
@@ -338,9 +340,23 @@ export class UploadedReceiptComponent implements OnInit {
     return { groups, groupArrays }
   }
 
+  
+  images = []
+  open(index: number): void {
+      // open lightbox
+      this.lightbox.open(this.images, index, {});
+  }
+
+  close(): void {
+      // close lightbox programmatically
+      this.lightbox.close();
+  }
+
+
   loading = false;
   originalData
   async getData(clear = true) {
+    this.images = []
     if (clear)
       this.data = [];
     try {
@@ -348,6 +364,19 @@ export class UploadedReceiptComponent implements OnInit {
       let data: any = await this.workOrderService.getById(this.workOrderId)
       this.fsId = data?.fs_scheduler_id
       this.data = await this.tripExpenseService.getByFsId(data?.fs_scheduler_id)
+
+      for (let i = 0; i < this.data.length; i++) {
+        let row = this.data[i]
+        const src = row.link;
+        const caption = 'Image ' + i + '- ' + row.created_date;
+        const thumb = src;
+        const item = {
+            src: src,
+            caption: caption,
+            thumb: thumb
+        };
+        this.images.push(item);
+    }
 
 
       this.getTripExenses(this.data)
@@ -524,8 +553,10 @@ export class UploadedReceiptComponent implements OnInit {
     }
   }
 
-  viewReceipt(row, link) {
-    window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
+  viewReceipt(e) {
+    this.lightbox.open(this.images, e.index, {});
+
+    //window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
   }
 
   gridApi: any
@@ -556,7 +587,7 @@ export class UploadedReceiptComponent implements OnInit {
           suppressHeaderMenuButton: true,
           floatingFilter: false,
           cellRendererParams: {
-            onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
+            onClick: (e: any) => this.viewReceipt(e),
             iconName: 'mdi mdi-view-list',
             classColor: 'text-info'
           },
@@ -683,7 +714,7 @@ export class UploadedReceiptComponent implements OnInit {
           filter: 'agMultiColumnFilter',
           cellRenderer: LinkImageRendererComponent,
           cellRendererParams: {
-            onClick: e => this.viewReceipt(e.rowData, e.rowData.link),
+            onClick: e => this.viewReceipt(e),
             iconName: 'mdi mdi-view-list',
             classColor: 'text-info'
           },

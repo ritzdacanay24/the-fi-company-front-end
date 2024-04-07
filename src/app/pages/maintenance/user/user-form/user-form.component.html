@@ -34,16 +34,17 @@
 
   <div class="row">
     <div class="col-md mb-3">
-      <label class="form-label">Area</label>
-      <input type="text" class="form-control" name="area" formControlName="area" placeholder="Enter area"
-        [ngClass]="{ 'is-invalid': submitted && f.area.errors }" />
+      <label class="form-label required">Department</label>
+      <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
+        <option *ngFor="let row of ['Warehouse', 'Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering']">{{row}}</option>
+      </select>
     </div>
   </div>
 
   <div class="row">
     <div class="col-md mb-3">
-      <label class="form-label">Work Area</label>
-      <input type="text" class="form-control" name="workArea" formControlName="workArea" placeholder="Enter work area"
+      <label class="form-label">User Roles</label>
+      <input type="text" class="form-control" name="workArea" formControlName="workArea" placeholder="Enter user role"
         [ngClass]="{ 'is-invalid': submitted && f.workArea.errors }" />
     </div>
   </div>

@@ -12,6 +12,9 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { Lightbox } from 'ngx-lightbox';
+import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-renderer.component';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
     standalone: true,
@@ -33,6 +36,8 @@ export class NcrAttachmentsListComponent implements OnInit {
         public ncrService: NcrService,
         public attachmentsService: AttachmentsService,
         private toastrService: ToastrService,
+        private lightbox: Lightbox,
+        private authenticationService: AuthenticationService
     ) {
     }
 
@@ -45,6 +50,18 @@ export class NcrAttachmentsListComponent implements OnInit {
             this.getData()
         }
     }
+
+    images = []
+    open(index: number): void {
+        // open lightbox
+        this.lightbox.open(this.images, index, {});
+    }
+
+    close(): void {
+        // close lightbox programmatically
+        this.lightbox.close();
+    }
+
 
     @Input() id = null
 
@@ -70,11 +87,43 @@ export class NcrAttachmentsListComponent implements OnInit {
     data
 
     async getData() {
+        this.images = []
         this.data = await this.attachmentsService.find({ field: 'NCR', uniqueId: this.id, active: 1 })
+
+        for (let i = 0; i < this.data.length; i++) {
+            let row = this.data[i]
+            const src = `https://dashboard.eye-fi.com/attachments/ncr/${row.fileName}`;
+            const caption = 'Image ' + i + '- ' + row.createdDate;
+            const thumb = src;
+            const item = {
+                src: src,
+                caption: caption,
+                thumb: thumb
+            };
+            this.images.push(item);
+        }
     }
 
-    onEdit(fileName) {
-        window.open(`https://dashboard.eye-fi.com/attachments/ncr/${fileName}`, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
+    async onDelete(data) {
+        if (this.authenticationService.currentUserValue.id != data.createdBy) {
+            alert('Access denied. ')
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this attachment?')) return;
+
+        try {
+            await this.attachmentsService.delete(data.id)
+            this.getData()
+        } catch (err) {
+
+        }
+
+    }
+
+    onEdit(e) {
+        //this.lightbox.open(this.images, e.index, {});
+        window.open(`https://dashboard.eye-fi.com/attachments/ncr/${e}`, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
     }
 
     columnDefs: any = [
@@ -83,7 +132,7 @@ export class NcrAttachmentsListComponent implements OnInit {
             pinned: "left",
             cellRenderer: LinkRendererComponent,
             cellRendererParams: {
-                onClick: (e: any) => this.onEdit(e.rowData.fileName),
+                onClick: (e: any) => this.onEdit(e.rowData?.fileName),
                 value: 'SELECT'
             },
             maxWidth: 115,
@@ -94,6 +143,14 @@ export class NcrAttachmentsListComponent implements OnInit {
         { field: "createdBy", headerName: "Created By", filter: "agTextColumnFilter" },
         { field: "fileName", headerName: "File name", filter: "agTextColumnFilter", cellDataType: 'text' },
         { field: "ext", headerName: "Ext", filter: "agTextColumnFilter", cellDataType: 'text' },
+        {
+            field: "Delete", headerName: "Delete", filter: "agMultiColumnFilter",
+            cellRenderer: IconRendererComponent,
+            cellRendererParams: {
+                onClick: e => { this.onDelete(e.rowData) },
+                iconName: 'mdi mdi-delete text-danger'
+            }
+        },
     ]
 
     gridApi

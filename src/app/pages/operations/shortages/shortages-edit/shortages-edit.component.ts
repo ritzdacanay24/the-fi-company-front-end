@@ -31,6 +31,7 @@ export class ShortagesEditComponent {
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
+      this.goBackUrl = params['goBackUrl'];
     });
 
     if (this.id) this.getData();
@@ -45,9 +46,13 @@ export class ShortagesEditComponent {
   isLoading = false;
 
   submitted = false;
-
+  goBackUrl
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    if (this.goBackUrl) {
+      this.router.navigateByUrl(this.goBackUrl);
+    } else {
+      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+    }
   }
 
   printData;

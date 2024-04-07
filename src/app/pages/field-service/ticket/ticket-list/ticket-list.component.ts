@@ -68,6 +68,7 @@ export class TicketListComponent implements OnInit {
     { field: 'customerName1', headerName: 'Customer name', filter: 'agMultiColumnFilter' },
     { field: 'dateSubmitted', headerName: 'Date Submitted', filter: 'agMultiColumnFilter' },
     { field: 'workCompleted', headerName: 'Work Completed', filter: 'agMultiColumnFilter' },
+    { field: 'status', headerName: 'Status', filter: 'agMultiColumnFilter' },
     { field: 'workCompletedComment', headerName: 'Comments', filter: 'agMultiColumnFilter', maxWidth: 300 },
   ]
 
@@ -172,6 +173,10 @@ export class TicketListComponent implements OnInit {
       if (this.selectedViewType != 'All') {
         let status = this.selectedViewOptions.find(person => person.name == this.selectedViewType)
         params = { active: status.value };
+      }
+
+      if(this.selectedViewType == 'Open'){
+        this.isAll = true;
       }
 
       this.data = await this.api.getAllRequests(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll)

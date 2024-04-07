@@ -209,6 +209,7 @@ export class JobListComponent implements OnInit {
         onClick: (e: any) => this.viewBilling(e.rowData.id),
       },
     },
+    { field: 'days_before_service', headerName: 'Age', filter: 'agMultiColumnFilter' },
     { field: 'property', headerName: 'Property', filter: 'agMultiColumnFilter' },
     { field: 'state', headerName: 'State', filter: 'agMultiColumnFilter' },
     { field: 'fs_lat', headerName: 'Latitude', filter: 'agMultiColumnFilter' },
@@ -225,6 +226,14 @@ export class JobListComponent implements OnInit {
     },
     { field: 'active', headerName: 'Active', filter: 'agSetColumnFilter' },
     { field: 'notice_email_date', headerName: 'Notice Email Date', filter: 'agSetColumnFilter' },
+    { field: 'service_type', headerName: 'Service', filter: 'agSetColumnFilter' },
+    { field: 'sales_order_number', headerName: 'SO #', filter: 'agSetColumnFilter' },
+    { field: 'sign_type', headerName: 'Sign Type', filter: 'agSetColumnFilter' },
+    { field: 'sign_theme', headerName: 'Sign Theme', filter: 'agSetColumnFilter' },
+    { field: 'out_of_state', headerName: 'Out Of State', filter: 'agSetColumnFilter' },
+    { field: 'createdByUserName', headerName: 'Job Created By', filter: 'agSetColumnFilter' },
+    { field: 'created_date', headerName: 'Job Created Date', filter: 'agSetColumnFilter' },
+    { field: 'cancellation_comments', headerName: 'Cancelled Comments', filter: 'agSetColumnFilter' },
   ];
 
   gridOptions: GridOptions = {
@@ -261,6 +270,11 @@ export class JobListComponent implements OnInit {
   data: any = []
   async getData() {
     try {
+
+      if (this.selectedViewType == 'Open') {
+        this.isAll = true;
+      }
+
       this.gridApi?.showLoadingOverlay()
       this.data = await this.jobService.getAllRequests(this.dateFrom, this.dateTo, this.selectedViewType, this.isAll);
       this.gridApi?.hideOverlay()

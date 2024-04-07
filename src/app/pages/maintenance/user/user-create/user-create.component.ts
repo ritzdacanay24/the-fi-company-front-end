@@ -46,7 +46,7 @@ export class UserCreateComponent {
   form = this.fb.group({
     access: [1],
     active: [1],
-    area: [''],
+    area: [null, Validators.required],
     workArea: [''],
     attempts: [0],
     createdDate: [''],

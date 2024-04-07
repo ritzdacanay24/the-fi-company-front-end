@@ -5,7 +5,8 @@
         <!-- Buttons with Label -->
         <button type="button" class="arrow-none btn btn-light btn-label waves-effect waves-light" (click)="openUp()"
             data-bs-toggle="dropdown" ngbDropdownToggle>
-            <i class="ri-settings-4-line label-icon align-middle fs-16 me-2"></i> Grid Settings</button>
+            <i class="ri-settings-4-line label-icon align-middle fs-16 me-2 border-end"
+                [ngClass]="{'text-info':currentView}"></i> Grid Settings</button>
 
         <!-- <a class="text-reset dropdown-btn arrow-none" href="javascript:void(0);" data-bs-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false" ngbDropdownToggle (click)="openUp()">

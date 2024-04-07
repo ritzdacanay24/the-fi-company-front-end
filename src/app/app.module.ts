@@ -37,6 +37,7 @@ import { ColorPickerModule } from 'ngx-color-picker';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { LightboxModule } from 'ngx-lightbox';
 import { FlatpickrModule } from 'angularx-flatpickr';
+import { CanDeactivateGuard } from './core/guards/CanDeactivateGuard';
 
 
 export function createTranslateLoader(http: HttpClient): any {
@@ -83,6 +84,7 @@ export function createTranslateLoader(http: HttpClient): any {
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
+    CanDeactivateGuard,
     provideEnvironmentNgxMask()
   ],
   bootstrap: [AppComponent]

@@ -28,17 +28,6 @@
               [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
           </div>
 
-          <div class="mb-3">
-            <label class="form-label required">Password</label>
-            <input type="password" class="form-control" name="password" formControlName="password"
-              placeholder="Enter password" [ngClass]="{ 'is-invalid': submitted && f.password.errors }" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label required">Confirm Password</label>
-            <input type="password" class="form-control" name="confirmPassword" formControlName="confirmPassword"
-              placeholder="Repeat password" [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" />
-          </div>
-
           <div class="row">
             <div class="col-md mb-3">
               <label class="form-label required">Title</label>
@@ -49,11 +38,23 @@
 
           <div class="row">
             <div class="col-md mb-3">
-              <label class="form-label">Department</label>
-              <input type="text" class="form-control" name="area" formControlName="area" placeholder="Enter area"
-                [ngClass]="{ 'is-invalid': submitted && f.area.errors }" />
+              <label class="form-label required">Department</label>
+              <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
+                <option *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering']">{{row}} </option>
+              </select>
             </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label required">Password</label>
+            <input type="password" class="form-control" name="password" formControlName="password"
+              placeholder="Enter password" [ngClass]="{ 'is-invalid': submitted && f.password.errors }" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Confirm Password</label>
+            <input type="password" class="form-control" name="confirmPassword" formControlName="confirmPassword"
+              placeholder="Repeat password" [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" />
+          </div>
+        
 
           <div class="mb-3">
             <label class="form-label">Work Phone</label>

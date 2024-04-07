@@ -11,7 +11,7 @@
     </div>
     <div class="col mb-3">
       <app-qad-wo-search (notifyParent)="setOrkOrderNumber($event)" [value]="f.wo_nbr.value"
-        [addTag]="true"></app-qad-wo-search>
+        [disabled]="this.form.disabled" [addTag]="true"></app-qad-wo-search>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
     <div class="col mb-3">
       <label for="ca_due_dt" class="form-label">Complaint Code</label>
       <select class="form-select" formControlName="complaint_code">
-        <option selected disabled value="">--SELECT--</option>
+        <option selected disabled value="null">--SELECT--</option>
         <option *ngFor="let row of complaint_codes" [value]="row.name">{{row.name}} - {{row.id}}</option>
       </select>
     </div>
@@ -36,7 +36,8 @@
 
   <div class="row">
     <div class="col mb-3">
-      <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qir_number.value"></app-qir-search>
+      <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qir_number.value"
+        [disabled]="this.form.disabled"></app-qir-search>
     </div>
   </div>
 
@@ -195,6 +196,44 @@
           <input type="date" class="form-control" id="icm_dspn_dt" formControlName="icm_dspn_dt">
         </div>
       </div>
+    </div>
+  </div>
+
+  <h4 class="p-2 bg-light mb-3 text-center">Corrective Action</h4>
+  <div class="mb-3">
+    <label for="ca_action_req" class="form-label me-2">Corrective Action Required?</label>
+    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+      <label class="form-check-label">
+        <input type="radio" class="form-check-input" name="ca_action_req" id="ca_action_req" [value]="row"
+          formControlName="ca_action_req" placeholder="Enter Issued By">
+        <i class="input-frame"></i>
+        {{row}}
+      </label>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-7 mb-3">
+      <label for="iss_by" class="form-label">Issued By:</label>
+      <input type="text" class="form-control" id="iss_by" formControlName="iss_by" placeholder="Enter Issued By">
+    </div>
+    <div class="col mb-3">
+      <label for="iss_dt" class="form-label">Issued Date:</label>
+      <input type="date" class="form-control" id="iss_dt" formControlName="iss_dt">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-4 mb-3">
+      <label for="ca_iss_to" class="form-label">Corrective Action Issued To</label>
+      <select class="form-select" id="ca_iss_to" formControlName="ca_iss_to">
+        <option selected disabled value="">--SELECT--</option>
+        <option *ngFor="let row of corrective_action_issued_to">{{row}}</option>
+      </select>
+    </div>
+    <div class="col mb-3">
+      <label for="ca_due_dt" class="form-label">Due Date</label>
+      <input type="date" class="form-control" id="ca_due_dt" formControlName="ca_due_dt">
     </div>
   </div>
 

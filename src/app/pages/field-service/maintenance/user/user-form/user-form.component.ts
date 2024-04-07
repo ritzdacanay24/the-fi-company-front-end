@@ -47,6 +47,8 @@ export class UserFormComponent {
     leadInstaller: [0],
     title: [''],
     workPhone: [''],
+    department: [null],
+    workArea: [''],
   })
 
   setBooleanToNumber(key) {

@@ -23,7 +23,7 @@
                       <div class="hstack gap-3 flex-wrap">
                         <div><i class="ri-building-line align-bottom me-1"></i> {{schedulerInfo?.property}}</div>
                         <div class="vr"></div>
-                        <div>FSID : <span class="fw-medium">{{schedulerInfo?.fs_scheduler_id}}</span></div>
+                        <div>FSID : <a (click)="viewJobInfo()" class="pointer"><u><span class="fw-medium">{{schedulerInfo?.fs_scheduler_id}}</span></u></a></div>
                         <div class="vr"></div>
                         <div>Service Type : <span class="fw-medium">{{schedulerInfo?.service_type}}</span></div>
                         <div class="vr"></div>

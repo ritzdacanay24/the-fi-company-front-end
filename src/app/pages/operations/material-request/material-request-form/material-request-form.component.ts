@@ -18,6 +18,7 @@ import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
+import { Router } from '@angular/router';
 
 @Component({
   standalone: true,
@@ -39,7 +40,8 @@ export class MaterialRequestFormComponent {
     private store: Store<RootReducerState>,
     private authenticationService: AuthenticationService,
     private materialRequestService: MaterialRequestService,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private router: Router,
   ) {
     this.store.select(getLayoutMode).subscribe((mode) => {
       this.aceTheme = mode == 'dark' ? 'merbivore_soft' : 'tomorrow';;
@@ -56,6 +58,10 @@ export class MaterialRequestFormComponent {
     // this.editor.setOptions({
     //   placeholder: "Enter CSS Code",
     // })
+  }
+
+  viewShortageId(shortageId) {
+    this.router.navigate(['/dashboard/operations/shortages/edit'], { queryParams: { id: shortageId, goBackUrl: this.router.url} });
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();

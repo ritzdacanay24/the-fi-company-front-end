@@ -14,6 +14,8 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
 
 @Component({
   standalone: true,
@@ -23,11 +25,15 @@ import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } fr
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: 'app-ncr-list',
   templateUrl: './ncr-list.component.html',
 })
 export class NcrListComponent implements OnInit {
+
+  pageId = '/ncr/list-ncr'
 
   constructor(
     public api: NcrService,
@@ -62,15 +68,73 @@ export class NcrListComponent implements OnInit {
       maxWidth: 115,
       minWidth: 115
     },
-    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-    { field: "ncr_type", headerName: "Type", filter: "agTextColumnFilter" },
-    { field: "initiated_by", headerName: "Initiated By", filter: "agTextColumnFilter" },
-    { field: "wo_nbr", headerName: "WO#", filter: "agTextColumnFilter", cellDataType: 'text' },
-    { field: "submitted_date", headerName: "Submitted Date", filter: "agTextColumnFilter" },
-    { field: "po_nbr", headerName: "PO #", filter: "agTextColumnFilter", cellDataType: 'text' },
-    { field: "pt_nbr", headerName: "Part #", filter: "agTextColumnFilter" },
-    { field: "created_date", headerName: "Created Date", filter: "agTextColumnFilter" },
-    { field: "created_by", headerName: "Created By", filter: "agTextColumnFilter" },
+    {
+      headerName: 'Main Info',
+      children: [
+        { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
+        { field: "ncr_type", headerName: "Type", filter: "agTextColumnFilter" },
+        { field: "source", headerName: "Source", filter: "agTextColumnFilter" },
+        { field: "qir_number", headerName: "QIR#", filter: "agTextColumnFilter" },
+        { field: "initiated_by", headerName: "Initiated By", filter: "agTextColumnFilter" },
+        { field: "wo_nbr", headerName: "WO#", filter: "agTextColumnFilter", cellDataType: 'text' },
+        { field: "submitted_date", headerName: "Submitted Date", filter: "agTextColumnFilter" },
+        { field: "po_nbr", headerName: "PO #", filter: "agTextColumnFilter", cellDataType: 'text' },
+        { field: "pt_nbr", headerName: "Part #", filter: "agTextColumnFilter" },
+        { field: "created_date", headerName: "Created Date", filter: "agTextColumnFilter" },
+        { field: "created_by", headerName: "Created By", filter: "agTextColumnFilter" },
+      ]
+    },
+    {
+      headerName: 'Corrective Actions',
+      children: [
+        {
+          field: "View", headerName: "View CA", filter: "agMultiColumnFilter",
+          cellRenderer: LinkRendererComponent,
+          cellRendererParams: {
+            onClick: (e: any) => this.onEdit(e.rowData.id, 2),
+            isLink: true,
+            value: 'View CA'
+          },
+          maxWidth: 115,
+          minWidth: 115
+        },
+        { field: "ca_iss_to", headerName: "CA Issued To", filter: "agTextColumnFilter" },
+        { field: "ca_due_dt", headerName: "CA Issued Due Date", filter: "agTextColumnFilter" },
+        { field: "ca_action_req", headerName: "Action Required", filter: "agTextColumnFilter" },
+        { field: "iss_by", headerName: "Issued By", filter: "agTextColumnFilter" },
+        { field: "iss_dt", headerName: "Issued Date", filter: "agTextColumnFilter" },
+        { field: "planned_ca_impl_dt", headerName: "Planned Implementation Date ", filter: "agTextColumnFilter" },
+        { field: "ca_by", headerName: "User", filter: "agTextColumnFilter" },
+        { field: "ca_title", headerName: "Title", filter: "agTextColumnFilter" },
+        { field: "ca_dt", headerName: "CA Issued Date", filter: "agTextColumnFilter" },
+        { field: "ca_impl_by", headerName: "Implementation By", filter: "agTextColumnFilter" },
+        { field: "ca_impl_title", headerName: "Implementation Title", filter: "agTextColumnFilter" },
+        { field: "ca_impl_dt", headerName: "Implementation Date", filter: "agTextColumnFilter" },
+        { field: "ca_submitted_date", headerName: "Submitted Date", filter: "agTextColumnFilter" },
+      ],
+    },
+    {
+      headerName: 'Verification',
+      children: [
+        {
+          field: "View", headerName: "View Verification", filter: "agMultiColumnFilter",
+          cellRenderer: LinkRendererComponent,
+          cellRendererParams: {
+            onClick: (e: any) => this.onEdit(e.rowData.id, 3),
+            isLink: true,
+            value: 'View Verification'
+          },
+          maxWidth: 115,
+          minWidth: 115
+        },
+        { field: "verif_of_ca_by", headerName: "Verified By", filter: "agTextColumnFilter" },
+        { field: "verif_of_ca_dt", headerName: "Verified Date", filter: "agTextColumnFilter" },
+        { field: "eff_verif_of_ca_by", headerName: "Effectiveness Verification of CA By", filter: "agTextColumnFilter" },
+        { field: "eff_verif_of_ca_dt", headerName: "Effectiveness Verification of CA Date", filter: "agTextColumnFilter" },
+        { field: "cmt_cls_by", headerName: "Comments/Closure By", filter: "agTextColumnFilter" },
+        { field: "cmt_cls_dt", headerName: "Comments/Closure Date", filter: "agTextColumnFilter" },
+      ]
+    },
   ]
 
   @Input() selectedViewType = 'Open';
@@ -146,15 +210,21 @@ export class NcrListComponent implements OnInit {
     });
   }
 
-  onEdit(id) {
+  onEdit(id, active = 1) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
     this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
       queryParamsHandling: 'merge',
       queryParams: {
         id: id,
-        gridParams
+        gridParams,
+        active: active
       }
     });
+  }
+
+  summaryInfo: any
+  async getOpenSummary() {
+    this.summaryInfo = await this.api.getOpenSummary();
   }
 
   async getData() {
@@ -165,6 +235,10 @@ export class NcrListComponent implements OnInit {
       if (this.selectedViewType != 'All') {
         let status = this.selectedViewOptions.find(person => person.name == this.selectedViewType)
         params = { active: status.value };
+      }
+
+      if (this.selectedViewType == 'Open') {
+        this.isAll = true;
       }
 
       this.data = await this.api.getList(this.selectedViewType, this.dateFrom, this.dateTo, this.isAll);
@@ -181,6 +255,8 @@ export class NcrListComponent implements OnInit {
       });
 
       this.gridApi?.hideOverlay()
+
+      this.getOpenSummary();
 
     } catch (err) {
       this.gridApi?.hideOverlay()

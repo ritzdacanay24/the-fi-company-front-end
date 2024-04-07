@@ -26,9 +26,9 @@ export class NotesModalService {
     public modalService: NgbModal
   ) { }
 
-  public open(orderNum: string, type: string) {
+  public open(orderNum: string, misc, type: string) {
     this.modalRef = this.modalService.open(NotesModalComponent, { size: 'lg' });
-    this.modalRef.componentInstance.data = { orderNum, type };
+    this.modalRef.componentInstance.data = { orderNum, type, misc };
     return this.modalRef;
   }
 
@@ -79,6 +79,7 @@ export class NotesModalComponent {
     orderNum: string
     type: string
     userId: number
+    misc: any
   };
   @Output() passEntry: EventEmitter<any> = new EventEmitter();
 

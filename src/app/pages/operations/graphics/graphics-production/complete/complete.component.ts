@@ -88,8 +88,12 @@ export class CompleteComponent implements OnInit {
     /**
      * TODO: Save to db
      */
-    await this.api
+    try{
+      await this.api
       .updateGraphics(this.data)
+      this.close();
+    } catch (err){
+    }
   }
 
 }

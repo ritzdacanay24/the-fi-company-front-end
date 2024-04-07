@@ -310,10 +310,10 @@ export class ShippingComponent implements OnInit {
     }
 
     viewNotes = (e: { rowData: any }) => {
-        const uniqueId = `${e.rowData.SOD_NBR}`
-        let modalRef = this.notesModalService.open(uniqueId, 'Sales Order')
+        const uniqueId = `${e.rowData.SOD_NBR}-${e.rowData.SOD_LINE}`
+        let modalRef = this.notesModalService.open(uniqueId, e.rowData.recent_notes, 'Sales Order')
         modalRef.result.then((result: any) => {
-            e.rowData.misc = result;
+            e.rowData.recent_notes = result;
             this.sendAndUpdate(e.rowData, e.rowData.id);
         }, () => { });
     }

@@ -71,6 +71,8 @@ export class QirSearchComponent implements OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['value']?.currentValue) {
       this.value = changes['value'].currentValue || null;
+    } else {
+      this.value = null
     }
   }
 

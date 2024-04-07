@@ -26,7 +26,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
 
     this.recent_comments = params.data.recent_comments;
 
-    this.atRisk = ['at risk'].includes(this.params.data.misc?.userName?.toLowerCase());
+    this.atRisk = ['at risk'].includes(this.params.data.misc?.userName?.toString()?.toLowerCase());
 
     if (!isEmpty(this.recent_comments) && this.recent_comments) {
       this.icon = this.recent_comments?.color_class_name == 'text-info' || this.recent_comments?.color_class_name == 'text-success' ? 'mdi-comment-text' : this.icon;

@@ -4,6 +4,7 @@ import { NcrComplainCodeService } from '@app/core/api/quality/ncr/ncr-complain-c
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
 import { SharedModule } from '@app/shared/shared.module';
+import { corrective_action_issued_to } from '../ncr-corrective-action-form/ncr-corrective-action-form.component';
 
 @Component({
   standalone: true,
@@ -53,6 +54,8 @@ export class NcrFormComponent {
   ncr_types: any[] = ["Internal", "Supplier", "Customer Return", "Internal Audit", "Customer Complaint"];
   cont_types: any[] = ["Rework", "RTV", "UAI", "MRB", "Scrap", "Others"];
 
+  corrective_action_issued_to = corrective_action_issued_to;
+  
   form = this.fb.group({
     source: [''],
     po_nbr: [''],
@@ -84,6 +87,13 @@ export class NcrFormComponent {
     created_by: [null],
     created_date: [null],
     updated_by: [null],
+    submitted_date: [null],
+
+    ca_action_req: [''],
+    iss_by: [''],
+    iss_dt: [null],
+    ca_iss_to: [null],
+    ca_due_dt: [null],
   })
 
   setBooleanToNumber(key) {

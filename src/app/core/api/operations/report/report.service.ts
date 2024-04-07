@@ -55,4 +55,7 @@ export class ReportService {
   getItemConsolidationReport = async () =>
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/ItemConsolidation/itemConsolidationReport`))
 
+  getOtdReport = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/report/getOtdReport?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`))
+
 }

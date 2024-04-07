@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnInit } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -30,6 +30,16 @@ export class NcrCreateComponent implements OnInit {
   }
 
   ngOnInit(): void { }
+
+
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm('You have unsaved changes. Discard and leave?');
+    }
+    return true;
+  }
+
 
   title = "Job Create";
 
@@ -77,6 +87,7 @@ export class NcrCreateComponent implements OnInit {
       let { insertId } = await this.api.create(this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
+      this.form.markAsPristine();
       this.goBack(insertId);
     } catch (err) {
       this.isLoading = false;

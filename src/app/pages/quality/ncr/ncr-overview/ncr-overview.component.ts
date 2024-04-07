@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, HostListener, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
@@ -8,6 +8,7 @@ import { NcrCorrectiveAcrionComponent } from './ncr-corrective-action/ncr-correc
 import { NcrVerificationComponent } from './ncr-verification/ncr-verification.component';
 import { NAVIGATION_ROUTE } from '../ncr-constant';
 import { NcrAttachmentsListComponent } from './ncr-attachments-list/ncr-attachments-list.component';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   standalone: true,
@@ -53,7 +54,27 @@ export class NcrOverviewComponent implements OnInit {
 
   title = "NCR Overview";
 
+  form: FormGroup;
+
+  setFormEmitterParent($event) {
+    this.form = $event;
+  }
+
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm('You have unsaved changes. Discard and leave?');
+    }
+    return true;
+  }
+
   onNavChange($event) {
+    $event.preventDefault();
+    if (this.form?.dirty) {
+      if (!confirm('You have unsaved changes. Discard and leave?')) return null;
+      this.form.markAsPristine();
+    }
+    
     this.router.navigate(['.'], {
       queryParams: {
         active: $event?.nextId
@@ -61,6 +82,7 @@ export class NcrOverviewComponent implements OnInit {
       relativeTo: this.activatedRoute
       , queryParamsHandling: 'merge'
     });
+    return false;
   }
 
   @Input() goBack: Function = () => {

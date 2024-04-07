@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '@app/shared/shared.module';
 
+export const corrective_action_issued_to: any[] = ["Production", "Logistics", "Quality", "NPI"];
+
 @Component({
   standalone: true,
   imports: [
@@ -21,6 +23,7 @@ export class NcrCorrectiveActionFormComponent {
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form)
   }
+  corrective_action_issued_to = corrective_action_issued_to;
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
@@ -32,7 +35,6 @@ export class NcrCorrectiveActionFormComponent {
     return this.form.controls
   }
 
-  corrective_action_issued_to: any[] = ["Production", "Logistics", "Quality", "NPI"];
 
   form = this.fb.group({
     ca_action_req: [''],

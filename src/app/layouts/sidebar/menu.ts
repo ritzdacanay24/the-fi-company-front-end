@@ -262,6 +262,15 @@ export const MENU: MenuItem[] = [
             description: "Revenue by customer"
           },
           {
+            label: 'MENUITEMS.OPERATIONS.REPORTS.OTD_REPORT',
+            link: '/dashboard/operations/reports/otd-report',
+            description: "OTD Report",
+            badge: {
+              variant:"badge bg-success",
+              text:"New"
+            }
+          },
+          {
             label: 'MENUITEMS.OPERATIONS.REPORTS.WIP_REPORT',
             link: '/dashboard/operations/reports/wip-report',
             description: "WIP Report"

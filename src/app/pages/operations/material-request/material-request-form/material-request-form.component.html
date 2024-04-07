@@ -97,8 +97,38 @@
     </div>
   </div>
 
+  <div class="table-responsive text-nowrap">
+    <table class="table table-bordered" *ngIf="getDetails.length && this.form.value.main.pickedCompletedDate">
+      <thead>
+        <tr class="text-nowrap">
+          <th>Part #</th>
+          <th>Description</th>
+          <th>Reason</th>
+          <th class="text-end">Qty</th>
+          <th class="text-end">Qty Picked</th>
+          <th class="text-end">Shortage ID</th>
+          <th>Transaction</th>
+          <th>Account Code</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of getDetails.controls;">
+          <td>{{row.value.partNumber}}</td>
+          <td>{{row.value.description}}</td>
+          <td>{{row.value.reasonCode}}</td>
+          <td class="text-end">{{row.value.qty}}</td>
+          <td class="text-end">{{row.value.qtyPicked}}</td>
+          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)" class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
+          <td>{{row.value.trType}}</td>
+          <td>{{row.value.ac_code}}</td>
+          <td>{{row.value.notes}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-  <ng-container formGroupName="details" *ngIf="getDetails.length">
+  <ng-container formGroupName="details" *ngIf="getDetails.length && !this.form.value.main.pickedCompletedDate">
     <div class="table-responsive">
       <table class="table align-middle table-bordered">
         <thead>
