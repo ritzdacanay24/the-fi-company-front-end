@@ -58,7 +58,7 @@
                   placement="end" [ngbTooltip]="subitem.link" container="body" [autoClose]="true" #t="ngbTooltip">
                   <a class="nav-link w-100" style="height:auto;">
                     <div class="ms-2 me-auto" style="white-space:normal;overflow: hidden;">
-                      <p class="mb-0 pb-0">{{ subitem.label | translate}}</p>
+                      <p class="mb-0 pb-0">{{ subitem.label}}</p>
                       <!-- <p style="font-size:10px;">{{ subitem.link}}</p> -->
                     </div>
                     <i style="position:absolute;right:10px"
@@ -75,7 +75,7 @@
 
           @for(item of menuItems; track $index){
           @if(item.isTitle){
-          <li class="menu-title"><span data-key="t-menu">{{ item.label | translate }}</span></li>
+          <li class="menu-title"><span data-key="t-menu">{{ item.label }}</span></li>
           }@else{
 
           <li class="nav-item pointer">
@@ -83,8 +83,8 @@
             <a class="is-parent nav-link menu-link" [ngClass]="{'has-arrow': !item.badge, 'has-dropdown': item.badge}"
               data-bs-toggle="collapse" [attr.aria-expanded]="!item.isCollapsed" (click)="toggleItem(item)">
               <i class="{{ item.icon }} icon nav-icon" class=""></i>
-              <span class=""> {{ item.label | translate }}</span>
-              @if(item.badge){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text
+              <span class=""> {{ item.label }}</span>
+              @if(item.badge && !item.showStar){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text
                 }}</span>}
             </a>
 
@@ -95,9 +95,9 @@
                   @if(hasItems(subitem)){
                   <a class="nav-link" [attr.data-parent]="subitem.parentId" data-bs-toggle="collapse"
                     aria-expanded="false" [attr.aria-expanded]="!subitem.isCollapsed" (click)="toggleItem(subitem)">
-                    {{ subitem.label | translate}}
-                    @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                      | translate}}</span>}
+                    {{ subitem.label}}
+                    @if(subitem.badge && !subitem.showStar){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                     }}</span>}
                   </a>
 
                   <div class="collapse menu-dropdown sub-menu" #collapse="ngbCollapse"
@@ -109,10 +109,10 @@
                         <a class="nav-link" [attr.data-parent]="subSubitem.parentId" data-bs-toggle="collapse"
                           aria-expanded="false" [attr.aria-expanded]="!subSubitem.isCollapsed"
                           (click)="toggleItem(subSubitem)">
-                          {{ subSubitem.label | translate}}
-                          @if(subSubitem.badge){<span
+                          {{ subSubitem.label}}
+                          @if(subSubitem.badge && !subSubitem.showStar){<span
                             class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                            | translate}}</span>}
+                           }}</span>}
                         </a>
 
                         <div class="collapse menu-dropdown extra-sub-menu" [(ngbCollapse)]="subSubitem.isCollapsed">
@@ -122,7 +122,7 @@
                               <a [attr.data-parent]="subSubitem1.parentId" [routerLink]="subSubitem1.link"
                                 class="nav-link" (click)="updateActive($event)"
                                 (mouseenter)="mouseHovering(subSubitem1)" (mouseleave)="mouseLeft(subSubitem1)">
-                                {{ subSubitem1.label | translate }}
+                                {{ subSubitem1.label }}
                                 <i style="position:absolute;right:10px"
                                   *ngIf="subSubitem1.showStar && !subSubitem1.showStarColor"
                                   class="las la-star text-end icon nav-icon"
@@ -140,7 +140,7 @@
                         <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subSubitem.link" class="nav-link"
                           (click)="updateActive($event)" (mouseenter)="mouseHovering(subSubitem)"
                           (mouseleave)="mouseLeft(subSubitem)">
-                          {{ subSubitem.label | translate }}
+                          {{ subSubitem.label }}
                           <i style="position:absolute;right:10px"
                             *ngIf="subSubitem.showStar && !subSubitem.showStarColor"
                             class="las la-star text-end icon nav-icon"
@@ -149,9 +149,9 @@
                             *ngIf="subSubitem.showStar && subSubitem.showStarColor"
                             class="las la-star text-end icon nav-icon text-warning"
                             (click)="$event.preventDefault();removeAsFavorite(subSubitem);$event.stopPropagation()"></i>
-                          @if(subSubitem.badge){<span
+                          @if(subSubitem.badge && !subSubitem.showStar){<span
                             class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                            | translate}}</span>}
+                           }}</span>}
                         </a>
                         }
                       </li>
@@ -162,15 +162,15 @@
                   <a [routerLink]="subitem.link" class="nav-link" [attr.data-parent]="subitem.parentId"
                     (click)="updateActive($event)" (mouseenter)="mouseHovering(subitem)"
                     (mouseleave)="mouseLeft(subitem)">
-                    {{ subitem.label | translate}}
+                    {{ subitem.label}}
                     <i style="position:absolute;right:10px" *ngIf="subitem.showStar && !subitem.showStarColor"
                       class="las la-star text-end icon nav-icon"
                       (click)="$event.preventDefault();saveAsFavorite(subitem);$event.stopPropagation()"></i>
                     <i style="position:absolute;right:10px" *ngIf="subitem.showStar && subitem.showStarColor"
                       class="las la-star text-end icon nav-icon text-warning"
                       (click)="$event.preventDefault();removeAsFavorite(subitem);$event.stopPropagation()"></i>
-                    @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                      | translate}}</span>}
+                    @if(subitem.badge && !subitem.showStar){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                     }}</span>}
                   </a>
                   }
                 </li>
@@ -180,8 +180,8 @@
             }@else{
             <a [routerLink]="item.link" class="side-nav-link-ref nav-link menu-link">
               @if(item.icon){<i class="{{ item.icon }} icon nav-icon" class=""></i>}
-              <span class=""> {{ item.label | translate }}</span>
-              @if(item.badge){ <span class="badge {{item.badge.variant}} float-end">{{item.badge.text |
+              <span class=""> {{ item.label }}</span>
+              @if(item.badge && !item.showStar){ <span class="badge {{item.badge.variant}} float-end">{{item.badge.text |
                 translate}}</span>}
             </a>
             }

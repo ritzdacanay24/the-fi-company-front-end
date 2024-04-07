@@ -71,6 +71,7 @@ export class OtdReportComponent implements OnInit {
     average = 0
 
     onCustomerChange(row) {
+        this.showAll = false;
         console.log(row)
         this.displayCustomers = row.label
         this.average = row.value
@@ -190,17 +191,13 @@ export class OtdReportComponent implements OnInit {
 
     summary = [];
 
-    getSummarRow() {
-        this.average = 0;
-        for (let i = 0; i < this.summary.length; i++) {
-            if (this.summary[i].label == this.displayCustomers) {
-                this.average = this.summary[i].value
-            }
-        }
-    }
+    
 
     displayCustomers = 'Show All';
     typeOfView = "Weekly"
+
+    otd = 0
+    ontime = 0
     async getData() {
         try {
             this.gridApi?.showLoadingOverlay();
@@ -222,7 +219,9 @@ export class OtdReportComponent implements OnInit {
             });
             this.isLoading = false;
 
-            this.getSummarRow();
+
+            this.average = data?.average || 0
+
             this.gridApi?.hideOverlay();
         } catch (err) {
             this.isLoading = false;

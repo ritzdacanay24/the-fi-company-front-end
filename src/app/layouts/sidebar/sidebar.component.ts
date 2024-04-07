@@ -46,10 +46,36 @@ export class SidebarComponent implements OnInit {
 
   }
 
+  compare(a, b) {
+    if (a.label < b.label) {
+      return -1;
+    }
+    if (a.label > b.label) {
+      return 1;
+    }
+    return 0;
+  }
+
   initalLoad = false;
   ngOnInit(): void {
     // Menu Items
     this.menuItems = MENU;
+
+    for (let i = 0; i < this.menuItems.length; i++) {
+      if (this.menuItems[i].subItems) {
+        this.menuItems[i].subItems.sort((a, b) => this.compare(a, b));
+        for (let ii = 0; ii < this.menuItems[i].subItems.length; ii++) {
+          if (this.menuItems[i].subItems[ii].subItems) {
+            this.menuItems[i].subItems[ii].subItems.sort((a, b) => this.compare(a, b));
+            for (let iii = 0; iii < this.menuItems[i].subItems[ii].subItems.length; iii++) {
+              if (this.menuItems[i].subItems[ii].subItems[iii].subItems) {
+                this.menuItems[i].subItems[ii].subItems[iii].subItems.sort((a, b) => this.compare(a, b));
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   /***
