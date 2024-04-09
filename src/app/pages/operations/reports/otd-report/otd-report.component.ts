@@ -51,7 +51,7 @@ export class OtdReportComponent implements OnInit {
             this.dateFrom = params['dateFrom'] || this.dateFrom;
             this.dateTo = params['dateTo'] || this.dateTo;
             this.dateRange = [this.dateFrom, this.dateTo];
-            this.displayCustomers = params['displayCustomers'];
+            this.displayCustomers = params['displayCustomers'] || 'Show All';
             this.typeOfView = params['typeOfView'] || this.typeOfView;
         });
 
@@ -72,7 +72,6 @@ export class OtdReportComponent implements OnInit {
 
     onCustomerChange(row) {
         this.showAll = false;
-        console.log(row)
         this.displayCustomers = row.label
         this.average = row.value
         this.getData()
@@ -85,6 +84,23 @@ export class OtdReportComponent implements OnInit {
     onFilterTextBoxChanged(value: any) {
         //setQuickFilter
         this.gridApi.setGridOption('quickFilterText', value);
+    }
+
+    async refreshData() {
+
+        try {
+            this.gridApi?.showLoadingOverlay();
+            this.isLoading = true;
+            await this.reportService.refreshOtdData(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
+            await this.getData();
+
+            this.gridApi?.hideOverlay();
+            this.isLoading = false;
+        } catch (err) {
+            this.gridApi?.hideOverlay();
+            this.isLoading = false;
+
+        }
     }
 
     showAll = true;
@@ -109,7 +125,7 @@ export class OtdReportComponent implements OnInit {
 
     title = 'OTD Report';
 
-    dateFrom = moment().subtract(30, "days").format('YYYY-MM-DD');
+    dateFrom = moment().subtract(6, "months").format('YYYY-MM-DD');
     dateTo = moment().format('YYYY-MM-DD');
     dateRange = [this.dateFrom, this.dateTo];
 
@@ -156,7 +172,14 @@ export class OtdReportComponent implements OnInit {
         { field: "last_shipped_on", headerName: "Last Shipped On", filter: "agTextColumnFilter" },
         { field: "shipped_partial", headerName: "Shipped Partial", filter: "agTextColumnFilter" },
         { field: "so_cust", headerName: "Customer", filter: "agTextColumnFilter" },
-        { field: "so_nbr", headerName: "SO #", filter: "agTextColumnFilter" },
+        {
+            field: "so_nbr", headerName: "SO #", filter: "agTextColumnFilter",
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: e => this.salesOrderInfoModalService.open(e.rowData.so_nbr),
+                isLink: true
+            }
+        },
         { field: "sod_line", headerName: "Line #", filter: "agTextColumnFilter" },
         { field: "sod_qty_ord", headerName: "Qty Ordered", filter: "agTextColumnFilter" },
     ];
@@ -191,21 +214,28 @@ export class OtdReportComponent implements OnInit {
 
     summary = [];
 
-    
+
+    get getValue() {
+        return ((this.allInfo?.todayInfo?.value - this.allInfo?.yesterdayInfo?.value) / this.allInfo?.yesterdayInfo?.value) * 100
+    }
 
     displayCustomers = 'Show All';
     typeOfView = "Weekly"
 
     otd = 0
     ontime = 0
+    allInfo
+    goal = 0
     async getData() {
         try {
             this.gridApi?.showLoadingOverlay();
             this.isLoading = true;
-            let data: any = await this.reportService.getOtdReport(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
+            let data: any = await this.reportService.getOtdReportV1(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
             this.data = data?.details ? data?.details : [];
             this.dataChart = data?.chartData;
             this.summary = data?.summary;
+            this.allInfo = data;
+            this.goal = data?.goal;
 
             this.router.navigate(['.'], {
                 queryParams: {
@@ -222,6 +252,8 @@ export class OtdReportComponent implements OnInit {
 
             this.average = data?.average || 0
 
+            this.setSummaryFooter()
+
             this.gridApi?.hideOverlay();
         } catch (err) {
             this.isLoading = false;
@@ -230,6 +262,27 @@ export class OtdReportComponent implements OnInit {
 
     }
 
+    summaryObject: any = {
+        onTime: 0,
+        total: 0,
+        otd: 0,
+    }
+
+    setSummaryFooter() {
+        let shippedOnTime = 0;
+        let total_lines = 0;
+        for (let i = 0; i < this.summary.length; i++) {
+            shippedOnTime += parseInt(this.summary[i]['total_shipped_on_time'])
+            total_lines += parseInt(this.summary[i]['total_lines'])
+        }
+
+        this.summaryObject = {
+            otd: (shippedOnTime / total_lines * 100).toFixed(2),
+            shippedOnTime: shippedOnTime,
+            total_lines: total_lines
+        }
+        console.log(this.summaryObject)
+    }
 
     isLoading = false;
     dataChart

@@ -1,1 +1,6 @@
-<router-outlet></router-outlet>
+<ng-template [ngIf]="!isMobile">
+    <router-outlet></router-outlet>
+</ng-template>
+<ng-template [ngIf]="isMobile">
+    <p class="text-center p-5">Dashboard not available on mobile device.</p>
+</ng-template>

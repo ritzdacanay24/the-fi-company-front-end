@@ -10,11 +10,20 @@ import { interval } from 'rxjs';
 import { SweetAlert } from './shared/sweet-alert/sweet-alert.service';
 import { THE_FI_COMPANY_LAYOUT } from './layouts/topbar/topbar.component';
 import { LightboxConfig } from 'ngx-lightbox';
+import { isMobile } from 'src/assets/js/util/is-mobile-helpers';
 
 
 export function setThemeColor(data) {
   var metaThemeColor = document.querySelector("meta[name=theme-color]");
-  metaThemeColor.setAttribute("content", data == 'light' || data == 'semi-dark' ? `#D0D0D0` : '#343b40');
+  if (!data) {
+    metaThemeColor.setAttribute("content", `#D0D0D0`);
+  }else if (data.SIDEBAR_COLOR == 'light') {
+    metaThemeColor.setAttribute("content", `#D0D0D0`);
+  }else if (data.SIDEBAR_COLOR == 'dark' && data.LAYOUT_MODE == 'light') {
+    metaThemeColor.setAttribute("content", `#D0D0D0`);
+  }else{
+    metaThemeColor.setAttribute("content", `#343b40`);
+  }
 }
 
 @Component({
@@ -50,20 +59,21 @@ export class AppComponent {
     this.titleService.init();
 
 
-    if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
-      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
-      setThemeColor(d.LAYOUT_MODE);
-    }
 
   }
+
+  isMobile = false;
 
   title = 'Eye-Fi';
 
   hasUpdate = false
 
   ngOnInit(): void {
+
+    this.isMobile = isMobile();
+
     this.store.select('layout').subscribe((data) => {
-      setThemeColor(data.LAYOUT_MODE);
+      setThemeColor(data);
     })
 
 
@@ -111,6 +121,12 @@ export class AppComponent {
 
 
   ngAfterViewInit() {
+    if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
+      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
+      console.log(d)
+      setThemeColor(d);
+    }
+
   }
 
   async showNewVersionMessage() {

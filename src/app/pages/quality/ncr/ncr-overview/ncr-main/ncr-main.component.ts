@@ -75,6 +75,59 @@ export class NcrMainComponent implements OnInit {
       .filter(v => v !== null).toString();
   }
 
+  onDownloadAsPdf() {
+    if (this.form.dirty) {
+      alert('Please save before downloading as PDF')
+      return
+    };
+
+
+    setTimeout(function () {
+
+      var printContents = document.getElementById('content').innerHTML;
+      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      popupWin.document.open();
+      popupWin.document.write(`
+      <html>
+        <head>
+          <title>Work Order Info</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+          <style>
+            @page {
+              size: portrait;
+            }
+            @media print {
+              .bg-grey {
+                background-color: lightgrey !important;
+              }
+              .pagebreak { page-break-before: always; } /* page-break-after works, as well */
+
+              .table  td {
+                font-size:11px
+              }
+
+              td:empty::after {
+                content: ".";
+                visibility:hidden;
+              }
+            }
+
+          </style>
+        </head>
+        <body onload="window.print();window.close()">
+          ${printContents}
+        </body>
+      </html>`
+      );
+      popupWin.document.close();
+      popupWin.onload = function () {
+        popupWin.print();
+        popupWin.close();
+      };
+    }, 0);
+  }
+
   async onSubmit() {
     this.convertToString();
     try {
@@ -89,6 +142,22 @@ export class NcrMainComponent implements OnInit {
   }
 
   async onSubmitAndClose() {
+
+    if (
+      this.form.value?.submitted_date
+    ) {
+      alert('This NCR is already closed.')
+      return;
+    }
+
+    if (
+      this.form.value?.ca_action_req == 'Yes' &&
+      (this.form.value?.verify_of_ca_dt == null || this.form.value?.verify_of_ca_dt == "")
+    ) {
+      alert('Unable to close NCR. Corrective action is marked as required and must be validated by the Quality Team.')
+      return;
+    }
+
     this.convertToString();
     try {
       this.isLoading = true;
@@ -103,8 +172,10 @@ export class NcrMainComponent implements OnInit {
 
   }
 
+  data
+
   async getData() {
-    let data = await this.ncrService.getById(this.id);
+    let data = this.data = await this.ncrService.getById(this.id);
 
     data.ncr_type = data.ncr_type.split(',');
     data.cont_type = data.cont_type.split(',');

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, HostListener, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -50,6 +50,14 @@ export class QirCreateComponent {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
   }
 
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm('You have unsaved changes. Discard and leave?');
+    }
+    return true;
+  }
+
   data: any;
 
   setFormEmitter($event) {
@@ -99,6 +107,7 @@ export class QirCreateComponent {
 
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
+      this.form.markAsPristine();
       this.goBack();
     } catch (err) {
       this.isLoading = false;

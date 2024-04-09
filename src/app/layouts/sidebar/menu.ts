@@ -574,7 +574,7 @@ export const MENU: MenuItem[] = [
             description: "Material Request Validate"
           },
           {
-            label: 'Picking',
+            label: 'Material Request Picking',
             link: '/dashboard/operations/material-request/picking',
             description: "Material Request Picking"
           }

@@ -23,7 +23,7 @@ export class InvoiceSummaryComponent implements OnInit {
   ngOnChanges(data: SimpleChanges) {
     if (!this.data) return;
     this.barChartData = {
-      labels: this.data?.chartData?.label,
+      labels: this.data?.chartData?.['label'],
       datasets: [
         { data: this.data?.chartData?.value, label: 'Invoice Amount', backgroundColor: '#2271B1', borderColor: '#2271B1', },
       ],

@@ -31,7 +31,6 @@ export class NcrCreateComponent implements OnInit {
 
   ngOnInit(): void { }
 
-
   @HostListener("window:beforeunload")
   canDeactivate() {
     if (this.form?.dirty) {

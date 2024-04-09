@@ -5,6 +5,7 @@ import { QirListComponent } from './qir-list/qir-list.component';
 import { QirComponent } from './qir.component';
 import { QirEditComponent } from './qir-edit/qir-edit.component';
 import { QirCreateComponent } from './qir-create/qir-create.component';
+import { CanDeactivateGuard } from '@app/core/guards/CanDeactivateGuard';
 
 const routes: Routes = [
   {
@@ -22,11 +23,13 @@ const routes: Routes = [
       },
       {
         path: 'edit',
-        component: QirEditComponent
+        component: QirEditComponent,
+        canDeactivate: [CanDeactivateGuard],
       },
       {
         path: 'create',
-        component: QirCreateComponent
+        component: QirCreateComponent,
+        canDeactivate: [CanDeactivateGuard],
       },
     ]
   },

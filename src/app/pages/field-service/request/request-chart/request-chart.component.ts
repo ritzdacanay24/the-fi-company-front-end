@@ -1,6 +1,7 @@
 import { Component, Input, SimpleChanges, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
-import { toFixed } from "ag-grid-enterprise/dist/lib/ag-charts-community/module-support";
+import _ from "lodash";
+
 import {
     ApexAxisChartSeries,
     ApexChart,
@@ -13,30 +14,10 @@ import {
     ApexFill,
     NgApexchartsModule,
     ApexTooltip,
-    ApexStroke
+    ApexStroke,
+    ApexNoData
 } from "ng-apexcharts";
 import { NgChartsModule } from "ng2-charts";
-import { currency } from "src/assets/js/util";
-
-
-function convertToInternationalCurrencySystem(labelValue) {
-
-    // Nine Zeroes for Billions
-    return Math.abs(Number(labelValue)) >= 1.0e+9
-
-        ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(0) + "B"
-        // Six Zeroes for Millions 
-        : Math.abs(Number(labelValue)) >= 1.0e+6
-
-            ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(0) + "M"
-            // Three Zeroes for Thousands
-            : Math.abs(Number(labelValue)) >= 1.0e+3
-
-                ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(0) + "K"
-
-                : Math.abs(Number(labelValue));
-
-}
 
 export type ChartOptions = {
     series: ApexAxisChartSeries;
@@ -49,6 +30,7 @@ export type ChartOptions = {
     title: ApexTitleSubtitle;
     tooltip: ApexTooltip;
     stroke: ApexStroke;
+    noData: ApexNoData
 };
 
 @Component({
@@ -58,10 +40,10 @@ export type ChartOptions = {
         NgChartsModule,
         NgApexchartsModule,
     ],
-    selector: 'app-otd-chart',
-    templateUrl: './otd-chart.component.html',
+    selector: 'app-request-chart',
+    templateUrl: './request-chart.component.html',
 })
-export class OtdChartComponent {
+export class RequestChartComponent {
     @ViewChild("chart") chart: ChartComponent;
 
     @Input() data
@@ -70,17 +52,16 @@ export class OtdChartComponent {
     @Input() title
     @Input() average
     @Input() typeOfView
-    @Input() goal
 
     chartOptions: Partial<ChartOptions> = {
         series: [],
         chart: {
             height: 420,
-            type: "line",
+            type: "bar",
             stacked: false,
         },
         tooltip: {
-            shared: true,
+            shared: false,
             intersect: false,
             followCursor: false,
             fixed: {
@@ -97,7 +78,6 @@ export class OtdChartComponent {
                 }
             }
         },
-
         fill: {
             opacity: [0.85, 0.25, 1],
             gradient: {
@@ -110,8 +90,6 @@ export class OtdChartComponent {
             }
         },
         dataLabels: {
-            enabledOnSeries: [0],
-            textAnchor: "middle",
             background: {
                 enabled: true,
                 foreColor: '#fff',
@@ -122,12 +100,18 @@ export class OtdChartComponent {
                 borderColor: '#fff'
             },
             enabled: true,
-            formatter: (val: any) => {
-                return val.toFixed(0) + '%';
+            formatter: function (value, { seriesIndex, dataPointIndex, w }) {
+                let indices = w.config.series.map((item, i) => i);
+                indices = indices.filter(i => !w.globals.collapsedSeriesIndices.includes(i) && _.get(w.config.series, `${i}.data.${dataPointIndex}`) > 0);
+                if (seriesIndex == _.max(indices))
+                    return w.globals.stackedSeriesTotals[dataPointIndex];
+                return '';
             },
-            offsetY: -10,
+
+            offsetY: -20,
             style: {
-                fontSize: "10px"
+                fontSize: "10px",
+                colors: ['bg-success']
             },
 
         },
@@ -169,7 +153,6 @@ export class OtdChartComponent {
 
 
         yaxis: {
-            max: 100,
             min: 0,
             axisBorder: {
                 show: true
@@ -180,11 +163,11 @@ export class OtdChartComponent {
             labels: {
                 show: true,
                 formatter: function (val) {
-                    return val.toFixed(0) + '%';
+                    return val.toFixed(0);
                 }
             },
             title: {
-                text: "OTD Percentage"
+                text: "Total Requests"
             }
         },
         // title: {
@@ -205,9 +188,7 @@ export class OtdChartComponent {
 
     ngOnChanges(data: SimpleChanges) {
 
-
         if (!this.data) return;
-
 
         let total = []
         let sum = 0;
@@ -221,8 +202,7 @@ export class OtdChartComponent {
         let ee = []
         let goalArray = []
 
-        let goal = this.goal
-        console.log(this.goal)
+        let goal = 75
         for (let i = 0; i < total.length; i++) {
             //ee.push(sum / total.length)
             ee.push(this.average)
@@ -240,81 +220,37 @@ export class OtdChartComponent {
                     name: this.data[key].label,
                     data: this.data[key].dataset,
 
-                },
-                {
-                    type: "line",
-                    name: 'Goal',
-                    data: goalArray
-
-                },
-                {
-                    type: "line",
-                    name: 'Average OTD',
-                    data: ee
-                },
+                }
             );
         }
 
-        console.log(data['goal']?.currentValue, 'dddddddd')
 
-        this.chart?.updateOptions({
+        this.chart.updateOptions({
 
-            stroke: {
-                width: [null, 2, 1],
-                curve: 'smooth'
-            },
             labels: this.labels,
             tooltip: {
-                shared: true,
+                shared: false,
                 intersect: false,
                 followCursor: false
             },
+            stroke: {
+                show: true,
+                curve: 'straight',
+                lineCap: 'butt',
+                colors: undefined,
+                width: 1,
+                dashArray: 0,
+            },
+
             title: {
-                text: this.title == "Show All" || !this.title ? "Overall OTD " + this.average + '%' : this.typeOfView + ' ' + this.title + " OTD " + this.average + '%',
+                text: this.title == "Show All" || !this.title ? "All Requests ": this.typeOfView + ' Requests',
                 offsetY: 0,
                 display: true,
                 align: "center",
                 style: {
                     color: "#444"
                 }
-            },
-            dataLabels: {
-                enabledOnSeries: [0],
-                textAnchor: "middle",
-                background: {
-                    enabled: true,
-                    foreColor: '#fff',
-                    borderRadius: 2,
-                    padding: 4,
-                    opacity: 0.9,
-                    borderWidth: 1,
-                    borderColor: '#fff'
-                },
-                enabled: true,
-                formatter: (val: any) => {
-                    return val.toFixed(0) + '%';
-                },
-                offsetY: -10,style: {
-                    fontSize: "10px",
-                    colors: [
-                        (data) => {
-                            if (data.series[data.seriesIndex][data.dataPointIndex] >= this.goal) {
-                                return 'green'
-                            } else {
-                                return 'red'
-                            }
-                        }, (data) => {
-                            if (data.series[data.seriesIndex][data.dataPointIndex] >= this.goal) {
-                                return 'green'
-                            } else {
-                                return 'red'
-                            }
-                        }
-                    ]
-                },
-
-            },
+            }
         }, true, true, true)
-
     }
 }

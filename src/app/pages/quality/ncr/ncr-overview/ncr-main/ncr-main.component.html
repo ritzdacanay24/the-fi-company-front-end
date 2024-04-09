@@ -3,6 +3,11 @@
     <div class="card">
       <div class="card-header d-flex align-items-center">
         <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+
+        <button type="button" (click)="onDownloadAsPdf()" class="btn btn-sm btn-light" [disabled]="isLoading">
+          <span class="icon-on"><i class="bx bxs-file-pdf text-danger me-2"></i> Download as PDF</span>
+        </button>
+
       </div>
       <div class="card-body" style="min-height:300px300px;height: calc(100vh - 363px);overflow:auto">
 
@@ -28,9 +33,202 @@
       <div class="card-footer d-flex  d-flex justify-content-between">
         <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">Update
           NCR</button>
-        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">Update & Close
+        <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled"
+          (click)="onSubmitAndClose()">Update & Close
           NCR</button>
       </div>
     </div>
   </div>
+</div>
+
+\<div id="content" #content style="font-size:12px;border:2px solid black" class="d-none d-print-block">
+
+  <h4 class="text-center">Corrective Action</h4>
+  <table class="table table-bordered table-sm">
+    <tr>
+      <td colspan="2">Source: {{data?.source}}</td>
+      <td>P.O No. {{data?.po_nbr}}</td>
+      <td>WO No. {{data?.wo_nbr}}</td>
+      <td>NCR No. {{data?.id}}</td>
+    </tr>
+    <tr>
+      <td colspan="5">NCR Type: {{data?.ncr_type}}</td>
+    </tr>
+    <tr>
+      <td colspan="2">Part No. {{data?.pt_nbr}}</td>
+      <td>Rev: {{data?.rev}}</td>
+      <td>Initiated By: {{data?.initiated_by}}</td>
+      <td>Return No. {{data?.ret_nbr}}</td>
+    </tr>
+    <tr>
+      <td>Acc. {{data?.acc}}</td>
+      <td>Rej. {{data?.rej}}</td>
+      <td>Sample Size: {{data?.sample_size}}</td>
+      <td>Dept./Operator: {{data?.dept_operator}}</td>
+      <td>Finished #: {{data?.finished_nbr}}</td>
+    </tr>
+  </table>
+  <table class="table table-bordered table-sm border-top-0">
+    <tr>
+      <td colspan="3" class="bg-grey">Description of Deficiency/Rejection</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:100px;vertical-align: top;">{{data?.desc_of_defn_rej}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Containment</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:100px;vertical-align: top;">{{data?.cont_notes}}</td>
+    </tr>
+    <tr>
+      <td colspan="3">Type: {{data?.cont_type}}</td>
+    </tr>
+    <tr>
+      <td>Dspn by: {{data?.cont_dspn_by}}</td>
+      <td>Dspn by: {{data?.cont_dspn_title}}</td>
+      <td>Dt: {{data?.cont_dspn_dt}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Disposition/Rework/Repair Instructions</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:100px;vertical-align: top;">{{data?.dspn_desc}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Impact assessment of nonconformity on other
+        product(s) and/or process(es):</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{data?.impact_assesment}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Immediate Correction Made</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:100px;vertical-align: top;">{{data?.icm_notes}}</td>
+    </tr>
+    <tr>
+      <td>Dspn by: {{data?.icm_dspn_by}}</td>
+      <td>Title: {{data?.icm_dspn_title}}</td>
+      <td>Dt: {{data?.icm_dspn_dt}}</td>
+    </tr>
+    <tr class="text-center bg-grey p-1">
+      <td colspan="5" class="p-1">Corrective Action</td>
+    </tr>
+    <tr>
+      <td colspan="5">Corrective Action Required? {{data?.ca_action_req}} <br /> If CA is not required, DO NOT proceed
+        to the
+        next page</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Issued By:</td>
+      <td class="bg-grey">Date:</td>
+    </tr>
+    <tr>
+      <td colspan="2">{{data?.iss_by}}</td>
+      <td>{{data?.iss_dt}}</td>
+    </tr>
+    <tr class="text-center bg-grey p-1">
+      <td colspan="5" class="p-1 bolder">Corrective Action</td>
+    </tr>
+    <tr>
+      <td colspan="3">(See next page for Corrective Action Section)</td>
+    </tr>
+  </table>
+
+  <div class="pagebreak"> </div>
+
+  <table class="table table-bordered table-sm border-top-0">
+    <tr class="text-center bg-grey p-3">
+      <td colspan="5" class="p-3">Corrective Action</td>
+    </tr>
+    <tr>
+      <td colspan="3">Corrective action must be completed within the due date and forwarded to the quaility
+        assurance manager.</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Corrective Action Issued To</td>
+      <td class="bg-grey">Due Date</td>
+    </tr>
+    <tr>
+      <td colspan="2">{{data?.ca_iss_to}}</td>
+      <td>{{data?.ca_due_dt}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Containment/Immediate Action Taken
+        (Only
+        need to be completed if CA is issued to Supplier)</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{data?.ca_cont_immed_action_taken}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Root Cause (Attach additional documentation if
+        nescessary)</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{data?.ca_root_cause}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey">Correction Action(s) Taken to
+        Prevent Reoccurrence</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{data?.ca_taken_to_prevent_recurr}}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Planned CA Implementation Date:</td>
+      <td>{{data?.planned_ca_impl_dt}}</td>
+    </tr>
+    <tr>
+      <td class="bg-grey">Corrective Action By</td>
+      <td class="bg-grey">Title</td>
+      <td class="bg-grey">Date</td>
+    </tr>
+    <tr>
+      <td>{{data?.ca_by}}</td>
+      <td>{{data?.ca_title}}</td>
+      <td>{{data?.ca_dt}}</td>
+    </tr>
+    <tr>
+      <td class="bg-grey">Corrective Action Implemented By</td>
+      <td class="bg-grey">Title</td>
+      <td class="bg-grey">Date</td>
+    </tr>
+    <tr>
+      <td>{{data?.ca_impl_by}}</td>
+      <td>{{data?.ca_impl_title}}</td>
+      <td>{{data?.ca_impl_dt}}</td>
+    </tr>
+    <tr>
+      <td colspan="3">Below section to be completed by the fi company</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Verification of CA By:</td>
+      <td class="bg-grey">Date</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="height:50px;vertical-align: top;">{{data?.verif_of_ca_by}}</td>
+      <td style="height:50px;vertical-align: top;">{{data?.verif_of_ca_dt}}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Effectiveness Verification of CA
+        By:</td>
+      <td class="bg-grey">Date</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="height:50px;vertical-align: top;">{{data?.eff_verif_of_ca_by}}</td>
+      <td style="height:50px;vertical-align: top;">{{data?.eff_verif_of_ca_dt}}</td>
+    </tr>
+    <tr>
+      <td colspan="2" class="bg-grey">Comments/Closure By:</td>
+      <td class="bg-grey">Date</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="height:50px;vertical-align: top;">{{data?.cmt_cls_by}}</td>
+      <td style="height:50px;vertical-align: top;">{{data?.cmt_cls_dt}}</td>
+    </tr>
+  </table>
+  <p class="text-right" style="text-align:right">FORM:8.70-00-1 REV NC</p>
 </div>

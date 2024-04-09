@@ -43,7 +43,7 @@
             </a>
           </li>
 
-          <li class="nav-item" *ngIf="favs?.length">
+          <li class="nav-item" *ngIf="favs?.length" style="word-break: break-all;">
             <a [attr.aria-expanded]="!isCollapsed" (click)="collapse.toggle();toggleItemFavorite()"
               class="pointer is-parent nav-link menu-link" data-bs-toggle="collapse">
               <i class="las la-star icon nav-icon"></i>
@@ -181,8 +181,7 @@
             <a [routerLink]="item.link" class="side-nav-link-ref nav-link menu-link">
               @if(item.icon){<i class="{{ item.icon }} icon nav-icon" class=""></i>}
               <span class=""> {{ item.label }}</span>
-              @if(item.badge && !item.showStar){ <span class="badge {{item.badge.variant}} float-end">{{item.badge.text |
-                translate}}</span>}
+              @if(item.badge && !item.showStar){ <span class="badge {{item.badge.variant}} float-end">{{item.badge.text}}</span>}
             </a>
             }
           </li>

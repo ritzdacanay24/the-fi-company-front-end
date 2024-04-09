@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, HostListener, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -10,6 +10,7 @@ import { IQirForm } from '../qir-form/qir-form-type';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { MyFormGroup } from 'src/assets/js/util/_formGroup';
 import { Lightbox } from 'ngx-lightbox';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -50,6 +51,14 @@ export class QirEditComponent {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
   }
 
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm('You have unsaved changes. Discard and leave?');
+    }
+    return true;
+  }
+
   data: any;
 
   async getData() {
@@ -73,6 +82,7 @@ export class QirEditComponent {
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success('Successfully Updated');
+      this.form.markAsPristine();
       this.goBack();
     } catch (err) {
       this.isLoading = false;

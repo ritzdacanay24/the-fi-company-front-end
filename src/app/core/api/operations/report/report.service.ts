@@ -58,4 +58,10 @@ export class ReportService {
   getOtdReport = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
     await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/report/getOtdReport?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`))
 
+  getOtdReportV1 = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/server/Api/report/getOtdReportv1?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`))
+
+  refreshOtdData = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any>(`https://dashboard.eye-fi.com/tasks/on_time_delivery_task.php`))
+
 }

@@ -30,4 +30,8 @@ export class RequestService extends DataService<any> {
     return firstValueFrom(this.http.get(`${url}/getAllRequests.php?selectedViewType=${selectedViewType}`))
   }
 
+  getChart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any>(`${url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
+
+
 }

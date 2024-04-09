@@ -211,7 +211,6 @@ export class MasterProductionComponent implements OnInit {
             headerName: 'Add To Kanban',
             filter: 'agSetColumnFilter',
             cellRenderer: KanbanRendererComponent,
-            pinned: 'left',
             cellRendererParams: {
                 onClick: e => this.addToKanban(e.rowData, e.rowData.WR_NBR),
                 isLink: true,

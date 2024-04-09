@@ -9,18 +9,43 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
+import { RequestChartComponent } from '../request-chart/request-chart.component';
+import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import moment from 'moment';
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     AgGridModule,
-    NgSelectModule
+    NgSelectModule,
+    RequestChartComponent,
+    DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
+    RequestChartComponent
   ],
   selector: 'app-request-list',
   templateUrl: `./request-list.component.html`
 })
 export class RequestsListComponent implements OnInit {
+
+  pageId = '/request/list-request'
+  average = 0
+  typeOfView = 'Weekly';
+
+  dateFrom = moment().subtract(6, "months").format('YYYY-MM-DD');
+  dateTo = moment().format('YYYY-MM-DD');
+  dateRange = [this.dateFrom, this.dateTo];
+
+  onChangeDate($event) {
+    this.dateFrom = $event['dateFrom']
+    this.dateTo = $event['dateTo']
+    this.getData()
+  }
+
 
   constructor(
     private api: RequestService,
@@ -34,7 +59,17 @@ export class RequestsListComponent implements OnInit {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
       this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
+      this.dateRange = [this.dateFrom, this.dateTo];
+      this.displayCustomers = params['displayCustomers'];
+      this.typeOfView = params['typeOfView'] || this.typeOfView;
     });
+
+    if (!this.displayCustomers || this.displayCustomers != 'Show All') {
+      this.showAll = false
+    }
+    if (!this.displayCustomers) {
+      this.showAll = true
+    }
 
     this.getData()
   }
@@ -115,7 +150,6 @@ export class RequestsListComponent implements OnInit {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
-    getRowId: params => params.data.id,
     onFilterChanged: params => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
       this.router.navigate([`.`], {
@@ -172,10 +206,99 @@ export class RequestsListComponent implements OnInit {
 
   title = "Request List";
 
+  displayCustomers = "false"
+
+  dataChart
+
+  summary
+
+  showAll = true;
+
+  async onCustomerChange(row) {
+    this.showAll = false;
+    this.displayCustomers = row.label
+
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: 'merge',
+      queryParams: {
+        displayCustomers: this.displayCustomers,
+        showAll: this.showAll
+      }
+    });
+
+    try {
+      this.isLoading = true;
+      let data = await this.api.getChart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
+
+      this.dataChart = data?.chartData
+      this.summary = data?.summary
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
+
+    }
+  }
+
+
+  async onChange() {
+    if (this.showAll) {
+      this.displayCustomers = "Show All"
+    }
+
+    this.showAll = false
+
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: 'merge',
+      queryParams: {
+        displayCustomers: this.displayCustomers,
+        showAll: this.showAll
+      }
+    });
+    try {
+      this.isLoading = true;
+      let data = await this.api.getChart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
+
+      this.dataChart = data?.chartData
+      this.summary = data?.summary
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
+
+    }
+
+  }
+
+
+  summaryObject: any = {
+    total_cancelled: 0,
+    value: 0,
+  }
+
+  setSummaryFooter() {
+    let total_cancelled = 0;
+    let value = 0;
+    for (let i = 0; i < this.summary.length; i++) {
+      total_cancelled += parseInt(this.summary[i]['total_cancelled'])
+      value += parseInt(this.summary[i]['value'])
+    }
+
+    this.summaryObject = {
+      total_cancelled: total_cancelled,
+      value: value
+    }
+    console.log(this.summaryObject)
+  }
+
+
+  isLoading = false;
+
   async getData() {
     try {
       this.data = [];
       this.gridApi?.showLoadingOverlay()
+      this.isLoading = true;
 
       let params: any = {};
       if (this.selectedViewType != 'All') {
@@ -187,16 +310,29 @@ export class RequestsListComponent implements OnInit {
 
       this.router.navigate(['.'], {
         queryParams: {
-          selectedViewType: this.selectedViewType
+          selectedViewType: this.selectedViewType,
+          dateFrom: this.dateFrom,
+          dateTo: this.dateTo,
+          displayCustomers: this.displayCustomers,
+          typeOfView: this.typeOfView
         },
         relativeTo: this.activatedRoute
         , queryParamsHandling: 'merge'
       });
 
+      let data = await this.api.getChart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView)
+
+      this.dataChart = data?.chartData
+      this.summary = data?.summary
+
+      this.setSummaryFooter()
+
       this.gridApi?.hideOverlay()
+      this.isLoading = false;
 
     } catch (err) {
       this.gridApi?.hideOverlay()
+      this.isLoading = false;
     }
 
   }
