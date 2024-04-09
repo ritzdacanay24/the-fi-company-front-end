@@ -20,4 +20,8 @@ export class NcrService extends DataService<any> {
   getOpenSummary = async () =>
     await firstValueFrom(this.http.get<any[]>(`${url}/getOpenSummary`));
 
+  getchart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/getchart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`));
+
+
 }

@@ -1,33 +1,59 @@
 <div class="row">
-  <div class="col-4 col-xl-4">
+  <div class="col-6 col-xl-6">
     <div class="card">
-      <div class="card-body">
+      <div class="card-body" style="max-height:350px;min-height:350px;overflow:auto">
         <table class="table table-sm mb-0">
           <thead>
             <tr>
               <th>Department</th>
-              <th class="text-end">Open</th>
-              <th class="text-end">CA Open</th>
-              <th class="text-end">Verify Open</th>
+              <th class="text-end">Total NCR's</th>
+              <th class="text-end">Open NCR's</th>
+              <th class="text-end">Open CA</th>
+              <th class="text-end">Open CA Verification</th>
+              <th class="text-end">CA OTD</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of summaryInfo?.data">
               <td>{{row?.department}}</td>
+              <td class="text-end">{{row?.total_ncrs}}</td>
               <td class="text-end">{{row?.total_open}}</td>
               <td class="text-end">{{row?.total_open_corrective_action}}</td>
               <td class="text-end">{{row?.total_open_verification}}</td>
+              <td class="text-end">{{row?.on_time_percentage}}</td>
             </tr>
           </tbody>
           <tbody>
             <tr class="bg-light">
               <td>Summary</td>
+              <td class="text-end">{{summaryInfo?.totalNCR}}</td>
               <td class="text-end">{{summaryInfo?.totalOpen}}</td>
               <td class="text-end">{{summaryInfo?.totalOpenCA}}</td>
               <td class="text-end">{{summaryInfo?.totalOpenVerifiation}}</td>
+              <td></td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-6">
+    <div class="card" style="overflow:hidden">
+      <div class="card-body" style="max-height:350px;min-height:350px;overflow:hidden">
+        <div *ngIf="isLoading" class="p-5 card-body text-center">
+          <h4>
+            <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading Data. Please wait...</p>
+          </h4>
+        </div>
+        <div [hidden]="isLoading">
+
+          <app-ncr-otd-chart [data]="dataChart?.series" [labels]="dataChart?.label" [title]="displayCustomers"
+            [average]="average" [stacked]="true" [typeOfView]="typeOfView" [goal]="goal">
+          </app-ncr-otd-chart>
+        </div>
       </div>
     </div>
   </div>

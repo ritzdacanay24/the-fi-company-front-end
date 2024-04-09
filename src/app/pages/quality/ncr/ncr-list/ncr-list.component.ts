@@ -16,6 +16,7 @@ import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
+import { NcrOtdChartComponent } from './ncr-otd-chart/ncr-otd-chart.component'
 
 @Component({
   standalone: true,
@@ -27,6 +28,7 @@ import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.comp
     DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
+    NcrOtdChartComponent
   ],
   selector: 'app-ncr-list',
   templateUrl: './ncr-list.component.html',
@@ -227,6 +229,19 @@ export class NcrListComponent implements OnInit {
     this.summaryInfo = await this.api.getOpenSummary();
   }
 
+  displayCustomers = 'Show All';
+  typeOfView = "Daily"
+  dataChart
+  async getChartData() {
+    let data:any = await this.api.getchart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView);
+    this.dataChart = data
+  }
+
+  average = 0;
+
+  isLoading = false;
+  goal = 0;
+
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay()
@@ -256,6 +271,7 @@ export class NcrListComponent implements OnInit {
 
       this.gridApi?.hideOverlay()
 
+      this.getChartData();
       this.getOpenSummary();
 
     } catch (err) {
