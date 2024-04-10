@@ -1,41 +1,80 @@
 <div class="row">
   <div class="col-6 col-xl-6">
+
     <div class="card">
-      <div class="card-body" style="max-height:350px;min-height:350px;overflow:auto">
-        <table class="table table-sm mb-0">
+      <div class="card-header border-0 align-items-center d-flex">
+        <h4 class="card-title mb-0 flex-grow-1">Summary</h4>
+      </div><!-- end card header -->
+      <div class="card-header p-0 border-0 bg-light-subtle">
+        <div class="row g-0 text-center">
+          <div class="col-6 col-sm-4">
+            <div class="p-3 border border-dashed border-start-0" [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.ca_open_past_due > 0}">
+              <h5 class="mb-1">
+                <span class="counter-value">{{summaryInfo?.ca_open_past_due || 0}}</span>
+              </h5>
+              <p class="text-muted mb-0">Overdue</p>
+            </div>
+          </div>
+          <!--end col-->
+          <div class="col-6 col-sm-4">
+            <div class="p-3 border border-dashed border-start-0">
+              <h5 class="mb-1">
+                <span  class="counter-value">{{summaryInfo?.totalOpenVerifiation || 0}}</span>
+              </h5>
+              <p class="text-muted mb-0">Open CA Verify</p>
+            </div>
+          </div>
+          <!--end col-->
+          <div class="col-6 col-sm-4">
+            <div class="p-3 border border-dashed border-start-0 border-end-0">
+              <h5 class="mb-1">
+                <span  class="counter-value">{{summaryInfo?.otd || 0}}%</span>
+              </h5>
+              <p class="text-muted mb-0">On Time</p>
+            </div>
+          </div>
+          <!--end col-->
+        </div>
+      </div><!-- end card header -->
+
+      <div class="card-body p-0" style="max-height:222px;min-height:222px;overflow:auto">
+        <table class="table table-sm mb-0 text-nowrap table-hover">
           <thead>
             <tr>
               <th>Department</th>
-              <th class="text-end">Total NCR's</th>
-              <th class="text-end">Open NCR's</th>
-              <th class="text-end">Open CA</th>
-              <th class="text-end">Open CA Verification</th>
-              <th class="text-end">CA OTD</th>
+              <th class="text-center">Total NCR's</th>
+              <th class="text-center">Open NCR's</th>
+              <th class="text-center">Open CA</th>
+              <th class="text-center">Open CA Overdue</th>
+              <th class="text-center">Open CA Verify</th>
+              <th class="text-center">CA OTD</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of summaryInfo?.data">
-              <td>{{row?.department}}</td>
-              <td class="text-end">{{row?.total_ncrs}}</td>
-              <td class="text-end">{{row?.total_open}}</td>
-              <td class="text-end">{{row?.total_open_corrective_action}}</td>
-              <td class="text-end">{{row?.total_open_verification}}</td>
-              <td class="text-end">{{row?.on_time_percentage}}</td>
+              <td (click)="selectJohnAndKenny(row.department)"><a class="link-primary pointer"><u>{{row?.department}}</u></a></td>
+              <td class="text-center">{{row?.total_ncrs}}</td>
+              <td class="text-center">{{row?.total_open}}</td>
+              <td class="text-center">{{row?.total_open_corrective_action}}</td>
+              <td class="text-center">{{row?.ca_open_past_due}}</td>
+              <td class="text-center">{{row?.total_open_verification}}</td>
+              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': row?.on_time_percentage < 75}" >{{row?.on_time_percentage | number : '1.0-0'}}%</td>
             </tr>
           </tbody>
           <tbody>
             <tr class="bg-light">
-              <td>Summary</td>
-              <td class="text-end">{{summaryInfo?.totalNCR}}</td>
-              <td class="text-end">{{summaryInfo?.totalOpen}}</td>
-              <td class="text-end">{{summaryInfo?.totalOpenCA}}</td>
-              <td class="text-end">{{summaryInfo?.totalOpenVerifiation}}</td>
-              <td></td>
+              <td (click)="selectJohnAndKenny('All')"><a class="link-primary pointer"><u>Summary</u></a></td>
+              <td class="text-center">{{summaryInfo?.totalNCR}}</td>
+              <td class="text-center">{{summaryInfo?.totalOpen}}</td>
+              <td class="text-center">{{summaryInfo?.totalOpenCA}}</td>
+              <td class="text-center">{{summaryInfo?.ca_open_past_due}}</td>
+              <td class="text-center">{{summaryInfo?.totalOpenVerifiation}}</td>
+              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.otd < 75}" >{{summaryInfo?.otd | number : '1.0-0'}}%</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </div><!-- end card -->
   </div>
   <div class="col-6 col-xl-6">
     <div class="card" style="overflow:hidden">

@@ -100,7 +100,7 @@ export class NcrListComponent implements OnInit {
           maxWidth: 115,
           minWidth: 115
         },
-        { field: "ca_iss_to", headerName: "CA Issued To", filter: "agTextColumnFilter" },
+        { field: "ca_iss_to", headerName: "CA Issued To", filter: "agSetColumnFilter" },
         { field: "ca_due_dt", headerName: "CA Issued Due Date", filter: "agTextColumnFilter" },
         { field: "ca_action_req", headerName: "Action Required", filter: "agTextColumnFilter" },
         { field: "iss_by", headerName: "Issued By", filter: "agTextColumnFilter" },
@@ -138,6 +138,24 @@ export class NcrListComponent implements OnInit {
       ]
     },
   ]
+
+
+  selectJohnAndKenny(department) {
+    if (department == 'All') {
+      this.gridApi!.setColumnFilterModel("ca_iss_to", null).then(() => {
+        this.gridApi!.onFilterChanged();
+      });
+    } else {
+
+      this.gridApi!
+        .setColumnFilterModel("ca_iss_to", {
+          values: [department],
+        })
+        .then(() => {
+          this.gridApi!.onFilterChanged();
+        });
+    }
+  }
 
   @Input() selectedViewType = 'Open';
 
@@ -233,7 +251,7 @@ export class NcrListComponent implements OnInit {
   typeOfView = "Daily"
   dataChart
   async getChartData() {
-    let data:any = await this.api.getchart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView);
+    let data: any = await this.api.getchart(this.dateFrom, this.dateTo, this.displayCustomers, this.typeOfView);
     this.dataChart = data
   }
 
