@@ -28,7 +28,7 @@
         </div>
 
 
-        <app-ncr-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-ncr-form>
+        <app-ncr-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted" [id]="id"></app-ncr-form>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
         <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">Update
@@ -41,7 +41,7 @@
   </div>
 </div>
 
-\<div id="content" #content style="font-size:12px;border:2px solid black" class="d-none d-print-block">
+<div id="content" #content style="font-size:12px;border:2px solid black" class="d-none d-print-block">
 
   <h4 class="text-center">Corrective Action</h4>
   <table class="table table-bordered table-sm">

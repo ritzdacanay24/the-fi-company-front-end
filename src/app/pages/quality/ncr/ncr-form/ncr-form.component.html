@@ -237,4 +237,12 @@
     </div>
   </div>
 
+
+  <button class="btn btn-primary mb-3" (click)="onSendEmailToDepartment()"
+    [disabled]="this.form.value?.ca_action_req == 'No' || !this.form.value?.ca_action_req">
+    Email Corrective Action
+  </button>
+
+  <p *ngIf="this.form.value?.ca_email_sent_date_time">Email sent on {{this.form.value?.ca_email_sent_date_time}}</p>
+  <p *ngIf="this.form.value?.ca_email_sent_to">Email sent to: {{this.form.value?.ca_email_sent_to}}</p>
 </form>

@@ -23,5 +23,6 @@ export class NcrService extends DataService<any> {
   getchart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
     await firstValueFrom(this.http.get<any[]>(`${url}/getchart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${displayCustomers}&typeOfView=${typeOfView}`));
 
+  updateAndSendEmailToDepartment = (id, params) => this.http.put(`/Ncr/updateAndSendEmailToDepartment?id=${id}`, params).toPromise();
 
 }

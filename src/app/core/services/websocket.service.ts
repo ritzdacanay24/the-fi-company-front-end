@@ -45,7 +45,7 @@ export class WebsocketService {
                     //console.log("connection closed");
                     // console.log(closeEvent, 'closeEvent');
                     //this.sendDialog()
-                    this.toastrService.warning("Websockets disconnected.Please refresh browser", "", { disableTimeOut: true })
+                    //this.toastrService.warning("Websockets disconnected.Please refresh browser", "", { disableTimeOut: true })
 
                 }
             },
