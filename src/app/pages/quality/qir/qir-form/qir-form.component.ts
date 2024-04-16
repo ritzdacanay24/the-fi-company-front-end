@@ -138,6 +138,7 @@ export class QirFormComponent {
     first_name: new FormControl(''),
     last_name: new FormControl(''),
     email: new FormControl(''),
+    statusClosed: new FormControl(null),
   })
 
   setBooleanToNumber(key) {

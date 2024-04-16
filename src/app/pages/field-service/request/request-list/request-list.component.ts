@@ -288,7 +288,6 @@ export class RequestsListComponent implements OnInit {
       total_cancelled: total_cancelled,
       value: value
     }
-    console.log(this.summaryObject)
   }
 
 

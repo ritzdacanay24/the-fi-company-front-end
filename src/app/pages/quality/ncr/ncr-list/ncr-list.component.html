@@ -8,9 +8,10 @@
       <div class="card-header p-0 border-0 bg-light-subtle">
         <div class="row g-0 text-center">
           <div class="col-6 col-sm-4">
-            <div class="p-3 border border-dashed border-start-0" [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.ca_open_past_due > 0}">
+            <div class="p-3 border border-dashed border-start-0"
+              [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.ca_open_past_due > 0}">
               <h5 class="mb-1">
-                <span class="counter-value">{{summaryInfo?.ca_open_past_due || 0}}</span>
+                <span class="counter-value" [ngClass]="{'text-danger': summaryInfo?.ca_open_past_due > 0}">{{summaryInfo?.ca_open_past_due || 0}}</span>
               </h5>
               <p class="text-muted mb-0">Overdue</p>
             </div>
@@ -19,7 +20,7 @@
           <div class="col-6 col-sm-4">
             <div class="p-3 border border-dashed border-start-0">
               <h5 class="mb-1">
-                <span  class="counter-value">{{summaryInfo?.totalOpenVerifiation || 0}}</span>
+                <span class="counter-value" [ngClass]="{'text-danger': summaryInfo?.totalOpenVerifiation > 0}">{{summaryInfo?.totalOpenVerifiation || 0}}</span>
               </h5>
               <p class="text-muted mb-0">Open CA Verify</p>
             </div>
@@ -28,7 +29,7 @@
           <div class="col-6 col-sm-4">
             <div class="p-3 border border-dashed border-start-0 border-end-0">
               <h5 class="mb-1">
-                <span  class="counter-value">{{summaryInfo?.otd || 0}}%</span>
+                <span class="counter-value">{{summaryInfo?.otd || 0}}%</span>
               </h5>
               <p class="text-muted mb-0">On Time</p>
             </div>
@@ -52,13 +53,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let row of summaryInfo?.data">
-              <td (click)="selectJohnAndKenny(row.department)"><a class="link-primary pointer"><u>{{row?.department}}</u></a></td>
+              <td (click)="selectJohnAndKenny(row.department)"><a
+                  class="link-primary pointer"><u>{{row?.department}}</u></a></td>
               <td class="text-center">{{row?.total_ncrs}}</td>
-              <td class="text-center">{{row?.total_open}}</td>
-              <td class="text-center">{{row?.total_open_corrective_action}}</td>
-              <td class="text-center">{{row?.ca_open_past_due}}</td>
-              <td class="text-center">{{row?.total_open_verification}}</td>
-              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': row?.on_time_percentage < 75}" >{{row?.on_time_percentage | number : '1.0-0'}}%</td>
+              <td class="text-center" [ngClass]="{'text-danger': row?.total_open > 0}">{{row?.total_open}}
+              </td>
+              <td class="text-center" [ngClass]="{'text-danger': row?.total_open_corrective_action > 0}">
+                {{row?.total_open_corrective_action}}</td>
+              <td class="text-center" [ngClass]="{'text-danger': row?.ca_open_past_due > 0}">{{row?.ca_open_past_due}}</td>
+              <td class="text-center" [ngClass]="{'text-danger': row?.total_open_verification > 0}">{{row?.total_open_verification}}</td>
+              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': row?.on_time_percentage < 75}">
+                {{row?.on_time_percentage | number : '1.0-0'}}%</td>
             </tr>
           </tbody>
           <tbody>
@@ -69,7 +74,8 @@
               <td class="text-center">{{summaryInfo?.totalOpenCA}}</td>
               <td class="text-center">{{summaryInfo?.ca_open_past_due}}</td>
               <td class="text-center">{{summaryInfo?.totalOpenVerifiation}}</td>
-              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.otd < 75}" >{{summaryInfo?.otd | number : '1.0-0'}}%</td>
+              <td class="text-center" [ngClass]="{'bg-danger-subtle text-danger': summaryInfo?.otd < 75}">
+                {{summaryInfo?.otd | number : '1.0-0'}}%</td>
             </tr>
           </tbody>
         </table>

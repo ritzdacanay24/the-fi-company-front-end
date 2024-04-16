@@ -21,7 +21,7 @@
                 Service date set for <b>{{jobInfo?.request_date}} {{jobInfo?.start_time}}</b>
               </p>
             </div>
-            <app-request-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-request-form>
+            <app-request-form [disabled]="disabled" (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-request-form>
 
             <div class="mb-3 mt-3">
               <div class="form-group">

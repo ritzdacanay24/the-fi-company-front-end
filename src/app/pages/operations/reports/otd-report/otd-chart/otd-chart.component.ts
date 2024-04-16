@@ -222,7 +222,6 @@ export class OtdChartComponent {
         let goalArray = []
 
         let goal = this.goal
-        console.log(this.goal)
         for (let i = 0; i < total.length; i++) {
             //ee.push(sum / total.length)
             ee.push(this.average)
@@ -254,8 +253,6 @@ export class OtdChartComponent {
                 },
             );
         }
-
-        console.log(data['goal']?.currentValue, 'dddddddd')
 
         this.chart?.updateOptions({
 

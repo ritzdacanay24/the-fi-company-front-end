@@ -12,6 +12,7 @@ import { JobModalService } from '../job/job-modal-edit/job-modal.service';
 import { FlatpickrModule } from 'angularx-flatpickr';
 import moment from 'moment';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
+import { PropertyService } from '@app/core/api/field-service/property.service';
 
 /**
  * A few things needs to happen.
@@ -109,6 +110,7 @@ export class MapComponent implements OnInit {
         this.dateTo = $event['dateTo']
 
         this.getData()
+        //this.getProperties()
         //this.getList()
     }
 
@@ -116,6 +118,7 @@ export class MapComponent implements OnInit {
 
     constructor(
         private api: SchedulerService,
+        private propertyService: PropertyService,
         private store: Store<RootReducerState>,
         private jobModalEditService: JobModalService
     ) {
@@ -159,19 +162,19 @@ export class MapComponent implements OnInit {
         });
 
         let d = `
-        <div style="padding:6px;border-radius:4px;" class="text-dark">
-        <p>FSID: ${popupText.fs_scheduler_id}</p>
-        <p>Start Date: ${popupText.start}</p>
-        <p>Title: ${popupText.service_type}</p>
-        <p>Techs: ${popupText.techs}</p>
-        </div>
-    `
+            <div style="padding:6px;border-radius:4px;" class="text-dark">
+            <p>FSID: ${popupText.fs_scheduler_id}</p>
+            <p>Start Date: ${popupText.start}</p>
+            <p>Title: ${popupText.service_type}</p>
+            <p>Techs: ${popupText.techs}</p>
+            </div>
+        `
         if (color == 'red') {
             d = `
-        <div style="padding:6px;border-radius:4px;">
-          <h6>${popupText?.address?.freeformAddress}</h6>
-        </div>
-      `
+                <div style="padding:6px;border-radius:4px;">
+                <h6>${popupText?.address?.freeformAddress}</h6>
+                </div>
+            `
         }
 
         let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(d);
@@ -231,9 +234,8 @@ export class MapComponent implements OnInit {
         this.map.addControl(new tt.FullscreenControl());
         this.map.addControl(new tt.NavigationControl());
 
-
         this.getData()
-
+        //this.getProperties()
     }
 
 
@@ -312,7 +314,7 @@ export class MapComponent implements OnInit {
         let modalRef = this.jobModalEditService.open(fsId)
         modalRef.result.then((result: any) => {
         }, () => {
-            
+
             //this.getList();
         });
     }
@@ -339,47 +341,14 @@ export class MapComponent implements OnInit {
         let pop_up = new tt.Popup({ offset: 30 })
             .setHTML(`
             <div style="padding:6px;border-radius:4px;" class="text-dark">
-            <p>FSID: ${data.fs_scheduler_id}</p>
-            <p>Start Date: ${data.start}</p>
-            <p>Title: ${data.service_type}</p>
-            <p>Techs: ${data.techs}</p>
+                <p>FSID: ${data.fs_scheduler_id}</p>
+                <p>Start Date: ${data.start}</p>
+                <p>Title: ${data.service_type}</p>
+                <p>Techs: ${data.techs}</p>
             </div>
       `);
 
         this._marker.setPopup(pop_up).togglePopup();
-
-        //     console.log(row)
-        //     this.active = row.fs_scheduler_id;
-
-        //     this.clearMarkers();
-
-        //     this.createMarker([row.fs_lon, row.fs_lat], row.backgroundColor, row, false, index)
-
-        //     this.map.setCenter([row.fs_lon, row.fs_lat]);
-
-        //     this.map.easeTo({
-        //         center: [row.fs_lon, row.fs_lat],
-        //         zoom: 13
-        //     });
-
-
-        //     var element = document.createElement('div');
-        //     element.id = 'marker';
-        //     this._marker = new tt.Marker({ element: element }).setLngLat([row.fs_lon, row.fs_lat]).addTo(this.map);
-        //     let pop_up = new tt.Popup({ offset: 30 })
-        //         .setHTML(`
-        //         <div style="padding:6px;border-radius:4px;" class="text-dark">
-        //         <p>FSID: ${row.fs_scheduler_id}</p>
-        //         <p>Start Date: ${row.start}</p>
-        //         <p>Title: ${row.service_type}</p>
-        //         <p>Techs: ${row.techs}</p>
-        //         </div>
-        //   `);
-
-        //     this._marker.setPopup(pop_up).togglePopup();
-
-
-
     }
 
     async getLocation() {
@@ -437,7 +406,72 @@ export class MapComponent implements OnInit {
         let from = moment(this.currentDate['from']).format('YYYY-MM-DD');
         let to = moment(this.currentDate['to']).format('YYYY-MM-DD');
         this.listData = await this.api.getMap(from, to);
-        console.log(this.listData)
+    }
+
+    listProperties
+    getProperties = async () => {
+        this.listProperties = await this.propertyService.find({ address_complete: 'Yes' });
+        for (let i = 0; i < this.listProperties.length; i++) {
+            if (this.listProperties[i].lon && this.listProperties[i].lat) {
+                this.createPropertyMarker([this.listProperties[i].lon, this.listProperties[i].lat], this.listProperties[i]?.backgroundColor, this.listProperties[i], false)
+            }
+        }
+    }
+
+
+    createPropertyMarker = (position: any, color: string, popupText: any | any, showPopup?, index?) => {
+
+        if (this._marker) this._marker.remove();
+
+        var markerElement = document.createElement('div');
+
+        markerElement.className = 'marker';
+        var markerContentElement = document.createElement('div');
+        markerContentElement.className = `marker-content text-dark ${color}`;
+        markerContentElement.style.backgroundColor = 'red';
+        markerContentElement.style.borderColor = ' #fff';
+        markerElement.appendChild(markerContentElement);
+
+        var iconElement = document.createElement('div');
+        iconElement.className = 'marker-icon';
+        iconElement.innerText = index ? index : null;
+        markerContentElement.appendChild(iconElement);
+
+        markerElement.addEventListener('click', (e) => {
+            this.fs_scheduler_id = popupText.fs_scheduler_id
+            this.activeIds = popupText.techId?.split(',')
+            this.scroll(popupText.fs_scheduler_id)
+        });
+
+        let d = `
+            <div style="padding:6px;border-radius:4px;" class="text-dark">
+                <p>FSID: ${popupText.fs_scheduler_id}</p>
+                <p>Start Date: ${popupText.start}</p>
+                <p>Title: ${popupText.service_type}</p>
+                <p>Techs: ${popupText.techs}</p>
+            </div>
+        `
+        if (color == 'red') {
+            d = `
+                <div style="padding:6px;border-radius:4px;">
+                <h6>${popupText?.address?.freeformAddress}</h6>
+                </div>
+            `
+        }
+
+        let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(d);
+
+        // add marker to map
+        let e = new tt.Marker({ element: markerElement, anchor: 'bottom' })
+            .setLngLat(position)
+            .setPopup(popup)
+            .addTo(this.map);
+
+        this.markersArray.push(e);
+
+        if (showPopup)
+            e.setPopup(popup).togglePopup();
+
     }
 
 

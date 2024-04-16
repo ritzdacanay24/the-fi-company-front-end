@@ -199,8 +199,6 @@ export class ShippedOrdersChartComponent implements OnInit {
         this.barChartData = [];
 
         this.barChartLabels = this.labels;
-
-        //console.log(this.data, 'this.data')
         let count = 0;
         for (const key in this.data) {
             let color = this.data[key].backgroundColor;

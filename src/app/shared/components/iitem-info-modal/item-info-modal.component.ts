@@ -46,9 +46,7 @@ export class ItemInfoModalComponent {
     }
 
     notifyParent($event) {
-        console.log($event)
         this.partNumber = $event.pt_part
-     
     }
 
     public dismiss() {

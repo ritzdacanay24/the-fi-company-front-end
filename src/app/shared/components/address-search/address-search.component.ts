@@ -70,6 +70,7 @@ export class AddressSearchComponent implements OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    console.log(changes)
     if (changes['value']?.currentValue) {
       this.value = changes['value'].currentValue || null;
     }

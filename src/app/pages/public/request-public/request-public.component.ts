@@ -67,6 +67,9 @@ export class RequestPublicComponent implements OnInit {
 
   myDatepickerOptions
 
+  disabled = false;
+
+
   setFormEmitter($event) {
     this.form = $event;
     this.form.get('active').disable()
@@ -142,7 +145,9 @@ export class RequestPublicComponent implements OnInit {
 
       this.form.patchValue(data);
 
-      this.form.disable()
+      this.form.disable();
+
+      this.disabled = true;
 
 
       await this.getAttachments()

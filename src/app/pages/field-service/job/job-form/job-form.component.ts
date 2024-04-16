@@ -321,9 +321,27 @@ export class JobFormComponent implements OnInit {
   getTurnover($event) {
   }
 
+  disableTechs() {
+    this.teams = this.form.get('resource') as FormArray;
+    //check if tech not in list already
+    this.inList = []
+    for (let i = 0; i < this.teams.controls.length; i++) {
+      this.inList.push(this.teams.controls[i]['controls'].user.value)
+    }
+
+
+    for (let i = 0; i < this.users$.length; i++) {
+      this.users$[i].disabled = false;
+      if (this.inList.indexOf(this.users$[i].user) !== -1) {
+        this.users$[i].disabled = true;
+      }
+    }
+  }
+
   teams: FormArray;
   addMoreTechs(n) {
     this.teams = this.form.get('resource') as FormArray;
+
     for (let i = 0; i < n; i++) {
       this.teams.push(this.fb.group({
         user: null,
@@ -341,13 +359,29 @@ export class JobFormComponent implements OnInit {
     return this.form.get('resource') as FormArray
   }
 
+  inList = []
+
   async onTechChange(e, i) {
+    this.teams = this.form.get('resource') as FormArray;
+
     if (e.user_rate) {
       e.contractor_code = null;
     }
-    //this.setOnRemoveTech.emit(e)
-    this.teams = this.form.get('resource') as FormArray;
+
+    if (this.inList) {
+      if (this.inList.indexOf(e.user) !== -1) {
+        alert('User already in list')
+        this.teams.controls[i]['controls']['user'].patchValue(null)
+        return;
+      }
+    }
+
+
     ((this.form.get('resource') as FormArray).at(i) as FormGroup).patchValue({ ...e, user_id: e.id });
+
+
+    this.setOnRemoveTech.emit(e);
+
   }
 
   form = this.fb.group({

@@ -311,6 +311,8 @@ export class RequestEditComponent {
           sales_order_number: res.so_number,
           co_number: res.customer_co_number,
           bolt_to_floor: res.bolt_to_floor,
+          fs_lat: res.lat,
+          fs_lon: res.lon,
           request_id: this.id,
           site_survey_requested: res.site_survey_requested,
           comments: `

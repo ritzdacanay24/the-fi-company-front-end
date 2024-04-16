@@ -51,13 +51,20 @@ export class ShippedOrdersReportComponent implements OnInit {
       this.dateFrom = params['dateFrom'] || this.dateFrom;
       this.dateTo = params['dateTo'] || this.dateTo;
       this.dateRange = [this.dateFrom, this.dateTo];
+      this.comment = params['comment'];
     });
 
 
     this.getData()
     this.getChartData();
+
+    if (this.comment) {
+      this.viewComment(this.comment, null);
+    }
+
   }
 
+  comment
 
   pageId = '/pulse/shipped-orders'
 

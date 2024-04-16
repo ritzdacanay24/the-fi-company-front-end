@@ -498,6 +498,7 @@ export class TechScheduleComponent implements OnInit {
 
 
   clearEventOverlay() {
+    this.tooltip?.close();
     this.id = null;
     // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
     //   queryParamsHandling: 'merge',

@@ -40,4 +40,5 @@ export interface IQirForm {
   email: string;
   customerSerialNumber?: string
   location?: string
+  statusClosed?: string
 }

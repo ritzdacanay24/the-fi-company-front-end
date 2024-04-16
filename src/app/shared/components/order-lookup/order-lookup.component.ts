@@ -35,6 +35,7 @@ export class OrderLookupComponent {
   @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
 
+  @Input() comment = null
 
   async notifyParent($event) {
     this.salesOrderNumber = $event.sod_nbr;
@@ -47,6 +48,12 @@ export class OrderLookupComponent {
       this.salesOrderNumber = changes['salesOrderNumber'].currentValue;
       if (this.salesOrderNumber)
         this.getData()
+    }
+
+    if (changes['comment'] && changes['comment'].currentValue) {
+      this.viewComment(changes['comment'].currentValue, null);
+      this.salesOrderNumber = changes['comment'].currentValue.split('-')[0]
+      this.getData()
     }
   }
 

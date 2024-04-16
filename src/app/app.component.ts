@@ -123,7 +123,6 @@ export class AppComponent {
   ngAfterViewInit() {
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
-      console.log(d)
       setThemeColor(d);
     }
 

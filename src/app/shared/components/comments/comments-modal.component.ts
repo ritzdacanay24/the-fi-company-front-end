@@ -231,11 +231,11 @@ export class CommentsModalComponent implements OnInit {
 
     let saveParams: any = {
       insert: 1,
-      locationPath: this.router.url,
-      pageName: this.router.url,
+      locationPath: window.location.href.split('?')[0],
+      pageName: location.pathname,
       comments: pid ? addCommentText : this.htmlText,
       emailToSendFromMention: em,
-      emailCallBackUrl: `${this.url}?comment=${this.orderNum}`,
+      emailCallBackUrl: `${window.location.href.split('?')[0]}?comment=${this.orderNum}`,
       created_by_name: this.userInfo.full_name,
       createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
       comments_html: stripHtml(pid ? addCommentText : this.htmlText),

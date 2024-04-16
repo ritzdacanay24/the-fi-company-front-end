@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectorRef, Component, Input } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -42,6 +42,7 @@ export class PlacardModalComponent {
         private tokenStorageService: TokenStorageService,
         private api: PlacardService,
         private toastrService: ToastrService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     @Input({ required: true }) public soNumber: string = '';
@@ -54,6 +55,10 @@ export class PlacardModalComponent {
     form: any;
 
     id
+
+    ngAfterViewChecked() {
+        this.cdr.detectChanges();
+    }
 
     setFormEmitter($event) {
         this.form = $event;
@@ -97,7 +102,7 @@ export class PlacardModalComponent {
                     po_number: data.SO_PO,
                     eyefi_so_number: data.SOD_NBR,
                     eyefi_part_number: data.SOD_PART,
-                    customer_co_por_so:data.MISC
+                    customer_co_por_so: data.MISC
                 })
 
             this.isLoading = false;
@@ -113,14 +118,14 @@ export class PlacardModalComponent {
             return;
         };
 
-        if(this.id){
+        if (this.id) {
             this.update()
-        }else{
+        } else {
             this.create()
         }
     }
 
-    async create(){
+    async create() {
         try {
             this.isLoading = true;
             let { insertId } = await this.api.create(this.form.value);
@@ -133,10 +138,10 @@ export class PlacardModalComponent {
         }
     }
 
-    async update(){
+    async update() {
         try {
             this.isLoading = true;
-             await this.api.update(this.id, this.form.value);
+            await this.api.update(this.id, this.form.value);
             this.onPrint()
             this.isLoading = false;
             this.toastrService.success('Successfully Updated');

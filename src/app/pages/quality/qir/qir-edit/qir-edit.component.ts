@@ -11,6 +11,7 @@ import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErr
 import { MyFormGroup } from 'src/assets/js/util/_formGroup';
 import { Lightbox } from 'ngx-lightbox';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import moment from 'moment';
 
 @Component({
   standalone: true,
@@ -26,7 +27,8 @@ export class QirEditComponent {
     private api: QirService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
-    private lightbox: Lightbox
+    private lightbox: Lightbox,
+    private authenticationService: AuthenticationService
   ) { }
 
   ngOnInit(): void {
@@ -76,6 +78,14 @@ export class QirEditComponent {
       getFormValidationErrors();
       return
     } else { }
+
+    if (this.form.value?.status != 'Open') {
+      this.form.value.statusClosed = moment().format('YYYY-MM-DD HH:mm:ss')
+      this.form.value.completedBy = this.authenticationService.currentUserValue.id
+    } else {
+      this.form.value.statusClosed = null;
+      this.form.value.completedBy = null
+    }
 
     try {
       this.isLoading = true;

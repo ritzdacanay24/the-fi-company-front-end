@@ -183,7 +183,6 @@ export class KanbanComponent implements OnInit {
 
     onAutoRefresh() {
         if (this.autoRefresh) {
-            console.log('huh??')
             this.interval = setInterval(() => {
                 this._fetchData();
             }, this.autoRefreshTimer);

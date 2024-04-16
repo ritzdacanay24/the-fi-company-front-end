@@ -68,9 +68,7 @@
                   <div style="min-width:200px">
                     <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
                       bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
-                      <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-                        {{item.user}}
-                      </ng-template>
+                     
                     </ng-select>
                   </div>
                   <div *ngIf="row.value.title == 'Vendor'" class="mt-2">

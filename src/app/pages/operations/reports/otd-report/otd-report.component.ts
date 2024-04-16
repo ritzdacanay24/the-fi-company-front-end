@@ -281,7 +281,6 @@ export class OtdReportComponent implements OnInit {
             shippedOnTime: shippedOnTime,
             total_lines: total_lines
         }
-        console.log(this.summaryObject)
     }
 
     isLoading = false;

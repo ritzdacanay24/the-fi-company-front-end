@@ -397,9 +397,9 @@ export const MENU: MenuItem[] = [
             description: "Master Production"
           },
           {
-            label: 'Picking',
+            label: 'Pick & Stage',
             link: '/dashboard/operations/master-scheduling/picking-routing',
-            description: "Picking"
+            description: "Pick & Stage"
           },
           {
             label: 'Production',

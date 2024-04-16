@@ -16,6 +16,7 @@ import { Store } from '@ngrx/store';
 import { RootReducerState } from '@app/store';
 import { getLayoutMode } from '@app/store/layouts/layout-selector';
 import { EventService } from '@app/core/services/event.service';
+import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 
 setOptions({
   theme: 'ios',
@@ -35,7 +36,8 @@ setOptions({
     MbscModule,
     AutosizeModule,
     MyRecaptchaModule,
-    NgSelectModule
+    NgSelectModule,
+    AddressSearchComponent,
   ],
   selector: 'app-request-form',
   templateUrl: './request-form.component.html',
@@ -87,8 +89,10 @@ export class RequestFormComponent {
 
   myLabels = [];
   myInvalid = [];
-
+  
   @Input() showCaptcha = true
+  
+  @Input() disabled = false;
 
   myDatepickerOptions: any = {
     controls: ['date'],
@@ -113,6 +117,20 @@ export class RequestFormComponent {
   states = states
 
   @Input() submitted = false;
+
+
+  notifyParent($event) {
+    this.form.patchValue({
+      address1: $event?.fullStreetName,
+      city: $event?.address?.municipality,
+      state: $event?.address?.countrySubdivisionCode || null,
+      zip: $event?.address?.postalCode,
+      property: $event?.poi?.name,
+      lat: $event?.position?.lat || null,
+      lon: $event?.position?.lon || null
+    })
+  }
+
 
   typeOfServiceOptions = [
     "Conversion", "Install", "Reface", "Relocation", "Removal", "Repair", "Service Call", "Site Survey"
@@ -171,7 +189,9 @@ export class RequestFormComponent {
     customer_product_number: [null],
     active: [1],
     site_survey_requested: [''],
-    created_by: ['']
+    created_by: [''],
+    lat: [''],
+    lon: ['']
   })
 
   get f() {

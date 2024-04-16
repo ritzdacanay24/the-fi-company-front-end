@@ -23,9 +23,12 @@ export class OrderLookupPageComponent {
 
     this.activatedRoute.queryParams.subscribe(params => {
       this.salesOrderNumber = params['salesOrderNumber'];
+      this.comment = params['comment'];
     })
 
   }
+
+  comment = null
 
   isLoadingEmitter($event){
   }

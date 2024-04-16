@@ -66,7 +66,6 @@ export class MaterialRequestValidateComponent {
 
       this.isLoading = true;
       let data: any = this.header = await this.api.getById(this.id);
-      console.log(data)
       this.data = await this.materialRequestDetailService.find({ mrf_id: data.id });
 
       if (this.data) {

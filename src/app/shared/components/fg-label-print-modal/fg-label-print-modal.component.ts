@@ -6,6 +6,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { PlacardService } from '@app/core/api/operations/placard/placard.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Injectable({
     providedIn: 'root'
@@ -52,7 +54,8 @@ export class FgLabelPrintModalComponent {
 
     constructor(
         private ngbActiveModal: NgbActiveModal,
-        private authenticationService: AuthenticationService
+        private authenticationService: AuthenticationService,
+        private placardService: PlacardService
     ) { }
 
     @Input() public poNumber: string = '';
@@ -70,7 +73,38 @@ export class FgLabelPrintModalComponent {
         this.monthYear = moment().format('MM/DD/YYYY');
         this.totalLabels = 1;
         this.qtyPerLabel = 1;
+
+        this.getData();
     }
+
+    async getData() {
+        try {
+            this.isLoading = true;
+            let data: any = await this.placardService.getPlacardBySoSearch(this.row.SOD_NBR, this.row.SOD_PART, this.row.SOD_LINE);
+            this.customerCo = data.MISC;
+            this.isLoading = false;
+        } catch (err) {
+            this.isLoading = false;
+        }
+    }
+
+    serialNumber: string;
+    async getSerialNumberInfo() {
+        try {
+            SweetAlert.loading('Searching... Please wait')
+            let data: any = await this.placardService.searchSerialNumber(this.customerAssetTagNumber);
+            this.eyefiSerialTag = data?.serialNumber || null
+
+            if (!data) {
+                alert('Unable to find serial tag.')
+            }
+
+            SweetAlert.close()
+        } catch (err) {
+            SweetAlert.close()
+        }
+    }
+
 
     dismiss() {
         this.ngbActiveModal.dismiss('dismiss');

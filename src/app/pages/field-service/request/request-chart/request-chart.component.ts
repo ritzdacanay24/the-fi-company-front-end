@@ -56,7 +56,7 @@ export class RequestChartComponent {
     chartOptions: Partial<ChartOptions> = {
         series: [],
         chart: {
-            height: 420,
+            height: 300,
             type: "bar",
             stacked: false,
         },

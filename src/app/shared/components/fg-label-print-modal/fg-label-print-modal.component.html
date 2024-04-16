@@ -2,7 +2,20 @@
   <h5 class="modal-title" id="exampleModalLabel">FG Label</h5>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
-<div class="modal-body">
+
+
+<div class="modal-body" *ngIf="isLoading">
+  <div class="m-5 text-center">
+    <h4>
+      <div class="spinner-grow text-primary mb-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p>Loading Data. Please wait...</p>
+    </h4>
+  </div>
+</div>
+
+<div class="modal-body" *ngIf="!isLoading">
 
   <div class="row">
     <div class="col mb-3">
@@ -21,17 +34,23 @@
 
   <div class="row">
     <div class="col mb-3">
-      <label class="form-label">Customer Asset Tag #</label>
-      <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer Asset Tag #"
-        [(ngModel)]="customerAssetTagNumber">
+      <label class="form-label">WO #</label>
+      <input type="text" class="form-control" name="customerCo" placeholder="Enter WO #" [(ngModel)]="woNumber">
     </div>
   </div>
 
   <div class="row">
     <div class="col mb-3">
-      <label class="form-label">WO #</label>
-      <input type="text" class="form-control" name="customerCo" placeholder="Enter WO #" [(ngModel)]="woNumber">
+      <label class="form-label">Customer Asset Tag #</label>
+
+      <div class="input-group">
+        <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
+        <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer Asset Tag #"
+          [(ngModel)]="customerAssetTagNumber">
+      </div>
+
     </div>
+
     <div class="col mb-3">
       <label class="form-label">Eyefi Serial Tag</label>
       <input type="text" class="form-control" name="eyefiSerialTag" placeholder="Enter Eyefi Serial Tag"
@@ -64,6 +83,6 @@
 
 </div>
 <div class="modal-footer">
-  <button (click)="dismiss()" type="button" class="btn btn-light me-3">Close</button>
+  <button (click)="dismiss()" type="button" class="btn btn-light me-2">Close</button>
   <button (click)="print()" type="button" class="btn btn-primary">Print</button>
 </div>

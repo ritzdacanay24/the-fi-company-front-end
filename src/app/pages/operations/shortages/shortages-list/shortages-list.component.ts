@@ -10,7 +10,7 @@ import { NAVIGATION_ROUTE } from '../shortages-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { ShortagesService } from '@app/core/api/operations/shortages/shortages.service'
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service'
-import { highlightRowView, autoSizeColumns, filterParams, agGridDateFilterdateFilter, agGridDateFilter, copyOrigianlData } from 'src/assets/js/util'
+import { highlightRowView, autoSizeColumns, agGridDateFilter } from 'src/assets/js/util'
 import { SharedModule } from '@app/shared/shared.module'
 import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
@@ -18,12 +18,11 @@ import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } fr
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component'
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
-import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
 import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component'
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component'
 import { LateReasonCodeModalService } from '@app/shared/components/last-reason-code-modal/late-reason-code-modal.component'
 import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component'
-import { WebsocketService } from '@app/core/services/websocket.service'
+
 @Component({
   standalone: true,
   imports: [
@@ -51,6 +50,8 @@ export class ShortagesListComponent implements OnInit {
   ) {
   }
 
+  comment
+
   ngOnInit(): void {
 
     this.activatedRoute.queryParams.subscribe(params => {
@@ -61,9 +62,15 @@ export class ShortagesListComponent implements OnInit {
       this.id = params['id'];
       this.isAll = params['isAll'] ? params['isAll'].toLocaleLowerCase() === 'true' : false;
       this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
+      this.comment = params['comment'];
     });
 
     this.getData();
+
+    if (this.comment) {
+      this.viewComment(this.comment);
+    }
+
   }
 
   query
@@ -92,8 +99,8 @@ export class ShortagesListComponent implements OnInit {
 
   viewComment = (id) => {
     let modalRef = this.commentsModalService.open(id, 'Shortage Request')
-
     modalRef.result.then((result: any) => {
+      this.getData()
     }, () => { });
   }
 
