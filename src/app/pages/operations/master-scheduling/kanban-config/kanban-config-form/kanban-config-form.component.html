@@ -1,5 +1,30 @@
 <form [formGroup]="form" autocomplete="off">
 
+    <div class="mb-3">
+        <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['user_roles']" [required]="true"
+            [ngClass]="{ 'is-invalid': submitted && f['user_roles'].errors }" [multiple]="true"
+            [form_label]="'User Access'"></app-user-search>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('max_in_queue')">Total Visible Orders In Queue</label>
+            <input type="text" class="form-control" name="max_in_queue" formControlName="max_in_queue"
+                placeholder="Enter number" [ngClass]="{ 'is-invalid': submitted && f['max_in_queue'].errors }" />
+            <small>Set value to 0 if you want all orders visible in this queue.</small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check ">
+            <input class="form-check-input" type="checkbox" id="flexCheckDisabled" formControlName="first_in_first_out">
+            <label class="form-check-label" for="flexCheckDisabled">
+                First in first out.
+            </label>
+        </div>
+        <small>All orders except the first order in the queue will be disabled. </small>
+    </div>
+
     <div class="row">
         <div class="col mb-3">
             <label class="form-label" [ngClass]="formValidator('name')">Queue Name</label>
@@ -53,6 +78,14 @@
             <li class="list-group-item" *ngFor="let row of queues">{{row.seq}} - {{row.name}}</li>
         </ul>
     </div> -->
+    
+
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" formControlName="enable_start_time">
+            <label class="form-check-label">Enable Start & End Time</label>
+        </div>
+    </div>
 
     <div class="mb-3">
         <div class="form-check form-switch">

@@ -140,8 +140,8 @@
     <div class="col-sm-12 col-lg-8 mb-3">
       <label class="form-label required">Search by address</label>
       <app-address-search (notifyParent)="notifyParent($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.address1.value }" [editableSearchTerm]="false" [hideSelected]="false"
-        [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true"
+        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" [editableSearchTerm]="false" [hideSelected]="false"
+        [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true" [required]="true"
         [addTag]="false" [value]="f.address1.value" [addTag]="false" [disabled]="disabled"></app-address-search>
 
         <!-- 
@@ -238,7 +238,7 @@
   </div>
 
 
-  <div class="mb-3" *ngIf="showCaptcha">
+  <!-- <div class="mb-3" *ngIf="showCaptcha">
     <re-captcha #captchaElem class="text-xs-center" (resolved)="resolved($event)"
       *ngIf="!form.get('token').value"></re-captcha>
     <p class="mb-2" [ngClass]="{
@@ -247,7 +247,7 @@
     }" class="text-danger" *ngIf="submitted && form.get('g-recaptcha-response')['errors']">
       Required
     </p>
-  </div>
+  </div> -->
 
   <div class="mb-3" *ngIf="!form.get('token').value">
     <p>

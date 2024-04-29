@@ -184,7 +184,7 @@ export class RequestFormComponent {
     serial_number: "",
     token: "",
     created_date: "",
-    'g-recaptcha-response': ["", Validators.required],
+    'g-recaptcha-response': [""],
     sign_manufacture: ["", Validators.required],
     customer_product_number: [null],
     active: [1],

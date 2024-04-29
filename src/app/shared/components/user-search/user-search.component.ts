@@ -69,13 +69,13 @@ export class UserSearchComponent implements OnInit {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['value']?.currentValue) {
-      if (!this.multiple) {
+      if (!changes['multiple']?.currentValue) {
         this.dataInput$.next(this.value)
 
         this.value = changes['value'].currentValue;
         //this.getLawFirmById(changes.value.currentValue);
       } else {
-        this.value = changes['value'].currentValue?.split(",");
+        this.value = changes['value']?.currentValue?.split(",");
       }
     }
   }

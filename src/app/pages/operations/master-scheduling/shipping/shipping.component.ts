@@ -834,6 +834,7 @@ export class ShippingComponent implements OnInit {
         animateRows: true,
         tooltipShowDelay: 0,
         columnDefs: [],
+        rowBuffer:0,
         suppressColumnMoveAnimation: true,
         getRowId: (data: any) => data?.data.id,
         onGridReady: (params: any) => {

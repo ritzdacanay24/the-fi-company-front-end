@@ -42,6 +42,7 @@ export class AddressSearchComponent implements OnInit {
   @Input() clearSearch: boolean = false;
   @Input() addTagText: string = "Add address: ";
   @Input() showCategories: boolean = false;
+  @Input() ngClass: string | any;
   
   data$: Observable<any[]>;
   dataLoading = false;

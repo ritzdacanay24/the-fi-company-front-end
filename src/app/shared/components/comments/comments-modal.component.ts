@@ -81,6 +81,7 @@ export class CommentsModalComponent implements OnInit {
   ) {
     this.url = window.location.href;
     Quill.register(TableBlockEmbed, true);
+
     this.userInfo = this.authenticationService.currentUserValue;
   }
 

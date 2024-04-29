@@ -124,6 +124,32 @@ export class MapComponent implements OnInit {
     ) {
     }
 
+    @Input() options = [{
+        value: 'custom',
+        text: 'Custom'
+    }, {
+        value: [moment().format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
+        text: 'Today'
+    }, {
+        value: [moment().add(1, 'days').format('YYYY-MM-DD'), moment().subtract(1, 'days').format('YYYY-MM-DD')],
+        text: 'Tomorrow'
+    }, {
+        value: [moment().add(1, 'weeks').startOf('week').format('YYYY-MM-DD'), moment().subtract(1, 'weeks').endOf('week').format('YYYY-MM-DD')],
+        text: 'This week'
+    }, {
+        value: [moment().add(1, 'months').startOf('month').format('YYYY-MM-DD'), moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD')],
+        text: 'Next month'
+    }, {
+        value: [moment().add(1, 'weeks').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
+        text: 'Last 7 days'
+    }, {
+        value: [moment().add(30, 'days').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
+        text: 'Last 30 days'
+    }, {
+        value: [moment().startOf('year').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
+        text: 'YTD'
+    }];
+
 
     scroll = (id: number) => {
         if (!id) return;

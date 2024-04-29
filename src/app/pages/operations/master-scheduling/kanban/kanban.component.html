@@ -1,3 +1,7 @@
+<div class="alert alert-danger d-flex align-items-center sticky-top" role="alert" *ngIf="liveUpdateMessage != ''">
+    {{liveUpdateMessage}} <button class="btn btn-light btn-sm ms-2" (click)="refresh()">Refresh</button>
+</div>
+
 <div class="card mb-3">
     <div class="card-body d-flex text-nowrap align-middle">
         <div class="search-box">
@@ -11,22 +15,9 @@
                 [(ngModel)]="currentQueueView" [multiple]="true" style="max-width:350px;min-width:350px"
                 (ngModelChange)="onChangeCurrentQueueView()" [hideSelected]="false" placeholder="Search Queues"
                 [closeOnSelect]="false" [clearable]="true">
-
-
-                <!-- <ng-template ng-multi-label-tmp let-items="items">
-                    <div class="ng-value text-nowrap" *ngFor="let item of items;">
-                        <span class="ng-value-label"> {{item?.name}}</span>
-                    </div>
-
-                </ng-template> -->
-
-
                 <ng-template ng-multi-label-tmp let-items="items" let-index="index">
                     <div class="ng-value text-nowrap" *ngFor="let item of items | slice: 0:2">
-
                         <span class="ng-value-label"> {{ item['name'] }}</span>
-
-
                     </div>
                     <div class="ng-value" *ngIf="items.length > 2">
                         <span class="ng-value-label">{{ items.length - 2}} more...</span>
@@ -42,33 +33,22 @@
             </ng-select>
         </div>
 
-        <!-- <ng-select style="width:300px" class="ms-2" [appendTo]="'body'" [(ngModel)]="currentQueueView"
-            (ngModelChange)="onChangeCurrentQueueView()">
-            <ng-option [value]="'All'"> All </ng-option>
-            <ng-option *ngFor="let row of data?.queues" [value]="row.id">{{row.name}} -
-                {{row.details.length}}</ng-option>
-        </ng-select> -->
-
-
         <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Kanban</button>
 
         <button class="btn btn-light ms-3" (click)="_fetchData()">Refresh</button>
 
         <div class="form-check form-switch ms-3 mt-2">
-            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showLess">
+            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showLess" (ngModelChange)="onShowLess()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show Less Data In Card</label>
         </div>
 
-        <!-- <div class="form-check form-switch ms-3 mt-2">
-            <input class="form-check-input" type="checkbox" id="autoRefresh" [(ngModel)]="autoRefresh" (ngModelChange)="onAutoRefresh()">
-            <label class="form-check-label" for="autoRefresh">Auto Refresh </label>
-        </div> -->
     </div><!--end card-body-->
 </div><!--end card-->
 
-<div class="d-flex tasks-board1 text-nowrap" style="overflow:auto;justify-content: safe center;gap:0" id="kanbanboard">
+
+<div class="d-flex tasks-board1 text-nowrap" style="overflow:auto;justify-content: safe center;gap:0;" id="kanbanboard">
     <ng-container *ngFor="let tasks of data?.queues | filterlist:currentQueueView">
-        <div style="min-width:208px;" class="me-2"
+        <div style="min-width:188px;max-width:188px;" class="mx-1"
             [ngClass]="{'center-task' : currentQueueView != null && currentQueueView != ''}">
             <div class="d-flex mb-3 sticky-top justify-content-center" style="z-index:1"
                 (click)="openKanbanConfig(tasks.id)">
@@ -84,25 +64,12 @@
                     (dndDrop)="onDrop($event, tasks.details, tasks.id)">
                     <div class="dndPlaceholder p-1 bg-warning-subtle text-warning border border-warning rounded"
                         dndPlaceholderRef>Place here</div>
-                    @for(task of tasks.details | myfilter:searchTerm;track $index;){
+                    @for(task of tasks.details | myfilter:searchTerm | slice:0:tasks?.max_in_queue != 0 ?
+                    tasks?.max_in_queue : tasks.details?.length;track $index; ){
                     <div [dndDraggable]="task" dndEffectAllowed="move" (dndMoved)="onDragged(task, tasks.details)"
                         (onBeforeDrop)="onBeforeDrop(task)" [dndDisableIf]="true">
                         <ng-template [ngTemplateOutlet]="ready"
-                            [ngTemplateOutletContext]="{task:task, header:tasks}"></ng-template>
-                        <!-- <ng-template [ngTemplateOutlet]="picking" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'picking'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="staging" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'staging'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="production" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'production'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="proto" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'proto'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="qa" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'qa'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="logistics" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'logistics'"></ng-template>
-                        <ng-template [ngTemplateOutlet]="completed" [ngTemplateOutletContext]="{task:task}"
-                            *ngIf="tasks.task_content == 'completed'"></ng-template> -->
+                            [ngTemplateOutletContext]="{task:task, header:tasks, index:$index}"></ng-template>
                     </div>
                     }
                     <p class="bg-light text-center text-muted" *ngIf="tasks.details.length > 0">End of data</p>
@@ -114,26 +81,52 @@
 </div><!--end task-board-->
 
 <!-- Task  -->
-<ng-template #ready let-task='task' let-header='header'>
-    <div class="card tasks-box card-animate1 mb-2"
-        [ngClass]="{'bg-danger-subtle text-danger' : task?.timeDiffMins >=60,'bg-warning-subtle text-warning' : task?.timeDiffMins >=30}">
-        <div class="card-header py-1 text-white text-center bg-danger" *ngIf="task.hot_order"> HOT ORDER </div>
-        <div class="card-header py-1 text-danger text-center">{{task.timeDiff || 'Loading time'}}</div>
-        <div class="card-body" [ngClass]="{'pb-0':showLess}">
-            <div class="d-flex mb-2">
-                <h6 class="fs-15 mb-0 flex-grow-1 text-truncate pointer" (click)="openPickSheet(task.wo_nbr)">
-                    <u>{{task.wo_nbr}}</u>
+<ng-template #ready let-task='task' let-header='header' let-index='index'>
+    <div class="card tasks-box card-animate1 mb-2 {{header?.first_in_first_out && index > 0 ? 'opacity-25 no-pointer' : ''}}"
+        [ngClass]="{'border-danger border border-2': task?.wo_mstr?.wo_due_date < today && task?.wo_mstr?.wo_status != 'C', 'bg-danger-subtle text-danger' : task?.timeDiffMins >=60 && header.id > 1,'bg-warning-subtle text-warning' : task?.timeDiffMins >=30 && header.id > 1}">
+        <div class="card-header p-1 text-white text-center blink" *ngIf="task.hot_order">
+            <span class="text">HOT ORDER</span>
+        </div>
+        <div class="card-header py-1 text-danger text-center overflow-hidden"
+            *ngIf="header.id !== 1 && task?.wo_mstr?.wo_status != 'C'">
+            <i class="text-danger ri-lock-line" style="position:absolute;left:5px;margin-right:3px"
+                *ngIf="header.enable_validation" title="Validation On"></i>
+            {{task.timeDiff || 'Loading time'}}
+        </div>
+        <div class="card-header py-1 text-center text-center p-0 m-0 bg-success-subtle text-success"
+            *ngIf="task?.wo_mstr?.wo_status == 'C'">
+            WO already completed
+        </div>
+        <div class="card-body">
+            <div *ngIf="task.isLoading || isLoadingAll" class="bg-loading">
+                <span style="
+                position: absolute;
+                top: 50%;
+                left: 42%;
+                transform: translateY(-50%);color:#fff">
+                    <div class="spinner-border text-primery" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </span>
+
+            </div>
+
+            <div class="d-flex mb-2 ">
+
+                <h6 class="fs-13 mb-0 flex-grow-1 text-truncate">
+                    <u (click)="openPickSheet(task.wo_nbr)" class="pointer" placement="top" ngbTooltip="View Pick Sheet"
+                        container="body">{{task.wo_nbr}}</u>
                 </h6>
                 <div class="dropdown" ngbDropdown container="body">
                     <a href="javascript:void(0);" class="text-muted arrow-none" id="dropdownMenuLink1"
                         data-bs-toggle="dropdown" aria-expanded="false" ngbDropdownToggle><i
                             class="ri-more-fill"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink1" ngbDropdownMenu>
-                        <li (click)="openQueueSelection(task)" class="pointer">
+                        <li (click)="openQueueSelection(task, header)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Select Queue </a>
                         </li>
-                        <li (click)="editKanban(task.id, task)" class="pointer">
+                        <li (click)="editKanban(task)" class="pointer">
                             <a class="dropdown-item">
                                 <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Edit</a>
                         </li>
@@ -155,19 +148,81 @@
                 </div>
             </div>
 
-            <div *ngIf="!showLess" class="mb-0">
-                <p class="" *ngIf="isShowing(header, 'prod_line')">ProdLine: {{task.prod_line}}</p>
-                <p class="" *ngIf="isShowing(header, 'staging_bay')">Staging Bay: {{task.staging_bay}}</p>
+            <div *ngIf="!showLess && task?.wo_mstr" class="mb-0">
+                <!-- <p class="">Routing: {{task?.wo_mstr?.wo_routing}}</p> -->
+                <!-- <p class="" *ngIf="task.assigned_user">Assigned To: {{task.assigned_user}}</p> -->
+
+                <!-- Simple Group -->
+                <div class="pointer d-flex align-items-center" *ngIf="task.assigned_user"
+                    title="This WO is assigned to {{task.assigned_user}}" (click)="editKanban(task)">
+                    <div class="avatar-group-item material-shadow">
+                        <img src="assets/images/users/user-dummy-img.jpg" alt="" class="rounded-circle avatar-xxs me-2"
+                            style="width:1.0rem;height:1.0rem">
+                    </div>
+                    <u>{{task.assigned_user}}</u>
+                </div>
+
+                <p class="" *ngIf="task.staging_bay">Staging Bay: {{task.staging_bay}}</p>
                 <p class="" *ngIf="isShowing(header, 'so_nbr') && task.so_nbr != ''">SO: {{task.so_nbr}}</p>
-                <p class="" *ngIf="isShowing(header, 'item_number')">{{task.item_number}}</p>
-                <p class="" *ngIf="isShowing(header, 'qty')">Qty: {{task.qty}}</p>
-                <p class="" *ngIf="isShowing(header, 'due_date')">Due Date: {{task.due_date}}</p>
-                <p class="fs-14 mb-0" *ngIf="isShowing(header, 'printed_date') && task.print_details?.printedDate">
-                    <i class="fs-15 align-middle float-start ri-printer-line me-2"></i>
+                <p class="" *ngIf="isShowing(header, 'item_number')" placement="left"
+                    ngbTooltip="{{task?.wo_mstr?.fulldesc}}" container="body">{{task?.wo_mstr?.wo_part}}</p>
+
+                <p class="" *ngIf="isShowing(header, 'qty')">
+                    Qty: <a class="pointer" style="color:unset"
+                        (click)="this.workOrderInfoModalService.open(task.wo_nbr)"><u>{{task?.wo_mstr?.wo_qty_comp}}/{{task?.wo_mstr?.wo_qty_ord}}</u></a>
+                </p>
+                <p class="ms-0 ps-0" *ngIf="task?.pickInfo">
+                    Picking: <a class="pointer" style="color:unset" (click)="openPickSheet(task.wo_nbr)"><u class="me-2"
+                            title="{{task?.pickInfo?.wod_qty_iss}} of {{task?.pickInfo?.wod_qty_req}} items picked">
+                            {{task?.pickInfo?.wod_qty_iss/task?.pickInfo?.wod_qty_req*100 | number : '1.2-2'}}%
+                        </u> </a>
+                </p>
+                <p class="ms-0 ps-0" *ngIf="task?.routingInfo">Routing Open Qty: {{task?.routingInfo?.open_qty}}</p>
+                <p class="ms-0 ps-0" *ngIf="task?.routingInfo">
+                    Routing Ops:
+                    <a class="pointer" style="color:unset"
+                        (click)="this.workOrderRoutingByWoModalService.open(task.wo_nbr)"><u>{{task?.routingInfo?.wr_op}}</u></a>
+                </p>
+                <p class="ms-0 ps-0">WO Status: {{task?.wo_mstr?.wo_status}}</p>
+                <p class="mb-0">WO Due Date: {{task?.wo_mstr?.wo_due_date}}</p>
+                <p class="mb-0">Due By: {{task?.due_by}}</p>
+                <p class="mb-0" *ngIf="isShowing(header, 'printed_date') && task.print_details?.printedDate">
+                    <i class="align-middle float-start ri-printer-line me-1"></i>
                     {{task.print_details?.printedDate | date:'short'}}
                 </p>
+                <p class="mb-0" style="text-overflow: ellipsis;overflow: hidden;white-space: normal;display: block; "
+                    *ngIf="task?.wo_mstr?.wo_rmks" title="{{task?.wo_mstr?.wo_rmks}}">
+                    Rmks: {{task?.wo_mstr?.wo_rmks}}</p>
+                <p class="mb-0" *ngIf="task?.wo_start_time">
+                    <span class="icon-on"><i class="ri-timer-line align-bottom me-1"></i></span>
+                    {{task?.wo_start_time | date : 'HH:mm:ss'}} -
+                    {{task?.wo_end_time | date : 'HH:mm:ss'}}
+                </p>
+
+            </div>
+            <div *ngIf="!task?.wo_mstr">
+                WO not found..
             </div>
 
+        </div>
+        <div class="card-footer border-top-dashed p-1 text-center"
+            *ngIf="(!task?.wo_start_time || !task?.wo_end_time) && header?.enable_start_time">
+            <div class="d-grid gap-2 d-md-block">
+
+                <button type="button" class="btn btn-success custom-toggle  btn-sm me-2 px-3" style="font-size:10px"
+                    (click)="onStart('start', task)" *ngIf="!task?.wo_start_time">
+                    <span class="icon-on"><i class="ri-timer-line align-bottom me-1"></i> Start Timer</span>
+                </button>
+
+                <button type="button" class="btn btn-danger custom-toggle  btn-sm me-2 px-3" style="font-size:10px"
+                    (click)="onStart('stop', task)" *ngIf="task?.wo_start_time && !task?.wo_end_time">
+                    <span class="icon-on"><i class="ri-timer-line align-bottom me-1"></i> Stop Timer</span>
+                </button>
+            </div>
+        </div>
+        <div class="card-footer border-top-dashed p-0 text-center"
+            *ngIf="task?.wo_mstr?.wo_due_date <= today && task?.wo_mstr?.wo_status != 'C'">
+            {{getDaysLate(task.wo_mstr.wo_due_date)}}
         </div>
         <div class="card-footer border-top-dashed py-2">
             <div class="d-flex">
@@ -175,13 +230,17 @@
                     <!-- <small>{{task.timeDiff}}</small> -->
                 </div>
                 <div class="flex-shrink-0">
-
                     <ul class="link-inline mb-0">
-                        <li class="list-inline-item" (click)="openQueueSelection(task)">
+                        <li class="list-inline-item me-3" (click)="onRefresh(task)" title="Refresh Card">
+                            <a href="javascript:void(0)" class="text-muted"><i
+                                    class="ri-refresh-line align-bottom"></i></a>
+                        </li>
+                        <li class="list-inline-item me-3" (click)="openQueueSelection(task, header)"
+                            title="Select Queue">
                             <a href="javascript:void(0)" class="text-muted"><i class="ri-eye-line align-bottom"></i>
                                 {{task.view}}</a>
                         </li>
-                        <li class="list-inline-item" (click)="viewComment(task)">
+                        <li class="list-inline-item" (click)="viewComment(task)" title="Add Comments">
                             <a href="javascript:void(0)" class="text-muted">
                                 <i class="ri-question-answer-line align-bottom"
                                     [ngClass]="{'text-info':task.comment?.id}"></i></a>

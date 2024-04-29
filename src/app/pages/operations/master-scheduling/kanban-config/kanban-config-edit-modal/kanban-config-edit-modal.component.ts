@@ -51,6 +51,7 @@ export class KanbanConfigEditModalComponent {
         this.isLoading = true;
         try {
             this.data = await this.kanbanConfigApiService.getById(this.id)
+            this.data.user_roles = this.data.user_roles?.split(',');
             this.form.patchValue(this.data)
             this.isLoading = false;
         } catch (err) {
@@ -82,6 +83,7 @@ export class KanbanConfigEditModalComponent {
 
     async onSubmit() {
         this.isLoading = true;
+        this.form.value.user_roles = this.form.value?.user_roles?.toString() || null;
         try {
             await this.kanbanConfigApiService.update(this.id, this.form.value)
             this.isLoading = false;

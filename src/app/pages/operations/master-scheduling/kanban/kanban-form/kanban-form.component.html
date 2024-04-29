@@ -3,9 +3,18 @@
     <div class="row">
         <div class="col mb-3">
             <app-qad-wo-search [ngClass]="{ 'is-invalid': submitted && f['wo_nbr'].errors }"
-                (notifyParent)="notifyParent($event)" [value]="f['wo_nbr'].value"></app-qad-wo-search>
+                (notifyParent)="notifyParent($event)" [value]="f['wo_nbr'].value"
+                [disabled]="this.form.get('wo_nbr').disabled"></app-qad-wo-search>
         </div>
     </div>
+
+
+    <div class="mb-3">
+        <app-user-search (notifyParent)="notifyAssignUserParent($event)" [value]="form.value['assigned_user']"
+            [ngClass]="{ 'is-invalid': submitted && f['assigned_user'].errors }" [multiple]="false"
+            [form_label]="'Assign user to this work order'"></app-user-search>
+    </div>
+
 
     <div class="row">
         <div class="col mb-3">
@@ -15,37 +24,6 @@
                     {{row.name}}
                 </option>
             </select>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('item_number')">Item Number</label>
-            <input type="text" class="form-control" name="item_number" formControlName="item_number"
-                placeholder="Enter item" [ngClass]="{ 'is-invalid': submitted && f['item_number'].errors }" />
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('item_description')">Item Description</label>
-            <input type="text" class="form-control" name="item_description" formControlName="item_description"
-                placeholder="Enter description"
-                [ngClass]="{ 'is-invalid': submitted && f['item_description'].errors }" />
-        </div>
-    </div>
-
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
-            <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty"
-                [ngClass]="{ 'is-invalid': submitted && f['qty'].errors }" />
-        </div>
-        <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('due_date')">Due Date</label>
-            <input type="date" class="form-control" name="due_date" formControlName="due_date"
-                placeholder="Enter due date" [ngClass]="{ 'is-invalid': submitted && f['due_date'].errors }" />
         </div>
     </div>
 
@@ -63,16 +41,22 @@
         </div>
     </div>
 
+    <!-- <h4>Start & End Time</h4>
     <div class="row">
         <div class="col mb-3">
-            <label class="form-label" [ngClass]="formValidator('prod_line')">Prod Line</label>
-            <input type="text" class="form-control" name="prod_line" formControlName="prod_line"
-                placeholder="Enter prod line" [ngClass]="{ 'is-invalid': submitted && f['prod_line'].errors }" />
+            <label class="form-label" [ngClass]="formValidator('start_time')">Start Time</label>
+            <input type="datetime-local" class="form-control" name="start_time" formControlName="start_time"
+                placeholder="Enter start time" [ngClass]="{ 'is-invalid': submitted && f['start_time'].errors }" />
         </div>
-    </div>
+        <div class="col mb-3">
+            <label class="form-label" [ngClass]="formValidator('end_time')">End Time</label>
+            <input type="datetime-local" class="form-control" name="end_time" formControlName="end_time"
+                placeholder="Enter start time" [ngClass]="{ 'is-invalid': submitted && f['end_time'].errors }" />
+        </div>
+    </div> -->
 
     <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault"  formControlName="hot_order">
+        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" formControlName="hot_order">
         <label class="form-check-label" for="flexSwitchCheckDefault">Hot Order</label>
     </div>
 

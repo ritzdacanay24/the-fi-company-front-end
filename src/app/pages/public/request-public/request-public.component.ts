@@ -9,8 +9,8 @@ import { FIELD_SERVICE } from '@app/pages/field-service/field-service-constant';
 import { RequestFormComponent } from '@app/pages/field-service/request/request-form/request-form.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { getFormValidationErrors } from 'src/assets/js/util';
 import { AutosizeModule } from 'ngx-autosize';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   encapsulation: ViewEncapsulation.None,

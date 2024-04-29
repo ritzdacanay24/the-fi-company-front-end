@@ -5,6 +5,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { AuthenticationService } from './auth.service';
 import { CORE_SETTINGS } from '../constants/app.config';
 import { ToastrService } from 'ngx-toastr';
+import { Subject, Observable, BehaviorSubject, retry } from 'rxjs';
 
 @Injectable({
     providedIn: 'root',
@@ -13,12 +14,19 @@ export class WebsocketService {
     myWebSocket: WebSocketSubject<unknown>;
     userInfo: any;
     showDialog: boolean;
+
+    public messageSubject$ = new BehaviorSubject<any>(undefined);
+
+
     constructor(
         public authenticationService: AuthenticationService,
         private toastrService: ToastrService
     ) {
         this.userInfo = this.authenticationService.currentUserValue;
+
     }
+    message$
+
 
     sendDialog() {
         setTimeout(() => {
@@ -29,20 +37,23 @@ export class WebsocketService {
     sendClose() {
         setTimeout(() => {
             this.close()
-        }, 5000);
+        }, 10000);
     }
 
     connect() {
         this.myWebSocket = webSocket({
             url: CORE_SETTINGS.websocketUrl,
             openObserver: {
-                next: () => {
-                    //console.log("connection ok");
+                next: (data) => {
+                    console.log("connection ok");
+                    //this.sendClose()
                 },
             },
             closeObserver: {
                 next: (closeEvent) => {
-                    //console.log("connection closed");
+
+                    this.messageSubject$.next(closeEvent);
+                    console.log("connection closed");
                     // console.log(closeEvent, 'closeEvent');
                     //this.sendDialog()
                     //this.toastrService.warning("Websockets disconnected.Please refresh browser", "", { disableTimeOut: true })
@@ -50,7 +61,12 @@ export class WebsocketService {
                 }
             },
         })
-        return this.myWebSocket;
+        return this.myWebSocket
+        // return this.myWebSocket.pipe(
+        //     retry({ count: 10, delay: 5000 })
+        // ).subscribe((message) => {
+        //     console.log(`message from the websocket: ${message}`)
+        // })
     }
 
 
@@ -81,7 +97,7 @@ export class WebsocketService {
     }
 
     multiplex(subscribe, unsubscribe, transact) {
-        return this.myWebSocket.multiplex(subscribe, unsubscribe, transact);
+        return this.myWebSocket?.multiplex(subscribe, unsubscribe, transact);
     }
 
 }

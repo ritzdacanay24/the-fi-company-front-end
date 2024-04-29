@@ -8,6 +8,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Injectable({
   providedIn: 'root'
@@ -68,11 +69,25 @@ export class KanbanQueueModalComponent {
 
   }
 
+  currentSelectionRouting
   checkNextSelectQueue() {
+    console.log(this.data)
     for (let i = 0; i < this.queues.length; i++) {
+
+      
       if (this.data.kanban_ID == this.queues[i].id) {
-        this.currentSelection = this.queues[i + 1].id
+        this.currentSelection = this.queues[i].next_queue_default;
+        this.currentSelectionRouting = this.queues[i].routing
       }
+      // if (this.data.kanban_ID == this.queues[i].id) {
+      //   if(this.queues[i].namthis.data.wo_mstr?.wo_routing?.toLowerCase()){
+      //     this.currentSelection = this.data.wo_mstr?.wo_routing?.toLowerCase()
+      //     this.currentSelectionRouting = this.queues[i].routing
+      //   }else{
+      //   this.currentSelection = this.queues[i].next_queue_default
+      //   this.currentSelectionRouting = this.queues[i].routing
+      //   }
+      // }
     }
 
   }
@@ -91,33 +106,27 @@ export class KanbanQueueModalComponent {
     this.ngbActiveModal.close(data);
   }
 
+  message = ""
   async onSubmit() {
     if (this.staging_bay == '' && this.currentSelection == '3') {
-      alert('Enter staging bay')
+      this.message = "Enter staging bay";
       return;
     }
 
     this.isLoading = true;
 
-
-    //picking
-    if (this.data.kanban_ID == 2) {
-      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 10, this.data.kanban_ID);
-      if (e?.errorMessage) {
-        alert(e?.errorMessage)
-        this.isLoading = false;
-        return;
-      }
-    } else if (this.data.kanban_ID == 3) {
-      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, 20, this.data.kanban_ID);
-      if (e?.errorMessage) {
-        alert(e?.errorMessage)
-        this.isLoading = false;
-        return;
-      }
-    }
+    //prod line 1 and prod line 2 and proto default to QA
 
     try {
+      SweetAlert.loading('Saving. Please wait..');
+      let e: any = await this.checkIfPickComplete(this.data.wo_nbr, this.currentSelectionRouting, this.data.kanban_ID);
+      if (e?.errorMessage) {
+        this.message = e?.errorMessage;
+        this.isLoading = false;
+        SweetAlert.close();
+        return;
+      }
+
       await this.kanbanApiService.update(this.data.id, {
         staging_bay: this.staging_bay,
       })
@@ -125,12 +134,17 @@ export class KanbanQueueModalComponent {
       let d = await this.kanbanApiService.moveQueue(this.data.id, {
         kanban_ID: this.currentSelection,
         created_by: this.authenticationService.currentUserValue.id,
+        wo_nbr: this.data.wo_nbr
       })
       this.isLoading = false;
+      this.message = "";
 
       this.close(d)
+      SweetAlert.close();
     } catch (err) {
       this.isLoading = false;
+      this.message = "";
+      SweetAlert.close();
 
       this.data = { ...this.data }
     }

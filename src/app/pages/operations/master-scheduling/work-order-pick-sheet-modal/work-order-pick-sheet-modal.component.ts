@@ -24,9 +24,11 @@ export class WorkOrderPickSheetModalService {
         public modalService: NgbModal
     ) { }
 
-    open(workOrderNumber: number) {
+    open(workOrderNumber: number, closeOnPrint = false) {
         let modalRef = this.modalService.open(WorkOrderPickSheetModalComponent, { size: 'xl', fullscreen: false, backdrop: 'static', scrollable: true, centered: true, keyboard: false });
         modalRef.componentInstance.workOrderNumber = workOrderNumber;
+        modalRef.componentInstance.closeOnPrint = closeOnPrint;
+
         return modalRef;
     }
 }
@@ -67,6 +69,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
     }
 
     @Input() workOrderNumber: number;
+    @Input() closeOnPrint = false;
 
     title: string = 'Work Order Pick Sheet';
 
@@ -226,7 +229,8 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
             await this.api.printWorkOrder(params);
             this.onPrint();
             // this.isLoading = false;
-            //this.ngbActiveModal.close(params);
+            if (this.closeOnPrint)
+                this.ngbActiveModal.close(params);
         } catch (err) {
             // this.isLoading = false;
         }

@@ -1,6 +1,7 @@
 import { Component, Input, SimpleChanges, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { toFixed } from "ag-grid-enterprise/dist/lib/ag-charts-community/module-support";
+import moment from "moment";
 import {
     ApexAxisChartSeries,
     ApexChart,
@@ -211,7 +212,7 @@ export class OtdChartComponent {
 
         let total = []
         let sum = 0;
-
+        
         for (const key in this.data) {
             total = this.data[key].dataset;
             sum += this.data[key].dataset.reduce((partialSum, a) => partialSum + a, 0);
@@ -230,15 +231,17 @@ export class OtdChartComponent {
 
 
         this.chartOptions.series = [];
+        let labelsTest = [];
 
         for (const key in this.data) {
             sum += this.data[key].dataset
+            labelsTest = this.data[key].labelTest;
+
             this.chartOptions.series.push(
                 {
                     type: "column",
                     name: this.data[key].label,
-                    data: this.data[key].dataset,
-
+                    data: this.data[key].dataset
                 },
                 {
                     type: "line",
@@ -254,8 +257,44 @@ export class OtdChartComponent {
             );
         }
 
-        this.chart?.updateOptions({
 
+        this.chart?.updateOptions({
+            grid: {
+                padding: {
+                    bottom: 20
+                }
+            },
+            xaxis: {
+                type: 'category',
+                categories: [],
+                position: "bottom",
+                labels: {
+                    rotate: 0,
+                    trim: false,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    formatter: (value) => {
+                        if (goalArray?.length <= 7) {
+                            for (let i = 0; i <= labelsTest.length; i++) {
+                                if (labelsTest[i]?.data == moment(value).format('YYYY-MM-DD')) {
+                                    return [value, labelsTest[i]?.test]
+                                }
+                            }
+                        }
+                        return [value]
+                    }
+                },
+            },
+            colors: [
+                function ({ value, seriesIndex, dataPointIndex, w }) {
+                    if (seriesIndex == 0) {
+                        return "#74C365";
+                    } else if (seriesIndex == 1) {
+                        return "#00693E";
+                    }
+                    return "#FFAC1C";
+                }
+            ],
             stroke: {
                 width: [null, 2, 1],
                 curve: 'smooth'
@@ -289,9 +328,11 @@ export class OtdChartComponent {
                 },
                 enabled: true,
                 formatter: (val: any) => {
-                    return val.toFixed(0) + '%';
+                    if (val)
+                        return val.toFixed(0) + '%';
+                    return "";
                 },
-                offsetY: -10,style: {
+                offsetY: -10, style: {
                     fontSize: "10px",
                     colors: [
                         (data) => {

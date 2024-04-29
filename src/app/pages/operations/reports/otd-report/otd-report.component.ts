@@ -125,7 +125,7 @@ export class OtdReportComponent implements OnInit {
 
     title = 'OTD Report';
 
-    dateFrom = moment().subtract(6, "months").format('YYYY-MM-DD');
+    dateFrom = moment().subtract(12, "months").format('YYYY-MM-DD');
     dateTo = moment().format('YYYY-MM-DD');
     dateRange = [this.dateFrom, this.dateTo];
 
@@ -201,6 +201,58 @@ export class OtdReportComponent implements OnInit {
         onSortChanged: params => this.updateUrl(params),
     };
 
+
+    gridApi1: GridApi;
+
+    gridColumnApi1: ColumnApi;
+
+    data1: any[];
+
+    columnDefs1: any = [
+        {
+            field: "label", headerName: "Customer", filter: "agTextColumnFilter",
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: (e: any) => this.onCustomerChange(e.rowData),
+                isLink: true
+            },
+        },
+        { field: "total_shipped_on_time", headerName: "On Time", filter: "agTextColumnFilter" },
+        { field: "total_lines", headerName: "Total", filter: "agTextColumnFilter" },
+        {
+            field: "value", headerName: "OTD %", filter: "agTextColumnFilter", cellRenderer: (e) => e.value?.toFixed(2) + '%',
+            cellClass: (params: any) => {
+                if (params.data) {
+                    if (params.value >= this.goal)
+                        return ['bg-success-subtle text-success'];
+                    if (params.value < this.goal)
+                        return ['bg-danger-subtle text-danger'];
+                    return params.value;
+                }
+                return null
+            }
+        }
+    ];
+
+    gridOptions1 = {
+        sideBar: false,
+        defaultColDef: {
+            ...agGridOptions.defaultColDef,
+            floatingFilter: false,
+            filter: false
+        },
+        columnDefs: this.columnDefs1,
+        onGridReady: (params: any) => {
+            this.gridApi1 = params.api;
+            this.gridColumnApi1 = params.columnApi;
+        },
+        onFirstDataRendered: (params) => {
+            params.api.sizeColumnsToFit();
+        },
+        onFilterChanged: params => this.updateUrl(params),
+        onSortChanged: params => this.updateUrl(params),
+    };
+
     updateUrl = (params) => {
         let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
         this.router.navigate([`.`], {
@@ -211,6 +263,27 @@ export class OtdReportComponent implements OnInit {
             }
         });
     }
+
+    calcTotalCols = ['total_shipped_on_time', 'total_lines', 'value'];
+
+    totalRow = function (api) {
+        let result = [{}];
+        // initialize all total columns to zero
+        this.calcTotalCols.forEach((params) => {
+            result[0][params] = 0
+        });
+        // calculate all total columns
+        this.calcTotalCols.forEach((params) => {
+            this.summary.forEach((line) => {
+                result[0][params] += line[params];
+            });
+            if (params == 'value') {
+                result[0]['value'] = result[0]['total_lines'] > 0 ? (result[0]['total_shipped_on_time'] / result[0]['total_lines']) * 100 : 0
+            }
+        });
+        api.setGridOption('pinnedBottomRowData', result);
+    }
+
 
     summary = [];
 
@@ -253,6 +326,7 @@ export class OtdReportComponent implements OnInit {
             this.average = data?.average || 0
 
             this.setSummaryFooter()
+            this.totalRow(this.gridApi1)
 
             this.gridApi?.hideOverlay();
         } catch (err) {
@@ -303,4 +377,5 @@ export class OtdReportComponent implements OnInit {
         // this.dataChart = data;
         // this.isLoading = false
     }
+
 }

@@ -17,11 +17,11 @@ export function setThemeColor(data) {
   var metaThemeColor = document.querySelector("meta[name=theme-color]");
   if (!data) {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
-  }else if (data.SIDEBAR_COLOR == 'light') {
+  } else if (data.SIDEBAR_COLOR == 'light') {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
-  }else if (data.SIDEBAR_COLOR == 'dark' && data.LAYOUT_MODE == 'light') {
+  } else if (data.SIDEBAR_COLOR == 'dark' && data.LAYOUT_MODE == 'light') {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
-  }else{
+  } else {
     metaThemeColor.setAttribute("content", `#343b40`);
   }
 }
@@ -72,10 +72,12 @@ export class AppComponent {
 
     this.isMobile = isMobile();
 
-    this.store.select('layout').subscribe((data) => {
-      setThemeColor(data);
-    })
 
+    if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
+      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
+      setThemeColor(d);
+    }
+    
 
     if (environment.production) {
       if (location.protocol === 'http:') {
@@ -118,15 +120,8 @@ export class AppComponent {
       if (event.type == 'NO_NEW_VERSION_DETECTED') return
     })
   }
+  
 
-
-  ngAfterViewInit() {
-    if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
-      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
-      setThemeColor(d);
-    }
-
-  }
 
   async showNewVersionMessage() {
     let { isConfirmed } = await SweetAlert.fire({

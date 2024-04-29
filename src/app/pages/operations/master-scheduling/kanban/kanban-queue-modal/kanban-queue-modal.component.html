@@ -2,15 +2,25 @@
   <h4 class="modal-title">Queue Selection</h4>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
+
+<div class="modal-header" *ngIf="message">
+  <div class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show" role="alert" style="width:100%">
+    <i class=" ri-error-warning-line label-icon"></i>{{message}}
+  </div>
+</div>
+
+
+
 <div class="modal-body mh-250 pt-0">
 
-  <h6 class="mb-3 text-info">Prod Line: {{data?.prod_line}}</h6>
-
+  <h6 class=" text-info">Prod Line: {{data?.prod_line}}</h6>
+  <p class="mb-3">Current Queue ID: {{this.data.kanban_ID}}</p>
+  <hr/>
   <div class="form-check mb-2" *ngFor="let row of queues; let i = index">
     <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1{{i}}"
-      [(ngModel)]="currentSelection" [value]="row.id" [disabled]="isLoading">
+      [(ngModel)]="currentSelection" [value]="row.id" [disabled]="isLoading || this.data.kanban_ID == row.id">
     <label class="form-check-label" for="flexRadioDefault1{{i}}">
-      {{row.name}}
+      {{row.name}} <span class="text-info">{{this.data.kanban_ID == row.id ? 'Current Queue': ''}}</span>
     </label>
   </div>
 

@@ -59,58 +59,23 @@
       <div class="card-header d-flex align-items-center text-nowrap">
         <h4 class="card-title mb-0 flex-grow-1"> OTD Summary </h4>
         <div class="f-flex-column">
-          <h6 class="fs- mb-0">{{allInfo?.todayInfo?.value || 0 | number
-            : '1.2-2' }}% Today OTD</h6>
+          <h6 class="fs- mb-0">
+            {{allInfo?.todayInfo?.value || 0 | number : '1.2-2' }}% Today OTD</h6>
           <p class="mb-0 text-muted">
             <span class="badge bg-success-subtle text-success mb-0"
               [ngClass]="{'bg-danger-subtle text-danger':getValue <= 0}">
               <i class="align-middle"
-                [ngClass]="{'ri-arrow-down-line':getValue <= 0,'ri-arrow-up-line':getValue > 0}"></i> {{getValue |
-              number
-              : '1.2-2' }}%
+                [ngClass]="{'ri-arrow-down-line':getValue <= 0,'ri-arrow-up-line':getValue > 0}"></i>
+              {{getValue | number : '1.2-2' }}%
             </span> vs. previous day
           </p>
         </div>
       </div>
 
       <div class="card-body p-0" style="max-height:400px;min-height:400px;overflow:auto">
-        <table class="table table-sm table-hover text-nowarap mb-0 pb-0">
-          <thead class="sticky-top bg-light" style="z-index: 1">
-            <tr>
-              <th>Rank</th>
-              <th>Customer</th>
-              <!-- <th class="text-end">Late</th> -->
-              <th class="text-end">On Time</th>
-              <th class="text-end">Total</th>
-              <th class="text-end">OTD %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of summary; let i = index" class="pointer" (click)="onCustomerChange(row)"
-              [ngClass]="{'bg-primary-subtle text-primary':displayCustomers == row.label}">
-              <td>{{i+1}}</td>
-              <td><a class="text-decoration-underline pointer link-primary">{{row.label}}</a> </td>
-              <!-- <td class="text-end">{{row.total_shipped_late}}</td> -->
-              <td class="text-end">{{row.total_shipped_on_time}}</td>
-              <td class="text-end">{{row.total_lines}}</td>
-              <td class="text-end"
-                [ngClass]="{'bg-success-subtle text-success': row.value >=goal,'bg-danger-subtle text-danger': row.value < goal}">
-                {{row.value | number: '1.0-0'}} %</td>
-            </tr>
-          </tbody>
-          <tfoot class="sticky-top bg-light" style="bottom:0px;z-index:1">
-            <tr>
-              <td>-</td>
-              <td class="fw-bold">Summary</td>
-              <td class="text-end fw-bold">{{summaryObject?.shippedOnTime}}</td>
-              <td class="text-end fw-bold">{{summaryObject?.total_lines}}</td>
-              <td class="text-end fw-bold"
-                [ngClass]="{'bg-success-subtle text-success': summaryObject?.otd >=goal,'bg-danger-subtle text-danger': summaryObject?.otd < goal}">
-                {{summaryObject?.otd}} %</td>
-            </tr>
-
-          </tfoot>
-        </table>
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="summary" [columnDefs]="columnDefs1"
+          [gridOptions]="gridOptions1" style="width: 100%;height: calc(100vh - 577px);">
+        </ag-grid-angular>
       </div>
     </div>
   </div>

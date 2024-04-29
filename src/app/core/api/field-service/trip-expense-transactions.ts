@@ -59,4 +59,9 @@ export class TripExpenseTransactionsService {
   }
 
 
+  getChart = async (dateFrom, dateTo, displayCustomers, typeOfView) =>
+    await firstValueFrom(this.http.get<any>(`${url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
+
+
+
 }

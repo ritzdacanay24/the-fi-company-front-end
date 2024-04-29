@@ -181,6 +181,7 @@ export class TopbarComponent implements OnInit {
     this.store.dispatch(changeMode({ mode }));
 
     let theme = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT)) || JSON.parse(JSON.stringify(initialState));;
+    
 
     if (semi) {
       document.documentElement.setAttribute('data-bs-theme', "light");
@@ -208,6 +209,9 @@ export class TopbarComponent implements OnInit {
     }
 
     theme.LAYOUT_MODE = mode;
+    
+    setThemeColor(theme)
+
     localStorage.setItem(THE_FI_COMPANY_LAYOUT, JSON.stringify(theme))
     setOptions({
       theme: 'ios',

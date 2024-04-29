@@ -111,7 +111,7 @@
         <div *ngIf="!data?.length && !loading" class="text-center p-3"> No events found.</div>
         <div *ngIf="data?.length > 0">
           <table class="table table-bordered table-hover align-middle">
-            <thead class="table-dark sticky-top" style="top:-15px">
+            <thead class="table-dark sticky-top text-nowrap" style="top:-15px">
               <tr>
                 <th class="text-start text-nowrap"></th>
                 <th class="text-start text-nowrap">Type</th>
@@ -139,7 +139,7 @@
                 <td class="pointer text-nowrap" (click)="_navigate(row.projectStart);$event.stopPropagation()">
                   View
                 </td>
-                <td class="text-start ps-4">
+                <td class="text-start ps-4 text-nowrap">
                   <span class="fw-bolder">{{i+1}}. {{row.event_name}}</span>
                   <p *ngIf="row.flight_hrs_delay">Flight Hr delay: {{row.flight_hrs_delay}}</p>
                   <p class="ms-4" *ngIf="row.receipts?.length"><b>Receipts</b></p>

@@ -1,0 +1,55 @@
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body" style="max-height:350px;min-height:350px;overflow:auto">
+                <div *ngIf="isLoading" class="p-5 card-body text-center">
+                    <h4>
+                        <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading Data. Please wait...</p>
+                    </h4>
+                </div>
+                <div [hidden]="isLoading">
+                    <app-credit-card-transaction-chart [dateFrom]="dateFrom"
+                        [dateTo]="dateTo"></app-credit-card-transaction-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-header position-relative">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
+                            [displayOptions]="true"></app-date-range>
+                    </div>
+                    <div class="ms-auto">
+                        <div class="btn-group text-end" role="group" aria-label="Button group with nested dropdown">
+                            <div ngbDropdown placement="bottom-right" container="body">
+                                <button type="button" class="btn btn-primary" id="dropdownBasic1" ngbDropdownToggle>
+                                    Actions
+                                </button>
+                                <div ngbDropdownMenu aria-labelledby="dropdownBasic1" container="body">
+                                    <button ngbDropdownItem class="py-2" (click)="showFileUpload()">
+                                        <i class="feather icon-upload me-2 text-info"></i> Upload
+                                        File
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+                    style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
+                </ag-grid-angular>
+            </div>
+        </div>
+    </div>
+</div>

@@ -3,6 +3,7 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModu
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { states } from '@app/core/data/states';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
+import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import moment from 'moment';
@@ -16,7 +17,8 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
         ReactiveFormsModule,
         NgSelectModule,
         QadWoSearchComponent,
-        AutosizeModule
+        AutosizeModule,
+        UserSearchComponent
     ],
     selector: 'app-kanban-config-form',
     templateUrl: './kanban-config-form.component.html',
@@ -33,7 +35,7 @@ export class KanbanConfigFormComponent {
 
         this.form.get('name').valueChanges.subscribe(val => {
             if (val) {
-                this.form.get('value').setValue(val.replace(/ /g,"_")?.toLowerCase())
+                this.form.get('value').setValue(val.replace(/ /g, "_")?.toLowerCase())
             } else {
                 this.form.get('value').setValue(null)
             }
@@ -62,7 +64,25 @@ export class KanbanConfigFormComponent {
         show_data: new FormControl(null),
         seq: new FormControl(null),
         description: new FormControl(null),
+        user_roles: new FormControl(null),
+        max_in_queue: new FormControl(0),
+        first_in_first_out: new FormControl(0),
+        enable_start_time: new FormControl(0),
     });
+
+    notifyParent($event) {
+        let user_roles: any = [];
+
+        for (let i = 0; i < $event.length; i++) {
+            if (typeof $event[i] === 'object' && $event[i] !== null) {
+                user_roles.push($event[i].username)
+            } else {
+                user_roles.push($event[i])
+            }
+        }
+        this.form.patchValue({ user_roles: user_roles })
+    }
+
 
     setBooleanToNumber(key) {
         let e = this.form.value[key]

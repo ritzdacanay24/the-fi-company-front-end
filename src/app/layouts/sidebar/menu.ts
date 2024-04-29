@@ -103,6 +103,18 @@ export const MENU: MenuItem[] = [
           },
         ]
       },
+      // {
+      //   label: 'Credit Card Transactions',
+      //   icon: 'las la-tachometer-alt',
+      //   isCollapsed: true,
+      //   subItems: [
+      //     {
+      //       label: 'List Credit Card Transactions',
+      //       link: '/dashboard/field-service/credit-card-transaction/list',
+      //       description: "Field Service Credit Card Transactions"
+      //     }
+      //   ]
+      // },
       {
         id: 4,
         label: 'Report',
@@ -412,9 +424,14 @@ export const MENU: MenuItem[] = [
             description: "QC"
           },
           {
-            label: 'Kanban',
-            link: '/dashboard/operations/master-scheduling/kanban',
-            description: "Kanban"
+            label: 'Work Order Tracker',
+            link: '/dashboard/operations/master-scheduling/work-order-tracker',
+            description: "Work Order Tracker"
+          },
+          {
+            label: 'List Work Order Tracker',
+            link: '/dashboard/operations/master-scheduling/list-work-order-tracker',
+            description: "Work Order Tracker List"
           },
           {
             label: 'Cables',

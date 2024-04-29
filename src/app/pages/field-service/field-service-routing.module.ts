@@ -43,6 +43,10 @@ const routes: Routes = [
     path: 'scheduling',
     loadChildren: () => import('./scheduler/scheduler-routing.module').then(m => m.SchedulerRoutingModule)
   },
+  {
+    path: 'credit-card-transaction',
+    loadChildren: () => import('./credit-card-transaction/credit-card-transaction-routing.module').then(m => m.CreditCardTransactionRoutingModule)
+  },
 ]
 
 @NgModule({

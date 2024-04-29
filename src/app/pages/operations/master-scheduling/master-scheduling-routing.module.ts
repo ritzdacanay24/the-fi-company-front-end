@@ -10,6 +10,7 @@ import { ProductionRoutingComponent } from './production-routing/production-rout
 import { AllRoutingComponent } from './all-routing/all-routing.component';
 import { KanbanComponent } from './kanban/kanban.component';
 import { CablesComponent } from './cables/cables.component';
+import { KanbanListComponent } from './kanban/kanban-list/kanban-list.component';
 
 const routes: Routes = [
   {
@@ -42,8 +43,12 @@ const routes: Routes = [
         component: QcRoutingComponent
       },
       {
-        path: 'kanban',
+        path: 'work-order-tracker',
         component: KanbanComponent
+      },
+      {
+        path: 'list-work-order-tracker',
+        component: KanbanListComponent
       },
       {
         path: 'cables',

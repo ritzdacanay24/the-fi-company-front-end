@@ -11,6 +11,7 @@ import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
 import moment from 'moment';
 import { QadService } from '@app/core/api/qad/sales-order-search.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Injectable({
     providedIn: 'root'
@@ -118,16 +119,14 @@ export class KanbanAddModalComponent {
     }
 
     async onSubmit() {
-        this.isLoading = true;
         try {
+            SweetAlert.loading('Saving. Please wait...')
             await this.kanbanApiService.create(this.form.value)
-            this.isLoading = false;
-
+            SweetAlert.close()
             this.close(this.data)
         } catch (err) {
-            this.isLoading = false;
-
             this.data = { ...this.data }
+            SweetAlert.close()
         }
     }
 

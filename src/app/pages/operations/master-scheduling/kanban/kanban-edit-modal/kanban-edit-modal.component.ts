@@ -3,13 +3,9 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AddressInfoService } from '@app/core/api/address-info/address-info.service';
 import { SharedModule } from '@app/shared/shared.module';
-import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
-import moment from 'moment';
 
 @Injectable({
     providedIn: 'root'
@@ -22,7 +18,7 @@ export class KanbanEditModalService {
     ) { }
 
     open(id: string) {
-        this.modalRef = this.modalService.open(KanbanEditModalComponent, { size: 'lg'});
+        this.modalRef = this.modalService.open(KanbanEditModalComponent, { size: 'lg' });
         this.modalRef.componentInstance.id = id;
         return this.modalRef;
     }
@@ -40,9 +36,7 @@ export class KanbanEditModalService {
 export class KanbanEditModalComponent {
 
     constructor(
-        private addressInfoService: AddressInfoService,
         private ngbActiveModal: NgbActiveModal,
-        private kanbanConfigApiService: KanbanConfigApiService,
         private kanbanApiService: KanbanApiService
     ) { }
 
@@ -87,14 +81,16 @@ export class KanbanEditModalComponent {
     }
 
     async onSubmit() {
-        this.isLoading = true;
+        //this.isLoading = true;
         try {
+            this.form.value.start_time = this.form.value.start_time ? this.form.value.start_time : null;
+            this.form.value.end_time = this.form.value.end_time ? this.form.value.end_time : null;
             await this.kanbanApiService.update(this.id, this.form.value)
-            this.isLoading = false;
+            //this.isLoading = false;
 
             this.close(this.form.value)
         } catch (err) {
-            this.isLoading = false;
+            //this.isLoading = false;
 
             this.data = { ...this.data }
         }

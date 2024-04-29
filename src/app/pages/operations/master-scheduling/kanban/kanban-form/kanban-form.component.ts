@@ -3,6 +3,7 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModu
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { states } from '@app/core/data/states';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
+import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import moment from 'moment';
@@ -14,7 +15,8 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
         SharedModule,
         ReactiveFormsModule,
         NgSelectModule,
-        QadWoSearchComponent
+        QadWoSearchComponent,
+        UserSearchComponent
     ],
     selector: 'app-kanban-form',
     templateUrl: './kanban-form.component.html',
@@ -31,14 +33,19 @@ export class KanbanFormComponent {
 
         this.form.get('hot_order').valueChanges.subscribe(val => {
             if (val) {
-                this.form.get('hot_order').setValue(moment().format('YYYY-MM-DD HH:mm:ss'))
+                this.form.get('hot_order').setValue(moment().format('YYYY-MM-DD HH:mm:ss'), { emitEvent: false })
             } else {
-                this.form.get('hot_order').setValue(null)
+                this.form.get('hot_order').setValue(null, { emitEvent: false })
             }
         });
 
         this.setFormEmitter.emit(this.form);
     }
+
+    notifyAssignUserParent($event) {
+        this.form.get('assigned_user').patchValue($event?.username || null)
+    }
+
 
     @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
@@ -75,6 +82,9 @@ export class KanbanFormComponent {
         item_number: new FormControl(''),
         item_description: new FormControl(''),
         hot_order: new FormControl(null),
+        assigned_user: new FormControl(null),
+        start_time: new FormControl(null),
+        end_time: new FormControl(null)
     });
 
     setBooleanToNumber(key) {

@@ -44,7 +44,9 @@ export class DateRangeComponent implements OnInit {
 
   @Input() optionValue: any = 'custom'
 
-  options = [{
+  @Input() isOptionsCustom = false
+
+  @Input() options = [{
     value: 'custom',
     text: 'Custom'
   }, {
@@ -71,7 +73,7 @@ export class DateRangeComponent implements OnInit {
   }];
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['value']?.currentValue) {
+    if (changes['value']?.currentValue && !this.isOptionsCustom) {
       this.optionValue = 'custom'
       for (let i = 0; i < this.options.length; i++) {
         if (this.options[i].value.toString() == changes['value']?.currentValue.toString()) {
