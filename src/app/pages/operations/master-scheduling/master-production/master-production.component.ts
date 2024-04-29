@@ -193,7 +193,7 @@ export class MasterProductionComponent implements OnInit {
     }
 
 
-    addToKanban(data, wo_nbr) {
+    addToWorkOrderTracker(data, wo_nbr) {
         let modalRef = this.kanbanAddModalService.open(null, wo_nbr)
         modalRef.result.then((result: any) => {
             data.kanban_info.id = true
@@ -208,11 +208,11 @@ export class MasterProductionComponent implements OnInit {
     columnDefs: any = [
         {
             field: 'kanban_info.wo_nbr',
-            headerName: 'Add To Kanban',
+            headerName: 'Add To WO Tracker',
             filter: 'agSetColumnFilter',
             cellRenderer: KanbanRendererComponent,
             cellRendererParams: {
-                onClick: e => this.addToKanban(e.rowData, e.rowData.WR_NBR),
+                onClick: e => this.addToWorkOrderTracker(e.rowData, e.rowData.WR_NBR),
                 isLink: true,
                 value: "Add"
             }

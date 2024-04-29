@@ -10,8 +10,7 @@
         <div>
             <div class="d-flex text-nowrap mb-3" style="overflow: auto;">
                 <app-date-range (setDateRange)="dateChanged($event)" [value]="dateRange1"
-                    [displayOptions]="true" ></app-date-range>
-
+                    [displayOptions]="true"></app-date-range>
                 <button class="btn btn-primary btn-sm ms-3" (click)="showAll()">Show All</button>
             </div>
 
@@ -20,9 +19,9 @@
                     *ngFor="let row of listData;let i = index">
 
                     <h2 ngbAccordionHeader class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
-                        <button ngbAccordionButton (click)="viewTech(row.username)">{{row.username}} <span
-                                class="text-end ms-1"> -
-                                {{row.total_jobs}}</span></button>
+                        <button ngbAccordionButton (click)="viewTech(row.username)">
+                            {{row.username}}
+                            <span class="text-end ms-1"> - {{row.total_jobs}}</span></button>
                     </h2>
                     <div ngbAccordionCollapse>
 
@@ -45,7 +44,6 @@
                                         <p class="list-text mb-0 fs-12">Techs: {{item.techs}}</p>
                                         <p class="list-text mb-0 fs-12">{{item.cordFound}}</p>
                                         <p class="list-text mb-0 fs-12">Status: {{item?.status}}</p>
-
                                         <p class="list-text mb-0 fs-12 pointer">
                                             <u (click)="$event.stopPropagation();viewJobInfo(item.fs_scheduler_id)">View
                                                 Job</u>
@@ -54,12 +52,10 @@
                                             <u (click)="item.fs_lat && viewJob(item, i)">Go to marker</u>
                                         </p>
                                     </div>
-
                                 </div>
                             </a>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
