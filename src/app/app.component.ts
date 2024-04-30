@@ -40,13 +40,11 @@ export class AppComponent {
     private router: Router,
     private swUpdate: SwUpdate,
     private _lightboxConfig: LightboxConfig
-
   ) {
     ngbModalConfig.backdrop = 'static';
     ngbModalConfig.keyboard = false;
     ngbModalConfig.centered = true;
     ngbModalConfig.scrollable = true;
-
 
     _lightboxConfig.centerVertically = true;
     _lightboxConfig.showZoom = false;
@@ -57,9 +55,6 @@ export class AppComponent {
     _lightboxConfig.fitImageInViewPort = true;
 
     this.titleService.init();
-
-
-
   }
 
   isMobile = false;
@@ -71,7 +66,6 @@ export class AppComponent {
   ngOnInit(): void {
 
     this.isMobile = isMobile();
-
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
@@ -104,7 +98,7 @@ export class AppComponent {
 
         this.hasUpdate = true
 
-        await this.showNewVersionMessage();
+        //await this.showNewVersionMessage();
 
       }
 

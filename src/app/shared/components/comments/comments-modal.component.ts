@@ -6,6 +6,9 @@ import { QuillModule, QuillModules } from 'ngx-quill';
 
 import "quill-mention";
 
+import BlotFormatter from 'quill-blot-formatter';
+
+
 import Quill from 'quill';
 
 import { TableBlockEmbed } from './comments.func'
@@ -81,6 +84,7 @@ export class CommentsModalComponent implements OnInit {
   ) {
     this.url = window.location.href;
     Quill.register(TableBlockEmbed, true);
+    Quill.register('modules/blotFormatter', BlotFormatter);
 
     this.userInfo = this.authenticationService.currentUserValue;
   }
@@ -96,6 +100,9 @@ export class CommentsModalComponent implements OnInit {
           [{ 'color': [] }, { 'background': [] }],
           [{ 'align': [] }], ['link', 'image', 'video']
         ],
+      },
+      blotFormatter: {
+        // empty object for default behaviour.
       },
       mention: {
         minChars: 0,

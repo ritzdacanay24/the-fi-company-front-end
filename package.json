@@ -111,6 +111,7 @@
     "ngx-ui-switch": "^15.0.0",
     "print-js": "^1.6.0",
     "prismjs": "^1.29.0",
+    "quill-blot-formatter": "^1.0.5",
     "quill-mention": "^4.1.0",
     "rxjs": "^7.8.1",
     "signature_pad": "^4.1.7",
