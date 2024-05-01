@@ -206,7 +206,6 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
                     text: 'This work order was already printed. You wish to re-print?',
                 });
 
-
             if (!accept) return;
 
         }

@@ -243,7 +243,7 @@
                         <li class="list-inline-item" (click)="viewComment(task)" title="Add Comments">
                             <a href="javascript:void(0)" class="text-muted">
                                 <i class="ri-question-answer-line align-bottom"
-                                    [ngClass]="{'text-info':task.comment?.id}"></i></a>
+                                    [ngClass]="{'text-info':task.comment?.id}"></i> {{task.comment?.hits || ''}}</a>
                         </li>
                     </ul>
                 </div>
