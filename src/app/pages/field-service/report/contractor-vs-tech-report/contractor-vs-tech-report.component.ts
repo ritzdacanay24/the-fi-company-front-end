@@ -56,8 +56,6 @@ export class ContractorVsTechComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   chartData: any[] = [];
@@ -65,7 +63,7 @@ export class ContractorVsTechComponent implements OnInit {
   isLoading = false;
 
   view(fsid: any) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -106,7 +104,6 @@ export class ContractorVsTechComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -118,8 +115,8 @@ export class ContractorVsTechComponent implements OnInit {
     onSortChanged: (params: any) => this.updateUrl(params),
   };
 
-  updateUrl = (params: { api: any; columnApi: any; }) => {
-    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+  updateUrl = (params: { api: any }) => {
+    let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: 'merge',

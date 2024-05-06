@@ -56,7 +56,7 @@ export class PropertyEditComponent {
 
   async onSubmit() {
     this.submitted = true;
-    if (this.form.invalid) {
+    if (this.form.invalid && this.form.value.active == 1) {
       getFormValidationErrors()
       return
     }

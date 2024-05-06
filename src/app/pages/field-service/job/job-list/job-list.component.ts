@@ -63,8 +63,6 @@ export class JobListComponent implements OnInit {
 
   gridApi: any;
 
-  gridColumnApi: any;
-
   id = null;
 
   title = "Jobs"
@@ -111,7 +109,7 @@ export class JobListComponent implements OnInit {
   }
 
   view(fsid) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -125,7 +123,7 @@ export class JobListComponent implements OnInit {
   }
 
   viewTicket(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([TICKET_NAVIGATION_ROUTE.OVERVIEW], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -139,7 +137,7 @@ export class JobListComponent implements OnInit {
   }
 
   viewBilling(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.BILLING], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -153,7 +151,7 @@ export class JobListComponent implements OnInit {
   }
 
   viewRequest(id, request_id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([REQUEST_NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -242,7 +240,6 @@ export class JobListComponent implements OnInit {
     getRowId: data => data.data.id,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -256,7 +253,7 @@ export class JobListComponent implements OnInit {
   };
 
   updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+    let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: 'merge',

@@ -14,12 +14,12 @@
                 <button class="btn btn-light ms-3" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
 
                 <div class="ms-3">
-                    <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"
+                    <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"
                         [value]="gridId" (emitGrid)="emitGrid($event)"></app-grid-settings>
                 </div>
 
                 <div class="ms-3">
-                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi" [gridColumnApi]="gridColumnApi"
+                    <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi"
                         [pageId]="pageId" [value]="gridFilterId" [dataRenderered]="dataRenderered"
                         (emitFilter)="emitFilter($event)"></app-grid-filters>
                 </div>

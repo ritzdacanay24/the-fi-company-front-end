@@ -7,7 +7,6 @@ import { AddressInfoService } from '@app/core/api/address-info/address-info.serv
 import { SharedModule } from '@app/shared/shared.module';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
 import moment from 'moment';
 import { QadService } from '@app/core/api/qad/sales-order-search.service';

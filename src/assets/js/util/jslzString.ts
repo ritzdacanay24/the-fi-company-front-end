@@ -1,6 +1,6 @@
 import * as JSLZString from 'lz-string'
 
-export function _compressToEncodedURIComponent(api, columnApi) {
+export function _compressToEncodedURIComponent(api) {
   return JSLZString.compressToEncodedURIComponent(JSON.stringify({
     columnState: api.getColumnState()
     , filterState: api.getFilterModel()

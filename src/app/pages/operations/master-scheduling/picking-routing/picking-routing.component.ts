@@ -109,11 +109,9 @@ export class PickingRoutingComponent implements OnInit {
     ]
 
     gridApi: any;
-    gridColumnApi: any;
 
     setGridApi($event) {
         this.gridApi = $event.api;
-        this.gridColumnApi = $event.columnApi;
     }
 
     tableList: any;

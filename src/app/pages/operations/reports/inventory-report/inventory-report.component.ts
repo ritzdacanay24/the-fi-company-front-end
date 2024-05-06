@@ -40,8 +40,6 @@ export class InventoryReportComponent implements OnInit {
 
     gridApi: any;
 
-    gridColumnApi: any;
-
     id = null;
 
     title = "Inventory Report"
@@ -60,7 +58,6 @@ export class InventoryReportComponent implements OnInit {
         columnDefs: [],
         onGridReady: (params: any) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
 
             let data = this.activatedRoute.snapshot.queryParams['gridParams']
             _decompressFromEncodedURIComponent(data, params);
@@ -74,7 +71,7 @@ export class InventoryReportComponent implements OnInit {
     };
 
     updateUrl = (params) => {
-        let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+        let gridParams = _compressToEncodedURIComponent(params.api);
         this.router.navigate([`.`], {
             relativeTo: this.activatedRoute,
             queryParamsHandling: 'merge',

@@ -68,7 +68,7 @@
                   <div style="min-width:200px">
                     <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
                       bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
-                     
+
                     </ng-select>
                   </div>
                   <div *ngIf="row.value.title == 'Vendor'" class="mt-2">
@@ -617,8 +617,6 @@
             </li>
           </ul>
         </ng-template>
-
-
         <div ngbScrollSpyFragment="items-10">
           <div class="mb-3 ms-1">
             <div class="form-check form-switch form-switch-md">
@@ -626,7 +624,6 @@
               <label class="form-check-label" for="active">Active</label>
             </div>
           </div>
-
           <div class="mb-3 ms-1">
             <div class="form-check form-switch form-switch-md">
               <input class="form-check-input" type="checkbox" id="published" formControlName="published">
@@ -634,8 +631,19 @@
             </div>
           </div>
         </div>
-
       </ng-container>
+
+
+      <ng-template [ngIf]="id">
+        <h5>Under construction</h5>
+        <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-trip-details">
+          <i class="mdi mdi-paperclip me-2"></i>
+          Trip Details
+        </h4>
+
+        <button class="btn btn-primary" (click)="addTripDetails()">Add Trip Details</button>
+
+      </ng-template>
 
     </form>
   </div>

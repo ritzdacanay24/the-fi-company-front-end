@@ -22,7 +22,6 @@ export class CablesComponent implements OnInit {
   query
 
   gridApi: any;
-  gridColumnApi: any;
 
   columnDefs = [
     { field: 'WOD_NBR', headerName: 'WO #', filter: 'agMultiColumnFilter' }
@@ -48,7 +47,6 @@ export class CablesComponent implements OnInit {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
       params.columnApi.autoSizeAllColumns();
     },
     getRowNodeId: data => data.id,

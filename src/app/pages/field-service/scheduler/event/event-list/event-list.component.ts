@@ -7,7 +7,7 @@ import { AgGridModule } from 'ag-grid-angular'
 import { SharedModule } from '@app/shared/shared.module'
 import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from '@app/shared/util/jslzString'
+import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { ActivatedRoute, Router } from '@angular/router'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { NAVIGATION_ROUTE } from '../event-constant'
@@ -47,7 +47,7 @@ export class EventListComponent implements OnInit {
     this.getData()
   }
 
-  columnDefs:any = [
+  columnDefs: any = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -75,8 +75,6 @@ export class EventListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   id = null;
@@ -96,10 +94,9 @@ export class EventListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
-      decompressFromEncodedURIComponent(data, params);
+      _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, 'id', this.id);
@@ -107,7 +104,7 @@ export class EventListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => {
-      let gridParams = compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -118,7 +115,7 @@ export class EventListComponent implements OnInit {
 
     },
     onSortChanged: params => {
-      let gridParams = compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -130,7 +127,7 @@ export class EventListComponent implements OnInit {
   };
 
   onEdit(id) {
-    let gridParams = compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {

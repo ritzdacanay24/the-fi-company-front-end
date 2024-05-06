@@ -489,7 +489,7 @@ export class CreditCardComponent implements OnInit {
 
 
   gridApi: any
-  gridColumnApi: any
+  
   title = 'Policy Usage'
 
   columnDefs: any = [
@@ -586,7 +586,6 @@ export class CreditCardComponent implements OnInit {
 
   onGridReady(params: any) {
     this.gridApi = params.api
-    this.gridColumnApi = params.columnApi
   }
 
 

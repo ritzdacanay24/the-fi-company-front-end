@@ -24,6 +24,7 @@ import { AttachmentsService as PublicAttachment } from '@app/core/api/attachment
 import { AttachmentService } from '@app/core/api/field-service/attachment.service';
 import { DatePickerService } from '@app/shared/date-picker/date-picker.component';
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
+import { JobTripDetailModalService } from '../job-trip-detail-modal/job-trip-detail-modal.component';
 
 export const timeNow = () => {
   return moment().format('YYYY-MM-DD HH:mm:ss')
@@ -64,6 +65,7 @@ export class JobFormComponent implements OnInit {
     private platformService: PlatformService,
     private publicAttachment: PublicAttachment,
     private attachmentService: AttachmentService,
+    private jobTripDetailModalService: JobTripDetailModalService
   ) {
   }
 
@@ -72,6 +74,7 @@ export class JobFormComponent implements OnInit {
   currentSection = 'item-3'
 
 
+  trip_selection = ""
 
   listOptions: any = [
     {
@@ -125,6 +128,12 @@ export class JobFormComponent implements OnInit {
     {
       name: "Receipts",
       ngbScrollSpyItem: 'items-9',
+      icon: 'mdi-receipt',
+      active: true
+    },
+    {
+      name: "Trip Details",
+      ngbScrollSpyItem: 'items-trip-details',
       icon: 'mdi-receipt',
       active: true
     },
@@ -456,8 +465,17 @@ export class JobFormComponent implements OnInit {
       fs_lat: [''],
       fs_lon: ['']
     }),
+    trip_details: this.fb.group({
+      vendor: [null],
+    }),
     resource: this.fb.array([]),
   })
+
+  addTripDetails() {
+    let modalRef = this.jobTripDetailModalService.open(this.id)
+    modalRef.result.then((result: Comment) => {
+    }, () => { });
+  }
 
   /**Api */
   statusType$: any[];

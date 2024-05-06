@@ -483,7 +483,7 @@ export class ReceiptComponent implements OnInit {
 
 
   gridApi: any
-  gridColumnApi: any
+
   title = 'Policy Usage'
 
   columnDefs:any = [
@@ -611,7 +611,6 @@ export class ReceiptComponent implements OnInit {
 
   onGridReady(params: any) {
     this.gridApi = params.api
-    this.gridColumnApi = params.columnApi
   }
 
 

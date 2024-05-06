@@ -103,22 +103,11 @@ export class GridSettingsComponent implements OnInit {
     @Input() pageId = null;
 
     @Input() gridApi
-    @Input() gridColumnApi
 
     ngOnChanges(changes: SimpleChanges) {
-        // if (changes['data']) {
-        //     this.data = changes['data'].currentValue;
-        // }
-
         if (changes['pageId']) {
             this.pageId = changes['pageId'].currentValue;
         }
-        // if (changes['gridApi']) {
-        //     this.gridApi = changes['gridApi'].currentValue;
-        // }
-        // if (changes['gridColumnApi']) {
-        //     this.gridColumnApi = changes['gridColumnApi'].currentValue;
-        // }
     }
 
     selectTable(row) {
@@ -145,7 +134,7 @@ export class GridSettingsComponent implements OnInit {
     }
 
     async update() {
-        const savedState = this.gridColumnApi.getColumnState();
+        const savedState = this.gridApi.getColumnState();
         let saveData = {
             data: JSON.stringify(savedState)
         }
@@ -166,7 +155,7 @@ export class GridSettingsComponent implements OnInit {
         this.currentView = null;
 
         setTimeout(() => {
-            this.gridColumnApi.resetColumnState();
+            this.gridApi.resetColumnState();
             autoSizeColumnsApi(this.gridApi)
             this.gridApi?.hideOverlay()
         }, 500);
@@ -174,7 +163,7 @@ export class GridSettingsComponent implements OnInit {
     }
 
     createNewView() {
-        const savedState = this.gridColumnApi.getColumnState();
+        const savedState = this.gridApi.getColumnState();
         let inst = this.gridSettingsModalService.open(savedState, this.pageId);
         inst.result.then((result) => {
             this.value = result.id;

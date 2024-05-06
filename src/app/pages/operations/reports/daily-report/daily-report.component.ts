@@ -4,7 +4,6 @@ import { ReportService } from '@app/core/api/operations/report/report.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { AG_THEME, TABLE_GRID_CONFIG, agGridOptions } from '@app/shared/config/ag-grid.config';
-import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 
@@ -26,7 +25,6 @@ export class DailyReportComponent implements OnInit {
     theme = AG_THEME;
 
     gridApi: any;
-    gridColumnApi: any;
 
     fullscreen = false;
 
@@ -62,13 +60,11 @@ export class DailyReportComponent implements OnInit {
 
     onGridReady(params: any) {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
         this.tableConfig.onGridReady(params);
     }
 
     constructor(
         private api: ReportService,
-        private sweetAlert: SweetAlert,
         private logisiticsDailyReportService: LogisiticsDailyReportService,
     ) { }
 

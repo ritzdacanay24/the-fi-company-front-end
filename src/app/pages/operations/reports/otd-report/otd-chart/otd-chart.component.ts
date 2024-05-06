@@ -17,7 +17,6 @@ import {
     ApexStroke
 } from "ng-apexcharts";
 import { NgChartsModule } from "ng2-charts";
-import { currency } from "src/assets/js/util";
 
 
 function convertToInternationalCurrencySystem(labelValue) {

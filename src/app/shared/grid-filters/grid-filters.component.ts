@@ -137,7 +137,6 @@ export class GridFiltersComponent implements OnInit {
     @Input() pageId = null;
 
     @Input() gridApi: GridApi;
-    @Input() gridColumnApi: ColumnApi
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes['pageId']) {
@@ -145,9 +144,6 @@ export class GridFiltersComponent implements OnInit {
         }
         if (changes['gridApi']) {
             this.gridApi = changes['gridApi'].currentValue;
-        }
-        if (changes['gridColumnApi']) {
-            this.gridColumnApi = changes['gridColumnApi'].currentValue;
         }
         if (changes['dataRenderered']?.currentValue) {
             this.setFilter()
@@ -213,7 +209,7 @@ export class GridFiltersComponent implements OnInit {
         this.currentView = null;
 
         setTimeout(() => {
-            this.gridColumnApi.resetColumnState();
+            this.gridApi.resetColumnState();
             autoSizeColumnsApi(this.gridApi)
             this.gridApi?.hideOverlay()
         }, 500);

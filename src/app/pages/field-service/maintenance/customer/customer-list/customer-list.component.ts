@@ -96,8 +96,6 @@ export class CustomerListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   id = null;
@@ -107,7 +105,6 @@ export class CustomerListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -118,7 +115,7 @@ export class CustomerListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -129,7 +126,7 @@ export class CustomerListComponent implements OnInit {
 
     },
     onSortChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -142,7 +139,7 @@ export class CustomerListComponent implements OnInit {
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {

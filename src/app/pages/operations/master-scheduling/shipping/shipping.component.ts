@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
@@ -241,8 +241,6 @@ export class ShippingComponent implements OnInit {
     gridViewId
 
     gridApi: GridApi;
-
-    gridColumnApi: ColumnApi;
 
     id = null;
 
@@ -837,9 +835,8 @@ export class ShippingComponent implements OnInit {
         rowBuffer:0,
         suppressColumnMoveAnimation: true,
         getRowId: (data: any) => data?.data.id,
-        onGridReady: (params: any) => {
+        onGridReady: (params) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
         },
         onFirstDataRendered: (params) => {
             this.dataRenderered = true;
@@ -927,7 +924,7 @@ export class ShippingComponent implements OnInit {
 
 
     updateUrl = (params) => {
-        let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+        let gridParams = _compressToEncodedURIComponent(params.api);
         this.router.navigate([`.`], {
             relativeTo: this.activatedRoute,
             queryParamsHandling: 'merge',

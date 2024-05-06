@@ -39,7 +39,6 @@ export class QueryComponent implements OnInit {
 
     //query info
     gridApi: any;
-    gridColumnApi: any;
 
     gridOptions = {
         ...agGridOptions,
@@ -47,7 +46,6 @@ export class QueryComponent implements OnInit {
         sideBar: 'filters',
         onGridReady: (params: { api: any; columnApi: any; }) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
         },
         // getRowNodeId: (data) => data.id
     };
@@ -56,7 +54,6 @@ export class QueryComponent implements OnInit {
 
     //queries
     gridApi1: any;
-    gridColumnApi1: any;
 
     gridOptions1 = {
         ...agGridOptions,
@@ -64,7 +61,6 @@ export class QueryComponent implements OnInit {
         sideBar: false,
         onGridReady: (params: { api: any; columnApi: any; }) => {
             this.gridApi1 = params.api;
-            this.gridColumnApi1 = params.columnApi;
         },
         onFirstDataRendered: (params) => {
             params.api.sizeColumnsToFit();

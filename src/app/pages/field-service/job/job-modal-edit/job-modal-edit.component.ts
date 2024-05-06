@@ -10,7 +10,6 @@ import moment from 'moment';
 import { SharedModule } from '@app/shared/shared.module';
 import { TokenStorageService } from '@app/core/services/token-storage.service';
 import { TeamService } from '@app/core/api/field-service/fs-team.service';
-import { AttachmentService } from '@app/core/api/field-service/attachment.service';
 import { JobEditComponent } from '../job-edit/job-edit.component';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -155,6 +154,7 @@ export class JobModalEditComponent implements OnInit {
 
     }
   }
+
 
   duplicateJob() {
     this.id = null;

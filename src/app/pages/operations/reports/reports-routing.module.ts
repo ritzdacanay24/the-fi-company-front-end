@@ -19,6 +19,7 @@ import { ItemConsolidationReportComponent } from './item-consolidation-report/it
 import { RevenueComponent } from './revenue/revenue.component';
 import { WorkOrderVarianceReport } from './work-order-variance-report/work-order-variance-report.component';
 import { OtdReportComponent } from './otd-report/otd-report.component';
+import { ReasonCodeReportComponent } from './reason-code-report/reason-code-report.component';
 
 const routes: Routes = [
   {
@@ -97,6 +98,10 @@ const routes: Routes = [
       {
         path: 'otd-report',
         component: OtdReportComponent
+      },
+      {
+        path: 'reason-code-report',
+        component: ReasonCodeReportComponent
       },
     ]
   },

@@ -57,7 +57,6 @@ export class CustomerOrderInfoModalComponent {
   ];
 
   gridApi: any;
-  gridColumnApi: any;
 
   gridOptions: any = {
     ...agGridOptions,
@@ -80,7 +79,6 @@ export class CustomerOrderInfoModalComponent {
 
   onGridReady(params) {
     this.gridApi = params.api;
-    this.gridColumnApi = params.columnApi;
   }
 
   constructor(

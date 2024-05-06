@@ -50,7 +50,6 @@ export class WorkOrderRoutingByWoComponent {
     data = [];
     isLoading = true;
     gridApi: any;
-    gridColumnApi: any;
 
     constructor(
         private workOrderRoutingService: WorkOrderRoutingService,
@@ -64,11 +63,10 @@ export class WorkOrderRoutingByWoComponent {
 
     onGridReady(params: { api: any; columnApi: any; }) {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
     }
 
     firstDataRendered() {
-        this.gridColumnApi.autoSizeAllColumns();
+        this.gridApi.autoSizeAllColumns();
     }
 
     columnDefs = [

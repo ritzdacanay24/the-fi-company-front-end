@@ -73,7 +73,6 @@ export class JobAttachmentsComponent implements OnInit {
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
             let data = this.activatedRoute.snapshot.queryParams['gridParams']
             _decompressFromEncodedURIComponent(data, params);
         },
@@ -83,7 +82,7 @@ export class JobAttachmentsComponent implements OnInit {
         },
         getRowId: params => params.data.id,
         onFilterChanged: params => {
-            let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+            let gridParams = _compressToEncodedURIComponent(this.gridApi);
             this.router.navigate([`.`], {
                 relativeTo: this.activatedRoute,
                 queryParamsHandling: 'merge',
@@ -94,7 +93,7 @@ export class JobAttachmentsComponent implements OnInit {
 
         },
         onSortChanged: params => {
-            let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+            let gridParams = _compressToEncodedURIComponent(this.gridApi);
             this.router.navigate([`.`], {
                 relativeTo: this.activatedRoute,
                 queryParamsHandling: 'merge',
@@ -131,8 +130,6 @@ export class JobAttachmentsComponent implements OnInit {
     theme = AG_THEME;
 
     gridApi: any;
-
-    gridColumnApi: any;
 
     title = "Attachments";
 

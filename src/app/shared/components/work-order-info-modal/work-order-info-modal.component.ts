@@ -37,7 +37,6 @@ export class WorkOrderInfoModalService {
 
 export class WorkOrderInfoModalComponent {
     gridApi: any;
-    gridColumnApi: any;
     isLoading = true;
     details = [];
     mainDetails: any = {
@@ -54,7 +53,6 @@ export class WorkOrderInfoModalComponent {
 
     onGridReady(params) {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
     }
 
     notifyParent($event) {
@@ -63,7 +61,7 @@ export class WorkOrderInfoModalComponent {
     }
 
     firstDataRendered() {
-        this.gridColumnApi.autoSizeAllColumns();
+        this.gridApi.autoSizeAllColumns();
     }
 
     columnDefs: any = [

@@ -114,7 +114,6 @@ export class OrderLookupComponent {
   }
 
   gridApi: any;
-  gridColumnApi: any;
 
   gridOptions = {
     ...agGridOptions,
@@ -124,7 +123,6 @@ export class OrderLookupComponent {
     },
     onGridReady: (params) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
     },
     sideBar: false,
     defaultColDef: {
@@ -182,12 +180,6 @@ export class OrderLookupComponent {
   }
 
   autoSizeAll(skipHeader) {
-    var allColumnIds = [];
-    this.gridColumnApi.getColumns().forEach(function (column) {
-      allColumnIds.push(column.colId);
-    });
-
-    this.gridColumnApi.autoSizeColumns(allColumnIds, skipHeader);
   }
 
   formatNumber(row) {
@@ -215,7 +207,6 @@ export class OrderLookupComponent {
   ];
 
   gridApi1: any;
-  gridColumnApi1: any;
 
   gridOptions1 = {
     ...agGridOptions,
@@ -225,7 +216,6 @@ export class OrderLookupComponent {
     },
     onGridReady: (params) => {
       this.gridApi1 = params.api;
-      this.gridColumnApi1 = params.columnApi;
     },
     sideBar: false,
     defaultColDef: {
@@ -286,7 +276,6 @@ export class OrderLookupComponent {
   ]
 
   gridApi2: any;
-  gridColumnApi2: any;
 
   gridOptions2 = {
     ...agGridOptions,
@@ -296,7 +285,6 @@ export class OrderLookupComponent {
     },
     onGridReady: (params) => {
       this.gridApi2 = params.api;
-      this.gridColumnApi2 = params.columnApi;
     },
     sideBar: false,
     defaultColDef: {

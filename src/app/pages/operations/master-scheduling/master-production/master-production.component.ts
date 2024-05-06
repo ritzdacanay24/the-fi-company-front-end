@@ -105,8 +105,6 @@ export class MasterProductionComponent implements OnInit {
 
     gridApi: any;
 
-    gridColumnApi: any;
-
     id = null;
 
     title = "Master Production";
@@ -311,7 +309,6 @@ export class MasterProductionComponent implements OnInit {
         columnDefs: [],
         onGridReady: async (params: any) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
             this.setGridApi.emit(params);
         },
         onFirstDataRendered: (params) => {

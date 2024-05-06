@@ -1,4 +1,4 @@
-import { GridApi, ColumnApi } from 'ag-grid-community'
+import { GridApi } from 'ag-grid-community'
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import { NgSelectModule } from '@ng-select/ng-select'
@@ -83,8 +83,6 @@ export class NonBillableCodeListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   id = null;
@@ -94,7 +92,6 @@ export class NonBillableCodeListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -105,7 +102,7 @@ export class NonBillableCodeListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -116,7 +113,7 @@ export class NonBillableCodeListComponent implements OnInit {
 
     },
     onSortChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -129,7 +126,7 @@ export class NonBillableCodeListComponent implements OnInit {
   };
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {

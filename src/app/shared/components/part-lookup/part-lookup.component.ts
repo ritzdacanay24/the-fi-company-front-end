@@ -58,7 +58,6 @@ export class PartLookupComponent {
     ];
 
     gridApi: any;
-    gridColumnApi: any;
 
     gridOptions: any = {
         ...agGridOptions,
@@ -78,7 +77,6 @@ export class PartLookupComponent {
 
     onGridReady(params) {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
         this.gridApi.sizeColumnsToFit();
     }
 
@@ -94,7 +92,6 @@ export class PartLookupComponent {
     ];
 
     gridApi2: any;
-    gridColumnApi2: any;
 
     gridOptions2: any = {
         ...agGridOptions,
@@ -111,7 +108,6 @@ export class PartLookupComponent {
 
     onGridReady2(params) {
         this.gridApi2 = params.api;
-        this.gridColumnApi2 = params.columnApi;
         this.gridApi2.sizeColumnsToFit();
     }
 
@@ -131,7 +127,6 @@ export class PartLookupComponent {
     ];
 
     gridApi3: any;
-    gridColumnApi3: any;
 
     gridOptions3: any = {
         ...agGridOptions,
@@ -148,7 +143,6 @@ export class PartLookupComponent {
 
     onGridReady3(params) {
         this.gridApi3 = params.api;
-        this.gridColumnApi3 = params.columnApi;
         this.gridApi3.sizeColumnsToFit();
     }
 
@@ -172,7 +166,6 @@ export class PartLookupComponent {
     ];
 
     gridApi4: any;
-    gridColumnApi4: any;
 
     gridOptions4: any = {
         ...agGridOptions,
@@ -188,7 +181,6 @@ export class PartLookupComponent {
 
     onGridReady4(params) {
         this.gridApi4 = params.api;
-        this.gridColumnApi4 = params.columnApi;
         this.gridApi4.sizeColumnsToFit();
     }
 
@@ -230,7 +222,6 @@ export class PartLookupComponent {
     ];
 
     gridApi5: any;
-    gridColumnApi5: any;
 
     gridOptions5: any = {
         ...agGridOptions,
@@ -256,7 +247,6 @@ export class PartLookupComponent {
 
     onGridReady5(params) {
         this.gridApi5 = params.api;
-        this.gridColumnApi5 = params.columnApi;
     }
 
     constructor(

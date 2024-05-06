@@ -1,12 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { states } from '@app/core/data/states';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
-import moment from 'moment';
 import { AutosizeModule } from 'ngx-autosize';
 import { ControlsOf } from 'src/assets/js/util/_formGroup';
 

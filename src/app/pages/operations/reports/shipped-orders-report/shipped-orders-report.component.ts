@@ -99,8 +99,6 @@ export class ShippedOrdersReportComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   columnDefs: any = [
@@ -171,7 +169,6 @@ export class ShippedOrdersReportComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -184,7 +181,7 @@ export class ShippedOrdersReportComponent implements OnInit {
   };
 
   updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+    let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: 'merge',

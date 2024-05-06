@@ -560,7 +560,7 @@ export class UploadedReceiptComponent implements OnInit {
   }
 
   gridApi: any
-  gridColumnApi: any
+  
   title = 'Policy Usage'
 
   setColumDef() {
@@ -682,9 +682,6 @@ export class UploadedReceiptComponent implements OnInit {
 
   onGridReady(params: any) {
     this.gridApi = params.api
-    this.gridColumnApi = params.columnApi
-
-
   }
 
 

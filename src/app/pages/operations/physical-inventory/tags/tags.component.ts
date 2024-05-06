@@ -40,7 +40,6 @@ export class TagsComponent implements OnInit {
 
   gridApi: any;
 
-  gridColumnApi: any;
 
   id = null;
 
@@ -195,11 +194,6 @@ export class TagsComponent implements OnInit {
     },
     onFirstDataRendered: () => {
       const allColumnIds = [];
-      this.gridColumnApi.getAllColumns().forEach((column) => {
-        allColumnIds.push(column.getId());
-      });
-
-      this.gridColumnApi.autoSizeColumns(allColumnIds, false);
     },
     onRowSelected: (event) => {
       if (event.data) {
@@ -235,11 +229,10 @@ export class TagsComponent implements OnInit {
 
   onGridReady(params: any) {
     this.gridApi = params.api;
-    this.gridColumnApi = params.columnApi;
   }
 
   updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+    let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: 'merge',

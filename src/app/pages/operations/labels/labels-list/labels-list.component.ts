@@ -66,7 +66,6 @@ export class LabelsListComponent implements OnInit {
 
   gridApi: any;
 
-  gridColumnApi: any;
 
   id = null;
 
@@ -127,7 +126,6 @@ export class LabelsListComponent implements OnInit {
     getRowId: data => data.data.id,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);

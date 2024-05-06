@@ -77,7 +77,6 @@ export class TicketListComponent implements OnInit {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
     },
@@ -87,7 +86,7 @@ export class TicketListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -98,7 +97,7 @@ export class TicketListComponent implements OnInit {
 
     },
     onSortChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
         queryParamsHandling: 'merge',
@@ -139,8 +138,6 @@ export class TicketListComponent implements OnInit {
   theme = AG_THEME;
 
   gridApi: any;
-
-  gridColumnApi: any;
 
   title = "Ticket List";
 
@@ -200,7 +197,7 @@ export class TicketListComponent implements OnInit {
   }
 
   openWorkOrder(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
       queryParamsHandling: 'merge',
       queryParams: {
@@ -211,7 +208,7 @@ export class TicketListComponent implements OnInit {
 
 
     // this.ticketModalService.open(id)
-    // let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    // let gridParams = _compressToEncodedURIComponent(this.gridApi);
     // this.router.navigate([NAVIGATION_ROUTE.OVERVIEW], {
     //   queryParamsHandling: 'merge',
     //   queryParams: {

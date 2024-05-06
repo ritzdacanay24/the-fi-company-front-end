@@ -154,13 +154,12 @@ export class NcrAttachmentsListComponent implements OnInit {
     ]
 
     gridApi
-    gridColumnApi
+    
     gridOptions = {
         ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
         },
         onFirstDataRendered: (params) => {
             autoSizeColumns(params)

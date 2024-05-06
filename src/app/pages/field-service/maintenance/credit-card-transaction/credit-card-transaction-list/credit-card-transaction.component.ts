@@ -43,7 +43,6 @@ export class CreditCardTransactionListComponent implements OnInit {
 
   title = 'Patient Claims'
   gridApi: GridApi
-  gridColumnApi: ColumnApi
 
   columnDefs: any[]
 
@@ -72,7 +71,6 @@ export class CreditCardTransactionListComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api
-    this.gridColumnApi = params.columnApi
   }
 
   constructor(

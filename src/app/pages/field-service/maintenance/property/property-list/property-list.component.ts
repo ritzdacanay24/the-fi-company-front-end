@@ -138,7 +138,6 @@ export class PropertyListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
 
   data: any[];
 
@@ -150,7 +149,6 @@ export class PropertyListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -161,7 +159,7 @@ export class PropertyListComponent implements OnInit {
     },
     getRowId: params => params.data.id,
     onFilterChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([NAVIGATION_ROUTE.LIST], {
         queryParamsHandling: 'merge',
         queryParams: {
@@ -171,7 +169,7 @@ export class PropertyListComponent implements OnInit {
 
     },
     onSortChanged: params => {
-      let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+      let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([NAVIGATION_ROUTE.LIST], {
         queryParamsHandling: 'merge',
         queryParams: {
@@ -183,7 +181,7 @@ export class PropertyListComponent implements OnInit {
   };
 
   onEdit(data) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {

@@ -690,6 +690,11 @@ export const MENU: MenuItem[] = [
             link: '/dashboard/operations/reports/work-order-variance-report',
             description: "Work Order Variance Report"
           },
+          // {
+          //   label: 'Reason Code Report',
+          //   link: '/dashboard/operations/reports/reason-code-report',
+          //   description: "Reason code"
+          // },
         ]
       },
       {

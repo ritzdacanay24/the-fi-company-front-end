@@ -1,15 +1,12 @@
-import { first } from 'rxjs/operators';
-
 import { Component, OnInit } from '@angular/core';
-import { CablesService } from '@app/core/api/cables/cables.service';
-import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { timeUntil, timeUntil1 } from '../kanban.component';
+import { timeUntil } from '../kanban.component';
 import { Subscription, interval } from 'rxjs';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -24,9 +21,7 @@ export class KanbanListComponent implements OnInit {
 
     query
 
-    gridApi: any;
-    gridColumnApi: any;
-
+    gridApi: GridApi;
 
     updateClock = () => {
         for (let i = 0; i < this.data.length; i++) {
@@ -94,9 +89,8 @@ export class KanbanListComponent implements OnInit {
         ...agGridOptions,
         enableCellChangeFlash: false,
         columnDefs: [],
-        onGridReady: (params: any) => {
+        onGridReady: (params: { api: GridApi<any>; columnApi: { autoSizeAllColumns: () => void; }; }) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
             params.columnApi.autoSizeAllColumns();
         },
         getRowNodeId: data => data.id,

@@ -146,8 +146,6 @@ export class OtdReportComponent implements OnInit {
 
     gridApi: GridApi;
 
-    gridColumnApi: ColumnApi;
-
     data: any[];
 
     columnDefs: any = [
@@ -189,7 +187,6 @@ export class OtdReportComponent implements OnInit {
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;
-            this.gridColumnApi = params.columnApi;
 
             let data = this.activatedRoute.snapshot.queryParams['gridParams']
             _decompressFromEncodedURIComponent(data, params);
@@ -203,8 +200,6 @@ export class OtdReportComponent implements OnInit {
 
 
     gridApi1: GridApi;
-
-    gridColumnApi1: ColumnApi;
 
     data1: any[];
 
@@ -244,7 +239,6 @@ export class OtdReportComponent implements OnInit {
         columnDefs: this.columnDefs1,
         onGridReady: (params: any) => {
             this.gridApi1 = params.api;
-            this.gridColumnApi1 = params.columnApi;
         },
         onFirstDataRendered: (params) => {
             params.api.sizeColumnsToFit();
@@ -254,7 +248,7 @@ export class OtdReportComponent implements OnInit {
     };
 
     updateUrl = (params) => {
-        let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+        let gridParams = _compressToEncodedURIComponent(params.api);
         this.router.navigate([`.`], {
             relativeTo: this.activatedRoute,
             queryParamsHandling: 'merge',

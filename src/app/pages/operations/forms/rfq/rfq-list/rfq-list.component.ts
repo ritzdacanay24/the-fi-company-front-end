@@ -103,8 +103,6 @@ export class RfqListComponent implements OnInit {
 
   gridApi: GridApi;
 
-  gridColumnApi: ColumnApi;
-
   data: any[];
 
   id = null;
@@ -128,7 +126,6 @@ export class RfqListComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
 
       let data = this.activatedRoute.snapshot.queryParams['gridParams']
       _decompressFromEncodedURIComponent(data, params);
@@ -143,7 +140,7 @@ export class RfqListComponent implements OnInit {
   };
 
   updateUrl = (params) => {
-    let gridParams = _compressToEncodedURIComponent(params.api, params.columnApi);
+    let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: 'merge',
@@ -154,7 +151,7 @@ export class RfqListComponent implements OnInit {
   }
 
   onEdit(id) {
-    let gridParams = _compressToEncodedURIComponent(this.gridApi, this.gridColumnApi);
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
       queryParamsHandling: 'merge',
       queryParams: {

@@ -20,11 +20,11 @@
         <button class="btn btn-light" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
 
         <div class="ms-2">
-          <app-grid-settings [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-settings>
+          <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
         </div>
 
         <div class="ms-2">
-          <app-grid-filters [gridApi]="gridApi" [gridColumnApi]="gridColumnApi" [pageId]="pageId"></app-grid-filters>
+          <app-grid-filters [gridApi]="gridApi"  [pageId]="pageId"></app-grid-filters>
         </div>
 
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
