@@ -95,7 +95,7 @@
                             </tr>
 
                             <tr>
-                                <td width="80" style="font-weight: bolder;">Open Revenue</td>
+                                <td width="80" style="font-weight: bolder;">Future Open Revenue</td>
                                 <td colspan="3">{{logistics?.openRevenue?.VALUE || 0 | currency}}</td>
                             </tr>
 
@@ -111,7 +111,7 @@
                                 <th style="font-weight: bolder;">Cust Name</th>
                                 <th style="font-weight: bolder;">Lines Shipped Before <br/> or On Performance Date</th>
                                 <th style="font-weight: bolder;">Total Number of Lines <br/> Shipped Today</th>
-                                <th style="font-weight: bolder;">OTD %</th>
+                                <th style="font-weight: bolder; text-align: right;">OTD %</th>
                             </tr>
 
                             <tr *ngFor="let row of data?.onTime">

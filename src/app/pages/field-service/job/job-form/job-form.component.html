@@ -562,7 +562,6 @@
           </div>
         </ng-template>
 
-
         <!-- Secondary Alert -->
         <div *ngIf="!id"
           class="alert alert-primary alert-dismissible material-shadow alert-label-icon label-arrow fade show"
@@ -571,8 +570,6 @@
           after you create the job.
           <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
-
-
 
         <ng-template [ngIf]="id">
           <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-8">
@@ -641,8 +638,47 @@
           Trip Details
         </h4>
 
-        <button class="btn btn-primary" (click)="addTripDetails()">Add Trip Details</button>
-
+        <table class="table table-sm table-bordered">
+          <ng-container *ngFor="let row of tripDetailInfo; let i = index">
+            <thead>
+              <tr>
+                <th colspan="5">{{row.type_of_travel | uppercase}}<span (click)="addTripDetails(row.id)"
+                    class="float-end pointer"><u>Edit</u></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th class="table-active" style="width:150px">Name</th>
+                <th>{{row.address_name}}</th>
+                <th class="table-active" style="width:150px">Confirmation #</th>
+                <th>{{row.confirmation}}</th>
+              </tr>
+              <tr *ngIf="row.type_of_travel == 'flight'">
+                <th class="table-active" style="width:150px">Flight Out</th>
+                <th>{{row.flight_out}}</th>
+                <th class="table-active" style="width:150px">Flight In</th>
+                <th>{{row.flight_in}}</th>
+              </tr>
+              <tr>
+                <th rowspan="2" class="table-active" style="width:150px">{{row.location_name || 'Location'}}</th>
+                <th>{{row.address}} {{row.address1}}</th>
+                <th class="table-active">{{row.end_datetime_name}}</th>
+                <th>{{row.end_datetime}}</th>
+              </tr>
+              <tr>
+                <th>{{row.city}}, {{row.state}} {{row.zip_code}}</th>
+                <th class="table-active">{{row.start_datetime_name}}</th>
+                <th>{{row.start_datetime}}</th>
+              </tr>
+              <tr *ngIf="row.type_of_travel == 'rental_car'">
+                <th class="table-active" style="width:150px">Driver</th>
+                <th colspan="3">{{row.rental_car_driver}}</th>
+              </tr>
+            </tbody>
+            <br/>
+          </ng-container>
+        </table>
+        <button class="btn btn-primary mt-0" (click)="addTripDetails()">Add Trip Details</button>
       </ng-template>
 
     </form>

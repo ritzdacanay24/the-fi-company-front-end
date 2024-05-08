@@ -14,6 +14,7 @@ import { JobEditComponent } from '../job-edit/job-edit.component';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { TripDetailService } from '@app/core/api/field-service/trip-detail/trip-detail.service';
 
 @Component({
   standalone: true,
@@ -154,7 +155,6 @@ export class JobModalEditComponent implements OnInit {
 
     }
   }
-
 
   duplicateJob() {
     this.id = null;

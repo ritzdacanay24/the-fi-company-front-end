@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { JobService } from "@app/core/api/field-service/job.service";
 import { NgbActiveModal, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, UntypedFormBuilder } from '@angular/forms';
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { UserService } from '@app/core/api/field-service/user.service';
@@ -16,6 +16,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { states } from '@app/core/data/states';
+import { TripDetailService } from '@app/core/api/field-service/trip-detail/trip-detail.service';
 
 @Injectable({
   providedIn: 'root'
@@ -26,9 +27,10 @@ export class JobTripDetailModalService {
     public modalService: NgbModal
   ) { }
 
-  open(id) {
-    let modalRef = this.modalService.open(JobTripDetailModalComponent, { size: 'lg', windowClass: 'field-service-modal-xxl' });
+  open(id, rowId) {
+    let modalRef = this.modalService.open(JobTripDetailModalComponent, { size: 'lg' });
     modalRef.componentInstance.id = id;
+    modalRef.componentInstance.rowId = rowId;
     return modalRef;
   }
 }
@@ -43,55 +45,111 @@ export class JobTripDetailModalService {
 export class JobTripDetailModalComponent implements OnInit {
 
   constructor(
-    private fb: FormBuilder,
     public route: ActivatedRoute,
     public router: Router,
     private ngbActiveModal: NgbActiveModal,
-    private api: JobService,
-    private userService: UserService,
     private publicAttachment: PublicAttachment,
-    private attachmentService: AttachmentService,
-    public authenticationService: AuthenticationService
+    public authenticationService: AuthenticationService,
+    private tripDetailService: TripDetailService,
+    private formBuilder: UntypedFormBuilder
   ) {
   }
 
-  ngOnInit(): void {
+  getTripSelection($event) {
+    for (let i = 0; i <= this.trip_selection_options.length; i++) {
+      if ($event == this.trip_selection_options[i].value) {
+        this.form.patchValue({
+          type_of_travel: $event,
+          location_name: this.trip_selection_options[i].location_name,
+          start_datetime_name: this.trip_selection_options[i].start_datetime_name,
+          end_datetime_name: this.trip_selection_options[i].end_datetime_name
+        })
+        break;
+      }
+    }
   }
 
-  notifyParent($event: any) {
+  trip_selection_options = [{
+    name: "Rental Car",
+    value: "rental_car",
+    start_datetime_name: "Pick Up Date/Time",
+    end_datetime_name: "Drop Off Date/Time",
+    location_name: "Pick Up Location"
+  }, {
+    name: "Equipment",
+    value: "equipment",
+    start_datetime_name: "Drop off Date/Time",
+    end_datetime_name: "Pick up Date/Time",
+    location_name: "Vendor"
+  }, {
+    name: "Hotel",
+    value: "hotel",
+    start_datetime_name: "Check In Date/Time",
+    end_datetime_name: "Check Out Date/Time",
+    location_name: "Hotel Location"
+  }, {
+    name: "Flight",
+    value: "flight",
+    start_datetime_name: "Flight Out Date/Time",
+    end_datetime_name: "Flight In Date/Time",
+    location_name: "Flight Out Location"
+  }]
 
+  ngOnInit(): void {
+    this.form = this.formBuilder.group({
+      start_datetime: "",
+      end_datetime: "",
+      start_datetime_name: "",
+      end_datetime_name: "",
+      confirmation: "",
+      type_of_travel: null,
+      rental_car_driver: "",
+      flight_out: "",
+      flight_in: "",
+      location_name: "",
+      address: this.formBuilder.group({
+        address_name: null,
+        address: "",
+        address1: "",
+        state: "",
+        zip_code: "",
+        city: "",
+      }),
+    }, { emitEvent: false })
+
+    if (this.rowId) {
+      this.getTripDetail()
+    }
+
+  }
+
+  tripDetailInfo: any
+  async getTripDetail() {
+    this.tripDetailInfo = await this.tripDetailService.getById(this.rowId);
+
+    this.form.patchValue({
+      ...this.tripDetailInfo,
+      address: this.tripDetailInfo,
+      [this.tripDetailInfo.type_of_travel]: this.tripDetailInfo
+    })
   }
 
   states = states;
 
   @Input() id: any
+  @Input() rowId: any
 
   trip_selection = ""
 
   currentSection = 'item-1'
 
+  onTripSelection() {
+    this.form.get(this.trip_selection).enable()
+
+  }
+
   setFormElements = async ($event: any) => {
     this.form = $event;
-
-    this.form.patchValue({
-      rental_car: {
-        rental_car_driver: "",
-        rental_car_pickup_datetime: "",
-        rental_car_dropoff_datetime: "",
-        rental_car_confirmation_number: "",
-        address: {
-          rental_car_name: "",
-          rental_car_address: "",
-          rental_car_address1: "",
-          rental_car_address_state: "",
-          rental_car_address_zip_code: "",
-          rental_car_address_city: "",
-        },
-        rental_car_created_by: this.authenticationService.currentUserValue.id,
-        rental_car_created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-      }
-    }, { emitEvent: false })
-
   }
 
   title = "Job Modal";
@@ -112,23 +170,69 @@ export class JobTripDetailModalComponent implements OnInit {
 
   async onSubmit() {
     this.submitted = true;
-
-    if (this.form.invalid) {
-      getFormValidationErrors()
-      return
+    // if (this.form.invalid) {
+    //   getFormValidationErrors()
+    //   return
+    // }
+    if (this.rowId) {
+      this.edit()
+    } else {
+      this.create()
     }
-    this.create()
   }
 
   async create() {
 
+    let d = {
+      ...this.form.value,
+      fsId: this.id,
+      ...this.form.value.address
+    }
+
     try {
-      let data = await this.api.create(this.form.value);
-      await this.onUploadAttachments(data.insertId)
+      await this.tripDetailService.create(d);
       this.close()
     } catch (err) {
 
     }
+  }
+
+  async edit() {
+
+    let d = {
+      ...this.form.value,
+      fsId: this.id,
+      ...this.form.value.address
+    }
+
+    try {
+      await this.tripDetailService.update(this.rowId, d);
+      this.close()
+    } catch (err) {
+
+    }
+  }
+
+  addTag = ($event) => {
+    this.form.patchValue({
+      address: {
+        address_name: $event
+      }
+    })
+
+    return true
+  }
+
+  notifyParent($event) {
+    this.form.patchValue({
+      address: {
+        address: $event?.fullStreetName,
+        city: $event?.address?.municipality,
+        state: $event?.address?.countrySubdivisionCode || null,
+        zip_code: $event?.address?.postalCode,
+        address_name: $event?.poi?.name || $event?.address?.streetName
+      }
+    })
   }
 
   file: File = null;

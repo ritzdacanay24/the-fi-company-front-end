@@ -25,6 +25,7 @@ import { AttachmentService } from '@app/core/api/field-service/attachment.servic
 import { DatePickerService } from '@app/shared/date-picker/date-picker.component';
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { JobTripDetailModalService } from '../job-trip-detail-modal/job-trip-detail-modal.component';
+import { TripDetailService } from '@app/core/api/field-service/trip-detail/trip-detail.service';
 
 export const timeNow = () => {
   return moment().format('YYYY-MM-DD HH:mm:ss')
@@ -65,7 +66,8 @@ export class JobFormComponent implements OnInit {
     private platformService: PlatformService,
     private publicAttachment: PublicAttachment,
     private attachmentService: AttachmentService,
-    private jobTripDetailModalService: JobTripDetailModalService
+    private jobTripDetailModalService: JobTripDetailModalService,
+    private tripDetailService: TripDetailService
   ) {
   }
 
@@ -195,7 +197,8 @@ export class JobFormComponent implements OnInit {
     this.setFormElements?.emit(this.form);
 
     if (this.id) {
-      this.getAttachments()
+      this.getAttachments();
+      this.getTripDetail()
     } else {
       for (let i = 0; i < this.listOptions.length; i++) {
         if (
@@ -238,6 +241,13 @@ export class JobFormComponent implements OnInit {
 
   public setValue(column, value) {
     this.form.get(column).patchValue(value, { emitEvent: false })
+  }
+
+
+  tripDetailInfo = []
+
+  async getTripDetail() {
+    this.tripDetailInfo = await this.tripDetailService.find({ fsId: this.id });
   }
 
   resetForm = () => {
@@ -471,9 +481,10 @@ export class JobFormComponent implements OnInit {
     resource: this.fb.array([]),
   })
 
-  addTripDetails() {
-    let modalRef = this.jobTripDetailModalService.open(this.id)
+  addTripDetails(rowId?) {
+    let modalRef = this.jobTripDetailModalService.open(this.id, rowId)
     modalRef.result.then((result: Comment) => {
+      this.getTripDetail()
     }, () => { });
   }
 
