@@ -43,7 +43,7 @@ export class AddressSearchComponent implements OnInit {
   @Input() addTagText: string = "Add address: ";
   @Input() showCategories: boolean = false;
   @Input() ngClass: string | any;
-  
+
   data$: Observable<any[]>;
   dataLoading = false;
   dataInput$ = new Subject<string>();
@@ -70,7 +70,6 @@ export class AddressSearchComponent implements OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log(changes)
     if (changes['value']?.currentValue) {
       this.value = changes['value'].currentValue || null;
     }

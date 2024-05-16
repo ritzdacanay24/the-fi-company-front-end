@@ -211,9 +211,6 @@ export class CreditCardTransactionChartComponent {
                 sum += this.data[key].dataset.reduce((partialSum, a) => partialSum + a, 0);
             }
 
-            console.log(labels)
-
-
             this.chartOptions.series = [];
 
             for (const key in this.data) {

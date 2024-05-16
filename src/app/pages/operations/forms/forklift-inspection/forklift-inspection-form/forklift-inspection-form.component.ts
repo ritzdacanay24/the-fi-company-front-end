@@ -75,7 +75,6 @@ export class ForkliftInspectionFormComponent implements OnInit {
         for (var i = 0; i < this.formValues.checklist.length; i++) {
             for (var ii = 0; ii < this.formValues.checklist[i].details.length; ii++) {
                 this.formValues.checklist[i].details[ii].error = false;
-                console.log(this.formValues.checklist[i].details[ii].status)
                 if (
                     this.formValues.checklist[i].details[ii].status == undefined &&
                     this.formValues.checklist[i].details[ii].needMaint == undefined

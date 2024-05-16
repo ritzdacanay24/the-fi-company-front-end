@@ -90,7 +90,6 @@ export class VehicleInspectionEditComponent {
                 ...data.main,
                 details: data?.details
             })
-            console.log(data)
 
             this.formValues = {
                 checklist: data?.details

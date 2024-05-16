@@ -71,7 +71,6 @@ export class KanbanQueueModalComponent {
 
   currentSelectionRouting
   checkNextSelectQueue() {
-    console.log(this.data)
     for (let i = 0; i < this.queues.length; i++) {
 
       

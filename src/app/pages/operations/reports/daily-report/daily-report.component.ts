@@ -416,7 +416,6 @@ export class DailyReportComponent implements OnInit {
             }
 
         } catch (err) {
-            console.log(err, 'error????')
             this.isLoading = false;
         }
     }

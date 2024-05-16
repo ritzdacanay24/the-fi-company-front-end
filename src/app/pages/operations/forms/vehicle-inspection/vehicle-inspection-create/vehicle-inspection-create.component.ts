@@ -87,7 +87,6 @@ export class VehicleInspectionCreateComponent {
                 formData.append("uniqueData", insertId);
                 formData.append("folderName", 'vehicleInformation');
                 this.uploadService.upload(formData).pipe(first()).subscribe(data => { 
-                    console.log(data, 'uploaded attachments')
                 });
             }
 
