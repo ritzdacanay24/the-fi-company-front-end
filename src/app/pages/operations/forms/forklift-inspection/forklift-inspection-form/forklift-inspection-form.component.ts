@@ -76,8 +76,7 @@ export class ForkliftInspectionFormComponent implements OnInit {
             for (var ii = 0; ii < this.formValues.checklist[i].details.length; ii++) {
                 this.formValues.checklist[i].details[ii].error = false;
                 if (
-                    this.formValues.checklist[i].details[ii].status == undefined &&
-                    this.formValues.checklist[i].details[ii].needMaint == undefined
+                    this.formValues.checklist[i].details[ii].status == undefined
                 ) {
                     this.formValues.checklist[i].details[ii].error;
                     totalErrors++;
@@ -86,14 +85,13 @@ export class ForkliftInspectionFormComponent implements OnInit {
         }
         return totalErrors;
     }
+
     private restValues() {
         for (let i = 0; i < this.formValues.checklist.length; i++) {
             this.formValues.checklist[i].status = undefined;
-            this.formValues.checklist[i].needMaint = undefined;
             for (let ii = 0; ii < this.formValues.checklist[i].details.length; ii++) {
                 this.formValues.checklist[i].details[ii].error = false;
                 this.formValues.checklist[i].details[ii].status = undefined;
-                this.formValues.checklist[i].details[ii].needMaint = undefined;
             }
         }
     }

@@ -49,9 +49,10 @@ export class ForkliftInspectionCreateComponent {
 
         this.form.patchValue({
             created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-            date_created: moment().format('YYYY-MM-DD HH:mm:ss'),
+            date_created: moment().format('YYYY-MM-DD'),
             created_by: this.authenticationService.currentUserValue.id,
             created_by_name: this.authenticationService.currentUserValue.full_name,
+            operator: this.authenticationService.currentUserValue.full_name,
         }, { emitEvent: false })
     }
 
