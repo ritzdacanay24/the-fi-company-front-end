@@ -1,0 +1,20 @@
+<div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Daily Report Config</h4>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+    <ul class="list-group" dragula="VAMPIRES" [(dragulaModel)]="data" (dragulaModelChange)="dragulaModelChange($event)">
+        <li class="list-group-item d-flex" *ngFor="let row of data" style="cursor:move">
+            <input class="form-check-input me-1 pointer" type="checkbox" [(ngModel)]="row.isVisible">
+            {{row.titleInfo.title}}
+            <p class="ms-auto">{{row?.valueInfo?.title || '-'}}</p>
+        </li>
+    </ul>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+    <button (click)="onReset()" type="button" class="btn btn-danger">Reset</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary">Save</button>
+</div>

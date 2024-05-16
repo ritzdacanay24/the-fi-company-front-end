@@ -12,7 +12,6 @@ import { THE_FI_COMPANY_LAYOUT } from './layouts/topbar/topbar.component';
 import { LightboxConfig } from 'ngx-lightbox';
 import { isMobile } from 'src/assets/js/util/is-mobile-helpers';
 
-
 export function setThemeColor(data) {
   var metaThemeColor = document.querySelector("meta[name=theme-color]");
   if (!data) {

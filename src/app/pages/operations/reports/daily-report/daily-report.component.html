@@ -1,5 +1,132 @@
 <div class="row">
     <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h4 class="card-title mb-0 flex-grow-1">Daily Report as of {{todayAsOf}}</h4>
+                <button class="btn btn-primary ms-auto btn-sm" (click)="openConfig()" [disabled]="isLoading">Column & Sort</button>
+
+            </div>
+
+            <div *ngIf="isLoading" class="p-5 card-body text-center">
+                <h4>
+                    <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Loading Data. Please wait...</p>
+                </h4>
+            </div>
+
+            <div class="card-body" *ngIf="!isLoading">
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle table table-striped-columns table-hover">
+                        <tbody class="align-middle" *ngFor="let row of displayedColumns">
+                            <tr>
+                                <ng-container
+                                    *ngIf="row.isVisible && row.id != '20' && row.id != '12' && row.id != '21'">
+                                    <th width="400">
+                                        <p>{{row.titleInfo?.title}}</p>
+                                        <small>{{row.titleInfo?.subtitle}}</small>
+                                    </th>
+                                    <td width="400" colspan="3">
+                                        {{row.valueInfo?.title}}
+                                        <br *ngIf="row.valueInfo?.subtitle">
+                                        <small>{{row.valueInfo?.subtitle}}</small>
+                                    </td>
+                                </ng-container>
+                            </tr>
+                            <ng-container *ngIf="row.isVisible && row.id == '12'">
+
+                                <tr class="table-light">
+                                    <th colspan="4" style="font-weight: bolder;"> % Shipping OTD ({{today}}) DETAILS
+                                    </th>
+                                </tr>
+
+                                <tr class="table-light">
+                                    <th style="font-weight: bolder;">Cust Name</th>
+                                    <th style="font-weight: bolder;">Lines Shipped Before <br /> or On Performance Date
+                                    </th>
+                                    <th style="font-weight: bolder;">Total Number of Lines <br /> Shipped Today</th>
+                                    <th style="font-weight: bolder; text-align: right;">OTD %</th>
+                                </tr>
+
+                                <tr *ngFor="let row of data?.onTime">
+                                    <td class="ps-3"> - {{row.so_cust}}</td>
+                                    <td>{{row.shipped_before_or_on_due_date}}</td>
+                                    <td>{{row.toal_lines_today}}</td>
+                                    <td style="white-space:nowrap;" class="text-end">
+                                        {{row.shipped_before_or_on_due_date/row.toal_lines_today*100 | number :
+                                        '1.2-2'}} %
+                                    </td>
+                                </tr>
+                                <tr *ngIf="!data?.onTime.length">
+                                    <td colspan="4">No details found.</td>
+                                </tr>
+                            </ng-container>
+
+                            <ng-container *ngIf="row.isVisible && row.id == '20'">
+                                <tr>
+                                    <th>Inventory Turns</th>
+                                    <th> Less than 1</th>
+                                    <th colspan="3"> Greater than or equal to 1</th>
+                                </tr>
+
+                                <tr>
+                                    <th class="ps-3"> - RMLV</th>
+                                    <td>{{data?.eye01?.lessthanone | currency}}</td>
+                                    <td colspan="3">{{data?.eye01?.greaterthanorequaltoone | currency}}</td>
+                                </tr>
+
+
+                                <tr>
+                                    <th class="ps-3"> - FGLV</th>
+                                    <td>{{data?.fgLV?.lessthanone | currency}}</td>
+                                    <td colspan="3">{{data?.fgLV?.greaterthanorequaltoone | currency}}</td>
+                                </tr>
+
+                                <tr>
+                                    <th class="ps-3"> - JX</th>
+                                    <td>{{data?.jx01?.lessthanone | currency}}</td>
+                                    <td colspan="3">{{data?.jx01?.greaterthanorequaltoone | currency}}</td>
+                                </tr>
+
+                                <tr>
+                                    <th class="ps-3"> - All</th>
+                                    <td>{{data?.all?.lessthanone | currency}}</td>
+                                    <td colspan="3">{{data?.all?.greaterthanorequaltoone | currency}}</td>
+                                </tr>
+                            </ng-container>
+
+                            <ng-container *ngIf="row.isVisible && row.id == '21'">
+
+                                <tr class="table-light">
+                                    <th colspan="4" style="font-weight: bolder;">Late Reason Codes (Today)</th>
+                                </tr>
+                                <tr>
+                                    <th style="font-weight: bolder;">Name</th>
+                                    <th colspan="3" style="font-weight: bolder;">Total</th>
+                                </tr>
+
+
+                                <tr *ngFor="let row of logistics?.lateReasonCodes">
+                                    <td width="80" style="font-weight: bolder;" class="ps-3"> - {{row.lateReasonCode}}
+                                    </td>
+                                    <td colspan="3">{{row.value || 0}}</td>
+                                </tr>
+
+                                <tr *ngIf="!logistics?.lateReasonCodes?.length">
+                                    <td colspan="4">No reason codes found.</td>
+                                </tr>
+                            </ng-container>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="content-grid col-lg-6">
         <div class="card">
             <div class="card-header">
                 <h4 class="card-title mb-0 flex-grow-1">Daily Report as of {{todayAsOf}}</h4>
@@ -95,7 +222,7 @@
                             </tr>
 
                             <tr>
-                                <td width="80" style="font-weight: bolder;">Future Open Revenue</td>
+                                <td width="80" style="font-weight: bolder;">Future Open Revenue, Current Month </td>
                                 <td colspan="3">{{logistics?.openRevenue?.VALUE || 0 | currency}}</td>
                             </tr>
 
@@ -109,8 +236,8 @@
                             </tr>
                             <tr class="table-light">
                                 <th style="font-weight: bolder;">Cust Name</th>
-                                <th style="font-weight: bolder;">Lines Shipped Before <br/> or On Performance Date</th>
-                                <th style="font-weight: bolder;">Total Number of Lines <br/> Shipped Today</th>
+                                <th style="font-weight: bolder;">Lines Shipped Before <br /> or On Performance Date</th>
+                                <th style="font-weight: bolder;">Total Number of Lines <br /> Shipped Today</th>
                                 <th style="font-weight: bolder; text-align: right;">OTD %</th>
                             </tr>
 
@@ -118,7 +245,8 @@
                                 <td class="ps-3"> - {{row.so_cust}}</td>
                                 <td>{{row.shipped_before_or_on_due_date}}</td>
                                 <td>{{row.toal_lines_today}}</td>
-                                <td style="white-space:nowrap;" class="text-end">{{row.shipped_before_or_on_due_date/row.toal_lines_today*100 | number : '1.2-2'}} %
+                                <td style="white-space:nowrap;" class="text-end">
+                                    {{row.shipped_before_or_on_due_date/row.toal_lines_today*100 | number : '1.2-2'}} %
                                 </td>
                             </tr>
                             <tr *ngIf="!data?.onTime.length">
@@ -213,7 +341,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 
 <div class="row" *ngIf="!isLoading">

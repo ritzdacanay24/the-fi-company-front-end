@@ -32,6 +32,16 @@ const routes: Routes = [
         loadChildren: () => import('./rfq/rfq-routing.module').then(m => m.RfqRoutingModule),
         data: { preload: true }
       },
+      {
+        path: 'vehicle-inspection',
+        loadChildren: () => import('./vehicle-inspection/vehicle-inspection-routing.module').then(m => m.VehicleInspectionRoutingModule),
+        data: { preload: true }
+      },
+      {
+        path: 'forklift-inspection',
+        loadChildren: () => import('./forklift-inspection/forklift-inspection-routing.module').then(m => m.ForkliftInspectionRoutingModule),
+        data: { preload: true }
+      },
     ]
   }
 ]

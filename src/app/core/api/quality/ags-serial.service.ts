@@ -17,4 +17,7 @@ export class AgsSerialService extends DataService<any> {
   getList = async (selectedViewType: string, dateFrom: string, dateTo: string, isAll = false) =>
     await firstValueFrom(this.http.get<any[]>(`${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`));
 
+  checkIfSerialIsFound = async (assetNumber) =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/checkIfSerialIsFound?assetNumber=${assetNumber}`));
+
 }

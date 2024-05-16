@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { VehicleFormComponent } from '../vehicle-form/vehicle-form.component';
 import { NAVIGATION_ROUTE } from '../vehicle-constant';
@@ -25,7 +25,6 @@ export class VehicleCreateComponent {
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
     private attachmentsService: AttachmentsService
-
   ) { }
 
   ngOnInit(): void {
@@ -49,7 +48,6 @@ export class VehicleCreateComponent {
 
   setFormEmitter($event) {
     this.form = $event;
-
     this.form.patchValue({
       createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
       createdBy: this.authenticationService.currentUserValue.id
@@ -99,6 +97,4 @@ export class VehicleCreateComponent {
       this.myFiles.push(event.target.files[i]);
     }
   }
-
-
 }

@@ -55,9 +55,8 @@ export class AddressSearchComponent implements OnInit {
     this.notifyParent.emit(data);
     if (this.clearSearch)
       setTimeout(() => {
-        this.value = null
-      }, 0)
-
+        this.value = null;
+      }, 0);
   }
 
   @Input() addTag: AddTagFn | boolean = false

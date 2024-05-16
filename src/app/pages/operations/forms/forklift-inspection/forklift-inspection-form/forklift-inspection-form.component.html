@@ -1,0 +1,124 @@
+<form [formGroup]="form" autocomplete="off">
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+
+            <div class="mb-3">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" formControlName="date_created"
+                    [ngClass]="{ 'is-invalid': submitted && f['date_created'].errors }">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Department</label>
+                <select class="form-select" id="department" formControlName="department"
+                    [ngClass]="{ 'is-invalid': submitted && f['department'].errors }">
+                    <option value="" selected disabled>--SELECT--</option>
+                    <option *ngFor="let row of formValues?.department" [value]="row.name">{{row.name}}</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Shift</label>
+                <select class="form-select" id="department" formControlName="shift"
+                    [ngClass]="{ 'is-invalid': submitted && f['shift'].errors }">
+                    <option value="" selected disabled>--SELECT--</option>
+                    <option *ngFor="let row of formValues?.shift" [value]="row.name">{{row.name}}</option>
+                </select>
+            </div>
+
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="mb-3">
+                <label class="form-label">Operator</label>
+                <input type="text" class="form-control" formControlName="operator"
+                    [ngClass]="{ 'is-invalid': submitted && f['operator'].errors }">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Lift #</label>
+                <select class="form-select" formControlName="model_number"
+                    [ngClass]="{ 'is-invalid': submitted && f['model_number'].errors }">
+                    <option value="" selected disabled>--SELECT--</option>
+                    <optgroup *ngFor="let row of formValues?.models">
+                        <option>{{row.name}}</option>
+                        <option *ngFor="let row1 of row.details">{{row1.name}}</option>
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <p class="mb-3">
+        Safety and Operational Checks (Prior to each shift) Have a qualified mechanix correct all problem.</p>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-3" *ngFor="let row of formValues?.checklist; let i = index">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="white-space: normal;">{{row.name}}</th>
+                            <th>
+                                <div class="form-check form-check-flat form-check-success m-0 p-0">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" class="form-check-input" id="status-{{i}}"
+                                            [(ngModel)]="row.status" [ngModelOptions]="{standalone: true}"
+                                            (change)="groupSelect(row, row.details, 'status')"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Pass
+                                    </label>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" class="form-check-input" id="needMaint-{{i}}"
+                                            [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
+                                            (change)="groupSelect(row, row.details, 'needMaint')" [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Fail
+                                    </label>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="align-middle">
+                        <tr *ngFor="let row1 of row.details; let ii = index;">
+                            <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
+                                    class="text-danger" *ngIf="row1.error">(Required)</span></td>
+                            <td style="width:80px;">
+                                <div class="form-check form-check-success m-0 p-0">
+                                    <label class="form-check-label" for="s{{ii}}">
+                                        <input type="radio" class="form-check-input" id="s{{ii}}"
+                                            name="{{row.name}}{{row1.name}}{{ii}}" [(ngModel)]="row1.status"
+                                            [ngModelOptions]="{standalone: true}" [value]="1"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame mb-2"></i> Pass
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="width:220px;">
+                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
+                                    <label class="form-check-label" for="v{{ii}}1">
+                                        <input type="radio" class="form-check-input" id="v{{ii}}1"
+                                            [(ngModel)]="row1.status" [ngModelOptions]="{standalone: true}"
+                                            name="{{row.name}}{{row1.name}}{{ii}}" [value]="0"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Fail
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="form-group">
+                <label for="comment">Additional Comments:</label>
+                <textarea class="form-control" rows="10" id="comment" formControlName="comments" required></textarea>
+            </div>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,199 @@
+{
+    "status": "Live Report",
+    "last_refreshed": "2024-05-09 11:05:29",
+    "wip": 335740.915,
+    "inventory_value": 6534713.25,
+    "shipping_open_overdue_and_due_today_lines": 12,
+    "shipping_open_overdue_and_due_today_value": 237291.7,
+    "shipping_total_shipped_value": 112144.72,
+    "total_shipped_today_lines": 9,
+    "percent_plan_overall_completed": 2.06896551724138,
+    "total_open": 435,
+    "value_percentage_today_completed": 23.421775,
+    "total_open_value_today": 173787,
+    "on_time_delivery_today": 6,
+    "on_time_delivery_today_percent": 66.66666666666666,
+    "total_lines_due_today": 9,
+    "total_open_value": 10182817.15,
+    "transit_total_ext_cost": 1558805.658227,
+    "intgrtd_total_ext_cost": null,
+    "reject_total_ext_cost": 13355.4887,
+    "onTime": [
+        {
+            "shipped_before_or_on_due_date": 3,
+            "shipped_after_due_date": 0,
+            "total_shipped_today": 3,
+            "total_value_shipped_today": 21550.64,
+            "toal_lines_today": 3,
+            "so_cust": "ATI"
+        },
+        {
+            "shipped_before_or_on_due_date": 3,
+            "shipped_after_due_date": 0,
+            "total_shipped_today": 3,
+            "total_value_shipped_today": 40704,
+            "toal_lines_today": 3,
+            "so_cust": "BALTEC"
+        },
+        {
+            "shipped_before_or_on_due_date": 0,
+            "shipped_after_due_date": 2,
+            "total_shipped_today": 2,
+            "total_value_shipped_today": 34110.58,
+            "toal_lines_today": 2,
+            "so_cust": "INTGAM"
+        },
+        {
+            "shipped_before_or_on_due_date": 0,
+            "shipped_after_due_date": 1,
+            "total_shipped_today": 1,
+            "total_value_shipped_today": 15779.5,
+            "toal_lines_today": 1,
+            "so_cust": "Other"
+        }
+    ],
+    "eye01": {
+        "lessthanone": 2001480.08131521,
+        "greaterthanorequaltoone": 4157929.26575121,
+        "total": 6159409.34706642
+    },
+    "jx01": {
+        "lessthanone": 78300.6,
+        "greaterthanorequaltoone": 159933.1278,
+        "total": 238233.7278
+    },
+    "all": {
+        "lessthanone": 2046105.78551521,
+        "greaterthanorequaltoone": 4250373.73316939,
+        "total": 6296479.5186846
+    },
+    "fgLV": {
+        "lessthanone": 42734.7042,
+        "greaterthanorequaltoone": 92444.46741818,
+        "total": 135179.17161818
+    },
+    "ss": {
+        "total": 1891
+    },
+    "getThreeMonthsRevenue": {
+        "value": 3141149.21
+    },
+    "production": {
+        "production_routing_20": {
+            "due": {
+                "due_open": 3,
+                "due_completed_today": 0,
+                "due_total": 3,
+                "total_overdue_orders": 110,
+                "due_percent": 0
+            }
+        }
+    },
+    "scheduledJobs": [
+        {
+            "id": 666,
+            "createdDate": "2024-05-08 16:00:21",
+            "data": {
+                "ss": {
+                    "total": 1891
+                },
+                "all": {
+                    "total": 6418295.9088446,
+                    "lessthanone": 2046291.78551521,
+                    "greaterthanorequaltoone": 4372004.12332939
+                },
+                "wip": 270230,
+                "fgLV": {
+                    "total": 163550.02180818,
+                    "lessthanone": 42734.7042,
+                    "greaterthanorequaltoone": 120815.31760818
+                },
+                "jx01": {
+                    "total": 238233.7278,
+                    "lessthanone": 78300.6,
+                    "greaterthanorequaltoone": 159933.1278
+                },
+                "eye01": {
+                    "total": 6252854.88703642,
+                    "lessthanone": 2001666.08131521,
+                    "greaterthanorequaltoone": 4251188.80572121
+                },
+                "onTime": [
+                    {
+                        "so_cust": "AMEGAM",
+                        "toal_lines_today": 3,
+                        "total_shipped_today": 3,
+                        "shipped_after_due_date": 2,
+                        "total_value_shipped_today": 2500,
+                        "shipped_before_or_on_due_date": 1
+                    },
+                    {
+                        "so_cust": "ATI",
+                        "toal_lines_today": 1,
+                        "total_shipped_today": 1,
+                        "shipped_after_due_date": 0,
+                        "total_value_shipped_today": 19826.58,
+                        "shipped_before_or_on_due_date": 1
+                    },
+                    {
+                        "so_cust": "BALTEC",
+                        "toal_lines_today": 7,
+                        "total_shipped_today": 7,
+                        "shipped_after_due_date": 1,
+                        "total_value_shipped_today": 82482.55,
+                        "shipped_before_or_on_due_date": 6
+                    },
+                    {
+                        "so_cust": "INTGAM",
+                        "toal_lines_today": 33,
+                        "total_shipped_today": 33,
+                        "shipped_after_due_date": 4,
+                        "total_value_shipped_today": 2637.75,
+                        "shipped_before_or_on_due_date": 29
+                    },
+                    {
+                        "so_cust": "Other",
+                        "toal_lines_today": 1,
+                        "total_shipped_today": 1,
+                        "shipped_after_due_date": 0,
+                        "total_value_shipped_today": 10392.81,
+                        "shipped_before_or_on_due_date": 1
+                    }
+                ],
+                "status": "Live Report",
+                "production": {
+                    "production_routing_20": {
+                        "due": {
+                            "due_open": 32,
+                            "due_total": 35,
+                            "due_percent": 8.571428571428571,
+                            "due_completed_today": 3,
+                            "total_overdue_orders": 82
+                        }
+                    }
+                },
+                "total_open": 429,
+                "scheduledJobs": [],
+                "last_refreshed": "2024-05-08 16:00:03",
+                "inventory_value": 6656529.64,
+                "total_open_value": 10292391.87,
+                "getThreeMonthsRevenue": {
+                    "value": 3140549.21
+                },
+                "reject_total_ext_cost": 26109.5261,
+                "total_lines_due_today": 45,
+                "intgrtd_total_ext_cost": null,
+                "on_time_delivery_today": 38,
+                "total_open_value_today": 98527.58,
+                "transit_total_ext_cost": 1558805.658227,
+                "total_shipped_today_lines": 45,
+                "shipping_total_shipped_value": 117839.69,
+                "on_time_delivery_today_percent": 84.44444444444444,
+                "percent_plan_overall_completed": 10.4895104895105,
+                "value_percentage_today_completed": 100,
+                "shipping_open_overdue_and_due_today_lines": 12,
+                "shipping_open_overdue_and_due_today_value": 161408.82
+            }
+        }
+    ]
+}

@@ -9,4 +9,4 @@ import { VehicleRoutingModule } from './vehicle-routing.module';
     VehicleComponent
   ]
 })
-export class VehicleModule { }
+export class VehicleInspectionModule { }

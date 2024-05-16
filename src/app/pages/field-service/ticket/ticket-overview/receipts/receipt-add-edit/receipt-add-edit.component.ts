@@ -173,8 +173,6 @@ export class ReceiptAddEditComponent implements OnInit {
       compressedFile = files[0];
     }
 
-
-
     let data = new FormData();
     data.append('document', compressedFile, compressedFile.name);
 

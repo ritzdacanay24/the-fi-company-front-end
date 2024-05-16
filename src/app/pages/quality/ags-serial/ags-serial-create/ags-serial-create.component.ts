@@ -8,6 +8,7 @@ import { NAVIGATION_ROUTE } from '../ags-serial-constant';
 import { AgsSerialService } from '@app/core/api/quality/ags-serial.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Component({
   standalone: true,
@@ -71,6 +72,18 @@ export class AgsSerialCreateComponent {
 
 
     if (this.form.invalid) return;
+
+    if (this.form.value?.generated_SG_asset) {
+      let data = await this.api.checkIfSerialIsFound(this.form.value?.generated_SG_asset);
+
+      if (data) {
+        const { value: accept } = await SweetAlert.confirmV1({
+          title: "Duplicate AGS serial found. Are you sure you want to continue?"
+        })
+        if (!accept) return;
+      }
+    }
+
 
     try {
       this.isLoading = true;

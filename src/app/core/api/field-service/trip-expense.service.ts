@@ -19,6 +19,14 @@ export class TripExpenseService {
       }));
   };
 
+  predictInvoiceApi = async (params: any) => {
+    return firstValueFrom(this.http.post(`https://api.mindee.net/v1/products/mindee/invoices/v4/predict`,
+      params,
+      {
+        headers: { Authorization: `Token 8e7001abc09642659a7ff08f22509226` },
+      }));
+  };
+
   getByWorkOrderId(workOrderId) {
     return firstValueFrom(this.http.get(`${url}/getByWorkOrderId.php?workOrderId=${workOrderId}`))
   }

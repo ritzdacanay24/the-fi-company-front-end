@@ -195,9 +195,9 @@ export class NcrMainComponent implements OnInit {
       this.form.disable()
     }
 
-    if (this.form?.value?.created_by != this.currentUserId.id && this.currentUserId.isAdmin == 0) {
-      this.form.disable()
-    }
+    // if (this.form?.value?.created_by != this.currentUserId.id && this.currentUserId.isAdmin == 0) {
+    //   this.form.disable()
+    // }
 
 
   }

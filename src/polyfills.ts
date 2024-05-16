@@ -56,3 +56,5 @@ import 'intersection-observer';
 /***************************************************************************************************
  * APPLICATION IMPORTS
  */
+
+(window as any).global = window;

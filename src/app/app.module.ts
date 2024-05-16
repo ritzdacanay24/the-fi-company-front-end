@@ -39,6 +39,7 @@ import { LightboxModule } from 'ngx-lightbox';
 import { FlatpickrModule } from 'angularx-flatpickr';
 import { CanDeactivateGuard } from './core/guards/CanDeactivateGuard';
 
+import { DragulaModule } from 'ng2-dragula';
 
 export function createTranslateLoader(http: HttpClient): any {
   return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
@@ -49,6 +50,7 @@ export function createTranslateLoader(http: HttpClient): any {
     AppComponent
   ],
   imports: [
+    DragulaModule.forRoot(),
     FormsModule,
     TranslateModule.forRoot({
       defaultLanguage: 'en',

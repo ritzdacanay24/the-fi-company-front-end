@@ -662,13 +662,13 @@
               <tr>
                 <th rowspan="2" class="table-active" style="width:150px">{{row.location_name || 'Location'}}</th>
                 <th>{{row.address}} {{row.address1}}</th>
-                <th class="table-active">{{row.end_datetime_name}}</th>
-                <th>{{row.end_datetime}}</th>
+                <th class="table-active">{{row.start_datetime_name}}</th>
+                <th>{{row.start_datetime | date: 'MM/dd/yyyy hh:mm a'}}</th>
               </tr>
               <tr>
                 <th>{{row.city}}, {{row.state}} {{row.zip_code}}</th>
-                <th class="table-active">{{row.start_datetime_name}}</th>
-                <th>{{row.start_datetime}}</th>
+                <th class="table-active">{{row.end_datetime_name}}</th>
+                <th>{{row.end_datetime | date: 'MM/dd/yyyy hh:mm a'}}</th>
               </tr>
               <tr *ngIf="row.type_of_travel == 'rental_car'">
                 <th class="table-active" style="width:150px">Driver</th>

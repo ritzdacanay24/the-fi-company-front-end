@@ -14,6 +14,13 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
         }
       });
 
+    }else if (request.url.indexOf("https://api.mindee.net/v1/products/mindee/invoices/v4/predict") == 0) {
+      request = request.clone({
+        url: request.url, setHeaders: {
+          Authorization: `Token 8e7001abc09642659a7ff08f22509226`
+        }
+      });
+
     } else if (request.url.indexOf("assets/i18n/en.json") == 0) {
     } else if (request.url.indexOf("https://") == 0) {
       request = request.clone({ url: request.url });

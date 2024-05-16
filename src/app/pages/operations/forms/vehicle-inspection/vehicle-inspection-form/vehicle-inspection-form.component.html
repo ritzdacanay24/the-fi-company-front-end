@@ -1,0 +1,106 @@
+<form [formGroup]="form" autocomplete="off">
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="form-group">
+                <label for="date" class="control-label">Inspector Name</label>
+                <input type="type" class="form-control" placeholder="Enter inspectors name"
+                    formControlName="created_by"
+                    [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="form-group">
+                <label for="date" class="control-label">Truck License Plate</label>
+                <input type="type" class="form-control" id="date" name="date" placeholder="Enter license plate number"
+                    formControlName="truck_license_plate"
+                    [ngClass]="{ 'is-invalid': submitted && f['truck_license_plate'].errors }">
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-3" *ngFor="let row of formValues?.checklist; let i = index">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="white-space: normal;">{{row.name}}</th>
+                            <th>
+                                <div class="form-check form-check-flat form-check-success m-0 p-0">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" class="form-check-input" id="status-{{i}}"
+                                            [(ngModel)]="row.status" [ngModelOptions]="{standalone: true}"
+                                            (change)="groupSelect(row, row.details, 'status')"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Pass
+                                    </label>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" class="form-check-input" id="needMaint-{{i}}"
+                                            [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
+                                            (change)="groupSelect(row, row.details, 'needMaint')" [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Fail
+                                    </label>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let row1 of row.details; let ii = index;">
+                            <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
+                                    class="text-danger" *ngIf="row1.error">(Required)</span>
+                            </td>
+                            <td style="width:80px;cursor:pointer;text-align:center">
+                                <div class="form-check  form-check-success m-0 p-0">
+                                    <label class="form-check-label" for="s{{ii}}">
+                                        <input type="radio" class="form-check-input" id="s{{ii}}"
+                                            name="{{row.name}}{{row1.name}}{{ii}}" [(ngModel)]="row1.status"
+                                            [ngModelOptions]="{standalone: true}" [value]="1"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Pass
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="width:220px;cursor:pointer;text-align:center">
+                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
+                                    <label class="form-check-label" for="v{{ii}}1">
+                                        <input type="radio" class="form-check-input" id="v{{ii}}1"
+                                            [(ngModel)]="row1.status" [ngModelOptions]="{standalone: true}"
+                                            name="{{row.name}}{{row1.name}}{{ii}}" [value]="0"
+                                            [disabled]="this.form.disabled">
+                                        <i class="input-frame"></i> Fail
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12 mb-3">
+            <div class="form-group">
+                <label for="comment">Additional Comments:</label>
+                <textarea class="form-control" rows="10" id="comment" formControlName="comments" required></textarea>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- <div>
+        <h4>Attachments</h4>
+        <p *ngIf="mainData?.attachments?.length == 0">No Attachment found.
+        <p>
+
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center pointer"
+                (click)="viewImage(row)" *ngFor="let row of mainData?.attachments; let i = index">
+                {{row.fileName}}
+            </li>
+        </ul>
+    </div> -->
+</form>

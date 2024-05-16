@@ -436,7 +436,7 @@ export class KanbanComponent implements OnInit {
 
     onBeforeDrop(item) {
 
-    }
+    };
 
     /**
      * on dragging task
@@ -453,10 +453,10 @@ export class KanbanComponent implements OnInit {
         var end = moment(this.today, "YYYY-MM-DD");
 
         //Difference in number of days
-        let dayCount = moment.duration(end.diff(start)).asDays();
+        let dayCount = Math.round(moment.duration(end.diff(start)).asDays());
 
         if (dayCount > 100) {
-            return `More 100 days old`
+            return `More 100 days old`;
         } else if (dayCount == 0) {
             return ' Due Today ';
         } else {

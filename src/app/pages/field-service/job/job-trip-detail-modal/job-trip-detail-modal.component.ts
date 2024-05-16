@@ -107,6 +107,7 @@ export class JobTripDetailModalComponent implements OnInit {
       flight_out: "",
       flight_in: "",
       location_name: "",
+      airline_name: "",
       address: this.formBuilder.group({
         address_name: null,
         address: "",
@@ -167,6 +168,17 @@ export class JobTripDetailModalComponent implements OnInit {
   }
 
   submitted = false;
+
+  async onDelete(){
+    if(!confirm('Are you sure you want to delete?')) return;
+    try {
+      await this.tripDetailService.delete(this.rowId);
+      this.close()
+    } catch (err) {
+
+    }
+    
+  }
 
   async onSubmit() {
     this.submitted = true;

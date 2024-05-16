@@ -504,6 +504,27 @@ export const MENU: MenuItem[] = [
         ]
       },
       {
+        label: 'Forklift',
+        isCollapsed: true,
+        subItems: [
+          {
+            label: 'List Forklift',
+            link: '/dashboard/operations/forms/forklift-inspection/list',
+            description: "Forklift List"
+          },
+          {
+            label: 'Create Forklift',
+            link: '/dashboard/operations/forms/forklift-inspection/create',
+            description: "Forklift Create"
+          },
+          {
+            label: 'Edit Forklift',
+            link: '/dashboard/operations/forms/forklift-inspection/edit',
+            description: "Forklift Edit"
+          }
+        ]
+      },
+      {
         label: 'Placard',
         isCollapsed: true,
         subItems: [
@@ -542,6 +563,24 @@ export const MENU: MenuItem[] = [
             label: 'Edit IGT Transfer',
             link: '/dashboard/operations/forms/igt-transfer/edit',
             description: "IGT Transfer Edit"
+          }
+        ]
+      },
+      {
+        label: 'Vehicle Inspection',
+        isCollapsed: true,
+        subItems: [
+          {
+            label: 'List Vehicle Inspections',
+            link: '/dashboard/operations/forms/vehicle-inspection/list',
+          },
+          {
+            label: 'Create Vehicle Inspection',
+            link: '/dashboard/operations/forms/vehicle-inspection/create',
+          },
+          {
+            label: 'Edit Vehicle Inspection',
+            link: '/dashboard/operations/forms/vehicle-inspection/edit',
           }
         ]
       },

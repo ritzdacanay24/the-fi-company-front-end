@@ -51,6 +51,7 @@ export class MaterialRequestCreateComponent {
     this.form.patchValue({
       main: {
         createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+        dueDate: moment().format('YYYY-MM-DD'),
         createdBy: this.authenticationService.currentUserValue.id,
         requestor: this.authenticationService.currentUserValue.full_name,
       }
