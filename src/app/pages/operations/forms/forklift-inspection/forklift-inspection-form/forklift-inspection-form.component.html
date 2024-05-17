@@ -58,7 +58,7 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="align-middle">
+                    <tbody style="white-space: nowrap;">
                         <tr *ngFor="let row1 of row.details; let ii = index;">
                             <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
                                     class="text-danger" *ngIf="row1.error">(Required)</span></td>
