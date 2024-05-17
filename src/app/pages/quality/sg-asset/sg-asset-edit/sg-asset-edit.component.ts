@@ -124,7 +124,7 @@ I03gW0F8024,hG07803C,hJ028,,:::^FS
 EOL
 `
       var printwindow = window.open('', 'PRINT', 'height=500,width=600');
-      printwindow.document.write(cmds);
+      printwindow.document.write(cmds.replace(/(.{80})/g, "$1<br>"));
       printwindow.document.close(); // necessary for IE >= 10
       printwindow.focus(); // necessary for IE >= 10
       printwindow.print();

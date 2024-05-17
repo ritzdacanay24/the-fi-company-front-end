@@ -1,39 +1,16 @@
 <form [formGroup]="form" autocomplete="off">
     <div class="row">
-        <div class="col-lg-6 mb-3">
-
-            <div class="mb-3">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-control" formControlName="date_created"
-                    [ngClass]="{ 'is-invalid': submitted && f['date_created'].errors }">
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Department</label>
-                <select class="form-select" id="department" formControlName="department"
-                    [ngClass]="{ 'is-invalid': submitted && f['department'].errors }">
-                    <option value="" selected disabled>--SELECT--</option>
-                    <option *ngFor="let row of formValues?.department" [value]="row.name">{{row.name}}</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Shift</label>
-                <select class="form-select" id="department" formControlName="shift"
-                    [ngClass]="{ 'is-invalid': submitted && f['shift'].errors }">
-                    <option value="" selected disabled>--SELECT--</option>
-                    <option *ngFor="let row of formValues?.shift" [value]="row.name">{{row.name}}</option>
-                </select>
-            </div>
-
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Date</label>
+            <input type="datetime-local" class="form-control" formControlName="date_created"
+                [ngClass]="{ 'is-invalid': submitted && f['date_created'].errors }">
         </div>
-        <div class="col-lg-6 mb-3">
-            <div class="mb-3">
-                <label class="form-label">Operator</label>
-                <input type="text" class="form-control" formControlName="operator" placeholder="Enter your full name"
-                    [ngClass]="{ 'is-invalid': submitted && f['operator'].errors }">
-            </div>
-
+        <div class="col-lg-4 mb-3">
+            <label class="form-label">Operator</label>
+            <input type="text" class="form-control" formControlName="operator" placeholder="Enter your full name"
+                [ngClass]="{ 'is-invalid': submitted && f['operator'].errors }">
+        </div>
+        <div class="col-lg-4 mb-3">
             <div class="form-group">
                 <label class="form-label">Lift #</label>
                 <select class="form-select" formControlName="model_number"
@@ -41,7 +18,7 @@
                     <option value="" selected disabled>--SELECT--</option>
                     <optgroup *ngFor="let row of formValues?.models">
                         <option>{{row.name}}</option>
-                        <option *ngFor="let row1 of row.details">{{row1.name}}</option>
+                        <option *ngFor="let row1 of row.details" [value]="row1.name">{{row1.name}}</option>
                     </optgroup>
                 </select>
             </div>
@@ -73,7 +50,8 @@
                                     <label class="form-check-label">
                                         <input type="checkbox" class="form-check-input" id="needMaint-{{i}}"
                                             [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
-                                            (change)="groupSelect(row, row.details, 'needMaint')" [disabled]="this.form.disabled">
+                                            (change)="groupSelect(row, row.details, 'needMaint')"
+                                            [disabled]="this.form.disabled">
                                         <i class="input-frame"></i> Fail
                                     </label>
                                 </div>

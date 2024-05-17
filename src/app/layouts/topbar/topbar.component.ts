@@ -62,6 +62,10 @@ export class TopbarComponent implements OnInit {
     }
   }
 
+  refresh() {
+    window.location.reload();
+  }
+
 
   constructor(@Inject(DOCUMENT) private document: any, private eventService: EventService, public languageService: LanguageService, private modalService: NgbModal,
     public _cookiesService: CookieService, public translate: TranslateService, private authService: AuthenticationService,
@@ -110,7 +114,7 @@ export class TopbarComponent implements OnInit {
 
   changeModeZoom(row) {
     // @ts-ignore comment
-    document.body.style.zoom = row + "%" 
+    document.body.style.zoom = row + "%"
 
   }
 
@@ -181,7 +185,7 @@ export class TopbarComponent implements OnInit {
     this.store.dispatch(changeMode({ mode }));
 
     let theme = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT)) || JSON.parse(JSON.stringify(initialState));;
-    
+
 
     if (semi) {
       document.documentElement.setAttribute('data-bs-theme', "light");
@@ -209,7 +213,7 @@ export class TopbarComponent implements OnInit {
     }
 
     theme.LAYOUT_MODE = mode;
-    
+
     setThemeColor(theme)
 
     localStorage.setItem(THE_FI_COMPANY_LAYOUT, JSON.stringify(theme))

@@ -73,7 +73,6 @@ export class ForkliftInspectionListComponent implements OnInit {
         { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
         { field: 'date_created', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
         { field: 'model_number', headerName: 'Model number', filter: 'agMultiColumnFilter' },
-        { field: 'shift', headerName: 'Shift', filter: 'agMultiColumnFilter' },
         { field: 'operator', headerName: 'Operator', filter: 'agMultiColumnFilter' },
         { field: 'passed_count', headerName: 'Passed', filter: 'agMultiColumnFilter' },
         { field: 'failed_count', headerName: 'Failed', filter: 'agMultiColumnFilter' },

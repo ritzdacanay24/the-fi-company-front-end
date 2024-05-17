@@ -73,13 +73,11 @@ export class ForkliftInspectionEditComponent {
             this.attachments = data?.attachments;
             this.form.patchValue({
                 ...data.main,
-                date_created: moment(data.main.date_created).format('YYYY-MM-DD'),
                 details: data?.details
             });
 
             this.formValues = {
                 ...formData,
-                date_created: moment(data.main.date_created).format('YYYY-MM-DD'),
                 checklist: data?.details
             };
 
@@ -93,13 +91,6 @@ export class ForkliftInspectionEditComponent {
 
     setFormEmitter($event) {
         this.form = $event;
-
-        this.form.patchValue({
-            created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-            date_created: moment().format('YYYY-MM-DD'),
-            created_by_id: this.authenticationService.currentUserValue.id,
-            created_by_name: this.authenticationService.currentUserValue.full_name,
-        }, { emitEvent: false })
     }
 
     details
