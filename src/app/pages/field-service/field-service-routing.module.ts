@@ -47,6 +47,10 @@ const routes: Routes = [
     path: 'credit-card-transaction',
     loadChildren: () => import('./credit-card-transaction/credit-card-transaction-routing.module').then(m => m.CreditCardTransactionRoutingModule)
   },
+  {
+    path: 'parts-order',
+    loadChildren: () => import('./parts-order/parts-order-routing.module').then(m => m.PartsOrderRoutingModule)
+  },
 ]
 
 @NgModule({

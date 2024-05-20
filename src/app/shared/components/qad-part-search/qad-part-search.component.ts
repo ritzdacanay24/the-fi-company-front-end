@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
 import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, startWith, switchMap, tap } from 'rxjs';
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
 import { AddTagFn, NgSelectComponent } from '@ng-select/ng-select/lib/ng-select.component';
@@ -11,7 +10,6 @@ import { QadService } from '@app/core/api/qad/sales-order-search.service';
   standalone: true,
   imports: [
     SharedModule,
-    TranslateModule,
     ReactiveFormsModule,
     NgSelectModule
   ],

@@ -37,6 +37,10 @@ const routes: Routes = [
     path: 'qir',
     loadChildren: () => import('./qir/qir-routing.module').then(m => m.QirRoutingModule)
   },
+  {
+    path: 'mrb',
+    loadChildren: () => import('./mrb/mrb-routing.module').then(m => m.MrbRoutingModule)
+  },
 ]
 
 @NgModule({

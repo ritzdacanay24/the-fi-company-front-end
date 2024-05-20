@@ -1,0 +1,88 @@
+<form [formGroup]="form" autocomplete="off">
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">OEM</label>
+            <input class="form-control" type="text" formControlName="oem" placeholder="Enter OEM"
+                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Shipping Method</label>
+            <input class="form-control" type="text" formControlName="shipping_method"
+                placeholder="Enter Shipping Method"
+                [ngClass]="{ 'is-invalid': submitted && f.shipping_method.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
+                [disabled]="this.form.disabled" [form_label]="'Search by address'"
+                placeholder="Enter Address Information"></app-address-search>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Casino Name</label>
+            <input class="form-control" type="text" formControlName="casino_name"
+                [ngClass]="{ 'is-invalid': submitted && f.casino_name.errors }" placeholder="Enter Casino Name" />
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Contact Name</label>
+            <input class="form-control" type="text" formControlName="contact_name"
+                [ngClass]="{ 'is-invalid': submitted && f.contact_name.errors }" placeholder="Enter Contact Name" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Contact Phone Number</label>
+            <input class="form-control" type="text" formControlName="contact_phone_number"
+                placeholder="Enter Contact Phone Number"
+                [ngClass]="{ 'is-invalid': submitted && f.contact_phone_number.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Billable</label>
+            <input class="form-control" type="text" formControlName="billable" placeholder="Enter Billable Information"
+                [ngClass]="{ 'is-invalid': submitted && f.billable.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Part Number</label>
+            <input class="form-control" type="text" formControlName="part_number" placeholder="Enter Part Number"
+                [ngClass]="{ 'is-invalid': submitted && f.part_number.errors }" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Qty</label>
+            <input class="form-control" type="text" formControlName="part_qty" placeholder="Enter Qty"
+                [ngClass]="{ 'is-invalid': submitted && f.part_qty.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">SV number</label>
+            <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
+                [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Instructions</label>
+            <textarea class="form-control" type="text" formControlName="instructions"
+                placeholder="Enter instructions if any" [ngClass]="{ 'is-invalid': submitted && f.instructions.errors }"
+                rows="5"></textarea>
+        </div>
+    </div>
+
+</form>

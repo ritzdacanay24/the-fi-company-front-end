@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
 import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, map, of, switchMap, tap } from 'rxjs';
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
 import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
@@ -11,7 +10,6 @@ import { AddressSearch } from '@app/core/api/address-search/address-search.servi
   standalone: true,
   imports: [
     SharedModule,
-    TranslateModule,
     ReactiveFormsModule,
     NgSelectModule
   ],

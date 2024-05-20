@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumnsApi } from 'src/assets/js/util';
@@ -14,7 +13,6 @@ import { ColumnApi, GridApi } from 'ag-grid-community';
     standalone: true,
     imports: [
         SharedModule,
-        TranslateModule,
         ReactiveFormsModule,
         NgSelectModule
     ],

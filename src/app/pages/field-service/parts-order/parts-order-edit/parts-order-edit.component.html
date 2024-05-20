@@ -17,17 +17,35 @@
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> MRB {{title}} </h4>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> Parts Order {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
+        <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-parts-order-form>
+
+
+        <div class="mt-3">
+          <h4 class="mb-3">Attachments</h4>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between pointer"
+              *ngFor="let row of attachments; let i = index">
+              <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
+              <p></p>
+              <span class="text-danger pointer" (click)="deleteAttachment(row.id, i)">X</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-3 mt-3">
+          <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+        </div>
 
         <div class="mb-3">
-          <button class="btn btn-primary me-3 btn-sm" (click)="qualityManagerApproval()">Quality Manager Approval</button>
-          <button class="btn btn-primary btn-sm" (click)="vpApproval()">VP Approval</button>
+          <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary"
+            [disabled]="isLoading || myFiles?.length == 0">
+            <i class="feather icon-upload"></i> Upload Documents</button>
         </div>
 
 
-        <app-mrb-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-mrb-form>
       </div>
       <div class="card-footer d-flex d-flex" *ngIf="data && id">
         <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>

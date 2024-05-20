@@ -7,7 +7,6 @@ import { SharedModule } from '@app/shared/shared.module';
 import { TableSettingsService } from '@app/core/api/table-settings/table-settings.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { MENU } from '@app/layouts/sidebar/menu';
-import { TranslateModule } from '@ngx-translate/core';
 import { MenuItem } from '@app/layouts/sidebar/menu.model';
 import { Router } from '@angular/router';
 
@@ -59,7 +58,7 @@ export class SearchModalService {
 
 @Component({
     standalone: true,
-    imports: [SharedModule, TranslateModule, FilterPeoplePipe],
+    imports: [SharedModule, FilterPeoplePipe],
     selector: 'app-search-modal',
     templateUrl: `./search-modal.component.html`,
     styleUrls: []

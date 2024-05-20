@@ -62,6 +62,8 @@ export class AppComponent {
 
   hasUpdate = false
 
+  enableSwUpdate = false;
+
   ngOnInit(): void {
 
     this.isMobile = isMobile();
@@ -70,7 +72,7 @@ export class AppComponent {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
       setThemeColor(d);
     }
-    
+
 
     if (environment.production) {
       if (location.protocol === 'http:') {
@@ -79,7 +81,7 @@ export class AppComponent {
     }
 
     // check for platform update
-    if (this.swUpdate.isEnabled) {
+    if (this.swUpdate.isEnabled && this.enableSwUpdate) {
       interval(60000).subscribe(() =>
         this.swUpdate.checkForUpdate().then(() => {
           // checking for updates
@@ -113,7 +115,7 @@ export class AppComponent {
       if (event.type == 'NO_NEW_VERSION_DETECTED') return
     })
   }
-  
+
 
 
   async showNewVersionMessage() {

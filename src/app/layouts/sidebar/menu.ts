@@ -82,6 +82,25 @@ export const MENU: MenuItem[] = [
         ]
       },
       {
+        label: 'Parts Order',
+        icon: 'las la-tachometer-alt',
+        isCollapsed: true,
+        subItems: [
+          {
+            label: 'List Parts Order Requests',
+            link: '/dashboard/field-service/parts-order/list'
+          },
+          {
+            label: 'Create Parts Order',
+            link: '/dashboard/field-service/parts-order/create',
+          },
+          {
+            label: 'Edit Parts Order',
+            link: '/dashboard/field-service/parts-order/edit'
+          },
+        ]
+      },
+      {
         label: 'Requests',
         icon: 'las la-tachometer-alt',
         isCollapsed: true,
@@ -881,6 +900,33 @@ export const MENU: MenuItem[] = [
             label: 'Edit NCR',
             link: '/dashboard/quality/ncr/overview',
             description: "NCR edit"
+          },
+        ]
+      },
+      {
+        label: 'MRB',
+        icon: 'las la-tachometer-alt',
+        isCollapsed: true,
+        subItems: [
+          {
+            label: 'List MRB',
+            link: '/dashboard/quality/mrb/list',
+            description: "MRB list"
+          },
+          {
+            label: 'Create MRB',
+            link: '/dashboard/quality/mrb/create',
+            description: "MRB create"
+          },
+          {
+            label: 'Edit MRB',
+            link: '/dashboard/quality/mrb/edit',
+            description: "MRB edit"
+          },
+          {
+            label: 'Edit MRB',
+            link: '/dashboard/quality/mrb/overview',
+            description: "MRB edit"
           },
         ]
       },

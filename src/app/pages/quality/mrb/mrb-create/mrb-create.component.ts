@@ -29,7 +29,6 @@ export class MrbCreateComponent {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
     });
-
     if (this.id) this.getData();
   }
 
