@@ -20,7 +20,8 @@
         <h4 class="card-title mb-0 flex-grow-1 text-end"> Parts Order {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-parts-order-form>
+
+        <app-parts-order-form (setFormEmitter)="form = $event" [submitted]="submitted" [id]="id"></app-parts-order-form>
 
 
         <div class="mt-3">

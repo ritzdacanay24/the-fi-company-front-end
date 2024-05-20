@@ -1,5 +1,17 @@
 <form [formGroup]="form" autocomplete="off">
 
+
+
+    <div class="row" *ngIf="id">
+        <label class="form-label">SV number</label>
+        <div class="input-group mb-3">
+            <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
+                [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" readonly/>
+            <span class="input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()">Add SV Number</span>
+        </div>
+
+    </div>
+
     <div class="row">
         <div class="col mb-3">
             <label class="form-label">OEM</label>
@@ -65,14 +77,6 @@
             <label class="form-label">Qty</label>
             <input class="form-control" type="text" formControlName="part_qty" placeholder="Enter Qty"
                 [ngClass]="{ 'is-invalid': submitted && f.part_qty.errors }" />
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">SV number</label>
-            <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
-                [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" />
         </div>
     </div>
 

@@ -62,6 +62,7 @@ export class PartsOrderListComponent implements OnInit {
             suppressHeaderMenuButton: true,
             floatingFilter: false
         },
+        { field: 'so_number', headerName: 'SV Number', filter: 'agMultiColumnFilter' },
         { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
         { field: 'casino_name', headerName: 'Casino Name', filter: 'agMultiColumnFilter' },
         { field: 'contact_name', headerName: 'Contact Name', filter: 'agMultiColumnFilter' },
@@ -73,7 +74,6 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter' },
         { field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
         { field: 'shipping_method', headerName: 'Shippimg Method', filter: 'agMultiColumnFilter' },
-        { field: 'so_number', headerName: 'SV Number', filter: 'agMultiColumnFilter' },
     ]
 
     gridOptions = {
