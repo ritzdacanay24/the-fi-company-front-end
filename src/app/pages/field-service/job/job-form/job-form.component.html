@@ -14,7 +14,7 @@
 
 
   <div class="col p-3" ngbScrollSpy #spy="ngbScrollSpy" rootMargin="10px" [ngStyle]="ngStyle">
-    <form [formGroup]="form" autofocus="false">
+    <form [formGroup]="form" autofocus="false" autocomplete="off">
 
       <ng-container formGroupName="job">
         <div class="row" ngbScrollSpyFragment="items-1">
@@ -675,7 +675,7 @@
                 <th colspan="3">{{row.rental_car_driver}}</th>
               </tr>
             </tbody>
-            <br/>
+            <br />
           </ng-container>
         </table>
         <button class="btn btn-primary mt-0" (click)="addTripDetails()">Add Trip Details</button>

@@ -4,7 +4,7 @@
 
 <div class="modal-body py-0">
 
-  <form [formGroup]="form" autofocus="false">
+  <form [formGroup]="form" autofocus="false" autocomplete="off">
 
     <div class="mb-3">
       <select class="form-select" formControlName="type_of_travel"
@@ -75,22 +75,24 @@
         <div class="col-12">
           <label for="inputAddress2" class="form-label">Address 2</label>
           <input type="text" class="form-control" id="inputAddress2" placeholder="Apartment, studio, or floor"
-            formControlName="address1">
+            autocomplete="off" formControlName="address1">
         </div>
         <div class="col-md-6">
           <label for="inputCity" class="form-label">City</label>
-          <input type="text" class="form-control" id="inputCity" formControlName="city" placeholder="Enter city name">
+          <input type="text" class="form-control" id="inputCity" formControlName="city" placeholder="Enter city name"
+            autocomplete="off">
         </div>
         <div class="col-md-4">
           <label for="inputState" class="form-label">State</label>
-          <select class="form-select" formControlName="state">
+          <select class="form-select" formControlName="state" autocomplete="off">
             <option disabled selected value="">--Select state--</option>
             <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
           </select>
         </div>
         <div class="col-md-2">
           <label for="inputZip" class="form-label">Zip</label>
-          <input type="text" class="form-control" id="inputZip" formControlName="zip_code" placeholder="Enter zip code">
+          <input type="text" class="form-control" id="inputZip" formControlName="zip_code" placeholder="Enter zip code"
+            autocomplete="off">
         </div>
         <div class="col">
           <label class="form-label">Company Name</label>

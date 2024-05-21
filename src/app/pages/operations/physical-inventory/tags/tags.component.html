@@ -1,14 +1,301 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+
+            <div class="card-header d-flex align-items-center py-2">
+                <button class="btn btn-light" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
+
+                <div class="ms-3">
+                    <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+                </div>
+
+                <div class="ms-3">
+                    <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+                </div>
+
+                <div class="ms-3">
+                    <div ngbDropdown class="d-inline-block" container="body">
+
+                        <button type="button"
+                            class="arrow-none btn btn-light btn-label waves-effect waves-light position-relative"
+                            data-bs-toggle="dropdown" ngbDropdownToggle>
+                            <span class="ri-filter-2-line label-icon align-middle fs-16 me-2 border-end"> </span>
+                            <span
+                                class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary border-end"
+                                *ngIf="ageType !== 'All'" style="top:13px;right:107px;padding:3px"><span
+                                    class="visually-hidden">unread
+                                    messages</span></span>
+                            Grid Filters
+                        </button>
+
+
+                        <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'First_Count_Variance'}"
+                                (click)="externalFilterChanged('First_Count_Variance')">
+                                Show 1st count variance
+                            </button>
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Second_Count_Variance'}"
+                                (click)="externalFilterChanged('Second_Count_Variance')">
+                                Show 2nd count variance
+                            </button>
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Not_Posted'}"
+                                (click)="externalFilterChanged('Not_Posted')">
+                                Not posted
+                            </button>
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Need_First_Count_Printed'}"
+                                (click)="externalFilterChanged('Need_First_Count_Printed')">
+                                1st counts not printed
+                            </button>
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == '1st_counts_completed'}"
+                                (click)="externalFilterChanged('1st_counts_completed')">
+                                1st counts completed
+                            </button>
+                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Bulk_tags_with_on_hand_qty'}"
+                                (click)="externalFilterChanged('Bulk_tags_with_on_hand_qty')">
+                                Bulk tags with on hand qty
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button ngbDropdownItem (click)="externalFilterChanged('All')">Clear Filter</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary ms-3 me-3" style="padding-bottom:11px" (click)="printBlankTags()">
+                    Print Bulk Tags
+                </button>
+
+                <div title="{{completedFirstCounts}} / {{totalCount}}" class="ms-auto text-center bg-light px-3 rounded"
+                    [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedFirstCounts < totalCount,'bg-success-subtle text-success border-success-subtle border ': completedFirstCounts >= totalCount}">
+                    <p> 1st Counts </p>
+                    <span class="fw-bold">
+                        {{(completedFirstCounts / totalCount ) * 100 || 0 | number : '1.2-2' }}%
+                    </span>
+                </div>
+                <div title="{{completedSecondCounts}} / {{totalSecondCounts}}" class="ms-3 text-center bg-light px-3 rounded"
+                    [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedSecondCounts < totalSecondCounts,'bg-success-subtle text-success border-success-subtle border ': completedSecondCounts >= totalSecondCounts}">
+                    <p>2nd Counts</p>
+                    <span class="fw-bold">
+                        {{(completedSecondCounts / totalSecondCounts ) * 100 || 0 | number : '1.2-2' }}%
+                    </span>
+                </div>
+                <div class="ms-3 text-center bg-light px-3 border border-light-subtle rounded">
+                    <p title="3rd counts printed"> 3rd Counts </p>
+                    <span class="fw-bold">{{totalThirdCounts}}</span>
+                </div>
             </div>
             <div class="card-body p-0">
                 <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-                    style="height: calc(100vh - 150px);" [rowData]="data" [columnDefs]="columnDefs">
+                    style="height: calc(100vh - 159px);" [rowData]="data" [columnDefs]="columnDefs">
                 </ag-grid-angular>
             </div>
+        </div>
+    </div>
+</div>
+
+<!---->
+
+<nav class="navbar navbar-expand-sm navbar-light bg-light  rounded" style="position:fixed;bottom:25px;width: 50%;padding:5px !important;margin: 10px auto;left: 0;
+right: 0;-webkit-box-shadow:0 0 10px rgba(0, 0, 0, 0.5);
+-moz-box-shadow:0 0 10px rgba(0, 0, 0, 0.5);
+box-shadow:0 0 10px rgba(0, 0, 0, 0.5);white-space: nowrap!important;overflow:hidden;" *ngIf="selectedRowCount > 0">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <div class="d-flex bg-primary rounded">
+                <button class="btn btn-primary btn-sm" style="font-size:20px;min-width:45px">
+                    {{selectedRowCount}}
+                </button>
+            </div>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3">
+                <li class="nav-item">
+                    <button class="btn btn-light btn-sm" (click)="printSelected(1)">
+                        <i class="bx bx-printer" style="font-size:18px"></i>
+                        <div>Print 1st Counts</div>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-light btn-sm" (click)="printSelected(2)">
+                        <i class="bx bx-printer" style="font-size:18px"></i>
+                        <div>Print 2nd Counts</div>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-light btn-sm" (click)="printSelected(3)">
+                        <i class="bx bx-printer" style="font-size:18px"></i>
+                        <div>Print 3rd Counts</div>
+                    </button>
+                </li>
+                <li class="nav-item my-auto">
+                    <div class="form-check">
+                        <input type="checkbox" [ngModel]="include_blank_after_each_bay"
+                            (ngModelChange)="testMethod($event)">
+                        <label class="form-check-label ms-3" for="flexCheckDefault">
+                            Include blank page after each new bay?
+                        </label>
+                    </div>
+                </li>
+            </ul>
+            <div class="d-flex bg-danger rounded" title="close">
+                <button class="btn btn-sm" (click)="gridApi.deselectAll()">
+                    <i class="bx bxs-x-square"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div id="printDiv" class="d-none d-print-block" style="width:100%;overflow:hidden">
+    <div *ngFor="let item of groupRows | keyvalue; let i = index">
+
+        <div *ngFor="let row of item.value.det | orderBy: 'TAG_LOC'; let ii = index; let iii = index">
+            <!-- <div *ngFor="let row of selectedRows; let i = index" style="page-break-after: always;"> -->
+            <div style="position:relative">
+
+                <span style="margin-right:10px;margin-bottom:0px;float:right" *ngIf="ii == 0"> {{item.value.AISLE}} -
+                    {{row.AREA1}} </span>
+                <span style="margin-top:5px;float: left;font-size:18px;">Tag# </span>
+                <ngx-barcode6 [bc-value]="row.tag_nbr" [bc-display-value]="true" [bc-height]="18" [bc-width]="1"
+                    [bc-font-size]="18" [bc-margin-left]="0" [bc-text-align]="'center'" [bc-background]="'transparent'">
+                </ngx-barcode6>
+            </div>
+            <div>
+                <span style="margin-top:5px;float: left;font-size:18px;">Item# </span>
+                <ngx-barcode6 [bc-value]="row.tag_part" [bc-display-value]="true" [bc-height]="18" [bc-width]="1"
+                    [bc-font-size]="18" [bc-margin-left]="0" [bc-text-align]="'center'" [bc-background]="'transparent'">
+                </ngx-barcode6>
+            </div>
+            <ul style="list-style: none;margin:0;padding:0;font-size:18px">
+                <li>Area: {{row.AREA1}} / {{row.PT_UM }}</li>
+                <li>Location: {{row.TAG_LOC}} <small class="text-mute fs-6 fw-light fst-italic text-danger"
+                        style="margin-left:15px" *ngIf="row.IS_COI == 'YES'">( {{row.TAG_LOC_REAL}} )</small></li>
+                <li style="overflow:hidden">Description:
+                    {{ row.FULLDESC | slice:0:50 }}{{row.FULLDESC.length > 50 ? '...' : ''}}</li>
+                <li>Lot/Serial: {{row.tag_serial}} </li>
+            </ul>
+            <div style="width: 100%; display: table;">
+                <div style="display: table-row">
+                    <div style="width: 250px; display: table-cell;height:95px">
+                        <div
+                            style="position:relative; border:1px black solid; height:70px; width:240px;padding:3px;font-size:12px">
+                            <span> Qty Counted</span>
+                        </div>
+                    </div>
+                    <div style="display: table-cell;">
+                        <ul style="list-style: none;margin:5px;padding:0;font-size:18px;line-height: 25px;">
+                            <li>Counted By: ____________________</li>
+                            <li>Remarks:</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <hr *ngIf="(ii + 1) % 4 != 0" style="padding:0px;margin:0px;">
+            <!-- <div style="position:fixed;bottom:5px;right:10px">{{ii+1}} -- {{item.value.det.length % 4}}</div> -->
+            <div *ngIf="item.value.det.length-1 == ii && include_blank_after_each_bay" style="height:100%"></div>
+            <div *ngIf="item.value.det.length-1 == ii" style="page-break-after: always;padding:0;margin:0"></div>
+        </div>
+    </div>
+</div>
+
+<div id="printDiv1" class="d-none d-print-block" style="width:100%;overflow:hidden">
+    <div *ngFor="let row of selectedRows; let i = index" style="page-break-after: always;">
+        <div style="position:relative">
+            <span style="margin-top:5px;float: left;font-size:18px;">Tag# </span>
+            <ngx-barcode6 [bc-value]="row.tag_nbr" [bc-display-value]="true" [bc-height]="18" [bc-width]="1"
+                [bc-font-size]="18" [bc-margin-left]="0" [bc-text-align]="'center'" [bc-background]="'transparent'">
+            </ngx-barcode6>
+        </div>
+        <div>
+            <span style="margin-top:5px;float: left;font-size:18px;">Item# </span>
+            <ngx-barcode6 [bc-value]="row.tag_part" [bc-display-value]="true" [bc-height]="18" [bc-width]="1"
+                [bc-font-size]="18" [bc-margin-left]="0" [bc-text-align]="'center'" [bc-background]="'transparent'">
+            </ngx-barcode6>
+        </div>
+        <ul style="list-style: none;margin:0;padding:0;font-size:18px">
+            <li>Area: {{row.AREA1}} / {{row.PT_UM}}</li>
+            <li>Location: {{row.TAG_LOC}}</li>
+            <li style="overflow:hidden">Description:
+                {{ row.FULLDESC | slice:0:50 }}{{row.FULLDESC.length > 50 ? '...' : ''}}</li>
+            <li>Lot/Serial: {{row.tag_serial}} </li>
+        </ul>
+        <div style="width: 100%; display: table;">
+            <div style="display: table-row">
+                <div style="width: 250px; display: table-cell;height:95px">
+                    <div
+                        style="position:relative; border:1px black solid; height:70px; width:240px;padding:3px;font-size:12px">
+                        <span> Qty Counted</span>
+                    </div>
+                </div>
+                <div style="display: table-cell;">
+                    <ul style="list-style: none;margin:5px;padding:0;font-size:18px;line-height: 25px;">
+                        <li>Counted By: ____________________</li>
+                        <li>Remarks:</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <hr *ngIf="(i + 1) % 4 != 0" style="padding:0px;margin:0px">
+    </div>
+</div>
+
+<div id="printBlankTagDiv" class="bulk-tags d-none d-print-block" style="font-size:10px;width:50%;overflow:hidden">
+    <div class="row">
+
+        <div class="col-sm-12" *ngFor="let row of totalBlankTags; let i = index">
+            <div>
+                <span style="margin-top:13px;float: left;">Tag# </span>
+                <ngx-barcode6 [bc-value]="row.tag_nbr" [bc-display-value]="true" [bc-height]="18" [bc-width]="1"
+                    [bc-font-size]="18" [bc-margin-left]="0" [bc-text-align]="'center'" [bc-background]="'transparent'">
+                </ngx-barcode6>
+            </div>
+            <div>
+                <p>Location: ______________________________________</p>
+            </div>
+            <div>
+                <p>Item Number: ____________________________________</p>
+            </div>
+            <div>
+                <p>Description: _____________________________________</p>
+            </div>
+            <div>
+                <p>Lot/Serial: ______________________________________</p>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div style="width: 100%; display: inline-table;">
+                        <div style="display: table-row">
+                            <div style="width: 200px; display: table-cell;height:40px">
+                                <div
+                                    style="position:relative; border:1px black solid; height:40px; width:200px;padding:3px;font-size:10px">
+                                    <span> 1st Count Qty </span>
+                                </div>
+                            </div>
+                            <div style="display: table-cell;">
+                                <ul style="list-style: none;margin:5px;padding:0;font-size:13px;line-height: 25px;">
+                                    <li>1st Count Counted By: _____________________</li>
+                                    <li>1st Count Remarks:</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="width: 100%; display: inline-table;">
+                        <div style="display: table-row">
+                            <div style="width: 200px; display: table-cell;height:60px">
+                                <div
+                                    style="position:relative; border:1px black solid; height:40px; width:200px;padding:3px;font-size:10px">
+                                    <span> 2nd Count Qty</span>
+                                </div>
+                            </div>
+                            <div style="display: table-cell;">
+                                <ul style="list-style: none;margin:5px;padding:0;font-size:13px;line-height: 25px;">
+                                    <li>2nd Count Counted By: _____________________</li>
+                                    <li>2nd Count Remarks:</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr *ngIf="(i + 1) % 3 != 0" style="padding:0px;margin:0px">
+
         </div>
     </div>
 </div>

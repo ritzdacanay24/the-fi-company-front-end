@@ -97,6 +97,7 @@ export class MapComponent implements OnInit {
     @Input() currentUserLng: any;
     @Input() displayNetwork = false;
 
+
     geoTurnedOn: any = "";
     geoJson
     markersOnTheMap = {};
@@ -134,17 +135,17 @@ export class MapComponent implements OnInit {
         value: [moment().add(1, 'days').format('YYYY-MM-DD'), moment().subtract(1, 'days').format('YYYY-MM-DD')],
         text: 'Tomorrow'
     }, {
-        value: [moment().add(1, 'weeks').startOf('week').format('YYYY-MM-DD'), moment().subtract(1, 'weeks').endOf('week').format('YYYY-MM-DD')],
+        value: [moment().startOf('week').format('YYYY-MM-DD'), moment().endOf('week').format('YYYY-MM-DD')],
         text: 'This week'
     }, {
-        value: [moment().add(1, 'months').startOf('month').format('YYYY-MM-DD'), moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD')],
+        value: [moment().startOf('month').format('YYYY-MM-DD'), moment().endOf('month').format('YYYY-MM-DD')],
+        text: 'This month'
+    }, {
+        value: [moment().add(1, 'months').startOf('month').format('YYYY-MM-DD'), moment().add(1, 'months').endOf('month').format('YYYY-MM-DD')],
         text: 'Next month'
     }, {
-        value: [moment().add(1, 'weeks').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
-        text: 'Last 7 days'
-    }, {
-        value: [moment().add(30, 'days').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
-        text: 'Last 30 days'
+        value: [moment().add(1, 'days').format('YYYY-MM-DD'), moment().add(6, 'months').endOf('month').format('YYYY-MM-DD')],
+        text: 'Next 6 months'
     }, {
         value: [moment().startOf('year').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')],
         text: 'YTD'

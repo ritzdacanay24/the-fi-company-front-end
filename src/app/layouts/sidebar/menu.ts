@@ -523,7 +523,7 @@ export const MENU: MenuItem[] = [
         ]
       },
       {
-        label: 'Forklift',
+        label: 'Forklift Inspection',
         isCollapsed: true,
         subItems: [
           {
@@ -801,6 +801,9 @@ export const MENU: MenuItem[] = [
             ]
           }
         ]
+      }, {
+        label: 'Physical Inventory',
+        link: '/dashboard/operations/physical-inventory/tags'
       },
     ]
   },
