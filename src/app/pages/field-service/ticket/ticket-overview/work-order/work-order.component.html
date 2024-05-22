@@ -91,6 +91,20 @@
           </div>
         </div>
 
+        <h4 class="mb-3 p-2 bg-info text-white border text-center rounded">Ticket Verification</h4>
+        <div class="mb-3">
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center pointer" *ngFor="let row of teamsData"
+              (click)="ticketVerified(row)">
+              {{row.user}}
+              <span class="badge rounded-pill"
+                [ngClass]="{'bg-success' : row.ticket_verified,'bg-danger' : !row.ticket_verified}">{{row.ticket_verified
+                || 'Not Verified' }}</span>
+            </li>
+          </ul>
+        </div>
+
+
         <p class="text-center p-1 bg-light" style="margin-left: -24px;
     margin-right: -24px;" *ngIf="data && !loading">End of data</p>
       </div>

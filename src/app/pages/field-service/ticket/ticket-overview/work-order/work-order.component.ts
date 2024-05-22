@@ -7,6 +7,9 @@ import { SignatureService } from '../signature/signature.component';
 import { WorkOrderSummaryService } from '../work-order-summary/work-order-summary.component';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { TeamsService } from '@app/core/api/field-service/teams.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import moment from 'moment';
 
 @Component({
   standalone: true,
@@ -44,11 +47,20 @@ export class WorkOrderComponent implements OnInit {
     private signatureService: SignatureService,
     private fieldServiceMobileService: FieldServiceMobileService,
     private workOrderSummaryService: WorkOrderSummaryService,
+    private teamsService: TeamsService,
+    public authenticationService: AuthenticationService,
   ) {
   }
 
   ngOnInit(): void {
   }
+
+
+  teamsData: any = []
+  async getTeams(id) {
+    this.teamsData = await this.teamsService.getByFsId(id);
+  }
+
 
   data: any = [];
 
@@ -58,6 +70,8 @@ export class WorkOrderComponent implements OnInit {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.workOrderId);
+
+      await this.getTeams(this.data?.fs_scheduler_id)
 
       if (this.data.partLocation == "") {
         this.data.partLocation == "N/A"
@@ -139,6 +153,27 @@ export class WorkOrderComponent implements OnInit {
 
   }
 
+  async ticketVerified(row) {
+    if (this.authenticationService.currentUserValue.id !== row.user_id) {
+      alert('You are not ' + row.user)
+      return;
+    }
+
+    if (row.ticket_verified) {
+      alert('This was already verified on ' + row.ticket_verified)
+      return;
+    }
+
+
+    if (!confirm('Please ensure this ticket is error free and event times are 100% correct. You will be held responsible for any incorrect information. Press ok to continue.')) return;
+
+    row.ticket_verified = moment().format('YYYY-MM-DD HH:mm:ss')
+    this.teamsData = await this.teamsService.updateById(row.id, {
+      ticket_verified: row.ticket_verified
+    });
+
+  }
+
   async submit() {
 
     if (this.data.dateSubmitted) {
@@ -165,6 +200,24 @@ export class WorkOrderComponent implements OnInit {
       })
       return;
     }
+
+    await this.getTeams(this.data?.fs_scheduler_id)
+
+    let isAllVerified = false;
+    if (this.teamsData?.length) {
+      for (let i = 0; i < this.teamsData.length; i++) {
+        if (this.teamsData[i].ticket_verified == '' || this.teamsData[i].ticket_verified == null) {
+          isAllVerified = true;
+          break;
+        }
+      }
+    }
+
+    if (isAllVerified) {
+      alert(`All techs must verify the accuracy of this ticket before submission.`);
+      return
+    }
+
 
     const modalRef = this.workOrderSummaryService.open(this.workOrderId);
 
