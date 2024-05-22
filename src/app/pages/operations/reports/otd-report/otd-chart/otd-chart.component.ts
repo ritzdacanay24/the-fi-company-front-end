@@ -1,6 +1,5 @@
 import { Component, Input, SimpleChanges, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
-import { toFixed } from "ag-grid-enterprise/dist/lib/ag-charts-community/module-support";
 import moment from "moment";
 import {
     ApexAxisChartSeries,
@@ -17,26 +16,6 @@ import {
     ApexStroke
 } from "ng-apexcharts";
 import { NgChartsModule } from "ng2-charts";
-
-
-function convertToInternationalCurrencySystem(labelValue) {
-
-    // Nine Zeroes for Billions
-    return Math.abs(Number(labelValue)) >= 1.0e+9
-
-        ? (Math.abs(Number(labelValue)) / 1.0e+9).toFixed(0) + "B"
-        // Six Zeroes for Millions 
-        : Math.abs(Number(labelValue)) >= 1.0e+6
-
-            ? (Math.abs(Number(labelValue)) / 1.0e+6).toFixed(0) + "M"
-            // Three Zeroes for Thousands
-            : Math.abs(Number(labelValue)) >= 1.0e+3
-
-                ? (Math.abs(Number(labelValue)) / 1.0e+3).toFixed(0) + "K"
-
-                : Math.abs(Number(labelValue));
-
-}
 
 export type ChartOptions = {
     series: ApexAxisChartSeries;

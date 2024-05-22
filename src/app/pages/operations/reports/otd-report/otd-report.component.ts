@@ -6,18 +6,14 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
-import { currencyFormatter, autoSizeColumns } from 'src/assets/js/util';
+import { autoSizeColumns } from 'src/assets/js/util';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
-import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { FgLabelPrintModalService } from '@app/shared/components/fg-label-print-modal/fg-label-print-modal.component';
-import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-renderer.component';
 import { OtdChartComponent } from './otd-chart/otd-chart.component';
 
 @Component({
@@ -40,9 +36,7 @@ export class OtdReportComponent implements OnInit {
         public router: Router,
         public reportService: ReportService,
         private commentsModalService: CommentsModalService,
-        private itemInfoModalService: ItemInfoModalService,
         private salesOrderInfoModalService: SalesOrderInfoModalService,
-        private fgLabelPrintModal: FgLabelPrintModalService,
     ) {
     }
 
@@ -125,7 +119,31 @@ export class OtdReportComponent implements OnInit {
 
     title = 'OTD Report';
 
-    dateFrom = moment().subtract(12, "months").format('YYYY-MM-DD');
+    addWeekdays(date, days) {
+        // make a 'pseudo-constant' to represent the # used when adding/subtracting days
+        var dayConst = 1;
+        date = moment(date); // use a clone
+
+        // add functionality for subtraction here
+        if (days < 0) {
+            dayConst = -1;
+            days = -days;
+        }
+
+        while (days > 0) {
+            // and then dayConst will be -1 if days is negative.
+            date = date.add(dayConst, 'days');
+
+            // decrease "days" only if it's a weekday.
+            if (date.isoWeekday() !== 6 && date.isoWeekday() !== 7) {
+                days -= 1;
+            }
+        }
+        return date;
+    }
+
+
+    dateFrom = this.addWeekdays(moment(), -4).format('YYYY-MM-DD');
     dateTo = moment().format('YYYY-MM-DD');
     dateRange = [this.dateFrom, this.dateTo];
 
@@ -287,7 +305,7 @@ export class OtdReportComponent implements OnInit {
     }
 
     displayCustomers = 'Show All';
-    typeOfView = "Weekly"
+    typeOfView = "Daily"
 
     otd = 0
     ontime = 0
@@ -355,8 +373,8 @@ export class OtdReportComponent implements OnInit {
     dataChart
     showCustomers = 'Show All';
 
-    dateFrom1 = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
-    dateTo1 = moment().add(7, 'days').endOf('month').format('YYYY-MM-DD');
+    dateFrom1 = moment().startOf('week').format('YYYY-MM-DD');
+    dateTo1 = moment().endOf('week').format('YYYY-MM-DD');
     dateRange1 = [this.dateFrom1, this.dateTo1];
 
 
