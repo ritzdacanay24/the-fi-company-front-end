@@ -143,8 +143,8 @@ export class OtdReportComponent implements OnInit {
     }
 
 
-    dateFrom = this.addWeekdays(moment(), -4).format('YYYY-MM-DD');
-    dateTo = moment().format('YYYY-MM-DD');
+    dateFrom = this.addWeekdays(moment(), -5).format('YYYY-MM-DD');
+    dateTo = moment().subtract(1, 'days').format('YYYY-MM-DD');
     dateRange = [this.dateFrom, this.dateTo];
 
     onChangeDate($event) {
