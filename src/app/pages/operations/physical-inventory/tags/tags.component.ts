@@ -87,7 +87,6 @@ export class TagsComponent implements OnInit {
 
   gridApi: any;
 
-
   include_blank_after_each_bay = false;
 
   testMethod = ($event) => {
@@ -108,8 +107,7 @@ export class TagsComponent implements OnInit {
       headerCheckboxSelection: true,
       suppressHeaderMenuButton: true,
       cellClass: 'lock-pinned'
-    }
-    , {
+    }, {
       headerName: 'Tag Info',
       children: [
         { field: 'tag_type', headerName: 'Tag Type', filter: 'agMultiColumnFilter' }

@@ -24,12 +24,26 @@ File: Custom Css File
 //     font-size: 0.9375rem;
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
-.no-pointer{
+
+.giveMeEllipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    /* number of lines to show */
+    line-height: 2;
+    /* fallback */
+    max-height: 2*2;
+    /* fallback */
+}
+
+.no-pointer {
     cursor: not-allowed;
 }
 
 .no-pointer * {
-    pointer-events: none; 
+    pointer-events: none;
 }
 
 
