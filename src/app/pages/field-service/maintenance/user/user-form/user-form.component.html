@@ -30,7 +30,7 @@
     <div class="col-md mb-3">
       <label class="form-label required">Department</label>
       <select formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
-        <option *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering']">{{row}} -- </option>
+        <option *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering', 'Field Service']">{{row}} -- </option>
       </select>
     </div>
   </div>
