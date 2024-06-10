@@ -2,7 +2,7 @@
     <div class="row">
         <div class="col-lg-6 mb-3">
             <div class="form-group">
-                <label for="date" class="control-label">Inspector Name</label>
+                <label for="date" class="control-label required">Inspector Name</label>
                 <input type="type" class="form-control" placeholder="Enter inspectors name"
                     formControlName="created_by"
                     [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
@@ -10,7 +10,7 @@
         </div>
         <div class="col-lg-6 mb-3">
             <div class="form-group">
-                <label for="date" class="control-label">Truck License Plate</label>
+                <label for="date" class="control-label required">Truck License Plate</label>
                 <select class="form-select" formControlName="truck_license_plate">
                     <option class="form-select" disabled selected value="null">--SELECT--</option>
                     <option *ngFor="let row of vehicleList" [value]="row.licensePlate">License Plate #: {{row.licensePlate}}</option>

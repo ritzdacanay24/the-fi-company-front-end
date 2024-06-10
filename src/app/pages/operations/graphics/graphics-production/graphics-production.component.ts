@@ -5,7 +5,6 @@ import { SharedModule } from '@app/shared/shared.module';
 import { QueueSelectionService } from './queue-selection/queue-selection.component';
 import { GraphicsBomModalService } from './graphics-bom-modal/graphics-bom-modal.component';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
-import { AuthenticationService } from '@app/core/services/auth.service';
 import { CompleteService } from './complete/complete.component';
 import { WebsocketService } from '@app/core/services/websocket.service';
 
