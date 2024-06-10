@@ -11,9 +11,13 @@
         <div class="col-lg-6 mb-3">
             <div class="form-group">
                 <label for="date" class="control-label">Truck License Plate</label>
-                <input type="type" class="form-control" id="date" name="date" placeholder="Enter license plate number"
+                <select class="form-select" formControlName="truck_license_plate">
+                    <option class="form-select" disabled selected value="null">--SELECT--</option>
+                    <option *ngFor="let row of vehicleList" [value]="row.licensePlate">License Plate #: {{row.licensePlate}}</option>
+                </select>
+                <!-- <input type="type" class="form-control" id="date" name="date" placeholder="Enter license plate number"
                     formControlName="truck_license_plate"
-                    [ngClass]="{ 'is-invalid': submitted && f['truck_license_plate'].errors }">
+                    [ngClass]="{ 'is-invalid': submitted && f['truck_license_plate'].errors }"> -->
             </div>
         </div>
     </div>
@@ -48,8 +52,8 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody  style="white-space: nowrap;">
-                        <tr *ngFor="let row1 of row.details; let ii = index;">
+                    <tbody  style="white-space: nowrap;" *ngFor="let row1 of row.details; let ii = index;">
+                        <tr>
                             <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
                                     class="text-danger" *ngIf="row1.error">(Required)</span>
                             </td>
@@ -76,6 +80,11 @@
                                 </div>
                             </td>
                         </tr>
+                        <!-- <tr *ngIf="row1.status == 0">
+                            <td colspan="3">
+                                <textarea autosize [minRows]="1" class="form-control border border-danger" [(ngModel)]="row1.comments" placeholder="Enter reason why it failed. (Option)"></textarea>
+                            </td>
+                        </tr> -->
                     </tbody>
                 </table>
             </div>

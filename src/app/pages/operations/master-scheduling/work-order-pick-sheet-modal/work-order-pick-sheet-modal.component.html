@@ -97,9 +97,13 @@
 
                     <form [formGroup]="form">
                         <div class="mb-3">
-                            <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value.assignedTo"
+                            <label for="formGroupExampleInput3" class="form-label required">Select User</label>
+                            <input type="text" class="form-control" id="assignedTo" placeholder="Enter User"
+                                formControlName="assignedTo" />
+
+                            <!-- <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value.assignedTo"
                                 [required]="true"
-                                [ngClass]="{ 'is-invalid': submitted && f['assignedTo'].errors }"></app-user-search>
+                                [ngClass]="{ 'is-invalid': submitted && f['assignedTo'].errors }"></app-user-search> -->
                         </div>
                         <div class="mb-3">
                             <label for="formGroupExampleInput2" class="form-label">Comments/Instructions</label>
@@ -172,7 +176,7 @@
 <div class="modal-footer">
     <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
     <button (click)="getData()" type="button" class="btn btn-light  me-auto">Refresh</button>
-    <button type="button" class="btn btn-warning ms-auto" (click)="generateShortage()"
-        [disabled]="isLoading">Generate Shortages</button>
+    <button type="button" class="btn btn-warning ms-auto" (click)="generateShortage()" [disabled]="isLoading">Generate
+        Shortages</button>
     <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="isLoading">Print</button>
 </div>

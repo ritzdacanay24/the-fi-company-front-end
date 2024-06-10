@@ -4,10 +4,14 @@ import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { formValues } from './formData';
 import { SharedModule } from '@app/shared/shared.module';
+import { VehicleService } from '@app/core/api/operations/vehicle/vehicle.service';
+import { AutosizeModule } from 'ngx-autosize';
 
 @Component({
     standalone: true,
-    imports: [SharedModule],
+    imports: [
+        SharedModule, AutosizeModule
+    ],
     selector: 'app-vehicle-inspection-form',
     templateUrl: './vehicle-inspection-form.component.html',
     styles: []
@@ -62,8 +66,15 @@ export class VehicleInspectionFormComponent implements OnInit {
     constructor(
         private router: Router,
         private fb: FormBuilder,
+        private vehicleService: VehicleService
 
     ) { };
+
+
+    vehicleList = []
+    async getVehicle() {
+        this.vehicleList = await this.vehicleService.find({ active: 1 });
+    }
 
 
     ngOnChanges(changes: SimpleChanges) {
@@ -75,7 +86,7 @@ export class VehicleInspectionFormComponent implements OnInit {
 
     ngOnInit() {
         this.form = this.fb.group({
-            truck_license_plate: ['', Validators.required],
+            truck_license_plate: [null, Validators.required],
             details: this.fb.array([]),
             comments: [''],
             date_created: [''],
@@ -85,6 +96,8 @@ export class VehicleInspectionFormComponent implements OnInit {
         });
         this.setDetailsFormEmitter.emit(this.formValues);
         this.setFormEmitter.emit(this.form);
+
+        this.getVehicle()
     };
 
 }

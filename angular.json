@@ -95,7 +95,12 @@
               "core-js/modules/es.string.match.js",
               "core-js/modules/es.string.replace.js",
               "core-js/modules/es.weak-map.js",
-              "core-js/modules/web.dom-collections.iterator.js"
+              "core-js/modules/web.dom-collections.iterator.js",
+              "quill-blot-formatter",
+              "@tomtom-international/web-sdk-maps",
+              "brace",
+              "dragula",
+              "quill"
             ],
             "serviceWorker": true,
             "ngswConfigPath": "ngsw-config.json"

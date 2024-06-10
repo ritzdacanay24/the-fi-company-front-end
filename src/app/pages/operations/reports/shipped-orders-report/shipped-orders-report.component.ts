@@ -161,7 +161,9 @@ export class ShippedOrdersReportComponent implements OnInit {
     { field: "sod_acct", headerName: "SOD Account", filter: "agSetColumnFilter" },
     { field: "shipViaAccount", headerName: "Ship Via Account", filter: "agSetColumnFilter" },
     { field: "arrivalDate", headerName: "Arrival Date", filter: "agTextColumnFilter" },
-    { field: "sod_type", headerName: "Type", filter: "agTextColumnFilter" }
+    { field: "sod_type", headerName: "Type", filter: "agTextColumnFilter" },
+    { field: "SO_RMKS", headerName: "Remarks", filter: "agTextColumnFilter" },
+    
   ];
 
   gridOptions = {

@@ -12,12 +12,10 @@ import { QirCreatePublicComponent } from './pages/quality/qir/qir-create-public/
 import { FlagBasedPreloadingStrategy } from './shared/providers/preload';
 import { MenuComponent } from './pages/menu/menu.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { KanbanPublicComponent } from './pages/public/kanban-public/kanban-public.component';
 
 const routes: Routes = [
   { path: 'menu', component: MenuComponent },
   { path: 'request', component: RequestPublicComponent, },
-  { path: 'kanban-public', component: KanbanPublicComponent, },
   { path: 'quality-incident-request', component: QirCreatePublicComponent },
   { path: 'auth', loadChildren: () => import('./account/account.module').then(m => m.AccountModule) },
   { path: '', redirectTo: 'menu', pathMatch: 'full' },

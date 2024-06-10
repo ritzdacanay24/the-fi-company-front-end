@@ -45,7 +45,6 @@ export class PartsOrderFormComponent {
             inputPlaceholder: "Enter sv number",
             inputValue: this.form.value.so_number,
             preConfirm: () => {
-                console.log(Swal.getInput(), 'Swal.getInput()')
                 Swal.getInput().setAttribute('autocomplete', 'false')
             },
             inputValidator: (value) => {

@@ -37,7 +37,7 @@ export class AllRoutingComponent implements OnInit {
             this.gridId = params['gridId'];
             this.gridFilterId = params['gridFilterId'];
         })
-        this.getData()
+        this.getData();
     }
     gridId
     gridFilterId
@@ -94,7 +94,7 @@ export class AllRoutingComponent implements OnInit {
     currentTableView: any
     async getTableSettings() {
         this.tableList = await this.tableSettingsService.getTableByUserId({ pageId: this.pageId });
-        this.gridApi.applyColumnState({
+        this.gridApi!.applyColumnState({
             state: this.tableList.currentView.data,
             applyOrder: true,
         });
@@ -111,6 +111,9 @@ export class AllRoutingComponent implements OnInit {
             });
             this.gridApi?.showLoadingOverlay()
             this.data = await this.api.getMasterProduction(this.routing);
+            
+            if (this.gridApi.destroyCalled) return;
+            
             this.gridApi?.hideOverlay();
         } catch (err) {
             this.gridApi?.hideOverlay()

@@ -926,11 +926,6 @@ export const MENU: MenuItem[] = [
             link: '/dashboard/quality/mrb/edit',
             description: "MRB edit"
           },
-          {
-            label: 'Edit MRB',
-            link: '/dashboard/quality/mrb/overview',
-            description: "MRB edit"
-          },
         ]
       },
       {

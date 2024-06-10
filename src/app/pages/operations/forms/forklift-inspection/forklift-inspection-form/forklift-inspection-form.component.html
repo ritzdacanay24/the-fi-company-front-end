@@ -17,7 +17,7 @@
                     [ngClass]="{ 'is-invalid': submitted && f['model_number'].errors }">
                     <option value="" selected disabled>--SELECT--</option>
                     <optgroup *ngFor="let row of formValues?.models">
-                        <option>{{row.name}}</option>
+                        <option disabled>{{row.name}}</option>
                         <option *ngFor="let row1 of row.details" [value]="row1.name">{{row1.name}}</option>
                     </optgroup>
                 </select>

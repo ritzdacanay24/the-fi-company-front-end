@@ -22,7 +22,7 @@ export class InvoiceReportChartComponent implements OnInit {
   ngOnChanges(data: SimpleChanges) {
     if (!this.data) return;
     this.barChartData = {
-      labels: this.data?.obj.label,
+      labels: this.data?.obj?.label,
       datasets: [],
     };
 

@@ -21,7 +21,7 @@ export class KanbanListComponent implements OnInit {
 
     query
 
-    gridApi: GridApi;
+    gridApi: any;
 
     updateClock = () => {
         for (let i = 0; i < this.data.length; i++) {
@@ -33,6 +33,8 @@ export class KanbanListComponent implements OnInit {
                 row.timeDiff = '';
             }
         }
+
+        if (this.gridApi!.destroyCalled) return;
 
         const res = this.gridApi!.applyTransaction({
             update: this.data,
@@ -91,9 +93,8 @@ export class KanbanListComponent implements OnInit {
         columnDefs: [],
         onGridReady: (params: { api: GridApi<any>; columnApi: { autoSizeAllColumns: () => void; }; }) => {
             this.gridApi = params.api;
-            params.columnApi.autoSizeAllColumns();
+            params.api.autoSizeAllColumns();
         },
-        getRowNodeId: data => data.id,
     };
 
     openItemInfo = (workOrder) => {

@@ -11,6 +11,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { resetVehicleInspectionFormValues } from '../vehicle-inspection-form/formData';
 import { UploadService } from '@app/core/api/upload/upload.service';
 import { first } from 'rxjs';
+import { VehicleService } from '@app/core/api/operations/vehicle/vehicle.service';
 
 @Component({
     standalone: true,
@@ -61,7 +62,6 @@ export class VehicleInspectionCreateComponent {
         this.details = $event?.checklist;
     }
 
-
     myFiles: string[] | any = [];
     onFileChange(event: any) {
         for (var i = 0; i < event.target.files.length; i++) {
@@ -86,7 +86,7 @@ export class VehicleInspectionCreateComponent {
                 formData.append("field", 'Vehicle Inspection');
                 formData.append("uniqueData", insertId);
                 formData.append("folderName", 'vehicleInformation');
-                this.uploadService.upload(formData).pipe(first()).subscribe(data => { 
+                this.uploadService.upload(formData).pipe(first()).subscribe(data => {
                 });
             }
 

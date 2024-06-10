@@ -47,9 +47,8 @@ export class CablesComponent implements OnInit {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-      params.columnApi.autoSizeAllColumns();
-    },
-    getRowNodeId: data => data.id,
+      params.api.autoSizeAllColumns();
+    }
   };
 
   openItemInfo = (workOrder) => {

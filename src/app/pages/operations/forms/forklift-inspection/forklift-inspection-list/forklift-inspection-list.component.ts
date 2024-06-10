@@ -77,7 +77,19 @@ export class ForkliftInspectionListComponent implements OnInit {
         { field: 'passed_count', headerName: 'Passed', filter: 'agMultiColumnFilter' },
         { field: 'failed_count', headerName: 'Failed', filter: 'agMultiColumnFilter' },
         { field: 'total_count', headerName: 'Total Inspection Points', filter: 'agMultiColumnFilter' },
-        { field: 'percent', headerName: 'Percent', filter: 'agMultiColumnFilter' },
+        {
+            field: 'percent', headerName: 'Percent', filter: 'agMultiColumnFilter',
+            cellClass: (params: any) => {
+                if (params.value < 100) {
+                    return ['bg-danger-subtle bg-opacity-75 text-danger'];
+                } else if (params.value == 'Yes') {
+                    return ['bg-success-subtle bg-opacity-75 text-success'];
+                } else {
+                    return [];
+                }
+            },
+            cellRenderer: (params: any) => params.value + '%'
+        },
     ]
 
     @Input() selectedViewType = 'Open';

@@ -771,7 +771,7 @@ export class ShippingComponent implements OnInit {
     currentTableView: any
     async getTableSettings() {
         this.tableList = await this.tableSettingsService.getTableByUserId({ pageId: this.pageId });
-        this.gridApi.applyColumnState({
+        this.gridApi!.applyColumnState({
             state: this.tableList.currentView.data,
             applyOrder: true,
         });

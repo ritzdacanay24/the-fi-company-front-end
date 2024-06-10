@@ -190,7 +190,7 @@ export class OtdChartComponent {
 
         let total = []
         let sum = 0;
-        
+
         for (const key in this.data) {
             total = this.data[key].dataset;
             sum += this.data[key].dataset.reduce((partialSum, a) => partialSum + a, 0);
@@ -254,7 +254,7 @@ export class OtdChartComponent {
                     formatter: (value) => {
                         if (goalArray?.length <= 7) {
                             for (let i = 0; i <= labelsTest.length; i++) {
-                                if (labelsTest[i]?.data == moment(value).format('YYYY-MM-DD')) {
+                                if (labelsTest[i]?.data == moment(value, "MM-DD-YYYY")) {
                                     return [value, labelsTest[i]?.test]
                                 }
                             }

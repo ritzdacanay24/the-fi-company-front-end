@@ -8,6 +8,7 @@ import { GridSettingsModalService } from './grid-settings-modal/grid-settings-mo
 import { GridSettingsEditModalService } from './grid-settings-edit-modal/grid-settings-edit-modal.component';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { FullTextSearchPipe } from '../pipes/full-text-search.pipe';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -39,7 +40,7 @@ export class GridSettingsComponent implements OnInit {
     otherGrids = []
     currentUserGrids = [];
     myView = false;
-    currentView;
+    currentView: any;
     getOtherGridByUsers = async () => {
         this.myView = false;
         let data = await this.tableSettingsService.getTableByUserId({ pageId: this.pageId, userId: this.authenticationService.currentUserValue.id })
@@ -65,7 +66,7 @@ export class GridSettingsComponent implements OnInit {
             this.value = current.id
             this.currentView = current;
 
-            this.gridApi.applyColumnState({
+            this.gridApi!.applyColumnState({
                 state: JSON.parse(current.data),
                 applyOrder: true,
             });
@@ -74,7 +75,6 @@ export class GridSettingsComponent implements OnInit {
     }
 
     openUp() {
-
         setTimeout(() => {
             let el = document.getElementById('test-' + this.value);
             if (el)
@@ -88,7 +88,6 @@ export class GridSettingsComponent implements OnInit {
         let e = row.table_default == 1 ? 0 : 1;
 
         for (let i = 0; i < this.currentUserGrids.length; i++) {
-
             //reset
             this.currentUserGrids[i].table_default = 0;
 
@@ -100,7 +99,7 @@ export class GridSettingsComponent implements OnInit {
 
     @Input() pageId = null;
 
-    @Input() gridApi
+    @Input() gridApi: GridApi
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes['pageId']) {
@@ -112,7 +111,7 @@ export class GridSettingsComponent implements OnInit {
         this.myView = true;
         this.gridApi?.showLoadingOverlay()
         setTimeout(() => {
-            this.gridApi.applyColumnState({
+            this.gridApi!.applyColumnState({
                 state: JSON.parse(row.data),
                 applyOrder: true,
             });

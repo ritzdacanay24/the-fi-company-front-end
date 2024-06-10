@@ -12,16 +12,7 @@ import { SharedModule } from '@app/shared/shared.module';
     standalone: true,
     imports: [SharedModule],
     selector: 'app-forklift-inspection-form',
-    templateUrl: './forklift-inspection-form.component.html',
-    styles: [`
-        .forklift-checklist .form-check .form-check-label input[type=checkbox]:checked+.input-frame:after {
-            width: 16px !important;
-            opacity: 1;
-            line-height: 19px;
-            filter: alpha(opacity=100);
-            transform: scale(1);
-        }
-    `]
+    templateUrl: './forklift-inspection-form.component.html'
 })
 
 export class ForkliftInspectionFormComponent implements OnInit {
