@@ -31,7 +31,7 @@ export class ImageRendererComponent implements ICellRendererAngularComp {
 
     this.params = params;
 
-    this.image = params.link + '' + params.value
+    this.image = params.link + ' ' + params.value
   }
 
   refresh(params?: any): boolean {

@@ -13,6 +13,14 @@ export const agGridOptions: GridOptions = {
   // undoRedoCellEditing: true,
   // undoRedoCellEditingLimit: 5,
   suppressDragLeaveHidesColumns: false,
+  defaultCsvExportParams: {
+    skipPinnedTop: true,
+    skipPinnedBottom: true,
+  },
+  defaultExcelExportParams: {
+    skipPinnedTop: true,
+    skipPinnedBottom: true,
+  },
   defaultColDef: {
     cellDataType: false,
     sortable: true,

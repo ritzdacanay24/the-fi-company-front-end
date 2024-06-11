@@ -57,6 +57,11 @@ export class PropertyFormComponent {
     this.getUserService()
   }
 
+  addTag(tag: string) {
+    /* https://github.com/ng-select/ng-select/issues/809 */
+    return tag;
+  }
+
   urlView
 
   getUrlView(address) {
@@ -95,7 +100,16 @@ export class PropertyFormComponent {
     license_expired_date: null,
     licensed_techs: [null],
     created_by: [null],
-    created_date: [null]
+    created_date: [null],
+
+    compliance_name: "",
+    compliance_address1: [null],
+    compliance_address2: [null],
+    compliance_city: [null],
+    compliance_state: [null],
+    compliance_zip_code: [null],
+    compliance_website: [null],
+    compliance_phone_numbers: [null],
   })
 
   setBooleanToNumber(key) {

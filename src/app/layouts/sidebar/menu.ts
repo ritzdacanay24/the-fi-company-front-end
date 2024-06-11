@@ -98,6 +98,10 @@ export const MENU: MenuItem[] = [
             label: 'Edit Parts Order',
             link: '/dashboard/field-service/parts-order/edit'
           },
+          // {
+          //   label: 'SV Orders',
+          //   link: '/dashboard/field-service/parts-order/sv-list'
+          // },
         ]
       },
       {

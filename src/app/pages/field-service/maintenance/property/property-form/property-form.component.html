@@ -22,7 +22,7 @@
     <div class="col-md-9 mb-3">
       <label class="form-label required">Address</label>
       <input type="text" class="form-control" name="address1" formControlName="address1" placeholder="Enter address"
-        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" />
+        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" autocomplete="off" />
     </div>
     <div class="col-md-3 mb-3">
       <label class="form-label">Suite #</label>
@@ -112,7 +112,10 @@
     </div>
   </div>
 
-  <h4 class="bg-light p-2 mb-3">License Information</h4>
+  <h4 class="bg-light p-2 mb-3 text-center">Compliance Information</h4>
+
+
+  <h4 class="bg-light p-2 mb-3 ps-3">License Information</h4>
   <div class="mb-3">
     <label class="form-check-label me-3">License Required</label>
     <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No', 'NA']; let i = index">
@@ -128,11 +131,78 @@
       [ngClass]="{ 'is-invalid': submitted && f.license_expired_date.errors }" />
   </div>
 
+
+  <h4 class="bg-light p-2 mb-3 ps-3">Compliance Address Information</h4>
+
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      <label class="form-label required">Name</label>
+      <input type="text" class="form-control" formControlName="compliance_name" placeholder="Enter compliance name"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_name.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-9 mb-3">
+      <label class="form-label required">Address</label>
+      <input type="text" class="form-control" name="address1" formControlName="compliance_address1"
+        placeholder="Enter address" [ngClass]="{ 'is-invalid': submitted && f.compliance_address1.errors }"
+        autocomplete="off" />
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label">Suite #</label>
+      <input type="text" class="form-control" formControlName="compliance_address2" placeholder="Suite Number"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_address2.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">City</label>
+      <input type="text" class="form-control" formControlName="compliance_city" placeholder="City"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_city.errors }" />
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label required">State</label>
+      <select class="form-select" formControlName="compliance_state" aria-label="Floating label select example"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_state.errors }">
+        <option disabled selected value="null">Select State</option>
+        <option [value]="row.abbreviation" *ngFor="let row of states">
+          {{ row.name }}
+        </option>
+      </select>
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label required">Zip Code</label>
+      <input type="tel" class="form-control" name="a5" formControlName="compliance_zip_code" placeholder="Zip Code"
+        pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_zip_code.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">Website</label>
+      <input type="text" class="form-control" formControlName="compliance_website" placeholder="Enter website URL"
+        [ngClass]="{ 'is-invalid': submitted && f.compliance_website.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">Phone number</label>
+      <ng-select formControlName="compliance_phone_numbers"  [multiple]="true" placeholder="Enter phone numbers"
+        placeholder="Enter phone number" #select [clearSearchOnAdd]="true" [addTag]="addTag" [closeOnSelect]="true" [closeOnSelect]="false">
+      </ng-select>
+    </div>
+  </div>
+
   <div class="mb-3">
     <label class="form-label">License Notes</label>
     <textarea type="text" class="form-control" name="license_notes" formControlName="license_notes" rows="5"
       placeholder="Enter License notes" [ngClass]="{ 'is-invalid': submitted && f.license_notes.errors }"></textarea>
   </div>
+  
 
   <div class="mb-3">
     <label class="form-label">Licensed Techs</label>

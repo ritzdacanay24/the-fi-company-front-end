@@ -12,6 +12,10 @@ import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
 import { NAVIGATION_ROUTE } from '../parts-order-constant';
+import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
+import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
+import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 
 @Component({
     standalone: true,
@@ -19,7 +23,9 @@ import { NAVIGATION_ROUTE } from '../parts-order-constant';
         SharedModule,
         AgGridModule,
         NgSelectModule,
-        DateRangeComponent
+        DateRangeComponent,
+        GridSettingsComponent,
+        GridFiltersComponent,
     ],
     selector: 'app-parts-order-list',
     templateUrl: `./parts-order-list.component.html`
@@ -30,10 +36,40 @@ export class PartsOrderListComponent implements OnInit {
         private api: WorkOrderService,
         public router: Router,
         private activatedRoute: ActivatedRoute,
-        private partsOrderService: PartsOrderService
+        private partsOrderService: PartsOrderService,
+        private commentsModalService: CommentsModalService,
     ) {
     }
     title = "Parts Orders";
+
+    pageId = '/list-parts-order'
+
+    viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+        let modalRef = this.commentsModalService.open(salesOrderLineNumber, 'Sales Order')
+        modalRef.result.then((result: any) => {
+            let rowNode = this.gridApi.getRowNode(id);
+            rowNode.data.recent_comments = result;
+            this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+            this.router.navigate([`.`], {
+                relativeTo: this.activatedRoute,
+                queryParamsHandling: 'merge',
+                queryParams: {
+                    comment: null
+                }
+            });
+        }, () => {
+
+            this.router.navigate([`.`], {
+                relativeTo: this.activatedRoute,
+                queryParamsHandling: 'merge',
+                queryParams: {
+                    comment: null
+                }
+            });
+        });
+    }
+
 
     ngOnInit(): void {
 
@@ -74,6 +110,33 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter' },
         { field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
         { field: 'shipping_method', headerName: 'Shippimg Method', filter: 'agMultiColumnFilter' },
+        {
+            field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
+            cellRenderer: CommentsRendererComponent,
+            cellRendererParams: {
+                onClick: (params: any) => this.viewComment(params.rowData.so_number, params.rowData.id, params.rowData.so_number),
+            }
+            , valueGetter: (params) => {
+                if (params.data)
+                    if (params.data.recent_comments?.bg_class_name == 'bg-info') {
+                        return 'Has Comments'
+                    } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
+                        return 'New Comments'
+                    } else {
+                    return 'No Comments'
+                }
+            },
+            filterParams: {
+                valueGetter: params => {
+                    let data = params.value;
+                    if (data !== '') {
+                        return 'Has Comments'
+                    } else {
+                        return 'No Comments';
+                    }
+                }
+            }
+        },
     ]
 
     gridOptions = {
@@ -86,7 +149,6 @@ export class PartsOrderListComponent implements OnInit {
         },
         onFirstDataRendered: (params) => {
             highlightRowView(params, 'id', this.id);
-            autoSizeColumns(params)
         },
         getRowId: params => params.data.id,
         onFilterChanged: params => {

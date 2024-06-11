@@ -2,7 +2,6 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { NgbActiveModal, NgbNavModule, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
 import { first } from 'rxjs/operators';
-import moment from 'moment';
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ShippingService } from '@app/core/api/operations/shipping/shipping.service';
@@ -132,6 +131,12 @@ export class ShippingMiscModalComponent implements OnInit {
       this.data = await this.shippingMiscService.findOne({ so: this.soLine })
       this.form.patchValue({ ...this.data, so: this.soLine })
 
+      this.form.get('hot_order').disable();
+
+      if(this.userInfo?.workArea?.indexOf('FlagAsHotSalesOrder')  > -1){
+        this.form.get('hot_order').enable();
+      }
+
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -148,6 +153,7 @@ export class ShippingMiscModalComponent implements OnInit {
     private shippingMiscService: ShippingMiscService,
   ) {
     this.userInfo = authenticationService.currentUserValue;
+
   }
 
   currentSection = 'item-1'
