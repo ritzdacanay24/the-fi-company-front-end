@@ -8,7 +8,7 @@ import moment from 'moment';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
-import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
+import { highlightRowView } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
 import { NAVIGATION_ROUTE } from '../parts-order-constant';
@@ -109,7 +109,10 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'oem', headerName: 'OEM', filter: 'agMultiColumnFilter' },
         { field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter' },
         { field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
-        { field: 'shipping_method', headerName: 'Shippimg Method', filter: 'agMultiColumnFilter' },
+        { field: 'tracking_number', headerName: 'Tracking Number', filter: 'agMultiColumnFilter' },
+        { field: 'tracking_number_carrier', headerName: 'Carrier', filter: 'agMultiColumnFilter' },
+        { field: 'ship_via_account', headerName: 'Ship Vi Account', filter: 'agMultiColumnFilter' },
+        { field: 'arrival_date', headerName: 'Arrival Date', filter: 'agMultiColumnFilter' },
         {
             field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
             cellRenderer: CommentsRendererComponent,

@@ -18,8 +18,8 @@ export class PartsOrderService extends DataService<any> {
         return firstValueFrom(this.http.put(`${url}/updateAndSendEmail.php?id=${id}`, params))
     }
 
-    getSvListReport() {
-        return firstValueFrom(this.http.get(`${url}/getSvListReport.php`))
+    getBySoLineNumber(so_number) {
+        return firstValueFrom(this.http.get(`${url}/getBySoLineNumber.php?so_number=${so_number}`))
     }
 
 }

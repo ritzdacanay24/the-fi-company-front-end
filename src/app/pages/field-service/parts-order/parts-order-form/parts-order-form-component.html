@@ -1,17 +1,66 @@
 <form [formGroup]="form" autocomplete="off">
 
-
-
     <div class="row" *ngIf="id">
-        <label class="form-label">SV number</label>
+        <label class="form-label">SV Number</label>
         <div class="input-group mb-3">
             <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
-                [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" readonly/>
-            <span class="input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()">Add SV Number</span>
+                [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" readonly />
+            <button class="btn input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()">Add SV
+                Number</button>
+        </div>
+    </div>
+
+    <div class="border border border-2 border-primary p-2 mb-3 rounded">
+        <h4 class="mb-2">Tracking Information</h4>
+
+        <div class="row" *ngIf="id">
+            <label class="form-label">Tracking Number</label>
+            <div class="input-group mb-3">
+                <select class="form-select" formControlName="tracking_number_carrier">
+                    <option selected disabled value="null">--SELECT CARRIER--</option>
+                    <option *ngFor="let row of ['BTX', 'FedEx', 'UPS']">{{row}}</option>
+                </select>
+                <input class="form-control" type="text" formControlName="tracking_number"
+                    placeholder="Enter Tracking Number"
+                    [ngClass]="{ 'is-invalid': submitted && f.tracking_number.errors }" />
+            </div>
+        </div>
+
+        <div *ngIf="form.value.tracking_number_carrier == 'FedEx'" class="mb-2">
+            Click <a class="link-primary" href="https://www.fedex.com/fedextrack/?trknbr={{form.value.tracking_number}}"
+                target="_blank"> <u>here</u>
+            </a> to view tracking.
+        </div>
+
+        <div *ngIf="form.value.tracking_number_carrier == 'UPS'" class="mb-2">
+            Click <a class="link-primary"
+                href="https://www.ups.com/track?track=yes&trackNums={{form.value.tracking_number}}" target="_blank">
+                <u>here</u>
+            </a> to view tracking.
+        </div>
+
+        <div *ngIf="form.value.tracking_number_carrier == 'BTX'" class="mb-2">
+            Click <a class="link-primary"
+                href="https://www.btxair.com/mybtx/track.asp?but.val=Details&airbill={{form.value.tracking_number}}"
+                target="_blank"> <u>here</u>
+            </a> to view tracking.
+        </div>
+
+
+        <div class="row" *ngIf="id">
+            <label class="form-label">Return Tracking Number</label>
+            <div class="input-group mb-3">
+                <select class="form-select" formControlName="return_tracking_number_carrier">
+                    <option selected disabled value="null">--SELECT CARRIER--</option>
+                    <option *ngFor="let row of ['BTX', 'FedEx', 'UPS']">{{row}}</option>
+                </select>
+                <input class="form-control" type="text" formControlName="return_tracking_number"
+                    placeholder="Enter Return Tracking Number"
+                    [ngClass]="{ 'is-invalid': submitted && f.return_tracking_number.errors }" />
+            </div>
         </div>
 
     </div>
-
     <div class="row">
         <div class="col mb-3">
             <label class="form-label">OEM</label>
@@ -21,10 +70,19 @@
     </div>
     <div class="row">
         <div class="col mb-3">
-            <label class="form-label">Shipping Method</label>
-            <input class="form-control" type="text" formControlName="shipping_method"
-                placeholder="Enter Shipping Method"
-                [ngClass]="{ 'is-invalid': submitted && f.shipping_method.errors }" />
+            <label class="form-label">Arrival Date</label>
+            <input class="form-control" type="date" formControlName="arrival_date" placeholder="Enter Shipping Method"
+                [ngClass]="{ 'is-invalid': submitted && f.arrival_date.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Ship vi Account</label>
+            <select class="form-control" formControlName="ship_via_account">
+                <option disabled selected value="null"> --SELECT--</option>
+                <option *ngFor="let row of ['Eyefi', 'Customer', 'N/A']"> {{row}} </option>
+            </select>
         </div>
     </div>
 

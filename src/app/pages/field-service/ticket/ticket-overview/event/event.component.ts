@@ -656,6 +656,31 @@ export class EventComponent implements OnInit {
     let receipts: any = [];
     if (this.isShowingReceipts) {
       receipts = await this.tripExpenseService.getByWorkOrderId(this.workOrderId);
+
+      // let events = [];
+      // for (let i = 0; i < receipts.length; i++) {
+      //   if (receipts[i].date && receipts[i].time) {
+      //     let startTime = receipts[i].date + ' ' + receipts[i].time;
+      //     let endDate = moment(startTime).add(15, 'minute');
+
+      //     events.push({
+      //       start: receipts[i].date + ' ' + receipts[i].time,
+      //       end: endDate,
+      //       title: receipts[i].vendor_name,
+      //       time: receipts[i].time,
+      //       tooltip: ` ${moment(receipts[i].date + ' ' + receipts[i].time).format('hh:mm a')} - ${moment(receipts[i].date + ' ' + receipts[i].time).format('hh:mm a')} \nTotal Time: ${receipts[i].time} \n${receipts[i].vendor_name}`,
+      //       color: 'green',
+      //       taskType: 'material-repeat-receipt',
+      //       resource: 0,
+      //       disable: true,
+      //       id: receipts[i].id,
+      //       resize: false
+      //     })
+      //   }
+      // }
+
+      // this.myEvents = this.myEvents.concat(events);
+
     }
 
 

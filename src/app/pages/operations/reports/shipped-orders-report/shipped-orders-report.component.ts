@@ -6,7 +6,7 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { currencyFormatter, autoSizeColumns } from 'src/assets/js/util';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
@@ -19,6 +19,7 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { FgLabelPrintModalService } from '@app/shared/components/fg-label-print-modal/fg-label-print-modal.component';
 import { IconRendererComponent } from '@app/shared/ag-grid/icon-renderer/icon-renderer.component';
 import { ShippedOrdersChartComponent } from './shipped-orders-chart/shipped-orders-chart.component';
+import { PartsOrderModalService } from '@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component';
 
 @Component({
   standalone: true,
@@ -43,6 +44,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     private itemInfoModalService: ItemInfoModalService,
     private salesOrderInfoModalService: SalesOrderInfoModalService,
     private fgLabelPrintModal: FgLabelPrintModalService,
+    private partsOrderModalService: PartsOrderModalService
   ) {
   }
 
@@ -163,8 +165,21 @@ export class ShippedOrdersReportComponent implements OnInit {
     { field: "arrivalDate", headerName: "Arrival Date", filter: "agTextColumnFilter" },
     { field: "sod_type", headerName: "Type", filter: "agTextColumnFilter" },
     { field: "SO_RMKS", headerName: "Remarks", filter: "agTextColumnFilter" },
-    
+    {
+      field: "VIEW_PARTS_ORDER_REQUEST", headerName: "View Parts Order Request", filter: "agMultiColumnFilter",
+      cellRenderer: IconRendererComponent,
+      cellRendererParams: {
+        onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR + '-' + e.rowData.SOD_LINE),
+        iconName: 'mdi mdi-ballot-outline'
+      }
+    }
   ];
+
+  viewPartsOrder = (so_number_and_line) => {
+    let modalRef = this.partsOrderModalService.open(so_number_and_line)
+    modalRef.result.then((result: any) => {
+    }, () => { });
+  }
 
   gridOptions = {
     ...agGridOptions,

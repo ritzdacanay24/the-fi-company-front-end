@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
-import { MrbService } from '@app/core/api/quality/mrb-service';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
 import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
@@ -55,10 +54,15 @@ export class PartsOrderFormComponent {
             }
         });
         if (ipAddress) {
-            await this.partsOrderService.updateAndSendEmail(this.id, {
-                ...this.form.value,
-                so_number: ipAddress
-            })
+            try {
+                await this.partsOrderService.updateAndSendEmail(this.id, {
+                    ...this.form.value,
+                    so_number: ipAddress
+                })
+                this.form.patchValue({ so_number: ipAddress })
+            } catch (e) {
+
+            }
         }
     }
 
@@ -73,9 +77,11 @@ export class PartsOrderFormComponent {
     }
 
     form = this.fb.group({
+        id: null,
         oem: [null],
         casino_name: [null],
-        shipping_method: [null],
+        arrival_date: [null],
+        ship_via_account: [null],
         address: null,
         contact_name: "",
         contact_phone_number: "",
@@ -86,6 +92,10 @@ export class PartsOrderFormComponent {
         created_by: [''],
         created_date: [''],
         so_number: [''],
+        tracking_number: [""],
+        tracking_number_carrier: [null],
+        return_tracking_number_carrier: [""],
+        return_tracking_number: [null],
     })
 
     setQadPartNumber($event) {

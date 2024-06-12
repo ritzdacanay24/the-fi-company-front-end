@@ -40,6 +40,7 @@ import { WebsocketService } from '@app/core/services/websocket.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { CheckboxRendererComponent } from '@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component';
 import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.component';
+import { PartsOrderModalService } from '@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component';
 
 const SALES_ORDER = 'Sales Order';
 const WS_SHIPPING = 'WS_SHIPPING';
@@ -137,7 +138,8 @@ export class ShippingComponent implements OnInit {
         private shippingMiscModalService: ShippingMiscModalService,
         private tableSettingsService: TableSettingsService,
         private websocketService: WebsocketService,
-        private authenticationService: AuthenticationService
+        private authenticationService: AuthenticationService,
+        private partsOrderModalService: PartsOrderModalService
     ) {
 
         this.websocketService = websocketService;
@@ -285,6 +287,12 @@ export class ShippingComponent implements OnInit {
                 }
             });
         });
+    }
+
+    viewPartsOrder = (so_number_and_line) => {
+        let modalRef = this.partsOrderModalService.open(so_number_and_line)
+        modalRef.result.then((result: any) => {
+        }, () => { });
     }
 
     viewRouting = (partNumber) => {
@@ -761,7 +769,15 @@ export class ShippingComponent implements OnInit {
     { field: 'sod_type', headerName: 'SOD Type', filter: 'agSetColumnFilter' },
     { field: 'sod_per_date', headerName: 'Performance Date', filter: 'agDateColumnFilter' },
     { field: "sod_req_date", headerName: "Request Date", filter: "agDateColumnFilter", filterParams: agGridDateFilter },
-    { field: "REQ_DUE_DIFF", headerName: "Request and Due Date Diff", filter: "agMultiColumnFilter" }
+    { field: "REQ_DUE_DIFF", headerName: "Request and Due Date Diff", filter: "agMultiColumnFilter" },
+    {
+        field: "VIEW_PARTS_ORDER_REQUEST", headerName: "View Parts Order Request", filter: "agMultiColumnFilter",
+        cellRenderer: IconRendererComponent,
+        cellRendererParams: {
+            onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR +'-'+e.rowData.SOD_LINE),
+            iconName: 'mdi mdi-ballot-outline'
+        }
+    }
     ];
 
 
@@ -832,7 +848,7 @@ export class ShippingComponent implements OnInit {
         animateRows: true,
         tooltipShowDelay: 0,
         columnDefs: [],
-        rowBuffer:0,
+        rowBuffer: 0,
         suppressColumnMoveAnimation: true,
         getRowId: (data: any) => data?.data.id,
         onGridReady: (params) => {
