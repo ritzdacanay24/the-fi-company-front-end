@@ -162,6 +162,8 @@ export class PartsOrderModalComponent implements OnInit {
             this.form.disable();
             this.form.get('tracking_number').enable();
             this.form.get('tracking_number_carrier').enable();
+            this.form.get('return_tracking_number').enable();
+            this.form.get('return_tracking_number_carrier').enable();
 
         } catch (err) { }
     }
