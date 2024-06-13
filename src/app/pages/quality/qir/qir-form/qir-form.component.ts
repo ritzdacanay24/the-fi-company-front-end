@@ -9,6 +9,7 @@ import { QadCustomerNameSearchComponent } from '@app/shared/components/qad-custo
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
 import { QadCustomerPartSearchComponent } from '@app/shared/components/qad-customer-part-search/qad-customer-part-search.component';
 import { ControlsOf } from 'src/assets/js/util/_formGroup';
+import { QuillModule } from 'ngx-quill';
 
 @Component({
   standalone: true,
@@ -19,7 +20,8 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
     JobSearchComponent,
     QadCustomerNameSearchComponent,
     QadPartSearchComponent,
-    QadCustomerPartSearchComponent
+    QadCustomerPartSearchComponent,
+    QuillModule
   ],
   selector: 'app-qir-form',
   templateUrl: './qir-form.component.html',
@@ -32,6 +34,19 @@ export class QirFormComponent {
     private qirSettingsService: QirSettingsService,
   ) {
   }
+
+  quillConfig = {
+    toolbar: {
+      container: [
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'color': [] }, { 'background': [] }],
+      ],
+    },
+  }
+
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);

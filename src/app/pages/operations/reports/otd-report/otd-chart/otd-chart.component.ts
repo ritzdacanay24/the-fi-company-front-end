@@ -253,8 +253,8 @@ export class OtdChartComponent {
                     hideOverlappingLabels: true,
                     formatter: (value) => {
                         if (goalArray?.length <= 7) {
-                            for (let i = 0; i <= labelsTest.length; i++) {
-                                if (labelsTest[i]?.data == moment(value, "MM-DD-YYYY")) {
+                            for (let i = 0; i < labelsTest.length; i++) {
+                                if (labelsTest[i]?.data == moment(value).format('YYYY-MM-DD')) {
                                     return [value, labelsTest[i]?.test]
                                 }
                             }

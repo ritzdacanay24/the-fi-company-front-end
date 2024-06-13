@@ -251,6 +251,25 @@ export class KanbanComponent implements OnInit {
         this.getKanbanConfig()
     }
 
+    onClickFilter(name) {
+        if (name == 'Open picks') {
+
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    this.data.queues[i].details[ii] = []
+                    let pickingPercent = row?.pickInfo?.wod_qty_iss/row?.pickInfo?.wod_qty_req*100 
+
+                    if(pickingPercent < 100){
+                        console.log(pickingPercent)
+                        this.data.queues[i].details[ii].push(row)
+                    }
+
+                }
+            }
+        }
+    }
+
     updateTransactionV1(row) {
 
         for (let i = 0; i < this.data.queues.length; i++) {
@@ -516,12 +535,14 @@ export class KanbanComponent implements OnInit {
 
     subscription: Subscription;
     isLoadingAll = false;
+    dataCopy
     public async _fetchData() {
 
         try {
             this.isLoadingAll = true;
             this.subscription?.unsubscribe();
             this.data = await this.kanbanApiService.getProduction();
+            this.dataCopy = this.data
             const source = interval(1000);
             this.subscription = source.subscribe(val => this.updateClock());
             this.isLoadingAll = false;

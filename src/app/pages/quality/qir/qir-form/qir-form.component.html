@@ -167,8 +167,10 @@
 
   <div class="mb-3">
     <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail</label>
-    <textarea type="text" class="form-control" name="issueComment" formControlName="issueComment"
-      [ngClass]="{ 'is-invalid': submitted && f.issueComment.errors }" rows="10"></textarea>
+    <quill-editor [ngClass]="{ 'is-invalid': submitted && f.issueComment.errors }" formControlName="issueComment"
+      placeholder="Enter Comments here.." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">
+    </quill-editor>
+
   </div>
 
   <div class="mb-3">

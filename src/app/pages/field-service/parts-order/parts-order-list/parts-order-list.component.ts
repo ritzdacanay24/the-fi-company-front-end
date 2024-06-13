@@ -16,6 +16,7 @@ import { CommentsModalService } from '@app/shared/components/comments/comments-m
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
 
 @Component({
     standalone: true,
@@ -38,6 +39,7 @@ export class PartsOrderListComponent implements OnInit {
         private activatedRoute: ActivatedRoute,
         private partsOrderService: PartsOrderService,
         private commentsModalService: CommentsModalService,
+        private salesOrderInfoModalService: SalesOrderInfoModalService,
     ) {
     }
     title = "Parts Orders";
@@ -98,7 +100,24 @@ export class PartsOrderListComponent implements OnInit {
             suppressHeaderMenuButton: true,
             floatingFilter: false
         },
-        { field: 'so_number', headerName: 'SV Number', filter: 'agMultiColumnFilter' },
+        {
+            field: "STATUS", headerName: "Status", filter: "agSetColumnFilter",
+            cellRenderer: (params: any) => {
+                if (params.data) {
+                    if (params.data.isPastDue == 'Yes')
+                        return `<span class="badge bg-danger-subtle text-danger mb-0"> Past Due </span>`;
+                }
+                return null
+            }
+        },
+        {
+            field: 'so_number', headerName: 'SV Number', filter: 'agMultiColumnFilter',
+            cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: e => this.salesOrderInfoModalService.open(e.rowData.so_number),
+                isLink: true
+            }
+        },
         { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
         { field: 'casino_name', headerName: 'Casino Name', filter: 'agMultiColumnFilter' },
         { field: 'contact_name', headerName: 'Contact Name', filter: 'agMultiColumnFilter' },
@@ -111,35 +130,41 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
         { field: 'tracking_number', headerName: 'Tracking Number', filter: 'agMultiColumnFilter' },
         { field: 'tracking_number_carrier', headerName: 'Carrier', filter: 'agMultiColumnFilter' },
+        { field: 'isPastDue', headerName: 'Past Due', filter: 'agMultiColumnFilter' },
         { field: 'ship_via_account', headerName: 'Ship Vi Account', filter: 'agMultiColumnFilter' },
         { field: 'arrival_date', headerName: 'Arrival Date', filter: 'agMultiColumnFilter' },
-        {
-            field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
-            cellRenderer: CommentsRendererComponent,
-            cellRendererParams: {
-                onClick: (params: any) => this.viewComment(params.rowData.so_number, params.rowData.id, params.rowData.so_number),
-            }
-            , valueGetter: (params) => {
-                if (params.data)
-                    if (params.data.recent_comments?.bg_class_name == 'bg-info') {
-                        return 'Has Comments'
-                    } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
-                        return 'New Comments'
-                    } else {
-                    return 'No Comments'
-                }
-            },
-            filterParams: {
-                valueGetter: params => {
-                    let data = params.value;
-                    if (data !== '') {
-                        return 'Has Comments'
-                    } else {
-                        return 'No Comments';
-                    }
-                }
-            }
-        },
+        { field: 'qad_info.so_ord_date', headerName: 'QAD Ordered Date', filter: 'agMultiColumnFilter' },
+        { field: 'qad_info.sod_due_date', headerName: 'QAD Due Date', filter: 'agMultiColumnFilter' },
+        { field: 'qad_info.qty_open', headerName: 'QAD Qty Open', filter: 'agMultiColumnFilter' },
+        { field: 'qad_info.abs_shp_date', headerName: 'QAD Last Shipped Date', filter: 'agMultiColumnFilter' },
+        { field: 'qad_info.abs_ship_qty', headerName: 'QAD Total Shipped Qty', filter: 'agMultiColumnFilter' },
+        // {
+        //     field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
+        //     cellRenderer: CommentsRendererComponent,
+        //     cellRendererParams: {
+        //         onClick: (params: any) => this.viewComment(params.rowData.so_number, params.rowData.id, params.rowData.so_number),
+        //     }
+        //     , valueGetter: (params) => {
+        //         if (params.data)
+        //             if (params.data.recent_comments?.bg_class_name == 'bg-info') {
+        //                 return 'Has Comments'
+        //             } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
+        //                 return 'New Comments'
+        //             } else {
+        //             return 'No Comments'
+        //         }
+        //     },
+        //     filterParams: {
+        //         valueGetter: params => {
+        //             let data = params.value;
+        //             if (data !== '') {
+        //                 return 'Has Comments'
+        //             } else {
+        //                 return 'No Comments';
+        //             }
+        //         }
+        //     }
+        // },
     ]
 
     gridOptions = {
@@ -174,7 +199,13 @@ export class PartsOrderListComponent implements OnInit {
                     gridParams
                 }
             });
-        }
+        },
+        getRowClass: (params: any) => {
+            if (params.data.isPastDue == 'Yes') {
+                return ['border border-danger bg-opacity-10 bg-danger']
+            }
+            return null;
+        },
     };
 
     searchName = ''

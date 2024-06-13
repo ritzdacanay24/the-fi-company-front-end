@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <div class="border border border-2 border-primary p-2 mb-3 rounded">
+    <div class="border border border-2 border-primary p-2 mb-3 rounded" *ngIf="id">
         <h4 class="mb-2">Tracking Information</h4>
 
         <div class="row" *ngIf="id">
@@ -89,7 +89,7 @@
     <div class="row">
         <div class="col-md-12 mb-3">
             <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
-                [disabled]="this.form.disabled" [form_label]="'Search by address'"
+                [disabled]="this.form.get('address').disabled" [form_label]="'Search by address'"
                 placeholder="Enter Address Information"></app-address-search>
         </div>
     </div>

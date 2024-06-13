@@ -33,14 +33,28 @@
             </ng-select>
         </div>
 
+        <div class="dropdown" ngbDropdown container="body">
+            <a href="javascript:void(0);" class="text-muted arrow-none" id="dropdownMenuLink1" data-bs-toggle="dropdown"
+                aria-expanded="false" ngbDropdownToggle> Filters </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink1" ngbDropdownMenu>
+                <li  class="pointer" (click)="onClickFilter('Open picks')">
+                    <a class="dropdown-item">
+                        <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Open Picks </a>
+                </li>
+            </ul>
+        </div>
+
+
         <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Kanban</button>
 
         <button class="btn btn-light ms-3" (click)="_fetchData()">Refresh</button>
 
         <div class="form-check form-switch ms-3 mt-2">
-            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showLess" (ngModelChange)="onShowLess()">
+            <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showLess"
+                (ngModelChange)="onShowLess()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show Less Data In Card</label>
         </div>
+
 
     </div><!--end card-body-->
 </div><!--end card-->

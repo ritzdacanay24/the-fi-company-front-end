@@ -169,7 +169,7 @@ export class ShippedOrdersReportComponent implements OnInit {
       field: "VIEW_PARTS_ORDER_REQUEST", headerName: "View Parts Order Request", filter: "agMultiColumnFilter",
       cellRenderer: IconRendererComponent,
       cellRendererParams: {
-        onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR + '-' + e.rowData.SOD_LINE),
+        onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR),
         iconName: 'mdi mdi-ballot-outline'
       }
     }

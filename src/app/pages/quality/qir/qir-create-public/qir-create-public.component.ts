@@ -84,7 +84,6 @@ export class QirCreatePublicComponent {
 
   closeWindow = false;
   async onSubmit() {
-    this.submitted = true;
 
     this.form.patchValue({
       createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -94,6 +93,8 @@ export class QirCreatePublicComponent {
       getFormValidationErrors()
       return;
     }
+    
+    this.submitted = true;
 
     try {
 
@@ -117,7 +118,7 @@ export class QirCreatePublicComponent {
 
       let value = await SweetAlert.fire({
         icon: 'success',
-        text: `Request submitted successfully. Your QIR ID # is ${res.insertId}. `,
+        text: `Request submitted successfully. Your QIR # is ${res.insertId}. `,
         confirmButtonText: 'Create New QIR',
         cancelButtonText: `Close`,
         denyButtonText: `Close`,
