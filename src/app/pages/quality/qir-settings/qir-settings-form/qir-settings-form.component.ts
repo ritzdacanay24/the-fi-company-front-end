@@ -49,7 +49,8 @@ export class QirSettingsFormComponent {
     { name: 'Component Type', value: 'componentType' },
     { name: 'Status', value: 'status' },
     { name: 'Platform Type', value: 'platformType' },
-    { name: 'Customer', value: 'customerName' }
+    { name: 'Customer', value: 'customerName' },
+    { name: 'Status Reason', value: 'statusReason' }
   ]
 
 

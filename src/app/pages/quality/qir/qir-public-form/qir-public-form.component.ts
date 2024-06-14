@@ -8,6 +8,8 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
 import { IQirForm } from '../qir-form/qir-form-type';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { QuillModule } from 'ngx-quill';
+import { validateEmail } from 'src/assets/js/util/validateEmail';
+import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
 
 @Component({
   standalone: true,
@@ -124,7 +126,22 @@ export class QirPublicFormComponent {
     last_name: new FormControl('', [Validators.required]),
     email: new FormControl('', [Validators.required]),
     location: new FormControl(null),
+    warranty_replacement: new FormControl(null),
+    cc_email: new FormControl(null)
   })
+
+  addTag: AddTagFn | boolean = (e) => {
+    let ee = validateEmail(e);
+
+    if (!ee) {
+      alert('Not valid email.')
+      return false;
+    }
+    console.log(e)
+
+    console.log(this.form.value)
+    return validateEmail(e) ? e : false
+  }
 
   setBooleanToNumber(key) {
     let e = this.form.value[key]

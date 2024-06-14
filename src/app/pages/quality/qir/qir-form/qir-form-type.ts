@@ -41,4 +41,7 @@ export interface IQirForm {
   customerSerialNumber?: string
   location?: string
   statusClosed?: string
+  warranty_replacement?: string
+  cc_email?: string
+  status_reason?: string
 }

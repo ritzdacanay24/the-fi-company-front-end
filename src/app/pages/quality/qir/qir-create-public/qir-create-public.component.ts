@@ -1,8 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup, Validators } from '@angular/forms';
+import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
 import moment from 'moment';
 import { QirFormComponent } from '../qir-form/qir-form.component';
 import { NAVIGATION_ROUTE } from '../qir-constant';
@@ -93,7 +92,7 @@ export class QirCreatePublicComponent {
       getFormValidationErrors()
       return;
     }
-    
+
     this.submitted = true;
 
     try {
@@ -118,7 +117,8 @@ export class QirCreatePublicComponent {
 
       let value = await SweetAlert.fire({
         icon: 'success',
-        text: `Request submitted successfully. Your QIR # is ${res.insertId}. `,
+        title: `QIR Request submitted successfully. Your QIR # is ${res.insertId}. `,
+        text: 'We have received your request.  You will receive a response from our Quality Team within two business days.',
         confirmButtonText: 'Create New QIR',
         cancelButtonText: `Close`,
         denyButtonText: `Close`,

@@ -6,6 +6,7 @@ import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/q
 import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { AutosizeModule } from 'ngx-autosize';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -15,7 +16,8 @@ import Swal from 'sweetalert2';
         ReactiveFormsModule,
         QirSearchComponent,
         QadPartSearchComponent,
-        AddressSearchComponent
+        AddressSearchComponent,
+        AutosizeModule
     ],
     selector: 'app-parts-order-form',
     templateUrl: './parts-order-form-component.html'

@@ -27,7 +27,7 @@
           <ul class="list-group">
             <li class="list-group-item d-flex justify-content-between pointer" *ngFor="let row of attachments; let i = index">
               <a (click)="open(i)">{{row.fileName}} - {{row.createdDate}}</a> <br />
-              <p></p>
+              <p>Can't open/view file? Click <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}" target="_blank" class="link-primary"> here </a></p>
               <span class="text-danger pointer" (click)="deleteAttachment(row.id, i)">X</span>
             </li>
           </ul>

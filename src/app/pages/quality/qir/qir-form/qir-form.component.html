@@ -20,25 +20,37 @@
   </div>
 
   <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Customer Reported Date</label>
       <input class="form-control" type="date" formControlName="customerReportedDate"
         [ngClass]="{ 'is-invalid': submitted && f.customerReportedDate.errors }" />
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('priority')">Priority</label>
       <ng-select [items]="formData?.priority" [searchable]="true" formControlName="priority" bindLabel="name"
         bindValue="name" placeholder="Select priority" [ngClass]="{ 'is-invalid': submitted && f.priority.errors }"
         [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
       </ng-select>
     </div>
-    <div class="col-md-4 mb-3">
+  </div>
+
+  <div class="row">
+    <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('status')">Status</label>
       <ng-select [items]="formData?.status" [searchable]="true" formControlName="status" bindLabel="name"
         bindValue="name" placeholder="Select status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }"
         [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
       </ng-select>
     </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('status_reason')">Status Reason</label>
+      <ng-select [items]="formData?.statusReason" [searchable]="true" formControlName="status_reason" bindLabel="name"
+        bindValue="name" placeholder="Select status reason"
+        [ngClass]="{ 'is-invalid': submitted && f.status_reason.errors }" [addTag]="false" [markFirst]="false"
+        [appendTo]="'body'" (click)="getQirSettings()">
+      </ng-select>
+    </div>
+
   </div>
 
   <div class="row">

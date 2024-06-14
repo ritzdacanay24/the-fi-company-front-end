@@ -19,6 +19,13 @@
       [ngClass]="{ 'is-invalid': submitted && f.email.errors }" placeholder="Enter your email address" />
   </div>
 
+  <div class="mb-3">
+    <label class="form-label">CC Email (Optional)</label>
+    <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="cc_email"
+      placeholder="Enter email address" notFoundText="Type email and press enter">
+    </ng-select>
+  </div>
+
   <div class="row">
     <div class="col mb-3">
       <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Reported Date</label>
@@ -33,6 +40,15 @@
         [appendTo]="'body'" (click)="getQirSettings()">
       </ng-select>
     </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('warranty_replacement')">Warranty Replacement</label>
+      <select class="form-select" formControlName="warranty_replacement"
+        [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
+        <option selected disabled value="null">--SELECT--</option>
+        <option *ngFor="let row of ['Yes', 'No', 'N/A']" [value]="row">{{row}}</option>
+      </select>
+    </div>
+
   </div>
 
   <div class="row">

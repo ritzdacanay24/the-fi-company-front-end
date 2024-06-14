@@ -154,6 +154,7 @@ export class QirFormComponent {
     last_name: new FormControl(''),
     email: new FormControl(''),
     statusClosed: new FormControl(null),
+    status_reason: new FormControl(null),
   })
 
   setBooleanToNumber(key) {
