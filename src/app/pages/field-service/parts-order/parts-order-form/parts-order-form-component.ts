@@ -34,7 +34,6 @@ export class PartsOrderFormComponent {
     }
 
     addTag(tag: string) {
-        /* https://github.com/ng-select/ng-select/issues/809 */
         return tag;
     }
 
