@@ -3,7 +3,7 @@
 </div>
 
 <div class="card mb-3">
-    <div class="card-body d-flex text-nowrap align-middle">
+    <div class="card-body d-flex text-nowrap align-middle" style="overflow: auto;">
         <div class="search-box">
             <input type="text" class="form-control search" placeholder="Search for work order number"
                 style="width:300px" [(ngModel)]="searchTerm">
@@ -33,19 +33,26 @@
             </ng-select>
         </div>
 
-        <div class="dropdown" ngbDropdown container="body">
+        <div class="dropdown mx-2 my-2 ms-4 p-0" ngbDropdown container="body">
             <a href="javascript:void(0);" class="text-muted arrow-none" id="dropdownMenuLink1" data-bs-toggle="dropdown"
-                aria-expanded="false" ngbDropdownToggle> Filters </a>
+                aria-expanded="false" ngbDropdownToggle> Filters <u>{{isFilterOn}}</u></a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink1" ngbDropdownMenu>
-                <li  class="pointer" (click)="onClickFilter('Open picks')">
-                    <a class="dropdown-item">
-                        <i class="ri-edit-2-line align-bottom me-2 text-muted"></i> Open Picks </a>
+                <li class="pointer active" (click)="onClickFilter('Open picks')">
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Open picks'}">Open Picks </a>
+                </li>
+                <li class="pointer" (click)="onClickFilter('Completed WO')">
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Completed WO'}">Completed WO's </a>
+                </li>
+                <li class="pointer" (click)="onClickFilter('Hot')">
+                    <a class="dropdown-item"  [ngClass]="{'active':isFilterOn == 'Hot'}"> Hot Orders </a>
+                </li>
+                <li class="pointer" (click)="onClickFilter('')">
+                    <a class="dropdown-item">Clear Filters </a>
                 </li>
             </ul>
         </div>
 
-
-        <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Kanban</button>
+        <button class="btn btn-primary ms-3" (click)="addToKanban()">Add to Work Order Tracker</button>
 
         <button class="btn btn-light ms-3" (click)="_fetchData()">Refresh</button>
 
@@ -96,7 +103,8 @@
 
 <!-- Task  -->
 <ng-template #ready let-task='task' let-header='header' let-index='index'>
-    <div class="card tasks-box card-animate1 mb-2 {{header?.first_in_first_out && index > 0 ? 'opacity-25 no-pointer' : ''}}"
+    <div *ngIf="!task.hidden"
+        class="card tasks-box card-animate1 mb-2 {{header?.first_in_first_out && index > 0 ? 'opacity-25 no-pointer' : ''}}"
         [ngClass]="{'border-danger border border-2': task?.wo_mstr?.wo_due_date < today && task?.wo_mstr?.wo_status != 'C', 'bg-danger-subtle text-danger' : task?.timeDiffMins >=60 && header.id > 1,'bg-warning-subtle text-warning' : task?.timeDiffMins >=30 && header.id > 1}">
         <div class="card-header p-1 text-white text-center blink" *ngIf="task.hot_order">
             <span class="text">HOT ORDER</span>

@@ -251,30 +251,54 @@ export class KanbanComponent implements OnInit {
         this.getKanbanConfig()
     }
 
+    isFilterOn = "";
     onClickFilter(name) {
+        this.isFilterOn = name
         if (name == 'Open picks') {
-
             for (let i = 0; i < this.data.queues.length; i++) {
                 for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
                     let row = this.data.queues[i].details[ii]
-                    this.data.queues[i].details[ii] = []
-                    let pickingPercent = row?.pickInfo?.wod_qty_iss/row?.pickInfo?.wod_qty_req*100 
-
-                    if(pickingPercent < 100){
-                        console.log(pickingPercent)
-                        this.data.queues[i].details[ii].push(row)
+                    let pickingPercent = row?.pickInfo?.wod_qty_iss / row?.pickInfo?.wod_qty_req * 100
+                    row.pickingPercent = pickingPercent;
+                    row.hidden = true;
+                    if (pickingPercent < 100) {
+                        row.hidden = false;
                     }
-
+                }
+            }
+        } else if (name == 'Completed WO') {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    row.hidden = true;
+                    if (row?.wo_mstr?.wo_status == 'C') {
+                        row.hidden = false;
+                    }
+                }
+            }
+        } else if (name == 'Hot') {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    row.hidden = true;
+                    if (row?.hot_order) {
+                        row.hidden = false;
+                    }
+                }
+            }
+        } else {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    row.hidden = false;
                 }
             }
         }
     }
 
     updateTransactionV1(row) {
-
         for (let i = 0; i < this.data.queues.length; i++) {
             if (this.data.queues[i].id == row.kanban_ID) {
-
                 for (let ii = 0; ii < this.data.queues[i]?.details?.length; ii++) {
                     if (this.data.queues[i]?.details[ii].id == row.id) {
                         this.data.queues[i].details[ii] = row;
@@ -282,7 +306,6 @@ export class KanbanComponent implements OnInit {
                 }
             }
         }
-
     }
 
     ngOnInit(): void {

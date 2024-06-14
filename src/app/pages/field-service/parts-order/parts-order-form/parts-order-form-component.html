@@ -90,7 +90,7 @@
         <div class="col-md-12 mb-3">
             <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
                 [disabled]="this.form.get('address').disabled" [form_label]="'Search by address'"
-                placeholder="Enter Address Information"></app-address-search>
+                placeholder="Enter Address Information" [addTag]="addTag"></app-address-search>
         </div>
     </div>
 

@@ -137,9 +137,7 @@ export class QirPublicFormComponent {
       alert('Not valid email.')
       return false;
     }
-    console.log(e)
-
-    console.log(this.form.value)
+    
     return validateEmail(e) ? e : false
   }
 

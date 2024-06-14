@@ -33,8 +33,13 @@ export class PartsOrderFormComponent {
         this.setFormEmitter.emit(this.form);
     }
 
+    addTag(tag: string) {
+        /* https://github.com/ng-select/ng-select/issues/809 */
+        return tag;
+    }
+
     notifyParent($event) {
-        this.form.patchValue({ address: $event.address.freeformAddress, casino_name: $event.poi?.name })
+        this.form.patchValue({ address: $event?.address?.freeformAddress || $event, casino_name: $event.poi?.name })
     }
 
     async addSVNumber() {
