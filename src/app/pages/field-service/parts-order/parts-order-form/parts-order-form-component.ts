@@ -42,7 +42,6 @@ export class PartsOrderFormComponent {
     }
 
     async addSVNumber() {
-        console.log(this.form.value, 'this.form.value')
         const { value: ipAddress } = await SweetAlert.fire({
             title: "SV Number",
             input: "text",

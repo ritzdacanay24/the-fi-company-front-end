@@ -40,12 +40,22 @@
                 <li class="pointer active" (click)="onClickFilter('Open picks')">
                     <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Open picks'}">Open Picks </a>
                 </li>
+                <li class="pointer active" (click)="onClickFilter('Over Picked')">
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Over Picked'}">Over Picked </a>
+                </li>
                 <li class="pointer" (click)="onClickFilter('Completed WO')">
                     <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Completed WO'}">Completed WO's </a>
                 </li>
                 <li class="pointer" (click)="onClickFilter('Hot')">
-                    <a class="dropdown-item"  [ngClass]="{'active':isFilterOn == 'Hot'}"> Hot Orders </a>
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Hot'}"> Hot Orders </a>
                 </li>
+                <li class="pointer" (click)="onClickFilter('Due Today')">
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Due Today'}"> Due Today </a>
+                </li>
+                <li class="pointer" (click)="onClickFilter('Over Due')">
+                    <a class="dropdown-item" [ngClass]="{'active':isFilterOn == 'Over Due'}"> Over Due </a>
+                </li>
+                
                 <li class="pointer" (click)="onClickFilter('')">
                     <a class="dropdown-item">Clear Filters </a>
                 </li>

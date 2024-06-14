@@ -3,14 +3,11 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup } from "@angular/forms";
-import { NgbActiveModal, NgbCarouselModule, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
-import { AttachmentsService, AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
 
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
-import { Lightbox } from 'ngx-lightbox';
 import { QirResponseFormComponent } from '../qir-response-form/qir-response-form.component';
 import { QirResponseService } from '@app/core/api/quality/qir-response.service';
 import { AuthenticationService } from '@app/core/services/auth.service';

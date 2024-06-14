@@ -254,7 +254,30 @@ export class KanbanComponent implements OnInit {
     isFilterOn = "";
     onClickFilter(name) {
         this.isFilterOn = name
-        if (name == 'Open picks') {
+
+        if (name == 'Over Due') {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    row.hidden = true;
+                    let totalDays: any = this.getDaysLateNumber(row.wo_mstr.wo_due_date);
+                    if (totalDays > 0) {
+                        row.hidden = false;
+                    }
+                }
+            }
+        } else if (name == 'Due Today') {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii];
+                    let totalDays: any = this.getDaysLateNumber(row.wo_mstr.wo_due_date);
+                    row.hidden = true;
+                    if (totalDays == 0) {
+                        row.hidden = false;
+                    }
+                }
+            }
+        } else if (name == 'Open picks') {
             for (let i = 0; i < this.data.queues.length; i++) {
                 for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
                     let row = this.data.queues[i].details[ii]
@@ -262,6 +285,18 @@ export class KanbanComponent implements OnInit {
                     row.pickingPercent = pickingPercent;
                     row.hidden = true;
                     if (pickingPercent < 100) {
+                        row.hidden = false;
+                    }
+                }
+            }
+        } else if (name == 'Over Picked') {
+            for (let i = 0; i < this.data.queues.length; i++) {
+                for (let ii = 0; ii < this.data.queues[i].details.length; ii++) {
+                    let row = this.data.queues[i].details[ii]
+                    let pickingPercent = row?.pickInfo?.wod_qty_iss / row?.pickInfo?.wod_qty_req * 100
+                    row.pickingPercent = pickingPercent;
+                    row.hidden = true;
+                    if (pickingPercent > 100) {
                         row.hidden = false;
                     }
                 }
@@ -504,7 +539,14 @@ export class KanbanComponent implements OnInit {
         } else {
             return dayCount > 1 ? ` ${dayCount} DAYS LATE` : ` ${dayCount} DAY LATE`;
         }
+    }
 
+    getDaysLateNumber(days) {
+        var start = moment(days, "YYYY-MM-DD");
+        var end = moment(this.today, "YYYY-MM-DD");
+
+        //Difference in number of days
+        return Math.round(moment.duration(end.diff(start)).asDays());
     }
 
     /**
@@ -568,6 +610,8 @@ export class KanbanComponent implements OnInit {
             this.dataCopy = this.data
             const source = interval(1000);
             this.subscription = source.subscribe(val => this.updateClock());
+
+            this.onClickFilter(this.isFilterOn)
             this.isLoadingAll = false;
 
         } catch (err) {
