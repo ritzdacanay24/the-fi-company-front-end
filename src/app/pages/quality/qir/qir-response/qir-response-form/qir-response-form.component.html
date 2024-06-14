@@ -1,0 +1,59 @@
+<form [formGroup]="form" autocomplete="off">
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label  text-decoration-underline">Preliminary Investigation Date</label>
+            <input type="date" class="form-control" formControlName="preliminary_investigation">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label text-decoration-underline">QA Findings</label>
+            <textarea class="form-control" type="text" formControlName="findings" placeholder="Enter findings if any"
+                [ngClass]="{ 'is-invalid': submitted && f.findings.errors }" autosize [minRows]="5"></textarea>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label text-decoration-underline">Fi Document Control Response</label>
+            <textarea class="form-control" type="text" formControlName="document_control_response"
+                placeholder="Enter findings if any"
+                [ngClass]="{ 'is-invalid': submitted && f.document_control_response.errors }" autosize
+                [minRows]="5"></textarea>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label text-decoration-underline">Fi Engineering Response</label>
+            <textarea class="form-control" type="text" formControlName="fs_engineering_reponse"
+                placeholder="Enter findings if any"
+                [ngClass]="{ 'is-invalid': submitted && f.fs_engineering_reponse.errors }" autosize
+                [minRows]="5"></textarea>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label text-decoration-underline">Fi Quality Team</label>
+            <textarea class="form-control" type="text" formControlName="quality_team"
+                placeholder="Enter findings if any" [ngClass]="{ 'is-invalid': submitted && f.quality_team.errors }"
+                autosize [minRows]="5"></textarea>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label  text-decoration-underline">Closure Date</label>
+            <input type="date" class="form-control" formControlName="closure_date">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label  text-decoration-underline">Closure By</label>
+            <input class="form-control" type="text" formControlName="closure_by" placeholder="Closure by"
+                [ngClass]="{ 'is-invalid': submitted && f.closure_by.errors }">
+        </div>
+    </div>
+
+</form>

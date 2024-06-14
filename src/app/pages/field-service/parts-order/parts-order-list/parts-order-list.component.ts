@@ -13,7 +13,6 @@ import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } fr
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
 import { NAVIGATION_ROUTE } from '../parts-order-constant';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
-import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
@@ -138,33 +137,6 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'qad_info.qty_open', headerName: 'QAD Qty Open', filter: 'agMultiColumnFilter' },
         { field: 'qad_info.abs_shp_date', headerName: 'QAD Last Shipped Date', filter: 'agMultiColumnFilter' },
         { field: 'qad_info.abs_ship_qty', headerName: 'QAD Total Shipped Qty', filter: 'agMultiColumnFilter' },
-        // {
-        //     field: "Comments", headerName: "Comments", filter: "agMultiColumnFilter",
-        //     cellRenderer: CommentsRendererComponent,
-        //     cellRendererParams: {
-        //         onClick: (params: any) => this.viewComment(params.rowData.so_number, params.rowData.id, params.rowData.so_number),
-        //     }
-        //     , valueGetter: (params) => {
-        //         if (params.data)
-        //             if (params.data.recent_comments?.bg_class_name == 'bg-info') {
-        //                 return 'Has Comments'
-        //             } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
-        //                 return 'New Comments'
-        //             } else {
-        //             return 'No Comments'
-        //         }
-        //     },
-        //     filterParams: {
-        //         valueGetter: params => {
-        //             let data = params.value;
-        //             if (data !== '') {
-        //                 return 'Has Comments'
-        //             } else {
-        //                 return 'No Comments';
-        //             }
-        //         }
-        //     }
-        // },
     ]
 
     gridOptions = {

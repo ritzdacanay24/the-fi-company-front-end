@@ -69,6 +69,7 @@ export class QirListComponent implements OnInit {
       minWidth: 115
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
+    { field: 'qir_response_id', headerName: 'QIR Reponse Found', filter: 'agMultiColumnFilter' },
     { field: "CustomerPartNumber", headerName: "Customer Part Number", filter: "agTextColumnFilter" },
     { field: "componentType", headerName: "Component Type", filter: "agTextColumnFilter" },
     { field: "createdBy", headerName: "Created By", filter: "agTextColumnFilter" },

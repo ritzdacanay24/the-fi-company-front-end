@@ -12,6 +12,7 @@ import { MyFormGroup } from 'src/assets/js/util/_formGroup';
 import { Lightbox } from 'ngx-lightbox';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
+import { QirResponseModalService } from '../qir-response/qir-repsonse-modal/qir-repsonse-modal.component';
 
 @Component({
   standalone: true,
@@ -28,7 +29,8 @@ export class QirEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private lightbox: Lightbox,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private qirResponseModalService: QirResponseModalService
   ) { }
 
   ngOnInit(): void {
@@ -48,6 +50,13 @@ export class QirEditComponent {
   isLoading = false;
 
   submitted = false;
+
+
+  async openQirResponse() {
+    const modalRef = this.qirResponseModalService.open(this.id);
+    modalRef.result.then(async (result: any) => {
+    })
+  }
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });

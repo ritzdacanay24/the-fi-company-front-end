@@ -32,11 +32,8 @@ export class PartsOrderEditComponent {
 
     if (this.id) this.getData();
   }
-
-  qualityManagerApproval() { }
-  vpApproval() { }
-
-
+  
+  
   title = "Edit";
 
   form: FormGroup;

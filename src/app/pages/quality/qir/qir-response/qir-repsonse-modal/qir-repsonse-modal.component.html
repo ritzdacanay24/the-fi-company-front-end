@@ -1,0 +1,14 @@
+<div class="modal-header text-center">
+    <h5 class="modal-title- mb-0 text-center" id="modal-basic-title">The Fi Company QIR Response Form. (Internal and External
+        Containment)</h5>
+</div>
+
+<div class="modal-body">
+    <app-qir-response-form (setFormEmitter)="setFormElements($event)" [submitted]="submitted"
+        [id]="id"></app-qir-response-form>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-2 me-auto">Close</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary">Update</button>
+</div>
