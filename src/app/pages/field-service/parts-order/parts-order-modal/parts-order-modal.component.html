@@ -24,7 +24,7 @@
     <ngb-carousel *ngIf="images?.length > 0"  [showNavigationArrows]="images?.length > 1" [showNavigationIndicators]="images?.length > 1">
         <ng-template ngbSlide>
             <div class="picsum-img-wrappers text-center" *ngFor="let row of images">
-                <img [src]="row.src" alt="Random first slide" class="img-thumbnail rounded mx-auto d-block"
+                <img [src]="row.src" alt="File extenstion - {{row.thumb}}" class="img-thumbnail rounded mx-auto d-block"
                     style="width:400px" />
             </div>
             <!-- <div class="carousel-caption">

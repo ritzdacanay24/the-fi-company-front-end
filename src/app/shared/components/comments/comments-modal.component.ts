@@ -20,9 +20,9 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { stripHtml } from 'src/assets/js/util';
 import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
 
-
 import { Pipe, PipeTransform } from '@angular/core';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { CommentEmailNotificationService } from '@app/core/api/comment-email-notification/comment-email-notification.service';
 
 @Pipe({
   standalone: true,
@@ -81,12 +81,19 @@ export class CommentsModalComponent implements OnInit {
     private router: Router,
     private authenticationService: AuthenticationService,
     private commentsService: CommentsService,
+    private commentEmailNotificationService: CommentEmailNotificationService
   ) {
     this.url = window.location.href;
     Quill.register(TableBlockEmbed, true);
     Quill.register('modules/blotFormatter', BlotFormatter);
 
     this.userInfo = this.authenticationService.currentUserValue;
+  }
+
+  commentEmailNotification = false;
+
+  onCommentEmailNotification() {
+    console.log(this.commentEmailNotification, 'this.commentEmailNotification')
   }
 
   ngOnInit() {
