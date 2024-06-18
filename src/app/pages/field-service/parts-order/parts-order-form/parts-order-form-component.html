@@ -102,7 +102,6 @@
         </div>
     </div>
 
-
     <div class="row">
         <div class="col-md-6 mb-3">
             <label class="form-label">Contact Name</label>
@@ -110,10 +109,23 @@
                 [ngClass]="{ 'is-invalid': submitted && f.contact_name.errors }" placeholder="Enter Contact Name" />
         </div>
         <div class="col-md-6 mb-3">
+            <label class="form-label">Contact Email</label>
+            <input class="form-control" type="email" formControlName="contact_email"
+                [ngClass]="{ 'is-invalid': submitted && f.contact_email.errors }" placeholder="Enter Contact Email" />
+        </div>
+        <div class="col-md-6 mb-3">
             <label class="form-label">Contact Phone Number</label>
             <input class="form-control" type="text" formControlName="contact_phone_number"
                 placeholder="Enter Contact Phone Number"
                 [ngClass]="{ 'is-invalid': submitted && f.contact_phone_number.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Serial Number</label>
+            <input class="form-control" type="text" formControlName="serial_number"
+                [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }" placeholder="Enter Serial Number" />
         </div>
     </div>
 

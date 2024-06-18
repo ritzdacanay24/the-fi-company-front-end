@@ -89,6 +89,7 @@ export class PartsOrderFormComponent {
         address: null,
         contact_name: "",
         contact_phone_number: "",
+        contact_email: "",
         billable: [null],
         part_number: [null],
         part_qty: [null],
@@ -100,6 +101,7 @@ export class PartsOrderFormComponent {
         tracking_number_carrier: [null],
         return_tracking_number_carrier: [""],
         return_tracking_number: [null],
+        serial_number: ''
     })
 
     setQadPartNumber($event) {

@@ -137,6 +137,8 @@ export class ShippingRequestEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, {
+        sendTrackingNumberTo: this.form.value.sendTrackingNumberTo,
+        sendTrackingEmail: true,
         trackingNumber: this.form.value.trackingNumber,
         completedBy: this.authenticationService.currentUserValue.id,
         completedDate: moment().format('YYYY-MM-DD HH:mm:ss')

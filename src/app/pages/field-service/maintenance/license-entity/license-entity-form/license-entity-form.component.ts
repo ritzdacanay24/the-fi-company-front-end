@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
-import { UserService } from '@app/core/api/field-service/user.service';
 import { states } from '@app/core/data/states';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
@@ -18,16 +17,15 @@ import { merge } from 'rxjs';
     UserSearchComponent,
     NgSelectModule
   ],
-  selector: 'app-property-form',
-  templateUrl: './property-form.component.html',
-  styleUrls: ['./property-form.component.scss']
+  selector: 'app-license-entity-form',
+  templateUrl: './license-entity-form.component.html',
+  styleUrls: ['./license-entity-form.component.scss']
 })
-export class PropertyFormComponent {
+export class LicenseEntityFormComponent {
 
   constructor(
     private fb: FormBuilder,
-    private sanitizer: DomSanitizer,
-    private userService: UserService
+    private sanitizer: DomSanitizer
   ) { }
 
   currentUrlAddress
@@ -54,7 +52,6 @@ export class PropertyFormComponent {
       });
 
     this.setFormEmitter.emit(this.form)
-    this.getUserService()
   }
 
   addTag(tag: string) {
@@ -75,6 +72,7 @@ export class PropertyFormComponent {
 
 
   @Input() submitted = false;
+  @Input() id = null;
 
   get f() {
     return this.form.controls
@@ -86,66 +84,34 @@ export class PropertyFormComponent {
     address2: [''],
     city: ['', [Validators.required]],
     country: ['United States', [Validators.required]],
-    license_notes: [''],
+    notes: [''],
     license_required: [''],
-    out_of_town: [''],
     property: [null, [Validators.required]],
     property_phone: [''],
     state: ['', [Validators.required]],
     zip_code: ['', [Validators.required]],
-    zone_code: [''],
-    notes: [''],
-    lat: ['', [Validators.required]],
-    lon: ['', [Validators.required]],
     license_expired_date: null,
-    licensed_techs: [null],
     created_by: [null],
     created_date: [null],
-
-    compliance_name: "",
-    compliance_address1: [null],
-    compliance_address2: [null],
-    compliance_city: [null],
-    compliance_state: [null],
-    compliance_zip_code: [null],
-    compliance_website: [null],
-    compliance_phone_numbers: [null],
+    website: [null],
   })
 
   setBooleanToNumber(key) {
     let e = this.form.value[key]
-    this.form.get(key).patchValue(e ? 1 : 0)
+    this.form.get(key).patchValue(e ? 1 : 0);
   }
 
+
   notifyParent($event) {
+    console.log($event)
     this.form.patchValue({
       address1: $event?.fullStreetName,
       city: $event?.address?.localName,
       state: $event?.address?.countrySubdivisionCode || null,
       zip_code: $event?.address?.postalCode,
       property_phone: $event?.poi?.phone,
-      property: $event?.poi?.name,
-      lat: $event?.position?.lat,
-      lon: $event?.position?.lon
+      property: $event?.poi?.name
     })
   }
 
-  onTechSelectChange($event) {
-    let resource_ids = []
-    for (let i = 0; i < $event.length; i++) {
-      resource_ids.push($event[i].id)
-    }
-
-    this.form.patchValue({
-      licensed_techs: resource_ids
-    })
-  }
-
-
-  users$: any;
-  getUserService = async () => {
-    try {
-      this.users$ = await this.userService.getUserWithTechRate();
-    } catch (err) { }
-  }
 }

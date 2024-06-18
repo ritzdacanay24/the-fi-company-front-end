@@ -1,0 +1,119 @@
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3">
+    <label class="form-label required">Search by casino name or by address</label>
+    <app-address-search [addTag]="true" (notifyParent)="notifyParent($event)"
+      [ngClass]="{ 'is-invalid': submitted && f.property.value }" [editableSearchTerm]="false" [hideSelected]="false"
+      [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true"
+      [addTag]="true"></app-address-search>
+  </div>
+
+  <h4 class="bg-light p-2 mb-3">Address Information</h4>
+
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      <label class="form-label required">Property name</label>
+      <input type="text" class="form-control" name="property" formControlName="property" placeholder="Enter property"
+        [ngClass]="{ 'is-invalid': submitted && f.property.errors }" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-9 mb-3">
+      <label class="form-label required">Address</label>
+      <input type="text" class="form-control" name="address1" formControlName="address1" placeholder="Enter address"
+        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" autocomplete="off" />
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label">Suite #</label>
+      <input type="text" class="form-control" name="address2" formControlName="address2" placeholder="Suite Number"
+        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">City</label>
+      <input type="text" class="form-control" name="city" formControlName="city" placeholder="City"
+        [ngClass]="{ 'is-invalid': submitted && f.city.errors }" autocomplete="off" />
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label required">State</label>
+      <select class="form-select" name="a4" formControlName="state" aria-label="Floating label select example"
+        [ngClass]="{ 'is-invalid': submitted && f.state.errors }" autocomplete="off">
+        <option disabled selected value="">Select State</option>
+        <option [value]="row.abbreviation" *ngFor="let row of states">
+          {{ row.name }}
+        </option>
+      </select>
+    </div>
+    <div class="col-md mb-3">
+      <label class="form-label required">Zip Code</label>
+      <input type="tel" class="form-control" name="a5" formControlName="zip_code" placeholder="Zip Code"
+        pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000" [showMaskTyped]="true"
+        [ngClass]="{ 'is-invalid': submitted && f.zip_code.errors }" autocomplete="off" />
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Country</label>
+    <input type="text" class="form-control" name="country" formControlName="country" placeholder="Enter country"
+      [ngClass]="{ 'is-invalid': submitted && f.country.errors }" />
+  </div>
+
+  <div *ngIf="urlView" style="width: 100%" class="mb-2 mt-2">
+    <iframe width="100%" height="300" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" [src]="urlView">
+      <a [href]="urlView">Address</a>
+    </iframe>
+  </div>
+
+  <h4 class="bg-light p-2 mb-3 text-center">Compliance Information</h4>
+
+  <h4 class="bg-light p-2 mb-3 ps-3">License Information</h4>
+  <div class="mb-3">
+    <label class="form-check-label me-3">License Required</label>
+    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No', 'Pending', 'N/A']; let i = index">
+      <input class="form-check-input" type="radio" name="license_required" id="license_required-{{i}}" [value]="row"
+        formControlName="license_required">
+      <label class="form-check-label" for="license_required-{{i}}">{{row}}</label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">License Expired Date</label>
+    <input type="date" class="form-control" formControlName="license_expired_date"
+      [ngClass]="{ 'is-invalid': submitted && f.license_expired_date.errors }" />
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">Website</label>
+      <input type="text" class="form-control" formControlName="website" placeholder="Enter website URL"
+        [ngClass]="{ 'is-invalid': submitted && f.website.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
+      <label class="form-label required">Phone number(s)</label>
+      <ng-select formControlName="property_phone" [multiple]="true" placeholder="Enter phone numbers"
+        placeholder="Enter phone number" #select [clearSearchOnAdd]="true" [addTag]="addTag" [closeOnSelect]="true"
+        [closeOnSelect]="false">
+      </ng-select>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">License Notes</label>
+    <textarea type="text" class="form-control" name="notes" formControlName="notes" rows="5"
+      placeholder="Enter License notes" [ngClass]="{ 'is-invalid': submitted && f.notes.errors }"></textarea>
+  </div>
+
+  <div class="form-check form-switch form-switch-md form-switch-md mt-2 mb-3">
+    <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+      (change)="setBooleanToNumber('active')">
+    <label class="form-check-label" for="active">Active</label>
+  </div>
+
+  
+</form>

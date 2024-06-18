@@ -45,6 +45,11 @@ const routes: Routes = [
         data: { preload: true }
       },
       {
+        path: 'license',
+        loadChildren: () => import('./license-entity/license-entity-routing.module').then(m => m.LicenseEntityRoutingModule),
+        data: { preload: true }
+      },
+      {
         path: 'property',
         loadChildren: () => import('./property/property-routing.module').then(m => m.PropertyRoutingModule),
         data: { preload: true }

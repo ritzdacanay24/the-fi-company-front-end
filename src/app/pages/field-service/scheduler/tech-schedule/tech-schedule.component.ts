@@ -245,8 +245,6 @@ export class TechScheduleComponent implements OnInit {
       if (this.id && clearData)
         this.scrollTo();
 
-
-
       this.calendarOptions = {
         ...this.calendarOptions,
         colors: [{

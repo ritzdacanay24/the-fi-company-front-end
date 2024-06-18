@@ -111,7 +111,7 @@ export class ShippingRequestFormComponent {
   notifyParent($event) {
     this.form.patchValue({
       streetAddress: $event?.fullStreetName,
-      city: $event.address?.municipality,
+      city: $event.address?.localName,
       state: $event.address?.countrySubdivisionCode || null,
       zipCode: $event.address?.postalCode,
     })

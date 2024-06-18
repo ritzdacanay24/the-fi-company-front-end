@@ -1,0 +1,82 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select property to view.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <button class="btn btn-light btn-sm" *ngIf="goBack" (click)="goBack()"><i
+            class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <app-license-entity-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-license-entity-form>
+
+        <h4 class="bg-light p-2 mb-3 text-center">Licensed Techs</h4>
+
+        <div class="mb-3">
+          <label class="form-label">Select Tech</label>
+          <ng-select [items]="users$" [(ngModel)]="licensed_techs" [multiple]="false" bindLabel="user_name"
+            bindValue="id" placeholder="Select tech name" placeholder="--Select--" [clearSearchOnAdd]="true"
+            [ngModelOptions]="{standalone: true}" (open)="getUserService()" [multiple]="true" [closeOnSelect]="false"
+            (change)="onTechSelectChange($event)" [hideSelected]="true">
+          </ng-select>
+        </div>
+
+        <div class="mb-3" *ngIf="techs?.length ">
+          <table class="table table-responsive table-bordered">
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Expired Date</th>
+                <th>License Required</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody class="align-middle">
+              <tr *ngFor="let row of techs; let i = index">
+                <td>{{row.id}}</td>
+                <td>{{row.user_name}}</td>
+                <td>
+                  <input class="form-control" type="date" [(ngModel)]="row.expired_date" (blur)="onBlurMethod(row)"
+                    [ngModelOptions]="{standalone: true}">
+                </td>
+                <td>
+                  <select class="form-select" [(ngModel)]="row.licensed_required" [ngModelOptions]="{standalone: true}"
+                    (blur)="onBlurMethod(row)">
+                    <option selected value="undefined || null" disabled>--SELECT--</option>
+                    <option *ngFor="let row of ['Yes', 'No', 'NA', 'Pending']">{{row}}</option>
+                  </select>
+                </td>
+                <td>
+                  <input class="form-control" type="text" [(ngModel)]="row.notes" [ngModelOptions]="{standalone: true}"
+                    (blur)="onBlurMethod(row)" placeholder="Enter any notes">
+                </td>
+                <td class="text-center">
+                  <span class="text-danger pointer" (click)="removeTech(i, row.id)">X</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -239,7 +239,7 @@ export class JobTripDetailModalComponent implements OnInit {
     this.form.patchValue({
       address: {
         address: $event?.fullStreetName,
-        city: $event?.address?.municipality,
+        city: $event?.address?.localName,
         state: $event?.address?.countrySubdivisionCode || null,
         zip_code: $event?.address?.postalCode,
         address_name: $event?.poi?.name || $event?.address?.streetName

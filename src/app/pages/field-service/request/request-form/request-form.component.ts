@@ -122,7 +122,7 @@ export class RequestFormComponent {
   notifyParent($event) {
     this.form.patchValue({
       address1: $event?.fullStreetName,
-      city: $event?.address?.municipality,
+      city: $event?.address?.localName,
       state: $event?.address?.countrySubdivisionCode || null,
       zip: $event?.address?.postalCode,
       property: $event?.poi?.name,

@@ -272,6 +272,28 @@ export const MENU: MenuItem[] = [
             ]
           },
           {
+            label: 'License',
+            icon: 'las la-tachometer-alt',
+            isCollapsed: true,
+            subItems: [
+              {
+                label: 'List License',
+                link: '/dashboard/field-service/maintenance/license/list',
+                description: "Field Service License Edit"
+              },
+              {
+                label: 'Create License',
+                link: '/dashboard/field-service/maintenance/license/create',
+                description: "Field Service License Create"
+              },
+              {
+                label: 'Edit License',
+                link: '/dashboard/field-service/maintenance/license/edit',
+                description: "Field Service License Edit"
+              },
+            ]
+          },
+          {
             label: 'Receipt Category',
             icon: 'las la-tachometer-alt',
             isCollapsed: true,
