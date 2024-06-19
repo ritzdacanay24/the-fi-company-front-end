@@ -25,6 +25,11 @@ File: Custom Css File
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
 
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-value.ng-value-disabled {
+     background-color: $primary;
+}
+
+
 .giveMeEllipsis {
     overflow: hidden;
     text-overflow: ellipsis;

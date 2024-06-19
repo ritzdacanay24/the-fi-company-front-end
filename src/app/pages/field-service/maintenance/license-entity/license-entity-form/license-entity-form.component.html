@@ -8,7 +8,7 @@
       [addTag]="true"></app-address-search>
   </div>
 
-  <h4 class="bg-light p-2 mb-3">Address Information</h4>
+  <h4 class="bg-light p-2 mb-3 text-center">Address Information</h4>
 
   <div class="row">
     <div class="col-md-12 mb-3">
@@ -58,18 +58,11 @@
   <div class="mb-3">
     <label class="form-label required">Country</label>
     <input type="text" class="form-control" name="country" formControlName="country" placeholder="Enter country"
-      [ngClass]="{ 'is-invalid': submitted && f.country.errors }" />
+      [ngClass]="{ 'is-invalid': submitted && f.country.errors }" autocomplete="off" />
   </div>
 
-  <div *ngIf="urlView" style="width: 100%" class="mb-2 mt-2">
-    <iframe width="100%" height="300" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" [src]="urlView">
-      <a [href]="urlView">Address</a>
-    </iframe>
-  </div>
+  <h4 class="bg-light p-2 mb-3 text-center">License Information</h4>
 
-  <h4 class="bg-light p-2 mb-3 text-center">Compliance Information</h4>
-
-  <h4 class="bg-light p-2 mb-3 ps-3">License Information</h4>
   <div class="mb-3">
     <label class="form-check-label me-3">License Required</label>
     <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No', 'Pending', 'N/A']; let i = index">
@@ -80,22 +73,40 @@
   </div>
 
   <div class="mb-3">
+    <label class="form-check-label me-3">Documents Required</label>
+    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No','N/A']; let i = index">
+      <input class="form-check-input" type="radio" name="documents_required" id="documents_required-{{i}}" [value]="row"
+        formControlName="documents_required">
+      <label class="form-check-label" for="documents_required-{{i}}">{{row}}</label>
+    </div>
+  </div>
+
+
+  <div class="mb-3">
     <label class="form-label">License Expired Date</label>
     <input type="date" class="form-control" formControlName="license_expired_date"
       [ngClass]="{ 'is-invalid': submitted && f.license_expired_date.errors }" />
   </div>
 
+
   <div class="row">
     <div class="col-md mb-3">
-      <label class="form-label required">Website</label>
-      <input type="text" class="form-control" formControlName="website" placeholder="Enter website URL"
-        [ngClass]="{ 'is-invalid': submitted && f.website.errors }" />
+      <label class="form-label">Website</label>
+      <div class="input-group">
+        <input type="text" class="form-control" formControlName="website" placeholder="Enter website URL"
+          [ngClass]="{ 'is-invalid': submitted && f.website.errors }" />
+        <div class="input-group-append pointer" *ngIf="f.website.value">
+          <span class="input-group-text" id="basic-addon2"><a href="{{'https://' + form.value.website}}" target="_blank">
+              View website</a>
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="row">
     <div class="col-md mb-3">
-      <label class="form-label required">Phone number(s)</label>
+      <label class="form-label">Phone number(s)</label>
       <ng-select formControlName="property_phone" [multiple]="true" placeholder="Enter phone numbers"
         placeholder="Enter phone number" #select [clearSearchOnAdd]="true" [addTag]="addTag" [closeOnSelect]="true"
         [closeOnSelect]="false">
@@ -115,5 +126,5 @@
     <label class="form-check-label" for="active">Active</label>
   </div>
 
-  
+
 </form>

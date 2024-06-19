@@ -4,7 +4,7 @@ import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { LicenseEntityFormComponent } from '../license-entity-form/license-entity-form.component';
+import { LicensedTechsFormComponent } from '../licensed-techs-form/license-entity-form.component';
 import { NAVIGATION_ROUTE } from '../license-entity-constant';
 import { LicenseService } from '@app/core/api/field-service/license.service';
 import { UserService } from '@app/core/api/field-service/user.service';
@@ -13,12 +13,12 @@ import { LicensedTechsService } from '@app/core/api/field-service/licensed-techs
 
 @Component({
   standalone: true,
-  imports: [SharedModule, LicenseEntityFormComponent, NgSelectModule],
-  selector: 'app-license-entity-edit',
-  templateUrl: './license-entity-edit.component.html',
-  styleUrls: ['./license-entity-edit.component.scss']
+  imports: [SharedModule, LicensedTechsFormComponent, NgSelectModule],
+  selector: 'app-licensed-techs-edit',
+  templateUrl: './licensed-techs-edit.component.html',
+  styleUrls: ['./licensed-techs-edit.component.scss']
 })
-export class LicenseEntityEditComponent {
+export class LicensedTechsEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -36,7 +36,6 @@ export class LicenseEntityEditComponent {
     if (this.id) this.getData();
   }
 
-  //start licensed techs
 
   licensed_techs = []
   techs = [];
@@ -94,9 +93,6 @@ export class LicenseEntityEditComponent {
     } catch (err) { }
   }
 
-  //end licensed techs
-
-
   title = "Edit Licensed Information";
 
   form: FormGroup;
@@ -107,10 +103,8 @@ export class LicenseEntityEditComponent {
 
   submitted = false;
 
-  @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
-
+  @Input() goBack: Function
+  
   data: any;
 
   async getData() {

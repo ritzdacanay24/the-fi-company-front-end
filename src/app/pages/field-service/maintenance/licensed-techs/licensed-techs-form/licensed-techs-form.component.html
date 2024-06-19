@@ -1,0 +1,52 @@
+<div class="mb-3">
+  <label class="form-label">Select Tech</label>
+  <ng-select [items]="users$" [(ngModel)]="licensed_techs" [multiple]="false" bindLabel="user_name" bindValue="user_id"
+    placeholder="Select tech name" placeholder="--Select--" [clearSearchOnAdd]="true"
+    [ngModelOptions]="{standalone: true}" (open)="getUserService()" [multiple]="true" [closeOnSelect]="false"
+    (add)="onTechAdd($event)" [hideSelected]="true" (remove)="false">
+
+    <ng-template ng-label-tmp let-item="item">
+      <p class="px-2">{{item.user_name}}</p>
+    </ng-template>
+
+  </ng-select>
+</div>
+<form [formGroup]="form" autocomplete="off">
+
+  <div class="mb-3" *ngIf="techs?.length ">
+    <table class="table table-responsive table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Expired Date</th>
+          <th>License Required</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody class="align-middle">
+        <tr *ngFor="let row of techs; let i = index">
+          <td>{{row.user_name}}</td>
+          <td>
+            <input class="form-control" type="date" [(ngModel)]="row.expired_date" (ngModelChange)="onTechUpdated(row)"
+              [ngModelOptions]="{standalone: true}">
+          </td>
+          <td>
+            <select class="form-select" [(ngModel)]="row.licensed_required" [ngModelOptions]="{standalone: true}"
+              (ngModelChange)="onTechUpdated(row)">
+              <option selected [value]="null" disabled>--SELECT--</option>
+              <option *ngFor="let row of ['Yes', 'No', 'NA', 'Pending']">{{row}}</option>
+            </select>
+          </td>
+          <td>
+            <input class="form-control" type="text" [(ngModel)]="row.notes" [ngModelOptions]="{standalone: true}"
+              (blur)="onTechUpdated(row)" placeholder="Enter any notes">
+          </td>
+          <td class="text-center">
+            <span class="text-danger pointer" (click)="onTechRemove(i, row)">X</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</form>

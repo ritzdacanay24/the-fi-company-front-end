@@ -1,13 +1,26 @@
-<div class="row">
+<div class="row" *ngIf="!data && !id">
   <div class="content-grid col-xxl-8">
     <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light  me-2 me-auto" *ngIf="goBack" (click)="goBack()"><i
+      <div class="card-body" style="min-height:300px">
+        Please select property to view.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col-xxl-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <button class="btn btn-light btn-sm" *ngIf="goBack" (click)="goBack()"><i
             class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-license-entity-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-license-entity-form>
+        <app-licensed-techs-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-licensed-techs-form>
 
         <h4 class="bg-light p-2 mb-3 text-center">Licensed Techs</h4>
 
@@ -40,18 +53,19 @@
               <tr *ngFor="let row of techs; let i = index">
                 <td>{{row.user_name}}</td>
                 <td>
-                  <input class="form-control" type="date" [(ngModel)]="row.expired_date"
+                  <input class="form-control" type="date" [(ngModel)]="row.expired_date" (ngModelChange)="onTechUpdated(row)"
                     [ngModelOptions]="{standalone: true}">
                 </td>
                 <td>
-                  <select class="form-select" [(ngModel)]="row.licensed_required" [ngModelOptions]="{standalone: true}">
+                  <select class="form-select" [(ngModel)]="row.licensed_required" [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="onTechUpdated(row)">
                     <option selected [value]="null" disabled>--SELECT--</option>
                     <option *ngFor="let row of ['Yes', 'No', 'NA', 'Pending']">{{row}}</option>
                   </select>
                 </td>
                 <td>
                   <input class="form-control" type="text" [(ngModel)]="row.notes" [ngModelOptions]="{standalone: true}"
-                    placeholder="Enter any notes">
+                    (blur)="onTechUpdated(row)" placeholder="Enter any notes">
                 </td>
                 <td class="text-center">
                   <span class="text-danger pointer" (click)="onTechRemove(i, row)">X</span>
@@ -60,8 +74,9 @@
             </tbody>
           </table>
         </div>
+
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
+      <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
       </div>

@@ -34,7 +34,6 @@ export class LicenseEntityFormComponent {
 
     merge(
       this.form.get('address1').valueChanges,
-      this.form.get('address2').valueChanges,
       this.form.get('state').valueChanges,
       this.form.get('city').valueChanges,
       this.form.get('zip_code').valueChanges
@@ -42,7 +41,6 @@ export class LicenseEntityFormComponent {
       .subscribe(data => {
         var values = [];
         values.push(this.form.get('address1').value);
-        values.push(this.form.get('address2').value);
         values.push(this.form.get('state').value);
         values.push(this.form.get('city').value);
         values.push(this.form.get('zip_code').value);
@@ -94,6 +92,7 @@ export class LicenseEntityFormComponent {
     created_by: [null],
     created_date: [null],
     website: [null],
+    documents_required: ""
   })
 
   setBooleanToNumber(key) {
