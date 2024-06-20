@@ -7,17 +7,27 @@
 <div class="modal-body py-0">
 
   <div class="alert alert-primary material-shadow" role="alert" *ngIf="id">
-    An email will be sent to the techs for any changes made. 
+    An email will be sent to the techs for any changes made.
   </div>
 
   <form [formGroup]="form" autofocus="false" autocomplete="off">
 
-    <div class="mb-3" *ngIf="!form.value?.type_of_travel">
+    <!-- <div class="mb-3" *ngIf="!form.value?.type_of_travel">
       <select class="form-select" formControlName="type_of_travel"
         (change)="getTripSelection(form.value?.type_of_travel)">
         <option selected disabled value="null">--SELECT--</option>
         <option *ngFor="let row of trip_selection_options" [ngValue]="row.value">{{row.name}}</option>
       </select>
+    </div> -->
+
+    <div class="mb-3" *ngIf="!form.value?.type_of_travel">
+      <div class="form-check" *ngFor="let row of trip_selection_options;let i = index">
+        <input class="form-check-input" type="radio" name="type_of_travel" id="type_of_travel-{{i}}"
+          formControlName="type_of_travel" (change)="getTripSelection(form.value?.type_of_travel)" [value]="row.value">
+        <label class="form-check-label" for="type_of_travel-{{i}}">
+          {{row.name}}
+        </label>
+      </div>
     </div>
 
     <ng-container *ngIf="form.value?.type_of_travel">

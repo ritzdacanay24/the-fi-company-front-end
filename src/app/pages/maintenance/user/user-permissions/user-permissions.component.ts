@@ -24,9 +24,9 @@ export class UserPermissionsComponent implements OnInit {
     ngOnInit(): void {
         if (this.id)
             this.getData()
-    }
+    };
 
-    title = "Maintenance"
+    title = "User Maintenance";
 
     icon = "mdi-cogs"
 
@@ -35,7 +35,7 @@ export class UserPermissionsComponent implements OnInit {
     submitted = false;
 
     get f() {
-        return this.form.controls
+        return this.form.controls;
     }
 
     form = this.fb.group({
