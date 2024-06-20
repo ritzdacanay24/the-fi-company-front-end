@@ -1,12 +1,18 @@
 <div class="modal-header">
-  <h4 class="modal-title" id="modal-basic-title">Trip Details</h4>
+  <h4 class="modal-title" id="modal-basic-title">Trip Details
+    <span class="text-info">{{form.value?.type_of_travel ? '- ' + form.value?.type_of_travel : ''}}</span>
+  </h4>
 </div>
 
 <div class="modal-body py-0">
 
+  <div class="alert alert-primary material-shadow" role="alert" *ngIf="id">
+    An email will be sent to the techs for any changes made. 
+  </div>
+
   <form [formGroup]="form" autofocus="false" autocomplete="off">
 
-    <div class="mb-3">
+    <div class="mb-3" *ngIf="!form.value?.type_of_travel">
       <select class="form-select" formControlName="type_of_travel"
         (change)="getTripSelection(form.value?.type_of_travel)">
         <option selected disabled value="null">--SELECT--</option>
@@ -59,6 +65,12 @@
             formControlName="airline_name" />
         </div> -->
       </div>
+      <div class="col-12 mb-3">
+        <label class="form-label">Notes</label>
+        <textarea autosize [minRows]="3" type="text" class="form-control" id="notes" placeholder="Enter notes"
+          formControlName="notes"></textarea>
+      </div>
+
     </ng-container>
 
     <ng-container formGroupName="address" *ngIf="form.value?.type_of_travel">
@@ -68,23 +80,23 @@
           <label for="inputAddress" class="form-label">Address</label>
           <app-address-search [minTermLength]="1" (notifyParent)="notifyParent($event)" [editableSearchTerm]="false"
             [hideSelected]="false" [showLabel]="false" [placeholder]="'Search by name or address'"
-            [showCategories]="true" [required]="true" [addTag]="false" [value]="form.value?.address?.address"
-            [addTag]="addTag"></app-address-search>
+            [showCategories]="true" [required]="true" [value]="form.value?.address?.address"
+            [addTag]="false"></app-address-search>
 
         </div>
         <div class="col-12">
           <label for="inputAddress2" class="form-label">Address 2</label>
           <input type="text" class="form-control" id="inputAddress2" placeholder="Apartment, studio, or floor"
-            autocomplete="off" formControlName="address1">
+            autocomplete="new-address2" formControlName="address1">
         </div>
         <div class="col-md-6">
           <label for="inputCity" class="form-label">City</label>
           <input type="text" class="form-control" id="inputCity" formControlName="city" placeholder="Enter city name"
-            autocomplete="off">
+            autocomplete="new-city">
         </div>
         <div class="col-md-4">
           <label for="inputState" class="form-label">State</label>
-          <select class="form-select" formControlName="state" autocomplete="off">
+          <select class="form-select" formControlName="state" autocomplete="new-state">
             <option disabled selected value="">--Select state--</option>
             <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
           </select>
@@ -92,9 +104,9 @@
         <div class="col-md-2">
           <label for="inputZip" class="form-label">Zip</label>
           <input type="text" class="form-control" id="inputZip" formControlName="zip_code" placeholder="Enter zip code"
-            autocomplete="off">
+            autocomplete="new-zip">
         </div>
-        <div class="col">
+        <div class="col mb-5">
           <label class="form-label">Company Name</label>
           <input type="text" class="form-control" id="inputAddress" placeholder="Vendor Name"
             formControlName="address_name">
@@ -105,7 +117,8 @@
 </div>
 
 <div class="modal-footer">
-  <button (click)="onDelete()" type="button" class="btn btn-danger" *ngIf="rowId">Delete</button>
+  <button (click)="onDelete()" type="button" class="btn btn-danger" *ngIf="id">Delete</button>
   <button (click)="dismiss()" type="button" class="btn btn-light me-2 ms-auto">Close</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-primary" *ngIf="rowId">Save</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary"
+    *ngIf="fsid && form.value?.type_of_travel">Save</button>
 </div>

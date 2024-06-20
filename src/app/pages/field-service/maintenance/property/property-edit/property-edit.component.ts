@@ -7,10 +7,12 @@ import { PropertyService } from '@app/core/api/field-service/property.service';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../property-constant';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { LicenseService } from '@app/core/api/field-service/license.service';
+import { LicenseEntitySearchComponent } from '@app/shared/components/license-entity-search/license-entity-search.component';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, PropertyFormComponent],
+  imports: [SharedModule, PropertyFormComponent, LicenseEntitySearchComponent],
   selector: 'app-property-edit',
   templateUrl: './property-edit.component.html',
   styleUrls: ['./property-edit.component.scss']
@@ -20,6 +22,7 @@ export class PropertyEditComponent {
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: PropertyService,
+    private licenseService: LicenseService,
     private toastrService: ToastrService,
   ) { }
 
@@ -30,6 +33,13 @@ export class PropertyEditComponent {
 
     if (this.id) this.getData();
   }
+
+  async notifyLicenseParent($event) {
+    let data: any = await this.licenseService.getByIdAndTechs($event.id);
+    this.licensedInfo = data.results;
+    this.form.get('fs_licensed_id').patchValue($event.id)
+  }
+
 
   title = "Edit Property";
 
@@ -51,7 +61,15 @@ export class PropertyEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data)
+      if (this.data.fs_licensed_id) {
+        this.getLicensedInformation()
+      }
     } catch (err) { }
+  }
+
+  licensedInfo = null
+  async getLicensedInformation() {
+    this.licensedInfo = await this.licenseService.getByIdAndTechs(this.data.fs_licensed_id);
   }
 
   async onSubmit() {

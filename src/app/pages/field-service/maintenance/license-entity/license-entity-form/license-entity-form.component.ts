@@ -92,7 +92,8 @@ export class LicenseEntityFormComponent {
     created_by: [null],
     created_date: [null],
     website: [null],
-    documents_required: ""
+    documents_required: "",
+    fs_licensed_id: ""
   })
 
   setBooleanToNumber(key) {

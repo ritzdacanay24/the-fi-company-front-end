@@ -112,7 +112,18 @@
     </div>
   </div>
 
-  <h4 class="bg-light p-2 mb-3 text-center">Compliance Information</h4>
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md form-switch-md mt-2">
+      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+        (change)="setBooleanToNumber('active')">
+      <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+  <!--delete below-->
+
+
+  <!-- <h4 class="bg-light p-2 mb-3 text-center">Compliance Information</h4>
 
 
   <h4 class="bg-light p-2 mb-3 ps-3">License Information</h4>
@@ -191,8 +202,9 @@
   <div class="row">
     <div class="col-md mb-3">
       <label class="form-label required">Phone number</label>
-      <ng-select formControlName="compliance_phone_numbers"  [multiple]="true" placeholder="Enter phone numbers"
-        placeholder="Enter phone number" #select [clearSearchOnAdd]="true" [addTag]="addTag" [closeOnSelect]="true" [closeOnSelect]="false">
+      <ng-select formControlName="compliance_phone_numbers" [multiple]="true" placeholder="Enter phone numbers"
+        placeholder="Enter phone number" #select [clearSearchOnAdd]="true" [addTag]="addTag" [closeOnSelect]="true"
+        [closeOnSelect]="false">
       </ng-select>
     </div>
   </div>
@@ -202,7 +214,7 @@
     <textarea type="text" class="form-control" name="license_notes" formControlName="license_notes" rows="5"
       placeholder="Enter License notes" [ngClass]="{ 'is-invalid': submitted && f.license_notes.errors }"></textarea>
   </div>
-  
+
 
   <div class="mb-3">
     <label class="form-label">Licensed Techs</label>
@@ -211,12 +223,7 @@
       (open)="getUserService()" [multiple]="true" [closeOnSelect]="false" (change)="onTechSelectChange($event)">
     </ng-select>
 
-  </div>
+  </div> -->
 
-  <div class="form-check form-switch form-switch-md form-switch-md mt-2">
-    <input class="form-check-input" type="checkbox" id="active" formControlName="active"
-      (change)="setBooleanToNumber('active')">
-    <label class="form-check-label" for="active">Active</label>
-  </div>
 
 </form>

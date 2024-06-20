@@ -58,12 +58,15 @@
                                     <i class="icon-sm me-2 mdi mdi-printer"></i>Print</a>
                                 <a class="pointer dropdown-item" ngbDropdownItem (click)="openComments(item)">
                                     <i class="icon-sm me-2 mdi mdi-comment-outline"></i>View/Add Comments</a>
+                                <a class="pointer dropdown-item" ngbDropdownItem (click)="onDeleteWO(item)">
+                                    <i class="icon-sm me-2 mdi mdi-trash-can text-danger"></i>Delete WO</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body py-3">
                     <ul class="list-unstyled mb-0">
+                        <li class="mb-1"><b>QAD Status:</b> {{item.wo_status}}</li>
                         <li class="mb-1"><b>Ordered:</b> {{item.ordered_date}}</li>
                         <li class="mb-1"><b>Due:</b> {{item.dueDate}}</li>
                         <li class="mb-1"><b>Actual Due Date:</b> {{item.actual_due_date}}</li>

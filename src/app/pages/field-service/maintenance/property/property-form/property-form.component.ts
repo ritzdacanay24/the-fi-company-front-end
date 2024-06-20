@@ -4,6 +4,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { UserService } from '@app/core/api/field-service/user.service';
 import { states } from '@app/core/data/states';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
+import { LicenseEntitySearchComponent } from '@app/shared/components/license-entity-search/license-entity-search.component';
 import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -16,7 +17,8 @@ import { merge } from 'rxjs';
     ReactiveFormsModule,
     AddressSearchComponent,
     UserSearchComponent,
-    NgSelectModule
+    NgSelectModule,
+    LicenseEntitySearchComponent
   ],
   selector: 'app-property-form',
   templateUrl: './property-form.component.html',
@@ -101,6 +103,7 @@ export class PropertyFormComponent {
     licensed_techs: [null],
     created_by: [null],
     created_date: [null],
+    fs_licensed_id: [null],
 
     compliance_name: "",
     compliance_address1: [null],

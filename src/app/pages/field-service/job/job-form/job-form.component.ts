@@ -26,6 +26,24 @@ import { DatePickerService } from '@app/shared/date-picker/date-picker.component
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { JobTripDetailModalService } from '../job-trip-detail-modal/job-trip-detail-modal.component';
 import { TripDetailService } from '@app/core/api/field-service/trip-detail/trip-detail.service';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+
+import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+  standalone: true,
+  name: 'sortBydate'
+})
+export class SortBydatePipe implements PipeTransform {
+
+  transform(value: any, key?: any): any {
+    return value.sort(
+      (a: any, b: any) =>
+        new Date(a[key]).getTime() - new Date(b[key]).getTime()
+    );
+  }
+
+}
 
 export const timeNow = () => {
   return moment().format('YYYY-MM-DD HH:mm:ss')
@@ -43,7 +61,8 @@ export const timeNow = () => {
     PropertySearchComponent,
     NgbScrollSpyModule,
     DatePickerService,
-    JobSearchComponent
+    JobSearchComponent,
+    SortBydatePipe
   ],
   selector: 'app-job-form',
   templateUrl: `./job-form.component.html`,
@@ -486,6 +505,22 @@ export class JobFormComponent implements OnInit {
     modalRef.result.then((result: Comment) => {
       this.getTripDetail()
     }, () => { });
+  }
+
+  async emailTripDetails() {
+    if (!confirm('Are you sure you want to send email?')) return;
+    try {
+      SweetAlert.loading('Sending email. Please wait..')
+      await this.tripDetailService.emailTripDetails(this.id, this.tripDetailInfo);
+
+      for (let i = 0; i < this.tripDetailInfo.length; i++) {
+        this.tripDetailInfo[i].email_sent = moment().format('YYYY-MM-DD HH:mm:ss')
+      }
+
+      SweetAlert.close()
+    } catch (err) {
+      SweetAlert.close()
+    }
   }
 
   /**Api */

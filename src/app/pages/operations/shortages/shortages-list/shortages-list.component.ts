@@ -100,7 +100,18 @@ export class ShortagesListComponent implements OnInit {
   viewComment = (id) => {
     let modalRef = this.commentsModalService.open(id, 'Shortage Request')
     modalRef.result.then((result: any) => {
-      this.getData()
+      let rowNode = this.gridApi.getRowNode(id);
+      rowNode.data.recent_comments = result;
+      this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+      this.router.navigate([`.`], {
+        relativeTo: this.activatedRoute,
+        queryParamsHandling: 'merge',
+        queryParams: {
+          comment: null
+        }
+      });
+
     }, () => { });
   }
 

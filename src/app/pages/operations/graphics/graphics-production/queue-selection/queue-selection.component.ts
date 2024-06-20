@@ -64,6 +64,8 @@ export class QueueSelectionComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  isLoading = false;
+
   public async onSubmit() {
     this.data.queueStatus = this.valueParams.queueStatus;
     this.data.status = this.valueParams.status;
@@ -72,9 +74,16 @@ export class QueueSelectionComponent implements OnInit {
     /**
      * TODO: Save to db
      */
-    await this.api
-      .updateGraphics(this.data)
-    this.close();
+    try {
+      this.isLoading = true;
+      await this.api
+        .updateGraphics(this.data)
+      this.close();
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
+
+    }
   }
 
   public onChangeValue(value: any) {

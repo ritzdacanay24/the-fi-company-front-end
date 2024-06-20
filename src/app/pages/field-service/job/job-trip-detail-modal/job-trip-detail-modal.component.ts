@@ -2,21 +2,17 @@
 
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { JobService } from "@app/core/api/field-service/job.service";
 import { NgbActiveModal, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
-import { FormBuilder, FormGroup, UntypedFormBuilder } from '@angular/forms';
+import { FormGroup, UntypedFormBuilder } from '@angular/forms';
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { UserService } from '@app/core/api/field-service/user.service';
 import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
-import { AttachmentService } from '@app/core/api/field-service/attachment.service';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
-import moment from 'moment';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { states } from '@app/core/data/states';
 import { TripDetailService } from '@app/core/api/field-service/trip-detail/trip-detail.service';
+import { AutosizeModule } from 'ngx-autosize';
 
 @Injectable({
   providedIn: 'root'
@@ -27,17 +23,22 @@ export class JobTripDetailModalService {
     public modalService: NgbModal
   ) { }
 
-  open(id, rowId) {
+  open(fsid, id) {
     let modalRef = this.modalService.open(JobTripDetailModalComponent, { size: 'lg' });
+    modalRef.componentInstance.fsid = fsid;
     modalRef.componentInstance.id = id;
-    modalRef.componentInstance.rowId = rowId;
     return modalRef;
   }
 }
 
 @Component({
   standalone: true,
-  imports: [SharedModule, NgbScrollSpyModule, AddressSearchComponent],
+  imports: [
+    SharedModule,
+    NgbScrollSpyModule,
+    AddressSearchComponent,
+    AutosizeModule
+  ],
   selector: 'app-job-modal-create',
   templateUrl: './job-trip-detail-modal.component.html',
   styleUrls: []
@@ -108,8 +109,9 @@ export class JobTripDetailModalComponent implements OnInit {
       flight_in: "",
       location_name: "",
       airline_name: "",
+      notes: "",
       address: this.formBuilder.group({
-        address_name: null,
+        address_name: "",
         address: "",
         address1: "",
         state: "",
@@ -118,7 +120,7 @@ export class JobTripDetailModalComponent implements OnInit {
       }),
     }, { emitEvent: false })
 
-    if (this.rowId) {
+    if (this.id) {
       this.getTripDetail()
     }
 
@@ -126,7 +128,7 @@ export class JobTripDetailModalComponent implements OnInit {
 
   tripDetailInfo: any
   async getTripDetail() {
-    this.tripDetailInfo = await this.tripDetailService.getById(this.rowId);
+    this.tripDetailInfo = await this.tripDetailService.getById(this.id);
 
     this.form.patchValue({
       ...this.tripDetailInfo,
@@ -138,7 +140,7 @@ export class JobTripDetailModalComponent implements OnInit {
   states = states;
 
   @Input() id: any
-  @Input() rowId: any
+  @Input() fsid: any
 
   trip_selection = ""
 
@@ -169,15 +171,15 @@ export class JobTripDetailModalComponent implements OnInit {
 
   submitted = false;
 
-  async onDelete(){
-    if(!confirm('Are you sure you want to delete?')) return;
+  async onDelete() {
+    if (!confirm('Are you sure you want to delete?')) return;
     try {
-      await this.tripDetailService.delete(this.rowId);
+      await this.tripDetailService.delete(this.id);
       this.close()
     } catch (err) {
 
     }
-    
+
   }
 
   async onSubmit() {
@@ -186,7 +188,7 @@ export class JobTripDetailModalComponent implements OnInit {
     //   getFormValidationErrors()
     //   return
     // }
-    if (this.rowId) {
+    if (this.id) {
       this.edit()
     } else {
       this.create()
@@ -197,7 +199,7 @@ export class JobTripDetailModalComponent implements OnInit {
 
     let d = {
       ...this.form.value,
-      fsId: this.id,
+      fsId: this.fsid,
       ...this.form.value.address
     }
 
@@ -213,12 +215,13 @@ export class JobTripDetailModalComponent implements OnInit {
 
     let d = {
       ...this.form.value,
-      fsId: this.id,
+      fsId: this.fsid,
       ...this.form.value.address
     }
 
     try {
-      await this.tripDetailService.update(this.rowId, d);
+      await this.tripDetailService.update(this.id, d);
+      await this.tripDetailService.emailTripDetails(this.fsid, this.tripDetailInfo);
       this.close()
     } catch (err) {
 
@@ -236,6 +239,7 @@ export class JobTripDetailModalComponent implements OnInit {
   }
 
   notifyParent($event) {
+    console.log($event)
     this.form.patchValue({
       address: {
         address: $event?.fullStreetName,

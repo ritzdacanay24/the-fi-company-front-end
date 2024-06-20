@@ -264,12 +264,12 @@
           <div class="col-md-8 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('address1')">Address</label>
             <input type="text" class="form-control" formControlName="address1" placeholder="Enter address"
-              autocomplete="off" [ngClass]="formClassJob('address1')">
+              autocomplete="new-address1" [ngClass]="formClassJob('address1')">
           </div>
           <div class="col-md-4 mb-3">
             <label class="form-label" [ngClass]="formValidatorJob('address2')">Suite</label>
             <input type="text" class="form-control" formControlName="address2" placeholder="Enter Suite"
-              autocomplete="off" [ngClass]="formClassJob('address2')">
+              autocomplete="new-address2" [ngClass]="formClassJob('address2')">
           </div>
         </div>
 
@@ -639,7 +639,7 @@
         </h4>
 
         <table class="table table-sm table-bordered">
-          <ng-container *ngFor="let row of tripDetailInfo; let i = index">
+          <ng-container *ngFor="let row of tripDetailInfo | sortBydate  : 'start_datetime'; let i = index">
             <thead>
               <tr>
                 <th colspan="5">{{row.type_of_travel | uppercase}}<span (click)="addTripDetails(row.id)"
@@ -674,11 +674,15 @@
                 <th class="table-active" style="width:150px">Driver</th>
                 <th colspan="3">{{row.rental_car_driver}}</th>
               </tr>
+              <tr>
+                <th colspan="4" [ngClass]="{'text-danger': !row.email_sent, 'text-success': row.email_sent}">Email Sent On : {{row.email_sent || 'Not Sent'}}</th>
+              </tr>
             </tbody>
             <br />
           </ng-container>
         </table>
         <button class="btn btn-primary mt-0" (click)="addTripDetails()">Add Trip Details</button>
+        <button class="btn btn-primary mt-0 ms-3" (click)="emailTripDetails()" *ngIf="tripDetailInfo?.length">Email Trip Details</button>
       </ng-template>
 
     </form>

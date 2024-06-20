@@ -22,12 +22,12 @@
     <div class="col-md-9 mb-3">
       <label class="form-label required">Address</label>
       <input type="text" class="form-control" name="address1" formControlName="address1" placeholder="Enter address"
-        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" autocomplete="off" />
+        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" autocomplete="new-address1" />
     </div>
     <div class="col-md-3 mb-3">
       <label class="form-label">Suite #</label>
       <input type="text" class="form-control" name="address2" formControlName="address2" placeholder="Suite Number"
-        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }" autocomplete="off" />
+        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }" autocomplete="new-address2" />
     </div>
   </div>
 
@@ -87,7 +87,6 @@
     <input type="date" class="form-control" formControlName="license_expired_date"
       [ngClass]="{ 'is-invalid': submitted && f.license_expired_date.errors }" />
   </div>
-
 
   <div class="row">
     <div class="col-md mb-3">

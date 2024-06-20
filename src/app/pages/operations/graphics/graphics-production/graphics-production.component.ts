@@ -11,6 +11,7 @@ import { WebsocketService } from '@app/core/services/websocket.service';
 const GRAPHICS_PRODUCTION = 'GRAPHICS PRODUCTION';
 
 import { Pipe, PipeTransform } from '@angular/core';
+import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 
 @Pipe({
     standalone: true,
@@ -73,13 +74,26 @@ export class GraphicsProductionComponent implements OnInit {
         });
     }
 
+    async onDeleteWO(row) {
+        if (!confirm('Are you sure you want to delete WO?')) return;
+        try {
+            SweetAlert.loading('Deleting WO. Please wait.')
+            await this.graphicsService.update(row.id, { active: 0 })
+            await this.getData(false);
+            this.send();
+            SweetAlert.close()
+
+        } catch (err) {
+            SweetAlert.close()
+        }
+    }
+
     openComplete(item) {
         const modalRef = this.completeService.open(item, item.queueNames);
         modalRef.result.then((data: any) => {
             this.getData(false);
             this.send();
         }, () => { });
-
     }
 
     openComments(item) {
@@ -110,9 +124,16 @@ export class GraphicsProductionComponent implements OnInit {
         }
         const modalRef = this.queueSelectionService.open(row, this.data.queueNames);
 
-        modalRef.result.then((result: any) => {
-            this.getData(false);
-            this.send();
+        modalRef.result.then(async (result: any) => {
+            try {
+                SweetAlert.loading('Moving WO. Please wait..')
+                await this.getData(false);
+                this.send();
+                SweetAlert.close()
+            } catch (err) {
+                SweetAlert.close()
+
+            }
         }, () => { });
     }
 

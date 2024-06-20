@@ -29,7 +29,7 @@
           <ng-select [items]="users$" [(ngModel)]="licensed_techs" [multiple]="false" bindLabel="user_name"
             bindValue="user_id" placeholder="Select tech name" placeholder="--Select--" [clearSearchOnAdd]="true"
             [ngModelOptions]="{standalone: true}" (open)="getUserService()" [multiple]="true" [closeOnSelect]="false"
-            (add)="onTechAdd($event)" [hideSelected]="true" (remove)="false">
+            (add)="onTechAdd($event)" [hideSelected]="true" [clearable]="false">
 
             <ng-template ng-label-tmp let-item="item">
               <p class="px-2">{{item.user_name}}</p>

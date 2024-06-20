@@ -15,12 +15,69 @@
   <div class="content-grid col-xxl-8">
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
-        <button class="btn btn-light btn-sm" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <button class="btn btn-light btn-sm" *ngIf="goBack" (click)="goBack()"><i
+            class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
         <app-property-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-property-form>
+
+        <div class="mb-3">
+          <label class="form-label">Search by license entity</label>
+          <app-license-entity-search (notifyParent)="notifyLicenseParent($event)" [editableSearchTerm]="false"
+            [hideSelected]="false" [showLabel]="false" [placeholder]="'Search by license entity'"
+            [value]="licensedInfo?.results?.property"></app-license-entity-search>
+        </div>
+
+        <div *ngIf="licensedInfo">
+          <table class="table table-bordered table-sm">
+            <tbody>
+              <tr>
+                <td>Property</td>
+                <td>{{licensedInfo?.results?.results?.property}}</td>
+              </tr>
+              <tr>
+                <td>Notes</td>
+                <td>{{licensedInfo?.results?.notes}}</td>
+              </tr>
+              <tr>
+                <td>License Required</td>
+                <td>{{licensedInfo?.results?.license_required}}</td>
+              </tr>
+              <tr>
+                <td>License Expired Date</td>
+                <td>{{licensedInfo?.results?.license_expired_date}}</td>
+              </tr>
+              <tr>
+                <td>Documents Required</td>
+                <td>{{licensedInfo?.results?.documents_required}}</td>
+              </tr>
+              <tr>
+                <td>Website</td>
+                <td>{{licensedInfo?.results?.website}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <h4>Licensed Tech</h4>
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>Tech</th>
+                <th>Licensed Required</th>
+                <th>Expired Date</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of licensedInfo?.licensed_techs">
+                <td>{{row.user_name}}</td>
+                <td>{{row?.licensed_required}}</td>
+                <td>{{row?.expired_date}}</td>
+                <td>{{row?.notes}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
