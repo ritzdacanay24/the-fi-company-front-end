@@ -11,6 +11,7 @@
   </div>
 </div>
 
+<!---Compliance table should be put on its own component.--->
 <div class="row" [hidden]="!data && !id">
   <div class="content-grid col-xxl-8">
     <div class="card">
@@ -26,15 +27,15 @@
           <label class="form-label">Search by license entity</label>
           <app-license-entity-search (notifyParent)="notifyLicenseParent($event)" [editableSearchTerm]="false"
             [hideSelected]="false" [showLabel]="false" [placeholder]="'Search by license entity'"
-            [value]="licensedInfo?.results?.property"></app-license-entity-search>
+            [value]="licensedInfo?.results?.property" [clearable]="false"></app-license-entity-search>
         </div>
 
-        <div *ngIf="licensedInfo">
+        <div *ngIf="licensedInfo?.results">
           <table class="table table-bordered table-sm">
             <tbody>
               <tr>
                 <td>Property</td>
-                <td>{{licensedInfo?.results?.results?.property}}</td>
+                <td>{{licensedInfo?.results?.property}}</td>
               </tr>
               <tr>
                 <td>Notes</td>
@@ -54,29 +55,33 @@
               </tr>
               <tr>
                 <td>Website</td>
-                <td>{{licensedInfo?.results?.website}}</td>
+                <td><a [href]="'https://' + licensedInfo?.results?.website"
+                    target="_blank">{{licensedInfo?.results?.website}}</a></td>
               </tr>
             </tbody>
           </table>
-          <h4>Licensed Tech</h4>
-          <table class="table table-bordered table-sm">
-            <thead>
-              <tr>
-                <th>Tech</th>
-                <th>Licensed Required</th>
-                <th>Expired Date</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let row of licensedInfo?.licensed_techs">
-                <td>{{row.user_name}}</td>
-                <td>{{row?.licensed_required}}</td>
-                <td>{{row?.expired_date}}</td>
-                <td>{{row?.notes}}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div *ngIf="licensedInfo?.licensed_techs?.length">
+            <h4>Licensed Tech</h4>
+            <table class="table table-bordered table-sm">
+              <thead>
+                <tr>
+                  <th>Tech</th>
+                  <th>Licensed Required</th>
+                  <th>Expired Date</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of licensedInfo?.licensed_techs">
+                  <td>{{row.user_name}}</td>
+                  <td>{{row?.licensed_required}}</td>
+                  <td>{{row?.expired_date}}</td>
+                  <td>{{row?.notes}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-light" [disabled]="isLoading" (click)="onRemoveLicenseEntity()">Remove License</button>
         </div>
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">

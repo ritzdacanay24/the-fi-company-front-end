@@ -39,6 +39,7 @@ export class LicenseEntitySearchComponent implements OnInit {
   @Input() editableSearchTerm: boolean = true;
   @Input() ngClass: string | any;
   @Input() showLabel: boolean = true;
+  @Input() clearable: boolean = true;
 
   data$: Observable<any[]>;
   dataLoading = false;

@@ -6,7 +6,7 @@
   [(ngModel)]="value" [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
   [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
   [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="License Entity Not Found."
-  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendToBody" [ngClass]="ngClass">
+  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendToBody" [ngClass]="ngClass" [clearable]="clearable">
 
   <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
     <div>

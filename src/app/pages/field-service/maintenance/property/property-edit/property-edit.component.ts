@@ -34,12 +34,20 @@ export class PropertyEditComponent {
     if (this.id) this.getData();
   }
 
-  async notifyLicenseParent($event) {
-    let data: any = await this.licenseService.getByIdAndTechs($event.id);
-    this.licensedInfo = data.results;
-    this.form.get('fs_licensed_id').patchValue($event.id)
+  async onRemoveLicenseEntity() {
+    if(!confirm('Are you sure you want to remove?')) return;
+    try{
+      await this.api.update(this.id, { fs_licensed_id: null });
+      this.licensedInfo = {}
+    } catch (err){
+    }
   }
 
+  async notifyLicenseParent($event) {
+    let data: any = await this.licenseService.getByIdAndTechs($event.id);
+    this.licensedInfo = data;
+    this.form.get('fs_licensed_id').patchValue($event.id)
+  }
 
   title = "Edit Property";
 

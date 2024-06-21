@@ -53,7 +53,7 @@
               <tr *ngFor="let row of techs; let i = index">
                 <td>{{row.user_name}}</td>
                 <td>
-                  <input class="form-control" type="date" [(ngModel)]="row.expired_date" (ngModelChange)="onTechUpdated(row)"
+                  <input class="form-control" type="date" [(ngModel)]="row.expired_date" (blur)="onTechUpdated(row)"
                     [ngModelOptions]="{standalone: true}">
                 </td>
                 <td>

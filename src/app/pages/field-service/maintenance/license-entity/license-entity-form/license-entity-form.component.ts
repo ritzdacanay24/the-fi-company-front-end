@@ -93,7 +93,7 @@ export class LicenseEntityFormComponent {
     created_date: [null],
     website: [null],
     documents_required: "",
-    fs_licensed_id: ""
+    //fs_licensed_id: ""
   })
 
   setBooleanToNumber(key) {
@@ -103,7 +103,6 @@ export class LicenseEntityFormComponent {
 
 
   notifyParent($event) {
-    console.log($event)
     this.form.patchValue({
       address1: $event?.fullStreetName,
       city: $event?.address?.localName,

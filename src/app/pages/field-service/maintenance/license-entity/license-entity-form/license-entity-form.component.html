@@ -1,11 +1,10 @@
 <form [formGroup]="form" autocomplete="off">
 
   <div class="mb-3">
-    <label class="form-label required">Search by casino name or by address</label>
-    <app-address-search [addTag]="true" (notifyParent)="notifyParent($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.property.value }" [editableSearchTerm]="false" [hideSelected]="false"
-      [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true"
-      [addTag]="true"></app-address-search>
+    <label class="form-label">Search by casino name or by address</label>
+    <app-address-search [addTag]="false" (notifyParent)="notifyParent($event)" [editableSearchTerm]="false"
+      [hideSelected]="false" [showLabel]="false" [placeholder]="'Search by casino name or address'"
+      [showCategories]="true"></app-address-search>
   </div>
 
   <h4 class="bg-light p-2 mb-3 text-center">Address Information</h4>
@@ -95,7 +94,8 @@
         <input type="text" class="form-control" formControlName="website" placeholder="Enter website URL"
           [ngClass]="{ 'is-invalid': submitted && f.website.errors }" />
         <div class="input-group-append pointer" *ngIf="f.website.value">
-          <span class="input-group-text" id="basic-addon2"><a href="{{'https://' + form.value.website}}" target="_blank">
+          <span class="input-group-text" id="basic-addon2"><a href="{{'https://' + form.value.website}}"
+              target="_blank">
               View website</a>
           </span>
         </div>
