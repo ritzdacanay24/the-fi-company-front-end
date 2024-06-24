@@ -154,23 +154,27 @@ export class WorkOrderComponent implements OnInit {
   }
 
   async ticketVerified(row) {
-    if (this.authenticationService.currentUserValue.id !== row.user_id) {
-      alert('You are not ' + row.user)
-      return;
-    }
+    //not needed for desktop view
+    // if (this.authenticationService.currentUserValue.id !== row.user_id) {
+    //   alert('You are not ' + row.user)
+    //   return;
+    // }
 
     if (row.ticket_verified) {
       alert('This was already verified on ' + row.ticket_verified)
       return;
     }
 
-
     if (!confirm('Please ensure this ticket is error free and event times are 100% correct. You will be held responsible for any incorrect information. Press ok to continue.')) return;
 
-    row.ticket_verified = moment().format('YYYY-MM-DD HH:mm:ss')
-    this.teamsData = await this.teamsService.updateById(row.id, {
-      ticket_verified: row.ticket_verified
-    });
+    try {
+      row.ticket_verified = moment().format('YYYY-MM-DD HH:mm:ss')
+      await this.teamsService.updateById(row.id, {
+        ticket_verified: row.ticket_verified
+      });
+    } catch (err) {
+
+    }
 
   }
 

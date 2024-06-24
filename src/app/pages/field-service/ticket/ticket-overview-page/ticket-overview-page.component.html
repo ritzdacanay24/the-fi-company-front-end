@@ -10,7 +10,8 @@
           <div *ngIf="!this.jobInfo && id"
             class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
             role="alert">
-            <i class="ri-error-warning-line label-icon"></i>Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
+            <i class="ri-error-warning-line label-icon"></i>Unable to find FSID {{id}}. Please ensure you have the
+            correct FSID number.
             <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
           </div>
 
@@ -20,7 +21,12 @@
             role="alert">
             <i class="ri-error-warning-line label-icon"></i>Ticket not started. Unable to view.
             <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+
+            <button type="button" class="btn btn-success btn-sm" (click)="createTicket()"
+              *ngIf="!this.workOrderInfo && id">Start
+              Ticket</button>
           </div>
+
 
 
           <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [showLabel]="false"

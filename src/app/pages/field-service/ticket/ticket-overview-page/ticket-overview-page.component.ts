@@ -8,6 +8,7 @@ import { NAVIGATION_ROUTE } from '../ticket-constant';
 import { JobOverviewComponent } from '../../job/job-overview/job-overview.component';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
+import moment from 'moment';
 
 @Component({
   standalone: true,
@@ -113,6 +114,34 @@ export class TicketOverviewPageComponent implements OnInit {
   @Input() goBackToTicket: Function = () => {
     this.fsid = null
     this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { fsid: this.fsid, active: 1 } });
+  }
+
+  async createTicket() {
+
+    if (!this.workOrderInfo && this.jobInfo?.id) {
+      let startTime = moment()
+      let end = moment(this.jobInfo?.full_request_date)
+      var duration = end.diff(startTime, 'h');
+      if (duration > 48) {
+        alert('You can start this work order within 48 hours from the requested date.');
+        return;
+      }
+    }
+
+    let params = {
+      fs_scheduler_id: this.jobInfo?.id
+    }
+    try {
+      await this.workOrderService.create(params);
+
+      this.fsid = this.jobInfo?.id
+      this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { fsid: this.fsid, active: 1 } })
+        .then(() => {
+          window.location.reload();
+        });
+
+    } catch (err) {
+    }
   }
 
 }

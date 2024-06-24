@@ -694,7 +694,14 @@ export class ShippingComponent implements OnInit {
         cellRenderer: CheckboxRendererComponent,
         cellRendererParams: {
             onClick: e => this.update(e.rowData),
-        }
+        },
+        hide: true
+    },
+    {
+        field: 'all_mention_comments.all_comments',
+        headerName: 'All Comments',
+        filter: 'agTextColumnFilter',
+        maxWidth: 200
     },
     {
         field: 'misc.lateReasonCodePerfDate',
