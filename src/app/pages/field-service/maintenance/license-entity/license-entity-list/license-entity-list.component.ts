@@ -84,7 +84,11 @@ export class LicenseEntityListComponent implements OnInit {
     { field: 'property_phone', headerName: 'Property Phone', filter: 'agMultiColumnFilter' },
     { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
     { field: 'created_by', headerName: 'Created By', filter: 'agMultiColumnFilter' },
-    { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' }
+    { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
+    { field: 'license_required', headerName: 'License Required', filter: 'agMultiColumnFilter' },
+    { field: 'website', headerName: 'Website', filter: 'agMultiColumnFilter' },
+    { field: 'license_expired_date', headerName: 'License Expired Date', filter: 'agMultiColumnFilter' },
+    { field: 'documents_required', headerName: 'Documents Required', filter: 'agMultiColumnFilter' }
   ]
 
   @Input() selectedViewType: 'Active' | 'Inactive' | 'All' | string = 'Active';

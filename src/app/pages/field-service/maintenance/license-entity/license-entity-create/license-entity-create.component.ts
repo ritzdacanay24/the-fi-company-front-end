@@ -103,7 +103,7 @@ export class LicenseEntityCreateComponent {
 
       let d = {
         data: this.form.value,
-        techs: this.licensed_techs
+        techs: this.techs
       }
 
       let data = await this.api.create(d);
