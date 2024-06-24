@@ -31,30 +31,30 @@
         </div>
 
         <div *ngIf="licensedInfo?.results">
-          <table class="table table-bordered table-sm">
+          <table class="table table-bordered table">
             <tbody>
               <tr>
-                <td>Property</td>
+                <td style="min-width:150px">Property</td>
                 <td>{{licensedInfo?.results?.property}}</td>
               </tr>
               <tr>
-                <td>Notes</td>
+                <td style="min-width:150px">Notes</td>
                 <td>{{licensedInfo?.results?.notes}}</td>
               </tr>
               <tr>
-                <td>License Required</td>
+                <td style="min-width:150px">License Required</td>
                 <td>{{licensedInfo?.results?.license_required}}</td>
               </tr>
               <tr>
-                <td>License Expired Date</td>
+                <td style="min-width:150px">License Expired Date</td>
                 <td>{{licensedInfo?.results?.license_expired_date}}</td>
               </tr>
               <tr>
-                <td>Documents Required</td>
+                <td style="min-width:150px">Documents Required</td>
                 <td>{{licensedInfo?.results?.documents_required}}</td>
               </tr>
               <tr>
-                <td>Website</td>
+                <td style="min-width:150px">Website</td>
                 <td><a [href]="'https://' + licensedInfo?.results?.website"
                     target="_blank">{{licensedInfo?.results?.website}}</a></td>
               </tr>
