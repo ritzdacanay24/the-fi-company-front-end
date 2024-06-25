@@ -11,7 +11,7 @@
 
   <div class="row">
     <div class="col-md-12 mb-3">
-      <label class="form-label required">Property name</label>
+      <label class="form-label required">Casino name</label>
       <input type="text" class="form-control" name="property" formControlName="property" placeholder="Enter property"
         [ngClass]="{ 'is-invalid': submitted && f.property.errors }" autocomplete="off" />
     </div>
@@ -82,7 +82,7 @@
 
 
   <div class="mb-3">
-    <label class="form-label">License Expired Date</label>
+    <label class="form-label">Casino Expired Date</label>
     <input type="date" class="form-control" formControlName="license_expired_date"
       [ngClass]="{ 'is-invalid': submitted && f.license_expired_date.errors }" />
   </div>

@@ -73,9 +73,10 @@ export class PartsOrderEditComponent {
         }
       };
 
-      this.form.patchValue({ ...this.data, details: this.details });
+      this.form.patchValue(this.data);
+      
+      this.getAttachments()
 
-      await this.getAttachments()
     } catch (err) { }
   }
 

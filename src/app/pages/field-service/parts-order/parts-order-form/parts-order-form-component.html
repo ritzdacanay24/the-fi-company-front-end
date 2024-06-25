@@ -78,7 +78,7 @@
 
     <div class="row">
         <div class="col mb-3">
-            <label class="form-label">Ship vi Account</label>
+            <label class="form-label">Ship via Account</label>
             <select class="form-control" formControlName="ship_via_account">
                 <option disabled selected value="null"> --SELECT--</option>
                 <option *ngFor="let row of ['Eyefi', 'Customer', 'N/A']"> {{row}} </option>
@@ -89,7 +89,7 @@
     <div class="row">
         <div class="col-md-12 mb-3">
             <app-address-search (notifyParent)="notifyParent($event)" [value]="f.address.value"
-                [disabled]="this.form.get('address').disabled" [form_label]="'Search by address'"
+                [disabled]="this.form.get('address').disabled" [form_label]="'Destination Address'"
                 placeholder="Enter Address Information" [addTag]="addTag"></app-address-search>
         </div>
     </div>
@@ -184,7 +184,7 @@
                     <tr class="p-0 m-0 align-middle text-center text-nowrap"
                         *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
                         <td style="min-width:200px">
-                            <input type="text" class="form-control" formControlName="part_number"
+                            <input type="text" class="form-control" formControlName="part_number" #userinput
                                 placeholder="Enter part number" />
                         </td>
                         <td style="min-width:200px">

@@ -24,6 +24,12 @@ import Swal from 'sweetalert2';
 })
 export class PartsOrderFormComponent {
 
+    copyInputMessage(inputElement) {
+        inputElement.select();
+        document.execCommand('copy');
+        inputElement.setSelectionRange(0, 0);
+    }
+
     constructor(
         private fb: FormBuilder,
         private partsOrderService: PartsOrderService
@@ -60,6 +66,10 @@ export class PartsOrderFormComponent {
         });
         if (ipAddress) {
             try {
+                let data: any = JSON.stringify(this.form.value.details);
+
+                this.form.value.details = data;
+                
                 await this.partsOrderService.updateAndSendEmail(this.id, {
                     ...this.form.value,
                     so_number: ipAddress
@@ -84,7 +94,7 @@ export class PartsOrderFormComponent {
     part_number = "";
     qty = "";
 
-    onDeleteItem(value, index){
+    onDeleteItem(value, index) {
         this.details.removeAt(index);
     }
 
@@ -137,7 +147,7 @@ export class PartsOrderFormComponent {
         }))
 
         this.part_number = "";
-        this.qty = ""; 
+        this.qty = "";
     };
 
 }

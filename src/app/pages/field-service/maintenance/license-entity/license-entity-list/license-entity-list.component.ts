@@ -74,7 +74,7 @@ export class LicenseEntityListComponent implements OnInit {
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'notes', headerName: 'Notes', filter: 'agMultiColumnFilter', maxWidth: 300, tooltipField: 'notes', },
-    { field: 'property', headerName: 'Property', filter: 'agMultiColumnFilter' },
+    { field: 'property', headerName: 'Casino', filter: 'agMultiColumnFilter' },
     { field: 'address1', headerName: 'Address 1', filter: 'agMultiColumnFilter' },
     { field: 'address2', headerName: 'STE', filter: 'agMultiColumnFilter' },
     { field: 'city', headerName: 'City', filter: 'agMultiColumnFilter' },
