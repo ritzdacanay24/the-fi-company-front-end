@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PartsOrderService } from '@app/core/api/field-service/parts-order/parts-order.service';
 import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
@@ -80,6 +80,13 @@ export class PartsOrderFormComponent {
         return this.form.controls
     }
 
+    part_number = "";
+    qty = "";
+
+    onDeleteItem(value, index){
+        this.details.removeAt(index);
+    }
+
     form = this.fb.group({
         id: null,
         oem: [null],
@@ -101,7 +108,8 @@ export class PartsOrderFormComponent {
         tracking_number_carrier: [null],
         return_tracking_number_carrier: [""],
         return_tracking_number: [null],
-        serial_number: ''
+        serial_number: '',
+        details: this.fb.array([]),
     })
 
     setQadPartNumber($event) {
@@ -111,5 +119,24 @@ export class PartsOrderFormComponent {
     public setValue(column, value) {
         this.form.controls[column].setValue(value, { emitEvent: false });
     }
+
+    @Input() details: FormArray;
+
+    get getDetails() {
+        return this.form.get('details') as FormArray
+    }
+
+
+    @Input() addMoreItems: Function = () => {
+        this.details = this.form.get('details') as FormArray;
+
+        this.details.push(this.fb.group({
+            part_number: new FormControl(this.part_number, Validators.required),
+            qty: new FormControl(this.qty, Validators.required),
+        }))
+
+        this.part_number = "";
+        this.qty = ""; 
+    };
 
 }

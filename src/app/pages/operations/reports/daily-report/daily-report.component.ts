@@ -169,7 +169,7 @@ export class DailyReportComponent implements OnInit {
                         subtitle: "Based on routing 20"
                     },
                     valueInfo: {
-                        title: ((this.data?.production.production_routing_20.due.due_completed_today / this.data?.production.production_routing_20.due.due_total) * 100)?.toFixed(2),
+                        title: this.data?.production.production_routing_20.due.due_total > 0 ? ((this.data?.production.production_routing_20.due.due_completed_today / this.data?.production.production_routing_20.due.due_total) * 100)?.toFixed(2) : 0,
                         subtitle: `${this.data?.production.production_routing_20.due.due_completed_today} of ${this.data?.production.production_routing_20.due.due_total} work orders`,
                     }
                 },

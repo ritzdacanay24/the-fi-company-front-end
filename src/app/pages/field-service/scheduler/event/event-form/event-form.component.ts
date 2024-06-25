@@ -112,7 +112,8 @@ export class EventFormComponent {
     active: [1],
     resource_id: [],
     created_date: '',
-    created_by: ''
+    created_by: '',
+    event_type: null
   }, { validators: dateValidator })
 
   myDatepickerOptions = {

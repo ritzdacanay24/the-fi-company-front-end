@@ -7,8 +7,7 @@ import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { MaterialRequestFormComponent } from '../material-request-form/material-request-form.component';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
-import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
+import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({

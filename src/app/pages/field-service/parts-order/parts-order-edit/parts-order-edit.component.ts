@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
@@ -23,6 +23,8 @@ export class PartsOrderEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private lightbox: Lightbox,
+    private fb: FormBuilder,
+
   ) { }
 
   ngOnInit(): void {
@@ -32,8 +34,8 @@ export class PartsOrderEditComponent {
 
     if (this.id) this.getData();
   }
-  
-  
+
+
   title = "Edit";
 
   form: FormGroup;
@@ -49,11 +51,30 @@ export class PartsOrderEditComponent {
   }
 
   data: any;
+  details: FormArray;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      this.form.patchValue(this.data);
+
+
+      if (this.data.details) {
+        this.data.details = JSON.parse(this.data.details);
+
+        this.details = this.form.get('details') as FormArray;
+
+        for (let i = 0; i < this.data.details.length; i++) {
+          let row = this.data.details[i];
+
+          this.details.push(this.fb.group({
+            part_number: new FormControl(row.part_number, Validators.required),
+            qty: new FormControl(row.qty, Validators.required),
+          }))
+        }
+      };
+
+      this.form.patchValue({ ...this.data, details: this.details });
+
       await this.getAttachments()
     } catch (err) { }
   }
@@ -61,9 +82,17 @@ export class PartsOrderEditComponent {
   async onSubmit() {
     this.submitted = true;
 
+    if (this.form.value.details.length == 0) {
+      alert('You have not items in your cart. Unable to submit request.');
+      return;
+    };
+
     if (this.form.invalid) return;
 
     try {
+
+      this.form.value.details = JSON.stringify(this.form.value.details);
+
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;

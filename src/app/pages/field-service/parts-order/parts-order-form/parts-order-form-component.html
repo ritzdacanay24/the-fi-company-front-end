@@ -138,19 +138,6 @@
     </div>
 
     <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Part Number</label>
-            <input class="form-control" type="text" formControlName="part_number" placeholder="Enter Part Number"
-                [ngClass]="{ 'is-invalid': submitted && f.part_number.errors }" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Qty</label>
-            <input class="form-control" type="text" formControlName="part_qty" placeholder="Enter Qty"
-                [ngClass]="{ 'is-invalid': submitted && f.part_qty.errors }" />
-        </div>
-    </div>
-
-    <div class="row">
         <div class="col mb-3">
             <label class="form-label">Instructions</label>
             <textarea class="form-control" type="text" formControlName="instructions"
@@ -158,5 +145,61 @@
                 autosize [minRows]="1"></textarea>
         </div>
     </div>
+
+    <div class="card text-center border">
+        <div class="card-header">
+            Add Parts to this request
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Part Number</label>
+                    <input class="form-control" type="text" [(ngModel)]="part_number" placeholder="Enter Part Number"
+                        [ngModelOptions]="{standalone: true}" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Qty</label>
+                    <input class="form-control" type="text" [(ngModel)]="qty" placeholder="Enter Qty"
+                        [ngModelOptions]="{standalone: true}" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            <span class="input-group-text button pointer" id="basic-addon2" (click)="addMoreItems()">Add To Cart</span>
+        </div>
+    </div>
+
+    <h4 *ngIf="getDetails.length == 0">Your cart is empty.</h4>
+    <ng-container formGroupName="details" *ngIf="getDetails.length">
+        <div class="table-responsive">
+            <table class="table align-middle table-bordered">
+                <thead>
+                    <tr class="text-nowrap">
+                        <th>Part Number</th>
+                        <th>Qty</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="p-0 m-0 align-middle text-center text-nowrap"
+                        *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+                        <td style="min-width:200px">
+                            <input type="text" class="form-control" formControlName="part_number"
+                                placeholder="Enter part number" />
+                        </td>
+                        <td style="min-width:200px">
+                            <input type="text" class="form-control" formControlName="qty" placeholder="Enter qty" />
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)"
+                                [disabled]="form.disabled">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </ng-container>
 
 </form>

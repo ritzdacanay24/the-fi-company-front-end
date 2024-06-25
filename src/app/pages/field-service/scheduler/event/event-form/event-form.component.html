@@ -11,12 +11,12 @@
     <div class="col-md-6 mb-3">
       <label class="form-label required">Start Date</label>
       <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-        mbsc-datepicker formControlName="start"  [ngClass]="{ 'is-invalid': submitted && f.start.errors }"/>
+        mbsc-datepicker formControlName="start" [ngClass]="{ 'is-invalid': submitted && f.start.errors }" />
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label required">End Time</label>
       <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-        mbsc-datepicker formControlName="end"  [ngClass]="{ 'is-invalid': submitted && f.end.errors }" />
+        mbsc-datepicker formControlName="end" [ngClass]="{ 'is-invalid': submitted && f.end.errors }" />
     </div>
   </div>
 
@@ -36,6 +36,14 @@
       placeholder="Select tech name" placeholder="--Select--" [clearSearchOnAdd]="true" [closeOnSelect]="true"
       (open)="getUserService()" [multiple]="true" [closeOnSelect]="false" (change)="onTechSelectChange($event)">
     </ng-select>
+  </div>
+
+  <div class="mb-3" *ngIf="form.value.techRelated">
+    <label class="form-label">Event Type</label>
+    <select class="form-select"  formControlName="event_type">
+      <option disabled selected value="null">--SELECT--</option>
+      <option *ngFor="let row of ['Travel', 'PTO', 'Production', 'Unavailable']" [value]="row">{{row}}</option>
+    </select>
   </div>
 
   <div class="mb-3" *ngIf="!form.get('techRelated').value">

@@ -1,4 +1,4 @@
-import { GridApi, ColumnApi } from 'ag-grid-community'
+import { GridApi } from 'ag-grid-community'
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import {
@@ -103,18 +103,19 @@ export class PropertyListComponent implements OnInit {
         { field: 'lat', headerName: 'Latitude', filter: 'agMultiColumnFilter', cellDataType: 'text' },
         { field: 'lon', headerName: 'Longitude', filter: 'agMultiColumnFilter', cellDataType: 'text' },
         { field: 'created_by', headerName: 'Created By', filter: 'agMultiColumnFilter' },
-        { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' }
+        { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
+        { field: 'fs_licensed_id', headerName: 'Licensed ID', filter: 'agMultiColumnFilter' }
       ]
     },
-    {
-      headerName: 'Compliance Info',
-      children: [
-        { field: 'license_required', headerName: 'Licensing Required', filter: 'agMultiColumnFilter' },
-        { field: 'license_notes', headerName: 'Licensing Notes', filter: 'agMultiColumnFilter', maxWidth: 300, tooltipField: 'license_notes', },
-        { field: 'license_expired_date', headerName: 'License Expired Date', filter: 'agMultiColumnFilter' },
-        { field: 'licensed_techs', headerName: 'Licensed Techs', filter: 'agMultiColumnFilter' },
-      ]
-    },
+    // {
+    //   headerName: 'Compliance Info',
+    //   children: [
+    //     { field: 'license_required', headerName: 'Licensing Required', filter: 'agMultiColumnFilter' },
+    //     { field: 'license_notes', headerName: 'Licensing Notes', filter: 'agMultiColumnFilter', maxWidth: 300, tooltipField: 'license_notes', },
+    //     { field: 'license_expired_date', headerName: 'License Expired Date', filter: 'agMultiColumnFilter' },
+    //     { field: 'licensed_techs', headerName: 'Licensed Techs', filter: 'agMultiColumnFilter' },
+    //   ]
+    // },
   ]
 
   @Input() selectedViewType: 'Active' | 'Inactive' | 'All' | string = 'Active';
