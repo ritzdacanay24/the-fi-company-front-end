@@ -2,7 +2,7 @@
 
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup } from "@angular/forms";
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from "@angular/forms";
 import { NgbActiveModal, NgbCarouselModule, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { AttachmentsService, AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
@@ -45,6 +45,7 @@ export class PartsOrderModalComponent implements OnInit {
         private api: PartsOrderService,
         private attachmentsService: AttachmentsService,
         private lightbox: Lightbox,
+        private fb: FormBuilder,
     ) {
     }
 
@@ -151,11 +152,28 @@ export class PartsOrderModalComponent implements OnInit {
     submitted = false;
 
     request_id = ''
+    details: FormArray;
 
     async getData() {
         try {
             let data: any = await this.api.getBySoLineNumber(this.id)
             this.request_id = data?.id;
+
+            if (data.details) {
+                data.details = JSON.parse(data.details);
+
+                this.details = this.form.get('details') as FormArray;
+
+                for (let i = 0; i < data.details.length; i++) {
+                    let row = data.details[i];
+
+                    this.details.push(this.fb.group({
+                        part_number: new FormControl(row.part_number, Validators.required),
+                        qty: new FormControl(row.qty, Validators.required),
+                    }))
+                }
+            };
+
 
             await this.getAttachments()
             this.form.patchValue(data);
@@ -164,7 +182,6 @@ export class PartsOrderModalComponent implements OnInit {
             this.form.get('tracking_number_carrier').enable();
             this.form.get('return_tracking_number').enable();
             this.form.get('return_tracking_number_carrier').enable();
-
         } catch (err) { }
     }
 

@@ -75,6 +75,7 @@ export class PartsOrderFormComponent {
 
     @Input() submitted = false;
     @Input() id = null;
+    @Input() disableAddToParts = false;
 
     get f() {
         return this.form.controls

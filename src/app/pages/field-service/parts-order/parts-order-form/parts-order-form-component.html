@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <div class="card text-center border">
+    <div class="card text-center border" *ngIf="!disableAddToParts">
         <div class="card-header">
             Add Parts to this request
         </div>
@@ -165,7 +165,7 @@
             </div>
         </div>
         <div class="card-footer text-muted">
-            <span class="input-group-text button pointer" id="basic-addon2" (click)="addMoreItems()">Add To Cart</span>
+            <button class="btn btn-block btn btn-outline-primary pointer" (click)="addMoreItems()">Add To Cart</button>
         </div>
     </div>
 
@@ -192,7 +192,7 @@
                         </td>
                         <td>
                             <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)"
-                                [disabled]="form.disabled">
+                                [disabled]="this.form.get('details').disabled" [disabled]="form.disabled">
                                 <i class="ri-delete-bin-line"></i>
                             </button>
                         </td>
