@@ -119,7 +119,7 @@ export class PartsOrderListComponent implements OnInit {
             field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter',
             cellRenderer: (params) => {
                 if (params?.data?.details?.length > 1) {
-                    return "More than 1 part listed."
+                    return "Multiple Parts"
                 } else {
                     return params.value
                 }
@@ -129,7 +129,7 @@ export class PartsOrderListComponent implements OnInit {
             field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter',
             cellRenderer: (params) => {
                 if (params?.data?.details?.length > 1) {
-                    return "More than 1 part listed."
+                    return "Multiple Parts"
                 } else {
                     return params.value
                 }
