@@ -115,7 +115,7 @@ export class PartsOrderEditComponent {
     this.images = []
     this.attachments = await this.attachmentsService.find({ field: 'FS Parts Order', uniqueId: this.id })
 
-    for (let i = 0; i <= this.attachments.length; i++) {
+    for (let i = 0; i < this.attachments.length; i++) {
       let row = this.attachments[i]
       const src = 'https://dashboard.eye-fi.com/attachments/fieldService/' + row.fileName;
       const caption = 'Image ' + i + '- ' + row.createdDate;

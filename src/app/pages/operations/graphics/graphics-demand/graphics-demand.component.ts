@@ -7,7 +7,6 @@ import { AgGridModule } from 'ag-grid-angular';
 import { GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
-import { ReportService } from '@app/core/api/operations/report/report.service';
 import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridDateFilterdateFilter, highlightRowView, autoSizeColumns } from 'src/assets/js/util';
@@ -17,7 +16,6 @@ import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.c
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GraphicsBomModalService } from '../graphics-production/graphics-bom-modal/graphics-bom-modal.component';
 import moment from 'moment';
-import { first } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
@@ -192,9 +190,9 @@ export class GraphicsDemandComponent implements OnInit {
             rowNode.data.poEnteredBy = this.authenticationService.currentUserValue.full_name
 
             this.gridApi.applyTransaction({ update: [rowNode.data] });
-            this.gridApi.hideOverlay()
+            this.gridApi.hideOverlay();
         } catch (err) {
-            this.gridApi.hideOverlay()
+            this.gridApi.hideOverlay();
 
         }
 

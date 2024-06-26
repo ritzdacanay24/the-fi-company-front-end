@@ -57,7 +57,7 @@ export class JobTripDetailModalComponent implements OnInit {
   }
 
   getTripSelection($event) {
-    for (let i = 0; i <= this.trip_selection_options.length; i++) {
+    for (let i = 0; i < this.trip_selection_options.length; i++) {
       if ($event == this.trip_selection_options[i].value) {
         this.form.patchValue({
           type_of_travel: $event,
