@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, startWith, switchMap, tap } from 'rxjs';
+import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
 import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
 import { SharedModule } from '@app/shared/shared.module';

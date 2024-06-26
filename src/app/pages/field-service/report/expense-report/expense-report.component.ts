@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../../job/job-constant';
 import { ExpenseReportChartComponent } from './expense-report-chart/expense-report-chart.component';

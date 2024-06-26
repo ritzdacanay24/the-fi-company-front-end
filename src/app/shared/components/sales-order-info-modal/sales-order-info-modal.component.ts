@@ -3,7 +3,6 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SalesOrderInfoService } from '@app/core/api/sales-order/sales-order-info.service';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { AgGridModule } from 'ag-grid-angular';
 import { SharedModule } from '@app/shared/shared.module';
 import { LoadingComponent } from '@app/shared/loading/loading.component';

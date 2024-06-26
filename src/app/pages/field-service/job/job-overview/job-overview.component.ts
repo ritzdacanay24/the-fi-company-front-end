@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@
 import { ActivatedRoute, Router } from '@angular/router';
 import { WorkOrderService } from '@app/core/api/field-service/work-order.service';
 import { JobInfoComponent } from './job-info/job-info.component';
-import { NAVIGATION_ROUTE } from '../job-constant';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { NgbDropdownModule, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 import { JobInvoiceComponent } from './job-invoice/job-invoice.component';

@@ -1,7 +1,7 @@
 import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbToastModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { FlatpickrModule } from 'angularx-flatpickr';
 import { CountUpModule } from 'ngx-countup';
@@ -22,7 +22,6 @@ import lottie from 'lottie-web';
 // Pages Routing
 import { PagesRoutingModule } from "./pages-routing.module";
 import { SharedModule } from "../shared/shared.module";
-import { WidgetModule } from '../shared/widget/widget.module';
 import { DashboardComponent } from './dashboard/dashboard.component';
 
 
@@ -43,7 +42,6 @@ import { DashboardComponent } from './dashboard/dashboard.component';
         SimplebarAngularModule,
         PagesRoutingModule,
         SharedModule,
-        WidgetModule,
         SlickCarouselModule,
         LightboxModule,
 

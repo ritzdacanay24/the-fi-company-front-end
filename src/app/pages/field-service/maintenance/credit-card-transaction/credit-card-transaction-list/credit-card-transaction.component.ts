@@ -1,5 +1,5 @@
 import { GridOptions } from 'ag-grid-community'
-import { GridReadyEvent, GridApi, ColumnApi } from 'ag-grid-community'
+import { GridReadyEvent, GridApi } from 'ag-grid-community';
 import { Component, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import {

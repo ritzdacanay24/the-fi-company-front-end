@@ -6,11 +6,11 @@ import { ToastrService } from 'ngx-toastr';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
-import { LicenseEntityFormComponent } from '../licensed-techs-form/license-entity-form.component';
 import { NAVIGATION_ROUTE } from '../license-entity-constant';
 import { LicenseService } from '@app/core/api/field-service/license.service';
 import { UserService } from '@app/core/api/field-service/user.service';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { LicenseEntityFormComponent } from '../../license-entity/license-entity-form/license-entity-form.component';
 
 //This page will represent, the license property details. I am debating if this should be using the property component, so it does not
 //cause the components to duplicate. Only difference is about the compliance details, listed in the compliance information. 
@@ -71,7 +71,7 @@ export class LicensedTechsCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = (id?: string) => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { id: id } });
+    // this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { id: id } });
   }
 
   async onSubmit() {

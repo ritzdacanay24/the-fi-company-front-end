@@ -2,7 +2,6 @@ import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CrashKitService } from '@app/core/api/field-service/crash-kit.service';
 import { NgbDatepickerModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
-import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 

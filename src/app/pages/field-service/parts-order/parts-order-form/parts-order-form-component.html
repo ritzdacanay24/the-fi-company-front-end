@@ -129,13 +129,13 @@
         </div>
     </div>
 
-    <div class="row">
+    <!-- <div class="row">
         <div class="col mb-3">
             <label class="form-label">Billable</label>
             <input class="form-control" type="text" formControlName="billable" placeholder="Enter Billable Information"
                 [ngClass]="{ 'is-invalid': submitted && f.billable.errors }" />
         </div>
-    </div>
+    </div> -->
 
     <div class="row">
         <div class="col mb-3">
@@ -152,12 +152,17 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Part Number</label>
                     <input class="form-control" type="text" [(ngModel)]="part_number" placeholder="Enter Part Number"
                         [ngModelOptions]="{standalone: true}" />
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Billable</label>
+                    <input class="form-control" type="text" [(ngModel)]="billable" placeholder="Enter Billable"
+                        [ngModelOptions]="{standalone: true}" />
+                </div>
+                <div class="col-md-4 mb-3">
                     <label class="form-label">Qty</label>
                     <input class="form-control" type="text" [(ngModel)]="qty" placeholder="Enter Qty"
                         [ngModelOptions]="{standalone: true}" />
@@ -176,6 +181,7 @@
                 <thead>
                     <tr class="text-nowrap">
                         <th>Part Number</th>
+                        <th>Billable</th>
                         <th>Qty</th>
                         <th></th>
                     </tr>
@@ -186,6 +192,10 @@
                         <td style="min-width:200px">
                             <input type="text" class="form-control" formControlName="part_number" #userinput
                                 placeholder="Enter part number" />
+                        </td>
+                        <td style="min-width:200px">
+                            <input type="text" class="form-control" formControlName="billable"
+                                placeholder="Enter billable" />
                         </td>
                         <td style="min-width:200px">
                             <input type="text" class="form-control" formControlName="qty" placeholder="Enter qty" />

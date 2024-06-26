@@ -24,12 +24,6 @@ import Swal from 'sweetalert2';
 })
 export class PartsOrderFormComponent {
 
-    copyInputMessage(inputElement) {
-        inputElement.select();
-        document.execCommand('copy');
-        inputElement.setSelectionRange(0, 0);
-    }
-
     constructor(
         private fb: FormBuilder,
         private partsOrderService: PartsOrderService
@@ -93,6 +87,7 @@ export class PartsOrderFormComponent {
 
     part_number = "";
     qty = "";
+    billable = "";
 
     onDeleteItem(value, index) {
         this.details.removeAt(index);
@@ -144,10 +139,12 @@ export class PartsOrderFormComponent {
         this.details.push(this.fb.group({
             part_number: new FormControl(this.part_number, Validators.required),
             qty: new FormControl(this.qty, Validators.required),
+            billable: new FormControl(this.billable, Validators.required),
         }))
 
         this.part_number = "";
         this.qty = "";
+        this.billable = "";
     };
 
 }

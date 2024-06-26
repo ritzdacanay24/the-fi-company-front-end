@@ -1,4 +1,4 @@
-import { Component, Injectable, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { MbscModule, setOptions } from '@mobiscroll/angular';
 import { SharedModule } from '../shared.module';
 import { RootReducerState } from '@app/store';

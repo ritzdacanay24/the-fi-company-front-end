@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, SimpleChanges, TemplateRef, ViewChild } from '@angular/core'
+import { Component, Input, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms'
 import { ActivatedRoute } from '@angular/router'
 import { TripExpenseService } from '@app/core/api/field-service/trip-expense.service'

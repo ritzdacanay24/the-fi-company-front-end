@@ -1,11 +1,7 @@
-import { GridApi, ColumnApi } from 'ag-grid-community'
+import { GridApi } from 'ag-grid-community';
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
-import {
-  NgbDatepickerModule,
-  NgbDropdownModule,
-  NgbNavModule
-} from '@ng-bootstrap/ng-bootstrap'
+import { NgbDropdownModule, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 import { NgSelectModule } from '@ng-select/ng-select'
 import { AgGridModule } from 'ag-grid-angular'
 

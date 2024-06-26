@@ -4,12 +4,11 @@ import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { LicensedTechsFormComponent } from '../licensed-techs-form/license-entity-form.component';
-import { NAVIGATION_ROUTE } from '../license-entity-constant';
 import { LicenseService } from '@app/core/api/field-service/license.service';
 import { UserService } from '@app/core/api/field-service/user.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { LicensedTechsService } from '@app/core/api/field-service/licensed-techs.service';
+import { LicensedTechsFormComponent } from '../licensed-techs-form/licensed-techs-form.component';
 
 @Component({
   standalone: true,

@@ -7,7 +7,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../graphics-constant';
 import { agGridDateFilterdateFilter, highlightRowView, autoSizeColumns } from 'src/assets/js/util';

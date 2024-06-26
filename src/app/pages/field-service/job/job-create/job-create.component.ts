@@ -6,7 +6,6 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { FormArray, FormGroup } from '@angular/forms';
-import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
@@ -24,7 +23,6 @@ export class JobCreateComponent implements OnInit {
     private router: Router,
     private api: JobService,
     private toastrService: ToastrService,
-    private publicAttachment: PublicAttachment,
     private authenticationService: AuthenticationService,
   ) {
   }

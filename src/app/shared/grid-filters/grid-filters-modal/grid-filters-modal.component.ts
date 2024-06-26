@@ -4,7 +4,6 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
-import { TableSettingsService } from '@app/core/api/table-settings/table-settings.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { TableFilterSettingsService } from '@app/core/api/table-filter-settings/table-filter-settings.component';

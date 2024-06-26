@@ -2,7 +2,6 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { QirService } from '@app/core/api/field-service/qir.service';
-import { ActivatedRoute, Router } from '@angular/router';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';

@@ -1,4 +1,4 @@
-import { GridApi, ColumnApi } from 'ag-grid-community'
+import { GridApi } from 'ag-grid-community';
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import { NgSelectModule } from '@ng-select/ng-select'

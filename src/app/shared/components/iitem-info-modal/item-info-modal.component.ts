@@ -5,7 +5,6 @@ import { Component, Input } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { ItemService } from '@app/core/api/operations/item/item.service';
 import { QadPartSearchComponent } from '../qad-part-search/qad-part-search.component';
 import { PartLookupComponent } from '../part-lookup/part-lookup.component';
 

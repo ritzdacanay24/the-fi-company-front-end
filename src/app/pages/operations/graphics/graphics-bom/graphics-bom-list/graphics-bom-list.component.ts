@@ -7,7 +7,7 @@ import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { GraphicsBomService } from '@app/core/api/operations/graphics/graphics-bom.service';
 import { NAVIGATION_ROUTE } from '../graphics-bom-constant';

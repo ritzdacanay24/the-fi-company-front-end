@@ -3,7 +3,6 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AddressInfoService } from '@app/core/api/address-info/address-info.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { RfqFormComponent, onFormatDataBeforeEmail } from '@app/pages/operations/forms/rfq/rfq-form/rfq-form.component';
 import { RfqService } from '@app/core/api/rfq/rfq-service';

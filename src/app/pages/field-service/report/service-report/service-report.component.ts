@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, ColumnApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { ServiceReportChartComponent } from './service-report-chart/service-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';

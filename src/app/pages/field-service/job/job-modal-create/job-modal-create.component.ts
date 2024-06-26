@@ -11,7 +11,6 @@ import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { UserService } from '@app/core/api/field-service/user.service';
 import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
-import { AttachmentService } from '@app/core/api/field-service/attachment.service';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
@@ -49,7 +48,6 @@ export class JobModalCreateComponent implements OnInit {
     private api: JobService,
     private userService: UserService,
     private publicAttachment: PublicAttachment,
-    private attachmentService: AttachmentService,
     public authenticationService: AuthenticationService
   ) {
   }

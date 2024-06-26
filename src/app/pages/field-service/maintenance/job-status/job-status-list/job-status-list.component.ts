@@ -1,4 +1,4 @@
-import { GridApi, ColumnApi } from 'ag-grid-community'
+import { GridApi } from 'ag-grid-community'
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import {
@@ -16,7 +16,6 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
-import { BreadcrumbsComponent } from '@app/shared/breadcrumbs/breadcrumbs.component'
 
 @Component({
   standalone: true,
@@ -26,8 +25,7 @@ import { BreadcrumbsComponent } from '@app/shared/breadcrumbs/breadcrumbs.compon
     NgbDropdownModule,
     NgbNavModule,
     NgSelectModule,
-    AgGridModule,
-    BreadcrumbsComponent
+    AgGridModule
   ],
   selector: 'app-job-status-list',
   templateUrl: './job-status-list.component.html',
@@ -40,16 +38,7 @@ export class JobStatusListComponent implements OnInit {
     private activatedRoute: ActivatedRoute,
   ) { }
 
-  breadCrumbItems: any
   ngOnInit(): void {
-
-    /**
-    * BreadCrumb
-    */
-    this.breadCrumbItems = [
-      { label: 'Forms' },
-      { label: 'Forms Validation', active: true }
-    ];
 
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];

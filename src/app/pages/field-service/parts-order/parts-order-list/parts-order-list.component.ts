@@ -100,16 +100,6 @@ export class PartsOrderListComponent implements OnInit {
             floatingFilter: false
         },
         {
-            field: "STATUS", headerName: "Status", filter: "agSetColumnFilter",
-            cellRenderer: (params: any) => {
-                if (params.data) {
-                    if (params.data.isPastDue == 'Yes')
-                        return `<span class="badge bg-danger-subtle text-danger mb-0"> Past Due </span>`;
-                }
-                return null
-            }
-        },
-        {
             field: 'so_number', headerName: 'SV Number', filter: 'agMultiColumnFilter',
             cellRenderer: LinkRendererComponent,
             cellRendererParams: {
@@ -125,8 +115,26 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
         { field: 'instructions', headerName: 'Instructions', filter: 'agMultiColumnFilter' },
         { field: 'oem', headerName: 'OEM', filter: 'agMultiColumnFilter' },
-        { field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter' },
-        { field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter' },
+        {
+            field: 'part_number', headerName: 'Part Number', filter: 'agMultiColumnFilter',
+            cellRenderer: (params) => {
+                if (params?.data?.details?.length > 1) {
+                    return "More than 1 part listed."
+                } else {
+                    return params.value
+                }
+            }
+        },
+        {
+            field: 'part_qty', headerName: 'Qty', filter: 'agMultiColumnFilter',
+            cellRenderer: (params) => {
+                if (params?.data?.details?.length > 1) {
+                    return "More than 1 part listed."
+                } else {
+                    return params.value
+                }
+            }
+        },
         { field: 'tracking_number', headerName: 'Tracking Number', filter: 'agMultiColumnFilter' },
         { field: 'tracking_number_carrier', headerName: 'Carrier', filter: 'agMultiColumnFilter' },
         { field: 'isPastDue', headerName: 'Past Due', filter: 'agMultiColumnFilter' },

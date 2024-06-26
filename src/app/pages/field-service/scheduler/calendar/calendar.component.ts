@@ -1,11 +1,9 @@
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { MbscCalendarEvent, MbscEventcalendar, MbscEventcalendarOptions, MbscEventcalendarView, MbscModule, setOptions } from '@mobiscroll/angular';
 import moment from 'moment';
 import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
-import { _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { RootReducerState } from '@app/store';

@@ -4,7 +4,6 @@ import { Observable, Subject, catchError, concat, debounceTime, distinctUntilCha
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
 import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
 import { SharedModule } from '@app/shared/shared.module';
-import { UserService } from '@app/core/api/field-service/user.service';
 import { LicenseService } from '@app/core/api/field-service/license.service';
 
 @Component({

@@ -1,10 +1,9 @@
-import { Injectable, Input } from "@angular/core";
-import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { Input } from "@angular/core";
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from "@app/shared/shared.module";
 import { TechScheduleComponent } from "../tech-schedule.component";
-import { MbscEventcalendarOptions, MbscEventcalendarView, setOptions } from "@mobiscroll/angular";
+import { MbscEventcalendarOptions, MbscEventcalendarView } from "@mobiscroll/angular";
 import { RootReducerState } from "@app/store";
 import { Store } from "@ngrx/store";
 import moment from "moment";

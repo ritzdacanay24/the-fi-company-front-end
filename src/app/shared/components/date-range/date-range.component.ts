@@ -3,7 +3,6 @@ import moment from 'moment';
 import { MbscModule, setOptions } from '@mobiscroll/angular';
 import { Store } from '@ngrx/store';
 import { RootReducerState } from 'src/app/store';
-import { take } from 'rxjs';
 import { EventService } from 'src/app/core/services/event.service';
 import { getLayoutMode } from 'src/app/store/layouts/layout-selector';
 import { SharedModule } from '@app/shared/shared.module';

@@ -6,7 +6,6 @@ import { RootReducerState } from '../store';
 import { Store } from '@ngrx/store';
 import { changeMode } from '@app/store/layouts/layout-action';
 import { EventService } from '@app/core/services/event.service';
-import { setOptions } from '@mobiscroll/angular';
 import { WebsocketService } from '@app/core/services/websocket.service';
 import { THE_FI_COMPANY_LAYOUT } from './topbar/topbar.component';
 @Component({

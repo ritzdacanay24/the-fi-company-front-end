@@ -69,6 +69,7 @@ export class PartsOrderEditComponent {
           this.details.push(this.fb.group({
             part_number: new FormControl(row.part_number, Validators.required),
             qty: new FormControl(row.qty, Validators.required),
+            billable: new FormControl(row.billable, Validators.required),
           }))
         }
       };

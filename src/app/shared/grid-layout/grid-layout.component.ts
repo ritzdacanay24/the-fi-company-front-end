@@ -1,11 +1,8 @@
-import { Component, Input } from '@angular/core';
-import { NgbActiveModal, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { Component } from '@angular/core';
+import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 
-import { Injectable } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AddressInfoService } from '@app/core/api/address-info/address-info.service';
 import { SharedModule } from '@app/shared/shared.module';
-import { NavigationEnd, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
 
 const sizes = [

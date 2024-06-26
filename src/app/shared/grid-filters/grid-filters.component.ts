@@ -7,7 +7,7 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { TableFilterSettingsService } from '@app/core/api/table-filter-settings/table-filter-settings.component';
 import { GridFiltersModalService } from './grid-filters-modal/grid-filters-modal.component';
 import { GridFiltersEditModalService } from './grid-filters-edit-modal/grid-filters-edit-modal.component';
-import { ColumnApi, GridApi } from 'ag-grid-community';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,

@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { JobFormComponent } from '../job-form/job-form.component';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,8 +7,6 @@ import { TeamService } from '@app/core/api/field-service/fs-team.service';
 import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
 import { getFormValidationErrors } from 'src/assets/js/util';
-import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
-import { AttachmentService } from '@app/core/api/field-service/attachment.service';
 import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
 import { WorkOrderService } from '@app/core/api/field-service/work-order.service';
 import { NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
@@ -170,7 +168,6 @@ export class JobEditComponent implements OnInit {
         goBackUrl: this.router.url
       }
     });
-
   }
 
   onCancel() {
