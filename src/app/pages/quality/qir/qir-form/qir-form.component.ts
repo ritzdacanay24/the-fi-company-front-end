@@ -156,6 +156,7 @@ export class QirFormComponent {
     statusClosed: new FormControl(null),
     status_reason: new FormControl(null),
     location: new FormControl(null),
+    warranty_replacement: new FormControl(null),
   })
 
   setBooleanToNumber(key) {

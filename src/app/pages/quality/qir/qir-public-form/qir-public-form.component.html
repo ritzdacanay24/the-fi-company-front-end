@@ -106,7 +106,7 @@
     </div>
   </div>
 
-  <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail</label>
+  <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail (Also describe any troubleshooting performed)</label>
   <div class="mb-3">
     <quill-editor [ngClass]="{ 'is-invalid border border-danger rounded': submitted && f.issueComment.errors }" formControlName="issueComment"
       placeholder="Enter Comments here.." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">

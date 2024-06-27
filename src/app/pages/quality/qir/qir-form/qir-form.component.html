@@ -76,11 +76,11 @@
 
   <div class="row">
     <div class="col-md-8 mb-3">
-      <label class="form-label" [ngClass]="formValidator('location')">Location of failure (Enter casino name to search your location)</label>
+      <label class="form-label" [ngClass]="formValidator('location')">Location of failure</label>
       <input type="text" class="form-control" name="location" formControlName="location"
         [ngClass]="{ 'is-invalid': submitted && f.location.errors }" placeholder="Enter location" />
     </div>
-    <div class="col-md-4 mb-3" *ngIf="form.get('type1')?.value?.includes('External')">
+    <div class="col-md-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('casinoName')">Casino Name</label>
       <input type="text" class="form-control" name="casinoName" formControlName="casinoName"
         [ngClass]="{ 'is-invalid': submitted && f.casinoName.errors }" placeholder="Enter casino name" />
@@ -98,6 +98,15 @@
       <input type="text" class="form-control" name="lotNumber" formControlName="lotNumber"
         [ngClass]="{ 'is-invalid': submitted && f.lotNumber.errors }" placeholder="Enter lot #" />
     </div>
+    <div class="col mb-3">
+      <label class="form-label" [ngClass]="formValidator('warranty_replacement')">Warranty Replacement</label>
+      <select class="form-select" formControlName="warranty_replacement"
+        [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
+        <option selected disabled value="null">--SELECT--</option>
+        <option *ngFor="let row of ['Yes', 'No', 'N/A']" [value]="row">{{row}}</option>
+      </select>
+    </div>
+
   </div>
 
   <div class="row">

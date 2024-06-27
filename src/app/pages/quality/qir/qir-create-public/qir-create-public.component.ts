@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, HostListener, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,6 +34,14 @@ export class QirCreatePublicComponent {
       history.pushState(null, null, window.location.href);
     });
 
+  }
+
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm('You have unsaved changes. Discard and leave?');
+    }
+    return true;
   }
 
   ngOnInit(): void {
