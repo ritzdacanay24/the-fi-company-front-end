@@ -9,7 +9,7 @@ import { NAVIGATION_ROUTE } from '../qir-constant';
 import { QirService } from '@app/core/api/quality/qir.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
-import { getFormValidationErrors } from 'src/assets/js/util';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,
@@ -36,7 +36,7 @@ export class QirCreateComponent {
     if (this.id) this.getData();
   }
 
-  title = "Create";
+  title = "Create QIR";
 
   form: FormGroup;
 
@@ -69,6 +69,10 @@ export class QirCreateComponent {
       last_name: this.authenticationService.currentUserValue.last_name,
       email: this.authenticationService.currentUserValue.email
     }, { emitEvent: false })
+
+    this.form.get('first_name').disable()
+    this.form.get('last_name').disable()
+    this.form.get('email').disable()
   }
 
   async getData() {

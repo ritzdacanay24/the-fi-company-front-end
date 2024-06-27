@@ -51,6 +51,7 @@ export class QadPartSearchComponent implements OnInit {
   @Input() clearSearch: boolean = false;
   @Input() ngClass: string | any;
   @Input() autoFocus: boolean = false;
+  @Input() matchCase: boolean = false;
 
   
   @ViewChild('select') ngSelect: NgSelectComponent;
@@ -101,7 +102,7 @@ export class QadPartSearchComponent implements OnInit {
         tap(() => {
           this.dataLoading = true
         }),
-        switchMap(term => this.api.searchPartNumber(term).pipe(
+        switchMap(term => this.api.searchPartNumber(term, this.matchCase).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => {
             this.dataLoading = false

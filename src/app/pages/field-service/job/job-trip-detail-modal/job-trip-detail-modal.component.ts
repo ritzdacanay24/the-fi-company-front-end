@@ -239,7 +239,6 @@ export class JobTripDetailModalComponent implements OnInit {
   }
 
   notifyParent($event) {
-    console.log($event)
     this.form.patchValue({
       address: {
         address: $event?.fullStreetName,

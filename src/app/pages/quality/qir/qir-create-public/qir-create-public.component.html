@@ -15,8 +15,8 @@
       <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10">
         <div class="card">
           <div class="card-header d-flex align-items-center justify-content-between">
-            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
-            <p>QIR # {{id}}</p>
+            <h4 class="card-title mb-0 flex-grow-1 text-center"> {{title}} </h4>
+            <p *ngIf="id">QIR # {{id}}</p>
           </div>
           <div class="card-body p-4" style="min-height:300px">
             <div class="mb-3">

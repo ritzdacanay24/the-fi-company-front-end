@@ -119,7 +119,8 @@
           <td>{{row.value.reasonCode}}</td>
           <td class="text-end">{{row.value.qty}}</td>
           <td class="text-end">{{row.value.qtyPicked}}</td>
-          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)" class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
+          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)"
+              class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
           <td>{{row.value.trType}}</td>
           <td>{{row.value.ac_code}}</td>
           <td>{{row.value.notes}}</td>
@@ -167,8 +168,8 @@
                 [ngClass]="{ 'is-invalid': isValidating && row.get('partNumber').errors }"></app-qad-part-search>
             </td>
             <td style="min-width:200px">
-              <p class="text-start text text-truncate mb-0" title="{{row.value.description}}">{{row.value.description ||
-                'No Description Found'}}</p>
+              <p class="text-start text-truncate mb-0" title="{{row.value.description}}">
+                {{row.value.description || 'No Description Found'}}</p>
             </td>
             <td style="min-width:200px">
               <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"

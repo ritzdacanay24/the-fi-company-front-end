@@ -43,7 +43,7 @@ export class PartsOrderCreateComponent implements OnInit {
             };
 
             this.form.value.details = JSON.stringify(this.form.value.details);
-
+            
             this.isLoading = true;
             this.form.value.created_date = moment().format('YYYY-MM-DD HH:mm:ss')
             this.form.value.created_by = this.authenticationService.currentUserValue.id

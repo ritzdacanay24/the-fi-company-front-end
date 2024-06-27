@@ -39,6 +39,7 @@ export class QirCreatePublicComponent {
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
       this.id = params['id'];
+      this.fsId = params['fsId'];
     });
 
     if (this.id) this.getData();
@@ -50,6 +51,7 @@ export class QirCreatePublicComponent {
   form: FormGroup;
 
   id = null;
+  fsId = null;
 
   isLoading = false;
 
@@ -68,11 +70,15 @@ export class QirCreatePublicComponent {
   setFormEmitter($event) {
     this.form = $event;
 
+    if (this.fsId) {
+      this.form.patchValue({
+        fieldServiceSchedulerId: this.fsId
+      })
+    }
+
   }
 
   async getData() {
-
-
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
@@ -83,6 +89,7 @@ export class QirCreatePublicComponent {
 
   closeWindow = false;
   async onSubmit() {
+    this.submitted = true;
 
     this.form.patchValue({
       createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -92,8 +99,6 @@ export class QirCreatePublicComponent {
       getFormValidationErrors()
       return;
     }
-
-    this.submitted = true;
 
     try {
 

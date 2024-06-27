@@ -17,14 +17,18 @@
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+        <h4 class="card-title mb-0 flex-grow-1 text-center"> {{title}} </h4>
+        <button type="button" (click)="onDownloadAsPdf()" class="btn btn-sm btn-light" [disabled]="isLoading">
+          <span class="icon-on"><i class="bx bxs-file-pdf text-danger me-2"></i> Download as PDF</span>
+        </button>
+
       </div>
       <div class="card-body" style="min-height:300px">
         <app-qir-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-qir-form>
 
         <div class="mt-3">
           <h4 class="mb-3">Attachments</h4>
-          <ul class="list-group">
+          <ul class="list-group" style="max-height:400px;overflow: auto;">
             <li class="list-group-item d-flex justify-content-between pointer"
               *ngFor="let row of attachments; let i = index">
               <div>
@@ -55,4 +59,110 @@
       </div>
     </div>
   </div>
+</div>
+
+<!--Print-->
+
+
+<div id="content" #content style="font-size:12px;border:2px solid black" class="d-none d-print-block">
+
+  <div><img src="http://localhost:4200/assets/images/fi-color.png" style="width:150px"></div>
+  <h4 class="text-center mb-3">Quality Incident Request Form</h4>
+  <table class="table table-bordered table-sm">
+    <tbody>
+      <tr>
+        <td><b>Name:</b> <br />{{data?.first_name}} {{data?.last_name}}</td>
+        <td><b>Email:</b> <br />{{data?.email}}</td>
+        <td><b>QIR:</b> <br />{{data?.id}}</td>
+        <td><b>Created Date:</b> <br />{{data?.createdDate}}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><b>Failure Type:</b> {{data?.failureType}}</td>
+        <td colspan="2"><b>Stakeholder:</b> {{data?.stakeholder}}</td>
+      </tr>
+      <tr>
+        <td><b>Customer Part No.</b> {{data?.CustomerPartNumber}}</td>
+        <td><b>EyeFi Part No.</b> {{data?.eyefiPartNumber}}</td>
+        <td><b>PO No.</b> {{data?.purchaseOrder}}</td>
+        <td><b>Warranty:</b> {{data?.warranty_replacement}}</td>
+      </tr>
+      <tr>
+        <td><b>Lot No.</b> {{data?.lotNumber}}</td>
+        <td><b>NCR No.</b> {{data?.ncr_id}}</td>
+        <td><b>Type:</b> {{data?.type1}}</td>
+        <td><b>Type Sub:</b> {{data?.typeSub}}</td>
+      </tr>
+      <tr>
+        <td><b>Customer Name:</b> <br />{{data?.customerName}}</td>
+        <td><b>Customer Reported Date:</b> <br />{{data?.customerReportedDate}}</td>
+        <td><b>Platform:</b> <br />{{data?.platformType}}</td>
+        <td><b>Component Type:</b> <br />{{data?.componentType}}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><b>Location:</b> {{data?.location}}</td>
+      </tr>
+    </tbody>
+  </table>
+  <table class="table table-bordered table-sm border-top-0">
+    <tr>
+      <td colspan="3" class="bg-grey">
+        <b>Describe the issue or problem in detail (Also describe any troubleshooting
+          performed)</b>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:100px;vertical-align: top;">{{data?.issueComment}}</td>
+    </tr>
+
+    <tr>
+      <td colspan="3">(See next page for QIR Reseponse)</td>
+    </tr>
+  </table>
+
+  <div class="pagebreak"> </div>
+
+  <table class="table table-bordered table-sm border-top-0">
+    <tr class="text-center bg-grey p-3">
+      <td colspan="5" class="p-3">
+        <h4>Quality Incident Request Response </h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="bg-grey"><b>Preliminary Investigation Date</b></td>
+      <td>{{qirResponse?.preliminary_investigation}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey"><b>QA Findings</b></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.findings}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey"><b>Fi Document Control Response</b></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.document_control_response}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey"><b>Fi Engineering Response</b></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.fs_engineering_reponse}}</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="bg-grey"><b>Fi Quality Team</b></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.quality_team}}</td>
+    </tr>
+    <tr>
+      <td class="bg-grey"><b>Closure By</b></td>
+      <td class="bg-grey"><b>Closure Date</b></td>
+    </tr>
+    <tr>
+      <td>{{qirResponse?.closure_by}}</td>
+      <td>{{qirResponse?.closure_date}}</td>
+    </tr>
+  </table>
+  <!-- <p class="text-right" style="text-align:right">FORM:8.70-00-1 REV NC</p> -->
 </div>

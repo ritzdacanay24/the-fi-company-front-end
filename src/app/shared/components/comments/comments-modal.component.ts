@@ -93,7 +93,6 @@ export class CommentsModalComponent implements OnInit {
   commentEmailNotification = false;
 
   onCommentEmailNotification() {
-    console.log(this.commentEmailNotification, 'this.commentEmailNotification')
   }
 
   ngOnInit() {

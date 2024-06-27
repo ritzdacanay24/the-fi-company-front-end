@@ -5,8 +5,8 @@
         <div class="input-group mb-3">
             <input class="form-control" type="text" formControlName="so_number" placeholder="Enter SV Number"
                 [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }" readonly />
-            <button class="btn input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()">Add SV
-                Number</button>
+            <button class="btn input-group-text btn-primary pointer" id="basic-addon2" (click)="addSVNumber()" [disabled]="f.so_number.disabled">
+                Add SV Number</button>
         </div>
     </div>
 
@@ -64,8 +64,24 @@
     <div class="row">
         <div class="col mb-3">
             <label class="form-label">OEM</label>
-            <input class="form-control" type="text" formControlName="oem" placeholder="Enter OEM"
-                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }" />
+            <ng-select [items]="customers" bindLabel="cm_addr" placeholder="--SELECT--" formControlName="oem"
+                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }">
+                <ng-template ng-label-tmp let-item="item">
+                    [{{item.cm_addr}}] {{ item.cm_sort }}
+                </ng-template>
+                <ng-template ng-option-tmp let-item="item">
+                    [{{item.cm_addr}}] {{ item.cm_sort }}
+                </ng-template>
+
+            </ng-select>
+
+            <!-- <select class="form-select" formControlName="oem" [ngClass]="{ 'is-invalid': submitted && f.oem.errors }">
+                <option selected disabled [value]="null">--SELECT--</option>
+                <option *ngFor="let row of customers" [value]="row.cm_addr">[{{row.cm_addr}}] {{ row.cm_sort }}
+                </option>
+            </select> -->
+            <!-- <input class="form-control" type="text" formControlName="oem" placeholder="Enter OEM"
+                [ngClass]="{ 'is-invalid': submitted && f.oem.errors }" /> -->
         </div>
     </div>
     <div class="row">
@@ -142,20 +158,25 @@
             <label class="form-label">Instructions</label>
             <textarea class="form-control" type="text" formControlName="instructions"
                 placeholder="Enter instructions if any" [ngClass]="{ 'is-invalid': submitted && f.instructions.errors }"
-                autosize [minRows]="1"></textarea>
+                autosize [minRows]="3"></textarea>
         </div>
     </div>
 
-    <div class="card text-center border" *ngIf="!disableAddToParts">
-        <div class="card-header">
-            Add Parts to this request
+    <div class="card border" *ngIf="!disableAddToParts">
+        <div class="card-header bg-primary text-white">
+            Add parts to this request
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Part Number</label>
-                    <input class="form-control" type="text" [(ngModel)]="part_number" placeholder="Enter Part Number"
-                        [ngModelOptions]="{standalone: true}" />
+                    <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParent($event)"
+                        [value]="part_number" [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true"
+                        [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled" [matchCase]="true"
+                        [addTag]="true"></app-qad-part-search>
+                    <small class="m-0 p-0 text-start" *ngIf="description">{{description}}</small>
+                    <!-- <input class="form-control" type="text" [(ngModel)]="part_number" placeholder="Enter Part Number"
+                        [ngModelOptions]="{standalone: true}" /> -->
                 </div>
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Billable</label>
@@ -186,12 +207,17 @@
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr class="p-0 m-0 align-middle text-center text-nowrap"
-                        *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+                <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+                    <tr class="p-0 m-0 align-middle text-center text-nowrap">
                         <td style="min-width:200px">
-                            <input type="text" class="form-control" formControlName="part_number" #userinput
-                                placeholder="Enter part number" />
+
+                            <!-- <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParentRow($event, row)"
+                                [value]="row.value.part_number" [showLabel]="false" [virtualScroll]="false"
+                                [editableSearchTerm]="true" [hideSelected]="false" [className]="'custom1'"
+                                [disabled]="form.disabled"></app-qad-part-search> -->
+
+                            <input type="text" class="form-control border-0" formControlName="part_number" #userinput
+                                placeholder="Enter part number" readonly />
                         </td>
                         <td style="min-width:200px">
                             <input type="text" class="form-control" formControlName="billable"
@@ -205,6 +231,12 @@
                                 [disabled]="this.form.get('details').disabled" [disabled]="form.disabled">
                                 <i class="ri-delete-bin-line"></i>
                             </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="py-1 bg-light" *ngIf="row.value.description">
+                            <p class="text-start text-wrap mb-0" title="{{row.value.description}}">
+                                Description: {{row.value.description || 'No Description Found'}}</p>
                         </td>
                     </tr>
                 </tbody>

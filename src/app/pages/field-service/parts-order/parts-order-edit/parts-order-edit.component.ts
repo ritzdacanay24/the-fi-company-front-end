@@ -70,6 +70,7 @@ export class PartsOrderEditComponent {
             part_number: new FormControl(row.part_number, Validators.required),
             qty: new FormControl(row.qty, Validators.required),
             billable: new FormControl(row.billable, Validators.required),
+            description: new FormControl(row.description, Validators.required),
           }))
         }
       };
@@ -89,7 +90,9 @@ export class PartsOrderEditComponent {
       return;
     };
 
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      return;
+    };
 
     try {
 

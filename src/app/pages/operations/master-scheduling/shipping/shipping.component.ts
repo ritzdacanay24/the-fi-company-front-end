@@ -782,8 +782,8 @@ export class ShippingComponent implements OnInit {
         cellRenderer: IconRendererComponent,
         cellRendererParams: {
             onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR),
-            iconName: 'mdi mdi-ballot-outline'
-        }
+            iconName: 'mdi mdi-ballot-outline',
+        }, 
     }
     ];
 

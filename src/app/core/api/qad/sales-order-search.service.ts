@@ -20,8 +20,8 @@ export class QadService extends DataService<any> {
     return this.http.get(apiURL)
   }
 
-  searchPartNumber(q: string): Observable<any> {
-    let apiURL = `${url}/searchPartNumber?text=${q}`;
+  searchPartNumber(q: string, matchCase): Observable<any> {
+    let apiURL = `${url}/searchPartNumber?text=${q}&matchCase=${matchCase}`;
     return this.http.get(apiURL)
   }
 
@@ -43,5 +43,9 @@ export class QadService extends DataService<any> {
     let apiURL = `${url}/searchCustomerName?text=${q}`;
     return this.http.get(apiURL)
   }
+
+  getAllCustomerName = async () =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/getAllCustomerName`));
+
 
 }

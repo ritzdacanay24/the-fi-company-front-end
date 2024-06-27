@@ -13,6 +13,7 @@ import { Lightbox } from 'ngx-lightbox';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
 import { QirResponseModalService } from '../qir-response/qir-repsonse-modal/qir-repsonse-modal.component';
+import { QirResponseService } from '@app/core/api/quality/qir-response.service';
 
 @Component({
   standalone: true,
@@ -30,7 +31,8 @@ export class QirEditComponent {
     private attachmentsService: AttachmentsService,
     private lightbox: Lightbox,
     private authenticationService: AuthenticationService,
-    private qirResponseModalService: QirResponseModalService
+    private qirResponseModalService: QirResponseModalService,
+    private qirResponseService: QirResponseService,
   ) { }
 
   ngOnInit(): void {
@@ -41,7 +43,7 @@ export class QirEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit QIR";
 
   form: MyFormGroup<IQirForm>;
 
@@ -76,6 +78,11 @@ export class QirEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
+
+      this.form.get('first_name').disable()
+      this.form.get('last_name').disable()
+      this.form.get('email').disable()
+
       await this.getAttachments()
     } catch (err) { }
   }
@@ -178,6 +185,62 @@ export class QirEditComponent {
       this.isLoading = false;
       await this.getAttachments()
     }
+  }
+
+  qirResponse
+  async onDownloadAsPdf() {
+    if (this.form.dirty) {
+      alert('Please save before downloading as PDF')
+      return
+    };
+
+    this.qirResponse = await this.qirResponseService.findOne({ qir_number: this.id })
+    console.log(this.qirResponse)
+
+    setTimeout(function () {
+
+      var printContents = document.getElementById('content').innerHTML;
+      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      popupWin.document.open();
+      popupWin.document.write(`
+      <html>
+        <head>
+          <title>Work Order Info</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+          <style>
+            @page {
+              size: portrait;
+            }
+            @media print {
+              .bg-grey {
+                background-color: lightgrey !important;
+              }
+              .pagebreak { page-break-before: always; } /* page-break-after works, as well */
+
+              .table  td {
+                font-size:11px
+              }
+
+              td:empty::after {
+                content: ".";
+                visibility:hidden;
+              }
+            }
+
+          </style>
+        </head>
+        <body onload="window.print();window.close()">
+          ${printContents}
+        </body>
+      </html>`
+      );
+      popupWin.document.close();
+      popupWin.onload = function () {
+        popupWin.print();
+        popupWin.close();
+      };
+    }, 0);
   }
 
 }

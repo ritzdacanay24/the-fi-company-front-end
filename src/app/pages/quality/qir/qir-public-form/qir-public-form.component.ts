@@ -97,7 +97,7 @@ export class QirPublicFormComponent {
     createdDate: new FormControl(null),
     active: new FormControl(1),
     status: new FormControl('Open'),
-    issueComment: new FormControl(null),
+    issueComment: new FormControl(null, [Validators.required]),
     issue_comment_html: new FormControl(''),
     verifiedBy: new FormControl(''),
     customerName: new FormControl(null),
@@ -137,7 +137,7 @@ export class QirPublicFormComponent {
       alert('Not valid email.')
       return false;
     }
-    
+
     return validateEmail(e) ? e : false
   }
 
