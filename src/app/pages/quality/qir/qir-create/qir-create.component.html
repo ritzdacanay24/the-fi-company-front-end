@@ -6,7 +6,7 @@
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
+      <div class="card-body" style="min-height:300;height: calc(100vh - 230px);overflow:auto">
         <app-qir-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-qir-form>
 
         <div class="mb-3 mt-3">

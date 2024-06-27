@@ -637,7 +637,7 @@
           <ng-container *ngFor="let row of tripDetailInfo | sortBydate  : 'start_datetime'; let i = index">
             <thead>
               <tr>
-                <th colspan="5">{{row.type_of_travel | uppercase}}<span (click)="addTripDetails(row.id)"
+                <th colspan="5">{{row.type_of_travel?.replace('_', ' ') | uppercase}}<span (click)="addTripDetails(row.id)"
                     class="float-end pointer"><u>Edit</u></span></th>
               </tr>
             </thead>

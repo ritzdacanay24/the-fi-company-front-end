@@ -23,7 +23,7 @@
         </button>
 
       </div>
-      <div class="card-body" style="min-height:300px">
+      <div class="card-body" style="min-height:300;height: calc(100vh - 231px);overflow:auto">
         <app-qir-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-qir-form>
 
         <div class="mt-3">
