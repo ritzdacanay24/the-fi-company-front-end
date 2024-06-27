@@ -85,6 +85,7 @@ export class PartsOrderCreateComponent implements OnInit {
     myFiles: string[] = [];
 
     onFilechange(event: any) {
+        this.myFiles = [];
         for (var i = 0; i < event.target.files.length; i++) {
             this.myFiles.push(event.target.files[i]);
         }
