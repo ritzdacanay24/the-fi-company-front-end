@@ -403,12 +403,12 @@
         <tr [formGroupName]="i" class="align-middle">
           <td>{{item.value.sod_part}}</td>
           <td>{{item.value.sod_list_pr | currency}}</td>
-          <td>
+          <td style="width:200px">
             <input type="number" class="form-control" placeholder="Enter qty" formControlName="qty"
               [ngClass]="{ 'is-invalid': submitted && item.get('qty').errors }" (change)="calculateValue()">
           </td>
-          <td>
-            <div class="form-check form-check-flat form-check-primary float-right">
+          <td style="width:150px">
+            <div class="form-check form-check-flat form-check-primary">
               <label class="form-check-label">
                 <input type="checkbox" class="form-check-input" formControlName="addItemsList"
                   (change)="calculateValue()">

@@ -47,10 +47,17 @@ export class RevenueByCustomerComponent implements OnInit {
 
     data1: any
     d: any
+    isLoadingSubData = false;
     async getData1(d) {
-        this.data1 = []
-        this.d = d;
-        this.data1 = await this.revenueService.getFutureRevenueByCustomerByWeekly(d);
+        try {
+            this.isLoadingSubData = true;
+            this.data1 = []
+            this.d = d;
+            this.data1 = await this.revenueService.getFutureRevenueByCustomerByWeekly(d);
+            this.isLoadingSubData = false;
+        } catch (err) {
+            this.isLoadingSubData = false;
+        }
     }
 
     originalOrder = (a: KeyValue<number, string>, b: KeyValue<number, string>): number => {

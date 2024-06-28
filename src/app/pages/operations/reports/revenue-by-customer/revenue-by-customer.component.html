@@ -26,10 +26,12 @@
                         <tbody>
                             <tr *ngFor="let row of data">
                                 <td *ngFor="let column of row | keyvalue:originalOrder; let i = index"
-                                    [ngClass]="{'text-end pointer': i != 0, 'bg-primary text-white': column.key == d}"
-                                    (click)="getData1(column.key)">
-                                    <span *ngIf="i == 0">{{ column.value }}</span>
-                                    <span *ngIf="i != 0" [ngClass]="{'bg-success-subtle' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">{{ column.value | currency }}</span>
+                                    [ngClass]="{'text-end pointer': ['Grand Total', 'Customer'].indexOf($any(column.key)) === -1, 'bg-primary text-white': column.key == d}"
+                                    (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
+                                    <span *ngIf="i == 0"> {{ column.value }}</span>
+                                    <span *ngIf="i != 0"
+                                        [ngClass]="{'bg-success-subtle' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">
+                                        {{ column.value | currency }}</span>
                                 </td>
                             </tr>
                         </tbody>
@@ -50,7 +52,16 @@
     </div>
 </div>
 
-<div class="row" *ngIf="data1?.chart1">
+<div *ngIf="isLoadingSubData" class="p-5 card-body text-center">
+    <h4>
+        <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Loading Data. Please wait...</p>
+    </h4>
+</div>
+
+<div class="row" *ngIf="data1?.chart1 && !isLoadingSubData">
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">

@@ -82,7 +82,7 @@
                   <table class="table table-sm table-bordered mb-0 pb-0" *ngIf="item.locations">
                     <tbody>
                       <tr *ngFor="let location of item.locations">
-                        <td class="p-0 px-2">{{location.LD_LOC}}</td>
+                        <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
                         <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
                       </tr>
                     </tbody>
@@ -149,7 +149,7 @@
                 <table class="table table-sm table-bordered m-0 p-0 text-left border-0 border border-white"
                   *ngIf="item.locations">
                   <tr *ngFor="let location of item.locations">
-                    <td class="p-0 px-2">{{location.LD_LOC}}</td>
+                    <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
                     <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
                   </tr>
                 </table>
