@@ -348,7 +348,9 @@ export class ShippingComponent implements OnInit {
     columnDefs: any = [{
         field: "Misc Edit", headerName: "Misc Edit", filter: false
         , valueGetter: (params) => {
-            return `SO#: ${params?.data?.sales_order_line_number}`;
+            if (params.data) {
+                return `SO#: ${params?.data?.sales_order_line_number}`;
+            } else { return null }
         },
         cellRenderer: ShipAccountRendererComponent,
         cellRendererParams: {
@@ -477,9 +479,9 @@ export class ShippingComponent implements OnInit {
         }
         , valueGetter: (params) => {
             if (params.data)
-                if (params.data.recent_comments?.bg_class_name == 'bg-info') {
+                if (params.data?.recent_comments?.bg_class_name == 'bg-info') {
                     return 'Has Comments'
-                } if (params.data.recent_comments?.bg_class_name == 'bg-success') {
+                } if (params.data?.recent_comments?.bg_class_name == 'bg-success') {
                     return 'New Comments'
                 } else {
                 return 'No Comments'
@@ -767,10 +769,15 @@ export class ShippingComponent implements OnInit {
         headerName: 'CTB Report Period',
         filter: 'agMultiColumnFilter',
         cellRenderer: (params) => {
-            return moment(params?.data?.SOD_DUE_DATE).format('MM-YYYY')
+            if (params.data)
+                return moment(params?.data?.SOD_DUE_DATE).format('MM-YYYY');
+            return "";
         },
         valueGetter: (params) => {
-            return moment(params?.data?.SOD_DUE_DATE).format('MM-YYYY')
+            if (params.data)
+                return moment(params?.data?.SOD_DUE_DATE).format('MM-YYYY')
+            return "";
+
         }
     },
     { field: 'sod_type', headerName: 'SOD Type', filter: 'agSetColumnFilter' },
@@ -783,7 +790,7 @@ export class ShippingComponent implements OnInit {
         cellRendererParams: {
             onClick: e => this.viewPartsOrder(e.rowData.SOD_NBR),
             iconName: 'mdi mdi-ballot-outline',
-        }, 
+        },
     }
     ];
 
@@ -856,6 +863,7 @@ export class ShippingComponent implements OnInit {
         tooltipShowDelay: 0,
         columnDefs: [],
         rowBuffer: 0,
+        enableAdvancedFilter: false,
         suppressColumnMoveAnimation: true,
         getRowId: (data: any) => data?.data.id,
         onGridReady: (params) => {
@@ -878,7 +886,7 @@ export class ShippingComponent implements OnInit {
             this.update(event.data);
         },
         getRowClass: (params: any) => {
-            if (params.data.SALES_ORDER_LINE_NUMBER === this.comment) {
+            if (params.data?.SALES_ORDER_LINE_NUMBER === this.comment) {
                 return ['bg-primary-subtle']
             } else if (params.data.misc?.hot_order) {
                 return ['border border-danger bg-opacity-10 bg-danger']

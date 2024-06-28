@@ -1,11 +1,14 @@
 import { GridOptions } from "ag-grid-community";
 
 export const agGridOptions: GridOptions = {
-  groupIncludeFooter: true,
+  groupIncludeFooter: false,
   groupIncludeTotalFooter: false,
   singleClickEdit: true,
   columnDefs: [],
   rowData: null,
+  groupDisplayType: 'groupRows',
+  groupSuppressBlankHeader: true,
+
   suppressMenuHide: false,
   suppressCopyRowsToClipboard: true,
   enableRangeSelection: true,

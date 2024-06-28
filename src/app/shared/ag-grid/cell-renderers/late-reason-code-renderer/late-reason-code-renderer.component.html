@@ -1,4 +1,7 @@
-<div class="d-flex flex-row text-nowrap overflow-hidden" style="width:auto;text-overflow: ellipsis;" title="{{params.value}}">
-  <span class="mdi mdi-plus-box me-2 icon-md-lg text-primary pointer" (click)="onClick($event)"></span>
-  <span>{{params.value}}</span>
-</div>
+<ng-container *ngIf="data">
+  <div class="d-flex flex-row text-nowrap overflow-hidden" style="width:auto;text-overflow: ellipsis;"
+    title="{{params?.value}}">
+    <span class="mdi mdi-plus-box me-2 icon-md-lg text-primary pointer" (click)="onClick($event)"></span>
+    <span>{{params?.value}}</span>
+  </div>
+</ng-container>

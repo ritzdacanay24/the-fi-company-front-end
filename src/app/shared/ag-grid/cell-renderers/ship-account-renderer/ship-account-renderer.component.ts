@@ -3,7 +3,6 @@ import { SharedModule } from '@app/shared/shared.module';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import tippy from 'tippy.js';
 
-
 @Component({
   standalone: true,
   imports: [SharedModule],

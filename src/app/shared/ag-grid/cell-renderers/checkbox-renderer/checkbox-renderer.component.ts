@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
+import { SharedModule } from '@app/shared/shared.module';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-checkbox-renderer',
   templateUrl: './checkbox-renderer.component.html'
 })
@@ -9,12 +12,14 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 export class CheckboxRendererComponent implements ICellRendererAngularComp {
 
   params: any;
+  data: any
   agInit(params): void {
     this.params = params;
   }
 
   refresh(params?: any): boolean {
     this.params.value = params.value;
+    this.data = params.data;
     return true;
   }
 

@@ -1,1 +1,4 @@
-<i class="{{iconName}} me-2 text-muted" (click)="onClick($event)"></i> {{value ? value : placeholder ? placeholder : ''}}
+<ng-container *ngIf="data">
+    <i class="{{iconName}} me-2 text-muted" (click)="onClick($event)"></i>
+    {{value ? value : placeholder ? placeholder : ''}}
+</ng-container>

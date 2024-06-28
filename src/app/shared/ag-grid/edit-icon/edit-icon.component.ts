@@ -19,13 +19,15 @@ export class EditIconComponent implements ICellRendererAngularComp {
   iconName: string;
   value: string;
   instances: any;
-  placeholder
+  placeholder: any;
+  data: any;
 
   agInit(params): void {
     this.params = params;
     this.iconName = params.iconName;
     this.value = params.value;
     this.placeholder = params.placeholder
+    this.data = params.data;
   }
 
   refresh(params?: any): boolean {

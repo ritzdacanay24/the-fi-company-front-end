@@ -3,11 +3,14 @@ import { Component } from '@angular/core';
 import { isEmpty } from 'src/assets/js/util';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import tippy from 'tippy.js';
+import { SharedModule } from '@app/shared/shared.module';
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-comments-renderer',
   templateUrl: './comments-renderer.component.html'
 })
@@ -19,9 +22,11 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
   icon: string = 'mdi-comment-outline';
   icon_color: string = '';
   atRisk: boolean;
+  data: any
 
   agInit(params): void {
     this.params = params;
+    this.data = params.data;
     if (!params.data) return;
 
     this.recent_comments = params.data.recent_comments;

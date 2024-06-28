@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
+import { SharedModule } from '@app/shared/shared.module';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-icon-renderer',
   templateUrl: './icon-renderer.component.html'
 })
@@ -14,9 +17,11 @@ export class IconRendererComponent implements ICellRendererAngularComp {
   value: string;
   label: any;
   classColor: string = '#000';
+  data
 
   agInit(params): void {
     this.params = params;
+    this.data = params.data;
     this.label = params.label;
     this.classColor = params.classColor;
     this.showValue = params.showValue;

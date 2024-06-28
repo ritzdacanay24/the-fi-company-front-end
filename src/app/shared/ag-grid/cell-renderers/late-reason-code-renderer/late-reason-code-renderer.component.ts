@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
+import { SharedModule } from '@app/shared/shared.module';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'app-late-reason-code-renderer',
   templateUrl: './late-reason-code-renderer.component.html',
   styleUrls: ['./late-reason-code-renderer.component.scss']
@@ -10,6 +13,8 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 export class LateReasonCodeRendererComponent implements ICellRendererAngularComp {
 
   params: any;
+  data: any;
+
   agInit(params): void {
 
     if (!params.data) return
@@ -19,6 +24,7 @@ export class LateReasonCodeRendererComponent implements ICellRendererAngularComp
 
   refresh(params?: any): boolean {
     this.params.value = params.value;
+    this.data = params.data;
     return true;
   }
 

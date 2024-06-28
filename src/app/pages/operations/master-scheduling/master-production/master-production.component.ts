@@ -253,10 +253,12 @@ export class MasterProductionComponent implements OnInit {
                 onClick: (e: any) => this.viewComment(e.rowData.WR_NBR),
             }
             , valueGetter: function (params) {
-                return {
-                    title: `WO#: ${params.data.WR_NBR}`,
-                    description: `${params.data.WR_PART}`
-                }
+                if (params.data)
+                    return {
+                        title: `WO#: ${params.data.WR_NBR}`,
+                        description: `${params.data.WR_PART}`
+                    }
+                return null
             },
         },
         { field: "WO_RMKS", headerName: "Remarks", filter: "agTextColumnFilter" },
