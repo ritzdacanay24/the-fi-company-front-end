@@ -18,7 +18,7 @@ import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer
 import { PickSheetRendererComponent } from '@app/shared/ag-grid/pick-sheet-renderer/pick-sheet-renderer.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
-import { KanbanAddModalService } from '../kanban/kanban-add-modal/kanban-add-modal.component';
+import { KanbanAddModalService } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component';
 import { WebsocketService } from '@app/core/services/websocket.service';
 import { KanbanRendererComponent } from '@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component';
 

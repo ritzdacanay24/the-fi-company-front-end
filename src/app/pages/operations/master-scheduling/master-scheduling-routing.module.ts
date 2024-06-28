@@ -8,9 +8,9 @@ import { PickingRoutingComponent } from './picking-routing/picking-routing.compo
 import { QcRoutingComponent } from './qc-routing/qc-routing.component';
 import { ProductionRoutingComponent } from './production-routing/production-routing.component';
 import { AllRoutingComponent } from './all-routing/all-routing.component';
-import { KanbanComponent } from './kanban/kanban.component';
+import { WorkOrderTrackerComponent } from './work-order-tracker/work-order-tracker.component';
 import { CablesComponent } from './cables/cables.component';
-import { KanbanListComponent } from './kanban/kanban-list/kanban-list.component';
+import { WorkOrderTrackerListComponent } from './work-order-tracker/work-order-tracker-list/work-order-tracker-list.component';
 
 const routes: Routes = [
   {
@@ -44,11 +44,11 @@ const routes: Routes = [
       },
       {
         path: 'work-order-tracker',
-        component: KanbanComponent
+        component: WorkOrderTrackerComponent
       },
       {
         path: 'list-work-order-tracker',
-        component: KanbanListComponent
+        component: WorkOrderTrackerListComponent
       },
       {
         path: 'cables',

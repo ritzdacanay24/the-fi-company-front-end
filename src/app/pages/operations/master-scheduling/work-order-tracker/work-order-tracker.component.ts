@@ -1,12 +1,20 @@
 import { Component, OnInit } from '@angular/core';
-import { NgbDropdownModule, NgbModal, NgbNavModule, NgbPaginationModule, NgbProgressbarModule, NgbTooltip, NgbTooltipModule, NgbTypeaheadModule } from '@ng-bootstrap/ng-bootstrap';
+import {
+    NgbDropdownModule,
+    NgbModal,
+    NgbNavModule,
+    NgbPaginationModule,
+    NgbProgressbarModule,
+    NgbTooltipModule,
+    NgbTypeaheadModule,
+} from '@ng-bootstrap/ng-bootstrap';
 // Drag and drop
 import { DndDropEvent, DndModule } from 'ngx-drag-drop';
 // Sweet Alert
-import { RootReducerState } from 'src/app/store';
+import { RootReducerState } from '@app/store';
 import { Store } from '@ngrx/store';
 import { Observable, Subscription, interval } from 'rxjs';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { SharedModule } from '@app/shared/shared.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FlatpickrModule } from 'angularx-flatpickr';
@@ -14,13 +22,13 @@ import { CountUpModule } from 'ngx-countup';
 import { SimplebarAngularModule } from 'simplebar-angular';
 import { tasks } from '@app/core/data/kanban';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { WorkOrderPickSheetModalService } from '../work-order-pick-sheet-modal/work-order-pick-sheet-modal.component';
-import { KanbanQueueModalService } from './kanban-queue-modal/kanban-queue-modal.component';
+import { WorkOrderPickSheetModalService } from '@app/pages/operations/master-scheduling/work-order-pick-sheet-modal/work-order-pick-sheet-modal.component';
+import { KanbanQueueModalService } from './work-order-tracker-queue-modal/work-order-tracker-queue-modal.component';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
-import { KanbanEditModalService } from './kanban-edit-modal/kanban-edit-modal.component';
+import { KanbanEditModalService } from './work-order-tracker-edit-modal/work-order-tracker-edit-modal.component';
 import { WebsocketService } from '@app/core/services/websocket.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { KanbanAddModalService } from './kanban-add-modal/kanban-add-modal.component';
+import { KanbanAddModalService } from './work-order-tracker-add-modal/work-order-tracker-add-modal.component';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -30,7 +38,7 @@ import moment from 'moment';
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
 import { WorkOrderRoutingByWoModalService } from '@app/shared/components/work-order-routing-by-wo-modal/work-order-routing-by-wo-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { KanbanConfigEditModalService } from '../kanban-config/kanban-config-edit-modal/kanban-config-edit-modal.component';
+import { KanbanConfigEditModalService } from '@app/pages/operations/master-scheduling/kanban-config/kanban-config-edit-modal/kanban-config-edit-modal.component';
 import { ToastrService } from 'ngx-toastr';
 import { KanbanTimerApiService } from '@app/core/api/kanban-timer';
 
@@ -93,14 +101,14 @@ export const KANBAN = 'KANBAN';
         NgSelectModule,
         FilterlistPipe
     ],
-    selector: 'app-kanban',
-    templateUrl: './kanban.component.html',
+    selector: 'app-work-order-tracker',
+    templateUrl: './work-order-tracker.component.html',
 })
 
 /**
  * Kanban Component
  */
-export class KanbanComponent implements OnInit {
+export class WorkOrderTrackerComponent implements OnInit {
 
     tasks: any = tasks;
     // bread crumb items

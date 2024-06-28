@@ -5,7 +5,7 @@
 <div class="modal-body mh-250">
     <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
     <div [hidden]="isLoading">
-        <app-kanban-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-kanban-form>
+        <app-work-order-tracker-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-work-order-tracker-form>
     </div>
 </div>
 <div class="modal-footer">

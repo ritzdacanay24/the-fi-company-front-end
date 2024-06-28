@@ -21,7 +21,7 @@ export class KanbanQueueModalService {
   ) { }
 
   open(data: string) {
-    this.modalRef = this.modalService.open(KanbanQueueModalComponent, { size: 'md' });
+    this.modalRef = this.modalService.open(WorkOrderTrackerQueueModalComponent, { size: 'md' });
     this.modalRef.componentInstance.data = data;
     return this.modalRef;
   }
@@ -31,12 +31,12 @@ export class KanbanQueueModalService {
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-kanban-queue-modal',
-  templateUrl: `./kanban-queue-modal.component.html`,
+  selector: 'app-work-order-tracker-queue-modal',
+  templateUrl: `./work-order-tracker-queue-modal.component.html`,
   styleUrls: []
 })
 
-export class KanbanQueueModalComponent {
+export class WorkOrderTrackerQueueModalComponent {
 
   constructor(
     private addressInfoService: AddressInfoService,

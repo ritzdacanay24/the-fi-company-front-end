@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
+import { WorkOrderTrackerFormComponent } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-form/work-order-tracker-form.component';
 
 @Injectable({
     providedIn: 'root'
@@ -18,7 +18,7 @@ export class KanbanEditModalService {
     ) { }
 
     open(id: string) {
-        this.modalRef = this.modalService.open(KanbanEditModalComponent, { size: 'lg' });
+        this.modalRef = this.modalService.open(WorkOrderTrackerEditModalComponent, { size: 'lg' });
         this.modalRef.componentInstance.id = id;
         return this.modalRef;
     }
@@ -27,13 +27,13 @@ export class KanbanEditModalService {
 
 @Component({
     standalone: true,
-    imports: [SharedModule, KanbanFormComponent],
-    selector: 'app-kanban-edit-modal',
-    templateUrl: `./kanban-edit-modal.component.html`,
+    imports: [SharedModule, WorkOrderTrackerFormComponent],
+    selector: 'app-work-order-tracker-edit-modal',
+    templateUrl: `./work-order-tracker-edit-modal.component.html`,
     styleUrls: []
 })
 
-export class KanbanEditModalComponent {
+export class WorkOrderTrackerEditModalComponent {
 
     constructor(
         private ngbActiveModal: NgbActiveModal,

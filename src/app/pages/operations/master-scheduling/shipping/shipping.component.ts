@@ -854,7 +854,6 @@ export class ShippingComponent implements OnInit {
         });
     }
 
-
     dataRenderered = false;
 
     gridOptions: GridOptions = {
@@ -863,8 +862,11 @@ export class ShippingComponent implements OnInit {
         tooltipShowDelay: 0,
         columnDefs: [],
         rowBuffer: 0,
+        enableCharts:false,
         enableAdvancedFilter: false,
+
         suppressColumnMoveAnimation: true,
+
         getRowId: (data: any) => data?.data.id,
         onGridReady: (params) => {
             this.gridApi = params.api;
@@ -872,12 +874,12 @@ export class ShippingComponent implements OnInit {
         onFirstDataRendered: (params) => {
             this.dataRenderered = true;
             if (this.comment) {
-                highlightRowViewV1(params, 'id', this.comment.replace('-', ''));
+                highlightRowViewV1(params, 'id', this.comment?.replace('-', ''));
                 this.gridApi.ensureColumnVisible('Comments', 'end')
             } else {
                 highlightRowView(params, 'id', this.id);
             }
-            this.setPinnedRows()
+            this.setPinnedRows();
         },
         // onFilterChanged: params => this.updateUrl(params),
         // onSortChanged: params => this.updateUrl(params),
@@ -915,6 +917,7 @@ export class ShippingComponent implements OnInit {
          *  Save data to database
         */
 
+        // Save transactop
         try {
             this.showHideOverlay(true);
             let res = await this.api.saveMisc(data.misc)
@@ -936,7 +939,7 @@ export class ShippingComponent implements OnInit {
 
     }
 
-
+    //send the updated data to the wing. Once update redraw rows.
     public sendAndUpdate(newData: any, id: any) {
         /**
          * newData MUST be the complete data object
@@ -952,7 +955,6 @@ export class ShippingComponent implements OnInit {
             type: WS_SHIPPING
         });
     }
-
 
     updateUrl = (params) => {
         let gridParams = _compressToEncodedURIComponent(params.api);

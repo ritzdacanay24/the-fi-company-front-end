@@ -1,4 +1,4 @@
-import * as JSLZString from 'lz-string'
+import * as JSLZString from 'lz-string';
 
 export function _compressToEncodedURIComponent(api) {
   return JSLZString.compressToEncodedURIComponent(JSON.stringify({

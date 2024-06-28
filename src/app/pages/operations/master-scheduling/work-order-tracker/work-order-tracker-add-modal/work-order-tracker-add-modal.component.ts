@@ -7,7 +7,7 @@ import { AddressInfoService } from '@app/core/api/address-info/address-info.serv
 import { SharedModule } from '@app/shared/shared.module';
 import { KanbanConfigApiService } from '@app/core/api/kanban-config';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { KanbanFormComponent } from '../kanban-form/kanban-form.component';
+import { WorkOrderTrackerFormComponent } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-form/work-order-tracker-form.component';
 import moment from 'moment';
 import { QadService } from '@app/core/api/qad/sales-order-search.service';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
@@ -23,7 +23,7 @@ export class KanbanAddModalService {
     ) { }
 
     open(id: string, wo_nbr?) {
-        this.modalRef = this.modalService.open(KanbanAddModalComponent, { size: 'lg' });
+        this.modalRef = this.modalService.open(WorkOrderTrackerAddModalComponent, { size: 'lg' });
         this.modalRef.componentInstance.id = id;
         this.modalRef.componentInstance.wo_nbr = wo_nbr;
         return this.modalRef;
@@ -33,13 +33,13 @@ export class KanbanAddModalService {
 
 @Component({
     standalone: true,
-    imports: [SharedModule, KanbanFormComponent],
-    selector: 'app-kanban-add-modal',
-    templateUrl: `./kanban-add-modal.component.html`,
+    imports: [SharedModule, WorkOrderTrackerFormComponent],
+    selector: 'app-work-order-tracker-add-modal',
+    templateUrl: `./work-order-tracker-add-modal.component.html`,
     styleUrls: []
 })
 
-export class KanbanAddModalComponent {
+export class WorkOrderTrackerAddModalComponent {
 
     constructor(
         private addressInfoService: AddressInfoService,

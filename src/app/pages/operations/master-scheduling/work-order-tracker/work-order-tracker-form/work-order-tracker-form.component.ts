@@ -18,10 +18,10 @@ import { ControlsOf } from 'src/assets/js/util/_formGroup';
         QadWoSearchComponent,
         UserSearchComponent
     ],
-    selector: 'app-kanban-form',
-    templateUrl: './kanban-form.component.html',
+    selector: 'app-work-order-tracker-form',
+    templateUrl: './work-order-tracker-form.component.html',
 })
-export class KanbanFormComponent {
+export class WorkOrderTrackerFormComponent {
 
     constructor(
         private fb: FormBuilder,

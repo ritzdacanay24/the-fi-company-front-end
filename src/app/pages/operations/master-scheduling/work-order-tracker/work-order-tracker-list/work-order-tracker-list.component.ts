@@ -4,17 +4,17 @@ import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
 import { KanbanApiService } from '@app/core/api/kanban';
-import { timeUntil } from '../kanban.component';
+import { timeUntil } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker.component';
 import { Subscription, interval } from 'rxjs';
 import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
     imports: [SharedModule, AgGridModule],
-    selector: 'app-kanban-list',
-    templateUrl: './kanban-list.component.html'
+    selector: 'app-work-order-tracker-list',
+    templateUrl: './work-order-tracker-list.component.html'
 })
-export class KanbanListComponent implements OnInit {
+export class WorkOrderTrackerListComponent implements OnInit {
 
     data: any;
     sub: any;
