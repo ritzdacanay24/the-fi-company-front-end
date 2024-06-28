@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import rmaFormJson from './rma.json';
 import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
 import { QadCustomerNameSearchComponent } from '@app/shared/components/qad-customer-name-search/qad-customer-name-search.component';

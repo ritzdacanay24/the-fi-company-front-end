@@ -27,12 +27,12 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Reported Date</label>
       <input class="form-control" type="date" formControlName="customerReportedDate"
         [ngClass]="{ 'is-invalid': submitted && f.customerReportedDate.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('failureType')">Failure Type</label>
       <ng-select [items]="formData?.failureType" [searchable]="true" formControlName="failureType" bindLabel="name"
         bindValue="name" placeholder="Select failure type"
@@ -40,7 +40,7 @@
         [appendTo]="'body'" (click)="getQirSettings()">
       </ng-select>
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('warranty_replacement')">Warranty Replacement</label>
       <select class="form-select" formControlName="warranty_replacement"
         [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
@@ -52,18 +52,18 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('customerName')">Company Name</label>
       <input class="form-control" type="text" formControlName="customerName"
         [ngClass]="{ 'is-invalid': submitted && f.customerName.errors }" placeholder="Enter Company Name" />
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('CustomerPartNumber')">Customer Part Number</label>
       <input type="text" class="form-control" name="CustomerPartNumber" formControlName="CustomerPartNumber"
         [ngClass]="{ 'is-invalid': submitted && f.CustomerPartNumber.errors }"
         placeholder="Enter customer part number" />
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('customerSerialNumber')">Serial Number</label>
       <input type="text" class="form-control" name="customerSerialNumber" formControlName="customerSerialNumber"
         [ngClass]="{ 'is-invalid': submitted && f.customerSerialNumber.errors }"
@@ -72,17 +72,17 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('eyefiPartNumber')">Eyefi part number</label>
       <input type="text" class="form-control" name="eyefiPartNumber" formControlName="eyefiPartNumber"
         [ngClass]="{ 'is-invalid': submitted && f.eyefiPartNumber.errors }" placeholder="Enter eyefi part number" />
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('purchaseOrder')">PO number / SO number</label>
       <input type="text" class="form-control" name="purchaseOrder" formControlName="purchaseOrder"
         [ngClass]="{ 'is-invalid': submitted && f.purchaseOrder.errors }" placeholder="Enter PO/SO Number" />
     </div>
-    <div class="col mb-3">
+    <div class="col-lg-4 mb-3">
       <label class="form-label" [ngClass]="formValidator('qtyAffected')">Qty of component affected</label>
       <input type="text" class="form-control" name="qtyAffected" formControlName="qtyAffected"
         [ngClass]="{ 'is-invalid': submitted && f.qtyAffected.errors }"
@@ -93,8 +93,8 @@
   <div class="row">
     <div class="col-md-12 mb-3">
       <app-address-search (notifyParent)="notifyParent($event)" [value]="f.location.value"
-        [disabled]="this.form.disabled" [form_label]="'Location of failure (Enter casino name to search your location)
-        '"></app-address-search>
+        [disabled]="this.form.disabled" form_label="Location of failure (Enter casino name to search your location)
+        "></app-address-search>
     </div>
   </div>
 
@@ -106,10 +106,12 @@
     </div>
   </div>
 
-  <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail (Also describe any troubleshooting performed)</label>
+  <label class="form-label" [ngClass]="formValidator('issueComment')">Describe the issue or problem in detail (Also
+    describe any troubleshooting performed)</label>
   <div class="mb-3">
-    <quill-editor [ngClass]="{ 'is-invalid border border-danger rounded': submitted && f.issueComment.errors }" formControlName="issueComment"
-      placeholder="Enter Comments here.." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">
+    <quill-editor [ngClass]="{ 'is-invalid border border-danger rounded': submitted && f.issueComment.errors }"
+      formControlName="issueComment" placeholder="Enter Comments here.." [modules]="quillConfig"
+      [styles]="{height: '300px'}" style="width:100%">
     </quill-editor>
   </div>
 

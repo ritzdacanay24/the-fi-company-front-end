@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 import { ChartOptions, ChartType } from 'chart.js';
 import { ChartComponent } from 'ng-apexcharts';
 import { NgChartsModule } from 'ng2-charts';
-import { currency, currencyFormatter } from 'src/assets/js/util';
+import { currency } from 'src/assets/js/util';
 
 
 @Component({

@@ -6,8 +6,6 @@ import { AgGridModule } from 'ag-grid-angular';
 import { AG_THEME, TABLE_GRID_CONFIG, agGridOptions } from '@app/shared/config/ag-grid.config';
 import { currency, currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
-import jsonData from './json-data.json';
-import jsonData1 from './json-data-1.json';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DailyReportModalService } from './daily-report-modal/daily-report-modal.component';
 

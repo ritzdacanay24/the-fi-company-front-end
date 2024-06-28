@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { CustomerService } from '@app/core/api/field-service/customer.service';
 import moment from 'moment';
 import { RmaFormComponent } from '../rma-form/rma-form.component';
 import { NAVIGATION_ROUTE } from '../rma-constant';

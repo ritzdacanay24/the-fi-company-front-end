@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
@@ -6,7 +6,6 @@ import { FormGroup } from '@angular/forms';
 import { NcrService } from '@app/core/api/quality/ncr-service';
 import { NcrCorrectiveActionFormComponent } from '../../ncr-corrective-action-form/ncr-corrective-action-form.component';
 import { ToastrService } from 'ngx-toastr';
-import { CanComponentDeactivate } from '@app/core/guards/CanDeactivateGuard';
 import moment from 'moment';
 
 @Component({

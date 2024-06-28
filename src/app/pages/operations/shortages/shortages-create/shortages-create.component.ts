@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../shortages-constant';
 import moment from 'moment';
@@ -18,7 +18,6 @@ import { getFormValidationErrors } from 'src/assets/js/util';
 export class ShortagesCreateComponent {
   constructor(
     private router: Router,
-    private activatedRoute: ActivatedRoute,
     private api: ShortagesService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,

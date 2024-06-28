@@ -3,7 +3,6 @@ import { SharedModule } from '@app/shared/shared.module';
 import { FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { JobService } from '@app/core/api/field-service/job.service';
 import { NcrFormComponent } from '../ncr-form/ncr-form.component';
 import { NAVIGATION_ROUTE } from '../ncr-constant';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';

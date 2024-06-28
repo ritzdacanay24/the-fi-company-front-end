@@ -1,9 +1,6 @@
 import { Component } from '@angular/core';
 import { NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-import { Store } from '@ngrx/store';
-import { RootReducerState } from './store';
 import { TitleService } from './shared/services/title.service';
-import { Router } from '@angular/router';
 import { environment } from '@environments/environment';
 import { SwUpdate } from '@angular/service-worker'
 import { interval } from 'rxjs';
@@ -34,9 +31,7 @@ export class AppComponent {
 
   constructor(
     ngbModalConfig: NgbModalConfig,
-    private store: Store<RootReducerState>,
     private titleService: TitleService,
-    private router: Router,
     private swUpdate: SwUpdate,
     private _lightboxConfig: LightboxConfig
   ) {

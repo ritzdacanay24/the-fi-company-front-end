@@ -2,7 +2,6 @@ import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
-import { NcrFormComponent } from '../../ncr-form/ncr-form.component';
 import { FormGroup } from '@angular/forms';
 import { NcrService } from '@app/core/api/quality/ncr-service';
 import { NcrCorrectiveActionFormComponent } from '../../ncr-corrective-action-form/ncr-corrective-action-form.component';
