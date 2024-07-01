@@ -5,6 +5,7 @@ import { NgModule } from '@angular/core';
 import { OverviewComponent } from './overview/overview.component';
 import { OrderLookupPageComponent } from './order-lookup-page/order-lookup-page.component';
 import { PartLookupPageComponent } from './part-lookup-page/part-lookup-page.component';
+import { WoLookupPageComponent } from './wo-lookup-page/wo-lookup-page.component';
 
 const routes: Routes = [
   {
@@ -23,6 +24,10 @@ const routes: Routes = [
   {
     path: 'part-lookup',
     component: PartLookupPageComponent
+  },
+  {
+    path: 'wo-lookup',
+    component: WoLookupPageComponent
   },
   {
     path: 'reports',

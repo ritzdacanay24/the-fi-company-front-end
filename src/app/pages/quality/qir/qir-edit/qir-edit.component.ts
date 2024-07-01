@@ -200,7 +200,6 @@ export class QirEditComponent {
     };
 
     this.qirResponse = await this.qirResponseService.findOne({ qir_number: this.id })
-    console.log(this.qirResponse)
 
     setTimeout(function () {
 

@@ -1,7 +1,15 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { states } from '@app/core/data/states';
 import { SharedModule } from '@app/shared/shared.module';
+
+export interface IServiceTypeForm {
+  name: FormControl<string>;
+  description: FormControl<string>;
+  font_color: FormControl<string>;
+  background_color: FormControl<string>;
+  active: FormControl<number>;
+}
 
 @Component({
   standalone: true,
@@ -35,13 +43,13 @@ export class ServiceTypeFormComponent {
     return this.form.controls
   }
 
-  form = this.fb.group({
-    name: [''],
-    description: [''],
-    font_color: [''],
-    background_color: [''],
-    active: [1],
-  })
+  form = new FormGroup<IServiceTypeForm>({
+    name: new FormControl('', { nonNullable: true }),
+    description: new FormControl('', { nonNullable: true }),
+    font_color: new FormControl('', { nonNullable: true }),
+    background_color: new FormControl('', { nonNullable: true }),
+    active: new FormControl(0, { nonNullable: true }),
+  });
 
   setBooleanToNumber(key) {
     let e = this.form.value[key]

@@ -1,0 +1,160 @@
+<div class="modal-body" *ngIf="isLoading">
+    <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+</div>
+
+<div style="width: 100%; min-height: calc(100vh - 550px);" *ngIf="!isLoading && data && data.orderFound">
+    <h4 *ngIf="!isLoading && !data.orderFound" class="text-center p-3">Sorry, no record found.</h4>
+
+    <div class="row">
+        <div class="col-lg-12">
+
+            <!-- Primary Alert -->
+            <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+                role="alert" *ngIf="data?.lineOverall == 100">
+                <i class="ri-check-double-line label-icon"></i><strong>WO Complete!</strong>
+            </div>
+
+            <!-- Primary Alert -->
+            <div class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+                role="alert" *ngIf="data?.lineOverall != 100">
+                <i class="ri-information-line label-icon"></i><strong>Line Information!</strong> - &nbsp;
+                According to the system, this order is about
+                {{data?.lineOverall | number : '1.2-2'}}% complete.
+            </div>
+
+        </div>
+    </div>
+
+    <div *ngIf="data && data.orderFound" id="print">
+        <div class="row">
+            <div class="col-lg-4 col-print-6 rid-margin float-left">
+                <div class="card overflow-hidden">
+                    <div class="card-header font-weight-bolder">
+                        Order Information
+                    </div>
+                    <ul class="list-group list-group-flush ">
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WO Number</span>
+                            {{data.main.wo_nbr}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Part Number</span>
+                            {{data.main.wo_part}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Ordered Date</span>
+                            {{data.main.wo_ord_date}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Need Date</span>
+                            {{data.main.wo_need_date}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Release Date</span>
+                            {{data?.main.wo_rel_date}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Remarks</span>
+                            {{data.main.wo_rmks}}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-4 d-print-none">
+                <div class="card overflow-hidden">
+                    <div class="card-header font-weight-bolder">
+                        Additional Information
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Routing</span>
+                            {{data.main.wo_routing}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WO/SO Job</span>
+                            {{data.main.wo_so_job}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Status</span>
+                            {{data.main.wo_status}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WO BOM Code</span>
+                            {{data.main.wo_bom_code}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WIP Total</span>
+                            {{data.main.wo_wip_tot | currency}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Close Date</span>
+                            {{data.main.wo_stat_close_date}}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-4 col-print-6">
+                <div class="card overflow-hidden">
+                    <div class="card-header font-weight-bolder">
+                        Order Summary
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Ordered Qty</span>
+                            {{data.main.wo_qty_ord}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Completed Qty</span>
+                            {{data.main.wo_qty_comp}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WO Qty Changed</span>
+                            {{data.main.wo_qty_chg}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Qty Rejected</span>
+                            {{data.main.wo_qty_rjct}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>Total Lines</span>
+                            {{data.details.length}}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
+                            <span>WO Unit Cost</span>
+                            {{data.main.wo_unit_cost | currency}}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" *ngIf="data && data.orderFound">
+        <div class="col-lg-12">
+            <div class="card overflow-hidden d-flex justify-content-between">
+                <div class="card-header font-weight-bolder">
+                    Line Details
+                    <span class="text-end">Overall {{data.lineOverall | number : '1.2-2'}}% completed</span>
+                </div>
+                <div class="card-body p-0">
+                    <ag-grid-angular *ngIf="data?.details" style="width: 100%;height:500px"
+                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data?.details">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" *ngIf="data && data.orderFound">
+        <div class="col">
+            <div class="card shadow-md">
+                <div class="card-header font-weight-bolder">
+                    Routing Details
+                </div>
+                <div class="card-body p-0">
+                    <ag-grid-angular *ngIf="data?.routing" style="width: 100%;height:500px"
+                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions1" [rowData]="data?.routing">
+                    </ag-grid-angular>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -7,7 +7,7 @@ export const agGridOptions: GridOptions = {
   rowData: null,
   groupDisplayType: 'groupRows',
   groupSuppressBlankHeader: true,
-
+  enableRangeHandle: true,
   suppressMenuHide: false,
   suppressCopyRowsToClipboard: true,
   enableRangeSelection: true,

@@ -4,7 +4,7 @@ import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../service-type-constant';
-import { ServiceTypeFormComponent } from '../service-type-form/service-type-form.component';
+import { IServiceTypeForm, ServiceTypeFormComponent } from '../service-type-form/service-type-form.component';
 import { ServiceTypeService } from '@app/core/api/field-service/service-type.service';
 
 @Component({
@@ -32,7 +32,7 @@ export class ServiceTypeEditComponent {
 
   title = "Edit Service Type";
 
-  form: FormGroup;
+  form: FormGroup<IServiceTypeForm>;
 
   id = null;
 
@@ -50,7 +50,7 @@ export class ServiceTypeEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      this.form.get('type').disable()
+      this.form.get(['type']).disable();
     } catch (err) { }
   }
 

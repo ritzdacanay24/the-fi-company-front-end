@@ -58,7 +58,7 @@
             <ul class="list-group" class="list-group list-group mb-2" *ngFor="let item of searches; let ii = index">
                 <li class="list-group-item text-primary bg-light">{{item.name}}</li>
 
-                <li class="list-group-item" *ngFor="let row of item.lines | filterPeople:query:'link'; let i = index"
+                <li class="list-group-item pointer" *ngFor="let row of item.lines | filterPeople:query:'link'; let i = index"
                     id="test_{{row.index}}" (mouseenter)="row.show = true;arrowkeyLocation = row.index"
                     (mouseleave)="row.show = false;" (click)="go(row)"
                     [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == row.index }">

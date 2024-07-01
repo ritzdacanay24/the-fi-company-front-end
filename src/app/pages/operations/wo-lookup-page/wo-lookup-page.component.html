@@ -1,0 +1,39 @@
+<div class="container" *ngIf="!hasDataEmitter">
+    <div class="row justify-content-md-center">
+        <div class="col col-lg-6">
+            <div class="card card-body text-center">
+                <div class="avatar-sm mx-auto mb-3 mt-3">
+                    <div class="avatar-title bg-info-subtle text-info rounded">
+                        <i class="h2 bx bx bx-search mt-2   ms-1"></i>
+                    </div>
+                </div>
+                <h2 class="card-title2">WO Lookup</h2>
+                <div class="my-4">
+                    <app-qad-wo-search [appendToBody]="'body'" (notifyParent)="notifyParent($event)"
+                        [value]="wo_nbr" [autoFocus]="true" [showLabel]="false"></app-qad-wo-search>
+                </div>
+
+                <div class="text-center" *ngIf="wo_nbr && isLoading">
+                    <p>Gathering data for SO number "{{wo_nbr}}"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row" *ngIf="hasDataEmitter">
+        <div class="col mb-3">
+            <div style="width:350px">
+                <app-qad-wo-search (notifyParent)="notifyParent($event)" [value]="wo_nbr"
+                    [showLabel]="false"></app-qad-wo-search>
+            </div>
+        </div>
+        <div class="col mb-3 text-end align-middle">
+            <h5>WO Lookup</h5>
+        </div>
+    </div>
+
+    <app-wo-lookup [comment]="comment" [wo_nbr]="wo_nbr" (isLoadingEmitter)="isLoading = $event"
+        (hasDataEmitter)="hasDataEmitter = $event;"></app-wo-lookup>
+</div>

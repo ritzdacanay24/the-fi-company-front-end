@@ -193,20 +193,26 @@ export class TechScheduleComponent implements OnInit {
       let contractors = [];
       let employeess = [];
       let inactive = [];
+      let active = [];
 
       this.myResourcesCount = 0
       for (const event of data.info1) {
         if (event.active == 0) {
           inactive.push(event)
+        } else if (event.title == 'Vendor') {
+          this.myResourcesCount++
+          contractors.push(event)
+        } else if (event.active == 1 && event.access == 1 && event.title != 'Installer') {
+          this.myResourcesCount++
+          active.push(event)
         } else if (event.title == 'Installer') {
           this.myResourcesCount++
           employeess.push(event)
         } else {
-          contractors.push(event)
+          this.myResourcesCount++
+          inactive.push(event)
         }
       }
-
-
 
       let resources = [
         {
@@ -216,11 +222,17 @@ export class TechScheduleComponent implements OnInit {
           fixed: true,
         }, {
 
-          id: 'employees',
-          name: 'Employees',
+          id: 'techs',
+          name: 'Techs',
           collapsed: false,
           eventCreation: false,
           children: employeess,
+        }, {
+          id: 'active',
+          name: 'Active',
+          collapsed: false,
+          eventCreation: false,
+          children: active,
         }, {
           id: 'contractors',
           name: 'Contractors',
@@ -230,11 +242,11 @@ export class TechScheduleComponent implements OnInit {
         }, {
           id: 'inactive',
           name: 'Inactive',
-          collapsed: false,
+          collapsed: true,
           eventCreation: false,
-          children: inactive,
-
+          children: inactive
         }]
+
       this.myEvents = data.info;
 
       this.copiedEvents = data.info;
@@ -563,7 +575,7 @@ export class TechScheduleComponent implements OnInit {
       }, 0);
   }
 
-  viewRequest(id){
+  viewRequest(id) {
     window.open("https://dashboard.eye-fi.com/dist/web/dashboard/field-service/request/edit?selectedViewType=Open&id=" + id, "_blank"); // Open new tab
 
   }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import {
   Observable,
@@ -13,7 +13,7 @@ import {
   tap,
 } from 'rxjs';
 import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
-import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
+import { AddTagFn, NgSelectComponent } from '@ng-select/ng-select/lib/ng-select.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { QadService } from '@app/core/api/qad/sales-order-search.service';
 
@@ -51,6 +51,7 @@ export class QadWoSearchComponent implements OnInit {
   @Input() clearSearch: boolean = false;
   @Input() ngClass: string | any;
   @Input() notFoundText: string = 'Work order not found.';
+  @Input() autoFocus: boolean = false;
 
 
   data$: Observable<any[]>;
@@ -62,6 +63,15 @@ export class QadWoSearchComponent implements OnInit {
 
   getSelectedValue(data) {
     this.notifyParent.emit(data);
+  }
+  
+  @ViewChild('select') ngSelect: NgSelectComponent;
+  ngAfterViewInit() {
+    if (this.autoFocus) {
+      setTimeout(() => {
+        this.ngSelect.focus();
+      });
+    }
   }
 
   @Input() addTag: AddTagFn | boolean = false

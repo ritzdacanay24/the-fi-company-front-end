@@ -429,6 +429,11 @@ export const MENU: MenuItem[] = [
         description: "Part Lookup"
       },
       {
+        label: 'WO Lookup',
+        link: '/dashboard/operations/wo-lookup',
+        description: "WO Lookup"
+      },
+      {
         label: 'Logistics',
         isCollapsed: true,
         subItems: [
