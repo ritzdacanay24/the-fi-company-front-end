@@ -87,19 +87,23 @@ export class CreditCardTransactionListComponent implements OnInit {
     }
 
     async getData() {
-        this.gridApi?.showLoadingOverlay()
-        this.data = await this.tripExpenseTransactionsService.findByDateRange('Transaction_Date', { dateFrom: this.dateFrom, dateTo: this.dateTo });
-
-        var customColumns = []
-
-        if (this.data.length > 0) {
-            for (const [key] of Object.entries(this.data[0])) {
-                customColumns.push(this.setColumnGrid(key))
+        try{
+            this.gridApi?.setGridOption("loading", true)
+            this.data = await this.tripExpenseTransactionsService.findByDateRange('Transaction_Date', { dateFrom: this.dateFrom, dateTo: this.dateTo });
+    
+            var customColumns = []
+    
+            if (this.data.length > 0) {
+                for (const [key] of Object.entries(this.data[0])) {
+                    customColumns.push(this.setColumnGrid(key))
+                }
             }
+    
+            this.columnDefs = customColumns
+            this.gridApi?.setGridOption("loading", false)
+        } catch (err){
+            this.gridApi?.setGridOption("loading", false)
         }
-
-        this.columnDefs = customColumns
-        this.gridApi?.hideOverlay()
     }
 
     setColumnGrid(row) {
