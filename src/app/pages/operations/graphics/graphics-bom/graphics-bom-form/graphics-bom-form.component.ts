@@ -1,12 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { states } from '@app/core/data/states';
 import { SharedModule } from '@app/shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ControlsOf } from 'src/assets/js/util/_formGroup';
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
 import { AutosizeModule } from 'ngx-autosize';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 
 @Component({
     standalone: true,
@@ -23,8 +22,6 @@ import { AttachmentsService } from '@app/core/api/attachments/attachments.servic
 export class GraphicsBomFormComponent {
 
     constructor(
-        private fb: FormBuilder,
-        private attachmentsService: AttachmentsService
     ) { }
 
     ngOnInit(): void {

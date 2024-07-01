@@ -25,7 +25,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let row of data">
-                                <td *ngFor="let column of row | keyvalue:originalOrder; let i = index"
+                                <td *ngFor="let column of row | keyvalue:originalOrder1; let i = index"
                                     [ngClass]="{'text-end pointer': ['Grand Total', 'Customer'].indexOf($any(column.key)) === -1, 'bg-primary text-white': column.key == d}"
                                     (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
                                     <span *ngIf="i == 0"> {{ column.value }}</span>
@@ -38,7 +38,7 @@
 
                         <tfoot class="table-primary">
                             <tr>
-                                <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
+                                <th *ngFor="let item of data[0] | keyvalue:originalOrder1; let i = index"
                                     [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">
                                     <span *ngIf="i == 0">Total</span>
                                     <span *ngIf="i != 0">{{ getTotal(item.key) | currency}}</span>

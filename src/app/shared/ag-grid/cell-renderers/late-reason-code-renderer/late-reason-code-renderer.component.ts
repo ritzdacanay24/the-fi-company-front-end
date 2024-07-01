@@ -20,11 +20,11 @@ export class LateReasonCodeRendererComponent implements ICellRendererAngularComp
     if (!params.data) return
 
     this.params = params;
+    this.data = params.data;  
   }
 
   refresh(params?: any): boolean {
     this.params.value = params.value;
-    this.data = params.data;
     return true;
   }
 

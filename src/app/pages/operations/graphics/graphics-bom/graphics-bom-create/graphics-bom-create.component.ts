@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../graphics-bom-constant';
 import moment from 'moment';
@@ -18,7 +18,6 @@ import { GraphicsBomFormComponent } from '../graphics-bom-form/graphics-bom-form
 export class GraphicsBomCreateComponent {
   constructor(
     private router: Router,
-    private activatedRoute: ActivatedRoute,
     private api: GraphicsBomService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,

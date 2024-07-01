@@ -7,7 +7,6 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FormControl, FormGroup } from '@angular/forms';
 import { LabelService } from '@app/core/api/labels/label.service';
 import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
-import moment from 'moment';
 
 @Injectable({
     providedIn: 'root'

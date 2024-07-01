@@ -15,11 +15,12 @@ export class CheckboxRendererComponent implements ICellRendererAngularComp {
   data: any
   agInit(params): void {
     this.params = params;
+    this.data = params.data;
+
   }
 
   refresh(params?: any): boolean {
     this.params.value = params.value;
-    this.data = params.data;
     return true;
   }
 
