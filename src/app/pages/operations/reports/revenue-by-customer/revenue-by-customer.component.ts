@@ -63,10 +63,5 @@ export class RevenueByCustomerComponent implements OnInit {
     originalOrder = (a: KeyValue<number, string>, b: KeyValue<number, string>): number => {
         return 0;
     }
-    originalOrder1 = (a: KeyValue<number, string>, b: KeyValue<number, string>): number => {
-        console.log(a, 'a')
-        console.log(b, 'b')
-        return 0;
-    }
-
+    
 }
