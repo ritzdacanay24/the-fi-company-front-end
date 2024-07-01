@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../job-constant';
 import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
@@ -61,7 +61,7 @@ export class JobListComponent implements OnInit {
 
   theme = 'ag-theme-quartz';
 
-  gridApi: any;
+  gridApi: GridApi;
 
   id = null;
 
@@ -237,7 +237,7 @@ export class JobListComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     columnDefs: [],
-    getRowId: data => data.data.id,
+    getRowId: params => params.data.id?.toString(),
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 

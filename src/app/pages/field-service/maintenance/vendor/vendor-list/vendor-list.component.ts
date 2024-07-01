@@ -99,7 +99,7 @@ export class VendorListComponent implements OnInit {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
-    getRowId: params => params.data.id,
+    getRowId: params => params.data.id?.toString(),
     onFilterChanged: params => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {

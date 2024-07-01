@@ -139,7 +139,7 @@ export class PlacardListComponent implements OnInit {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
-    getRowId: params => params.data.id,
+    getRowId: params => params.data.id?.toString(),
     onFilterChanged: params => this.updateUrl(params),
     onSortChanged: params => this.updateUrl(params),
   };

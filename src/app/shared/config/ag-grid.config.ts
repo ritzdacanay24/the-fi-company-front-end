@@ -1,8 +1,7 @@
 import { GridOptions } from "ag-grid-community";
 
 export const agGridOptions: GridOptions = {
-  groupIncludeFooter: false,
-  groupIncludeTotalFooter: false,
+  groupTotalRow: null,
   singleClickEdit: true,
   columnDefs: [],
   rowData: null,
@@ -33,6 +32,7 @@ export const agGridOptions: GridOptions = {
     enableRowGroup: true,
     enablePivot: false,
     floatingFilter: true,
+    enableCellChangeFlash: true,
     // filterParams: {
     //   buttons: ['reset'],
     //   inRangeInclusive: true,
@@ -76,7 +76,6 @@ export const agGridOptions: GridOptions = {
     ],
   },
   enableCharts: false,
-  enableCellChangeFlash: true,
   statusBar: {
     statusPanels: [
       { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },

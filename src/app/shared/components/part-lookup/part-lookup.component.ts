@@ -8,6 +8,7 @@ import { QadPartSearchComponent } from '../qad-part-search/qad-part-search.compo
 import { SalesOrderInfoModalService } from '../sales-order-info-modal/sales-order-info-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 
 @Component({
@@ -57,7 +58,7 @@ export class PartLookupComponent {
         { field: "LD_STATUS", headerName: "Status", filter: "agTextColumnFilter" }
     ];
 
-    gridApi: any;
+    gridApi: GridApi;
 
     gridOptions: any = {
         ...agGridOptions,

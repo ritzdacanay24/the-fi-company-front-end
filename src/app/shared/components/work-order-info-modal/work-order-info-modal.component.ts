@@ -8,6 +8,7 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { QadWoSearchComponent } from '../qad-wo-search/qad-wo-search.component';
+import { GridApi } from 'ag-grid-community';
 
 @Injectable({
     providedIn: 'root'
@@ -36,7 +37,7 @@ export class WorkOrderInfoModalService {
 })
 
 export class WorkOrderInfoModalComponent {
-    gridApi: any;
+    gridApi: GridApi;
     isLoading = true;
     details = [];
     mainDetails: any = {

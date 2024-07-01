@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { ColDef, GridOptions } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../job-constant';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -48,7 +48,7 @@ export class JobOpenInvoiceComponent implements OnInit {
 
   previous_fsid;
 
-  gridApi: any;
+  gridApi: GridApi;
 
   id = null;
 
@@ -132,7 +132,7 @@ export class JobOpenInvoiceComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     columnDefs: [],
-    getRowId: data => data.data.id,
+    getRowId: params => params.data.id?.toString(),
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 

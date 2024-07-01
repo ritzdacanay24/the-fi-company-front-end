@@ -6,7 +6,7 @@
 
           <div class="form-icon">
             <input type="search" class="form-control form-control-icon" style="width:250px"
-              (ngModelChange)="this.gridApi?.setQuickFilter($event);" [value]="searchName" [(ngModel)]="searchName"
+              (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName" [(ngModel)]="searchName"
               placeholder="Search">
             <i class="ri-search-2-line"></i>
           </div>

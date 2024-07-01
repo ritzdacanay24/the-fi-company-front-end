@@ -5,7 +5,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { WorkOrderInfoService } from '@app/core/api/operations/work-order/work-order-info.service';
@@ -38,7 +38,7 @@ export class WorkOrderVarianceReport implements OnInit {
         this.getData()
     }
 
-    gridApi: any;
+    gridApi: GridApi;
 
     id = null;
 

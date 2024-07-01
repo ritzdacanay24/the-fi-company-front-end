@@ -6,6 +6,7 @@ import { TableSettingsService } from '@app/core/api/table-settings/table-setting
 import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -80,7 +81,7 @@ export class QcRoutingComponent implements OnInit {
 
     data
 
-    gridApi: any;
+    gridApi: GridApi;
 
     setGridApi($event) {
         this.gridApi = $event.api;
@@ -109,7 +110,7 @@ export class QcRoutingComponent implements OnInit {
             this.gridApi?.showLoadingOverlay()
             this.data = await this.api.getMasterProduction(this.routing);
             
-            if (this.gridApi.destroyCalled) return;
+            if (this.gridApi.isDestroyed()) return;
             
             this.gridApi?.hideOverlay();
         } catch (err) {

@@ -6,7 +6,7 @@ import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/it
 import { KanbanApiService } from '@app/core/api/kanban';
 import { timeUntil } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker.component';
 import { Subscription, interval } from 'rxjs';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -16,12 +16,12 @@ import { GridApi } from 'ag-grid-community';
 })
 export class WorkOrderTrackerListComponent implements OnInit {
 
-    data: any;
+    data!: any[];
     sub: any;
 
     query
 
-    gridApi: any;
+    gridApi: GridApi;
 
     updateClock = () => {
         for (let i = 0; i < this.data.length; i++) {
@@ -34,7 +34,7 @@ export class WorkOrderTrackerListComponent implements OnInit {
             }
         }
 
-        if (this.gridApi!.destroyCalled) return;
+        if (this.gridApi!.isDestroyed) return;
 
         const res = this.gridApi!.applyTransaction({
             update: this.data,
@@ -87,11 +87,10 @@ export class WorkOrderTrackerListComponent implements OnInit {
         }
     ];
 
-    gridOptions = {
+    gridOptions: GridOptions = {
         ...agGridOptions,
-        enableCellChangeFlash: false,
         columnDefs: [],
-        onGridReady: (params: { api: GridApi<any>; columnApi: { autoSizeAllColumns: () => void; }; }) => {
+        onGridReady: (params) => {
             this.gridApi = params.api;
             params.api.autoSizeAllColumns();
         },
@@ -116,7 +115,7 @@ export class WorkOrderTrackerListComponent implements OnInit {
 
     public showHideOverlay(isShow) {
         if (this.gridApi) {
-            isShow ? this.gridApi.showLoadingOverlay() : this.gridApi.hideOverlay();
+            isShow ? this.gridApi.setGridOption('loading', true) : this.gridApi.setGridOption('loading', false);
         }
     }
 

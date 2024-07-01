@@ -188,7 +188,7 @@ export class GraphicsBomListComponent implements OnInit {
         },
         onFilterChanged: params => this.updateUrl(params),
         onSortChanged: params => this.updateUrl(params),
-        getRowId: params => params.data.id,
+        getRowId: params => params.data.id?.toString(),
     };
 
     updateUrl = (params) => {

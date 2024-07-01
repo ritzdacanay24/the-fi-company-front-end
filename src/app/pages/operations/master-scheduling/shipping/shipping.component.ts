@@ -862,7 +862,7 @@ export class ShippingComponent implements OnInit {
         tooltipShowDelay: 0,
         columnDefs: [],
         rowBuffer: 0,
-        enableCharts:false,
+        enableCharts: true,
         enableAdvancedFilter: false,
 
         suppressColumnMoveAnimation: true,
@@ -900,7 +900,7 @@ export class ShippingComponent implements OnInit {
 
     public showHideOverlay(isShow) {
         if (this.gridApi) {
-            isShow ? this.gridApi.showLoadingOverlay() : this.gridApi.hideOverlay();
+            isShow ? this.gridApi.setGridOption('loading', true) : this.gridApi.setGridOption('loading', false);
         }
     }
 

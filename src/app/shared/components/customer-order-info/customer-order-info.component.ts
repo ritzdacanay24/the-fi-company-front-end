@@ -8,6 +8,7 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SalesOrderInfoService } from '@app/core/api/sales-order/sales-order-info.service';
 import { SalesOrderInfoModalService } from '../sales-order-info-modal/sales-order-info-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 @Injectable({
   providedIn: 'root'
@@ -56,7 +57,7 @@ export class CustomerOrderInfoModalComponent {
     { field: "so_po", headerName: "Customer PO #", filter: "agTextColumnFilter" }
   ];
 
-  gridApi: any;
+  gridApi: GridApi;
 
   gridOptions: any = {
     ...agGridOptions,

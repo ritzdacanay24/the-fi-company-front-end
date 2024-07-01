@@ -61,7 +61,7 @@ export class CreditCardTransactionListComponent implements OnInit {
             // cellRenderer: CellRenderer,
         },
         singleClickEdit: false,
-        getRowId: params => params.data.id,
+        getRowId: params => params.data.id?.toString(),
         onCellValueChanged: async (event) => {
             try {
                 await this.tripExpenseTransactionsService.updateById(event.data.id, event.data);

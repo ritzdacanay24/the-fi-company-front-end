@@ -9,6 +9,7 @@ import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -80,7 +81,7 @@ export class JobAttachmentsComponent implements OnInit {
             highlightRowView(params, 'id', this.id);
             autoSizeColumns(params)
         },
-        getRowId: params => params.data.id,
+        getRowId: params => params.data.id?.toString(),
         onFilterChanged: params => {
             let gridParams = _compressToEncodedURIComponent(this.gridApi);
             this.router.navigate([`.`], {
@@ -129,7 +130,7 @@ export class JobAttachmentsComponent implements OnInit {
 
     theme = AG_THEME;
 
-    gridApi: any;
+    gridApi: GridApi;
 
     title = "Attachments";
 

@@ -7,6 +7,7 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
   standalone: true,
@@ -21,7 +22,7 @@ export class CablesComponent implements OnInit {
 
   query
 
-  gridApi: any;
+  gridApi: GridApi;
 
   columnDefs = [
     { field: 'WOD_NBR', headerName: 'WO #', filter: 'agMultiColumnFilter' }
@@ -70,7 +71,7 @@ export class CablesComponent implements OnInit {
 
   public showHideOverlay(isShow) {
     if (this.gridApi) {
-      isShow ? this.gridApi.showLoadingOverlay() : this.gridApi.hideOverlay();
+      isShow ? this.gridApi.setGridOption('loading', true) : this.gridApi.setGridOption('loading', false);
     }
   }
 

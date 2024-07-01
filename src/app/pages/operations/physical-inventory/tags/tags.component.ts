@@ -4,7 +4,7 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { PhyscialInventoryService } from '@app/core/api/operations/physcial-inventory/physcial-inventory.service';
@@ -85,7 +85,7 @@ export class TagsComponent implements OnInit {
     this.getData()
   }
 
-  gridApi: any;
+  gridApi: GridApi;
 
   include_blank_after_each_bay = false;
 
@@ -254,7 +254,7 @@ export class TagsComponent implements OnInit {
 
   gridOptions: GridOptions = {
     ...agGridOptions,
-    groupIncludeFooter: false,
+    groupTotalRow: null,
     groupSelectsChildren: true,
     groupSelectsFiltered: true,
     suppressAggFuncInHeader: true,

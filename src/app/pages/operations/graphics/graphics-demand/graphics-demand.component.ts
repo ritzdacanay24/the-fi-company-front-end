@@ -4,7 +4,7 @@ import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
@@ -59,7 +59,7 @@ export class GraphicsDemandComponent implements OnInit {
 
     defaultFilters
 
-    gridApi: any;
+    gridApi: GridApi;
 
     id = null;
 
@@ -180,7 +180,7 @@ export class GraphicsDemandComponent implements OnInit {
          *  Save data to database
         */
         try {
-            this.gridApi.showLoadingOverlay()
+            this.gridApi?.setGridOption("loading", true);
             let res: any = await this.api.saveGraphicsDemand(params)
             var rowNode = this.gridApi.getRowNode(data.id);
             rowNode.data.checked = data.checked;
@@ -190,9 +190,9 @@ export class GraphicsDemandComponent implements OnInit {
             rowNode.data.poEnteredBy = this.authenticationService.currentUserValue.full_name
 
             this.gridApi.applyTransaction({ update: [rowNode.data] });
-            this.gridApi.hideOverlay();
+            this.gridApi?.setGridOption("loading", false);
         } catch (err) {
-            this.gridApi.hideOverlay();
+            this.gridApi?.setGridOption("loading", false);
 
         }
 
@@ -213,12 +213,12 @@ export class GraphicsDemandComponent implements OnInit {
     data: any;
     async getData() {
         try {
-            this.gridApi?.showLoadingOverlay()
+            this.gridApi?.setGridOption("loading", true);
             let data = await this.api.getGraphicsDemand();
             this.data = data
-            this.gridApi?.hideOverlay();
+            this.gridApi?.setGridOption("loading", false);
         } catch (err) {
-            this.gridApi?.hideOverlay()
+            this.gridApi?.setGridOption("loading", false);
         }
     }
 

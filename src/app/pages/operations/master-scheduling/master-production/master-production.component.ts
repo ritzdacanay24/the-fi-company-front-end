@@ -21,6 +21,7 @@ import { MasterSchedulingService } from '@app/core/api/operations/master-schedul
 import { KanbanAddModalService } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component';
 import { WebsocketService } from '@app/core/services/websocket.service';
 import { KanbanRendererComponent } from '@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component';
+import { GridApi } from 'ag-grid-community';
 
 const MASTER_PRODUCTION = 'MASTER_PRODUCTION';
 
@@ -103,7 +104,7 @@ export class MasterProductionComponent implements OnInit {
     @Input({ required: true }) getData: Function;
     @Input({ required: false }) ngStyles: string | any = "height: calc(100vh - 170px)";
 
-    gridApi: any;
+    gridApi: GridApi;
 
     id = null;
 

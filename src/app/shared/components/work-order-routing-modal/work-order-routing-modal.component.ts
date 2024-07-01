@@ -13,6 +13,7 @@ import { WorkOrderPickSheetModalService } from '@app/pages/operations/master-sch
 import { WorkOrderRoutingService } from '@app/core/api/work-order-routing/work-order-routing.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
+import { GridApi } from 'ag-grid-community';
 
 @Injectable({
     providedIn: 'root'
@@ -49,7 +50,7 @@ export class WorkOrderRoutingComponent {
 
     data = [];
     isLoading = true;
-    gridApi: any;
+    gridApi: GridApi;
 
     constructor(
         private workOrderRoutingService: WorkOrderRoutingService,

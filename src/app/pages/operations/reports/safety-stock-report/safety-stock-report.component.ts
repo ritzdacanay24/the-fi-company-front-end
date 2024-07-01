@@ -6,7 +6,7 @@ import { autoSizeColumns,highlightRowView } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { currencyFormatter } from 'src/assets/js/util';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridOptions } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { ReportService } from '@app/core/api/operations/report/report.service';
@@ -39,7 +39,7 @@ export class SafetyStockReportComponent implements OnInit {
     this.getData()
   }
 
-  gridApi: any;
+  gridApi: GridApi;
 
   id = null;
 
@@ -59,7 +59,7 @@ export class SafetyStockReportComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     columnDefs: [],
-    // getRowId: data => data.data.id,
+    // getRowId: params => params.data.id?.toString(),
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 

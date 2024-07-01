@@ -13,7 +13,7 @@ import 'brace/theme/tomorrow';
 import { RootReducerState } from '@app/store';
 import { getLayoutMode } from '@app/store/layouts/layout-selector';
 import { Store } from '@ngrx/store';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -41,26 +41,26 @@ export class QueryComponent implements OnInit {
     //query info
     gridApi: GridApi;
 
-    gridOptions = {
+    gridOptions: GridOptions = {
         ...agGridOptions,
         columnDefs: [],
         sideBar: 'filters',
-        onGridReady: (params: { api: any; columnApi: any; }) => {
+        onGridReady: (params) => {
             this.gridApi = params.api;
         },
         // getRowId: (data) => data.id
     };
-    data: any;
+    data!: any[];
     columnDefs: any[];
 
     //queries
     gridApi1: any;
 
-    gridOptions1 = {
+    gridOptions1: GridOptions = {
         ...agGridOptions,
         columnDefs: [],
         sideBar: false,
-        onGridReady: (params: { api: any; columnApi: any; }) => {
+        onGridReady: (params) => {
             this.gridApi1 = params.api;
         },
         onFirstDataRendered: (params) => {

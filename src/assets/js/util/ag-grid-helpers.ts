@@ -1,5 +1,5 @@
 import moment from "moment";
-import { GridReadyEvent } from 'ag-grid-community'
+import { FirstDataRenderedEvent, GridReadyEvent } from 'ag-grid-community'
 
 export let agGridDateFilterdateFilter = {
   comparator: function (filterLocalDateAtMidnight, cellValue) {
@@ -119,7 +119,7 @@ export const addMoment = (params: any) =>
     .add(params.data?.Days_Supply, 'days')
     .format('YYYY-MM-DD')
 
-export const highlightRowView = (params: GridReadyEvent, key: string, preview_id_view: number | string) => {
+export const highlightRowView = (params: FirstDataRenderedEvent, key: string, preview_id_view: number | string) => {
 
   params.api.forEachNode((node) => {
     if (node.data) {
@@ -133,7 +133,7 @@ export const highlightRowView = (params: GridReadyEvent, key: string, preview_id
 }
 
 
-export const highlightRowViewV1 = (params: GridReadyEvent, key: string, preview_id_view: number | string) => {
+export const highlightRowViewV1 = (params: FirstDataRenderedEvent, key: string, preview_id_view: number | string) => {
 
   params.api.forEachNode((node) => {
     if (node.data) {

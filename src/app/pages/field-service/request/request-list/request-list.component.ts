@@ -14,6 +14,7 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import moment from 'moment';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
   standalone: true,
@@ -199,7 +200,7 @@ export class RequestsListComponent implements OnInit {
 
   theme = AG_THEME;
 
-  gridApi: any;
+  gridApi: GridApi;
 
   title = "Request List";
 

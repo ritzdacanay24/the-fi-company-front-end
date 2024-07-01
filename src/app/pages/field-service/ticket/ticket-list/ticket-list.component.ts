@@ -12,6 +12,7 @@ import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { TicketModalService } from '../ticket-modal/ticket-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
   standalone: true,
@@ -84,7 +85,7 @@ export class TicketListComponent implements OnInit {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
-    getRowId: params => params.data.id,
+    getRowId: params => params.data.id?.toString(),
     onFilterChanged: params => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
@@ -137,7 +138,7 @@ export class TicketListComponent implements OnInit {
 
   theme = AG_THEME;
 
-  gridApi: any;
+  gridApi: GridApi;
 
   title = "Ticket List";
 

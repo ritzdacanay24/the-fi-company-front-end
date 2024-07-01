@@ -8,6 +8,7 @@ import { currency, currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DailyReportModalService } from './daily-report-modal/daily-report-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -26,7 +27,7 @@ export class DailyReportComponent implements OnInit {
 
     theme = AG_THEME;
 
-    gridApi: any;
+    gridApi: GridApi;
 
     fullscreen = false;
 

@@ -149,7 +149,7 @@ export class MaterialRequestListComponent implements OnInit {
       highlightRowView(params, 'id', this.id);
       autoSizeColumns(params)
     },
-    getRowId: params => params.data.id,
+    getRowId: params => params.data.id?.toString(),
     onFilterChanged: params => this.updateUrl(params),
     onSortChanged: params => this.updateUrl(params),
   };
@@ -178,7 +178,8 @@ export class MaterialRequestListComponent implements OnInit {
 
   async getData() {
     try {
-      this.gridApi?.showLoadingOverlay()
+      //this.gridApi?.showLoadingOverlay()
+      this.gridApi?.setGridOption("loading", true);
 
       let params: any = {};
       if (this.selectedViewType != 'All') {
@@ -199,11 +200,12 @@ export class MaterialRequestListComponent implements OnInit {
         relativeTo: this.activatedRoute
         , queryParamsHandling: 'merge'
       });
-
-      this.gridApi?.hideOverlay()
+      this.gridApi?.setGridOption("loading", false);
+      //this.gridApi?.hideOverlay()
 
     } catch (err) {
-      this.gridApi?.hideOverlay()
+      this.gridApi?.setGridOption("loading", false);
+      //this.gridApi?.hideOverlay()
     }
 
   }

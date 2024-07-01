@@ -16,6 +16,7 @@ import { CommentsModalService } from '@app/shared/components/comments/comments-m
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
+import { GridApi } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -158,7 +159,7 @@ export class PartsOrderListComponent implements OnInit {
         onFirstDataRendered: (params) => {
             highlightRowView(params, 'id', this.id);
         },
-        getRowId: params => params.data.id,
+        getRowId: params => params.data.id?.toString(),
         onFilterChanged: params => {
             let gridParams = _compressToEncodedURIComponent(this.gridApi);
             this.router.navigate([`.`], {
@@ -217,7 +218,7 @@ export class PartsOrderListComponent implements OnInit {
 
     theme = AG_THEME;
 
-    gridApi: any;
+    gridApi: GridApi;
 
     dateFrom = moment().startOf('month').format('YYYY-MM-DD');
     dateTo = moment().endOf('month').format('YYYY-MM-DD');
