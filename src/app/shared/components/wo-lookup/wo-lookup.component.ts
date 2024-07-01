@@ -226,7 +226,7 @@ export class WoLookupComponent {
         this.isLoadingEmitter.emit(this.isLoading)
         this.hasDataEmitter.emit(this.data?.main?.SO_NBR !== '')
 
-        this.data.lineOverall = (this.data.main.wo_qty_comp / this.data.main.wo_qty_ord * 100).toFixed(2);
+        this.data.lineOverall = this.data.main.wo_qty_ord > (this.data.main.wo_qty_comp / this.data.main.wo_qty_ord * 100).toFixed(2);
 
       }, error => {
         this.isLoading = false;
