@@ -53,7 +53,7 @@ export class QadPartSearchComponent implements OnInit {
   @Input() autoFocus: boolean = false;
   @Input() matchCase: boolean = false;
 
-  
+
   @ViewChild('select') ngSelect: NgSelectComponent;
   ngAfterViewInit() {
     if (this.autoFocus) {
@@ -81,7 +81,7 @@ export class QadPartSearchComponent implements OnInit {
   }
 
   trackByFn(item: any) {
-    return item.id;
+    return item.pt_part + '-' + item.pt_status + '-' + item.description;
   }
 
   ngOnChanges(changes: SimpleChanges) {
