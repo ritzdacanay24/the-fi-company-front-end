@@ -98,7 +98,7 @@ export class TicketEventReportComponent implements OnInit {
     { field: 'time', headerName: 'Time', filter: 'agMultiColumnFilter' },
     { field: 'userId', headerName: 'User ID', filter: 'agMultiColumnFilter' },
     { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter', maxWidth: 300 },
-    { field: 'include_calculation', headerName: 'Invlude in calculation', filter: 'agMultiColumnFilter' },
+    { field: 'include_calculation', headerName: 'Billable', filter: 'agMultiColumnFilter' },
   ]
 
   gridOptions = {
