@@ -1,6 +1,5 @@
-
 import Quill from 'quill';
-const BlockEmbed = Quill.import('blots/block/embed');
+const BlockEmbed: any = Quill.import('blots/block/embed');
 
 export class TableBlockEmbed extends BlockEmbed {
 
@@ -34,21 +33,4 @@ export class TableBlockEmbed extends BlockEmbed {
   static value(node) {
     return node.innerHTML;
   }
-}
-
-export function onEditorCreated(quill: Quill): void {
-  quill.clipboard.addMatcher('TABLE', (node: any, delta) => {
-    const Delta = Quill.import('delta');
-    const tableTagStyles = node.getAttribute('style');
-    return new Delta([
-      {
-        insert: {
-          TableBlockEmbed:
-            // `<style>#tableId {${tableTagStyles} margin: 0 auto !important; }</style>` + delta.ops[0].insert.TableBlockEmbed
-            `<style>#tableId {${tableTagStyles} margin: 0 auto !important; }</style>`
-
-        }
-      }
-    ]);
-  });
 }

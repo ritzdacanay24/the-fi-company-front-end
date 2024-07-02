@@ -3,18 +3,15 @@ import { SharedModule } from '@app/shared/shared.module';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { QuillModule, QuillModules } from 'ngx-quill';
-
-import "quill-mention";
+import "quill-mention/autoregister";
+import QuillBetterTable from 'quill-better-table'
 
 import BlotFormatter from 'quill-blot-formatter';
 
-
 import Quill from 'quill';
 
-// import { TableBlockEmbed } from './comments.func'
 import { UserService } from '@app/core/api/field-service/user.service';
 import moment from 'moment';
-import { Router } from '@angular/router';
 import { CommentsService } from '@app/core/api/comments/comments.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { stripHtml } from 'src/assets/js/util';
@@ -22,7 +19,11 @@ import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
 
 import { Pipe, PipeTransform } from '@angular/core';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { CommentEmailNotificationService } from '@app/core/api/comment-email-notification/comment-email-notification.service';
+
+Quill.register('modules/blotFormatter', BlotFormatter);
+
+Quill.register({ 'modules/better-table': QuillBetterTable }, true)
+
 
 @Pipe({
   standalone: true,
@@ -78,14 +79,10 @@ export class CommentsModalComponent implements OnInit {
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private userService: UserService,
-    private router: Router,
     private authenticationService: AuthenticationService,
     private commentsService: CommentsService,
-    private commentEmailNotificationService: CommentEmailNotificationService
   ) {
     this.url = window.location.href;
-    // Quill.register(TableBlockEmbed, true);
-    Quill.register('modules/blotFormatter', BlotFormatter);
 
     this.userInfo = this.authenticationService.currentUserValue;
   }
@@ -109,6 +106,21 @@ export class CommentsModalComponent implements OnInit {
       },
       blotFormatter: {
         // empty object for default behaviour.
+      },
+      'better-table': {
+        operationMenu: {
+          items: {
+            unmergeCells: {
+              text: 'Another unmerge cells name'
+            },
+            mergeCells: {
+              text: 'Another merge cells name'
+            }
+          }
+        },
+        keyboard: {
+          bindings: QuillBetterTable.keyboardBindings
+        }
       },
       mention: {
         minChars: 0,

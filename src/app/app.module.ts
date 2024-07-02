@@ -79,7 +79,8 @@ export function createTranslateLoader(http: HttpClient): any {
             enabled: environment.production
         }),
         LightboxModule,
-        FlatpickrModule.forRoot(),
+        FlatpickrModule.forRoot()
+
     ],
     providers: [
         { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
