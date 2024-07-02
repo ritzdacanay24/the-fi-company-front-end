@@ -9,7 +9,7 @@ import { AppComponent } from './app.component';
 import { LayoutsModule } from "./layouts/layouts.module";
 
 // Auth
-import { HttpClientModule, HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HttpClient, HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { environment } from '../environments/environment';
 import { ErrorInterceptor } from './core/helpers/error.interceptor';
@@ -45,50 +45,45 @@ export function createTranslateLoader(http: HttpClient): any {
   return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
 }
 
-@NgModule({
-  declarations: [
-    AppComponent
-  ],
-  imports: [
-    DragulaModule.forRoot(),
-    FormsModule,
-    TranslateModule.forRoot({
-      defaultLanguage: 'en',
-      loader: {
-        provide: TranslateLoader,
-        useFactory: (createTranslateLoader),
-        deps: [HttpClient]
-      }
-    }),
-    BrowserAnimationsModule,
-    HttpClientModule,
-    BrowserModule,
-    AppRoutingModule,
-    LayoutsModule,
-    StoreModule.forRoot(rootReducer),
-    StoreDevtoolsModule.instrument({
-      maxAge: 25, // Retains last 25 states
-      logOnly: environment.production, // Restrict extension to log-only mode
-    }),
-    EffectsModule.forRoot([
-      AuthenticationEffects,
-    ]),
-    ToastrModule.forRoot({ preventDuplicates: true }),
-    // QuillModule.forRoot()
-    ColorPickerModule,
-    ServiceWorkerModule.register('ngsw-worker.js', {
-      enabled: environment.production
-    }),
-    LightboxModule,
-    FlatpickrModule.forRoot(),
-  ],
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
-    { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
-    CanDeactivateGuard,
-    provideEnvironmentNgxMask()
-  ],
-  bootstrap: [AppComponent]
-})
+@NgModule({ declarations: [
+        AppComponent
+    ],
+    bootstrap: [AppComponent], imports: [DragulaModule.forRoot(),
+        FormsModule,
+        TranslateModule.forRoot({
+            defaultLanguage: 'en',
+            loader: {
+                provide: TranslateLoader,
+                useFactory: (createTranslateLoader),
+                deps: [HttpClient]
+            }
+        }),
+        BrowserAnimationsModule,
+        BrowserModule,
+        AppRoutingModule,
+        LayoutsModule,
+        StoreModule.forRoot(rootReducer),
+        StoreDevtoolsModule.instrument({
+            maxAge: 25, // Retains last 25 states
+            logOnly: environment.production, // Restrict extension to log-only mode
+        }),
+        EffectsModule.forRoot([
+            AuthenticationEffects,
+        ]),
+        ToastrModule.forRoot({ preventDuplicates: true }),
+        // QuillModule.forRoot()
+        ColorPickerModule,
+        ServiceWorkerModule.register('ngsw-worker.js', {
+            enabled: environment.production
+        }),
+        LightboxModule,
+        FlatpickrModule.forRoot(),
+        StoreModule.forRoot({}, {})], providers: [
+        { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+        { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
+        { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
+        CanDeactivateGuard,
+        provideEnvironmentNgxMask(),
+        provideHttpClient(withInterceptorsFromDi())
+    ] })
 export class AppModule { }

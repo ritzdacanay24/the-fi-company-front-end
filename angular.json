@@ -37,7 +37,6 @@
               "src/manifest.webmanifest"
             ],
             "styles": [
-              "node_modules/shepherd.js/dist/css/shepherd.css",
               "node_modules/flatpickr/dist/flatpickr.css",
               "src/styles.scss",
               "node_modules/@ctrl/ngx-emoji-mart/picker.css",
