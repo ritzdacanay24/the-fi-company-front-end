@@ -11,7 +11,7 @@ import BlotFormatter from 'quill-blot-formatter';
 
 import Quill from 'quill';
 
-import { TableBlockEmbed } from './comments.func'
+// import { TableBlockEmbed } from './comments.func'
 import { UserService } from '@app/core/api/field-service/user.service';
 import moment from 'moment';
 import { Router } from '@angular/router';
@@ -84,7 +84,7 @@ export class CommentsModalComponent implements OnInit {
     private commentEmailNotificationService: CommentEmailNotificationService
   ) {
     this.url = window.location.href;
-    Quill.register(TableBlockEmbed, true);
+    // Quill.register(TableBlockEmbed, true);
     Quill.register('modules/blotFormatter', BlotFormatter);
 
     this.userInfo = this.authenticationService.currentUserValue;

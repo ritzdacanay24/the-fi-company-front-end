@@ -42,13 +42,16 @@ import { CanDeactivateGuard } from './core/guards/CanDeactivateGuard';
 import { DragulaModule } from 'ng2-dragula';
 
 export function createTranslateLoader(http: HttpClient): any {
-  return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
+    return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
 }
 
-@NgModule({ declarations: [
+@NgModule({
+    declarations: [
         AppComponent
     ],
-    bootstrap: [AppComponent], imports: [DragulaModule.forRoot(),
+    bootstrap: [AppComponent],
+    imports: [
+        DragulaModule.forRoot(),
         FormsModule,
         TranslateModule.forRoot({
             defaultLanguage: 'en',
@@ -71,19 +74,20 @@ export function createTranslateLoader(http: HttpClient): any {
             AuthenticationEffects,
         ]),
         ToastrModule.forRoot({ preventDuplicates: true }),
-        // QuillModule.forRoot()
         ColorPickerModule,
         ServiceWorkerModule.register('ngsw-worker.js', {
             enabled: environment.production
         }),
         LightboxModule,
         FlatpickrModule.forRoot(),
-        StoreModule.forRoot({}, {})], providers: [
+    ],
+    providers: [
         { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
         CanDeactivateGuard,
         provideEnvironmentNgxMask(),
         provideHttpClient(withInterceptorsFromDi())
-    ] })
+    ]
+})
 export class AppModule { }
