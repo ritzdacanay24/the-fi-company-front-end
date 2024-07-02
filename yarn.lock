@@ -1976,26 +1976,6 @@
   resolved "https://registry.npmjs.org/@firebase/webchannel-wrapper/-/webchannel-wrapper-0.10.5.tgz"
   integrity sha512-eSkJsnhBWv5kCTSU1tSUVl9mpFu+5NXXunZc83le8GMjMlsWwQArSc7cJJ4yl+aDFY0NGLi0AjZWMn1axOrkRg==
 
-"@floating-ui/core@^1.4.2":
-  version "1.5.0"
-  resolved "https://registry.npmjs.org/@floating-ui/core/-/core-1.5.0.tgz"
-  integrity sha512-kK1h4m36DQ0UHGj5Ah4db7R0rHemTqqO0QLvUqi1/mUUp3LuAWbWxdxSIf/XsnH9VS6rRVPLJCncjRzUvyCLXg==
-  dependencies:
-    "@floating-ui/utils" "^0.1.3"
-
-"@floating-ui/dom@^1.5.1":
-  version "1.5.3"
-  resolved "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.5.3.tgz"
-  integrity sha512-ClAbQnEqJAKCJOEbbLo5IUlZHkNszqhuxS4fHAVxRPXPya6Ysf2G8KypnYcOTpx6I8xcgF9bbHb6g/2KpbV8qA==
-  dependencies:
-    "@floating-ui/core" "^1.4.2"
-    "@floating-ui/utils" "^0.1.3"
-
-"@floating-ui/utils@^0.1.3":
-  version "0.1.4"
-  resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.1.4.tgz"
-  integrity sha512-qprfWkn82Iw821mcKofJ5Pk9wgioHicxcQMxx+5zt5GSKoqdWvgG5AxVmpmUUjzTLPVSH5auBrhI93Deayn/DA==
-
 "@fullcalendar/angular@^6.1.10":
   version "6.1.10"
   resolved "https://registry.npmjs.org/@fullcalendar/angular/-/angular-6.1.10.tgz"
@@ -3787,14 +3767,6 @@ angular-ng-stepper@^2.0.0:
   dependencies:
     tslib "^2.3.0"
 
-angular-shepherd@^16.0.0:
-  version "16.0.0"
-  resolved "https://registry.npmjs.org/angular-shepherd/-/angular-shepherd-16.0.0.tgz"
-  integrity sha512-9r1HZih6wfgAitCw/Vg5IVRThtbqejWNuaTu3mrsSo1Bpmnimew+NVBwWM0qbiRpy7sU1+eNbZ6/7vBsQoKXlQ==
-  dependencies:
-    shepherd.js "^11.0.0"
-    tslib "^2.3.0"
-
 angular2-recaptcha@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/angular2-recaptcha/-/angular2-recaptcha-1.1.0.tgz"
@@ -4766,11 +4738,6 @@ deepmerge@^2.0.0:
   version "2.2.1"
   resolved "https://registry.npmjs.org/deepmerge/-/deepmerge-2.2.1.tgz"
   integrity sha512-R9hc1Xa/NOBi9WRVUWg19rl1UB7Tt4kuPd+thNJgFZoxXsTz7ncaPaeIm+40oSGuP33DfMb4sZt1QIGiJzC4EA==
-
-deepmerge@^4.3.1:
-  version "4.3.1"
-  resolved "https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz"
-  integrity sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==
 
 default-gateway@^6.0.3:
   version "6.0.3"
@@ -8442,14 +8409,6 @@ shell-quote@^1.7.3:
   version "1.8.1"
   resolved "https://registry.npmjs.org/shell-quote/-/shell-quote-1.8.1.tgz"
   integrity sha512-6j1W9l1iAs/4xYBI1SYOVZyFcCis9b4KCLQ8fgAGG07QvzaRLVVRQvAy85yNmmZSjYjg4MWh4gNvlPujU/5LpA==
-
-shepherd.js@^11.0.0:
-  version "11.2.0"
-  resolved "https://registry.npmjs.org/shepherd.js/-/shepherd.js-11.2.0.tgz"
-  integrity sha512-2hbz3N7GuuTjI7y3sfnoqKnH0cNhExx67IJtCTGQI2KhBEyvegsDYW5qjj5BlvvVtQjmL/O/J1GQEciwfoZWpw==
-  dependencies:
-    "@floating-ui/dom" "^1.5.1"
-    deepmerge "^4.3.1"
 
 side-channel@^1.0.4:
   version "1.0.4"
