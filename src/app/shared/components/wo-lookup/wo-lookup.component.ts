@@ -69,7 +69,13 @@ export class WoLookupComponent {
     { field: "wod_part", headerName: "Part #", filter: "agTextColumnFilter" },
     { field: "wod_iss_date", headerName: "Issued Date", filter: "agTextColumnFilter" },
     { field: "wod_op", headerName: "OP", filter: "agTextColumnFilter" },
-    { field: "wod_qty_req", headerName: "Qty Required", filter: "agTextColumnFilter" },
+    { field: "wod_loc", headerName: "Location", filter: "agTextColumnFilter" },
+    {
+      field: "wod_qty_req", headerName: "Qty Required", filter: "agTextColumnFilter",
+      cellClass: params => {
+        return params.value === 0 ? 'text-danger' : '';
+      },
+    },
     { field: "wod_qty_pick", headerName: "Qty Picked", filter: "agTextColumnFilter" },
     { field: "wod_qty_iss", headerName: "Qty Issued", filter: "agTextColumnFilter" },
     { field: "wod_serial", headerName: "Serial", filter: "agTextColumnFilter" },
@@ -77,12 +83,16 @@ export class WoLookupComponent {
     {
       field: "PERCENT", headerName: "% Complete", filter: "agTextColumnFilter", pinned: 'right',
       cellClass: params => {
-        if (params.value === 100) {
+        if (params.value === '100.00') {
           return ['bg-success-subtle text-success'];
         }
         return null;
-      }, valueFormatter: params => {
-        return ((params.data?.wod_qty_iss / params.data?.wod_qty_req) * 100).toFixed(2) + '%'
+      },
+      valueFormatter: params => {
+        return params.data?.wod_qty_req > 0 ? ((params.data?.wod_qty_iss / params.data?.wod_qty_req) * 100).toFixed(2) + '%' : '0.00%'
+      },
+      valueGetter: params => {
+        return params.data?.wod_qty_req > 0 ? ((params.data?.wod_qty_iss / params.data?.wod_qty_req) * 100).toFixed(2) : 0
       }
     },
   ];
@@ -103,7 +113,6 @@ export class WoLookupComponent {
     ...agGridOptions,
     columnDefs: this.columnDefs,
     onFirstDataRendered: (params) => {
-      this.autoSizeAll(false);
     },
     onGridReady: (params) => {
       this.gridApi = params.api;
@@ -115,56 +124,6 @@ export class WoLookupComponent {
     },
   };
 
-  print() {
-
-    setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
-      popupWin.document.open();
-      popupWin.document.write(`
-      <html>
-        <head>
-          <title>Work Order Info</title>
-          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-          <style>
-            @page {
-              size: A3 portrait;
-            }
-            .table{
-              font-size:12px
-            }
-            .col-print-1 {width:8%;  float:left;}
-            .col-print-2 {width:16%; float:left;}
-            .col-print-3 {width:25%; float:left;}
-            .col-print-4 {width:33%; float:left;}
-            .col-print-5 {width:42%; float:left;}
-            .col-print-6 {width:50%; float:left;}
-            .col-print-7 {width:58%; float:left;}
-            .col-print-8 {width:66%; float:left;}
-            .col-print-9 {width:75%; float:left;}
-            .col-print-10{width:83%; float:left;}
-            .col-print-11{width:92%; float:left;}
-            .col-print-12{width:100%; float:left;}
-          </style>
-        </head>
-        <body onload="window.print();window.close()">
-          ${printContents}
-        </body>
-      </html>`
-      );
-      popupWin.document.close();
-
-      popupWin.onfocus = function () {
-        setTimeout(function () {
-          popupWin.focus();
-          popupWin.document.close();
-        }, 300);
-      };
-    }, 200);
-  }
-
-  autoSizeAll(skipHeader) {
-  }
 
   formatNumber(row) {
     // this puts commas into the number eg 1000 goes to 1,000,
@@ -226,7 +185,7 @@ export class WoLookupComponent {
         this.isLoadingEmitter.emit(this.isLoading)
         this.hasDataEmitter.emit(this.data?.main?.SO_NBR !== '')
 
-        this.data.lineOverall = this.data.main.wo_qty_ord > (this.data.main.wo_qty_comp / this.data.main.wo_qty_ord * 100).toFixed(2);
+        this.data.lineOverall = this.data.main.wo_qty_ord > 0 ? (this.data.main.wo_qty_comp / this.data.main.wo_qty_ord * 100).toFixed(2) : 0;
 
       }, error => {
         this.isLoading = false;
