@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NAVIGATION_ROUTE } from '../request-constant';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
+import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { RequestChartComponent } from '../request-chart/request-chart.component';
@@ -197,8 +197,6 @@ export class RequestsListComponent implements OnInit {
   data: any;
 
   id: any;
-
-  theme = AG_THEME;
 
   gridApi: GridApi;
 

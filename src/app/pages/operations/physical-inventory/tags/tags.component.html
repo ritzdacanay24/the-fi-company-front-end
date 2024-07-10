@@ -1,88 +1,95 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
+            <ngx-simplebar style="overflow:auto;" [options]="options">
+                <div class="card-header d-flex align-items-center py-2" style="overflow:unset">
+                    <button class="btn btn-light" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
 
-            <div class="card-header d-flex align-items-center py-2">
-                <button class="btn btn-light" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
+                    <div class="ms-3">
+                        <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+                    </div>
 
-                <div class="ms-3">
-                    <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
-                </div>
+                    <div class="ms-3">
+                        <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+                    </div>
 
-                <div class="ms-3">
-                    <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-                </div>
+                    <div class="ms-3">
+                        <div ngbDropdown class="d-inline-block" container="body">
 
-                <div class="ms-3">
-                    <div ngbDropdown class="d-inline-block" container="body">
-
-                        <button type="button"
-                            class="arrow-none btn btn-light btn-label waves-effect waves-light position-relative"
-                            data-bs-toggle="dropdown" ngbDropdownToggle>
-                            <span class="ri-filter-2-line label-icon align-middle fs-16 me-2 border-end"> </span>
-                            <span
-                                class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary border-end"
-                                *ngIf="ageType !== 'All'" style="top:13px;right:130px;padding:3px"><span
-                                    class="visually-hidden">unread
-                                    messages</span></span>
-                            Custom Filters
-                        </button>
-
-
-                        <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'First_Count_Variance'}"
-                                (click)="externalFilterChanged('First_Count_Variance')">
-                                Show 1st count variance
+                            <button type="button"
+                                class="arrow-none btn btn-light btn-label waves-effect waves-light position-relative"
+                                data-bs-toggle="dropdown" ngbDropdownToggle>
+                                <span class="ri-filter-2-line label-icon align-middle fs-16 me-2 border-end"> </span>
+                                <span
+                                    class="position-absolute  translate-middle badge border border-primary rounded-circle bg-primary border-end"
+                                    *ngIf="ageType !== 'All'" style="top:13px;right:130px;padding:3px"><span
+                                        class="visually-hidden">unread
+                                        messages</span></span>
+                                Custom Filters
                             </button>
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Second_Count_Variance'}"
-                                (click)="externalFilterChanged('Second_Count_Variance')">
-                                Show 2nd count variance
-                            </button>
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Not_Posted'}"
-                                (click)="externalFilterChanged('Not_Posted')">
-                                Not posted
-                            </button>
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Need_First_Count_Printed'}"
-                                (click)="externalFilterChanged('Need_First_Count_Printed')">
-                                1st counts not printed
-                            </button>
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == '1st_counts_completed'}"
-                                (click)="externalFilterChanged('1st_counts_completed')">
-                                1st counts completed
-                            </button>
-                            <button ngbDropdownItem [ngClass]="{'active':ageType == 'Bulk_tags_with_on_hand_qty'}"
-                                (click)="externalFilterChanged('Bulk_tags_with_on_hand_qty')">
-                                Bulk tags with on hand qty
-                            </button>
-                            <div class="dropdown-divider"></div>
-                            <button ngbDropdownItem (click)="externalFilterChanged('All')">Clear Filter</button>
+
+                            
+                            <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'ALl_First_Count_Variance'}"
+                                    (click)="externalFilterChanged('ALl_First_Count_Variance')">
+                                    Show All 1st count variance
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'First_Count_Variance'}"
+                                    (click)="externalFilterChanged('First_Count_Variance')">
+                                    Show 1st count variance
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'Second_Count_Variance'}"
+                                    (click)="externalFilterChanged('Second_Count_Variance')">
+                                    Show 2nd count variance
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'Not_Posted'}"
+                                    (click)="externalFilterChanged('Not_Posted')">
+                                    Not posted
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'Need_First_Count_Printed'}"
+                                    (click)="externalFilterChanged('Need_First_Count_Printed')">
+                                    1st counts not printed
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == '1st_counts_completed'}"
+                                    (click)="externalFilterChanged('1st_counts_completed')">
+                                    1st counts completed
+                                </button>
+                                <button ngbDropdownItem [ngClass]="{'active':ageType == 'Bulk_tags_with_on_hand_qty'}"
+                                    (click)="externalFilterChanged('Bulk_tags_with_on_hand_qty')">
+                                    Bulk tags with on hand qty
+                                </button>
+                                <div class="dropdown-divider"></div>
+                                <button ngbDropdownItem (click)="externalFilterChanged('All')">Clear Filter</button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <button class="btn btn-primary ms-3 me-3" style="padding-bottom:11px" (click)="printBlankTags()">
-                    Print Bulk Tags
-                </button>
+                    <button class="btn btn-primary ms-3 me-3" style="padding-bottom:11px" (click)="printBlankTags()">
+                        Print Bulk Tags
+                    </button>
 
-                <div title="{{completedFirstCounts}} / {{totalCount}}" class="ms-auto text-center bg-light px-3 rounded"
-                    [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedFirstCounts < totalCount,'bg-success-subtle text-success border-success-subtle border ': completedFirstCounts >= totalCount}">
-                    <p> 1st Counts </p>
-                    <span class="fw-bold">
-                        {{(completedFirstCounts / totalCount ) * 100 || 0 | number : '1.2-2' }}%
-                    </span>
+                    <div title="{{completedFirstCounts}} / {{totalCount}}"
+                        class="ms-auto text-center bg-light px-3 rounded"
+                        [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedFirstCounts < totalCount,'bg-success-subtle text-success border-success-subtle border ': completedFirstCounts >= totalCount}">
+                        <p> 1st Counts </p>
+                        <span class="fw-bold">
+                            {{(completedFirstCounts / totalCount ) * 100 || 0 | number : '1.2-2' }}%
+                        </span>
+                    </div>
+                    <div title="{{completedSecondCounts}} / {{totalSecondCounts}}"
+                        class="ms-3 text-center bg-light px-3 rounded"
+                        [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedSecondCounts < totalSecondCounts,'bg-success-subtle text-success border-success-subtle border ': completedSecondCounts >= totalSecondCounts}">
+                        <p>2nd Counts</p>
+                        <span class="fw-bold">
+                            {{(completedSecondCounts / totalSecondCounts ) * 100 || 0 | number : '1.2-2' }}%
+                        </span>
+                    </div>
+                    <div class="ms-3 text-center bg-light px-3 border border-light-subtle rounded">
+                        <p title="3rd counts printed"> 3rd Counts </p>
+                        <span class="fw-bold">{{totalThirdCounts}}</span>
+                    </div>
                 </div>
-                <div title="{{completedSecondCounts}} / {{totalSecondCounts}}" class="ms-3 text-center bg-light px-3 rounded"
-                    [ngClass]="{'bg-danger-subtle text-danger border-danger-subtle border ': completedSecondCounts < totalSecondCounts,'bg-success-subtle text-success border-success-subtle border ': completedSecondCounts >= totalSecondCounts}">
-                    <p>2nd Counts</p>
-                    <span class="fw-bold">
-                        {{(completedSecondCounts / totalSecondCounts ) * 100 || 0 | number : '1.2-2' }}%
-                    </span>
-                </div>
-                <div class="ms-3 text-center bg-light px-3 border border-light-subtle rounded">
-                    <p title="3rd counts printed"> 3rd Counts </p>
-                    <span class="fw-bold">{{totalThirdCounts}}</span>
-                </div>
-            </div>
+            </ngx-simplebar>
             <div class="card-body p-0">
                 <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
                     style="height: calc(100vh - 159px);" [rowData]="data" [columnDefs]="columnDefs">

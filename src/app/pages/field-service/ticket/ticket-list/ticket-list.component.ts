@@ -8,7 +8,7 @@ import { WorkOrderService } from '@app/core/api/field-service/work-order.service
 import moment from 'moment';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
+import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { TicketModalService } from '../ticket-modal/ticket-modal.component';
@@ -135,9 +135,7 @@ export class TicketListComponent implements OnInit {
   data: any;
 
   id: any;
-
-  theme = AG_THEME;
-
+  
   gridApi: GridApi;
 
   title = "Ticket List";

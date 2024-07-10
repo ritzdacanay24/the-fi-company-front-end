@@ -66,10 +66,43 @@ export class GridSettingsComponent implements OnInit {
             this.value = current.id
             this.currentView = current;
 
+            let d = JSON.parse(current?.allState)
+
+            if (d?.pivot?.pivotMode) {
+                this.gridApi!.setGridOption("pivotMode", d.pivot?.pivotMode);
+            }
+
+            // if (d?.rowGroupExpansion?.expandedRowGroupIds) {
+            //     setTimeout(() => {
+            //         console.log('asdfasdf')
+            //         this.gridApi!.expandAll();
+            //     }, 500);
+            // }
+
+            // if (d?.focusedCell?.colId) {
+            //     this.gridApi!.ensureColumnVisible(d.focusedCell?.colId, 'middle');
+            // }
+
             this.gridApi!.applyColumnState({
                 state: JSON.parse(current.data),
                 applyOrder: true,
             });
+
+
+            this.gridApi.forEachNode((groupId) => { console.log(groupId, 'groupId')})
+
+           
+
+            // onFirstDataRendered: (params) => {
+            //     let groups = store.getItem(OPEN_GROUP_KEY);
+            //     groups.forEach((groupId) => {
+            //       let node = params.api.getRowNode(groupId);
+            //       node.setExpanded(true);
+            //     });
+            //   },
+
+
+
         }
 
     }
@@ -131,10 +164,14 @@ export class GridSettingsComponent implements OnInit {
     }
 
     async update() {
+
         const savedState = this.gridApi.getColumnState();
+        const allState = this.gridApi.getState();
         let saveData = {
-            data: JSON.stringify(savedState)
+            data: JSON.stringify(savedState),
+            allState: JSON.stringify(allState)
         }
+
 
         this.currentUserGrids = this.currentUserGrids.map((pilot) => {
             if (this.value == pilot.id) pilot.data = JSON.stringify(savedState);

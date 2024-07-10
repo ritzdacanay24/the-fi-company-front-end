@@ -130,6 +130,7 @@ export class PrintTicketComponent implements OnInit {
 
   }
 
+  
   ngOnInit(): void {
     this.isDarkMode = isDarkTheme();
 

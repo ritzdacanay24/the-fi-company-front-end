@@ -3,7 +3,7 @@ import moment from 'moment';
 import { ReportService } from '@app/core/api/operations/report/report.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { AG_THEME, TABLE_GRID_CONFIG, agGridOptions } from '@app/shared/config/ag-grid.config';
+import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { currency, currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -25,17 +25,7 @@ export class DailyReportComponent implements OnInit {
     today = moment().format('YYYY-MM-DD')
     todayAsOf = moment().format('YYYY-MM-DD HH:mm:ss')
 
-    theme = AG_THEME;
-
     gridApi: GridApi;
-
-    fullscreen = false;
-
-    tableConfig = {
-        ...TABLE_GRID_CONFIG,
-        setFullscreen: true,
-        refreshData: this.getData.bind(this),
-    };
 
     displayedColumns: any = []
 
@@ -75,7 +65,6 @@ export class DailyReportComponent implements OnInit {
 
     onGridReady(params: any) {
         this.gridApi = params.api;
-        this.tableConfig.onGridReady(params);
     }
 
     constructor(

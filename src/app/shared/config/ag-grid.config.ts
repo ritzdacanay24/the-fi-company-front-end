@@ -19,6 +19,17 @@ export const agGridOptions: GridOptions = {
     skipPinnedTop: true,
     skipPinnedBottom: true,
   },
+
+  // autoGroupColumnDef: {
+  //   headerName: "Athlete",
+  //   field: "athlete",
+  //   minWidth: 250,
+  //   cellRenderer: "agGroupCellRenderer",
+  //   cellRendererParams: {
+  //     checkbox: true,
+  //   } as IGroupCellRendererParams,
+  // },
+
   defaultExcelExportParams: {
     skipPinnedTop: true,
     skipPinnedBottom: true,
@@ -45,6 +56,7 @@ export const agGridOptions: GridOptions = {
       return params.value !== null && params.value !== '' ? params.value : '-'
     }
   },
+  allowDragFromColumnsToolPanel: true,
   stopEditingWhenCellsLoseFocus: true,
   animateRows: true,
   pagination: false,
@@ -75,7 +87,7 @@ export const agGridOptions: GridOptions = {
       }
     ],
   },
-  enableCharts: false,
+  enableCharts: true,
   statusBar: {
     statusPanels: [
       { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
@@ -95,24 +107,8 @@ export const agGridOptions: GridOptions = {
   suppressColumnVirtualisation: true
 }
 
-export const TABLE_GRID_CONFIG = {
-  gridApi: false,
-  gridColumnApi: false,
-  theme: localStorage.getItem('myapp-theme') == 'Dark' ? 'ag-theme-balham-' + localStorage.getItem('myapp-theme').toLocaleLowerCase() : 'ag-theme-balham',
-  refreshData: false,
-  setFullscreen: true,
-  fullscreen: false,
-  setUserGrid: true,
-  onGridReady: function (params: any) {
-    this.gridApi = params.api;
-    this.gridColumnApi = params.columnApi;
-
-    this.theme = localStorage.getItem('myapp-theme') == 'Dark' ? 'ag-theme-balham-' + localStorage.getItem('myapp-theme').toLocaleLowerCase() : 'ag-theme-balham'
-  }
-}
-
 export const isDarkTheme = () => {
-  return TABLE_GRID_CONFIG.theme.includes('dark');
+  return localStorage.getItem('myapp-theme') == 'Dark'
 }
 
 export function autoSizeAll(gridColumnApi: { getAllColumns: () => any[]; }) {
@@ -122,5 +118,3 @@ export function autoSizeAll(gridColumnApi: { getAllColumns: () => any[]; }) {
   });
   return allColumnIds
 }
-
-export const AG_THEME = 'balham';

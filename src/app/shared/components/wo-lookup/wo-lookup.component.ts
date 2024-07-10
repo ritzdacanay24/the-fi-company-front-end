@@ -148,7 +148,7 @@ export class WoLookupComponent {
     { field: "wr_qty_move", headerName: "Qty Moved", filter: "agTextColumnFilter" },
     { field: "wr_qty_outque", headerName: "Qty Out Que", filter: "agTextColumnFilter" },
     { field: "wr_qty_wip", headerName: "Qty WIP", filter: "agTextColumnFilter" },
-    { field: "wr_qty_inque", headerName: "Qty Inque", filter: "agTextColumnFilter" },
+    { field: "wr_qty_inque", headerName: "Qty Inque", filter: "agTextColumnFilter" }, //represent the current queue
     { field: "wr_start", headerName: "Start", filter: "agTextColumnFilter" },
     { field: "wr_status", headerName: "Status", filter: "agTextColumnFilter" },
     { field: "wr_wkctr", headerName: "Work Center", filter: "agTextColumnFilter" },

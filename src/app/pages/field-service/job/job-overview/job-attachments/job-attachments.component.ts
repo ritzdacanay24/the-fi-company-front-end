@@ -5,7 +5,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AttachmentService } from '@app/core/api/field-service/attachment.service';
 import { AttachmentsService as PublicAttachment } from '@app/core/api/attachments/attachments.service';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { agGridOptions, AG_THEME } from '@app/shared/config/ag-grid.config';
+import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
@@ -36,7 +36,6 @@ export class JobAttachmentsComponent implements OnInit {
             this.getData()
         }
     }
-
 
     ngOnInit(): void {
     }
@@ -127,8 +126,6 @@ export class JobAttachmentsComponent implements OnInit {
     data: any;
 
     @Input() id: any;
-
-    theme = AG_THEME;
 
     gridApi: GridApi;
 

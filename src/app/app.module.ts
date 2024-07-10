@@ -30,7 +30,6 @@ import { ApiPrefixInterceptor } from './core/helpers/api-prefix-interceptor';
 
 import { provideEnvironmentNgxMask } from 'ngx-mask';
 import { ToastrModule } from 'ngx-toastr';
-// import { QuillModule } from 'ngx-quill';
 
 import { ColorPickerModule } from 'ngx-color-picker';
 

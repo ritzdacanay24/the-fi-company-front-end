@@ -320,7 +320,7 @@ export class ShippingComponent implements OnInit {
         let modalRef = this.notesModalService.open(uniqueId, e.rowData.recent_notes, 'Sales Order')
         modalRef.result.then((result: any) => {
             e.rowData.recent_notes = result;
-            this.sendAndUpdate(e.rowData, e.rowData.id);
+            this.sendAndUpdateByUser(e.rowData, e.rowData.id);
         }, () => { });
     }
 
@@ -956,6 +956,23 @@ export class ShippingComponent implements OnInit {
         });
     }
 
+    //send the updated data to the wing. Once update redraw rows.
+    public sendAndUpdateByUser(newData: any, id: any) {
+        /**
+         * newData MUST be the complete data object
+         */
+        let rowNode = this.gridApi.getRowNode(id);
+        rowNode.data = newData;
+        this.gridApi.redrawRows({ rowNodes: [rowNode] });
+
+        this.setPinnedRows()
+
+        // this.websocketService.next({
+        //     message: newData,
+        //     type: WS_SHIPPING
+        // });
+    }
+
     updateUrl = (params) => {
         let gridParams = _compressToEncodedURIComponent(params.api);
         this.router.navigate([`.`], {
@@ -977,7 +994,7 @@ export class ShippingComponent implements OnInit {
         let data = this.getAllRows()
         let res = []
         for (let i = 0; i < data.length; i++) {
-            if (data[i].misc?.hot_order) {
+            if (data[i]?.misc?.hot_order) {
                 res.push(data[i])
             }
         }

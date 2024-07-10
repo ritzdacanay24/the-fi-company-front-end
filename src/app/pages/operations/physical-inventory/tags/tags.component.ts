@@ -14,6 +14,7 @@ import { NgxBarcode6Module } from 'ngx-barcode6';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
+import { SimplebarAngularModule } from 'simplebar-angular';
 
 @Pipe({
   standalone: true,
@@ -57,6 +58,7 @@ export class OrderByPipe implements PipeTransform {
     NgxBarcode6Module,
     GridSettingsComponent,
     GridFiltersComponent,
+    SimplebarAngularModule
   ],
   selector: 'app-tags',
   templateUrl: './tags.component.html',
@@ -68,6 +70,13 @@ export class TagsComponent implements OnInit {
   externalFilterChanged = (newValue) => {
     this.ageType = newValue;
     this.gridApi.onFilterChanged();
+  }
+
+  options = {
+    scrollbarMinSize: 0,
+    forceVisible: true,
+    autoHide: true,
+    clickOnTrack: false
   }
 
   constructor(
@@ -111,10 +120,11 @@ export class TagsComponent implements OnInit {
       headerName: 'Tag Info',
       children: [
         { field: 'tag_type', headerName: 'Tag Type', filter: 'agMultiColumnFilter' }
-        , { field: 'AREA1', headerName: 'Area', filter: 'agMultiColumnFilter' }
+        , { field: 'ALL', headerName: 'All', filter: 'agMultiColumnFilter', rowGroup: true, hide: true }
+        , { field: 'AREA1', headerName: 'Area', filter: 'agMultiColumnFilter', rowGroup: true, hide: true }
         , { field: 'tag_nbr', headerName: 'Tag #', filter: 'agTextColumnFilter', maxWidth: 80 }
         , { field: 'tag_part', headerName: 'Part', filter: 'agMultiColumnFilter' }
-        , { field: 'AISLE', headerName: 'Aisle', filter: 'agMultiColumnFilter' }
+        , { field: 'AISLE', headerName: 'Aisle', filter: 'agMultiColumnFilter', rowGroup: true, hide: true }
         , {
           field: 'TAG_LOC', headerName: 'Tag Location', filter: 'agMultiColumnFilter', filterParams: {
             filters: [
@@ -130,7 +140,7 @@ export class TagsComponent implements OnInit {
         }
         , { field: 'TAG_LOC_REAL', headerName: 'Actual Tag Location', filter: 'agTextColumnFilter', floatingFilter: false }
         , { field: 'LOC_TYPE', headerName: 'Loc Type', filter: 'agMultiColumnFilter' }
-        , { field: 'LD_QTY_OH', headerName: 'Qty On Hand', filter: 'agTextColumnFilter' }
+        , { field: 'LD_QTY_OH', headerName: 'Qty On Hand', filter: 'agNumberColumnFilter' }
         , { field: 'UNIT_COST', headerName: 'Unit Cost', filter: 'agNumberColumnFilter', valueFormatter: currencyFormatter }
         , { field: 'tag_serial', headerName: 'Tag Serial', filter: 'agMultiColumnFilter', hide: false }
         , { field: 'LD_REF', headerName: 'Ref', filter: 'agTextColumnFilter', hide: false }
@@ -143,52 +153,40 @@ export class TagsComponent implements OnInit {
       headerName: 'First Count Info',
       children: [
         {
-          field: 'tag_cnt_qty', headerName: '1st Count Qty', filter: 'agTextColumnFilter'
+          field: 'TAG_CNT_QTY', headerName: '1st Count Qty', filter: 'agNumberColumnFilter'
           , cellStyle: function (params) {
-            if (params.data && params.data.tag_cnt_dt && params.data.LD_QTY_OH != params.data.tag_cnt_qty && params.data.tag_posted == 0)
+            if (params.data && params.data.tag_cnt_dt && params.data.LD_QTY_OH != params.data.TAG_CNT_QTY && params.data.tag_posted == 0)
               return {
                 borderColor: 'red',
                 borderWidth: '3px',
               };
             return null;
           },
-        }
-        , { field: 'tag_cnt_dt', headerName: '1st Count Date', filter: 'agTextColumnFilter' }
-        , {
-          field: 'firstCountPrintTag', headerName: '1st Count Print Date', filter: 'agTextColumnFilter',
           cellRenderer: (params) => {
             if (!params.data && !params.node.footer) {
-              let sum = false;
-              let printedCount = 0
-              for (let i = 0; i < params.node.allLeafChildren.length; i++) {
-                if (params.node.allLeafChildren[i].data.firstCountPrintTag == null) {
-                  printedCount++
-                  sum = true
-                };
-              }
 
-              if (sum) {
-                return `Printed ${params.node.allLeafChildren.length - printedCount} of ${params.node.allLeafChildren.length}`
-              } else {
-                return `Printed ${params.node.allLeafChildren.length - printedCount} of ${params.node.allLeafChildren.length}`
-              }
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.TAG_CNT_QTY != x.data.LD_QTY_OH).length
 
+              let total = params.node.allLeafChildren.length;
+
+              let current = total - outstanding;
+
+              let percent = (current / outstanding * 100).toFixed(2) + '%'
+
+              return `${current} of ${total} (${percent})`
             }
+
             return params.value
           },
           cellClass: (params: any) => {
-
             if (!params.data && !params.node.footer) {
-              let sum = false;
-              let printedCount = 0
-              for (let i = 0; i < params.node.allLeafChildren.length; i++) {
-                if (params.node.allLeafChildren[i].data.firstCountPrintTag == null) {
-                  printedCount++
-                  sum = true
-                };
-              }
 
-              if ((params.node.allLeafChildren.length - printedCount) == params.node.allLeafChildren.length) {
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.TAG_CNT_QTY != x.data.LD_QTY_OH).length
+
+              let total = params.node.allLeafChildren.length;
+
+
+              if ((total - outstanding) == total) {
                 return ['bg-success-subtle bg-opacity-75 text-success'];
               } else {
                 return ['bg-danger-subtle bg-opacity-75 text-danger'];
@@ -198,8 +196,90 @@ export class TagsComponent implements OnInit {
             return null;
           },
         }
-        , { field: 'POV', headerName: 'PQV %', filter: 'agNumberColumnFilter' }
-        , { field: 'COV', headerName: 'COV $', filter: 'agNumberColumnFilter', valueFormatter: currencyFormatter }
+        , {
+          field: 'tag_cnt_dt', headerName: '1st Count Date', filter: 'agTextColumnFilter',
+          cellRenderer: (params) => {
+            if (!params.data && !params.node.footer) {
+
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.tag_cnt_dt != "").length
+
+              let total = params.node.allLeafChildren.length;
+
+              let current = total - outstanding;
+
+              let percent = (current / outstanding * 100).toFixed(2) + '%'
+
+              return `${current} of ${total} (${percent})`
+            }
+
+            return params.value
+          },
+          cellClass: (params: any) => {
+            if (!params.data && !params.node.footer) {
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.tag_cnt_dt != "").length
+
+              let total = params.node.allLeafChildren.length;
+
+
+              if ((total - outstanding) == total) {
+                return ['bg-success-subtle bg-opacity-75 text-success'];
+              } else {
+                return ['bg-danger-subtle bg-opacity-75 text-danger'];
+              }
+            }
+
+            return null;
+          },
+        }
+        , {
+          field: 'firstCountPrintTag', headerName: '1st Count Print Date', filter: 'agTextColumnFilter',
+          cellRenderer: (params) => {
+            if (!params.data && !params.node.footer) {
+
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.firstCountPrintTag == null).length;
+
+              let total = params.node.allLeafChildren.length;
+
+              return `Printed ${total - outstanding} of ${total}`
+
+            }
+            return params.value
+          },
+          cellClass: (params: any) => {
+
+            if (!params.data && !params.node.footer) {
+              let outstanding = params.node.allLeafChildren.filter(x => x.data.firstCountPrintTag == null).length;
+
+              let total = params.node.allLeafChildren.length;
+
+              if ((total - outstanding) == total) {
+                return ['bg-success-subtle bg-opacity-75 text-success'];
+              } else {
+                return ['bg-danger-subtle bg-opacity-75 text-danger'];
+              }
+            }
+
+            return null;
+          },
+        }
+        , {
+          field: 'POV', headerName: 'PQV %', filter: 'agNumberColumnFilter',
+          valueGetter: (params) => {
+            if (params.data === undefined) {
+              return 0;
+            }
+            return Number(params.data.POV);
+          },
+        }
+        , {
+          field: 'COV', headerName: 'COV $', filter: 'agNumberColumnFilter', valueFormatter: currencyFormatter,
+          valueGetter: (params) => {
+            if (params.data === undefined) {
+              return 0;
+            }
+            return Number(params.data.COV);
+          },
+        }
         , { field: 'tag_cnt_nam', headerName: 'Counted By', filter: 'agMultiColumnFilter' }
       ]
     },
@@ -207,8 +287,8 @@ export class TagsComponent implements OnInit {
       headerName: 'Second Count Info',
       children: [
         {
-          field: 'tag_rcnt_qty', headerName: '2nd Count Qty', filter: 'agTextColumnFilter', cellStyle: function (params) {
-            if (params.data && params.data.LD_QTY_OH != params.data.tag_rcnt_qty && params.data.tag_rcnt_dt && params.data.tag_posted == 0)
+          field: 'TAG_RCNT_QTY', headerName: '2nd Count Qty', filter: 'agNumberColumnFilter', cellStyle: function (params) {
+            if (params.data && params.data.LD_QTY_OH != params.data.TAG_RCNT_QTY && params.data.tag_rcnt_dt && params.data.tag_posted == 0)
               return {
                 borderColor: 'red',
                 borderWidth: '3px',
@@ -226,18 +306,18 @@ export class TagsComponent implements OnInit {
       children: [
         {
           field: 'thirdCountRequired', headerName: '3rd Count Required', filter: 'agMultiColumnFilter', cellRenderer: function (params) {
-            if (params.data && params.data.tag_cnt_qty != params.data.tag_rcnt_qty && params.data.tag_rcnt_dt) {
+            if (params.data && params.data.TAG_CNT_QTY != params.data.TAG_RCNT_QTY && params.data.tag_rcnt_dt) {
               return 'Yes'
-            } else if (params.data && params.data.tag_cnt_qty == params.data.tag_rcnt_qty && params.data.tag_rcnt_dt) {
+            } else if (params.data && params.data.TAG_CNT_QTY == params.data.TAG_RCNT_QTY && params.data.tag_rcnt_dt) {
               return '1st and 2nd Count Matches'
             } else {
               return ''
             }
           },
           valueGetter: function (params) {
-            if (params.data && params.data.tag_cnt_qty != params.data.tag_rcnt_qty && params.data.tag_rcnt_dt) {
+            if (params.data && params.data.TAG_CNT_QTY != params.data.TAG_RCNT_QTY && params.data.tag_rcnt_dt) {
               return 'Yes'
-            } else if (params.data && params.data.tag_cnt_qty == params.data.tag_rcnt_qty && params.data.tag_rcnt_dt) {
+            } else if (params.data && params.data.TAG_CNT_QTY == params.data.TAG_RCNT_QTY && params.data.tag_rcnt_dt) {
               return '1st and 2nd Count Matches'
             }
             return null
@@ -255,6 +335,7 @@ export class TagsComponent implements OnInit {
   gridOptions: GridOptions = {
     ...agGridOptions,
     groupTotalRow: null,
+    groupDisplayType: 'singleColumn',
     groupSelectsChildren: true,
     groupSelectsFiltered: true,
     suppressAggFuncInHeader: true,
@@ -262,9 +343,22 @@ export class TagsComponent implements OnInit {
     pagination: false,
     onGridReady: this.onGridReady.bind(this),
     suppressRowClickSelection: true,
-    getRowId: (data) => {
-      return data.data?.tag_nbr;
+    isGroupOpenByDefault: (data) => {
+      return data.field == 'ALL'
     },
+    getRowId: (data) => {
+      return data.data?.tag_nbr?.toString();
+    },
+    showOpenedGroup: true,
+    autoGroupColumnDef: {
+      headerName: 'Bay',
+      field: "Bay",
+      cellRendererParams: {
+        checkbox: false,
+      },
+      cellRenderer: "agGroupCellRenderer",
+    },
+
     onFirstDataRendered: () => {
       const allColumnIds = [];
     },
@@ -282,9 +376,11 @@ export class TagsComponent implements OnInit {
     doesExternalFilterPass: (node) => {
       switch (this.ageType) {
         case 'Second_Count_Variance':
-          return node.data && node.data.LD_QTY_OH != node.data.tag_rcnt_qty && node.data.tag_rcnt_dt && node.data.tag_posted == 0;
+          return node.data && node.data.LD_QTY_OH != node.data.TAG_RCNT_QTY && node.data.tag_rcnt_dt && node.data.tag_posted == 0;
         case 'First_Count_Variance':
-          return node.data.tag_cnt_dt && node.data.LD_QTY_OH != node.data.tag_cnt_qty && !node.data.tag_rcnt_dt && node.data.tag_posted == 0;
+          return node.data.tag_cnt_dt && node.data.LD_QTY_OH != node.data.TAG_CNT_QTY && !node.data.tag_rcnt_dt && node.data.tag_posted == 0;
+        case 'ALl_First_Count_Variance':
+          return node.data.tag_cnt_dt && node.data.LD_QTY_OH != node.data.TAG_CNT_QTY && node.data.tag_posted == 0;
         case 'Not_Posted':
           return node.data.tag_posted == 0;
         case 'Need_First_Count_Printed':
@@ -564,8 +660,13 @@ export class TagsComponent implements OnInit {
 
       if (this.data[i].tag_cnt_dt) {
         this.completedFirstCounts++;
-        if (this.data[i].secondCountPrintTag) {
+
+        //only count variance
+        if (this.data[i].TAG_CNT_QTY != this.data[i].LD_QTY_OH) {
+          //total variance
           this.totalSecondCounts++
+
+
           if (this.data[i].tag_rcnt_dt != null) {
             this.completedSecondCounts++
           }
