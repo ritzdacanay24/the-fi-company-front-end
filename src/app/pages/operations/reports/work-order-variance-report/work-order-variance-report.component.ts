@@ -9,6 +9,8 @@ import { GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { WorkOrderInfoService } from '@app/core/api/operations/work-order/work-order-info.service';
+import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
+import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers/link-renderer/link-renderer.component';
 
 @Component({
     standalone: true,
@@ -27,6 +29,7 @@ export class WorkOrderVarianceReport implements OnInit {
         public router: Router,
         private api: WorkOrderInfoService,
         public activatedRoute: ActivatedRoute,
+        private workOrderInfoModalService: WorkOrderInfoModalService,
     ) {
     }
 
@@ -38,14 +41,26 @@ export class WorkOrderVarianceReport implements OnInit {
         this.getData()
     }
 
+    openWorkOrderInfo = (workOrder) => {
+        let modalRef = this.workOrderInfoModalService.open(workOrder)
+        modalRef.result.then((result: any) => {
+        }, () => { });
+    }
+
     gridApi: GridApi;
 
     id = null;
 
     title = "Work Order Variance Report"
 
-    columnDefs:any = [
-        { field: "wo_nbr", headerName: "WO", filter: "agTextColumnFilter" },
+    columnDefs: any = [
+        {
+            field: "wo_nbr", headerName: "WO", filter: "agTextColumnFilter", cellRenderer: LinkRendererComponent,
+            cellRendererParams: {
+                onClick: (e: any) => this.openWorkOrderInfo(e.rowData.wo_nbr),
+                isLink: true
+            },
+        },
         { field: "wo_line", headerName: "Line", filter: "agTextColumnFilter" },
         { field: "wo_due_date", headerName: "Due Date", filter: "agTextColumnFilter" },
         { field: "wo_part", headerName: "Part Number", filter: "agTextColumnFilter" },
@@ -53,6 +68,7 @@ export class WorkOrderVarianceReport implements OnInit {
         { field: "wo_qty_comp", headerName: "Qty Completed", filter: "agTextColumnFilter" },
         { field: "wod_qty_req", headerName: "Qty Required", filter: "agTextColumnFilter" },
         { field: "wod_qty_iss", headerName: "Qty Issued", filter: "agTextColumnFilter" },
+        { field: "real_wod_status", headerName: "Status", filter: "agTextColumnFilter" },
         { field: "wod_status", headerName: "Over Issued", filter: "agTextColumnFilter" },
     ];
 
