@@ -18,7 +18,7 @@ export interface IQirForm {
   purchaseOrder: string;
   CustomerPartNumber: string;
   eyefiPartNumber: string;
-  confirmationCode: string
+  confirmationCode: string;
   firstName: string;
   lastName: string;
   source: string;
@@ -38,10 +38,10 @@ export interface IQirForm {
   first_name: string;
   last_name: string;
   email: string;
-  customerSerialNumber?: string
-  location?: string
-  statusClosed?: string
-  warranty_replacement?: string
-  cc_email?: string
-  status_reason?: string
+  customerSerialNumber?: string;
+  location?: string;
+  statusClosed?: string;
+  warranty_replacement?: string;
+  cc_email?: string;
+  status_reason?: string;
 }

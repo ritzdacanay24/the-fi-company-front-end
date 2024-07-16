@@ -1,21 +1,21 @@
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import moment from 'moment';
-import { AgsSerialFormComponent } from '../ags-serial-form/ags-serial-form.component';
-import { NAVIGATION_ROUTE } from '../ags-serial-constant';
-import { AgsSerialService } from '@app/core/api/quality/ags-serial.service';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { Component, Input } from "@angular/core";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import moment from "moment";
+import { AgsSerialFormComponent } from "../ags-serial-form/ags-serial-form.component";
+import { NAVIGATION_ROUTE } from "../ags-serial-constant";
+import { AgsSerialService } from "@app/core/api/quality/ags-serial.service";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, AgsSerialFormComponent],
-  selector: 'app-ags-serial-create',
-  templateUrl: './ags-serial-create.component.html',
-  styleUrls: ['./ags-serial-create.component.scss']
+  selector: "app-ags-serial-create",
+  templateUrl: "./ags-serial-create.component.html",
+  styleUrls: ["./ags-serial-create.component.scss"],
 })
 export class AgsSerialCreateComponent {
   constructor(
@@ -23,12 +23,12 @@ export class AgsSerialCreateComponent {
     private activatedRoute: ActivatedRoute,
     private api: AgsSerialService,
     private toastrService: ToastrService,
-    private authenticationService: AuthenticationService,
-  ) { }
+    private authenticationService: AuthenticationService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -45,17 +45,22 @@ export class AgsSerialCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   setFormEmitter($event) {
     this.form = $event;
-    this.form.patchValue({
-      inspectorName: this.authenticationService.currentUserValue.full_name,
-      timeStamp: moment().format('YYYY-MM-DD HH:mm:ss'),
-      created_by: this.authenticationService.currentUserValue.id,
-      lastUpdate: moment().format('YYYY-MM-DD HH:mm:ss'),
-    }, { emitEvent: false })
+    this.form.patchValue(
+      {
+        inspectorName: this.authenticationService.currentUserValue.full_name,
+        timeStamp: moment().format("YYYY-MM-DD HH:mm:ss"),
+        created_by: this.authenticationService.currentUserValue.id,
+        lastUpdate: moment().format("YYYY-MM-DD HH:mm:ss"),
+      },
+      { emitEvent: false }
+    );
   }
 
   data: any;
@@ -64,32 +69,33 @@ export class AgsSerialCreateComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
     this.submitted = true;
 
-
     if (this.form.invalid) return;
 
     if (this.form.value?.generated_SG_asset) {
-      let data = await this.api.checkIfSerialIsFound(this.form.value?.generated_SG_asset);
+      let data = await this.api.checkIfSerialIsFound(
+        this.form.value?.generated_SG_asset
+      );
 
       if (data) {
         const { value: accept } = await SweetAlert.confirmV1({
-          title: "Duplicate AGS serial found. Are you sure you want to continue?"
-        })
+          title:
+            "Duplicate AGS serial found. Are you sure you want to continue?",
+        });
         if (!accept) return;
       }
     }
-
 
     try {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Created');
+      this.toastrService.success("Successfully Created");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -97,7 +103,6 @@ export class AgsSerialCreateComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

@@ -1,10 +1,10 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import rmaFormJson from './rma.json';
-import { QirSearchComponent } from '@app/shared/components/qir-search/qir-search.component';
-import { QadCustomerNameSearchComponent } from '@app/shared/components/qad-customer-name-search/qad-customer-name-search.component';
-import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import rmaFormJson from "./rma.json";
+import { QirSearchComponent } from "@app/shared/components/qir-search/qir-search.component";
+import { QadCustomerNameSearchComponent } from "@app/shared/components/qad-customer-name-search/qad-customer-name-search.component";
+import { QadPartSearchComponent } from "@app/shared/components/qad-part-search/qad-part-search.component";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
@@ -13,20 +13,17 @@ import { SharedModule } from '@app/shared/shared.module';
     ReactiveFormsModule,
     QirSearchComponent,
     QadCustomerNameSearchComponent,
-    QadPartSearchComponent
+    QadPartSearchComponent,
   ],
-  selector: 'app-rma-form',
-  templateUrl: './rma-form.component.html',
-  styleUrls: ['./rma-form.component.scss']
+  selector: "app-rma-form",
+  templateUrl: "./rma-form.component.html",
+  styleUrls: ["./rma-form.component.scss"],
 })
 export class RmaFormComponent {
-
-  constructor(
-    private fb: FormBuilder,
-  ) { }
+  constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    this.setFormEmitter.emit(this.form)
+    this.setFormEmitter.emit(this.form);
     this.formData = rmaFormJson;
   }
 
@@ -34,55 +31,56 @@ export class RmaFormComponent {
 
   @Input() submitted = false;
 
-  formData
+  formData;
 
   get f() {
-    return this.form.controls
+    return this.form.controls;
   }
 
   form = this.fb.group({
-    type: [''],
-    rmaNumber: [''],
-    status: ['Open'],
+    type: [""],
+    rmaNumber: [""],
+    status: ["Open"],
     customer: [null],
     partNumber: [null],
-    partDescription: [''],
-    orderNumber: [''],
-    qty: [''],
-    tag_qn_number: [''],
+    partDescription: [""],
+    orderNumber: [""],
+    qty: [""],
+    tag_qn_number: [""],
     qirNumber: [null],
-    returnMethod: [''],
-    returnType: [''],
-    disposition: [''],
-    notes: [''],
-    customerComment: [''],
-    dateIssued: [''],
-    failureCode: [''],
-    createdDate: [''],
-    createdBy: [''],
+    returnMethod: [""],
+    returnType: [""],
+    disposition: [""],
+    notes: [""],
+    customerComment: [""],
+    dateIssued: [""],
+    failureCode: [""],
+    createdDate: [""],
+    createdBy: [""],
     active: [1],
-  })
+  });
 
   setBooleanToNumber(key) {
-    let e = this.form.value[key]
-    this.form.get(key).patchValue(e ? 1 : 0)
+    let e = this.form.value[key];
+    this.form.get(key).patchValue(e ? 1 : 0);
   }
 
   async notifyParent($event) {
     try {
       this.form.patchValue({ qirNumber: $event.id });
-    } catch (err) { }
+    } catch (err) {}
   }
 
   getCustomerName($event) {
     try {
       this.form.patchValue({ customer: $event.cm_addr });
-    } catch (err) { }
+    } catch (err) {}
   }
 
   setQadPartNumber($event) {
-    this.form.patchValue({ partNumber: $event.pt_part, partDescription: $event.description })
+    this.form.patchValue({
+      partNumber: $event.pt_part,
+      partDescription: $event.description,
+    });
   }
-
-
 }

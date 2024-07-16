@@ -1,26 +1,20 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-qir-settings',
-  templateUrl: './qir-settings.component.html',
-  styleUrls: []
+  selector: "app-qir-settings",
+  templateUrl: "./qir-settings.component.html",
+  styleUrls: [],
 })
 export class QirSettingsComponent implements OnInit {
+  constructor(public route: ActivatedRoute, public router: Router) {}
 
-  constructor(
-    public route: ActivatedRoute,
-    public router: Router
-  ) {
-  }
+  ngOnInit(): void {}
 
-  ngOnInit(): void {
-  }
-
-  title = "QIR Settings"
+  title = "QIR Settings";
 
   icon = "mdi mdi-cogs";
 }

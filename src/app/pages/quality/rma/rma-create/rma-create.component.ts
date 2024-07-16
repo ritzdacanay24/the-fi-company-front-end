@@ -1,21 +1,21 @@
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import moment from 'moment';
-import { RmaFormComponent } from '../rma-form/rma-form.component';
-import { NAVIGATION_ROUTE } from '../rma-constant';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { RmaService } from '@app/core/api/quality/rma.service';
+import { Component, Input } from "@angular/core";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import moment from "moment";
+import { RmaFormComponent } from "../rma-form/rma-form.component";
+import { NAVIGATION_ROUTE } from "../rma-constant";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { RmaService } from "@app/core/api/quality/rma.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, RmaFormComponent],
-  selector: 'app-rma-create',
-  templateUrl: './rma-create.component.html',
-  styleUrls: ['./rma-create.component.scss']
+  selector: "app-rma-create",
+  templateUrl: "./rma-create.component.html",
+  styleUrls: ["./rma-create.component.scss"],
 })
 export class RmaCreateComponent {
   constructor(
@@ -23,12 +23,12 @@ export class RmaCreateComponent {
     private activatedRoute: ActivatedRoute,
     private api: RmaService,
     private toastrService: ToastrService,
-    private authenticationService: AuthenticationService,
-  ) { }
+    private authenticationService: AuthenticationService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -45,8 +45,10 @@ export class RmaCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -54,31 +56,33 @@ export class RmaCreateComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   setFormEmitter($event) {
     this.form = $event;
-    this.form.patchValue({
-      createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
-      createdBy: this.authenticationService.currentUserValue.id
-    }, { emitEvent: false })
+    this.form.patchValue(
+      {
+        createdDate: moment().format("YYYY-MM-DD HH:mm:ss"),
+        createdBy: this.authenticationService.currentUserValue.id,
+      },
+      { emitEvent: false }
+    );
   }
 
   async onSubmit() {
     this.submitted = true;
 
-
     if (this.form.invalid) {
-      getFormValidationErrors()
-      return
+      getFormValidationErrors();
+      return;
     }
 
     try {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Created');
+      this.toastrService.success("Successfully Created");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -86,7 +90,6 @@ export class RmaCreateComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

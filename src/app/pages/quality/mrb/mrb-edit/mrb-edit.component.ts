@@ -1,38 +1,37 @@
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { MrbFormComponent } from '../mrb-form/mrb-form.component';
-import { NAVIGATION_ROUTE } from '../mrb-constant';
-import { MrbService } from '@app/core/api/quality/mrb-service';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, Input } from "@angular/core";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { MrbFormComponent } from "../mrb-form/mrb-form.component";
+import { NAVIGATION_ROUTE } from "../mrb-constant";
+import { MrbService } from "@app/core/api/quality/mrb-service";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule, MrbFormComponent],
-  selector: 'app-mrb-edit',
-  templateUrl: './mrb-edit.component.html',
-  styleUrls: ['./mrb-edit.component.scss']
+  selector: "app-mrb-edit",
+  templateUrl: "./mrb-edit.component.html",
+  styleUrls: ["./mrb-edit.component.scss"],
 })
 export class MrbEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: MrbService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
   }
 
-  qualityManagerApproval() { }
-  vpApproval() { }
-
+  qualityManagerApproval() {}
+  vpApproval() {}
 
   title = "Edit";
 
@@ -45,8 +44,10 @@ export class MrbEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -54,7 +55,7 @@ export class MrbEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -66,7 +67,7 @@ export class MrbEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -74,8 +75,6 @@ export class MrbEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
-
 }

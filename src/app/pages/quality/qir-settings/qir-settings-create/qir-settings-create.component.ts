@@ -1,20 +1,20 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import moment from 'moment';
-import { QirSettingsFormComponent } from '../qir-settings-form/qir-settings-form.component';
-import { NAVIGATION_ROUTE } from '../qir-settings-constant';
-import { QirSettingsService } from '@app/core/api/quality/qir-settings.service';
-import { AuthenticationService } from '@app/core/services/auth.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import moment from "moment";
+import { QirSettingsFormComponent } from "../qir-settings-form/qir-settings-form.component";
+import { NAVIGATION_ROUTE } from "../qir-settings-constant";
+import { QirSettingsService } from "@app/core/api/quality/qir-settings.service";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, QirSettingsFormComponent],
-  selector: 'app-qir-settings-create',
-  templateUrl: './qir-settings-create.component.html',
-  styleUrls: ['./qir-settings-create.component.scss']
+  selector: "app-qir-settings-create",
+  templateUrl: "./qir-settings-create.component.html",
+  styleUrls: ["./qir-settings-create.component.scss"],
 })
 export class QirSettingsCreateComponent {
   constructor(
@@ -22,12 +22,12 @@ export class QirSettingsCreateComponent {
     private activatedRoute: ActivatedRoute,
     private api: QirSettingsService,
     private toastrService: ToastrService,
-    private authenticationService: AuthenticationService,
-  ) { }
+    private authenticationService: AuthenticationService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -44,8 +44,10 @@ export class QirSettingsCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -53,18 +55,21 @@ export class QirSettingsCreateComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
     this.submitted = true;
 
-    this.form.patchValue({
-      job: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id
-      }
-    }, { emitEvent: false })
+    this.form.patchValue(
+      {
+        job: {
+          created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+          created_by: this.authenticationService.currentUserValue.id,
+        },
+      },
+      { emitEvent: false }
+    );
 
     if (this.form.invalid) return;
 
@@ -72,7 +77,7 @@ export class QirSettingsCreateComponent {
       this.isLoading = true;
       await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Created');
+      this.toastrService.success("Successfully Created");
       //this.form.reset()
       //this.goBack();
     } catch (err) {
@@ -81,7 +86,6 @@ export class QirSettingsCreateComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

@@ -1,4 +1,10 @@
-import { Component, Input, OnInit, SimpleChanges, ViewChild } from "@angular/core";
+import {
+  Component,
+  Input,
+  OnInit,
+  SimpleChanges,
+  ViewChild,
+} from "@angular/core";
 // window.Apex = {
 //   chart: {
 //     foreColor: '#ccc',
@@ -36,9 +42,9 @@ import {
   ApexLegend,
   ApexGrid,
   ApexTheme,
-  NgApexchartsModule
+  NgApexchartsModule,
 } from "ng-apexcharts";
-import { SharedModule } from '@app/shared/shared.module';
+import { SharedModule } from "@app/shared/shared.module";
 import { returnAvg } from "src/assets/js/util";
 
 export type ChartOptions = {
@@ -62,25 +68,24 @@ export type ChartOptions = {
   imports: [SharedModule, NgApexchartsModule],
   selector: "app-qir-summary",
   template: `
-        <div id="chart">
-            <apx-chart
-                #chart
-                [series]="chartOptions.series"
-                [chart]="chartOptions.chart"
-                [yaxis]="chartOptions.yaxis"
-                [xaxis]="chartOptions.xaxis"
-                [labels]="chartOptions.labels"
-                [stroke]="chartOptions.stroke"
-                [title]="chartOptions.title"
-                [dataLabels]="chartOptions.dataLabels"
-                [fill]="chartOptions.fill"
-                [tooltip]="chartOptions.tooltip"
-            ></apx-chart>
-        </div>
-    `,
+    <div id="chart">
+      <apx-chart
+        #chart
+        [series]="chartOptions.series"
+        [chart]="chartOptions.chart"
+        [yaxis]="chartOptions.yaxis"
+        [xaxis]="chartOptions.xaxis"
+        [labels]="chartOptions.labels"
+        [stroke]="chartOptions.stroke"
+        [title]="chartOptions.title"
+        [dataLabels]="chartOptions.dataLabels"
+        [fill]="chartOptions.fill"
+        [tooltip]="chartOptions.tooltip"
+      ></apx-chart>
+    </div>
+  `,
 })
 export class QirSummaryComponent implements OnInit {
-
   @Input() public data: any;
   max: any;
 
@@ -89,12 +94,12 @@ export class QirSummaryComponent implements OnInit {
 
   constructor() {
     this.chartOptions = {
-      theme: { mode: 'light' },
+      theme: { mode: "light" },
       series: [],
       chart: {
-        foreColor: '#ccc',
+        foreColor: "#ccc",
         height: 420,
-        type: "line"
+        type: "line",
       },
       stroke: {
         width: [2, 2, 2],
@@ -102,12 +107,12 @@ export class QirSummaryComponent implements OnInit {
       title: {
         text: "Failure types",
         style: {
-          color: '#000'
+          color: "#000",
         },
       },
       dataLabels: {
         enabled: true,
-        enabledOnSeries: [1]
+        enabledOnSeries: [1],
       },
       labels: [],
     };
@@ -119,7 +124,7 @@ export class QirSummaryComponent implements OnInit {
 
   ngOnChanges(data: SimpleChanges) {
     if (!!this.data) {
-      this.data.value = this.data?.value ? this.data.value : [0]
+      this.data.value = this.data?.value ? this.data.value : [0];
       var pers = [];
       var count = 0;
       var dem = 0;
@@ -134,7 +139,7 @@ export class QirSummaryComponent implements OnInit {
       for (var l = 0; l < pers.length; l++) {
         let e = pers[l] / this.max;
         let ee = e * 100;
-        ll.push((ee.toFixed(1)));
+        ll.push(ee.toFixed(1));
       }
 
       this.chartOptions.series = [
@@ -142,8 +147,7 @@ export class QirSummaryComponent implements OnInit {
           name: "Frequency",
           type: "column",
           data: this.data.value,
-          color: '#2271B1'
-
+          color: "#2271B1",
         },
         {
           name: "Cumulative %",
@@ -154,9 +158,8 @@ export class QirSummaryComponent implements OnInit {
           name: "80% cutoff",
           type: "line",
           data: returnAvg(pers.length, 80),
-
-        }
-      ]
+        },
+      ];
 
       this.chart.updateOptions({
         labels: this.data.label,
@@ -169,20 +172,20 @@ export class QirSummaryComponent implements OnInit {
             title: {
               text: "Frequency",
               style: {
-                color: '#2271B1',
-              }
+                color: "#2271B1",
+              },
             },
             max: this.max,
             axisBorder: {
               show: true,
-              color: '#2271B1'
+              color: "#2271B1",
             },
             labels: {
               style: {
-                colors: '#2271B1',
-              }
+                colors: "#2271B1",
+              },
             },
-            tickAmount: 10
+            tickAmount: 10,
           },
           {
             opposite: true,
@@ -191,20 +194,20 @@ export class QirSummaryComponent implements OnInit {
             title: {
               text: "Cumulative %",
               style: {
-                color: '#4c9173',
-              }
+                color: "#4c9173",
+              },
             },
             axisBorder: {
               show: true,
-              color: '#4c9173'
+              color: "#4c9173",
             },
             labels: {
               style: {
-                colors: '#4c9173',
+                colors: "#4c9173",
               },
               formatter: function (value) {
                 return value + "%";
-              }
+              },
             },
           },
           {
@@ -215,24 +218,24 @@ export class QirSummaryComponent implements OnInit {
             },
             legend: {
               labels: {
-                show: false
+                show: false,
               },
             },
 
             labels: {
               show: false,
               style: {
-                colors: '',
+                colors: "",
               },
               formatter: function (value) {
                 return value + "%";
-              }
-            }
-          }
-        ]
-      })
+              },
+            },
+          },
+        ],
+      });
     }
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {}
 }

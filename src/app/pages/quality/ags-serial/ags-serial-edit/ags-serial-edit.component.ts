@@ -1,30 +1,30 @@
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { AgsSerialFormComponent } from '../ags-serial-form/ags-serial-form.component';
-import { NAVIGATION_ROUTE } from '../ags-serial-constant';
-import { AgsSerialService } from '@app/core/api/quality/ags-serial.service';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, Input } from "@angular/core";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { AgsSerialFormComponent } from "../ags-serial-form/ags-serial-form.component";
+import { NAVIGATION_ROUTE } from "../ags-serial-constant";
+import { AgsSerialService } from "@app/core/api/quality/ags-serial.service";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule, AgsSerialFormComponent],
-  selector: 'app-ags-serial-edit',
-  templateUrl: './ags-serial-edit.component.html',
-  styleUrls: ['./ags-serial-edit.component.scss']
+  selector: "app-ags-serial-edit",
+  templateUrl: "./ags-serial-edit.component.html",
+  styleUrls: ["./ags-serial-edit.component.scss"],
 })
 export class AgsSerialEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: AgsSerialService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -41,17 +41,19 @@ export class AgsSerialEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      this.form.get('generated_SG_asset').disable()
+      this.form.get("generated_SG_asset").disable();
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -63,7 +65,7 @@ export class AgsSerialEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -71,12 +73,11 @@ export class AgsSerialEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
   onPrint() {
     let row = this.form.getRawValue();
-
 
     setTimeout(() => {
       let cmds = `
@@ -105,15 +106,13 @@ export class AgsSerialEditComponent {
       ^FS^FO50,330^BY2,2.5^B3,N,42,N,N,N,A^FD${row.generated_SG_asset}^FS
       ^CFA,15
       ^XZ
-`
-      var printwindow = window.open('', 'PRINT', 'height=500,width=600');
+`;
+      var printwindow = window.open("", "PRINT", "height=500,width=600");
       printwindow.document.write(cmds);
       printwindow.document.close(); // necessary for IE >= 10
       printwindow.focus(); // necessary for IE >= 10
       printwindow.print();
       printwindow.close();
     }, 200);
-
   }
-
 }
