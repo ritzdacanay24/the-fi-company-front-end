@@ -38,3 +38,9 @@ ng build --output-hashing=all
 ##https://dev.to/stephengade/how-to-install-and-manage-multiple-versions-of-nodejs-on-windows-5h30
 
 chrome://flags#enable-desktop-pwas-tab-strip
+
+
+Documentation
+
+1. How to restart server
+    
