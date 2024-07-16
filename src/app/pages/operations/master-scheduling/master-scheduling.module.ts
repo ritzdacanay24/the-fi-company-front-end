@@ -1,10 +1,8 @@
-import { NgModule } from '@angular/core';
-import { MasterSchedulingRoutingModule } from './master-scheduling-routing.module';
+import { NgModule } from "@angular/core";
+import { MasterSchedulingRoutingModule } from "./master-scheduling-routing.module";
 
 @NgModule({
   declarations: [],
-  imports: [
-    MasterSchedulingRoutingModule
-  ]
+  imports: [MasterSchedulingRoutingModule],
 })
-export class MasterSchedulingModule { }
+export class MasterSchedulingModule {}

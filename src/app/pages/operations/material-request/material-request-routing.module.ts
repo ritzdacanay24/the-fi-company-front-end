@@ -7,7 +7,6 @@ import { MaterialRequestListComponent } from './material-request-list/material-r
 import { MaterialRequestEditComponent } from './material-request-edit/material-request-edit.component';
 import { MaterialRequestCreateComponent } from './material-request-create/material-request-create.component';
 import { MaterialRequestPickingComponent } from './material-request-picking/material-request-picking.component';
-import { MaterialRequestValidateComponent } from './material-request-validate/material-request-validate.component';
 import { MaterialRequestValidateListComponent } from './material-request-validate-list/material-request-validate-list.component';
 
 const routes: Routes = [

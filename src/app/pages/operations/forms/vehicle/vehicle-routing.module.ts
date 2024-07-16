@@ -1,42 +1,39 @@
+import { Routes, RouterModule } from "@angular/router";
+import { NgModule } from "@angular/core";
 
-import { Routes, RouterModule } from '@angular/router';
-import { NgModule } from '@angular/core';
-
-import { VehicleListComponent } from './vehicle-list/vehicle-list.component';
-import { VehicleComponent } from './vehicle.component';
-import { VehicleEditComponent } from './vehicle-edit/vehicle-edit.component';
-import { VehicleCreateComponent } from './vehicle-create/vehicle-create.component';
+import { VehicleListComponent } from "./vehicle-list/vehicle-list.component";
+import { VehicleComponent } from "./vehicle.component";
+import { VehicleEditComponent } from "./vehicle-edit/vehicle-edit.component";
+import { VehicleCreateComponent } from "./vehicle-create/vehicle-create.component";
 
 const routes: Routes = [
   {
-    path: '',
+    path: "",
     component: VehicleComponent,
     children: [
       {
-        path: '',
-        redirectTo: 'list',
-        pathMatch: 'full'
+        path: "",
+        redirectTo: "list",
+        pathMatch: "full",
       },
       {
-        path: 'list',
-        component: VehicleListComponent
+        path: "list",
+        component: VehicleListComponent,
       },
       {
-        path: 'edit',
-        component: VehicleEditComponent
+        path: "edit",
+        component: VehicleEditComponent,
       },
       {
-        path: 'create',
-        component: VehicleCreateComponent
+        path: "create",
+        component: VehicleCreateComponent,
       },
-    ]
-  }
-]
+    ],
+  },
+];
 
 @NgModule({
-  imports: [
-    RouterModule.forChild(routes),
-  ],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
-export class VehicleRoutingModule { }
+export class VehicleRoutingModule {}

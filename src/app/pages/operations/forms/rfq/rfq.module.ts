@@ -1,12 +1,9 @@
-import { NgModule } from '@angular/core';
-import { RfqRoutingModule } from './rfq-routing.module';
-import { RfqComponent } from './rfq.component';
+import { NgModule } from "@angular/core";
+import { RfqRoutingModule } from "./rfq-routing.module";
+import { RfqComponent } from "./rfq.component";
 
 @NgModule({
   declarations: [],
-  imports: [
-    RfqRoutingModule,
-    RfqComponent
-  ]
+  imports: [RfqRoutingModule, RfqComponent],
 })
-export class RfqModule { }
+export class RfqModule {}

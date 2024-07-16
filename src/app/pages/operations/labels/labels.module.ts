@@ -1,12 +1,9 @@
-import { NgModule } from '@angular/core';
-import { LabelsComponent } from './labels.component';
-import { LabelsRoutingModule } from './labels-routing.module';
+import { NgModule } from "@angular/core";
+import { LabelsComponent } from "./labels.component";
+import { LabelsRoutingModule } from "./labels-routing.module";
 
 @NgModule({
   declarations: [],
-  imports: [
-    LabelsRoutingModule,
-    LabelsComponent
-  ]
+  imports: [LabelsRoutingModule, LabelsComponent],
 })
-export class LabelsModule { }
+export class LabelsModule {}

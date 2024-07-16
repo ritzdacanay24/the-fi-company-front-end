@@ -14,7 +14,7 @@ export interface IIgtTransferForm {
   pallet_number: string;
   serial_number: string;
   active: number;
-  created_date: string
-  created_by: number
-  created_by_name: string
+  created_date: string;
+  created_by: number;
+  created_by_name: string;
 }

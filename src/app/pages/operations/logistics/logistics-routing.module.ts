@@ -1,37 +1,34 @@
+import { Routes, RouterModule } from "@angular/router";
+import { NgModule } from "@angular/core";
 
-import { Routes, RouterModule } from '@angular/router';
-import { NgModule } from '@angular/core';
-
-import { DailyReportComponent } from './daily-report/daily-report.component';
-import { LogisticsComponent } from './logistics.component';
-import { CalendarComponent } from './calendar/calendar.component';
+import { DailyReportComponent } from "./daily-report/daily-report.component";
+import { LogisticsComponent } from "./logistics.component";
+import { CalendarComponent } from "./calendar/calendar.component";
 
 const routes: Routes = [
   {
-    path: '',
+    path: "",
     component: LogisticsComponent,
     children: [
       {
-        path: '',
-        redirectTo: 'daily-report',
-        pathMatch: 'full'
+        path: "",
+        redirectTo: "daily-report",
+        pathMatch: "full",
       },
       {
-        path: 'daily-report',
-        component: DailyReportComponent
+        path: "daily-report",
+        component: DailyReportComponent,
       },
       {
-        path: 'calendar',
-        component: CalendarComponent
+        path: "calendar",
+        component: CalendarComponent,
       },
-    ]
-  }
-]
+    ],
+  },
+];
 
 @NgModule({
-  imports: [
-    RouterModule.forChild(routes),
-  ],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
-export class LogisticsRoutingModule { }
+export class LogisticsRoutingModule {}

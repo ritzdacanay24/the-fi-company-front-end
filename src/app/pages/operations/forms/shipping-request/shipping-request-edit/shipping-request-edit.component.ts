@@ -1,22 +1,22 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { NAVIGATION_ROUTE } from '../shipping-request-constant';
-import { ShippingRequestFormComponent } from '../shipping-request-form/shipping-request-form.component';
-import { ShippingRequestService } from '@app/core/api/operations/shippging-request/shipping-request.service';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { IShippingRequestForm } from '../shipping-request-form/shipping-request-form.type';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import moment from 'moment';
-import { AuthenticationService } from '@app/core/services/auth.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { NAVIGATION_ROUTE } from "../shipping-request-constant";
+import { ShippingRequestFormComponent } from "../shipping-request-form/shipping-request-form.component";
+import { ShippingRequestService } from "@app/core/api/operations/shippging-request/shipping-request.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
+import { MyFormGroup } from "src/assets/js/util/_formGroup";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import moment from "moment";
+import { AuthenticationService } from "@app/core/services/auth.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, ShippingRequestFormComponent],
-  selector: 'app-shipping-request-edit',
-  templateUrl: './shipping-request-edit.component.html'
+  selector: "app-shipping-request-edit",
+  templateUrl: "./shipping-request-edit.component.html",
 })
 export class ShippingRequestEditComponent {
   constructor(
@@ -26,11 +26,11 @@ export class ShippingRequestEditComponent {
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService,
     private authenticationService: AuthenticationService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -47,8 +47,10 @@ export class ShippingRequestEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -57,9 +59,10 @@ export class ShippingRequestEditComponent {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
       if (this.data?.sendTrackingNumberTo)
-        this.data.sendTrackingNumberTo = this.data?.sendTrackingNumberTo?.split(',')
+        this.data.sendTrackingNumberTo =
+          this.data?.sendTrackingNumberTo?.split(",");
       this.form.patchValue(this.data);
-      await this.getAttachments()
+      await this.getAttachments();
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -70,17 +73,18 @@ export class ShippingRequestEditComponent {
     this.submitted = true;
 
     if (this.form.invalid) {
-      getFormValidationErrors()
+      getFormValidationErrors();
       return;
     }
 
-    this.form.value.sendTrackingNumberTo = this.form.value.sendTrackingNumberTo?.toString()
+    this.form.value.sendTrackingNumberTo =
+      this.form.value.sendTrackingNumberTo?.toString();
 
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -88,18 +92,21 @@ export class ShippingRequestEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
-  attachments: any = []
+  attachments: any = [];
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({ field: 'shippingRequest', uniqueId: this.id })
+    this.attachments = await this.attachmentsService.find({
+      field: "shippingRequest",
+      uniqueId: this.id,
+    });
   }
 
   async deleteAttachment(id, index) {
-    if (!confirm('Are you sure you want to remove attachment?')) return
+    if (!confirm("Are you sure you want to remove attachment?")) return;
     await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1)
+    this.attachments.splice(index, 1);
   }
 
   file: File = null;
@@ -122,15 +129,14 @@ export class ShippingRequestEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "shippingRequest");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", 'shippingRequest');
+        formData.append("folderName", "shippingRequest");
         try {
           await this.attachmentsService.uploadfile(formData);
-          totalAttachments++
-        } catch (err) {
-        }
+          totalAttachments++;
+        } catch (err) {}
       }
       this.isLoading = false;
-      await this.getAttachments()
+      await this.getAttachments();
     }
   }
 
@@ -142,20 +148,20 @@ export class ShippingRequestEditComponent {
         sendTrackingEmail: true,
         trackingNumber: this.form.value.trackingNumber,
         completedBy: this.authenticationService.currentUserValue.id,
-        completedDate: moment().format('YYYY-MM-DD HH:mm:ss')
+        completedDate: moment().format("YYYY-MM-DD HH:mm:ss"),
       });
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
     }
-  }
+  };
 
   onPrint() {
     setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
 
       popupWin.document.write(`
@@ -171,8 +177,7 @@ export class ShippingRequestEditComponent {
           </style>
         </head>
         <body onload="window.print();window.close()">${printContents}</body>
-      </html>`
-      );
+      </html>`);
 
       popupWin.document.close();
 
@@ -184,5 +189,4 @@ export class ShippingRequestEditComponent {
       };
     }, 200);
   }
-
 }

@@ -7,8 +7,8 @@ import { SharedModule } from '@app/shared/shared.module';
 import moment from 'moment';
 import { NgxBarcode6Module } from 'ngx-barcode6';
 import { Subscription, interval } from 'rxjs';
-import { MaterialPickingValidationModalService } from '../material-picking-validation-modal/material-picking-validation-modal.component';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { MaterialPickingValidationModalService } from '../material-picking-validation-modal/material-picking-validation-modal.component';
 
 const MATERIAL_PICKING_TRANSACTION = 'MATERIAL_PICKING_TRANSACTION';
 const VALIDATE_ADD_TRANSACTION = 'VALIDATE_ADD_TRANSACTION';
@@ -280,6 +280,7 @@ export class MaterialRequestPickingComponent implements OnInit {
     modalRef.result.then(async (result: any) => {
       try {
 
+        return
         row.pickedCompletedDate = moment().format('YYYY-MM-DD HH:mm:ss');
         await this.api.completePicking(row);
 

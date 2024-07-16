@@ -1,27 +1,20 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-master-scheduling',
-  templateUrl: './master-scheduling.component.html',
-  styleUrls: []
+  selector: "app-master-scheduling",
+  templateUrl: "./master-scheduling.component.html",
+  styleUrls: [],
 })
 export class MasterSchedulingComponent implements OnInit {
+  constructor(public route: ActivatedRoute, public router: Router) {}
 
-  constructor(
-    public route: ActivatedRoute,
-    public router: Router
-  ) {
-  }
+  ngOnInit(): void {}
 
-  ngOnInit(): void {
-  }
+  title: string = "Master Scheduling";
 
-  title: string = 'Master Scheduling';
-
-  icon = 'mdi-account-group';
+  icon = "mdi-account-group";
 }
-

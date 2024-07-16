@@ -1,20 +1,20 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { NAVIGATION_ROUTE } from '../vehicle-constant';
-import { VehicleFormComponent } from '../vehicle-form/vehicle-form.component';
-import { VehicleService } from '@app/core/api/operations/vehicle/vehicle.service';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { IVehicleForm } from '../vehicle-form/vehicle-form.type';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { NAVIGATION_ROUTE } from "../vehicle-constant";
+import { VehicleFormComponent } from "../vehicle-form/vehicle-form.component";
+import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { IVehicleForm } from "../vehicle-form/vehicle-form.type";
+import { MyFormGroup } from "src/assets/js/util/_formGroup";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, VehicleFormComponent],
-  selector: 'app-vehicle-edit',
-  templateUrl: './vehicle-edit.component.html'
+  selector: "app-vehicle-edit",
+  templateUrl: "./vehicle-edit.component.html",
 })
 export class VehicleEditComponent {
   constructor(
@@ -23,11 +23,11 @@ export class VehicleEditComponent {
     private api: VehicleService,
     private toastrService: ToastrService,
     private attachmentsService: AttachmentsService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -44,8 +44,10 @@ export class VehicleEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -54,7 +56,7 @@ export class VehicleEditComponent {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      await this.getAttachments()
+      await this.getAttachments();
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -65,7 +67,7 @@ export class VehicleEditComponent {
     this.submitted = true;
 
     if (this.form.invalid) {
-      getFormValidationErrors()
+      getFormValidationErrors();
       return;
     }
 
@@ -73,7 +75,7 @@ export class VehicleEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -81,18 +83,21 @@ export class VehicleEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
-  attachments: any = []
+  attachments: any = [];
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({ field: 'Vehicle Information', uniqueId: this.id })
+    this.attachments = await this.attachmentsService.find({
+      field: "Vehicle Information",
+      uniqueId: this.id,
+    });
   }
 
   async deleteAttachment(id, index) {
-    if (!confirm('Are you sure you want to remove attachment?')) return
+    if (!confirm("Are you sure you want to remove attachment?")) return;
     await this.attachmentsService.delete(id);
-    this.attachments.splice(index, 1)
+    this.attachments.splice(index, 1);
   }
 
   file: File = null;
@@ -115,16 +120,14 @@ export class VehicleEditComponent {
         formData.append("file", this.myFiles[i]);
         formData.append("field", "Vehicle Information");
         formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", 'vehicleInformation');
+        formData.append("folderName", "vehicleInformation");
         try {
           await this.attachmentsService.uploadfile(formData);
-          totalAttachments++
-        } catch (err) {
-        }
+          totalAttachments++;
+        } catch (err) {}
       }
       this.isLoading = false;
-      await this.getAttachments()
+      await this.getAttachments();
     }
   }
-
 }

@@ -12,13 +12,14 @@ import moment from "moment";
 @Injectable({
   providedIn: "root",
 })
-export class PartInformationLabelModalService {
+export class PartInformationLabelLgModalService {
   constructor(public modalService: NgbModal) {}
 
   open(data) {
-    let modalRef = this.modalService.open(PartInformationLabelModalComponent, {
-      size: "md",
-    });
+    let modalRef = this.modalService.open(
+      PartInformationLabelLgModalComponent,
+      { size: "md" }
+    );
     modalRef.componentInstance.data = data;
     return modalRef;
   }
@@ -27,11 +28,11 @@ export class PartInformationLabelModalService {
 @Component({
   standalone: true,
   imports: [SharedModule, QadPartSearchComponent],
-  selector: "app-part-information-label-modal",
-  templateUrl: "./part-information-label-modal.component.html",
+  selector: "app-part-information-label-lg-modal",
+  templateUrl: "./part-information-label-lg-modal.component.html",
   styleUrls: [],
 })
-export class PartInformationLabelModalComponent implements OnInit {
+export class PartInformationLabelLgModalComponent implements OnInit {
   constructor(
     public route: ActivatedRoute,
     public router: Router,
@@ -81,14 +82,15 @@ export class PartInformationLabelModalComponent implements OnInit {
     let row = this.form.value;
 
     var cmds = `
-            ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
             ^XA
-            ^FO30,30^A0N,120,55^FD${row.partNumber.toUpperCase()}^FS
-            ^FO690,35^BXN,4,200,,,,,^FD${row.partNumber.toUpperCase()}^FS
-            ^FO30,140^A0N,60,30^FD${row.description || ""}^FS
-            ^FO30,210^A0N,60,30^FD${row.description2 || ""}^FS
-            ^FO30,280^A0N,60,30^FDQTY: ${row.qty}^FS
-            ^FO30,350^A0N,60,30^FDDate: ${moment().format("MM/DD/YYYY")}^FS
+            ^FWR
+            ^BY5,2,270
+            ^FO580,990^BXN,8,200,,,,,^FD${row.partNumber?.toUpperCase()}^FS
+            ^FO605,50^A0,80,80^FD${row.partNumber?.toUpperCase()}^FS
+            ^FO505,50^A0,70,70^FD${row.description || ""}^FS
+            ^FO405,50^A0,70,70^FD${row.description2 || ""}^FS
+            ^FO305,50^A0,70,70^FDQty: ${row.qty}^FS
+            ^FO205,50^A0,70,70^FDDate: ${moment().format("MM/DD/YYYY")}^FS
             ^PQ${row.totalLabels}^FS
             ^XZ
             ^XA^XZ

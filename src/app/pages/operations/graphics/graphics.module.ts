@@ -1,12 +1,9 @@
-import { NgModule } from '@angular/core';
-import { GraphicsRoutingModule } from './graphics-routing.module';
-import { GraphicsComponent } from './graphics.component';
+import { NgModule } from "@angular/core";
+import { GraphicsRoutingModule } from "./graphics-routing.module";
+import { GraphicsComponent } from "./graphics.component";
 
 @NgModule({
   declarations: [],
-  imports: [
-    GraphicsRoutingModule,
-    GraphicsComponent
-  ]
+  imports: [GraphicsRoutingModule, GraphicsComponent],
 })
-export class GraphicsModule { }
+export class GraphicsModule {}

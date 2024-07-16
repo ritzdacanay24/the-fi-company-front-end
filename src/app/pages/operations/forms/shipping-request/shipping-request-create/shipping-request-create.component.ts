@@ -1,22 +1,22 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { ShippingRequestFormComponent } from '../shipping-request-form/shipping-request-form.component';
-import { NAVIGATION_ROUTE } from '../shipping-request-constant';
-import moment from 'moment';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { ShippingRequestService } from '@app/core/api/operations/shippging-request/shipping-request.service';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { MyFormGroup } from 'src/assets/js/util/_formGroup';
-import { IShippingRequestForm } from '../shipping-request-form/shipping-request-form.type';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { ShippingRequestFormComponent } from "../shipping-request-form/shipping-request-form.component";
+import { NAVIGATION_ROUTE } from "../shipping-request-constant";
+import moment from "moment";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { ShippingRequestService } from "@app/core/api/operations/shippging-request/shipping-request.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { MyFormGroup } from "src/assets/js/util/_formGroup";
+import { IShippingRequestForm } from "../shipping-request-form/shipping-request-form.type";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, ShippingRequestFormComponent],
-  selector: 'app-shipping-request-create',
-  templateUrl: './shipping-request-create.component.html',
+  selector: "app-shipping-request-create",
+  templateUrl: "./shipping-request-create.component.html",
 })
 export class ShippingRequestCreateComponent {
   constructor(
@@ -26,11 +26,9 @@ export class ShippingRequestCreateComponent {
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
     private attachmentsService: AttachmentsService
+  ) {}
 
-  ) { }
-
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   title = "Create Shipping Request";
 
@@ -43,30 +41,37 @@ export class ShippingRequestCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   setFormEmitter($event) {
     this.form = $event;
 
-    this.form.patchValue({
-      createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
-      requestorName: this.authenticationService.currentUserValue.full_name,
-      emailAddress: this.authenticationService.currentUserValue.email,
-      sendTrackingNumberTo: [this.authenticationService.currentUserValue.email],
-      createdById: this.authenticationService.currentUserValue.id
-    }, { emitEvent: false })
-
+    this.form.patchValue(
+      {
+        createdDate: moment().format("YYYY-MM-DD HH:mm:ss"),
+        requestorName: this.authenticationService.currentUserValue.full_name,
+        emailAddress: this.authenticationService.currentUserValue.email,
+        sendTrackingNumberTo: [
+          this.authenticationService.currentUserValue.email,
+        ],
+        createdById: this.authenticationService.currentUserValue.id,
+      },
+      { emitEvent: false }
+    );
   }
 
   async onSubmit() {
     this.submitted = true;
     if (this.form.invalid) {
-      getFormValidationErrors()
+      getFormValidationErrors();
       return;
-    };
+    }
 
-    this.form.value.sendTrackingNumberTo = this.form.value.sendTrackingNumberTo?.toString()
+    this.form.value.sendTrackingNumberTo =
+      this.form.value.sendTrackingNumberTo?.toString();
     try {
       this.isLoading = true;
       let { insertId } = await this.api.create(this.form.value);
@@ -77,13 +82,13 @@ export class ShippingRequestCreateComponent {
           formData.append("file", this.myFiles[i]);
           formData.append("field", "shippingRequest");
           formData.append("uniqueData", `${insertId}`);
-          formData.append("folderName", 'shippingRequest');
-          await this.attachmentsService.uploadfile(formData)
+          formData.append("folderName", "shippingRequest");
+          await this.attachmentsService.uploadfile(formData);
         }
       }
 
       this.isLoading = false;
-      this.toastrService.success('Successfully Created');
+      this.toastrService.success("Successfully Created");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -91,10 +96,10 @@ export class ShippingRequestCreateComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
-  upload(){}
+  upload() {}
 
   file: File = null;
 
@@ -106,6 +111,4 @@ export class ShippingRequestCreateComponent {
       this.myFiles.push(event.target.files[i]);
     }
   }
-
-
 }

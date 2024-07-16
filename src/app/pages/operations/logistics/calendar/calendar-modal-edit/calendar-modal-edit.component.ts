@@ -1,27 +1,25 @@
-
-import { Component, Input, OnInit } from '@angular/core';
-import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { first } from 'rxjs/operators';
-import { FormGroup } from '@angular/forms';
-import moment from 'moment';
-import { ReceivingService } from '@app/core/api/receiving/receiving.service';
-import { Injectable } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ToastrService } from 'ngx-toastr';
-import { CalendarFormComponent } from '../calendar-form/calendar-form.component';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { Component, Input, OnInit } from "@angular/core";
+import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { first } from "rxjs/operators";
+import { FormGroup } from "@angular/forms";
+import moment from "moment";
+import { ReceivingService } from "@app/core/api/receiving/receiving.service";
+import { Injectable } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ToastrService } from "ngx-toastr";
+import { CalendarFormComponent } from "../calendar-form/calendar-form.component";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class CalendarModalEditService {
-
-  constructor(
-    public modalService: NgbModal
-  ) { }
+  constructor(public modalService: NgbModal) {}
 
   open(id?: number | string, date?) {
-    let modalRef = this.modalService.open(CalendarModalEditComponent, { size: 'lg' });
+    let modalRef = this.modalService.open(CalendarModalEditComponent, {
+      size: "lg",
+    });
     modalRef.componentInstance.id = id;
     return modalRef;
   }
@@ -30,42 +28,44 @@ export class CalendarModalEditService {
 @Component({
   standalone: true,
   imports: [SharedModule, CalendarFormComponent],
-  selector: 'app-calendar-modal-edit',
+  selector: "app-calendar-modal-edit",
   templateUrl: `./calendar-modal-edit.component.html`,
 })
 export class CalendarModalEditComponent implements OnInit {
-
   @Input() public id: any;
 
   loadingIndicator: boolean;
   currentUserInfo: any;
 
   view(row) {
-    window.open(`https://dashboard.eye-fi.com/attachments/receiving/${row.fileName}`, '', 'width=600,height=400,left=200,top=200');
+    window.open(
+      `https://dashboard.eye-fi.com/attachments/receiving/${row.fileName}`,
+      "",
+      "width=600,height=400,left=200,top=200"
+    );
   }
 
   setFormEmitter($event) {
     this.form = $event;
-    this.form.patchValue(this.data)
+    this.form.patchValue(this.data);
   }
 
-
   async removeAttachment(id, index) {
-    if (!confirm('Are you sure you want to remove attachment?')) return
+    if (!confirm("Are you sure you want to remove attachment?")) return;
     await this.api.deleteAttachment(id);
-    this.attachments.splice(index, 1)
+    this.attachments.splice(index, 1);
   }
 
   file: File = null;
   attachments: any = [];
 
   onFilechange(event: any) {
-    this.file = event.target.files[0]
+    this.file = event.target.files[0];
   }
 
   async upload() {
     if (this.file) {
-      await this.api.uploadfile(this.id, this.file)
+      await this.api.uploadfile(this.id, this.file);
       this.toastrService.success("File upldated");
       this.attachments = await this.api.getAttachment(this.id);
     } else {
@@ -79,21 +79,21 @@ export class CalendarModalEditComponent implements OnInit {
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private api: ReceivingService,
-    private toastrService: ToastrService,
-  ) {
-  }
+    private toastrService: ToastrService
+  ) {}
 
   onPrint() {
     this.api
       .update(this.id, this.form.value)
       .pipe(first())
-      .subscribe((data) => {
-        setTimeout(() => {
-          var printContents = document.getElementById('print').innerHTML;
-          var popupWin = window.open('', '_blank', 'width=1000,height=600');
-          popupWin.document.open();
+      .subscribe(
+        (data) => {
+          setTimeout(() => {
+            var printContents = document.getElementById("print").innerHTML;
+            var popupWin = window.open("", "_blank", "width=1000,height=600");
+            popupWin.document.open();
 
-          popupWin.document.write(`
+            popupWin.document.write(`
           <html>
             <head>
               <title>Logistics Calendar</title>
@@ -106,89 +106,99 @@ export class CalendarModalEditComponent implements OnInit {
               </style>
             </head>
             <body onload="window.print();window.close()">${printContents}</body>
-          </html>`
-          );
+          </html>`);
 
-          popupWin.document.close();
+            popupWin.document.close();
 
-          popupWin.onfocus = function () {
-            setTimeout(function () {
-              popupWin.focus();
-              popupWin.document.close();
-            }, 300);
-          };
-        }, 200);
-      }, () => this.loadingIndicator = false);
-
-
+            popupWin.onfocus = function () {
+              setTimeout(function () {
+                popupWin.focus();
+                popupWin.document.close();
+              }, 300);
+            };
+          }, 200);
+        },
+        () => (this.loadingIndicator = false)
+      );
   }
 
   ngOnInit(): void {
-    if (this.id) this.getData()
+    if (this.id) this.getData();
   }
 
   dismiss() {
-    this.ngbActiveModal.dismiss()
+    this.ngbActiveModal.dismiss();
   }
 
-  data: any
+  data: any;
   async getData() {
     this.loadingIndicator = true;
     let data = await this.api.getById(this.id);
-    this.form.patchValue(data)
+    this.form.patchValue(data);
     this.attachments = await this.api.getAttachment(this.id);
-    this.loadingIndicator = false
+    this.loadingIndicator = false;
   }
 
-  get f() { return this.form.controls; }
+  get f() {
+    return this.form.controls;
+  }
 
   onSubmit() {
     this.submitted = true;
 
     if (this.form.invalid) {
-      getFormValidationErrors()
-      return
-    };
+      getFormValidationErrors();
+      return;
+    }
 
     if (this.id) {
-      this.update()
+      this.update();
     }
   }
 
   onDelete() {
-    if (!confirm('Are you sure you want to delete')) return;
-    this.delete()
+    if (!confirm("Are you sure you want to delete")) return;
+    this.delete();
   }
 
   onReceived() {
+    if (!confirm("Are you sure?")) return;
 
-    if (!confirm('Are you sure?')) return
+    this.form.value.status =
+      this.form.value.status == "Open" ? "Completed" : "Open";
 
-    this.form.value.status = this.form.value.status == 'Open' ? 'Completed' : 'Open'
-
-    this.update()
+    this.update();
   }
 
   delete() {
     this.api
       .delete(this.id)
       .pipe(first())
-      .subscribe((data) => {
-        this.ngbActiveModal.close({ transaction: "DELETE" })
-        this.loadingIndicator = false
-      }, () => this.loadingIndicator = false);
+      .subscribe(
+        (data) => {
+          this.ngbActiveModal.close({ transaction: "DELETE" });
+          this.loadingIndicator = false;
+        },
+        () => (this.loadingIndicator = false)
+      );
   }
 
   update() {
-    this.form.value.start_date = moment(this.form.value.start_date).format('YYYY-MM-DD')
-    this.form.value.end_date = moment(this.form.value.end_date).format('YYYY-MM-DD')
+    this.form.value.start_date = moment(this.form.value.start_date).format(
+      "YYYY-MM-DD"
+    );
+    this.form.value.end_date = moment(this.form.value.end_date).format(
+      "YYYY-MM-DD"
+    );
     this.api
       .update(this.id, this.form.value)
       .pipe(first())
-      .subscribe((data) => {
-        this.ngbActiveModal.close({ transaction: "UPDATE" })
-        this.loadingIndicator = false
-      }, () => this.loadingIndicator = false);
+      .subscribe(
+        (data) => {
+          this.ngbActiveModal.close({ transaction: "UPDATE" });
+          this.loadingIndicator = false;
+        },
+        () => (this.loadingIndicator = false)
+      );
   }
-
 }

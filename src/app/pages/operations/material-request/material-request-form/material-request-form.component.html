@@ -119,7 +119,8 @@
           <td>{{row.value.reasonCode}}</td>
           <td class="text-end">{{row.value.qty}}</td>
           <td class="text-end">{{row.value.qtyPicked}}</td>
-          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)" class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
+          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)"
+              class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
           <td>{{row.value.trType}}</td>
           <td>{{row.value.ac_code}}</td>
           <td>{{row.value.notes}}</td>
@@ -135,20 +136,17 @@
           <tr class="text-nowrap">
             <th>Status</th>
             <th>Part # <span class="text-danger">*</span></th>
-            <th>Description</th>
             <th>Reason <span class="text-danger">*</span></th>
             <th>Qty <span class="text-danger">*</span></th>
             <th>Available Qty</th>
-            <th>Transaction</th>
-            <th>Account Code</th>
+            <th *ngIf="id">Transaction</th>
+            <th *ngIf="id">Account Code</th>
             <th>Comments</th>
             <th></th>
           </tr>
         </thead>
-        <tbody>
-          <tr class="p-0 m-0 align-middle text-center text-nowrap" *ngFor="let row of getDetails.controls; let i=index"
-            [formGroupName]="i">
-
+        <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+          <tr class="p-0 m-0 align-middle text-center text-nowrap">
             <td class="text-center h4">
               <i *ngIf="!isLoading && !row.value.message && !row.value.isDuplicate"
                 class=" text-success ri-checkbox-circle-line"> </i>
@@ -167,10 +165,6 @@
                 [ngClass]="{ 'is-invalid': isValidating && row.get('partNumber').errors }"></app-qad-part-search>
             </td>
             <td style="min-width:200px">
-              <p class="text-start text-truncate mb-0" title="{{row.value.description}}">{{row.value.description ||
-                'No Description Found'}}</p>
-            </td>
-            <td style="min-width:200px">
               <ng-select [appendTo]="'body'" [items]="materialRequestForm.reasonCategory" [searchable]="true"
                 formControlName="reasonCode" bindLabel="value" bindValue="value" placeholder="Select reason code"
                 [clearable]="true" [editableSearchTerm]="true"
@@ -185,7 +179,7 @@
               <input type="text" class="form-control" placeholder="Available Qty" readonly
                 [value]="row.value.availableQty" />
             </td>
-            <td style="min-width:200px">
+            <td style="min-width:200px" *ngIf="id">
               <ng-select appendTo="body" [items]="materialRequestForm.transactionType" [searchable]="true"
                 formControlName="trType" bindLabel="TrType" bindValue="TrType" placeholder="Select transaction type"
                 [clearable]="false" [editableSearchTerm]="true"
@@ -196,7 +190,7 @@
                 </ng-template>
               </ng-select>
             </td>
-            <td style="min-width:200px">
+            <td style="min-width:200px" *ngIf="id">
               <ng-select appendTo="body" [items]="materialRequestForm.accountCodes" [searchable]="true"
                 formControlName="ac_code" bindLabel="ac_code" bindValue="ac_code" placeholder="Select account code"
                 [clearable]="false" [editableSearchTerm]="true"
@@ -215,6 +209,12 @@
               <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)" [disabled]="form.disabled">
                 <i class="ri-delete-bin-line"></i>
               </button>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="10" class="py-2">
+              <p class="text-start text-truncate mb-0" title="{{row.value.description}}">
+                Description: <u>{{row.value.description || 'No Description Found'}}</u></p>
             </td>
           </tr>
         </tbody>

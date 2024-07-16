@@ -30,7 +30,7 @@
 
 
         <app-material-request-form [enableEdit]="false" (setFormEmitter)="form = $event" [submitted]="submitted"
-          [onDeleteItem]="onDeleteItem"></app-material-request-form>
+          [onDeleteItem]="onDeleteItem" [id]="id"></app-material-request-form>
       </div>
       <div class="card-footer d-flex " *ngIf="data && id">
         <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>

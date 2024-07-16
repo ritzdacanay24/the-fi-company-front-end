@@ -1,6 +1,6 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { NAVIGATION_ROUTE } from '../material-request-constant';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -8,7 +8,6 @@ import { MaterialRequestFormComponent } from '../material-request-form/material-
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
 import { MaterialRequestDetailService } from '@app/core/api/operations/material-request/material-request-detail.service';
 import moment from 'moment';
-import { AuthenticationService } from '@app/core/services/auth.service';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
@@ -20,12 +19,10 @@ import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErr
 export class MaterialRequestValidateComponent {
   constructor(
     private router: Router,
-    private activatedRoute: ActivatedRoute,
     private api: MaterialRequestService,
     private materialRequestDetailService: MaterialRequestDetailService,
     private toastrService: ToastrService,
     private fb: FormBuilder,
-    private authenticationService: AuthenticationService
   ) { }
 
   ngOnInit(): void {

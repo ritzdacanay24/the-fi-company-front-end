@@ -1,71 +1,68 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, Input, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
+import { SharedModule } from "@app/shared/shared.module";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { FormControl, FormGroup } from '@angular/forms';
-import { LabelService } from '@app/core/api/labels/label.service';
-import { QadPartSearchComponent } from '@app/shared/components/qad-part-search/qad-part-search.component';
+import { FormControl, FormGroup } from "@angular/forms";
+import { LabelService } from "@app/core/api/labels/label.service";
+import { QadPartSearchComponent } from "@app/shared/components/qad-part-search/qad-part-search.component";
 
 @Injectable({
-    providedIn: 'root'
+  providedIn: "root",
 })
 export class LocationLabelModalService {
+  constructor(public modalService: NgbModal) {}
 
-    constructor(
-        public modalService: NgbModal
-    ) { }
-
-    open(data) {
-        let modalRef = this.modalService.open(LocationLabelModalComponent, { size: 'md' });
-        modalRef.componentInstance.data = data;
-        return modalRef;
-    }
+  open(data) {
+    let modalRef = this.modalService.open(LocationLabelModalComponent, {
+      size: "md",
+    });
+    modalRef.componentInstance.data = data;
+    return modalRef;
+  }
 }
 
 @Component({
-    standalone: true,
-    imports: [SharedModule, QadPartSearchComponent],
-    selector: 'app-location-label-modal',
-    templateUrl: './location-label-modal.component.html',
-    styleUrls: []
+  standalone: true,
+  imports: [SharedModule, QadPartSearchComponent],
+  selector: "app-location-label-modal",
+  templateUrl: "./location-label-modal.component.html",
+  styleUrls: [],
 })
-
 export class LocationLabelModalComponent implements OnInit {
+  constructor(
+    public route: ActivatedRoute,
+    public router: Router,
+    private ngbActiveModal: NgbActiveModal,
+    private labelService: LabelService
+  ) {}
 
-    constructor(
-        public route: ActivatedRoute,
-        public router: Router,
-        private ngbActiveModal: NgbActiveModal,
-        private labelService: LabelService
-    ) {
-    }
+  form = new FormGroup<any>({
+    start_location: new FormControl(""),
+    end_location: new FormControl(""),
+    arrowDirection: new FormControl(""),
+  });
 
-    form = new FormGroup<any>({
-        start_location: new FormControl(''),
-        end_location: new FormControl(''),
-        arrowDirection: new FormControl(''),
-    })
+  @Input() data: any;
 
-    @Input() data: any
+  ngOnInit(): void {}
 
-    ngOnInit(): void {
-    }
+  dismiss() {
+    this.ngbActiveModal.dismiss();
+  }
 
-    dismiss() {
-        this.ngbActiveModal.dismiss()
-    }
+  close() {
+    this.ngbActiveModal.close();
+  }
 
-    close() {
-        this.ngbActiveModal.close()
-    }
+  async onPrint() {
+    let res = await this.labelService.getLocationByRange(
+      this.form.value.start_location,
+      this.form.value.end_location
+    );
 
-    async onPrint() {
-        let res = await this.labelService.getLocationByRange(this.form.value.start_location, this.form.value.end_location);
-
-        let e =
-            `
+    let e = `
 ^XA
 ^FO5,20^GFA,15444,15444,36,,::::::::gT038,gT03C,gT07E,gT0FF,gS01FF8,gS03FFC,gS07FFE,gS0JF
 ,gR01JF8,gR03JFC,gR07JFE,gR0LF,gQ01LF8,gQ03LFC,gQ07LFE,gQ0NF,gP01NF8,gP03NFC,gP07NFE
@@ -86,10 +83,9 @@ export class LocationLabelModalComponent implements OnInit {
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::gM07TFC,,::::::::::
 ^FS
 ^FX
-`
-        if (!res[1]) {
-            e =
-                `
+`;
+    if (!res[1]) {
+      e = `
 ^XA
 ^FO20,20^GFA,13696,13696,32,,:::::::::gH01VFE,:::::::::::::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -109,11 +105,10 @@ Q01gXFE,:R0gXFC,:R07gWF8,:R03gWF,R01gVFE,:S0gVFC,:S07gUF8,S03gUF,:S01gTFE
 ,:gM07MF8,gM03MF,:gM01LFE,:gN0LFC,:gN07KF8,gN03KF,:gN01JFE,:gO0JFC,gO07IF8
 ,:gO03IF,:gO01FFE,:gP0FFC,gP07F8,:gP03F,:gP01E,gQ0C,:,::::::^FS
 ^FX
-`
-        }
-        for (let i = 0; i < res?.length; i++) {
-            let cmds =
-                `
+`;
+    }
+    for (let i = 0; i < res?.length; i++) {
+      let cmds = `
 ${e}
 ^FWN
 ^FO280,20^A0,280,140^FD${res[i].loc_loc.toUpperCase()}^FS
@@ -121,14 +116,12 @@ ${e}
 ^XZ
 `;
 
-            var printwindow = window.open('', 'PRINT', 'height=500,width=600');
-            printwindow.document.write(cmds);
-            printwindow.document.close();
-            printwindow.focus();
-            printwindow.print();
-            printwindow.close();
-        }
+      var printwindow = window.open("", "PRINT", "height=500,width=600");
+      printwindow.document.write(cmds);
+      printwindow.document.close();
+      printwindow.focus();
+      printwindow.print();
+      printwindow.close();
     }
-
-
+  }
 }

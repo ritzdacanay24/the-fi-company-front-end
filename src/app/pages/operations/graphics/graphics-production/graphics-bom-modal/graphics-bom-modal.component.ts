@@ -1,45 +1,45 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { Component, Input, OnInit } from "@angular/core";
+import { GraphicsService } from "@app/core/api/operations/graphics/graphics.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
-import { Injectable } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { NgxBarcode6Module } from 'ngx-barcode6';
-import moment from 'moment';
+import { Injectable } from "@angular/core";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgxBarcode6Module } from "ngx-barcode6";
+import moment from "moment";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class GraphicsBomModalService {
   modalRef: any;
 
-  constructor(
-    public modalService: NgbModal
-  ) { }
+  constructor(public modalService: NgbModal) {}
 
   open(graphicsWoNumber) {
-    this.modalRef = this.modalService.open(GraphicsBomModalComponent, { size: 'lg', centered: true, scrollable: true });
+    this.modalRef = this.modalService.open(GraphicsBomModalComponent, {
+      size: "lg",
+      centered: true,
+      scrollable: true,
+    });
     this.modalRef.componentInstance.graphicsWoNumber = graphicsWoNumber;
     return this.modalRef;
   }
-
 }
 
 export class QueueValueParams {
-  queueStatus: any
-  status: any
+  queueStatus: any;
+  status: any;
 }
 
 @Component({
   standalone: true,
   imports: [SharedModule, NgxBarcode6Module],
-  selector: 'app-graphics-bom-modal',
-  templateUrl: './graphics-bom-modal.component.html',
-  styleUrls: ['./graphics-bom-modal.component.scss']
+  selector: "app-graphics-bom-modal",
+  templateUrl: "./graphics-bom-modal.component.html",
+  styleUrls: ["./graphics-bom-modal.component.scss"],
 })
 export class GraphicsBomModalComponent implements OnInit {
-
   @Input() public graphicsWoNumber: number;
   data: any;
   printDate = "";
@@ -47,9 +47,7 @@ export class GraphicsBomModalComponent implements OnInit {
   constructor(
     private activeModal: NgbActiveModal,
     private api: GraphicsService
-  ) {
-  }
-
+  ) {}
 
   ngOnInit(): void {
     this.getData();
@@ -73,14 +71,16 @@ export class GraphicsBomModalComponent implements OnInit {
     } catch (err) {
       this.isLoading = false;
     }
-  }
+  };
 
   print() {
-    this.printDate = moment().format('YYYY-MM-DD HH:mm:ss');
+    this.printDate = moment().format("YYYY-MM-DD HH:mm:ss");
 
     setTimeout(() => {
-      var printContents = document.getElementById('yellowFishWorkOrder').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById(
+        "yellowFishWorkOrder"
+      ).innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
       popupWin.document.write(`
       <html>
@@ -156,8 +156,7 @@ export class GraphicsBomModalComponent implements OnInit {
         <body onload="window.print();window.close()">
           ${printContents}
         </body>
-      </html>`
-      );
+      </html>`);
       popupWin.document.close();
 
       popupWin.onfocus = function () {
@@ -168,5 +167,4 @@ export class GraphicsBomModalComponent implements OnInit {
       };
     }, 200);
   }
-
 }
