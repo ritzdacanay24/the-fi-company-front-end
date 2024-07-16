@@ -1,22 +1,26 @@
-import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
-import { SalesOrderInfoService } from '@app/core/api/sales-order/sales-order-info.service';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
-import { AgGridModule } from 'ag-grid-angular';
-import { SharedModule } from '@app/shared/shared.module';
-import { LoadingComponent } from '@app/shared/loading/loading.component';
-import { SoSearchComponent } from '@app/shared/components/so-search/so-search.component';
-import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
-import { CommentsModalService } from '../comments/comments-modal.service';
-import { GridApi } from 'ag-grid-community';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  SimpleChanges,
+} from "@angular/core";
+import { SalesOrderInfoService } from "@app/core/api/sales-order/sales-order-info.service";
+import { AgGridModule } from "ag-grid-angular";
+import { SharedModule } from "@app/shared/shared.module";
+import { LoadingComponent } from "@app/shared/loading/loading.component";
+import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
+import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
+import { CommentsModalService } from "../comments/comments-modal.service";
+import { GridApi } from "ag-grid-community";
 
 @Component({
   standalone: true,
   imports: [SharedModule, AgGridModule, LoadingComponent, SoSearchComponent],
-  selector: 'app-order-lookup',
+  selector: "app-order-lookup",
   templateUrl: `./order-lookup.component.html`,
   styleUrls: [],
 })
-
 export class OrderLookupComponent {
   transactions: any = [];
   loadingIndicatorTransactions: boolean;
@@ -24,37 +28,32 @@ export class OrderLookupComponent {
   constructor(
     private salesOrderInfoService: SalesOrderInfoService,
     private commentsModalService: CommentsModalService
-  ) {
+  ) {}
 
-  }
-
-  @Input() public salesOrderNumber: string = '';
+  @Input() public salesOrderNumber: string = "";
   @Output() setData: EventEmitter<any> = new EventEmitter();
   @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
 
-  @Input() comment = null
+  @Input() comment = null;
 
   async notifyParent($event) {
     this.salesOrderNumber = $event.sod_nbr;
-    this.getData()
+    this.getData();
   }
-
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['salesOrderNumber']) {
-      this.salesOrderNumber = changes['salesOrderNumber'].currentValue;
-      if (this.salesOrderNumber)
-        this.getData()
+    if (changes["salesOrderNumber"]) {
+      this.salesOrderNumber = changes["salesOrderNumber"].currentValue;
+      if (this.salesOrderNumber) this.getData();
     }
 
-    if (changes['comment'] && changes['comment'].currentValue) {
-      this.viewComment(changes['comment'].currentValue, null);
-      this.salesOrderNumber = changes['comment'].currentValue.split('-')[0]
-      this.getData()
+    if (changes["comment"] && changes["comment"].currentValue) {
+      this.viewComment(changes["comment"].currentValue, null);
+      this.salesOrderNumber = changes["comment"].currentValue.split("-")[0];
+      this.getData();
     }
   }
-
 
   data: any = {
     address: {},
@@ -67,73 +66,131 @@ export class OrderLookupComponent {
 
   columnDefs: any = [
     { field: "sod_part", headerName: "Part #", filter: "agTextColumnFilter" },
-    { field: "sod_custpart", headerName: "Customer Part", filter: "agTextColumnFilter" },
-    { field: "sod_due_date", headerName: "Due Date", filter: "agTextColumnFilter" },
-    { field: "sod_line", headerName: "Line #", filter: "agTextColumnFilter" },
-    { field: "sod_order_category", headerName: "CO #", filter: "agTextColumnFilter" },
-    { field: "sod_contr_id", headerName: "Customer PO #", filter: "agTextColumnFilter" },
-    { field: "sod_qty_ord", headerName: "Ordered", filter: "agTextColumnFilter" },
-    { field: "sod_qty_all", headerName: "Allocated", filter: "agTextColumnFilter" },
-    { field: "sod_qty_pick", headerName: "Picked", filter: "agTextColumnFilter" },
-    { field: "sod_qty_ship", headerName: "Shipped", filter: "agTextColumnFilter" },
-    { field: "ABS_SHP_DATE", headerName: "Shipped Date", filter: "agTextColumnFilter" },
-    { field: "SHORT", headerName: "Qty Short", filter: "agTextColumnFilter" },
     {
-      field: "PERCENT", headerName: "% Complete", filter: "agTextColumnFilter", pinned: 'right', valueFormatter: this.formatNumber.bind(this),
-      cellClass: params => {
-        if (params.value === 100) {
-          return ['bg-success-subtle text-success'];
-        }
-        return null;
-      }
+      field: "sod_custpart",
+      headerName: "Customer Part",
+      filter: "agTextColumnFilter",
     },
     {
-      field: "recent_comments.comments_html", headerName: "Recent Comment", filter: "agTextColumnFilter", maxWidth: 300,
+      field: "sod_due_date",
+      headerName: "Due Date",
+      filter: "agTextColumnFilter",
+    },
+    { field: "sod_line", headerName: "Line #", filter: "agTextColumnFilter" },
+    {
+      field: "sod_order_category",
+      headerName: "CO #",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "sod_contr_id",
+      headerName: "Customer PO #",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "sod_qty_ord",
+      headerName: "Ordered",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "sod_qty_all",
+      headerName: "Allocated",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "sod_qty_pick",
+      headerName: "Picked",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "sod_qty_ship",
+      headerName: "Shipped",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "ABS_SHP_DATE",
+      headerName: "Shipped Date",
+      filter: "agTextColumnFilter",
+    },
+    { field: "SHORT", headerName: "Qty Short", filter: "agTextColumnFilter" },
+    {
+      field: "PERCENT",
+      headerName: "% Complete",
+      filter: "agTextColumnFilter",
+      pinned: "right",
+      valueFormatter: this.formatNumber.bind(this),
+      cellClass: (params) => {
+        if (params.value === 100) {
+          return ["bg-success-subtle text-success"];
+        }
+        return null;
+      },
+    },
+    {
+      field: "recent_comments.comments_html",
+      headerName: "Recent Comment",
+      filter: "agTextColumnFilter",
+      maxWidth: 300,
       tooltipValueGetter: (params) => params.value,
     },
     {
-      field: "add_comments", headerName: "Comments", filter: "agSetColumnFilter",
+      field: "add_comments",
+      headerName: "Comments",
+      filter: "agSetColumnFilter",
       cellRenderer: CommentsRendererComponent,
       cellRendererParams: {
-        onClick: (params: any) => this.viewComment(params.rowData.sod_nbr + '-' + params.rowData.sod_line, params.rowData.id, params.rowData.sod_nbr),
-      }
+        onClick: (params: any) =>
+          this.viewComment(
+            params.rowData.sod_nbr + "-" + params.rowData.sod_line,
+            params.rowData.id,
+            params.rowData.sod_nbr
+          ),
+      },
     },
-    { field: "CMT_CMMT", headerName: "QAD Comment", filter: "agTextColumnFilter" }
+    {
+      field: "CMT_CMMT",
+      headerName: "QAD Comment",
+      filter: "agTextColumnFilter",
+    },
   ];
 
-
   viewComment = (salesOrderLineNumber: any, id: string, so?) => {
-    let modalRef = this.commentsModalService.open(salesOrderLineNumber, 'Sales Order')
-    modalRef.result.then((result: any) => {
-      let rowNode = this.gridApi.getRowNode(id);
-      rowNode.data.recent_comments = result;
-      this.gridApi.redrawRows({ rowNodes: [rowNode] });
-    }, () => { });
-  }
+    let modalRef = this.commentsModalService.open(
+      salesOrderLineNumber,
+      "Sales Order"
+    );
+    modalRef.result.then(
+      (result: any) => {
+        let rowNode = this.gridApi.getRowNode(id);
+        rowNode.data.recent_comments = result;
+        this.gridApi.redrawRows({ rowNodes: [rowNode] });
+      },
+      () => {}
+    );
+  };
 
   gridApi: GridApi;
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onFirstDataRendered: (params) => {
       this.autoSizeAll(false);
     },
     onGridReady: (params) => {
       this.gridApi = params.api;
+      params.api.updateGridOptions({
+        defaultColDef: {
+          floatingFilter: false,
+        },
+      });
     },
     sideBar: false,
-    defaultColDef: {
-      ...agGridOptions.defaultColDef,
-      floatingFilter: false
-    },
   };
 
   print() {
-
     setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
       popupWin.document.write(`
       <html>
@@ -164,8 +221,7 @@ export class OrderLookupComponent {
         <body onload="window.print();window.close()">
           ${printContents}
         </body>
-      </html>`
-      );
+      </html>`);
       popupWin.document.close();
 
       popupWin.onfocus = function () {
@@ -177,17 +233,16 @@ export class OrderLookupComponent {
     }, 200);
   }
 
-  autoSizeAll(skipHeader) {
-  }
+  autoSizeAll(skipHeader) {}
 
   formatNumber(row) {
     // this puts commas into the number eg 1000 goes to 1,000,
     // i pulled this from stack overflow, i have no idea how it works
     if (!row.value) {
-      return '0.00 %'
+      return "0.00 %";
     }
 
-    return row.value.toFixed(2) + '%'
+    return row.value.toFixed(2) + "%";
   }
 
   /**
@@ -195,31 +250,47 @@ export class OrderLookupComponent {
    */
 
   columnDefs1 = [
-    { field: "abs_shipto", headerName: "Ship To", filter: "agTextColumnFilter" },
-    { field: "abs_shp_date", headerName: "Ship Date", filter: "agTextColumnFilter" },
+    {
+      field: "abs_shipto",
+      headerName: "Ship To",
+      filter: "agTextColumnFilter",
+    },
+    {
+      field: "abs_shp_date",
+      headerName: "Ship Date",
+      filter: "agTextColumnFilter",
+    },
     { field: "abs_item", headerName: "Part #", filter: "agTextColumnFilter" },
     { field: "abs_line", headerName: "Line", filter: "agTextColumnFilter" },
-    { field: "abs_ship_qty", headerName: "Ship Qty", filter: "agTextColumnFilter" },
+    {
+      field: "abs_ship_qty",
+      headerName: "Ship Qty",
+      filter: "agTextColumnFilter",
+    },
     { field: "abs_inv_nbr", headerName: "Inv #", filter: "agTextColumnFilter" },
-    { field: "abs_par_id", headerName: "Packing Slip #", filter: "agTextColumnFilter" }
+    {
+      field: "abs_par_id",
+      headerName: "Packing Slip #",
+      filter: "agTextColumnFilter",
+    },
   ];
 
   gridApi1: any;
 
   gridOptions1 = {
-    ...agGridOptions,
     columnDefs: this.columnDefs1,
     onFirstDataRendered: (params) => {
       params.api.sizeColumnsToFit();
     },
     onGridReady: (params) => {
       this.gridApi1 = params.api;
+      params.api.updateGridOptions({
+        defaultColDef: {
+          floatingFilter: false,
+        },
+      });
     },
     sideBar: false,
-    defaultColDef: {
-      ...agGridOptions.defaultColDef,
-      floatingFilter: false
-    },
   };
 
   /**
@@ -228,67 +299,67 @@ export class OrderLookupComponent {
 
   columnDefs2 = [
     {
-      field: 'tr_date',
-      headerName: 'Transaction Date',
-      filter: 'agTextColumnFilter',
+      field: "tr_date",
+      headerName: "Transaction Date",
+      filter: "agTextColumnFilter",
     },
     {
-      field: 'tr_per_date',
-      headerName: 'Performance Date',
-      filter: 'agTextColumnFilter',
+      field: "tr_per_date",
+      headerName: "Performance Date",
+      filter: "agTextColumnFilter",
     },
-    { field: 'tr_time', headerName: 'Time', filter: 'agTextColumnFilter' },
+    { field: "tr_time", headerName: "Time", filter: "agTextColumnFilter" },
     {
-      field: 'tr_nbr',
-      headerName: 'Transaction #',
-      filter: 'agTextColumnFilter',
+      field: "tr_nbr",
+      headerName: "Transaction #",
+      filter: "agTextColumnFilter",
     },
-    { field: 'tr_type', headerName: 'Type', filter: 'agTextColumnFilter' },
+    { field: "tr_type", headerName: "Type", filter: "agTextColumnFilter" },
     {
-      field: 'tr_part',
-      headerName: 'Part #',
-      filter: 'agTextColumnFilter'
-    },
-    {
-      field: 'tr_qty_loc',
-      headerName: 'Qty Changed Location',
-      filter: 'agTextColumnFilter',
-    },
-    { field: 'tr_rmks', headerName: 'Remarks', filter: 'agTextColumnFilter' },
-    {
-      field: 'tr_ship_id',
-      headerName: 'Packing Slip',
-      filter: 'agTextColumnFilter',
+      field: "tr_part",
+      headerName: "Part #",
+      filter: "agTextColumnFilter",
     },
     {
-      field: 'tr_qty_chg',
-      headerName: 'Qty Changed',
-      filter: 'agTextColumnFilter',
+      field: "tr_qty_loc",
+      headerName: "Qty Changed Location",
+      filter: "agTextColumnFilter",
+    },
+    { field: "tr_rmks", headerName: "Remarks", filter: "agTextColumnFilter" },
+    {
+      field: "tr_ship_id",
+      headerName: "Packing Slip",
+      filter: "agTextColumnFilter",
     },
     {
-      field: 'tr_qty_req',
-      headerName: 'Qty Required',
-      filter: 'agTextColumnFilter',
+      field: "tr_qty_chg",
+      headerName: "Qty Changed",
+      filter: "agTextColumnFilter",
     },
-    { field: 'tr_userid', headerName: 'User', filter: 'agTextColumnFilter' },
-  ]
+    {
+      field: "tr_qty_req",
+      headerName: "Qty Required",
+      filter: "agTextColumnFilter",
+    },
+    { field: "tr_userid", headerName: "User", filter: "agTextColumnFilter" },
+  ];
 
   gridApi2: any;
 
   gridOptions2 = {
-    ...agGridOptions,
     columnDefs: this.columnDefs2,
     onFirstDataRendered: (params) => {
       params.api.sizeColumnsToFit();
     },
     onGridReady: (params) => {
       this.gridApi2 = params.api;
+      params.api.updateGridOptions({
+        defaultColDef: {
+          floatingFilter: false,
+        },
+      });
     },
     sideBar: false,
-    defaultColDef: {
-      ...agGridOptions.defaultColDef,
-      floatingFilter: false
-    },
   };
 
   getTransactions() {
@@ -297,34 +368,36 @@ export class OrderLookupComponent {
       (data: any) => {
         this.transactions = data;
         this.loadingIndicatorTransactions = false;
-      }, error => {
+      },
+      (error) => {
         this.loadingIndicatorTransactions = false;
-      })
-
+      }
+    );
   }
 
   getData = () => {
     this.isLoading = true;
-    this.isLoadingEmitter.emit(this.isLoading)
-    this.salesOrderInfoService.getSalesOrderNumberDetails(this.salesOrderNumber).subscribe(
-      (data: any) => {
-        this.data = data;
-        this.isLoading = false;
-        this.isLoadingEmitter.emit(this.isLoading)
-        this.hasDataEmitter.emit(this.data?.main?.SO_NBR !== '')
-      }, error => {
-        this.isLoading = false;
-        this.isLoadingEmitter.emit(this.isLoading)
-      })
-  }
+    this.isLoadingEmitter.emit(this.isLoading);
+    this.salesOrderInfoService
+      .getSalesOrderNumberDetails(this.salesOrderNumber)
+      .subscribe(
+        (data: any) => {
+          this.data = data;
+          this.isLoading = false;
+          this.isLoadingEmitter.emit(this.isLoading);
+          this.hasDataEmitter.emit(this.data?.main?.SO_NBR !== "");
+        },
+        (error) => {
+          this.isLoading = false;
+          this.isLoadingEmitter.emit(this.isLoading);
+        }
+      );
+  };
   ngOnInit() {
-    this.setData.emit(this.getData)
+    this.setData.emit(this.getData);
   }
 
-  dismiss() {
-  }
+  dismiss() {}
 
-  close() {
-  }
-
+  close() {}
 }

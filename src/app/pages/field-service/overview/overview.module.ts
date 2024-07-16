@@ -1,12 +1,9 @@
-import { NgModule } from '@angular/core';
-import { OverviewComponent } from './overview.component';
-import { OverviewRoutingModule } from './overview-routing.module';
+import { NgModule } from "@angular/core";
+import { OverviewComponent } from "./overview.component";
+import { OverviewRoutingModule } from "./overview-routing.module";
 
 @NgModule({
   declarations: [],
-  imports: [
-    OverviewRoutingModule,
-    OverviewComponent
-  ]
+  imports: [OverviewRoutingModule, OverviewComponent],
 })
-export class OverviewModule { }
+export class OverviewModule {}

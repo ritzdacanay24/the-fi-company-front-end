@@ -14,7 +14,6 @@ import { AgGridModule } from 'ag-grid-angular'
 import { DomSanitizer, SafeHtml, SafeStyle, SafeScript, SafeUrl, SafeResourceUrl } from '@angular/platform-browser';
 import { ReceiptAddEditService } from '../receipt-add-edit/receipt-add-edit.service'
 import { timeConvert } from '@app/pages/field-service/shared/field-service-helpers.service'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import moment from 'moment'
@@ -559,7 +558,6 @@ export class CreditCardComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: this.onGridReady.bind(this),
     getRowId: (data) => data.data.id,

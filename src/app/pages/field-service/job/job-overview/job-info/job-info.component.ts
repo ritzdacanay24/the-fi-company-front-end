@@ -1,45 +1,42 @@
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
-import { JobService } from '@app/core/api/field-service/job.service';
-import { TeamService } from '@app/core/api/field-service/fs-team.service';
-import { NAVIGATION_ROUTE } from '../../job-constant';
-import { JobFormComponent } from '../../job-form/job-form.component';
-import moment from 'moment';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
-import { ToastrService } from 'ngx-toastr';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { getFormValidationErrors } from 'src/assets/js/util';
+import { Component, Input, OnInit, SimpleChanges } from "@angular/core";
+import { FormArray, FormBuilder, FormGroup } from "@angular/forms";
+import { Router } from "@angular/router";
+import { JobService } from "@app/core/api/field-service/job.service";
+import { TeamService } from "@app/core/api/field-service/fs-team.service";
+import { NAVIGATION_ROUTE } from "../../job-constant";
+import { JobFormComponent } from "../../job-form/job-form.component";
+import moment from "moment";
+import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
+import { ToastrService } from "ngx-toastr";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { getFormValidationErrors } from "src/assets/js/util";
 
 @Component({
   standalone: true,
   imports: [SharedModule, JobFormComponent, NgbDropdownModule],
-  selector: 'app-job-info',
-  templateUrl: './job-info.component.html',
-  styleUrls: []
+  selector: "app-job-info",
+  templateUrl: "./job-info.component.html",
+  styleUrls: [],
 })
 export class JobInfoComponent implements OnInit {
-
   constructor(
     private router: Router,
     private jobService: JobService,
     private teamService: TeamService,
     private fb: FormBuilder,
     private authenticationService: AuthenticationService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['id']) {
-      this.id = changes['id'].currentValue
+    if (changes["id"]) {
+      this.id = changes["id"].currentValue;
       this.getData();
     }
   }
-
 
   title = "Info";
 
@@ -51,37 +48,38 @@ export class JobInfoComponent implements OnInit {
 
   submitted: boolean = false;
 
-  goBackUrl
+  goBackUrl;
   @Input() goBack: Function = (id?) => {
     if (this.goBackUrl) {
       this.router.navigateByUrl(this.goBackUrl);
     } else {
-      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+      this.router.navigate([NAVIGATION_ROUTE.LIST], {
+        queryParamsHandling: "merge",
+      });
     }
-  }
+  };
 
   onSubmit = async () => {
     this.submitted = true;
 
     if (this.form.invalid && this.form.value.active == 1) {
-      getFormValidationErrors()
-      return
-    };
-
-    if (this.id) {
-      this.update()
-    } else {
-      this.create()
+      getFormValidationErrors();
+      return;
     }
 
-  }
+    if (this.id) {
+      this.update();
+    } else {
+      this.create();
+    }
+  };
 
   async create() {
     try {
       this.isLoading = true;
       let { insertId } = await this.jobService.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully created');
+      this.toastrService.success("Successfully created");
       this.goBack(insertId);
     } catch (err) {
       this.isLoading = false;
@@ -93,7 +91,7 @@ export class JobInfoComponent implements OnInit {
       this.isLoading = true;
       await this.jobService.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully updated');
+      this.toastrService.success("Successfully updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -111,40 +109,40 @@ export class JobInfoComponent implements OnInit {
 
       let teams = await this.teamService.find({ fs_det_id: this.id });
 
-      (this.form.controls['resource'] as FormArray).clear();
+      (this.form.controls["resource"] as FormArray).clear();
 
       if (teams) {
-        this.teams = this.form.get('resource') as FormArray;
+        this.teams = this.form.get("resource") as FormArray;
         for (let i = 0; i < teams.length; i++) {
-          this.teams.push(this.fb.group(teams[i]))
+          this.teams.push(this.fb.group(teams[i]));
         }
       }
 
-      this.form.patchValue({
-        job: this.data
-      }, { emitEvent: false });
+      this.form.patchValue(
+        {
+          job: this.data,
+        },
+        { emitEvent: false }
+      );
 
       this.isLoading = false;
-
-
     } catch (err) {
       this.isLoading = false;
     }
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
   setOnRemoveTech($event) {
     this.teams.removeAt($event.index);
   }
 
-
   print() {
     setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
 
       popupWin.document.write(`
@@ -160,8 +158,7 @@ export class JobInfoComponent implements OnInit {
             </style>
           </head>
           <body onload="window.print();window.close()">${printContents}</body>
-        </html>`
-      );
+        </html>`);
 
       popupWin.document.close();
 
@@ -183,27 +180,28 @@ export class JobInfoComponent implements OnInit {
      */
     this.form.patchValue({
       job: {
-        invoice_date: '',
-        vendor_inv_number: '',
-        vendor_cost: '',
-        invoice_number: this.form.value.job.billable == 'No' ? this.form.value.job.billable : '',
-        invoice_notes: '',
-        invoice: '',
-        acc_status: '',
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
+        invoice_date: "",
+        vendor_inv_number: "",
+        vendor_cost: "",
+        invoice_number:
+          this.form.value.job.billable == "No"
+            ? this.form.value.job.billable
+            : "",
+        invoice_notes: "",
+        invoice: "",
+        acc_status: "",
+        created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
         created_by: this.authenticationService.currentUserValue.id,
-        paper_work_location: 'Field Service',
-        billable_flat_rate_or_po: '',
-        contractor_inv_sent_to_ap: '',
-        period: '',
-        customer_cancelled: '',
-        cancellation_comments: '',
-        cancelled_type: ''
-      }
+        paper_work_location: "Field Service",
+        billable_flat_rate_or_po: "",
+        contractor_inv_sent_to_ap: "",
+        period: "",
+        customer_cancelled: "",
+        cancellation_comments: "",
+        cancelled_type: "",
+      },
     });
 
     this.form.enable();
   }
-
-
 }

@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
@@ -10,7 +9,7 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { agGridDateFilterdateFilter, highlightRowView, autoSizeColumns } from 'src/assets/js/util';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component';
 import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
@@ -131,7 +130,6 @@ export class GraphicsDemandComponent implements OnInit {
     }
 
     gridOptions: GridOptions = {
-        ...agGridOptions,
         columnDefs: [],
         getRowId: data => data?.data.id,
         onGridReady: (params: any) => {

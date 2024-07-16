@@ -1,10 +1,8 @@
-import { NgModule } from '@angular/core';
-import { JobOverviewComponent } from './job-overview.component';
+import { NgModule } from "@angular/core";
+import { JobOverviewComponent } from "./job-overview.component";
 
 @NgModule({
   declarations: [],
-  imports: [
-    JobOverviewComponent,
-  ],
+  imports: [JobOverviewComponent],
 })
-export class JobOverviewModule { }
+export class JobOverviewModule {}

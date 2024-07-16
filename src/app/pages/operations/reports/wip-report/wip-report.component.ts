@@ -6,7 +6,6 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { ReportService } from '@app/core/api/operations/report/report.service';
 import { autoSizeColumns, currencyFormatter, highlightRowView } from 'src/assets/js/util';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 
@@ -64,7 +63,6 @@ export class WipReportComponent implements OnInit {
   ];
 
   gridOptions: GridOptions = {
-    ...agGridOptions,
     columnDefs: [],
     getRowId: params => params.data.id?.toString(),
     onGridReady: (params: any) => {

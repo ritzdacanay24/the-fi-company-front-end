@@ -1,30 +1,30 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { JobStatusFormComponent } from '../job-status-form/job-status-form.component';
-import { NAVIGATION_ROUTE } from '../job-status-constant';
-import { StatusCategoryService } from '@app/core/api/field-service/status-category.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { JobStatusFormComponent } from "../job-status-form/job-status-form.component";
+import { NAVIGATION_ROUTE } from "../job-status-constant";
+import { StatusCategoryService } from "@app/core/api/field-service/status-category.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, JobStatusFormComponent],
-  selector: 'app-job-status-edit',
-  templateUrl: './job-status-edit.component.html',
-  styleUrls: ['./job-status-edit.component.scss']
+  selector: "app-job-status-edit",
+  templateUrl: "./job-status-edit.component.html",
+  styleUrls: ["./job-status-edit.component.scss"],
 })
 export class JobStatusEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: StatusCategoryService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -41,8 +41,10 @@ export class JobStatusEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -50,7 +52,7 @@ export class JobStatusEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -62,7 +64,7 @@ export class JobStatusEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -70,7 +72,6 @@ export class JobStatusEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

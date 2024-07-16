@@ -1,28 +1,27 @@
-import { Component, Input } from '@angular/core';
-import { FormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
-import { SharedModule } from '@app/shared/shared.module';
-import { ToastrService } from 'ngx-toastr';
-import { NAVIGATION_ROUTE } from '../service-type-constant';
-import { ServiceTypeFormComponent } from '../service-type-form/service-type-form.component';
-import { ServiceTypeService } from '@app/core/api/field-service/service-type.service';
+import { Component, Input } from "@angular/core";
+import { FormGroup } from "@angular/forms";
+import { Router } from "@angular/router";
+import { SharedModule } from "@app/shared/shared.module";
+import { ToastrService } from "ngx-toastr";
+import { NAVIGATION_ROUTE } from "../service-type-constant";
+import { ServiceTypeFormComponent } from "../service-type-form/service-type-form.component";
+import { ServiceTypeService } from "@app/core/api/field-service/service-type.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, ServiceTypeFormComponent],
-  selector: 'app-service-type-create',
-  templateUrl: './service-type-create.component.html',
-  styleUrls: ['./service-type-create.component.scss']
+  selector: "app-service-type-create",
+  templateUrl: "./service-type-create.component.html",
+  styleUrls: ["./service-type-create.component.scss"],
 })
 export class ServiceTypeCreateComponent {
   constructor(
     private router: Router,
     private api: ServiceTypeService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   title = "Create Service Type";
 
@@ -33,8 +32,11 @@ export class ServiceTypeCreateComponent {
   submitted = false;
 
   @Input() goBack: Function = (id?: string) => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge', queryParams: { id: id } });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+      queryParams: { id: id },
+    });
+  };
 
   async onSubmit() {
     this.submitted = true;
@@ -45,7 +47,7 @@ export class ServiceTypeCreateComponent {
       this.isLoading = true;
       let data = await this.api.create(this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Created');
+      this.toastrService.success("Successfully Created");
       this.goBack(data.insertId);
     } catch (err) {
       this.isLoading = false;
@@ -53,6 +55,6 @@ export class ServiceTypeCreateComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 }

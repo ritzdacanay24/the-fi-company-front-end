@@ -158,30 +158,6 @@
             <app-job-search [showLabel]="false" [value]="form?.value?.job?.turnover_fsid"
               (notifyParent)="getTurnover($event)" [ngClass]="formClassJob('turnover_fsid')"></app-job-search>
           </div>
-          <!-- <div class="col-md-5 mb-4">
-        <label class="form-label" [ngClass]="formValidatorJob('group_id')">Group ID</label>
-        <div class="input-group">
-          <ng-select [virtualScroll]="true" [items]="jobs$" bindLabel="id" bindValue="id" formControlName="group_id"
-            placeholder="--Select--" [ngClass]="formClassJob('group_id')" (open)="getJobs()" style="width:74%">
-
-            <ng-template ng-label-tmp let-item="item">
-              <p>{{item.id}} - {{item.customer}} {{item.service_type}} {{item.platform}}</p>
-            </ng-template>
-
-            <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-              <div class="row">
-                <div class="col-md-12">
-                  <p>{{item.request_date | date:'shortDate'}} {{item.start_time}} <span class="float-end">FSID#
-                      {{item.id}}</span></p>
-                  <p>{{item.customer}} {{item.service_type}} {{item.platform}}</p>
-                  <p>{{item.status}}</p>
-                </div>
-              </div>
-            </ng-template>
-          </ng-select>
-          <span class="input-group-text pointer" id="basic-addon2" (click)="createGroup()">or Create Group</span>
-        </div>
-      </div> -->
         </div>
 
         <div class="row">
@@ -502,6 +478,14 @@
           </div>
 
 
+          <!-- 
+            
+              Need to hide this section from the dashboard. Set permissions only OR this section can be moved to another
+              component. Creating a component is better. It will be easy to maintain. Just need to have the form use typescript
+              so that we can use the same form. Using the same form prevent any errors in other components. This should be applied
+              to all other forms within this application. Adding typescript 
+          
+          -->
           <div class="row">
             <div class="col-md-4 mb-3">
               <label class="form-label">Invoice Amount</label>

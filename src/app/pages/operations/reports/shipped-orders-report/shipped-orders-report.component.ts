@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { ReportService } from '@app/core/api/operations/report/report.service';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from '@app/shared/shared.module';
@@ -13,7 +12,7 @@ import { CommentsModalService } from '@app/shared/components/comments/comments-m
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component';
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { FgLabelPrintModalService } from '@app/shared/components/fg-label-print-modal/fg-label-print-modal.component';
@@ -182,7 +181,6 @@ export class ShippedOrdersReportComponent implements OnInit {
   }
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

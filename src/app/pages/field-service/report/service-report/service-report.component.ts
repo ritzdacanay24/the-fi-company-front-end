@@ -6,7 +6,6 @@ import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { ServiceReportChartComponent } from './service-report-chart/service-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
-import { agGridOptions } from 'src/app/shared/config/ag-grid.config';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
@@ -65,7 +64,6 @@ export class ServiceReportComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

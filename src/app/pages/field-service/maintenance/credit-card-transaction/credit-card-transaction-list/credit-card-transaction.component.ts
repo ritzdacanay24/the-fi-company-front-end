@@ -1,20 +1,16 @@
-import { GridOptions } from 'ag-grid-community'
-import { GridReadyEvent, GridApi } from 'ag-grid-community';
-import { Component, OnInit } from '@angular/core'
-import { ReactiveFormsModule } from '@angular/forms'
-import {
-  NgbDropdownModule,
-  NgbNavModule
-} from '@ng-bootstrap/ng-bootstrap'
-import { NgSelectModule } from '@ng-select/ng-select'
-import { AgGridModule } from 'ag-grid-angular'
+import { ColDef, GridOptions } from "ag-grid-community";
+import { GridApi } from "ag-grid-community";
+import { Component, OnInit } from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
+import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
+import { NgSelectModule } from "@ng-select/ng-select";
+import { AgGridModule } from "ag-grid-angular";
 
-import moment from 'moment'
-import { CreditCardModalService } from '../credit-card-transaction-modal/credit-card-transaction-modal.component'
-import { TripExpenseTransactionsService } from 'src/app/core/api/field-service/trip-expense-transactions'
-import { agGridOptions } from 'src/app/shared/config/ag-grid.config'
-import { SharedModule } from 'src/app/shared/shared.module'
-import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
+import moment from "moment";
+import { CreditCardModalService } from "../credit-card-transaction-modal/credit-card-transaction-modal.component";
+import { TripExpenseTransactionsService } from "src/app/core/api/field-service/trip-expense-transactions";
+import { SharedModule } from "src/app/shared/shared.module";
+import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 
 @Component({
   standalone: true,
@@ -25,95 +21,96 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
     NgbNavModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent
+    DateRangeComponent,
   ],
-  selector: 'app-credit-card-transaction-list',
-  templateUrl: `./credit-card-transaction-list.component.html`
+  selector: "app-credit-card-transaction-list",
+  templateUrl: `./credit-card-transaction-list.component.html`,
 })
 export class CreditCardTransactionListComponent implements OnInit {
-
-  dateFrom = moment().format('YYYY-MM-DD')
-  dateTo = moment().format('YYYY-MM-DD')
+  dateFrom = moment().format("YYYY-MM-DD");
+  dateTo = moment().format("YYYY-MM-DD");
   dateRange = [this.dateFrom, this.dateTo];
   onChangeDate($event) {
-    this.dateFrom = $event['dateFrom']
-    this.dateTo = $event['dateTo']
-    this.getData()
+    this.dateFrom = $event["dateFrom"];
+    this.dateTo = $event["dateTo"];
+    this.getData();
   }
 
-  title = 'Patient Claims'
-  gridApi: GridApi
+  title = "Patient Claims";
+  gridApi: GridApi;
 
-  columnDefs: any[]
+  columnDefs: ColDef[];
 
-  data: any[]
+  data: any[];
 
   gridOptions: GridOptions = {
-    ...agGridOptions,
     columnDefs: [],
-    onGridReady: this.onGridReady.bind(this),
     suppressColumnVirtualisation: false,
-    defaultColDef: {
-      ...agGridOptions.defaultColDef,
-      editable: false,
-      // cellRenderer: CellRenderer,
+    onGridReady: (params) => {
+      this.gridApi = params.api;
+      params.api.updateGridOptions({
+        defaultColDef: {
+          editable: false,
+        },
+      });
     },
     singleClickEdit: false,
-    getRowId: params => params.data.id?.toString(),
+    getRowId: (params) => params.data.id?.toString(),
     onCellValueChanged: async (event) => {
       try {
-        await this.tripExpenseTransactionsService.updateById(event.data.id, event.data);
-      } catch (err) {
-      }
-    }
-
-  }
-
-  onGridReady(params: GridReadyEvent) {
-    this.gridApi = params.api
-  }
+        await this.tripExpenseTransactionsService.updateById(
+          event.data.id,
+          event.data
+        );
+      } catch (err) {}
+    },
+  };
 
   constructor(
     public tripExpenseTransactionsService: TripExpenseTransactionsService,
     private creditCardModalService: CreditCardModalService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.getData();
   }
 
   async getData() {
-    this.gridApi?.showLoadingOverlay()
-    this.data = await this.tripExpenseTransactionsService.findByDateRange('Transaction_Date', { dateFrom: this.dateFrom, dateTo: this.dateTo });
+    this.gridApi?.showLoadingOverlay();
+    this.data = await this.tripExpenseTransactionsService.findByDateRange(
+      "Transaction_Date",
+      { dateFrom: this.dateFrom, dateTo: this.dateTo }
+    );
 
-    var customColumns = []
+    var customColumns = [];
 
     if (this.data.length > 0) {
       for (const [key] of Object.entries(this.data[0])) {
-        customColumns.push(this.setColumnGrid(key))
+        customColumns.push(this.setColumnGrid(key));
       }
     }
 
-    this.columnDefs = customColumns
-    this.gridApi?.hideOverlay()
+    this.columnDefs = customColumns;
+    this.gridApi?.hideOverlay();
   }
 
   setColumnGrid(row) {
     return {
-      headerName: row.replaceAll('_', ' '),
+      headerName: row.replaceAll("_", " "),
       field: row,
       editable: false,
-      filter: 'agMultiColumnFilter'
-    }
+      filter: "agMultiColumnFilter",
+    };
   }
 
   async showFileUpload() {
-
-    const modalRef = this.creditCardModalService.open()
-    modalRef.result.then(async (result: any) => {
-      await this.getData();
-    }, () => { });
-
+    const modalRef = this.creditCardModalService.open();
+    modalRef.result.then(
+      async (result: any) => {
+        await this.getData();
+      },
+      () => {}
+    );
 
     // await SweetAlert.fire({
     //   title: 'Select .xlsx file',
@@ -143,6 +140,5 @@ export class CreditCardTransactionListComponent implements OnInit {
     // })
   }
 
-  async deleteAll() {
-  }
+  async deleteAll() {}
 }

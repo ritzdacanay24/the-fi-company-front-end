@@ -5,14 +5,12 @@ import { NgSelectModule } from '@ng-select/ng-select'
 import { AgGridModule } from 'ag-grid-angular'
 
 import { SharedModule } from '@app/shared/shared.module'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { ActivatedRoute, Router } from '@angular/router'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import moment from 'moment'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
-import { ShippingRequestService } from '@app/core/api/operations/shippging-request/shipping-request.service'
 import { VehicleInspectionService } from '@app/core/api/operations/vehicle-inspection/vehicle-inspection.service'
 import { NAVIGATION_ROUTE } from '../vehicle-inspection-constant'
 
@@ -139,7 +137,6 @@ export class VehicleInspectionListComponent implements OnInit {
     }
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;

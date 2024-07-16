@@ -1,15 +1,12 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { DomSanitizer } from '@angular/platform-browser';
-import { Router, ActivatedRoute } from '@angular/router';
-import { LicenseService } from '@app/core/api/field-service/license.service';
-import { LicensedTechsService } from '@app/core/api/field-service/licensed-techs.service';
-import { UserService } from '@app/core/api/field-service/user.service';
-import { AddressSearchComponent } from '@app/shared/components/address-search/address-search.component';
-import { UserSearchComponent } from '@app/shared/components/user-search/user-search.component';
-import { SharedModule } from '@app/shared/shared.module';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { ToastrService } from 'ngx-toastr';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { LicensedTechsService } from "@app/core/api/field-service/licensed-techs.service";
+import { UserService } from "@app/core/api/field-service/user.service";
+import { AddressSearchComponent } from "@app/shared/components/address-search/address-search.component";
+import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
+import { SharedModule } from "@app/shared/shared.module";
+import { NgSelectModule } from "@ng-select/ng-select";
+import { ToastrService } from "ngx-toastr";
 
 @Component({
   standalone: true,
@@ -18,27 +15,22 @@ import { ToastrService } from 'ngx-toastr';
     ReactiveFormsModule,
     AddressSearchComponent,
     UserSearchComponent,
-    NgSelectModule
+    NgSelectModule,
   ],
-  selector: 'app-licensed-techs-form',
-  templateUrl: './licensed-techs-form.component.html',
-  styleUrls: ['./licensed-techs-form.component.scss']
+  selector: "app-licensed-techs-form",
+  templateUrl: "./licensed-techs-form.component.html",
+  styleUrls: ["./licensed-techs-form.component.scss"],
 })
 export class LicensedTechsFormComponent {
-
   constructor(
     private fb: FormBuilder,
-    private sanitizer: DomSanitizer,
-    private router: Router,
-    private activatedRoute: ActivatedRoute,
-    private api: LicenseService,
     private toastrService: ToastrService,
     private userService: UserService,
     private licensedTechsService: LicensedTechsService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    this.setFormEmitter.emit(this.form)
+    this.setFormEmitter.emit(this.form);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
@@ -47,65 +39,66 @@ export class LicensedTechsFormComponent {
   @Input() id = null;
 
   get f() {
-    return this.form.controls
+    return this.form.controls;
   }
 
-  form = this.fb.group({})
+  form = this.fb.group({});
 
-  licensed_techs = []
+  licensed_techs = [];
   techs = [];
 
   async onTechAdd($event) {
     try {
       let { insertId } = await this.licensedTechsService.create($event);
       $event.id = insertId;
-      this.techs.push($event)
-      this.toastrService.success('Tech successfully added.');
-    } catch (err) { }
-
+      this.techs.push($event);
+      this.toastrService.success("Tech successfully added.");
+    } catch (err) {}
   }
 
   async onTechRemove(i, row) {
     //remove from table
     try {
-      if (!confirm('Are you sure you want to remove tech?')) return;
+      if (!confirm("Are you sure you want to remove tech?")) return;
 
       await this.licensedTechsService.delete(row.id);
-      this.techs.splice(i, 1)
+      this.techs.splice(i, 1);
 
       //remove from ng-select
-      this.licensed_techs = this.licensed_techs.filter(s => s != row.user_id);
+      this.licensed_techs = this.licensed_techs.filter((s) => s != row.user_id);
 
-      this.toastrService.success('Tech successfully removed.')
-    } catch (err) { }
+      this.toastrService.success("Tech successfully removed.");
+    } catch (err) {}
   }
 
   async onTechUpdated(row) {
     try {
       await this.licensedTechsService.update(row.id, row);
-      this.toastrService.success('Recordd successfully updated.')
-    } catch (err) { }
+      this.toastrService.success("Recordd successfully updated.");
+    } catch (err) {}
   }
 
   users$: any;
   getUserService = async () => {
     try {
-      let data: any = await this.userService.find({ area: 'Field Service', active: 1, access: 1 });
+      let data: any = await this.userService.find({
+        area: "Field Service",
+        active: 1,
+        access: 1,
+      });
 
       this.users$ = [];
       for (let i = 0; i < data.length; i++) {
-        let row = data[i]
+        let row = data[i];
         this.users$.push({
           fs_licensed_id: this.id,
           user_id: row.id,
-          user_name: row.first + ' ' + row.last,
+          user_name: row.first + " " + row.last,
           expired_date: null,
-          licensed_required: 'Yes',
-          notes: ""
+          licensed_required: "Yes",
+          notes: "",
         });
       }
-
-    } catch (err) { }
-  }
-
+    } catch (err) {}
+  };
 }

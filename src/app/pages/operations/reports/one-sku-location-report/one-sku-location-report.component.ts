@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { currencyFormatter } from 'src/assets/js/util';
@@ -56,7 +55,6 @@ export class OneSkuLocationReportComponent implements OnInit {
     ];
 
     gridOptions: GridOptions = {
-        ...agGridOptions,
         columnDefs: [],
         onGridReady: (params: any) => {
             this.gridApi = params.api;

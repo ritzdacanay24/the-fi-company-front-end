@@ -4,7 +4,6 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Component, Input } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { WorkOrderInfoService } from '@app/core/api/operations/work-order/work-order-info.service';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
 import { QadWoSearchComponent } from '../qad-wo-search/qad-wo-search.component';
@@ -104,7 +103,6 @@ export class WorkOrderInfoModalComponent {
     };
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: this.onGridReady.bind(this),
         onFirstDataRendered: this.firstDataRendered.bind(this),

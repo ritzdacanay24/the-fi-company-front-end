@@ -5,7 +5,6 @@ import { NgSelectModule } from '@ng-select/ng-select'
 import { AgGridModule } from 'ag-grid-angular'
 
 import { SharedModule } from '@app/shared/shared.module'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { ActivatedRoute, Router } from '@angular/router'
@@ -139,7 +138,6 @@ export class ForkliftInspectionListComponent implements OnInit {
     }
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;

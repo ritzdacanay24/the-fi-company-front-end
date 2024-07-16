@@ -15,7 +15,6 @@ import { CreditCardComponent } from './credit-card/credit-card.component'
 import { UploadedReceiptComponent } from './receipt-list/receipt-list.component'
 import { ReceiptAddEditService } from './receipt-add-edit/receipt-add-edit.service'
 import { timeConvert } from '@app/pages/field-service/shared/field-service-helpers.service'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { AgGridModule } from 'ag-grid-angular'
@@ -577,7 +576,6 @@ export class ReceiptComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: this.onGridReady.bind(this),
     getRowId: (data) => data.data.id,

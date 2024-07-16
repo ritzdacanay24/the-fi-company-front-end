@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumns,currencyFormatter,highlightRowView } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
@@ -54,7 +53,6 @@ export class InventoryReportComponent implements OnInit {
     ];
 
     gridOptions: GridOptions = {
-        ...agGridOptions,
         columnDefs: [],
         onGridReady: (params: any) => {
             this.gridApi = params.api;

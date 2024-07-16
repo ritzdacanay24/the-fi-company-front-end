@@ -8,7 +8,6 @@ import { NcrCorrectiveActionFormComponent } from '../../ncr-corrective-action-fo
 import { ToastrService } from 'ngx-toastr';
 import { AgGridModule } from 'ag-grid-angular';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { Lightbox } from 'ngx-lightbox';
@@ -155,7 +154,6 @@ export class NcrAttachmentsListComponent implements OnInit {
     gridApi
     
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;

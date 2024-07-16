@@ -1,22 +1,27 @@
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
-import { first } from 'rxjs/operators';
-import { Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { CORE_SETTINGS } from '@app/core/constants/app.config';
-import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
-import { NAVIGATION_ROUTE } from '../../job-constant';
+import {
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from "@angular/core";
+import { first } from "rxjs/operators";
+import { Location } from "@angular/common";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SchedulerService } from "@app/core/api/field-service/scheduler.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { CORE_SETTINGS } from "@app/core/constants/app.config";
+import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
+import { NAVIGATION_ROUTE } from "../../job-constant";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    JobSearchComponent
-  ],
-  selector: 'app-job-billing',
-  templateUrl: './job-billing.component.html',
-  styleUrls: ['./job-billing.component.scss']
+  imports: [SharedModule, JobSearchComponent],
+  selector: "app-job-billing",
+  templateUrl: "./job-billing.component.html",
+  styleUrls: ["./job-billing.component.scss"],
 })
 export class JobBillingComponent implements OnInit {
   @Input() public displayDates: boolean = true;
@@ -38,20 +43,26 @@ export class JobBillingComponent implements OnInit {
     this.id = null;
     this.data = null;
     if (this.goBackUrl) {
-      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge' });
+      this.router.navigate([this.goBackUrl], { queryParamsHandling: "merge" });
     } else {
-      this.router.navigate([NAVIGATION_ROUTE.BILLING], { queryParamsHandling: 'merge', queryParams: { id: this.id, active: 1 } });
+      this.router.navigate([NAVIGATION_ROUTE.BILLING], {
+        queryParamsHandling: "merge",
+        queryParams: { id: this.id, active: 1 },
+      });
     }
-  }
+  };
 
-  active
+  active;
   notifyParent($event) {
     this.id = $event.id;
-    this.active = 1
-    this.router.navigate([], { relativeTo: this.activatedRoute, queryParamsHandling: 'merge', queryParams: { id: this.id, active: 1 } });
-    this.getData('', this.id, false)
+    this.active = 1;
+    this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: { id: this.id, active: 1 },
+    });
+    this.getData("", this.id, false);
   }
-
 
   data: any;
   scheduledDates: any;
@@ -60,7 +71,7 @@ export class JobBillingComponent implements OnInit {
   dateViewing: any;
   applyovertime: any;
   img = CORE_SETTINGS.IMAGE;
-  ticketId: any = '';
+  ticketId: any = "";
 
   constructor(
     private api: SchedulerService,
@@ -68,21 +79,20 @@ export class JobBillingComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private activatedRoute: ActivatedRoute,
-  ) { }
+    private activatedRoute: ActivatedRoute
+  ) {}
 
   ngAfterViewChecked() {
     //your code to update the model
     this.cdr.detectChanges();
   }
 
-  goBackUrl
-  
-  ngOnInit(): void {
+  goBackUrl;
 
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
-      this.goBackUrl = params['goBackUrl'];
+  ngOnInit(): void {
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
+      this.goBackUrl = params["goBackUrl"];
     });
 
     if (this.id) this.getData(null, this.id, false);
@@ -107,36 +117,41 @@ export class JobBillingComponent implements OnInit {
     this.api
       .getBillinReportByDate(date, ticketId)
       .pipe(first())
-      .subscribe((data) => {
-        this.isLoading = false;
+      .subscribe(
+        (data) => {
+          this.isLoading = false;
 
-        this.showHideOverlay(false);
-        this.data = data
-      }, error => {
-        this.showHideOverlay(false);
-        this.isLoading = false;
-      });
+          this.showHideOverlay(false);
+          this.data = data;
+        },
+        (error) => {
+          this.showHideOverlay(false);
+          this.isLoading = false;
+        }
+      );
   }
 
   public getSum(group, details) {
-
     var summ = 0;
     for (var i in details) {
-      if (group == 'travelTimeHrs') {
-        summ = summ + (Number(details[i][group]) + Number(details[i].travel_over_time_hrs));
-      } else if (group == 'installTimes') {
-        summ = summ + (Number(details[i][group]) + Number(details[i].install_overtime_hrs));
+      if (group == "travelTimeHrs") {
+        summ =
+          summ +
+          (Number(details[i][group]) + Number(details[i].travel_over_time_hrs));
+      } else if (group == "installTimes") {
+        summ =
+          summ +
+          (Number(details[i][group]) + Number(details[i].install_overtime_hrs));
       } else {
         summ = summ + Number(details[i][group]);
       }
     }
     return summ;
-  };
+  }
 
   public print() {
-
-    var printContents = document.getElementById('workOrder').innerHTML;
-    var popupWin = window.open('', '_blank', 'width=900,height=800');
+    var printContents = document.getElementById("workOrder").innerHTML;
+    var popupWin = window.open("", "_blank", "width=900,height=800");
     popupWin.document.open();
     popupWin.document.write(`
       <html>
@@ -212,11 +227,8 @@ export class JobBillingComponent implements OnInit {
           </style>
         </head>
         <body onload="window.print();window.close()">${printContents}</body>
-      </html>`
-    );
+      </html>`);
 
     popupWin.document.close();
-
   }
-
 }

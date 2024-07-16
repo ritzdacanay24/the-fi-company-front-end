@@ -1,30 +1,30 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { NonBillableCodeFormComponent } from '../non-billable-code-form/non-billable-code-form.component';
-import { NAVIGATION_ROUTE } from '../non-billable-code-constant';
-import { NonBillableCodeService } from '@app/core/api/field-service/fs_non_billable_code.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { NonBillableCodeFormComponent } from "../non-billable-code-form/non-billable-code-form.component";
+import { NAVIGATION_ROUTE } from "../non-billable-code-constant";
+import { NonBillableCodeService } from "@app/core/api/field-service/fs_non_billable_code.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, NonBillableCodeFormComponent],
-  selector: 'app-non-billable-code-edit',
-  templateUrl: './non-billable-code-edit.component.html',
-  styleUrls: ['./non-billable-code-edit.component.scss']
+  selector: "app-non-billable-code-edit",
+  templateUrl: "./non-billable-code-edit.component.html",
+  styleUrls: ["./non-billable-code-edit.component.scss"],
 })
 export class NonBillableCodeEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: NonBillableCodeService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -41,8 +41,10 @@ export class NonBillableCodeEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -50,8 +52,8 @@ export class NonBillableCodeEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      this.form.get('type').disable()
-    } catch (err) { }
+      this.form.get("type").disable();
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -63,7 +65,7 @@ export class NonBillableCodeEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -71,7 +73,6 @@ export class NonBillableCodeEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

@@ -5,7 +5,6 @@ import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
 import { JobByUserReportChartComponent } from './job-by-user-report-chart/job-by-user-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
-import { agGridOptions } from 'src/app/shared/config/ag-grid.config';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
@@ -64,7 +63,6 @@ export class JobByUserReportComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

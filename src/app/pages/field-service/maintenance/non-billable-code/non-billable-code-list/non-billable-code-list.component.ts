@@ -1,42 +1,38 @@
-import { GridApi } from 'ag-grid-community'
-import { Component, Input, OnInit } from '@angular/core'
-import { ReactiveFormsModule } from '@angular/forms'
-import { NgSelectModule } from '@ng-select/ng-select'
-import { AgGridModule } from 'ag-grid-angular'
+import { GridApi } from "ag-grid-community";
+import { Component, Input, OnInit } from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
+import { NgSelectModule } from "@ng-select/ng-select";
+import { AgGridModule } from "ag-grid-angular";
 
-import { SharedModule } from '@app/shared/shared.module'
-import { ActivatedRoute, Router } from '@angular/router'
-import { NAVIGATION_ROUTE } from '../non-billable-code-constant'
-import { NonBillableCodeService } from '@app/core/api/field-service/fs_non_billable_code.service'
-import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
-import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
-import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
+import { SharedModule } from "@app/shared/shared.module";
+import { ActivatedRoute, Router } from "@angular/router";
+import { NAVIGATION_ROUTE } from "../non-billable-code-constant";
+import { NonBillableCodeService } from "@app/core/api/field-service/fs_non_billable_code.service";
+import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
+import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
+import {
+  _compressToEncodedURIComponent,
+  _decompressFromEncodedURIComponent,
+} from "src/assets/js/util/jslzString";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    ReactiveFormsModule,
-    NgSelectModule,
-    AgGridModule,
-  ],
-  selector: 'app-non-billable-code-list',
-  templateUrl: './non-billable-code-list.component.html',
+  imports: [SharedModule, ReactiveFormsModule, NgSelectModule, AgGridModule],
+  selector: "app-non-billable-code-list",
+  templateUrl: "./non-billable-code-list.component.html",
 })
 export class NonBillableCodeListComponent implements OnInit {
-
   constructor(
     public api: NonBillableCodeService,
     public router: Router,
-    private activatedRoute: ActivatedRoute,
-  ) { }
+    private activatedRoute: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
-
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
-      this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
+      this.selectedViewType =
+        params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
@@ -44,42 +40,48 @@ export class NonBillableCodeListComponent implements OnInit {
 
   columnDefs: any = [
     {
-      field: "View", headerName: "View", filter: "agMultiColumnFilter",
+      field: "View",
+      headerName: "View",
+      filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: 'SELECT'
+        value: "SELECT",
       },
       maxWidth: 115,
-      minWidth: 115
+      minWidth: 115,
     },
-    { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-    { field: 'name', headerName: 'Name', filter: 'agMultiColumnFilter' },
-    { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter' },
-    { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
-  ]
+    { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "name", headerName: "Name", filter: "agMultiColumnFilter" },
+    {
+      field: "description",
+      headerName: "Description",
+      filter: "agMultiColumnFilter",
+    },
+    { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
+  ];
 
-  @Input() selectedViewType = 'Active';
+  @Input() selectedViewType = "Active";
 
   selectedViewOptions = [
     {
       name: "Active",
       value: 1,
-      selected: false
+      selected: false,
     },
     {
       name: "Inactive",
       value: 0,
-      selected: false
+      selected: false,
     },
     {
       name: "All",
-      selected: false
-    }
-  ]
+      selected: false,
+    },
+  ];
 
-  title = 'Non-billable codes';
+  title = "Non-billable codes";
 
   gridApi: GridApi;
 
@@ -88,73 +90,67 @@ export class NonBillableCodeListComponent implements OnInit {
   id = null;
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 
-      let data = this.activatedRoute.snapshot.queryParams['gridParams']
+      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
       _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
-      highlightRowView(params, 'id', this.id);
-      autoSizeColumns(params)
+      highlightRowView(params, "id", this.id);
+      autoSizeColumns(params);
     },
-    getRowId: params => params.data.id?.toString(),
-    onFilterChanged: params => {
+    getRowId: (params) => params.data.id?.toString(),
+    onFilterChanged: (params) => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
-        queryParamsHandling: 'merge',
+        queryParamsHandling: "merge",
         queryParams: {
-          gridParams
-        }
+          gridParams,
+        },
       });
-
     },
-    onSortChanged: params => {
+    onSortChanged: (params) => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([`.`], {
         relativeTo: this.activatedRoute,
-        queryParamsHandling: 'merge',
+        queryParamsHandling: "merge",
         queryParams: {
-          gridParams
-        }
+          gridParams,
+        },
       });
-
-    }
+    },
   };
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
-      queryParamsHandling: 'merge',
+      queryParamsHandling: "merge",
       queryParams: {
         id: id,
-        gridParams
-      }
+        gridParams,
+      },
     });
   }
 
   async getData() {
     try {
-      this.gridApi?.showLoadingOverlay()
+      this.gridApi?.showLoadingOverlay();
       this.data = await this.api.getAllRequests(this.selectedViewType);
 
-      this.router.navigate(['.'], {
+      this.router.navigate(["."], {
         queryParams: {
-          selectedViewType: this.selectedViewType
+          selectedViewType: this.selectedViewType,
         },
-        relativeTo: this.activatedRoute
-        , queryParamsHandling: 'merge'
+        relativeTo: this.activatedRoute,
+        queryParamsHandling: "merge",
       });
 
-      this.gridApi?.hideOverlay()
-
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.gridApi?.hideOverlay()
+      this.gridApi?.hideOverlay();
     }
-
   }
-
 }

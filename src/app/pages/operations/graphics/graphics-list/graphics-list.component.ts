@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { GraphicsService } from '@app/core/api/operations/graphics/graphics.service';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from '@app/shared/shared.module';
@@ -96,7 +95,6 @@ export class GraphicsListComponent implements OnInit {
     ];
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;

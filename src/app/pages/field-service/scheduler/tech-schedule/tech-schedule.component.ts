@@ -560,7 +560,7 @@ export class TechScheduleComponent implements OnInit {
     };
 
     if (enableScroll)
-      el1[0].scrollIntoViewIfNeeded();
+      el1[0]?.scrollIntoViewIfNeeded();
 
   }
 

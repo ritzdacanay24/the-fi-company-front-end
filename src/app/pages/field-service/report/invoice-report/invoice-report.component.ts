@@ -7,7 +7,6 @@ import { NAVIGATION_ROUTE } from '../../job/job-constant';
 import { InvoiceReportChartComponent } from './invoice-report-chart/invoice-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
 import { LinkRendererComponent } from 'src/app/shared/ag-grid/cell-renderers';
-import { agGridOptions } from 'src/app/shared/config/ag-grid.config';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { currencyFormatter, highlightRowView } from 'src/assets/js/util';
@@ -106,7 +105,6 @@ export class InvoiceReportComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

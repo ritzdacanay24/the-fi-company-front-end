@@ -1684,7 +1684,7 @@ $breadcrumb-border-radius: null;
 // Carousel
 
 // scss-docs-start carousel-variables
-$carousel-control-color: $white;
+$carousel-control-color: var(--#{$prefix}secondary-color);
 $carousel-control-width: 15%;
 $carousel-control-opacity: .5;
 $carousel-control-hover-opacity: .9;

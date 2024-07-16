@@ -9,7 +9,6 @@ import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { NAVIGATION_ROUTE } from '../user-constant'
 import { UserService } from '@app/core/api/field-service/user.service'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
 
@@ -97,7 +96,6 @@ export class UserListComponent implements OnInit {
   id = null;
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

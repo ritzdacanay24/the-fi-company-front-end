@@ -20,7 +20,6 @@ import { timeConvert } from '@app/pages/field-service/shared/field-service-helpe
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { LinkImageRendererComponent } from '@app/shared/ag-grid/cell-renderers/link-image-renderer.component'
 import { LinksImageRendererComponent } from '@app/shared/ag-grid/cell-renderers/links-image-renderer.component'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service'
 import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util'
@@ -652,7 +651,6 @@ export class UploadedReceiptComponent implements OnInit {
   }
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: [],
     onGridReady: this.onGridReady.bind(this),
 

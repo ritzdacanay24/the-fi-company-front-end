@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
@@ -9,7 +8,7 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { WorkOrderPickSheetModalService } from '../work-order-pick-sheet-modal/work-order-pick-sheet-modal.component';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
 import { LateReasonCodeModalService } from '@app/shared/components/last-reason-code-modal/late-reason-code-modal.component';
 import { agGridDateFilterdateFilter, highlightRowView, isEmpty } from 'src/assets/js/util';
@@ -305,7 +304,6 @@ export class MasterProductionComponent implements OnInit {
     dataRendered = false;
 
     gridOptions: any = {
-        ...agGridOptions,
         // rowBuffer: 0,
         // animateRows: true,
         getRowId: (data: any) => data?.data.SO,

@@ -1,26 +1,20 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-platform',
-  templateUrl: './platform.component.html',
-  styleUrls: []
+  selector: "app-platform",
+  templateUrl: "./platform.component.html",
+  styleUrls: [],
 })
 export class PlatformComponent implements OnInit {
+  constructor(public route: ActivatedRoute, public router: Router) {}
 
-  constructor(
-    public route: ActivatedRoute,
-    public router: Router
-  ) {
-  }
+  ngOnInit(): void {}
 
-  ngOnInit(): void {
-  }
+  title: string = "Platforms";
 
-  title: string = 'Platforms';
-
-  icon = 'mdi-cogs';
+  icon = "mdi-cogs";
 }

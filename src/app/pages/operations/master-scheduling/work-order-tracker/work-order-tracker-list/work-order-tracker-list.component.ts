@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component';
 import { KanbanApiService } from '@app/core/api/kanban';
 import { timeUntil } from '@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker.component';
 import { Subscription, interval } from 'rxjs';
@@ -88,7 +87,6 @@ export class WorkOrderTrackerListComponent implements OnInit {
     ];
 
     gridOptions: GridOptions = {
-        ...agGridOptions,
         columnDefs: [],
         onGridReady: (params) => {
             this.gridApi = params.api;

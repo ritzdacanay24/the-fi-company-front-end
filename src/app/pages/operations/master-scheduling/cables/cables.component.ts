@@ -3,10 +3,9 @@ import { first } from 'rxjs/operators';
 import { Component, OnInit } from '@angular/core';
 import { CablesService } from '@app/core/api/cables/cables.service';
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component';
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component';
 import { GridApi } from 'ag-grid-community';
 
 @Component({
@@ -44,7 +43,6 @@ export class CablesComponent implements OnInit {
   ];
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;
@@ -57,7 +55,6 @@ export class CablesComponent implements OnInit {
     modalRef.result.then((result: any) => {
     }, () => { });
   }
-
 
   constructor(
     private api: CablesService,

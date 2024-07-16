@@ -1,30 +1,23 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-job-status',
-  templateUrl: './job-status.component.html',
-  styleUrls: []
+  selector: "app-job-status",
+  templateUrl: "./job-status.component.html",
+  styleUrls: [],
 })
 export class JobStatusComponent implements OnInit {
+  constructor(public route: ActivatedRoute, public router: Router) {}
 
-  constructor(
-    public route: ActivatedRoute,
-    public router: Router
-  ) {
-  }
+  ngOnInit(): void {}
+  selectedTab = "list";
 
-  ngOnInit(): void {
-  }
-  selectedTab = 'list';
+  title: string = "Job Status";
 
-  title: string = 'Job Status';
+  icon = "mdi-cogs";
 
-  icon = 'mdi-cogs';
-
-  onNavChange($event){
-  }
+  onNavChange($event) {}
 }

@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
@@ -46,6 +45,7 @@ export class EmptyLocationReportComponent implements OnInit {
 
     columnDefs:any = [
         { field: "LOC_LOC", headerName: "Location", filter: "agTextColumnFilter" },
+        { field: "TAG_LOC_TEST", headerName: "Location Test", filter: "agTextColumnFilter" },
         { field: "LD_QTY_OH", headerName: "Qty On Hand", filter: "agTextColumnFilter" },
         { field: "loc_date", headerName: "Date", filter: "agTextColumnFilter" },
         { field: "loc_desc", headerName: "Description", filter: "agTextColumnFilter" },
@@ -55,7 +55,6 @@ export class EmptyLocationReportComponent implements OnInit {
     ];
 
     gridOptions: GridOptions = {
-        ...agGridOptions,
         columnDefs: [],
         onGridReady: (params: any) => {
             this.gridApi = params.api;

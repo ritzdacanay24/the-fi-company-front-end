@@ -1,25 +1,19 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { SharedModule } from 'src/app/shared/shared.module';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { SharedModule } from "src/app/shared/shared.module";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    ReactiveFormsModule
-  ],
-  selector: 'app-customer-form',
-  templateUrl: './customer-form.component.html',
-  styleUrls: ['./customer-form.component.scss']
+  imports: [SharedModule, ReactiveFormsModule],
+  selector: "app-customer-form",
+  templateUrl: "./customer-form.component.html",
+  styleUrls: ["./customer-form.component.scss"],
 })
 export class CustomerFormComponent {
-
-  constructor(
-    private fb: FormBuilder,
-  ) { }
+  constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    this.setFormEmitter.emit(this.form)
+    this.setFormEmitter.emit(this.form);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
@@ -27,19 +21,18 @@ export class CustomerFormComponent {
   @Input() submitted = false;
 
   get f() {
-    return this.form.controls
+    return this.form.controls;
   }
 
   form = this.fb.group({
-    name: [''],
-    image: [''],
+    name: [""],
+    image: [""],
     active: [1],
-    background_color: ''
-  })
+    background_color: "",
+  });
 
   setBooleanToNumber(key) {
-    let e = this.form.value[key]
-    this.form.get(key).patchValue(e ? 1 : 0)
+    let e = this.form.value[key];
+    this.form.get(key).patchValue(e ? 1 : 0);
   }
-
 }

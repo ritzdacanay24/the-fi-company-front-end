@@ -1,45 +1,38 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    ReactiveFormsModule
-  ],
-  selector: 'app-non-billable-code-form',
-  templateUrl: './non-billable-code-form.component.html',
-  styleUrls: ['./non-billable-code-form.component.scss']
+  imports: [SharedModule, ReactiveFormsModule],
+  selector: "app-non-billable-code-form",
+  templateUrl: "./non-billable-code-form.component.html",
+  styleUrls: ["./non-billable-code-form.component.scss"],
 })
 export class NonBillableCodeFormComponent {
-
-  constructor(
-    private fb: FormBuilder,
-  ) { }
+  constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    this.setFormEmitter.emit(this.form)
+    this.setFormEmitter.emit(this.form);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
-
   @Input() submitted = false;
 
   get f() {
-    return this.form.controls
+    return this.form.controls;
   }
 
   form = this.fb.group({
     name: [],
-    description: [''],
-    code: [''],
+    description: [""],
+    code: [""],
     active: [1],
-  })
+  });
 
   setBooleanToNumber(key) {
-    let e = this.form.value[key]
-    this.form.get(key).patchValue(e ? 1 : 0)
+    let e = this.form.value[key];
+    this.form.get(key).patchValue(e ? 1 : 0);
   }
 }

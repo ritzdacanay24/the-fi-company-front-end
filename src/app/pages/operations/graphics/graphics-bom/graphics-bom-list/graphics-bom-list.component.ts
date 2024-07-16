@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from '@app/shared/shared.module';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
@@ -174,7 +173,6 @@ export class GraphicsBomListComponent implements OnInit {
     ];
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: (params: any) => {
             this.gridApi = params.api;

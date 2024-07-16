@@ -2,11 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GridApi } from 'ag-grid-community';
 import moment from 'moment';
-import { NAVIGATION_ROUTE } from '../../job/job-constant';
 import { TicketEventReportChartComponent } from './ticket-event-report-chart/ticket-event-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
 import { LinkRendererComponent } from 'src/app/shared/ag-grid/cell-renderers';
-import { agGridOptions } from 'src/app/shared/config/ag-grid.config';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
@@ -102,7 +100,6 @@ export class TicketEventReportComponent implements OnInit {
   ]
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

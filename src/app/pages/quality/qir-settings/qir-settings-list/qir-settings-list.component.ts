@@ -9,7 +9,6 @@ import { NAVIGATION_ROUTE } from '../qir-settings-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { QirSettingsService } from '@app/core/api/quality/qir-settings.service'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
@@ -94,7 +93,6 @@ export class QirSettingsListComponent implements OnInit {
   changeIsAll() { }
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

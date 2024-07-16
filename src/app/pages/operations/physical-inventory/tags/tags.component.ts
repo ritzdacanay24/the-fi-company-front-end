@@ -1,6 +1,5 @@
 import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
@@ -333,7 +332,6 @@ export class TagsComponent implements OnInit {
   selectedRowCount: any;
 
   gridOptions: GridOptions = {
-    ...agGridOptions,
     groupTotalRow: null,
     groupDisplayType: 'singleColumn',
     groupSelectsChildren: true,

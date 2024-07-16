@@ -12,13 +12,12 @@ import { ShortagesService } from '@app/core/api/operations/shortages/shortages.s
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service'
 import { highlightRowView, autoSizeColumns, agGridDateFilter } from 'src/assets/js/util'
 import { SharedModule } from '@app/shared/shared.module'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
 import { CommentsRendererComponent } from '@app/shared/ag-grid/comments-renderer/comments-renderer.component'
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
-import { ItemInfoModalService } from '@app/shared/components/iitem-info-modal/item-info-modal.component'
+import { ItemInfoModalService } from '@app/shared/components/item-info-modal/item-info-modal.component'
 import { WorkOrderInfoModalService } from '@app/shared/components/work-order-info-modal/work-order-info-modal.component'
 import { LateReasonCodeModalService } from '@app/shared/components/last-reason-code-modal/late-reason-code-modal.component'
 import { LateReasonCodeRendererComponent } from '@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component'
@@ -279,7 +278,6 @@ export class ShortagesListComponent implements OnInit {
 
   copiedData
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

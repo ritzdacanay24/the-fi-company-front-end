@@ -10,7 +10,6 @@ import { RmaService } from '@app/core/api/quality/rma.service'
 import moment from 'moment'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
@@ -127,7 +126,6 @@ export class RmaListComponent implements OnInit {
   }
 
   gridOptions = {
-    ...agGridOptions,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

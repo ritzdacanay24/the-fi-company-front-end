@@ -3,7 +3,6 @@ import moment from 'moment';
 import { ReportService } from '@app/core/api/operations/report/report.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { AgGridModule } from 'ag-grid-angular';
-import { agGridOptions } from '@app/shared/config/ag-grid.config';
 import { currency, currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
@@ -56,7 +55,6 @@ export class DailyReportComponent implements OnInit {
     ];
 
     gridOptions = {
-        ...agGridOptions,
         columnDefs: this.columnDefs,
         onGridReady: this.onGridReady.bind(this),
         pagination: false,

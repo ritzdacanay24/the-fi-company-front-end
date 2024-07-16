@@ -1,30 +1,33 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { NAVIGATION_ROUTE } from '../service-type-constant';
-import { IServiceTypeForm, ServiceTypeFormComponent } from '../service-type-form/service-type-form.component';
-import { ServiceTypeService } from '@app/core/api/field-service/service-type.service';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { NAVIGATION_ROUTE } from "../service-type-constant";
+import {
+  IServiceTypeForm,
+  ServiceTypeFormComponent,
+} from "../service-type-form/service-type-form.component";
+import { ServiceTypeService } from "@app/core/api/field-service/service-type.service";
 
 @Component({
   standalone: true,
   imports: [SharedModule, ServiceTypeFormComponent],
-  selector: 'app-service-type-edit',
-  templateUrl: './service-type-edit.component.html',
-  styleUrls: ['./service-type-edit.component.scss']
+  selector: "app-service-type-edit",
+  templateUrl: "./service-type-edit.component.html",
+  styleUrls: ["./service-type-edit.component.scss"],
 })
 export class ServiceTypeEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: ServiceTypeService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -41,8 +44,10 @@ export class ServiceTypeEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -50,8 +55,8 @@ export class ServiceTypeEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      this.form.get(['type']).disable();
-    } catch (err) { }
+      this.form.get(["type"]).disable();
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -63,7 +68,7 @@ export class ServiceTypeEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -71,7 +76,6 @@ export class ServiceTypeEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }

@@ -1,23 +1,22 @@
-import { GridApi } from 'ag-grid-community'
-import { Component, Input, OnInit } from '@angular/core'
-import { ReactiveFormsModule } from '@angular/forms'
-import {
-  NgbDropdownModule,
-  NgbNavModule
-} from '@ng-bootstrap/ng-bootstrap'
-import { NgSelectModule } from '@ng-select/ng-select'
-import { AgGridModule } from 'ag-grid-angular'
+import { GridApi } from "ag-grid-community";
+import { Component, Input, OnInit } from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
+import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
+import { NgSelectModule } from "@ng-select/ng-select";
+import { AgGridModule } from "ag-grid-angular";
 
-import { ActivatedRoute, Router } from '@angular/router'
-import { NAVIGATION_ROUTE } from '../property-constant'
-import { PropertyService } from '@app/core/api/field-service/property.service'
-import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
-import { agGridOptions } from '@app/shared/config/ag-grid.config'
-import { SharedModule } from '@app/shared/shared.module'
-import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
-import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString'
-import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component'
-import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component'
+import { ActivatedRoute, Router } from "@angular/router";
+import { NAVIGATION_ROUTE } from "../property-constant";
+import { PropertyService } from "@app/core/api/field-service/property.service";
+import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
+import { SharedModule } from "@app/shared/shared.module";
+import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
+import {
+  _compressToEncodedURIComponent,
+  _decompressFromEncodedURIComponent,
+} from "src/assets/js/util/jslzString";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 
 @Component({
   standalone: true,
@@ -31,81 +30,140 @@ import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.c
     GridSettingsComponent,
     GridFiltersComponent,
   ],
-  selector: 'app-property-list',
-  templateUrl: `./property-list.component.html`
+  selector: "app-property-list",
+  templateUrl: `./property-list.component.html`,
 })
 export class PropertyListComponent implements OnInit {
-
   constructor(
     public api: PropertyService,
     public router: Router,
-    private activatedRoute: ActivatedRoute,
-  ) { }
+    private activatedRoute: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
-
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
-      this.selectedViewType = params['selectedViewType'] || this.selectedViewType;
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
+      this.selectedViewType =
+        params["selectedViewType"] || this.selectedViewType;
     });
 
     this.getData();
   }
 
-  pageId = '/field-service/list-properties'
+  pageId = "/field-service/list-properties";
 
   searchName = "";
 
   onFilterTextBoxChanged(value: any) {
-    this.gridApi.setGridOption('quickFilterText', value);
+    this.gridApi.setGridOption("quickFilterText", value);
   }
 
   columnDefs: any = [
     {
-      field: "View", headerName: "View", filter: "agMultiColumnFilter",
+      field: "View",
+      headerName: "View",
+      filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData),
-        value: 'SELECT'
+        value: "SELECT",
       },
       maxWidth: 115,
-      minWidth: 115
+      minWidth: 115,
     },
     {
-      field: 'address_complete', headerName: 'Address Complete', filter: 'agMultiColumnFilter',
+      field: "address_complete",
+      headerName: "Address Complete",
+      filter: "agMultiColumnFilter",
       cellClass: (params: any) => {
-        if (params.value == 'No') {
-          return ['bg-danger-subtle bg-opacity-75 text-danger'];
-        } else if (params.value == 'Yes') {
-          return ['bg-success-subtle bg-opacity-75 text-success'];
+        if (params.value == "No") {
+          return ["bg-danger-subtle bg-opacity-75 text-danger"];
+        } else if (params.value == "Yes") {
+          return ["bg-success-subtle bg-opacity-75 text-success"];
         } else {
           return [];
         }
       },
     },
     {
-      headerName: 'Address Info',
+      headerName: "Address Info",
       children: [
-
-        { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
-        { field: 'notes', headerName: 'Notes', filter: 'agMultiColumnFilter', maxWidth: 300, tooltipField: 'notes', },
-        { field: 'property', headerName: 'Property', filter: 'agMultiColumnFilter' },
-        { field: 'address1', headerName: 'Address 1', filter: 'agMultiColumnFilter' },
-        { field: 'address2', headerName: 'STE', filter: 'agMultiColumnFilter' },
-        { field: 'city', headerName: 'City', filter: 'agMultiColumnFilter' },
-        { field: 'state', headerName: 'State', filter: 'agMultiColumnFilter' },
-        { field: 'zip_code', headerName: 'Zip Code', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-        { field: 'country', headerName: 'Country', filter: 'agMultiColumnFilter' },
-        { field: 'out_of_town', headerName: 'Out Of Town', filter: 'agMultiColumnFilter' },
-        { field: 'property_phone', headerName: 'Property Phone', filter: 'agMultiColumnFilter' },
-        { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
-        { field: 'lat', headerName: 'Latitude', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-        { field: 'lon', headerName: 'Longitude', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-        { field: 'created_by', headerName: 'Created By', filter: 'agMultiColumnFilter' },
-        { field: 'created_date', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
-        { field: 'fs_licensed_id', headerName: 'Licensed ID', filter: 'agMultiColumnFilter' }
-      ]
+        { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+        {
+          field: "notes",
+          headerName: "Notes",
+          filter: "agMultiColumnFilter",
+          maxWidth: 300,
+          tooltipField: "notes",
+        },
+        {
+          field: "property",
+          headerName: "Property",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "address1",
+          headerName: "Address 1",
+          filter: "agMultiColumnFilter",
+        },
+        { field: "address2", headerName: "STE", filter: "agMultiColumnFilter" },
+        { field: "city", headerName: "City", filter: "agMultiColumnFilter" },
+        { field: "state", headerName: "State", filter: "agMultiColumnFilter" },
+        {
+          field: "zip_code",
+          headerName: "Zip Code",
+          filter: "agMultiColumnFilter",
+          cellDataType: "text",
+        },
+        {
+          field: "country",
+          headerName: "Country",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "out_of_town",
+          headerName: "Out Of Town",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "property_phone",
+          headerName: "Property Phone",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "active",
+          headerName: "Active",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "lat",
+          headerName: "Latitude",
+          filter: "agMultiColumnFilter",
+          cellDataType: "text",
+        },
+        {
+          field: "lon",
+          headerName: "Longitude",
+          filter: "agMultiColumnFilter",
+          cellDataType: "text",
+        },
+        {
+          field: "created_by",
+          headerName: "Created By",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "created_date",
+          headerName: "Created Date",
+          filter: "agMultiColumnFilter",
+        },
+        {
+          field: "fs_licensed_id",
+          headerName: "Licensed ID",
+          filter: "agMultiColumnFilter",
+        },
+      ],
     },
     // {
     //   headerName: 'Compliance Info',
@@ -116,101 +174,94 @@ export class PropertyListComponent implements OnInit {
     //     { field: 'licensed_techs', headerName: 'Licensed Techs', filter: 'agMultiColumnFilter' },
     //   ]
     // },
-  ]
+  ];
 
-  @Input() selectedViewType: 'Active' | 'Inactive' | 'All' | string = 'Active';
+  @Input() selectedViewType: "Active" | "Inactive" | "All" | string = "Active";
 
   selectedViewOptions = [
     {
       name: "Active",
-      selected: false
+      selected: false,
     },
     {
       name: "Inactive",
-      selected: false
+      selected: false,
     },
     {
       name: "All",
-      selected: false
-    }
-  ]
+      selected: false,
+    },
+  ];
 
-  title = 'Properties';
+  title = "Properties";
 
   gridApi: GridApi;
-
 
   data: any[];
 
   id = null;
 
   gridOptions = {
-    ...agGridOptions,
     enableBrowserTooltips: true,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 
-      let data = this.activatedRoute.snapshot.queryParams['gridParams']
+      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
       _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
-      highlightRowView(params, 'id', this.id);
-      autoSizeColumns(params)
+      highlightRowView(params, "id", this.id);
+      autoSizeColumns(params);
     },
-    getRowId: params => params.data.id?.toString(),
-    onFilterChanged: params => {
+    getRowId: (params) => params.data.id?.toString(),
+    onFilterChanged: (params) => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([NAVIGATION_ROUTE.LIST], {
-        queryParamsHandling: 'merge',
+        queryParamsHandling: "merge",
         queryParams: {
-          gridParams
-        }
+          gridParams,
+        },
       });
-
     },
-    onSortChanged: params => {
+    onSortChanged: (params) => {
       let gridParams = _compressToEncodedURIComponent(this.gridApi);
       this.router.navigate([NAVIGATION_ROUTE.LIST], {
-        queryParamsHandling: 'merge',
+        queryParamsHandling: "merge",
         queryParams: {
-          gridParams
-        }
+          gridParams,
+        },
       });
-
-    }
+    },
   };
 
   onEdit(data) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
-      queryParamsHandling: 'merge',
+      queryParamsHandling: "merge",
       queryParams: {
         id: data.id,
-        gridParams
-      }
+        gridParams,
+      },
     });
   }
 
   async getData() {
     try {
-      this.gridApi?.showLoadingOverlay()
+      this.gridApi?.showLoadingOverlay();
       this.data = await this.api.getAll(this.selectedViewType);
 
-      this.router.navigate(['.'], {
+      this.router.navigate(["."], {
         queryParams: {
-          selectedViewType: this.selectedViewType
+          selectedViewType: this.selectedViewType,
         },
-        relativeTo: this.activatedRoute
-        , queryParamsHandling: 'merge'
+        relativeTo: this.activatedRoute,
+        queryParamsHandling: "merge",
       });
 
-      this.gridApi?.hideOverlay()
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.gridApi?.hideOverlay()
-
+      this.gridApi?.hideOverlay();
     }
-
   }
-
 }

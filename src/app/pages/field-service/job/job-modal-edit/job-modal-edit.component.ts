@@ -1,29 +1,31 @@
-
-
-import { Component, Input, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, Input, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
 import { FormArray, FormBuilder, FormGroup } from "@angular/forms";
 import { JobFormComponent } from "../job-form/job-form.component";
 import { JobService } from "@app/core/api/field-service/job.service";
-import { NgbActiveModal, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
-import moment from 'moment';
-import { SharedModule } from '@app/shared/shared.module';
-import { TokenStorageService } from '@app/core/services/token-storage.service';
-import { TeamService } from '@app/core/api/field-service/fs-team.service';
-import { JobEditComponent } from '../job-edit/job-edit.component';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import { NgbActiveModal, NgbScrollSpyModule } from "@ng-bootstrap/ng-bootstrap";
+import moment from "moment";
+import { SharedModule } from "@app/shared/shared.module";
+import { TokenStorageService } from "@app/core/services/token-storage.service";
+import { TeamService } from "@app/core/api/field-service/fs-team.service";
+import { JobEditComponent } from "../job-edit/job-edit.component";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, JobFormComponent, NgbScrollSpyModule, JobEditComponent],
-  selector: 'app-job-modal-edit',
-  templateUrl: './job-modal-edit.component.html',
-  styleUrls: []
+  imports: [
+    SharedModule,
+    JobFormComponent,
+    NgbScrollSpyModule,
+    JobEditComponent,
+  ],
+  selector: "app-job-modal-edit",
+  templateUrl: "./job-modal-edit.component.html",
+  styleUrls: [],
 })
 export class JobModalEditComponent implements OnInit {
-
   constructor(
     public route: ActivatedRoute,
     public router: Router,
@@ -33,34 +35,36 @@ export class JobModalEditComponent implements OnInit {
     private tokenStorageService: TokenStorageService,
     private teamService: TeamService,
     private authenticationService: AuthenticationService
-  ) {
-  }
+  ) {}
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   removeTech = async ($event, value) => {
     if (value.id) {
-      const { value: accept } = await SweetAlert.confirm({ title: "Are you sure you want to remove?", text: "" });
-      if (!accept) return; await this.teamService.delete(value.id)
+      const { value: accept } = await SweetAlert.confirm({
+        title: "Are you sure you want to remove?",
+        text: "",
+      });
+      if (!accept) return;
+      await this.teamService.delete(value.id);
     }
     this.teams.removeAt($event);
-  }
+  };
 
   viewAttachment(url) {
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   }
 
   setFormElements = ($event) => {
     this.form = $event;
     if (this.id) this.getData();
-  }
+  };
 
-  @Input() ngStyle = { 'height': 'calc(100vh - 222px)' }
-  @Input() id = null
-  @Input() request_date = null
-  @Input() start_time = null
-  @Input() techs = null
+  @Input() ngStyle = { height: "calc(100vh - 222px)" };
+  @Input() id = null;
+  @Input() request_date = null;
+  @Input() start_time = null;
+  @Input() techs = null;
 
   title = "Job Modal";
 
@@ -69,11 +73,11 @@ export class JobModalEditComponent implements OnInit {
   form: FormGroup;
 
   dismiss() {
-    this.ngbActiveModal.dismiss()
+    this.ngbActiveModal.dismiss();
   }
 
   close() {
-    this.ngbActiveModal.close()
+    this.ngbActiveModal.close();
   }
 
   submitted = false;
@@ -81,9 +85,9 @@ export class JobModalEditComponent implements OnInit {
   async onSubmit() {
     this.submitted = true;
     if (this.id) {
-      this.update()
+      this.update();
     } else {
-      this.create()
+      this.create();
     }
   }
 
@@ -91,67 +95,61 @@ export class JobModalEditComponent implements OnInit {
     this.submitted = true;
 
     if (this.form.invalid && this.form.value?.job?.active == 1) {
-      getFormValidationErrors()
-      return
-    };
+      getFormValidationErrors();
+      return;
+    }
 
     this.form.patchValue({
       job: {
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.tokenStorageService.authUser.id
-      }
-    })
+        created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        created_by: this.tokenStorageService.authUser.id,
+      },
+    });
 
     try {
-      await this.api.create(this.form.value)
-      this.close()
-    } catch (err) {
-    }
+      await this.api.create(this.form.value);
+      this.close();
+    } catch (err) {}
   }
 
   async update() {
     this.submitted = true;
 
     if (this.form.invalid && this.form.value?.job?.active == 1) {
-      getFormValidationErrors()
-      return
-    };
+      getFormValidationErrors();
+      return;
+    }
 
     try {
-      await this.api.update(this.id, this.form.value)
-      this.close()
-    } catch (err) {
-
-    }
+      await this.api.update(this.id, this.form.value);
+      this.close();
+    } catch (err) {}
   }
 
   async onDelete() {
     try {
-      await this.api.delete(this.id)
-      this.close()
-    } catch (err) {
-
-    }
+      await this.api.delete(this.id);
+      this.close();
+    } catch (err) {}
   }
 
-  data
+  data;
   async getData() {
     try {
-      let data = this.data = await this.api.getById(this.id)
-      this.form.patchValue({ job: data })
-      this.getTeams()
-    } catch (err) { }
+      let data = (this.data = await this.api.getById(this.id));
+      this.form.patchValue({ job: data });
+      this.getTeams();
+    } catch (err) {}
   }
 
   teams: FormArray;
   async getTeams() {
-    let data = await this.teamService.find({ fs_det_id: this.id })
+    let data = await this.teamService.find({ fs_det_id: this.id });
     if (data) {
-      this.teams = this.form.get('resource') as FormArray;
+      this.teams = this.form.get("resource") as FormArray;
       for (let i = 0; i < data.length; i++) {
-        this.teams.push(this.fb.group(data[i]))
+        this.teams.push(this.fb.group(data[i]));
       }
-
     }
   }
 
@@ -159,42 +157,45 @@ export class JobModalEditComponent implements OnInit {
     this.id = null;
     delete this.form.value.id;
 
-    this.form.patchValue({
-      job: {
-        invoice_date: null,
-        vendor_inv_number: '',
-        vendor_cost: '',
-        invoice_number: this.form.value.billable == 'No' ? this.form.value.billable : '',
-        id: null,
-        invoice_notes: '',
-        invoice: '',
-        acc_status: '',
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-        created_by: this.authenticationService.currentUserValue.id,
-        paper_work_location: null,
-        billable_flat_rate_or_po: '',
-        contractor_inv_sent_to_ap: '',
-        period: '',
-        customer_cancelled: '',
-        cancellation_comments: '',
-        cancelled_type: '',
-      }
-    }, { emitEvent: false });
+    this.form.patchValue(
+      {
+        job: {
+          invoice_date: null,
+          vendor_inv_number: "",
+          vendor_cost: "",
+          invoice_number:
+            this.form.value.billable == "No" ? this.form.value.billable : "",
+          id: null,
+          invoice_notes: "",
+          invoice: "",
+          acc_status: "",
+          created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+          created_by: this.authenticationService.currentUserValue.id,
+          paper_work_location: null,
+          billable_flat_rate_or_po: "",
+          contractor_inv_sent_to_ap: "",
+          period: "",
+          customer_cancelled: "",
+          cancellation_comments: "",
+          cancelled_type: "",
+        },
+      },
+      { emitEvent: false }
+    );
 
     //clear fsid in resoruce
-    this.teams = this.form.get('resource') as FormArray;
-    for (let i = 0; i < this.teams['controls'].length; i++) {
-      this.teams['controls'][i].patchValue({ fs_det_id: null, id: null })
+    this.teams = this.form.get("resource") as FormArray;
+    for (let i = 0; i < this.teams["controls"].length; i++) {
+      this.teams["controls"][i].patchValue({ fs_det_id: null, id: null });
     }
 
     this.form.enable();
   }
 
-
   onPrint() {
     setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
 
       popupWin.document.write(`
@@ -210,8 +211,7 @@ export class JobModalEditComponent implements OnInit {
             </style>
           </head>
           <body onload="window.print();window.close()">${printContents}</body>
-        </html>`
-      );
+        </html>`);
 
       popupWin.document.close();
 
@@ -223,5 +223,4 @@ export class JobModalEditComponent implements OnInit {
       };
     }, 200);
   }
-
 }

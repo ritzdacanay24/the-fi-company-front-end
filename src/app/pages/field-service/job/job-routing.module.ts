@@ -1,57 +1,57 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { JobComponent } from './job.component';
-import { JobListComponent } from './job-list/job-list.component';
-import { JobCreateComponent } from './job-create/job-create.component';
-import { JobMapComponent } from './job-map/job-map.component';
-import { JobEditComponent } from './job-edit/job-edit.component';
-import { JobOpenInvoiceComponent } from './job-open-invoice/job-open-invoice.component';
-import { JobBillingComponent } from './job-overview/job-billing/job-billing.component';
+import { NgModule } from "@angular/core";
+import { RouterModule, Routes } from "@angular/router";
+import { JobComponent } from "./job.component";
+import { JobListComponent } from "./job-list/job-list.component";
+import { JobCreateComponent } from "./job-create/job-create.component";
+import { JobMapComponent } from "./job-map/job-map.component";
+import { JobEditComponent } from "./job-edit/job-edit.component";
+import { JobOpenInvoiceComponent } from "./job-open-invoice/job-open-invoice.component";
+import { JobBillingComponent } from "./job-overview/job-billing/job-billing.component";
 
 const routes: Routes = [
   {
-    path: '',
+    path: "",
     component: JobComponent,
     children: [
       {
-        path: '',
-        redirectTo: 'list',
-        pathMatch: 'full'
+        path: "",
+        redirectTo: "list",
+        pathMatch: "full",
       },
       {
-        path: 'list',
-        component: JobListComponent
+        path: "list",
+        component: JobListComponent,
       },
       {
-        path: 'edit',
-        component: JobEditComponent
+        path: "edit",
+        component: JobEditComponent,
       },
       {
-        path: 'create',
-        component: JobCreateComponent
+        path: "create",
+        component: JobCreateComponent,
       },
       {
-        path: 'job-open-invoice',
-        component: JobOpenInvoiceComponent
+        path: "job-open-invoice",
+        component: JobOpenInvoiceComponent,
       },
       {
-        path: 'map',
-        component: JobMapComponent
+        path: "map",
+        component: JobMapComponent,
       },
       {
-        path: 'billing',
-        component: JobBillingComponent
+        path: "billing",
+        component: JobBillingComponent,
       },
-    ]
+    ],
   },
   // {
   //   path: 'overview',
   //   component: JobOverviewPageComponent
   // },
-]
+];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class JobRoutingModule { }
+export class JobRoutingModule {}

@@ -1,30 +1,30 @@
-import { Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { TicketEventFormComponent } from '../ticket-event-form/ticket-event-form.component';
-import { TicketEventService } from '@app/core/api/field-service/ticket-event.service';
-import { NAVIGATION_ROUTE } from '../ticket-event-constant';
+import { Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { TicketEventFormComponent } from "../ticket-event-form/ticket-event-form.component";
+import { TicketEventService } from "@app/core/api/field-service/ticket-event.service";
+import { NAVIGATION_ROUTE } from "../ticket-event-constant";
 
 @Component({
   standalone: true,
   imports: [SharedModule, TicketEventFormComponent],
-  selector: 'app-ticket-event-edit',
-  templateUrl: './ticket-event-edit.component.html',
-  styleUrls: []
+  selector: "app-ticket-event-edit",
+  templateUrl: "./ticket-event-edit.component.html",
+  styleUrls: [],
 })
 export class TicketEventEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: TicketEventService,
-    private toastrService: ToastrService,
-  ) { }
+    private toastrService: ToastrService
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['id'];
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["id"];
     });
 
     if (this.id) this.getData();
@@ -41,8 +41,10 @@ export class TicketEventEditComponent {
   submitted = false;
 
   @Input() goBack: Function = () => {
-    this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
-  }
+    this.router.navigate([NAVIGATION_ROUTE.LIST], {
+      queryParamsHandling: "merge",
+    });
+  };
 
   data: any;
 
@@ -50,8 +52,7 @@ export class TicketEventEditComponent {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   async onSubmit() {
@@ -63,7 +64,7 @@ export class TicketEventEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       this.goBack();
     } catch (err) {
       this.isLoading = false;
@@ -71,7 +72,6 @@ export class TicketEventEditComponent {
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
-
 }
