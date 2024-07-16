@@ -25,8 +25,9 @@ import { SharedModule } from "../shared/shared.module";
 import { DashboardComponent } from "./dashboard/dashboard.component";
 
 @NgModule({
-  declarations: [DashboardComponent],
+  // declarations: [DashboardComponent],
   imports: [
+    DashboardComponent,
     CommonModule,
     FormsModule,
     NgbToastModule,

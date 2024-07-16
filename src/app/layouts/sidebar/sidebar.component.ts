@@ -1,49 +1,53 @@
-import { Component, OnInit, EventEmitter, Output, ViewChild, ElementRef } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
+import {
+  Component,
+  OnInit,
+  EventEmitter,
+  Output,
+  ViewChild,
+  ElementRef,
+} from "@angular/core";
+import { NavigationEnd, Router } from "@angular/router";
+import { TranslateService } from "@ngx-translate/core";
 
-import { MENU } from './menu';
-import { MenuItem } from './menu.model';
-import { environment } from 'src/environments/environment';
-import { FavoriteService } from '@app/core/api/favorites/favorites.service';
+import { MENU } from "./menu";
+import { MenuItem } from "./menu.model";
+import { environment } from "src/environments/environment";
+import { FavoriteService } from "@app/core/api/favorites/favorites.service";
 
 @Component({
-  selector: 'app-sidebar',
-  templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss']
+  selector: "app-sidebar",
+  templateUrl: "./sidebar.component.html",
+  styleUrls: ["./sidebar.component.scss"],
 })
 export class SidebarComponent implements OnInit {
-
   menu: any;
   toggle: any = true;
   menuItems: MenuItem[] = [];
-  @ViewChild('sideMenu') sideMenu!: ElementRef;
+  @ViewChild("sideMenu") sideMenu!: ElementRef;
   @Output() mobileMenuButtonClicked = new EventEmitter();
-  maxFavs = 5
+  maxFavs = 5;
   favs = [];
 
-  searchMenu
+  searchMenu;
 
-  recentSearches = []
+  recentSearches = [];
   constructor(
     private router: Router,
     public translate: TranslateService,
-    private favoriteService: FavoriteService,
+    private favoriteService: FavoriteService
   ) {
-    translate.setDefaultLang('en');
+    translate.setDefaultLang("en");
     this.favoriteService.getData$.subscribe(() => {
       this.favs = this.favoriteService.getFavorites();
     });
 
     this.router.events.subscribe((event) => {
-      if (document.documentElement.getAttribute('data-layout') != "twocolumn") {
+      if (document.documentElement.getAttribute("data-layout") != "twocolumn") {
         if (event instanceof NavigationEnd) {
           this.initActiveMenu();
-
         }
       }
     });
-
   }
 
   compare(a, b) {
@@ -66,10 +70,18 @@ export class SidebarComponent implements OnInit {
         this.menuItems[i].subItems.sort((a, b) => this.compare(a, b));
         for (let ii = 0; ii < this.menuItems[i].subItems.length; ii++) {
           if (this.menuItems[i].subItems[ii].subItems) {
-            this.menuItems[i].subItems[ii].subItems.sort((a, b) => this.compare(a, b));
-            for (let iii = 0; iii < this.menuItems[i].subItems[ii].subItems.length; iii++) {
+            this.menuItems[i].subItems[ii].subItems.sort((a, b) =>
+              this.compare(a, b)
+            );
+            for (
+              let iii = 0;
+              iii < this.menuItems[i].subItems[ii].subItems.length;
+              iii++
+            ) {
               if (this.menuItems[i].subItems[ii].subItems[iii].subItems) {
-                this.menuItems[i].subItems[ii].subItems[iii].subItems.sort((a, b) => this.compare(a, b));
+                this.menuItems[i].subItems[ii].subItems[iii].subItems.sort(
+                  (a, b) => this.compare(a, b)
+                );
               }
             }
           }
@@ -87,57 +99,51 @@ export class SidebarComponent implements OnInit {
     }, 0);
   }
 
-
   removeActivation(items: any) {
     items.forEach((item: any) => {
       item.classList.remove("active");
     });
   }
 
-
   toggleItem(item: any) {
     this.menuItems.forEach((menuItem: any) => {
-
       if (menuItem == item) {
-        menuItem.isCollapsed = !menuItem.isCollapsed
+        menuItem.isCollapsed = !menuItem.isCollapsed;
       } else {
-        menuItem.isCollapsed = true
+        menuItem.isCollapsed = true;
       }
       if (menuItem.subItems) {
         menuItem.subItems.forEach((subItem: any) => {
-
           if (subItem == item) {
-            menuItem.isCollapsed = !menuItem.isCollapsed
-            subItem.isCollapsed = !subItem.isCollapsed
+            menuItem.isCollapsed = !menuItem.isCollapsed;
+            subItem.isCollapsed = !subItem.isCollapsed;
           } else {
-            subItem.isCollapsed = true
+            subItem.isCollapsed = true;
           }
           if (subItem.subItems) {
             subItem.subItems.forEach((childitem: any) => {
-
               if (childitem == item) {
-                childitem.isCollapsed = !childitem.isCollapsed
-                subItem.isCollapsed = !subItem.isCollapsed
-                menuItem.isCollapsed = !menuItem.isCollapsed
+                childitem.isCollapsed = !childitem.isCollapsed;
+                subItem.isCollapsed = !subItem.isCollapsed;
+                menuItem.isCollapsed = !menuItem.isCollapsed;
               } else {
-                childitem.isCollapsed = true
+                childitem.isCollapsed = true;
               }
               if (childitem.subItems) {
                 childitem.subItems.forEach((childrenitem: any) => {
-
                   if (childrenitem == item) {
-                    childrenitem.isCollapsed = false
-                    childitem.isCollapsed = false
-                    subItem.isCollapsed = false
-                    menuItem.isCollapsed = false
+                    childrenitem.isCollapsed = false;
+                    childitem.isCollapsed = false;
+                    subItem.isCollapsed = false;
+                    menuItem.isCollapsed = false;
                   } else {
-                    childrenitem.isCollapsed = true
+                    childrenitem.isCollapsed = true;
                   }
-                })
+                });
               }
-            })
+            });
           }
-        })
+        });
       }
     });
   }
@@ -149,7 +155,7 @@ export class SidebarComponent implements OnInit {
       this.removeActivation(items);
     }
     this.activateParentDropdown(event.target);
-    this.toggleItemFavorite()
+    this.toggleItemFavorite();
 
     const ul1 = document.getElementById("navbar-nav");
     if (ul1) {
@@ -158,52 +164,50 @@ export class SidebarComponent implements OnInit {
     }
   }
 
-
   toggleItemFavorite() {
     this.menuItems.forEach((menuItem: any) => {
-
-      menuItem.isCollapsed = true
+      menuItem.isCollapsed = true;
 
       if (menuItem.subItems) {
         menuItem.subItems.forEach((subItem: any) => {
-          subItem.isCollapsed = true
+          subItem.isCollapsed = true;
           if (subItem.subItems) {
             subItem.subItems.forEach((childitem: any) => {
-              childitem.isCollapsed = true
+              childitem.isCollapsed = true;
               if (childitem.subItems) {
                 childitem.subItems.forEach((childrenitem: any) => {
-                  childrenitem.isCollapsed = true
-                })
+                  childrenitem.isCollapsed = true;
+                });
               }
-            })
+            });
           }
-        })
+        });
       }
     });
   }
 
-  isCollapsed = true
+  isCollapsed = true;
   mouseHovering(e) {
-    e.showStar = true
-    e.showStarColor = false
+    e.showStar = true;
+    e.showStarColor = false;
     this.favs.forEach((menuItem: any) => {
       if (e.label == menuItem.label) {
-        e.showStarColor = true
+        e.showStarColor = true;
       }
-    })
+    });
   }
 
   saveAsFavorite(item) {
-    item.showStarColor = true
-    this.favoriteService.onSave(item)
+    item.showStarColor = true;
+    this.favoriteService.onSave(item);
   }
   removeAsFavorite(item) {
-    item.showStarColor = false
-    this.favoriteService.removeByLabel(item.label)
+    item.showStarColor = false;
+    this.favoriteService.removeByLabel(item.label);
   }
 
   mouseLeft(item) {
-    item.showStar = false
+    item.showStar = false;
     item.showStarColor = false;
   }
 
@@ -216,18 +220,36 @@ export class SidebarComponent implements OnInit {
       // to set aria expand true remaining
       parentCollapseDiv.classList.add("show");
       parentCollapseDiv.parentElement.children[0].classList.add("active");
-      parentCollapseDiv.parentElement.children[0].setAttribute("aria-expanded", "true");
+      parentCollapseDiv.parentElement.children[0].setAttribute(
+        "aria-expanded",
+        "true"
+      );
       if (parentCollapseDiv.parentElement.closest(".collapse.menu-dropdown")) {
-        parentCollapseDiv.parentElement.closest(".collapse").classList.add("show");
-        if (parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling)
-          parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.classList.add("active");
-        if (parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.closest(".collapse")) {
-          parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.closest(".collapse").classList.add("show");
-          parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.closest(".collapse").previousElementSibling.classList.add("active");
+        parentCollapseDiv.parentElement
+          .closest(".collapse")
+          .classList.add("show");
+        if (
+          parentCollapseDiv.parentElement.closest(".collapse")
+            .previousElementSibling
+        )
+          parentCollapseDiv.parentElement
+            .closest(".collapse")
+            .previousElementSibling.classList.add("active");
+        if (
+          parentCollapseDiv.parentElement
+            .closest(".collapse")
+            .previousElementSibling.closest(".collapse")
+        ) {
+          parentCollapseDiv.parentElement
+            .closest(".collapse")
+            .previousElementSibling.closest(".collapse")
+            .classList.add("show");
+          parentCollapseDiv.parentElement
+            .closest(".collapse")
+            .previousElementSibling.closest(".collapse")
+            .previousElementSibling.classList.add("active");
         }
       }
-
-
 
       if (!this.initalLoad)
         setTimeout(() => {
@@ -240,7 +262,12 @@ export class SidebarComponent implements OnInit {
     return false;
   }
 
+  //this is the functino that selects the items in the side menu.
   updateActive(event: any) {
+    if (document.documentElement.clientWidth <= 767) {
+      document.body.classList.toggle("vertical-sidebar-enable");
+    }
+
     this.isCollapsed = true;
 
     const ul1 = document.getElementById("navbar-nav1");
@@ -262,34 +289,34 @@ export class SidebarComponent implements OnInit {
     // Check if the application is running in production
     if (environment.production) {
       // Modify pathName for production build
-      pathName = pathName.replace('/velzon/angular/modern', '');
-      pathName = pathName.replace('/dist/web', '');
+      pathName = pathName.replace("/velzon/angular/modern", "");
+      pathName = pathName.replace("/dist/web", "");
     }
 
-    const active = this.findMenuItem(pathName, this.menuItems)
-    this.toggleItem(active)
+    const active = this.findMenuItem(pathName, this.menuItems);
+    this.toggleItem(active);
     const ul = document.getElementById("navbar-nav");
     if (ul) {
       const items = Array.from(ul.querySelectorAll("a.nav-link"));
-      let activeItems = items.filter((x: any) => x.classList.contains("active"));
+      let activeItems = items.filter((x: any) =>
+        x.classList.contains("active")
+      );
       this.removeActivation(activeItems);
 
       let matchingMenuItem = items.find((x: any) => {
         if (environment.production) {
-          let path = x.pathname
-          path = path.replace('/velzon/angular/modern', '');
-          path = path.replace('/dist/web', '');
+          let path = x.pathname;
+          path = path.replace("/velzon/angular/modern", "");
+          path = path.replace("/dist/web", "");
           return path === pathName;
         } else {
           return x.pathname === pathName;
         }
-
       });
       if (matchingMenuItem) {
         this.activateParentDropdown(matchingMenuItem);
       }
     }
-
   }
 
   private findMenuItem(pathname: string, menuItems: any[]): any {
@@ -321,11 +348,15 @@ export class SidebarComponent implements OnInit {
    * Toggle the menu bar when having mobile screen
    */
   toggleMobileMenu(event: any) {
-    var sidebarsize = document.documentElement.getAttribute("data-sidebar-size");
-    if (sidebarsize == 'sm-hover-active') {
-      document.documentElement.setAttribute("data-sidebar-size", 'sm-hover')
+    var sidebarsize =
+      document.documentElement.getAttribute("data-sidebar-size");
+    if (sidebarsize == "sm-hover-active") {
+      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
     } else {
-      document.documentElement.setAttribute("data-sidebar-size", 'sm-hover-active')
+      document.documentElement.setAttribute(
+        "data-sidebar-size",
+        "sm-hover-active"
+      );
     }
   }
 
@@ -334,7 +365,6 @@ export class SidebarComponent implements OnInit {
    * @param content modal content
    */
   SidebarHide() {
-    document.body.classList.remove('vertical-sidebar-enable');
+    document.body.classList.remove("vertical-sidebar-enable");
   }
-
 }
