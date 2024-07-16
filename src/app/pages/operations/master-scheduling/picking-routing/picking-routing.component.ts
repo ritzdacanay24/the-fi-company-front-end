@@ -133,6 +133,7 @@ export class PickingRoutingComponent implements OnInit {
 
       this.statusCount = this.calculateStatus();
       if (this.gridApi.isDestroyed()) return;
+      this.gridApi!.redrawRows();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

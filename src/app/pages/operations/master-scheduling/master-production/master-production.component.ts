@@ -37,6 +37,7 @@ import { KanbanRendererComponent } from "@app/shared/ag-grid/cell-renderers/kanb
 import { GridApi } from "ag-grid-community";
 
 const MASTER_PRODUCTION = "MASTER_PRODUCTION";
+const WORK_ORDER_ROUTING = "Work Order Routing";
 
 @Component({
   standalone: true,
@@ -157,16 +158,42 @@ export class MasterProductionComponent implements OnInit {
     );
   };
 
-  viewComment = (workOrderNumber) => {
+  viewComment = (workOrderNumber, id: string) => {
     let modalRef = this.commentsModalService.open(
       workOrderNumber,
       "Work Order"
     );
     modalRef.result.then(
-      (result: any) => {},
+      (result: any) => {
+        let rowNode = this.gridApi.getRowNode(id);
+        rowNode.data.recent_comments = result;
+        this.massUpdate(rowNode.data, workOrderNumber, true);
+      },
       () => {}
     );
   };
+
+  massUpdate(newData: any, uniqueId: number, ws = false) {
+    let updatedData = [];
+    this.gridApi.forEachNode(function (rowNode) {
+      if (rowNode.data.WR_NBR == uniqueId) {
+        rowNode.data.recent_comments = newData.recent_comments;
+        rowNode.data.wedge_rework = newData.wedge_rework;
+        rowNode.data.print_details = newData.print_details;
+        rowNode.data.misc.shipping_db_status = newData.misc.shipping_db_status;
+        updatedData.push(rowNode);
+      }
+    });
+
+    this.gridApi.redrawRows({ rowNodes: updatedData });
+
+    if (ws) {
+      this.websocketService.next({
+        message: newData,
+        type: WORK_ORDER_ROUTING,
+      });
+    }
+  }
 
   openReasonCodes = (key, misc, soLineNumber, rowData) => {
     let lateReasonCodeDepartment = "";
@@ -283,7 +310,7 @@ export class MasterProductionComponent implements OnInit {
       filter: "agMultiColumnFilter",
       cellRenderer: CommentsRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.viewComment(e.rowData.WR_NBR),
+        onClick: (e: any) => this.viewComment(e.rowData.WR_NBR, e.rowData.SO),
       },
       valueGetter: function (params) {
         if (params.data)

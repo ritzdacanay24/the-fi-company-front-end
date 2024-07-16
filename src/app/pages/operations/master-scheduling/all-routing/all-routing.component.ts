@@ -109,6 +109,7 @@ export class AllRoutingComponent implements OnInit {
       this.data = await this.api.getMasterProduction(this.routing);
 
       if (this.gridApi.isDestroyed()) return;
+      this.gridApi!.redrawRows();
 
       this.gridApi?.hideOverlay();
     } catch (err) {

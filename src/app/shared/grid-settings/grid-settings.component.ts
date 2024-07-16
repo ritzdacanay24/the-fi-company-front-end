@@ -87,11 +87,7 @@ export class GridSettingsComponent implements OnInit {
                 state: JSON.parse(current.data),
                 applyOrder: true,
             });
-
-
-            this.gridApi.forEachNode((groupId) => { console.log(groupId, 'groupId')})
-
-           
+          
 
             // onFirstDataRendered: (params) => {
             //     let groups = store.getItem(OPEN_GROUP_KEY);

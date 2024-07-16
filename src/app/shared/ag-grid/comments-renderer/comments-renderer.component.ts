@@ -48,7 +48,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
           <div class="card shadow-lg">
             <div class="card-header d-flex align-items-center">
               <h4 class="card-title mb-0">${this.params.value?.title || 'Recent Comment'}</h4>
-              ${this.params.value?.description ? `<p>${this.params.value?.description}</p>` : ''}
+              ${this.params.value?.description ? `<span class="ms-3 text-end">${this.params.value?.description}</span>` : ''}
             </div>
             <div class="card-body" style="overflow:hidden;">
              <div style="text-overflow: ellipsis;white-space: normal;
@@ -81,9 +81,9 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
         arrow: false,
         content: `
           <div class="card shadow-lg">
-          <div class="card-header d-flex align-items-center">
-          <h4 class="card-title mb-0">${this.params.value?.title || 'No comments found'}</h4>
-              ${this.params.value?.description ? `<p>${this.params.value?.description}</p>` : ''}
+            <div class="card-header d-flex align-items-center">
+              <h4 class="card-title mb-0">${this.params.value?.title || 'No comments found'}</h4>
+              ${this.params.value?.description ? `<span class="ms-3 text-end">${this.params.value?.description}</span>` : ''}
             </div>
             <div class="card-body" style="overflow:hidden">
               <p>No comments found.</p>
