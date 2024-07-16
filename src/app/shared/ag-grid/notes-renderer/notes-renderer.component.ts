@@ -1,32 +1,34 @@
-import { Component } from '@angular/core';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { Component } from "@angular/core";
+import { ICellRendererAngularComp } from "ag-grid-angular";
 
-import tippy from 'tippy.js';
-import { isEmpty } from 'src/assets/js/util';
-import { SharedModule } from '@app/shared/shared.module';
+import tippy from "tippy.js";
+import { isEmpty } from "src/assets/js/util";
+import { SharedModule } from "@app/shared/shared.module";
+import moment from "moment";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-notes-renderer',
-  templateUrl: './notes-renderer.component.html'
+  selector: "app-notes-renderer",
+  templateUrl: "./notes-renderer.component.html",
 })
-
 export class NotesRendererComponent implements ICellRendererAngularComp {
-
   params: any;
   notes: any;
-  iconColor = '';
-  data
+  iconColor = "";
+  data;
   agInit(params): void {
-
     this.params = params;
     this.data = params.data;
 
     this.notes = params.data?.recent_notes;
 
     if (!isEmpty(this.notes)) {
-      this.iconColor = 'text-warning';
+      this.iconColor = "text-warning";
+
+      if (moment().isSame(this.notes?.createdDate, "day")) {
+        this.iconColor = "text-success";
+      }
 
       tippy(params.eGridCell, {
         content: `
@@ -43,12 +45,12 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
             </div>
           </div>
         `,
-        placement: 'top-start',
+        placement: "top-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
-      })
+        trigger: "mouseenter",
+      });
     }
   }
 
@@ -63,13 +65,13 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.data
-      }
+        rowData: this.params.data,
+      };
       this.params.onClick(params);
     }
   }
 }
 
 function isEMpty(recent_notes: any) {
-  throw new Error('Function not implemented.');
+  throw new Error("Function not implemented.");
 }
