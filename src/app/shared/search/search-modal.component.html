@@ -11,7 +11,7 @@
         <ng-container *ngIf="menuItems | filterPeople:query:'link' as result">
 
             <ul class="list-group">
-                <li class="list-group-item" (click)="go(row)" [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == i}"
+                <li class="list-group-item pointer" (click)="go(row)" [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == i}"
                     (mouseenter)="row.show = true;" (mouseleave)="row.show = false;"
                     *ngFor="let row of $any(menuItems) | filterPeople:query:'link'; let i = index" id="test_{{i}}">
                     <div class="d-flex align-items-center">
@@ -76,7 +76,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 ">
 
                             <button (click)="addFavorite(row, ii, i);$event.stopPropagation()"
                                 *ngIf="item.name == 'Recent Searches'" type="button"
