@@ -1,18 +1,16 @@
-import { Component } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
-import tippy from 'tippy.js';
+import { Component } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ICellRendererAngularComp } from "ag-grid-angular";
+import tippy from "tippy.js";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-ship-account-renderer',
-  templateUrl: './ship-account-renderer.component.html',
-  styleUrls: []
+  selector: "app-ship-account-renderer",
+  templateUrl: "./ship-account-renderer.component.html",
+  styleUrls: [],
 })
-
 export class ShipAccountRendererComponent implements ICellRendererAngularComp {
-
   params: any;
   iconName: string;
   showValue: boolean;
@@ -47,11 +45,11 @@ export class ShipAccountRendererComponent implements ICellRendererAngularComp {
           </div>
         </div>
       `,
-        placement: 'top-start',
+        placement: "top-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
+        trigger: "mouseenter",
       });
     }
   }
@@ -67,8 +65,8 @@ export class ShipAccountRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.node.data
-      }
+        rowData: this.params.node.data,
+      };
       this.params.onClick(params);
     }
   }

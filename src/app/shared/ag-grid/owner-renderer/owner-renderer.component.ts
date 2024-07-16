@@ -1,33 +1,31 @@
-import { Component } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
-import { isEmpty } from 'src/assets/js/util';
+import { Component } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ICellRendererAngularComp } from "ag-grid-angular";
+import { isEmpty } from "src/assets/js/util";
 
-import tippy from 'tippy.js';
+import tippy from "tippy.js";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-owner-renderer',
-  templateUrl: './owner-renderer.component.html'
+  selector: "app-owner-renderer",
+  templateUrl: "./owner-renderer.component.html",
 })
-
 export class OwnerRendererComponent implements ICellRendererAngularComp {
-
   params: any;
-  iconColor = '';
+  iconColor = "";
   data: any;
 
   agInit(params): void {
-    if (!params.data) return
+    if (!params.data) return;
     this.params = params;
     this.data = this.params.data.misc;
 
-    if (!isEmpty(this.data) && this.data.userName != '') {
+    if (!isEmpty(this.data) && this.data.userName != "") {
       if (isEmpty(this.params.data.recent_owner_changes)) {
-        this.iconColor = 'text-info-emphasis';
+        this.iconColor = "text-info-emphasis";
       } else if (!isEmpty(this.params.data.recent_owner_changes)) {
-        this.iconColor = 'text-success-emphasis';
+        this.iconColor = "text-success-emphasis";
       }
 
       tippy(params.eGridCell, {
@@ -40,14 +38,17 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
             </div>
           </div>
         `,
-        placement: 'top-start',
+        placement: "top-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
-      })
-    } else if (!isEmpty(this.data) && !isEmpty(this.params.data.recent_owner_changes)) {
-      this.iconColor = 'text-success-emphasis';
+        trigger: "mouseenter",
+      });
+    } else if (
+      !isEmpty(this.data) &&
+      !isEmpty(this.params.data.recent_owner_changes)
+    ) {
+      this.iconColor = "text-success-emphasis";
 
       tippy(params.eGridCell, {
         content: `
@@ -59,12 +60,12 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
             </div>
           </div>
         `,
-        placement: 'top-start',
+        placement: "top-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
-      })
+        trigger: "mouseenter",
+      });
     }
   }
 
@@ -79,8 +80,8 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.data
-      }
+        rowData: this.params.data,
+      };
       this.params.onClick(params);
     }
   }

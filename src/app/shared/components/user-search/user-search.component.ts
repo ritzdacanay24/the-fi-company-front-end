@@ -1,31 +1,43 @@
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
-import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
-import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
-import { AddTagFn } from '@ng-select/ng-select/lib/ng-select.component';
-import { SharedModule } from '@app/shared/shared.module';
-import { UserService } from '@app/core/api/field-service/user.service';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
+import {
+  Observable,
+  Subject,
+  catchError,
+  concat,
+  debounceTime,
+  distinctUntilChanged,
+  of,
+  switchMap,
+  tap,
+} from "rxjs";
+import { DropdownPosition, NgSelectModule } from "@ng-select/ng-select";
+import { AddTagFn } from "@ng-select/ng-select/lib/ng-select.component";
+import { SharedModule } from "@app/shared/shared.module";
+import { UserService } from "@app/core/api/field-service/user.service";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    ReactiveFormsModule,
-    NgSelectModule
-  ],
-  selector: 'app-user-search',
+  imports: [SharedModule, ReactiveFormsModule, NgSelectModule],
+  selector: "app-user-search",
   templateUrl: `./user-search.component.html`,
 })
 export class UserSearchComponent implements OnInit {
-
-  @Input() form_label: string = 'Select user';
+  @Input() form_label: string = "Select user";
   @Input() client_id: string;
   @Input() value: string | number | any = null;
   @Input() minTermLength: number = 3;
   @Input() debounceTime: number = 500;
   @Input() virtualScroll: boolean = true;
-  @Input() appendToBody = '';
-  @Input() className = 'testing mb-3';
+  @Input() appendToBody = "";
+  @Input() className = "testing mb-3";
   @Input() hideSelected: boolean = true;
   @Input() closeOnSelect: boolean = true;
   @Input() clearSearchOnAdd: boolean = true;
@@ -50,7 +62,7 @@ export class UserSearchComponent implements OnInit {
     this.notifyParent.emit(data);
   }
 
-  @Input() addTag: AddTagFn | boolean = false
+  @Input() addTag: AddTagFn | boolean = false;
 
   onRemove(e) {
     this.notifyParent.emit(null);
@@ -61,26 +73,24 @@ export class UserSearchComponent implements OnInit {
   }
 
   async getLawFirmById(id) {
-    let data = await this.api.getById(id)
+    let data = await this.api.getById(id);
     this.value = data.law_firm;
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['value']?.currentValue) {
-      if (!changes['multiple']?.currentValue) {
-        this.dataInput$.next(this.value)
+    if (changes["value"]?.currentValue) {
+      if (!changes["multiple"]?.currentValue) {
+        this.dataInput$.next(this.value);
 
-        this.value = changes['value'].currentValue;
+        this.value = changes["value"].currentValue;
         //this.getLawFirmById(changes.value.currentValue);
       } else {
-        this.value = changes['value']?.currentValue?.split(",");
+        this.value = changes["value"]?.currentValue?.split(",");
       }
     }
   }
 
-
-
-  @Input() clearInput: Function
+  @Input() clearInput: Function;
 
   private getList() {
     this.data$ = concat(
@@ -89,27 +99,25 @@ export class UserSearchComponent implements OnInit {
         debounceTime(this.debounceTime),
         distinctUntilChanged(),
         tap(() => {
-          this.dataLoading = true
+          this.dataLoading = true;
           this.notifyParentItsLoading.emit(this.dataLoading);
         }),
-        switchMap(term => this.api.searchUser(term).pipe(
-          catchError(() => of([])), // empty list on error
-          tap(() => {
-            this.dataLoading = false
-            this.notifyParentItsLoading.emit(this.dataLoading);
-          })
-        ))
+        switchMap((term) =>
+          this.api.searchUser(term).pipe(
+            catchError(() => of([])), // empty list on error
+            tap(() => {
+              this.dataLoading = false;
+              this.notifyParentItsLoading.emit(this.dataLoading);
+            })
+          )
+        )
       )
     );
   }
 
-  constructor(
-    private api: UserService
-  ) { }
+  constructor(private api: UserService) {}
 
   ngOnInit() {
-    this.getList()
+    this.getList();
   }
-
-
 }

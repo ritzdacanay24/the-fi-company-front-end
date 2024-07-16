@@ -1,44 +1,53 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
-import { NgbActiveModal, NgbNavModule, NgbScrollSpyModule } from '@ng-bootstrap/ng-bootstrap';
-import { first } from 'rxjs/operators';
-import { Injectable } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ShippingService } from '@app/core/api/operations/shipping/shipping.service';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SharedModule } from '@app/shared/shared.module';
-import { AutosizeModule } from 'ngx-autosize';
-import { LateReasonCodesService } from '@app/core/api/operations/late-reason-codes/late-reason-codes.service';
-import { SoSearchComponent } from '../so-search/so-search.component';
-import { ShippingMiscService } from '@app/core/api/shipping-misc/shipping-misc.service';
-import { ControlsOf } from 'src/assets/js/util/_formGroup';
-import { NgSelectModule } from '@ng-select/ng-select';
+import { Component, Input, OnInit } from "@angular/core";
+import { FormBuilder, FormControl, FormGroup } from "@angular/forms";
+import {
+  NgbActiveModal,
+  NgbNavModule,
+  NgbScrollSpyModule,
+} from "@ng-bootstrap/ng-bootstrap";
+import { first } from "rxjs/operators";
+import { Injectable } from "@angular/core";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { ShippingService } from "@app/core/api/operations/shipping/shipping.service";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { AutosizeModule } from "ngx-autosize";
+import { LateReasonCodesService } from "@app/core/api/operations/late-reason-codes/late-reason-codes.service";
+import { SoSearchComponent } from "../so-search/so-search.component";
+import { ShippingMiscService } from "@app/core/api/shipping-misc/shipping-misc.service";
+import { ControlsOf } from "src/assets/js/util/_formGroup";
+import { NgSelectModule } from "@ng-select/ng-select";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class ShippingMiscModalService {
   modalRef: any;
 
-  constructor(
-    public modalService: NgbModal,
-  ) { }
+  constructor(public modalService: NgbModal) {}
 
   open(soLine) {
-    this.modalRef = this.modalService.open(ShippingMiscModalComponent, { size: 'xl' });
+    this.modalRef = this.modalService.open(ShippingMiscModalComponent, {
+      size: "xl",
+    });
     this.modalRef.componentInstance.soLine = soLine;
     return this.modalRef;
   }
-
 }
-
 
 @Component({
   standalone: true,
-  imports: [SharedModule, NgbNavModule, AutosizeModule, NgbScrollSpyModule, SoSearchComponent, NgSelectModule],
-  selector: 'app-shipping-misc-modal',
-  templateUrl: './shipping-misc-modal.component.html',
-  styleUrls: []
+  imports: [
+    SharedModule,
+    NgbNavModule,
+    AutosizeModule,
+    NgbScrollSpyModule,
+    SoSearchComponent,
+    NgSelectModule,
+  ],
+  selector: "app-shipping-misc-modal",
+  templateUrl: "./shipping-misc-modal.component.html",
+  styleUrls: [],
 })
 export class ShippingMiscModalComponent implements OnInit {
   loadingIndicator: boolean;
@@ -54,93 +63,92 @@ export class ShippingMiscModalComponent implements OnInit {
   listOptions = [
     {
       name: "Hot Order",
-      ngbScrollSpyItem: 'items-0',
-      icon: 'mdi-sticker-alert'
+      ngbScrollSpyItem: "items-0",
+      icon: "mdi-sticker-alert",
     },
     {
       name: "Owner",
-      ngbScrollSpyItem: 'items-1',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-1",
+      icon: "mdi-calendar",
     },
     {
       name: "Clear to build status",
-      ngbScrollSpyItem: 'items-2',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-2",
+      icon: "mdi-calendar",
     },
     {
       name: "Late Reason Code",
-      ngbScrollSpyItem: 'items-3',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-3",
+      icon: "mdi-calendar",
     },
     {
       name: "Late Reason Code (perf)",
-      ngbScrollSpyItem: 'items-4',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-4",
+      icon: "mdi-calendar",
     },
     {
       name: "Ship Account Info",
-      ngbScrollSpyItem: 'items-5',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-5",
+      icon: "mdi-calendar",
     },
     {
       name: "Container Info",
-      ngbScrollSpyItem: 'items-6',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-6",
+      icon: "mdi-calendar",
     },
     {
       name: "TJ Info",
-      ngbScrollSpyItem: 'items-7',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-7",
+      icon: "mdi-calendar",
     },
     {
       name: "G2E",
-      ngbScrollSpyItem: 'items-8',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-8",
+      icon: "mdi-calendar",
     },
     {
       name: "Shortages",
-      ngbScrollSpyItem: 'items-9',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-9",
+      icon: "mdi-calendar",
     },
     {
       name: "Pallet Info",
-      ngbScrollSpyItem: 'items-10',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-10",
+      icon: "mdi-calendar",
     },
     {
       name: "Recovery Info",
-      ngbScrollSpyItem: 'items-11',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-11",
+      icon: "mdi-calendar",
     },
     {
       name: "Inspection Info",
-      ngbScrollSpyItem: 'items-12',
-      icon: 'mdi-calendar'
+      ngbScrollSpyItem: "items-12",
+      icon: "mdi-calendar",
     },
-  ]
+  ];
 
   async notifyParent($event) {
     this.soLine = $event.sod_nbr + "-" + $event.sod_line;
-    this.getData()
+    this.getData();
   }
 
-  isLoading
+  isLoading;
   async getData() {
     try {
       this.isLoading = true;
-      this.data = await this.shippingMiscService.findOne({ so: this.soLine })
-      this.form.patchValue({ ...this.data, so: this.soLine })
+      this.data = await this.shippingMiscService.findOne({ so: this.soLine });
+      this.form.patchValue({ ...this.data, so: this.soLine });
 
-      this.form.get('hot_order').disable();
+      this.form.get("hot_order").disable();
 
-      if(this.userInfo?.workArea?.indexOf('FlagAsHotSalesOrder')  > -1){
-        this.form.get('hot_order').enable();
+      if (this.userInfo?.workArea?.indexOf("FlagAsHotSalesOrder") > -1) {
+        this.form.get("hot_order").enable();
       }
 
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
-
     }
   }
 
@@ -150,13 +158,12 @@ export class ShippingMiscModalComponent implements OnInit {
     private api: ShippingService,
     private authenticationService: AuthenticationService,
     private lateReasonCodesService: LateReasonCodesService,
-    private shippingMiscService: ShippingMiscService,
+    private shippingMiscService: ShippingMiscService
   ) {
     this.userInfo = authenticationService.currentUserValue;
-
   }
 
-  currentSection = 'item-1'
+  currentSection = "item-1";
 
   form = new FormGroup<ControlsOf<any>>({
     userName: new FormControl(null),
@@ -182,37 +189,35 @@ export class ShippingMiscModalComponent implements OnInit {
     hot_order: new FormControl(0),
   });
 
-
   ngOnInit(): void {
+    this.getData();
 
-    this.getData()
-
-    this.getReasonCodes()
+    this.getReasonCodes();
   }
 
   dismiss() {
-    this.activeModal.dismiss('dismiss');
+    this.activeModal.dismiss("dismiss");
   }
   get formValue() {
-    return this.form.value
+    return this.form.value;
   }
 
   public onSubmit() {
-
     this.loadingIndicator = true;
     this.api
       .saveMisc({ ...this.form.value, shippingMisc: true })
       .pipe(first())
-      .subscribe((res) => {
-        this.loadingIndicator = false;
-        this.activeModal.close(res);
-      }, () => this.loadingIndicator = false);
-
-
+      .subscribe(
+        (res) => {
+          this.loadingIndicator = false;
+          this.activeModal.close(res);
+        },
+        () => (this.loadingIndicator = false)
+      );
   }
 
-  department = 'Shipping'
-  lastReasonCodes: any
+  department = "Shipping";
+  lastReasonCodes: any;
   getReasonCodes() {
     this.lateReasonCodesService
       .getData(this.department)
@@ -221,5 +226,4 @@ export class ShippingMiscModalComponent implements OnInit {
         this.lastReasonCodes = data;
       });
   }
-
 }

@@ -1,32 +1,49 @@
-import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
-import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
-import { DropdownPosition, NgSelectModule } from '@ng-select/ng-select';
-import { AddTagFn, NgSelectComponent } from '@ng-select/ng-select/lib/ng-select.component';
-import { SharedModule } from '@app/shared/shared.module';
-import { JobService } from '@app/core/api/field-service/job.service';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
+import {
+  Observable,
+  Subject,
+  catchError,
+  concat,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  of,
+  switchMap,
+  tap,
+} from "rxjs";
+import { DropdownPosition, NgSelectModule } from "@ng-select/ng-select";
+import {
+  AddTagFn,
+  NgSelectComponent,
+} from "@ng-select/ng-select/lib/ng-select.component";
+import { SharedModule } from "@app/shared/shared.module";
+import { JobService } from "@app/core/api/field-service/job.service";
 
 @Component({
   standalone: true,
-  imports: [
-    SharedModule,
-    ReactiveFormsModule,
-    NgSelectModule
-  ],
-  selector: 'app-job-search',
+  imports: [SharedModule, ReactiveFormsModule, NgSelectModule],
+  selector: "app-job-search",
   templateUrl: `./job-search.component.html`,
 })
 export class JobSearchComponent implements OnInit {
-
   @Input() showLabel: boolean = true;
-  @Input() form_label: string = 'Select job';
+  @Input() form_label: string = "Select job";
   @Input() client_id: string;
   @Input() value: string | number | any = null;
   @Input() minTermLength: number = 3;
   @Input() debounceTime: number = 500;
   @Input() virtualScroll: boolean = true;
-  @Input() appendTo = '';
-  @Input() className = '';
+  @Input() appendTo = "";
+  @Input() className = "";
   @Input() hideSelected: boolean = true;
   @Input() closeOnSelect: boolean = true;
   @Input() clearSearchOnAdd: boolean = true;
@@ -52,12 +69,11 @@ export class JobSearchComponent implements OnInit {
 
     if (this.clearSearch)
       setTimeout(() => {
-        this.value = null
-      }, 0)
-
+        this.value = null;
+      }, 0);
   }
 
-  @ViewChild('select') ngSelect: NgSelectComponent;
+  @ViewChild("select") ngSelect: NgSelectComponent;
   ngAfterViewInit() {
     if (this.autoFocus) {
       setTimeout(() => {
@@ -66,12 +82,9 @@ export class JobSearchComponent implements OnInit {
     }
   }
 
+  resetCalculations() {}
 
-  resetCalculations() {
-
-  }
-
-  @Input() addTag: AddTagFn | boolean = false
+  @Input() addTag: AddTagFn | boolean = false;
 
   onRemove(e) {
     this.notifyParent.emit(null);
@@ -82,48 +95,45 @@ export class JobSearchComponent implements OnInit {
   }
 
   async getLawFirmById(id) {
-    let data = await this.api.getById(id)
+    let data = await this.api.getById(id);
     this.value = data.law_firm;
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['value']?.currentValue) {
-      this.value = changes['value'].currentValue || null;
+    if (changes["value"]?.currentValue) {
+      this.value = changes["value"].currentValue || null;
     }
   }
 
-
-  @Input() clearInput: Function
+  @Input() clearInput: Function;
 
   private getList() {
     this.data$ = concat(
       of([]), // default items
       this.dataInput$.pipe(
-        filter(term => term != null),
+        filter((term) => term != null),
         debounceTime(this.debounceTime),
         distinctUntilChanged(),
         tap(() => {
-          this.dataLoading = true
+          this.dataLoading = true;
           this.notifyParentItsLoading.emit(this.dataLoading);
         }),
-        switchMap(term => this.api.searchByJob(term).pipe(
-          catchError(() => of([])), // empty list on error
-          tap(() => {
-            this.dataLoading = false
-            this.notifyParentItsLoading.emit(this.dataLoading);
-          })
-        ))
+        switchMap((term) =>
+          this.api.searchByJob(term).pipe(
+            catchError(() => of([])), // empty list on error
+            tap(() => {
+              this.dataLoading = false;
+              this.notifyParentItsLoading.emit(this.dataLoading);
+            })
+          )
+        )
       )
     );
   }
 
-  constructor(
-    private api: JobService
-  ) { }
+  constructor(private api: JobService) {}
 
   ngOnInit() {
-    this.getList()
+    this.getList();
   }
-
-
 }

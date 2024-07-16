@@ -1,24 +1,20 @@
-
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { CommonModule } from "@angular/common";
+import { Component } from "@angular/core";
+import { ICellRendererAngularComp } from "ag-grid-angular";
 
 @Component({
   standalone: true,
   imports: [CommonModule],
-  selector: 'app-link-renderer',
-  templateUrl: './link-renderer.component.html'
+  selector: "app-link-renderer",
+  templateUrl: "./link-renderer.component.html",
 })
-
 export class LinkRendererComponent implements ICellRendererAngularComp {
-
   params: any;
 
   isLink = false;
 
   agInit(params): void {
-
-    if(!params.data) return
+    if (!params.data) return;
 
     this.params = params;
 
@@ -26,7 +22,6 @@ export class LinkRendererComponent implements ICellRendererAngularComp {
   }
 
   refresh(params?: any): boolean {
-
     this.params.value = params?.value;
     return true;
   }
@@ -37,8 +32,8 @@ export class LinkRendererComponent implements ICellRendererAngularComp {
       const params = {
         event: $event,
         rowData: this.params.node.data,
-        index: this.params.rowIndex
-      }
+        index: this.params.rowIndex,
+      };
       this.params.onClick(params);
     }
   }

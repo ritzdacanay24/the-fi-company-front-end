@@ -4,14 +4,13 @@ import { LayoutState, layoutReducer } from "./layouts/layout-reducers";
 // import { authenticationReducer, AuthenticationState } from "./Authentication/authentication.reducer";
 
 export interface RootReducerState {
-    layout: LayoutState;
+  layout: LayoutState;
 
-    // authentication: AuthenticationState;
+  // authentication: AuthenticationState;
 }
 
 export const rootReducer: ActionReducerMap<RootReducerState> = {
-    layout: layoutReducer,
+  layout: layoutReducer,
 
-    // authentication: authenticationReducer,
-
-}
+  // authentication: authenticationReducer,
+};

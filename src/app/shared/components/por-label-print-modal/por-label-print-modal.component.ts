@@ -1,23 +1,29 @@
-import { Component, Input } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import moment from 'moment';
-import { Injectable } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, Input } from "@angular/core";
+import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
+import moment from "moment";
+import { Injectable } from "@angular/core";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class PorLabelPrintModalService {
   modalRef: any;
 
-  constructor(
-    public modalService: NgbModal
-  ) { }
+  constructor(public modalService: NgbModal) {}
 
-  open(customerPartNumber: string, poNumber: string, partNumber: string, desc: string, desc1: string) {
-    this.modalRef = this.modalService.open(PorLabelPrintModalComponent, { size: 'md' });
+  open(
+    customerPartNumber: string,
+    poNumber: string,
+    partNumber: string,
+    desc: string,
+    desc1: string
+  ) {
+    this.modalRef = this.modalService.open(PorLabelPrintModalComponent, {
+      size: "md",
+    });
     this.modalRef.componentInstance.customerPartNumber = customerPartNumber;
     this.modalRef.componentInstance.partNumber = partNumber;
     this.modalRef.componentInstance.poNumber = poNumber;
@@ -29,16 +35,14 @@ export class PorLabelPrintModalService {
   getInstance() {
     return this.modalRef;
   }
-
 }
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-por-label-print-modal',
-  templateUrl: './por-label-print-modal.component.html',
+  selector: "app-por-label-print-modal",
+  templateUrl: "./por-label-print-modal.component.html",
 })
-
 export class PorLabelPrintModalComponent {
   monthYear: string;
   time: string;
@@ -46,24 +50,24 @@ export class PorLabelPrintModalComponent {
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private authenticationService: AuthenticationService
-  ) { }
+  ) {}
 
-  @Input() public poNumber: string = '';
-  @Input() public customerPartNumber: string = '';
-  @Input() public partNumber: string = '';
-  @Input() public desc: string = '';
-  @Input() public desc1: string = '';
+  @Input() public poNumber: string = "";
+  @Input() public customerPartNumber: string = "";
+  @Input() public partNumber: string = "";
+  @Input() public desc: string = "";
+  @Input() public desc1: string = "";
 
   data: any;
   isLoading = false;
 
   ngOnInit() {
-    this.monthYear = moment().format('MM/DD/YYYY');
-    this.time = moment().format('HH:mm');
+    this.monthYear = moment().format("MM/DD/YYYY");
+    this.time = moment().format("HH:mm");
   }
 
   dismiss() {
-    this.ngbActiveModal.dismiss('dismiss');
+    this.ngbActiveModal.dismiss("dismiss");
   }
 
   close() {
@@ -74,19 +78,16 @@ export class PorLabelPrintModalComponent {
   qtyPerLabel = 1;
 
   print() {
-
     setTimeout(() => {
-
-      var printwindow = window.open('', 'PRINT', 'height=500,width=600');
+      var printwindow = window.open("", "PRINT", "height=500,width=600");
       var cmds;
 
-      let rev = 'N/A';
-      let po = 'N/A';
-      let receiver = ': N/A';
-      let um = 'EA';
+      let rev = "N/A";
+      let po = "N/A";
+      let receiver = ": N/A";
+      let um = "EA";
 
-      cmds =
-        `
+      cmds = `
           ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
           ^XA
           ^FO530,0^GB0,1218,2^FS
@@ -116,15 +117,13 @@ export class PorLabelPrintModalComponent {
           EOL
       `;
 
-      cmds = cmds.replace(/(.{90})/g, '$1<br>');
+      cmds = cmds.replace(/(.{90})/g, "$1<br>");
       printwindow.document.write(cmds);
 
       printwindow.document.close(); // necessary for IE >= 10
       printwindow.focus(); // necessary for IE >= 10
       printwindow.print();
       printwindow.close();
-
     }, 500);
   }
-
 }

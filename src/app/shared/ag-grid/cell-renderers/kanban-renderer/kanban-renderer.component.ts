@@ -1,24 +1,20 @@
-
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { CommonModule } from "@angular/common";
+import { Component } from "@angular/core";
+import { ICellRendererAngularComp } from "ag-grid-angular";
 
 @Component({
   standalone: true,
   imports: [CommonModule],
-  selector: 'app-kanban-renderer',
-  templateUrl: './kanban-renderer.component.html'
+  selector: "app-kanban-renderer",
+  templateUrl: "./kanban-renderer.component.html",
 })
-
 export class KanbanRendererComponent implements ICellRendererAngularComp {
-
   params: any;
 
   isLink = false;
 
   agInit(params): void {
-
-    if(!params.data) return
+    if (!params.data) return;
 
     this.params = params;
 
@@ -26,7 +22,6 @@ export class KanbanRendererComponent implements ICellRendererAngularComp {
   }
 
   refresh(params?: any): boolean {
-
     this.params.value = params?.value;
     return true;
   }
@@ -36,8 +31,8 @@ export class KanbanRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.node.data
-      }
+        rowData: this.params.node.data,
+      };
       this.params.onClick(params);
     }
   }

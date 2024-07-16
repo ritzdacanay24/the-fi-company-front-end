@@ -1,22 +1,19 @@
-import { Component } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
+import { Component } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ICellRendererAngularComp } from "ag-grid-angular";
 
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-checkbox-renderer',
-  templateUrl: './checkbox-renderer.component.html'
+  selector: "app-checkbox-renderer",
+  templateUrl: "./checkbox-renderer.component.html",
 })
-
 export class CheckboxRendererComponent implements ICellRendererAngularComp {
-
   params: any;
-  data: any
+  data: any;
   agInit(params): void {
     this.params = params;
     this.data = params.data;
-
   }
 
   refresh(params?: any): boolean {
@@ -29,8 +26,8 @@ export class CheckboxRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.node.data
-      }
+        rowData: this.params.node.data,
+      };
       this.params.onClick(params);
     }
   }
@@ -42,8 +39,8 @@ export class CheckboxRendererComponent implements ICellRendererAngularComp {
 
     const params = {
       event: event,
-      rowData: this.params.node.data
-    }
+      rowData: this.params.node.data,
+    };
     this.params.onClick(params);
   }
 }

@@ -1,9 +1,8 @@
-
-import { Component } from '@angular/core';
-import { isEmpty } from 'src/assets/js/util';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
-import tippy from 'tippy.js';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component } from "@angular/core";
+import { isEmpty } from "src/assets/js/util";
+import { ICellRendererAngularComp } from "ag-grid-angular";
+import tippy from "tippy.js";
+import { SharedModule } from "@app/shared/shared.module";
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -11,18 +10,16 @@ tippy.setDefaultProps({ animation: false });
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-comments-renderer',
-  templateUrl: './comments-renderer.component.html'
+  selector: "app-comments-renderer",
+  templateUrl: "./comments-renderer.component.html",
 })
-
 export class CommentsRendererComponent implements ICellRendererAngularComp {
-
   params: any;
   recent_comments: any;
-  icon: string = 'mdi-comment-outline';
-  icon_color: string = '';
+  icon: string = "mdi-comment-outline";
+  icon_color: string = "";
   atRisk: boolean;
-  data: any
+  data: any;
 
   agInit(params): void {
     this.params = params;
@@ -31,11 +28,22 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
 
     this.recent_comments = params.data.recent_comments;
 
-    this.atRisk = ['at risk'].includes(this.params.data.misc?.userName?.toString()?.toLowerCase());
+    this.atRisk = ["at risk"].includes(
+      this.params.data.misc?.userName?.toString()?.toLowerCase()
+    );
 
     if (!isEmpty(this.recent_comments) && this.recent_comments) {
-      this.icon = this.recent_comments?.color_class_name == 'text-info' || this.recent_comments?.color_class_name == 'text-success' ? 'mdi-comment-text' : this.icon;
-      this.icon_color = this.recent_comments?.color_class_name == 'text-info' ? 'text-info-emphasis' : this.recent_comments?.color_class_name == 'text-success' ? 'text-success-emphasis' : null;
+      this.icon =
+        this.recent_comments?.color_class_name == "text-info" ||
+        this.recent_comments?.color_class_name == "text-success"
+          ? "mdi-comment-text"
+          : this.icon;
+      this.icon_color =
+        this.recent_comments?.color_class_name == "text-info"
+          ? "text-info-emphasis"
+          : this.recent_comments?.color_class_name == "text-success"
+          ? "text-success-emphasis"
+          : null;
       if (this.atRisk) {
         this.icon = "mdi mdi-comment-alert";
         this.icon_color = "text-danger-emphasis";
@@ -47,8 +55,14 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
         content: `
           <div class="card shadow-lg">
             <div class="card-header d-flex align-items-center">
-              <h4 class="card-title mb-0">${this.params.value?.title || 'Recent Comment'}</h4>
-              ${this.params.value?.description ? `<span class="ms-3 text-end">${this.params.value?.description}</span>` : ''}
+              <h4 class="card-title mb-0">${
+                this.params.value?.title || "Recent Comment"
+              }</h4>
+              ${
+                this.params.value?.description
+                  ? `<span class="ms-3 text-end">${this.params.value?.description}</span>`
+                  : ""
+              }
             </div>
             <div class="card-body" style="overflow:hidden;">
              <div style="text-overflow: ellipsis;white-space: normal;
@@ -64,17 +78,21 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
             </div>
             <div class="card-footer">
               <p><b>Comment date: </b> ${this.recent_comments?.createdDate}</p>
-              <p><b>Created by: </b> ${this.recent_comments?.created_by_name}</p>
-              <p class="text-secondary">Click on the <i class="mdi ${this.icon} icon-ml ${this.icon_color}"></i> icon to add a comment.</p>
+              <p><b>Created by: </b> ${
+                this.recent_comments?.created_by_name
+              }</p>
+              <p class="text-secondary">Click on the <i class="mdi ${
+                this.icon
+              } icon-ml ${this.icon_color}"></i> icon to add a comment.</p>
             </div>
           </div>
         `,
-        placement: 'bottom-start',
+        placement: "bottom-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
-      })
+        trigger: "mouseenter",
+      });
     } else {
       tippy(params.eGridCell, {
         // animateFill:false,
@@ -82,21 +100,29 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
         content: `
           <div class="card shadow-lg">
             <div class="card-header d-flex align-items-center">
-              <h4 class="card-title mb-0">${this.params.value?.title || 'No comments found'}</h4>
-              ${this.params.value?.description ? `<span class="ms-3 text-end">${this.params.value?.description}</span>` : ''}
+              <h4 class="card-title mb-0">${
+                this.params.value?.title || "No comments found"
+              }</h4>
+              ${
+                this.params.value?.description
+                  ? `<span class="ms-3 text-end">${this.params.value?.description}</span>`
+                  : ""
+              }
             </div>
             <div class="card-body" style="overflow:hidden">
               <p>No comments found.</p>
-              <p class="text-secondary">Click on the <i class="mdi ${this.icon} icon-ml"></i> icon to add a comment.</p>
+              <p class="text-secondary">Click on the <i class="mdi ${
+                this.icon
+              } icon-ml"></i> icon to add a comment.</p>
             </div>
           </div>
         `,
-        placement: 'bottom-start',
+        placement: "bottom-start",
         allowHTML: true,
-        theme: 'light',
+        theme: "light",
         offset: [20, -3],
-        trigger: 'mouseenter'
-      })
+        trigger: "mouseenter",
+      });
     }
   }
 
@@ -111,8 +137,8 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.data
-      }
+        rowData: this.params.data,
+      };
       this.params.onClick(params);
     }
   }

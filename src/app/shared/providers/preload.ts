@@ -6,8 +6,8 @@ import { Observable, of } from "rxjs";
 
 @Injectable({ providedIn: "root" })
 export class FlagBasedPreloadingStrategy extends PreloadingStrategy {
-    // 👇 For clarity, I prefer `load` rather than `fn` for the callback name
-    preload(route: Route, load: () => Observable<any>): Observable<any> {
-        return route.data?.["preload"] === true ? load() : of(null);
-    }
+  // 👇 For clarity, I prefer `load` rather than `fn` for the callback name
+  preload(route: Route, load: () => Observable<any>): Observable<any> {
+    return route.data?.["preload"] === true ? load() : of(null);
+  }
 }

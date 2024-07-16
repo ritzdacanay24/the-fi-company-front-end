@@ -1,29 +1,28 @@
-import { Injectable } from '@angular/core';
-import { SweetAlertOptions } from 'sweetalert2';
-import Swal from 'sweetalert2';
+import { Injectable } from "@angular/core";
+import { SweetAlertOptions } from "sweetalert2";
+import Swal from "sweetalert2";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
     confirmButton: "btn btn-primary ms-2",
     cancelButton: "btn btn-light",
-    denyButton: "btn btn-danger"
+    denyButton: "btn btn-danger",
   },
-  buttonsStyling: false
+  buttonsStyling: false,
 });
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class SweetAlert {
-
   static imageInfo: SweetAlertOptions = {
-    imageUrl: 'assets/images/fi-color.png',
+    imageUrl: "assets/images/fi-color.png",
     imageWidth: 160,
-    imageAlt: 'Fi Image',
+    imageAlt: "Fi Image",
     reverseButtons: true,
-  }
+  };
 
-  constructor() { }
+  constructor() {}
 
   static async fire(options: SweetAlertOptions | any) {
     return await swalWithBootstrapButtons.fire({
@@ -36,83 +35,82 @@ export class SweetAlert {
   static async confirm(options?: SweetAlertOptions) {
     return await swalWithBootstrapButtons.fire({
       allowOutsideClick: false,
-      title: 'Are you sure you want to delete?',
-      icon: 'info',
-      text: 'This cannot be undone.',
+      title: "Are you sure you want to delete?",
+      icon: "info",
+      text: "This cannot be undone.",
       showCloseButton: false,
       showCancelButton: true,
       focusConfirm: false,
-      confirmButtonText: 'Delete',
-      confirmButtonColor: '#ff0000',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#ff0000",
+      cancelButtonText: "Cancel",
       reverseButtons: true,
-      ...options
-    })
+      ...options,
+    });
   }
 
   static async confirmV1(options?: SweetAlertOptions) {
     return await swalWithBootstrapButtons.fire({
       allowOutsideClick: false,
-      title: 'Are you sure?',
-      icon: 'info',
-      text: 'You want to continue?',
+      title: "Are you sure?",
+      icon: "info",
+      text: "You want to continue?",
       showCloseButton: false,
       showCancelButton: true,
       focusConfirm: false,
-      confirmButtonText: 'Yes',
-      cancelButtonText: 'Cancel',
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
       reverseButtons: true,
       ...options,
-    })
+    });
   }
 
   static async alert(options?: SweetAlertOptions) {
     return await swalWithBootstrapButtons.fire({
       allowOutsideClick: false,
-      title: 'Are you sure?',
-      icon: 'info',
-      text: 'You want to continue?',
+      title: "Are you sure?",
+      icon: "info",
+      text: "You want to continue?",
       showCloseButton: false,
       showCancelButton: true,
       focusConfirm: false,
-      confirmButtonText: 'Yes',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: '#ff0000',
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#ff0000",
       reverseButtons: true,
-      ...options
-    })
+      ...options,
+    });
   }
 
   static swal() {
-    return Swal
+    return Swal;
   }
 
   static swalIsLoading() {
-    return swalWithBootstrapButtons.isLoading()
+    return swalWithBootstrapButtons.isLoading();
   }
 
   static toast(options: SweetAlertOptions) {
     let Toast = SweetAlert.mixin({
       toast: true,
-      position: 'top-end',
+      position: "top-end",
       showConfirmButton: false,
       timer: 1000,
       timerProgressBar: true,
-    })
-
+    });
 
     Toast.fire({
       ...options,
-      icon: 'success',
+      icon: "success",
       title: "Saved Successfully",
-    })
+    });
   }
 
   static mixin(options: SweetAlertOptions) {
-    return swalWithBootstrapButtons.mixin(options)
+    return swalWithBootstrapButtons.mixin(options);
   }
 
-  static async loading(title = 'Saving. Please wait..') {
+  static async loading(title = "Saving. Please wait..") {
     return await swalWithBootstrapButtons.fire({
       showCancelButton: false,
       showCloseButton: false,
@@ -120,7 +118,7 @@ export class SweetAlert {
       title: title,
       allowOutsideClick: false,
       willOpen: () => {
-        swalWithBootstrapButtons.showLoading()
+        swalWithBootstrapButtons.showLoading();
       },
       ...this.imageInfo,
     });
@@ -139,8 +137,5 @@ export class SweetAlert {
         resolve(true);
       }, delay);
     });
-
-  }
-
-
+  };
 }

@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
-import tippy from 'tippy.js';
+import { Component } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { ICellRendererAngularComp } from "ag-grid-angular";
+import tippy from "tippy.js";
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -9,12 +9,10 @@ tippy.setDefaultProps({ animation: false });
 @Component({
   standalone: true,
   imports: [SharedModule],
-  selector: 'app-edit-icon',
-  templateUrl: './edit-icon.component.html'
+  selector: "app-edit-icon",
+  templateUrl: "./edit-icon.component.html",
 })
-
 export class EditIconComponent implements ICellRendererAngularComp {
-
   params: any;
   iconName: string;
   value: string;
@@ -26,7 +24,7 @@ export class EditIconComponent implements ICellRendererAngularComp {
     this.params = params;
     this.iconName = params.iconName;
     this.value = params.value;
-    this.placeholder = params.placeholder
+    this.placeholder = params.placeholder;
     this.data = params.data;
   }
 
@@ -40,8 +38,8 @@ export class EditIconComponent implements ICellRendererAngularComp {
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
-        rowData: this.params.node.data
-      }
+        rowData: this.params.node.data,
+      };
       this.params.onClick(params);
     }
   }

@@ -1,21 +1,21 @@
-import { Component } from '@angular/core';
-import { NgbModalConfig } from '@ng-bootstrap/ng-bootstrap';
-import { TitleService } from './shared/services/title.service';
-import { environment } from '@environments/environment';
-import { SwUpdate } from '@angular/service-worker'
-import { interval } from 'rxjs';
-import { SweetAlert } from './shared/sweet-alert/sweet-alert.service';
-import { THE_FI_COMPANY_LAYOUT } from './layouts/topbar/topbar.component';
-import { LightboxConfig } from 'ngx-lightbox';
-import { isMobile } from 'src/assets/js/util/is-mobile-helpers';
+import { Component } from "@angular/core";
+import { NgbModalConfig } from "@ng-bootstrap/ng-bootstrap";
+import { TitleService } from "./shared/services/title.service";
+import { environment } from "@environments/environment";
+import { SwUpdate } from "@angular/service-worker";
+import { interval } from "rxjs";
+import { SweetAlert } from "./shared/sweet-alert/sweet-alert.service";
+import { THE_FI_COMPANY_LAYOUT } from "./layouts/topbar/topbar.component";
+import { LightboxConfig } from "ngx-lightbox";
+import { isMobile } from "src/assets/js/util/is-mobile-helpers";
 
 export function setThemeColor(data) {
   var metaThemeColor = document.querySelector("meta[name=theme-color]");
   if (!data) {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
-  } else if (data.SIDEBAR_COLOR == 'light') {
+  } else if (data.SIDEBAR_COLOR == "light") {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
-  } else if (data.SIDEBAR_COLOR == 'dark' && data.LAYOUT_MODE == 'light') {
+  } else if (data.SIDEBAR_COLOR == "dark" && data.LAYOUT_MODE == "light") {
     metaThemeColor.setAttribute("content", `#D0D0D0`);
   } else {
     metaThemeColor.setAttribute("content", `#343b40`);
@@ -23,19 +23,18 @@ export function setThemeColor(data) {
 }
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
-
   constructor(
     ngbModalConfig: NgbModalConfig,
     private titleService: TitleService,
     private swUpdate: SwUpdate,
     private _lightboxConfig: LightboxConfig
   ) {
-    ngbModalConfig.backdrop = 'static';
+    ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
     ngbModalConfig.centered = true;
     ngbModalConfig.scrollable = true;
@@ -53,25 +52,23 @@ export class AppComponent {
 
   isMobile = false;
 
-  title = 'Eye-Fi';
+  title = "Eye-Fi";
 
-  hasUpdate = false
+  hasUpdate = false;
 
   enableSwUpdate = false;
 
   ngOnInit(): void {
-
     this.isMobile = isMobile();
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
-      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT))
+      let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
       setThemeColor(d);
     }
 
-
     if (environment.production) {
-      if (location.protocol === 'http:') {
-        window.location.href = location.href.replace('http', 'https');
+      if (location.protocol === "http:") {
+        window.location.href = location.href.replace("http", "https");
       }
     }
 
@@ -81,37 +78,34 @@ export class AppComponent {
         this.swUpdate.checkForUpdate().then(() => {
           // checking for updates
         })
-      )
+      );
     }
 
     this.swUpdate.versionUpdates.subscribe(async (event) => {
-      if (event.type === 'VERSION_DETECTED') {
+      if (event.type === "VERSION_DETECTED") {
         // activateUpdate() will trigger the 'VERSION_READY' or 'VERSION_INSTALLATION_FAILED' event when done
-        console.log('New server version detected, trying to install...')
+        console.log("New server version detected, trying to install...");
         this.swUpdate.activateUpdate().then(() => {
           // checking for updates
-        })
+        });
 
-        this.hasUpdate = true
+        this.hasUpdate = true;
 
         //await this.showNewVersionMessage();
-
       }
 
-      if (event.type === 'VERSION_READY') {
+      if (event.type === "VERSION_READY") {
         // this._reloadPage will be set to true, asking a full page reload on next navigation
         //console.log('New server version installed');
       }
-      if (event.type === 'VERSION_INSTALLATION_FAILED') {
+      if (event.type === "VERSION_INSTALLATION_FAILED") {
         // this._clearCacheAndReload will be set to true, asking a cache clear and full page reload on next navigation
         //console.warn('Error while installing update, cache will be cleared and page reloaded');
       }
 
-      if (event.type == 'NO_NEW_VERSION_DETECTED') return
-    })
+      if (event.type == "NO_NEW_VERSION_DETECTED") return;
+    });
   }
-
-
 
   async showNewVersionMessage() {
     let { isConfirmed } = await SweetAlert.fire({
@@ -124,16 +118,14 @@ export class AppComponent {
       showClass: {
         popup: `
           show-blur
-        `
+        `,
       },
     });
 
-    if (isConfirmed) this.reloadSite()
-
+    if (isConfirmed) this.reloadSite();
   }
 
   reloadSite(): void {
-    window.location.reload()
+    window.location.reload();
   }
-
 }
