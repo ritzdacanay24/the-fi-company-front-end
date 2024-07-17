@@ -12,7 +12,7 @@ import { QadPartSearchComponent } from "../qad-part-search/qad-part-search.compo
 import { SalesOrderInfoModalService } from "../sales-order-info-modal/sales-order-info-modal.component";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
-import { GridApi } from "ag-grid-community";
+import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
 
 @Component({
   standalone: true,
@@ -49,7 +49,7 @@ export class PartLookupComponent {
 
   @Input() partNumber: string;
 
-  locationcolumnDefs: any = [
+  locationcolumnDefs: ColDef[] = [
     { field: "LD_LOC", headerName: "Location", filter: "agTextColumnFilter" },
     {
       field: "LD_QTY_OH",
@@ -72,7 +72,7 @@ export class PartLookupComponent {
 
   gridApi: GridApi;
 
-  gridOptions: any = {
+  gridOptions: GridOptions = {
     columnDefs: this.locationcolumnDefs,
     onGridReady: (params) => {
       this.gridApi = params.api;
@@ -95,7 +95,7 @@ export class PartLookupComponent {
     this.gridApi.sizeColumnsToFit();
   }
 
-  purchaseOrdercolumnDefs: any = [
+  purchaseOrdercolumnDefs: ColDef[] = [
     { field: "pod_nbr", headerName: "PO #", filter: "agTextColumnFilter" },
     {
       field: "po_ord_date",
@@ -142,7 +142,7 @@ export class PartLookupComponent {
     });
   }
 
-  workOrdercolumnDefs: any = [
+  workOrdercolumnDefs: ColDef[] = [
     { field: "WR_DUE", headerName: "Due Date", filter: "agTextColumnFilter" },
     {
       field: "WR_QTY_COMP",
@@ -190,7 +190,7 @@ export class PartLookupComponent {
   /**
    * Demand
    */
-  demandcolumnDefs: any = [
+  demandcolumnDefs: ColDef[] = [
     {
       field: "sod_nbr",
       headerName: "SO #",
@@ -247,7 +247,7 @@ export class PartLookupComponent {
    * Shortages
    */
 
-  shortagescolumnDefs: any = [
+  shortagescolumnDefs: (ColDef | ColGroupDef)[] = [
     {
       headerName: "Shortage Info",
       children: [

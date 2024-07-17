@@ -50,25 +50,8 @@ import { JobSearchComponent } from "@app/shared/components/job-search/job-search
 import { JobTripDetailModalService } from "../job-trip-detail-modal/job-trip-detail-modal.component";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
-
-import { Pipe, PipeTransform } from "@angular/core";
-
-@Pipe({
-  standalone: true,
-  name: "sortBydate",
-})
-export class SortBydatePipe implements PipeTransform {
-  transform(value: any, key?: any): any {
-    return value.sort(
-      (a: any, b: any) =>
-        new Date(a[key]).getTime() - new Date(b[key]).getTime()
-    );
-  }
-}
-
-export const timeNow = () => {
-  return moment().format("YYYY-MM-DD HH:mm:ss");
-};
+import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
+import { time_now } from "src/assets/js/util/time-now";
 
 @Component({
   standalone: true,
@@ -272,7 +255,7 @@ export class JobFormComponent implements OnInit {
     window.open(url, "_blank");
   }
 
-  timeNow = timeNow();
+  timeNow = time_now();
 
   states = states;
 

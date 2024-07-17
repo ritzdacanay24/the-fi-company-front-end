@@ -7,7 +7,7 @@ import { WorkOrderInfoService } from "@app/core/api/operations/work-order/work-o
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { QadWoSearchComponent } from "../qad-wo-search/qad-wo-search.component";
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 
 @Injectable({
   providedIn: "root",
@@ -66,7 +66,7 @@ export class WorkOrderInfoModalComponent {
     this.gridApi.autoSizeAllColumns();
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     { field: "wod_part", headerName: "Part #", filter: "agMultiColumnFilter" },
     {
       field: "WOD_QTY_ISS",
@@ -121,7 +121,7 @@ export class WorkOrderInfoModalComponent {
     return totalCompleted == 0 ? 0 : (totalCompleted / totalRequired) * 100;
   }
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: this.onGridReady.bind(this),
     onFirstDataRendered: this.firstDataRendered.bind(this),

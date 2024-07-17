@@ -7,7 +7,7 @@ import { AgGridModule } from "ag-grid-angular";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SalesOrderInfoService } from "@app/core/api/sales-order/sales-order-info.service";
 import { SalesOrderInfoModalService } from "../sales-order-info-modal/sales-order-info-modal.component";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 
 @Injectable({
   providedIn: "root",
@@ -36,7 +36,7 @@ export class CustomerOrderInfoModalComponent {
   data: any;
   @Input() public customerOrderNumber: number;
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "SOD_NBR",
       headerName: "SO #",

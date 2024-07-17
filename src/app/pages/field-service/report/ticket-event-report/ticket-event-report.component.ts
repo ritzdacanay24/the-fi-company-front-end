@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { TicketEventReportChartComponent } from './ticket-event-report-chart/ticket-event-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
@@ -73,7 +73,7 @@ export class TicketEventReportComponent implements OnInit {
     });
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -99,7 +99,7 @@ export class TicketEventReportComponent implements OnInit {
     { field: 'include_calculation', headerName: 'Billable', filter: 'agMultiColumnFilter' },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

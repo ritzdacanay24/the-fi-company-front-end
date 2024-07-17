@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { ContractorVsTechReportChartComponent } from './contractor-vs-tech-report-chart/contractor-vs-tech-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
@@ -97,7 +97,7 @@ export class ContractorVsTechComponent implements OnInit {
     { field: 'year', headerName: 'Year', filter: 'agMultiColumnFilter' },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

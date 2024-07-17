@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../../job/job-constant';
 import { ExpenseReportChartComponent } from './expense-report-chart/expense-report-chart.component';
@@ -116,7 +116,7 @@ export class ExpenseReportComponent implements OnInit {
     { field: 'total_cost', headerName: 'Total Cost', filter: 'agMultiColumnFilter', valueFormatter: currencyFormatter },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

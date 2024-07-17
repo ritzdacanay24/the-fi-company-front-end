@@ -6,7 +6,7 @@ import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
-import { GridApi } from "ag-grid-community";
+import { GridApi, GridOptions } from "ag-grid-community";
 
 @Component({
   standalone: true,
@@ -76,7 +76,7 @@ export class CablesComponent implements OnInit {
     },
   ];
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;

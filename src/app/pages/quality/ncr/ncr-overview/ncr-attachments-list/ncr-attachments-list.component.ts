@@ -13,6 +13,7 @@ import { AttachmentsService } from "@app/core/api/attachments/attachments.servic
 import { Lightbox } from "ngx-lightbox";
 import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { ColDef, GridOptions } from "ag-grid-community";
 
 @Component({
   standalone: true,
@@ -125,7 +126,7 @@ export class NcrAttachmentsListComponent implements OnInit {
     );
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",
@@ -178,7 +179,7 @@ export class NcrAttachmentsListComponent implements OnInit {
 
   gridApi;
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

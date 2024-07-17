@@ -6,7 +6,7 @@ import {
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { GraphicsService } from "@app/core/api/operations/graphics/graphics.service";
@@ -79,7 +79,7 @@ export class GraphicsDemandComponent implements OnInit {
     );
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "woNumber",
       headerName: "WO Number",

@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AgGridModule } from "ag-grid-angular";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
@@ -74,7 +74,7 @@ export class LabelsListComponent implements OnInit {
     this[data.service].open(data);
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",

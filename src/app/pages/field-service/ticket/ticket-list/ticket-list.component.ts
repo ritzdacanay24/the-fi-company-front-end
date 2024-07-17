@@ -11,7 +11,7 @@ import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers';
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util';
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { TicketModalService } from '../ticket-modal/ticket-modal.component';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 
 @Component({
   standalone: true,
@@ -48,7 +48,7 @@ export class TicketListComponent implements OnInit {
     this.getData()
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: '', headerName: 'View', filter: 'agNumberColumnFilter', cellRenderer: LinkRendererComponent,
       cellRendererParams: {
@@ -72,7 +72,7 @@ export class TicketListComponent implements OnInit {
     { field: 'workCompletedComment', headerName: 'Comments', filter: 'agMultiColumnFilter', maxWidth: 300 },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;

@@ -10,7 +10,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { LoadingComponent } from "@app/shared/loading/loading.component";
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
 import { CommentsModalService } from "../comments/comments-modal.service";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { WorkOrderInfoService } from "@app/core/api/work-order/work-order-info.service";
 import { currencyFormatter } from "src/assets/js/util";
 
@@ -62,7 +62,7 @@ export class WoLookupComponent {
   };
   isLoading = false;
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     { field: "wod_part", headerName: "Part #", filter: "agTextColumnFilter" },
     {
       field: "wod_iss_date",

@@ -9,7 +9,7 @@ import {
 } from "src/assets/js/util/jslzString";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { AgGridModule } from "ag-grid-angular";
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../graphics-constant";
 import {
@@ -78,7 +78,7 @@ export class GraphicsListComponent implements OnInit {
     });
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",
@@ -134,7 +134,7 @@ export class GraphicsListComponent implements OnInit {
     },
   ];
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

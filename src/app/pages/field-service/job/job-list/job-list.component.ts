@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AgGridModule } from "ag-grid-angular";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import moment from "moment";
 import { NAVIGATION_ROUTE } from "../job-constant";
 import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from "../../ticket/ticket-constant";
@@ -174,7 +174,7 @@ export class JobListComponent implements OnInit {
 
   query;
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",

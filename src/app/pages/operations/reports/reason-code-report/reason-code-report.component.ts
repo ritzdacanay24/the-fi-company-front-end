@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
@@ -96,7 +96,7 @@ export class ReasonCodeReportComponent implements OnInit {
     { field: 'year', headerName: 'Year', filter: 'agMultiColumnFilter' },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

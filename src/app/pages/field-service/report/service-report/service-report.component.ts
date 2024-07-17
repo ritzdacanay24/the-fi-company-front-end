@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { ServiceReportChartComponent } from './service-report-chart/service-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
@@ -63,7 +63,7 @@ export class ServiceReportComponent implements OnInit {
     { field: 'service_type', headerName: 'Service Type', filter: 'agMultiColumnFilter' },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

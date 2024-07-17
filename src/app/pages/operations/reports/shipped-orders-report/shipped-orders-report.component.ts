@@ -5,7 +5,7 @@ import { DateRangeComponent } from '@app/shared/components/date-range/date-range
 import { SharedModule } from '@app/shared/shared.module';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { currencyFormatter, autoSizeColumns } from 'src/assets/js/util';
 import { CommentsModalService } from '@app/shared/components/comments/comments-modal.service';
@@ -102,7 +102,7 @@ export class ShippedOrdersReportComponent implements OnInit {
 
   data: any[];
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     { field: "STATUS", headerName: "Status" },
     {
       field: "SOD_PART", headerName: "Part", filter: "agTextColumnFilter",
@@ -180,7 +180,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     }, () => { });
   }
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

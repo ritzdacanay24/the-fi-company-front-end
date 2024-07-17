@@ -15,7 +15,7 @@ import { CommentsModalService } from '@app/shared/components/comments/comments-m
 import { GridFiltersComponent } from '@app/shared/grid-filters/grid-filters.component';
 import { GridSettingsComponent } from '@app/shared/grid-settings/grid-settings.component';
 import { SalesOrderInfoModalService } from '@app/shared/components/sales-order-info-modal/sales-order-info-modal.component';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -86,7 +86,7 @@ export class PartsOrderListComponent implements OnInit {
         this.getData()
     }
 
-    columnDefs: any = [
+    columnDefs: ColDef[] = [
         {
             field: '', headerName: 'View', filter: 'agNumberColumnFilter', cellRenderer: LinkRendererComponent,
             cellRendererParams: {
@@ -147,7 +147,7 @@ export class PartsOrderListComponent implements OnInit {
         { field: 'qad_info.abs_ship_qty', headerName: 'QAD Total Shipped Qty', filter: 'agMultiColumnFilter' },
     ]
 
-    gridOptions = {
+    gridOptions: GridOptions = {
         columnDefs: [],
         onGridReady: (params: any) => {
             this.gridApi = params.api;

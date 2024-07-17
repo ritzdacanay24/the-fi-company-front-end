@@ -6,7 +6,7 @@ import {
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
-import { GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
@@ -368,7 +368,7 @@ export class ShippingComponent implements OnInit {
     this.gridApi.setGridOption("quickFilterText", value);
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "Misc Edit",
       headerName: "Misc Edit",

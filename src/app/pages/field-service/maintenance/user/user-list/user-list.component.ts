@@ -1,4 +1,4 @@
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { NgSelectModule } from "@ng-select/ng-select";
@@ -51,7 +51,7 @@ export class UserListComponent implements OnInit {
     });
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",
@@ -136,7 +136,7 @@ export class UserListComponent implements OnInit {
 
   id = null;
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

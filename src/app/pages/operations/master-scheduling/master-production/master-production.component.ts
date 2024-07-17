@@ -34,7 +34,7 @@ import { MasterSchedulingService } from "@app/core/api/operations/master-schedul
 import { KanbanAddModalService } from "@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component";
 import { WebsocketService } from "@app/core/services/websocket.service";
 import { KanbanRendererComponent } from "@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component";
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 
 const MASTER_PRODUCTION = "MASTER_PRODUCTION";
 const WORK_ORDER_ROUTING = "Work Order Routing";
@@ -254,7 +254,7 @@ export class MasterProductionComponent implements OnInit {
     );
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "kanban_info.wo_nbr",
       headerName: "Add To WO Tracker",
@@ -460,7 +460,7 @@ export class MasterProductionComponent implements OnInit {
 
   dataRendered = false;
 
-  gridOptions: any = {
+  gridOptions: GridOptions = {
     // rowBuffer: 0,
     // animateRows: true,
     getRowId: (data: any) => data?.data.SO,

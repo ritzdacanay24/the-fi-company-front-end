@@ -26,6 +26,7 @@ import { isMobile, currencyFormatter, autoSizeColumns } from 'src/assets/js/util
 import { EditIconComponent } from '@app/shared/ag-grid/edit-icon/edit-icon.component'
 import printJS from 'print-js'
 import { Lightbox } from 'ngx-lightbox'
+import { GridApi, GridOptions } from 'ag-grid-community'
 
 /**
  * Sanitize HTML
@@ -474,9 +475,7 @@ export class UploadedReceiptComponent implements OnInit {
 
     }
 
-
-
-    this.gridApi.setRowData(this.transactions)
+    this.gridApi!.setGridOption("rowData", this.transactions);
 
     this.setColumDef()
 
@@ -558,7 +557,7 @@ export class UploadedReceiptComponent implements OnInit {
     //window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
   }
 
-  gridApi: any
+  gridApi: GridApi
   
   title = 'Policy Usage'
 
@@ -576,7 +575,6 @@ export class UploadedReceiptComponent implements OnInit {
           pinned: isMobile() ? null : 'left',
           checkboxSelection: true,
           floatingFilterComponentParams: { suppressFilterButton: true },
-          enableFilter: false,
         },
         {
           field: 'link',
@@ -650,7 +648,7 @@ export class UploadedReceiptComponent implements OnInit {
     })
   }
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: [],
     onGridReady: this.onGridReady.bind(this),
 

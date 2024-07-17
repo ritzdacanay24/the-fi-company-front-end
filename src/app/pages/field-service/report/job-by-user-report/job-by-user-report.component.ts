@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { JobByUserReportChartComponent } from './job-by-user-report-chart/job-by-user-report-chart.component';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
@@ -62,7 +62,7 @@ export class JobByUserReportComponent implements OnInit {
     { field: 'total', headerName: 'Total Jobs', filter: 'agMultiColumnFilter' },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

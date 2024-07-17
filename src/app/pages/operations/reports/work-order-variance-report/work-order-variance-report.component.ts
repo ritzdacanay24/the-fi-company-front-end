@@ -4,7 +4,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, GridOptions } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { WorkOrderInfoService } from '@app/core/api/operations/work-order/work-order-info.service';
@@ -52,7 +52,7 @@ export class WorkOrderVarianceReport implements OnInit {
 
     title = "Work Order Variance Report"
 
-    columnDefs: any = [
+    columnDefs: ColDef[] = [
         {
             field: "wo_nbr", headerName: "WO", filter: "agTextColumnFilter", cellRenderer: LinkRendererComponent,
             cellRendererParams: {

@@ -7,7 +7,7 @@ import { currency, currencyFormatter } from 'src/assets/js/util';
 import { LogisiticsDailyReportService } from '@app/core/api/operations/logisitics/daily-report.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { DailyReportModalService } from './daily-report-modal/daily-report-modal.component';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 
 @Component({
     standalone: true,
@@ -39,7 +39,7 @@ export class DailyReportComponent implements OnInit {
         }, () => { });
     }
 
-    columnDefs: any = [
+    columnDefs: ColDef[] = [
         { field: "createdDate", headerName: "Recorded Date/Time", filter: "agMultiColumnFilter" },
         { field: "data.shipping_open_overdue_and_due_today_value", headerName: "Lines Shipped", filter: "agMultiColumnFilter", valueFormatter: currencyFormatter },
         { field: "data.shipping_total_shipped_value", headerName: "Lines Shipped Value", filter: "agMultiColumnFilter", valueFormatter: currencyFormatter },
@@ -54,7 +54,7 @@ export class DailyReportComponent implements OnInit {
         { field: "data.production.production_routing_20.due.due_percent", headerName: "Production OTD %", filter: "agMultiColumnFilter" },
     ];
 
-    gridOptions = {
+    gridOptions: GridOptions = {
         columnDefs: this.columnDefs,
         onGridReady: this.onGridReady.bind(this),
         pagination: false,

@@ -12,7 +12,7 @@ import { LoadingComponent } from "@app/shared/loading/loading.component";
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
 import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
 import { CommentsModalService } from "../comments/comments-modal.service";
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 
 @Component({
   standalone: true,
@@ -64,7 +64,7 @@ export class OrderLookupComponent {
   };
   isLoading = false;
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     { field: "sod_part", headerName: "Part #", filter: "agTextColumnFilter" },
     {
       field: "sod_custpart",
@@ -171,7 +171,7 @@ export class OrderLookupComponent {
 
   gridApi: GridApi;
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onFirstDataRendered: (params) => {
       this.autoSizeAll(false);

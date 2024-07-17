@@ -1,4 +1,4 @@
-import { GridApi } from 'ag-grid-community'
+import { GridApi, GridOptions } from 'ag-grid-community'
 import { Component, Input, OnInit } from '@angular/core'
 import { ReactiveFormsModule } from '@angular/forms'
 import { NgSelectModule } from '@ng-select/ng-select'
@@ -123,7 +123,7 @@ export class MaterialRequestValidateListComponent implements OnInit {
     this.getData()
   }
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

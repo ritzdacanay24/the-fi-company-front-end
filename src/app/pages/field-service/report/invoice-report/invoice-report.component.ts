@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
 import moment from 'moment';
 import { NAVIGATION_ROUTE } from '../../job/job-constant';
 import { InvoiceReportChartComponent } from './invoice-report-chart/invoice-report-chart.component';
@@ -76,7 +76,7 @@ export class InvoiceReportComponent implements OnInit {
     });
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
@@ -104,7 +104,7 @@ export class InvoiceReportComponent implements OnInit {
     { field: 'invoice', headerName: 'Invoice Amount', filter: 'agMultiColumnFilter', pinned: 'right', valueFormatter: currencyFormatter },
   ]
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;

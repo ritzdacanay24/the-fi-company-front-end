@@ -1,4 +1,4 @@
-import { GridApi } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
@@ -46,7 +46,7 @@ export class PlatformListComponent implements OnInit {
     this.getData();
   }
 
-  columnDefs: any = [
+  columnDefs: ColDef[] = [
     {
       field: "View",
       headerName: "View",
@@ -118,7 +118,7 @@ export class PlatformListComponent implements OnInit {
 
   id = null;
 
-  gridOptions = {
+  gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
