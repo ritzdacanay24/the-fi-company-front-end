@@ -28,6 +28,8 @@ export class SidebarComponent implements OnInit {
   maxFavs = 5;
   favs = [];
 
+  version = environment.VERSION;
+
   searchMenu;
 
   recentSearches = [];

@@ -122,9 +122,9 @@ export class PartLookupComponent {
     { field: "po_buyer", headerName: "Buyer", filter: "agTextColumnFilter" },
   ];
 
-  gridApi2: any;
+  gridApi2: GridApi;
 
-  gridOptions2: any = {
+  gridOptions2: GridOptions = {
     columnDefs: this.purchaseOrdercolumnDefs,
     onGridReady: this.onGridReady2.bind(this),
     sideBar: false,
@@ -161,15 +161,16 @@ export class PartLookupComponent {
       filter: "agTextColumnFilter",
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
-        onClick: (e) => this.workOrderInfoModalService.open(e.rowData.wr_nbr),
+        onClick: ({ rowData }) =>
+          this.workOrderInfoModalService.open(rowData.wr_nbr),
         isLink: true,
       },
     },
   ];
 
-  gridApi3: any;
+  gridApi3: GridApi;
 
-  gridOptions3: any = {
+  gridOptions3: GridOptions = {
     columnDefs: this.workOrdercolumnDefs,
     onGridReady: this.onGridReady3.bind(this),
     sideBar: false,
@@ -224,9 +225,9 @@ export class PartLookupComponent {
     },
   ];
 
-  gridApi4: any;
+  gridApi4: GridApi;
 
-  gridOptions4: any = {
+  gridOptions4: GridOptions = {
     columnDefs: this.demandcolumnDefs,
     onGridReady: this.onGridReady4.bind(this),
     sideBar: false,
@@ -347,9 +348,9 @@ export class PartLookupComponent {
     },
   ];
 
-  gridApi5: any;
+  gridApi5: GridApi;
 
-  gridOptions5: any = {
+  gridOptions5: GridOptions = {
     columnDefs: this.shortagescolumnDefs,
     onGridReady: this.onGridReady5.bind(this),
     alwaysShowHorizontalScroll: true,

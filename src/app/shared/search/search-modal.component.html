@@ -14,7 +14,7 @@
                 <li class="list-group-item pointer" (click)="go(row)" [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == i}"
                     (mouseenter)="row.show = true;" (mouseleave)="row.show = false;"
                     *ngFor="let row of $any(menuItems) | filterPeople:query:'link'; let i = index" id="test_{{i}}">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center" style="overflow:hidden">
                         <div class="flex-grow-1">
                             <div class="d-flex">
                                 <div class="flex-shrink-0 avatar-xs">
@@ -62,7 +62,7 @@
                     id="test_{{row.index}}" (mouseenter)="row.show = true;arrowkeyLocation = row.index"
                     (mouseleave)="row.show = false;" (click)="go(row)"
                     [ngClass]="{'bg-secondary-subtle':arrowkeyLocation == row.index }">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center" style="overflow:hidden">
                         <div class="flex-grow-1">
                             <div class="d-flex">
                                 <div class="flex-shrink-0 avatar-xs">

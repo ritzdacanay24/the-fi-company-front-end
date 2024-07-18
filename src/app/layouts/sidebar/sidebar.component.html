@@ -10,7 +10,7 @@
           alt="" height="22">
       </span>
       <span class="logo-lg">
-        The Fi Company
+        The Fi Company <small style="font-size:10px" class="text-muted"><i>{{version}}</i></small>
       </span>
     </a>
     <!-- Light Logo-->
@@ -20,8 +20,8 @@
           src="https://media.licdn.com/dms/image/C560BAQH-W14cKPsFNg/company-logo_200_200/0/1630662405857/fiholding_logo?e=2147483647&v=beta&t=c-KfmJAV4ryZDJ07JKAuwMLTAEBS7qrP6vWbLiOzF_w"
           alt="" height="22">
       </span>
-      <span class="logo-lg text-white">
-        The Fi Company
+      <span class="logo-lg">
+        The Fi Company <small style="font-size:10px" class="text-muted"><i>{{version}}</i></small>
       </span>
     </a>
     <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover"
@@ -96,8 +96,9 @@
                   <a class="nav-link" [attr.data-parent]="subitem.parentId" data-bs-toggle="collapse"
                     aria-expanded="false" [attr.aria-expanded]="!subitem.isCollapsed" (click)="toggleItem(subitem)">
                     {{ subitem.label}}
-                    @if(subitem.badge && !subitem.showStar){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                     }}</span>}
+                    @if(subitem.badge && !subitem.showStar){<span
+                      class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                      }}</span>}
                   </a>
 
                   <div class="collapse menu-dropdown sub-menu" #collapse="ngbCollapse"
@@ -112,7 +113,7 @@
                           {{ subSubitem.label}}
                           @if(subSubitem.badge && !subSubitem.showStar){<span
                             class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                           }}</span>}
+                            }}</span>}
                         </a>
 
                         <div class="collapse menu-dropdown extra-sub-menu" [(ngbCollapse)]="subSubitem.isCollapsed">
@@ -151,7 +152,7 @@
                             (click)="$event.preventDefault();removeAsFavorite(subSubitem);$event.stopPropagation()"></i>
                           @if(subSubitem.badge && !subSubitem.showStar){<span
                             class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
-                           }}</span>}
+                            }}</span>}
                         </a>
                         }
                       </li>
@@ -169,8 +170,9 @@
                     <i style="position:absolute;right:10px" *ngIf="subitem.showStar && subitem.showStarColor"
                       class="las la-star text-end icon nav-icon text-warning"
                       (click)="$event.preventDefault();removeAsFavorite(subitem);$event.stopPropagation()"></i>
-                    @if(subitem.badge && !subitem.showStar){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
-                     }}</span>}
+                    @if(subitem.badge && !subitem.showStar){<span
+                      class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                      }}</span>}
                   </a>
                   }
                 </li>
@@ -181,7 +183,8 @@
             <a [routerLink]="item.link" class="side-nav-link-ref nav-link menu-link">
               @if(item.icon){<i class="{{ item.icon }} icon nav-icon" class=""></i>}
               <span class=""> {{ item.label }}</span>
-              @if(item.badge && !item.showStar){ <span class="badge {{item.badge.variant}} float-end">{{item.badge.text}}</span>}
+              @if(item.badge && !item.showStar){ <span
+                class="badge {{item.badge.variant}} float-end">{{item.badge.text}}</span>}
             </a>
             }
           </li>
