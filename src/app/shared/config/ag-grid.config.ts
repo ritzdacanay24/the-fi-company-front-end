@@ -1,5 +1,6 @@
 import { GridOptions } from "ag-grid-community";
 
+let popupParent: HTMLElement | null = document.querySelector("card");
 export const agGridOptions: GridOptions = {
   groupTotalRow: null,
   singleClickEdit: true,
@@ -19,6 +20,7 @@ export const agGridOptions: GridOptions = {
     skipPinnedTop: true,
     skipPinnedBottom: true,
   },
+  popupParent: popupParent,
   autoSizeStrategy: {
     type: "fitCellContents",
   },

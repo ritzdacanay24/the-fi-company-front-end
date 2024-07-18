@@ -74,19 +74,17 @@ export class PartLookupComponent {
 
   gridOptions: GridOptions = {
     columnDefs: this.locationcolumnDefs,
-    autoSizeStrategy: {
-        type: 'fitCellContents'
-    },
     onGridReady: (params) => {
       this.gridApi = params.api;
       params.api.updateGridOptions({
         defaultColDef: {
           floatingFilter: false,
+          suppressHeaderFilterButton: true,
         },
       });
     },
     sideBar: false,
-    domLayout: "autoHeight"
+    domLayout: "autoHeight",
   };
   total: number;
   demand: any;
@@ -139,6 +137,7 @@ export class PartLookupComponent {
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
+        suppressHeaderFilterButton: true,
       },
     });
   }
@@ -183,6 +182,7 @@ export class PartLookupComponent {
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
+        suppressHeaderFilterButton: true,
       },
     });
   }
@@ -238,6 +238,7 @@ export class PartLookupComponent {
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
+        suppressHeaderFilterButton: true,
       },
     });
   }
@@ -362,6 +363,7 @@ export class PartLookupComponent {
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
+        suppressHeaderFilterButton: true,
       },
     });
   }

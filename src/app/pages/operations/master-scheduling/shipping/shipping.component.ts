@@ -600,7 +600,10 @@ export class ShippingComponent implements OnInit {
       filter: "agTextColumnFilter",
       autoHeight: false,
       wrapText: false,
-      width: 300,
+      width: 100,
+      minWidth: 100,
+      // suppressSizeToFit: true,
+      // suppressAutoSize: true,
       tooltipField: "recent_comments.comments_html",
     },
     {
@@ -1070,7 +1073,7 @@ export class ShippingComponent implements OnInit {
     rowBuffer: 0,
     enableCharts: true,
     enableAdvancedFilter: false,
-
+    enableBrowserTooltips: true,
     suppressColumnMoveAnimation: true,
 
     getRowId: (data: any) => data?.data.id,
