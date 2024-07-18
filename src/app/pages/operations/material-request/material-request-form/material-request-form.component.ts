@@ -244,7 +244,7 @@ export class MaterialRequestFormComponent {
               row.partNumber || null,
               Validators.required
             ),
-            qty: new FormControl(row.qty, Validators.required),
+            qty: new FormControl(row.qty, [Validators.required, Validators.min(1)]),
             isDuplicate: isDup,
             reasonCode: new FormControl(
               row.reasonCode || null,

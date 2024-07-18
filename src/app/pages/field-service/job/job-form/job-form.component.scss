@@ -43,5 +43,5 @@ div.waiver p {
 }
 .ng-select.is-invalid {
   border-radius: 5px;
-  border: 1px red solid !important;
+  border: 1px var(--vz-form-invalid-border-color) solid !important;
 }
