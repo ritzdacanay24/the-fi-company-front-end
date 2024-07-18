@@ -176,8 +176,7 @@ export class MaterialRequestListComponent implements OnInit {
 
   async getData() {
     try {
-      //this.gridApi?.showLoadingOverlay()
-      this.gridApi?.setGridOption("loading", true);
+      this.gridApi?.showLoadingOverlay();
 
       let params: any = {};
       if (this.selectedViewType != 'All') {
@@ -198,12 +197,10 @@ export class MaterialRequestListComponent implements OnInit {
         relativeTo: this.activatedRoute
         , queryParamsHandling: 'merge'
       });
-      this.gridApi?.setGridOption("loading", false);
-      //this.gridApi?.hideOverlay()
+      this.gridApi?.hideOverlay();
 
     } catch (err) {
-      this.gridApi?.setGridOption("loading", false);
-      //this.gridApi?.hideOverlay()
+      this.gridApi?.hideOverlay();
     }
 
   }

@@ -191,22 +191,19 @@ export class WorkOrderTrackerListComponent implements OnInit {
     this.getData();
   }
 
-  public showHideOverlay(isShow) {
-    if (this.gridApi) {
-      isShow
-        ? this.gridApi.setGridOption("loading", true)
-        : this.gridApi.setGridOption("loading", false);
-    }
-  }
-
   subscription: Subscription;
   async getData() {
-    this.showHideOverlay(true);
-    let data: any = await this.api.getList();
+    try {
+      this.gridApi?.showLoadingOverlay();
+      let data: any = await this.api.getList();
 
-    const source = interval(1000);
-    this.subscription = source.subscribe((val) => this.updateClock());
+      const source = interval(1000);
+      this.subscription = source.subscribe((val) => this.updateClock());
 
-    this.data = data?.details;
+      this.data = data?.details;
+      this.gridApi?.hideOverlay();
+    } catch (err) {
+      this.gridApi?.hideOverlay();
+    }
   }
 }

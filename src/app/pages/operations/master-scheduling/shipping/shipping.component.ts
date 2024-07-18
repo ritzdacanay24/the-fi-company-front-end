@@ -1103,14 +1103,6 @@ export class ShippingComponent implements OnInit {
     },
   };
 
-  public showHideOverlay(isShow) {
-    if (this.gridApi) {
-      isShow
-        ? this.gridApi.setGridOption("loading", true)
-        : this.gridApi.setGridOption("loading", false);
-    }
-  }
-
   public async update(data: any) {
     data.misc.shippingMisc = 1;
     data.misc.so = data.sales_order_line_number; //add on insert since so is not available yet
@@ -1125,13 +1117,13 @@ export class ShippingComponent implements OnInit {
 
     // Save transactop
     try {
-      this.showHideOverlay(true);
+      this.gridApi?.showLoadingOverlay();
       let res = await this.api.saveMisc(data.misc);
       data.misc = res;
       this.sendAndUpdate(data, data.id);
-      this.showHideOverlay(false);
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.showHideOverlay(false);
+      this.gridApi?.hideOverlay();
     }
 
     // let res = await this.api

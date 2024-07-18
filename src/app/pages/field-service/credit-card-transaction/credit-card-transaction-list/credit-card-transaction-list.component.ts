@@ -85,7 +85,7 @@ export class CreditCardTransactionListComponent implements OnInit {
 
   async getData() {
     try {
-      this.gridApi?.setGridOption("loading", true);
+      this.gridApi?.showLoadingOverlay();
       this.data = await this.tripExpenseTransactionsService.findByDateRange(
         "Transaction_Date",
         { dateFrom: this.dateFrom, dateTo: this.dateTo }
@@ -100,9 +100,9 @@ export class CreditCardTransactionListComponent implements OnInit {
       }
 
       this.columnDefs = customColumns;
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     }
   }
 

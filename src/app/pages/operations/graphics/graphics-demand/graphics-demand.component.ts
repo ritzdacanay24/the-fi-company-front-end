@@ -264,7 +264,7 @@ export class GraphicsDemandComponent implements OnInit {
      *  Save data to database
      */
     try {
-      this.gridApi?.setGridOption("loading", true);
+      this.gridApi?.showLoadingOverlay();
       let res: any = await this.api.saveGraphicsDemand(params);
       var rowNode = this.gridApi.getRowNode(data.id);
       rowNode.data.checked = data.checked;
@@ -275,9 +275,9 @@ export class GraphicsDemandComponent implements OnInit {
         this.authenticationService.currentUserValue.full_name;
 
       this.gridApi.applyTransaction({ update: [rowNode.data] });
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     }
   }
 
@@ -295,12 +295,12 @@ export class GraphicsDemandComponent implements OnInit {
   data: any;
   async getData() {
     try {
-      this.gridApi?.setGridOption("loading", true);
+      this.gridApi?.showLoadingOverlay();
       let data = await this.api.getGraphicsDemand();
       this.data = data;
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     } catch (err) {
-      this.gridApi?.setGridOption("loading", false);
+      this.gridApi?.hideOverlay();
     }
   }
 }

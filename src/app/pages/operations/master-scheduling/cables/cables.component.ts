@@ -101,25 +101,17 @@ export class CablesComponent implements OnInit {
     this.getData();
   }
 
-  public showHideOverlay(isShow) {
-    if (this.gridApi) {
-      isShow
-        ? this.gridApi.setGridOption("loading", true)
-        : this.gridApi.setGridOption("loading", false);
-    }
-  }
-
   getData() {
-    this.showHideOverlay(true);
+    this.gridApi?.showLoadingOverlay();
     this.api
       .getData()
       .pipe(first())
       .subscribe(
         (data) => {
-          this.showHideOverlay(false);
+          this.gridApi?.hideOverlay();
           this.data = data;
         },
-        (error) => this.showHideOverlay(false)
+        (error) => this.gridApi?.hideOverlay()
       );
   }
 }
