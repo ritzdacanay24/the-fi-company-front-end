@@ -173,9 +173,6 @@ export class OrderLookupComponent {
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
-    onFirstDataRendered: (params) => {
-      this.autoSizeAll(false);
-    },
     onGridReady: (params) => {
       this.gridApi = params.api;
       params.api.updateGridOptions({
@@ -233,8 +230,6 @@ export class OrderLookupComponent {
     }, 200);
   }
 
-  autoSizeAll(skipHeader) {}
-
   formatNumber(row) {
     // this puts commas into the number eg 1000 goes to 1,000,
     // i pulled this from stack overflow, i have no idea how it works
@@ -279,9 +274,6 @@ export class OrderLookupComponent {
 
   gridOptions1 = {
     columnDefs: this.columnDefs1,
-    onFirstDataRendered: (params) => {
-      params.api.sizeColumnsToFit();
-    },
     onGridReady: (params) => {
       this.gridApi1 = params.api;
       params.api.updateGridOptions({
@@ -348,9 +340,6 @@ export class OrderLookupComponent {
 
   gridOptions2 = {
     columnDefs: this.columnDefs2,
-    onFirstDataRendered: (params) => {
-      params.api.sizeColumnsToFit();
-    },
     onGridReady: (params) => {
       this.gridApi2 = params.api;
       params.api.updateGridOptions({

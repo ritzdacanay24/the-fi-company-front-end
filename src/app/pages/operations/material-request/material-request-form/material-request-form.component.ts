@@ -22,7 +22,7 @@ import { RootReducerState } from "@app/store";
 import { getLayoutMode } from "@app/store/layouts/layout-selector";
 import { Store } from "@ngrx/store";
 
-import { AceModule } from "ngx-ace-wrapper";
+import { AceConfigInterface, AceModule } from "ngx-ace-wrapper";
 import "brace";
 import "brace/mode/plain_text";
 import "brace/theme/merbivore_soft";
@@ -164,10 +164,9 @@ export class MaterialRequestFormComponent {
     this.itemsInCart = code;
   }
 
-  aceConfig: any = {
+  aceConfig: AceConfigInterface = {
     maxLines: 1000,
     minLines: 15,
-    printMargin: false,
     autoScrollEditorIntoView: true,
     showInvisibles: false,
     tabSize: 3,
@@ -244,7 +243,10 @@ export class MaterialRequestFormComponent {
               row.partNumber || null,
               Validators.required
             ),
-            qty: new FormControl(row.qty, [Validators.required, Validators.min(1)]),
+            qty: new FormControl(row.qty, [
+              Validators.required,
+              Validators.min(1),
+            ]),
             isDuplicate: isDup,
             reasonCode: new FormControl(
               row.reasonCode || null,

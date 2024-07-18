@@ -28,7 +28,7 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
         this.iconColor = "text-success-emphasis";
       }
 
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         content: `
         <div class="card shadow-md" style="min-width:300px">
         <div class="card-header d-flex align-items-center"><h4 class="card-title mb-0">${this.data.so}</h4></div>
@@ -50,7 +50,7 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
     ) {
       this.iconColor = "text-success-emphasis";
 
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         content: `
         <div class="card shadow-md" style="min-width:300px">
         <div class="card-header d-flex align-items-center"><h4 class="card-title mb-0">${this.data.so}</h4></div>
@@ -69,6 +69,8 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
     }
   }
 
+  instance;
+
   refresh(params?: any): boolean {
     this.params = params.data;
 
@@ -77,6 +79,7 @@ export class OwnerRendererComponent implements ICellRendererAngularComp {
 
   onClick($event: any) {
     $event.preventDefault();
+    this.instance?.hide();
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,

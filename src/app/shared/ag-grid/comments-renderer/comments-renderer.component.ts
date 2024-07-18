@@ -20,7 +20,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
   icon_color: string = "";
   atRisk: boolean;
   data: any;
-
+  instance;
   agInit(params): void {
     this.params = params;
     this.data = params.data;
@@ -49,7 +49,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
         this.icon_color = "text-danger-emphasis";
         this.recent_comments.bg_class_name = "bg-danger";
       }
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         // animateFill:false,
         arrow: false,
         content: `
@@ -94,7 +94,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
         trigger: "mouseenter",
       });
     } else {
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         // animateFill:false,
         arrow: false,
         content: `
@@ -134,6 +134,7 @@ export class CommentsRendererComponent implements ICellRendererAngularComp {
 
   onClick($event: any) {
     $event.preventDefault();
+    this.instance?.hide();
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,

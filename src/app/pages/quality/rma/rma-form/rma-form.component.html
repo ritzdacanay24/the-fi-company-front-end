@@ -1,19 +1,19 @@
 <form [formGroup]="form" autocomplete="off">
 
   <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Produce By</label>
       <select class="form-select" formControlName="type" [ngClass]="{ 'is-invalid': submitted && f.type.errors }">
         <option selected disabled value="">--Select--</option>
         <option *ngFor="let row of formData.produceBy" [value]="row">{{row}}</option>
       </select>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Date Issued</label>
       <input class="form-control" type="date" formControlName="dateIssued"
         [ngClass]="{ 'is-invalid': submitted && f.dateIssued.errors }" />
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Status</label>
       <select class="form-select" formControlName="status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
         <option *ngFor="let row of formData.status" [value]="row.name">{{row.name}}</option>
@@ -29,12 +29,12 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <app-qad-customer-name-search (notifyParent)="getCustomerName($event)"
         [ngClass]="{ 'is-invalid': submitted && f.customer.errors }"
         [value]="f.customer.value"></app-qad-customer-name-search>
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label">Tag QN Number</label>
       <input class="form-control" type="text" formControlName="tag_qn_number" placeholder="Enter QN Number"
         [ngClass]="{ 'is-invalid': submitted && f.tag_qn_number.errors }" />
@@ -53,12 +53,12 @@
   </div>
 
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Order Number</label>
       <input class="form-control" type="text" formControlName="orderNumber" placeholder="Enter Order Number"
         [ngClass]="{ 'is-invalid': submitted && f.orderNumber.errors }" />
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Qty</label>
       <input class="form-control" type="number" formControlName="qty" placeholder="Enter Qty"
         [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
@@ -68,12 +68,12 @@
 
 
   <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Return Method</label>
       <input class="form-control" type="text" formControlName="returnMethod" placeholder="Enter Return Method"
         [ngClass]="{ 'is-invalid': submitted && f.returnMethod.errors }" />
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Return Type</label>
       <select formControlName="returnType" class="form-select"
         [ngClass]="{ 'is-invalid': submitted && f.returnType.errors }">
@@ -81,7 +81,7 @@
         <option *ngFor="let row of formData.returnType" [value]="row">{{row}}</option>
       </select>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label class="form-label">Disposition</label>
       <select formControlName="disposition" class="form-select"
         [ngClass]="{ 'is-invalid': submitted && f.disposition.errors }">

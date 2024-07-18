@@ -173,7 +173,7 @@ export class MrbListComponent implements OnInit {
     },
   ];
 
-  title = "RMA List";
+  title = "MRB List";
 
   gridApi: GridApi;
 

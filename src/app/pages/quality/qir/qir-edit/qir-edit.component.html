@@ -17,7 +17,7 @@
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-center"> {{title}} </h4>
+        <h4 class="card-title mb-0 flex-grow-1 text-center d-none d-lg-block"> {{title}} </h4>
         <button type="button" (click)="onDownloadAsPdf()" class="btn btn-sm btn-light" [disabled]="isLoading">
           <span class="icon-on"><i class="bx bxs-file-pdf text-danger me-2"></i> Download as PDF</span>
         </button>

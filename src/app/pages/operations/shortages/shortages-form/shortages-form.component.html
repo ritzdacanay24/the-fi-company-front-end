@@ -1,10 +1,10 @@
 <form [formGroup]="form" autocomplete="off">
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <app-qad-part-search (notifyParent)="notifyParent($event)" [value]="f.partNumber.value"></app-qad-part-search>
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('partDesc')">Part Description</label>
       <input type="text" class="form-control" name="partDesc" formControlName="partDesc"
         placeholder="Enter part description" [ngClass]="{ 'is-invalid': submitted && f.partDesc.errors }" />
@@ -12,12 +12,12 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
       <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty"
         [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('assemblyNumber')">Assembly Number</label>
       <input type="text" class="form-control" name="assemblyNumber" formControlName="assemblyNumber"
         placeholder="Enter assembly number" [ngClass]="{ 'is-invalid': submitted && f.assemblyNumber.errors }" />
@@ -25,17 +25,17 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('woNumber')">WO Number</label>
       <input type="text" class="form-control" name="woNumber" formControlName="woNumber" placeholder="Enter WO number"
         [ngClass]="{ 'is-invalid': submitted && f.woNumber.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('lineNumber')">Line Number</label>
       <input type="text" class="form-control" name="lineNumber" formControlName="lineNumber"
         placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.lineNumber.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('dueDate')">Due Date</label>
       <input type="date" class="form-control" name="dueDate" formControlName="dueDate" placeholder="Enter due date"
         [ngClass]="{ 'is-invalid': submitted && f.dueDate.errors }" />
@@ -43,7 +43,7 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('reasonPartNeeded')">Reason Part Needed</label>
       <select class="form-select" formControlName="reasonPartNeeded"
         [ngClass]="{ 'is-invalid': submitted && f.reasonPartNeeded.errors }">
@@ -51,7 +51,7 @@
         <option *ngFor="let row of reasonCodeOptions">{{row}}</option>
       </select>
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('priority')">Priority</label>
       <select class="form-select" formControlName="priority"
         [ngClass]="{ 'is-invalid': submitted && f.priority.errors }">
@@ -62,17 +62,17 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('poNumber')">PO Number</label>
       <input type="text" class="form-control" name="poNumber" formControlName="poNumber" placeholder="Enter PO number"
         [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('supplier')">Supplier</label>
       <input type="text" class="form-control" name="supplier" formControlName="supplier" placeholder="Enter supplier"
         [ngClass]="{ 'is-invalid': submitted && f.supplier.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('buyer')">Buyer</label>
       <input type="text" class="form-control" name="buyer" formControlName="buyer" placeholder="Enter buyer"
         [ngClass]="{ 'is-invalid': submitted && f.buyer.errors }" />

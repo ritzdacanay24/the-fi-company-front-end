@@ -7,7 +7,7 @@
             <div class="row mb-3">
               <div class="col-md">
                 <div class="row align-items-center g-3">
-                  <div class="col-md-auto">
+                  <div class="col-md-auto d-none d-lg-block">
                     <div class="avatar-md">
                       <div class="avatar-title bg-white rounded-circle">
                         <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
@@ -53,7 +53,7 @@
             </div>
 
             <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
-              class="nav nav-tabs-custom border-bottom-0" role="tablist">
+              class="nav nav-tabs-custom border-bottom-0" role="tablist" style="overflow:auto;flex-wrap:nowrap;white-space: nowrap;">
               <li [ngbNavItem]="1" class="nav-item">
                 <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                   <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Events

@@ -133,3 +133,8 @@
     border-left-color: transparent;
     border-bottom-color: $card-border-color;
 }
+
+.ql-toolbar { 
+    white-space: nowrap;
+    overflow: auto;
+}

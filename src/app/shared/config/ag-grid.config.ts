@@ -19,6 +19,9 @@ export const agGridOptions: GridOptions = {
     skipPinnedTop: true,
     skipPinnedBottom: true,
   },
+  autoSizeStrategy: {
+    type: "fitCellContents",
+  },
 
   // autoGroupColumnDef: {
   //   headerName: "Athlete",

@@ -1,33 +1,31 @@
 <div class="row">
   <div class="col-lg-12">
-    <div class="">
-      <div class="card card-body">
-        <div class="d-flex align-items-center">
-          <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="isLoading"
-            [displayOptions]="true"></app-date-range>
+    <div class="card card-body" style="overflow:auto">
+      <div class="d-flex align-items-center">
+        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="isLoading"
+          [displayOptions]="true"></app-date-range>
 
-          <div class="ms-3">
-            <select class="form-select" [(ngModel)]="typeOfView" (change)="getData()" [disabled]="isLoading">
-              <option *ngFor="let row of ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually']" [value]="row">
-                {{row}}</option>
-            </select>
-          </div>
-
-          <div class="form-check ms-3 me-3" style="white-space: nowrap;">
-            <input class="form-check-input" type="checkbox" [disabled]="isLoading"
-              [disabled]="this.displayCustomers == 'Show All' && this.showAll" [(ngModel)]="showAll"
-              id="displayCustomers" (ngModelChange)="onChange()">
-            <label class="form-check-label" for="displayCustomers">
-              Show All
-            </label>
-          </div>
-
-          <h4 class="card-title mb-0 ms-auto">OTD Based On Performance Date <br />
-            <small style="font-size:12px">OTD is recorded daily at 5pm or you can refresh by clicking <a
-                class="link-primary link-underline pointer"
-                (click)="!isLoading && refreshData()"><u>here</u></a></small>
-          </h4>
+        <div class="ms-3">
+          <select class="form-select" [(ngModel)]="typeOfView" (change)="getData()" [disabled]="isLoading"
+            style="min-width:150px">
+            <option *ngFor="let row of ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually']" [value]="row">
+              {{row}}</option>
+          </select>
         </div>
+
+        <div class="form-check ms-3 me-3" style="white-space: nowrap;">
+          <input class="form-check-input" type="checkbox" [disabled]="isLoading"
+            [disabled]="this.displayCustomers == 'Show All' && this.showAll" [(ngModel)]="showAll" id="displayCustomers"
+            (ngModelChange)="onChange()">
+          <label class="form-check-label" for="displayCustomers">
+            Show All
+          </label>
+        </div>
+
+        <h4 class="card-title mb-0 ms-auto d-none d-lg-block">OTD Based On Performance Date <br />
+          <small style="font-size:12px">OTD is recorded daily at 5pm or you can refresh by clicking <a
+              class="link-primary link-underline pointer" (click)="!isLoading && refreshData()"><u>here</u></a></small>
+        </h4>
       </div>
     </div>
   </div>
@@ -79,39 +77,36 @@
       </div>
     </div>
   </div>
-  <div class="row">
-    <div class="col-lg-12">
-      <div class="card">
-        <div class="card-header">
-          <div class="d-flex align-items-center">
-            <div class="form-icon">
-              <input type="search" class="form-control form-control-icon" style="width:250px"
-                (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
-                placeholder="Search">
-              <i class="ri-search-2-line"></i>
-            </div>
 
-            <div class="ms-3">
-              <app-grid-settings [gridApi]="gridApi"
-                [pageId]="pageId"></app-grid-settings>
-            </div>
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex align-items-center">
+          <div class="form-icon">
+            <input type="search" class="form-control form-control-icon" style="width:250px"
+              (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+              placeholder="Search">
+            <i class="ri-search-2-line"></i>
+          </div>
+
+          <div class="ms-3">
+            <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+          </div>
 
 
-            <div class="ms-3">
-              <app-grid-filters [gridApi]="gridApi"
-                [pageId]="pageId"></app-grid-filters>
-            </div>
+          <div class="ms-3 me-3">
+            <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+          </div>
 
-            <div class="ms-auto">
-              <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
-            </div>
+          <div class="ms-auto">
+            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
           </div>
         </div>
-        <div class="card-body p-0">
-          <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-            [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
-          </ag-grid-angular>
-        </div>
+      </div>
+      <div class="card-body p-0">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
+        </ag-grid-angular>
       </div>
     </div>
   </div>

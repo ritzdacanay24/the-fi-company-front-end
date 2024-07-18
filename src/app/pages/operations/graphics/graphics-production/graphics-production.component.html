@@ -7,11 +7,13 @@
 
 
 <div class="row mb-2" *ngIf="!isLoading">
-    <div class=" d-flex">
-        <button class="btn btn-primary btn-sm" (click)="getData()">Refresh</button>
-        <div class="input-group  w-25  ms-2">
-            <input type="search" class="form-control" placeholder="Enter work order number"
-                [(ngModel)]="searchWorkOrder">
+    <div class="col-lg-4 col-sm">
+        <div class="d-flex">
+            <button class="btn btn-primary btn-sm" (click)="getData()">Refresh</button>
+            <div class="input-group ms-2">
+                <input type="search" class="form-control" placeholder="Enter work order number"
+                    [(ngModel)]="searchWorkOrder">
+            </div>
         </div>
     </div>
 </div>

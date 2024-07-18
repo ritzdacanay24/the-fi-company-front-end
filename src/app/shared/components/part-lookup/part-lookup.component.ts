@@ -74,6 +74,9 @@ export class PartLookupComponent {
 
   gridOptions: GridOptions = {
     columnDefs: this.locationcolumnDefs,
+    autoSizeStrategy: {
+        type: 'fitCellContents'
+    },
     onGridReady: (params) => {
       this.gridApi = params.api;
       params.api.updateGridOptions({
@@ -83,7 +86,7 @@ export class PartLookupComponent {
       });
     },
     sideBar: false,
-    domLayout: "autoHeight",
+    domLayout: "autoHeight"
   };
   total: number;
   demand: any;
@@ -92,7 +95,6 @@ export class PartLookupComponent {
 
   onGridReady(params) {
     this.gridApi = params.api;
-    this.gridApi.sizeColumnsToFit();
   }
 
   purchaseOrdercolumnDefs: ColDef[] = [
@@ -134,7 +136,6 @@ export class PartLookupComponent {
 
   onGridReady2(params) {
     this.gridApi2 = params.api;
-    this.gridApi2.sizeColumnsToFit();
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
@@ -179,7 +180,6 @@ export class PartLookupComponent {
 
   onGridReady3(params) {
     this.gridApi3 = params.api;
-    this.gridApi3.sizeColumnsToFit();
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
@@ -235,7 +235,6 @@ export class PartLookupComponent {
 
   onGridReady4(params) {
     this.gridApi4 = params.api;
-    this.gridApi4.sizeColumnsToFit();
     params.api.updateGridOptions({
       defaultColDef: {
         floatingFilter: false,
@@ -356,13 +355,6 @@ export class PartLookupComponent {
     sideBar: false,
     domLayout: "autoHeight",
     popupParent: document.querySelector("modal"),
-    onFirstDataRendered: (params) => {
-      var allColumnIds = [];
-      params.columnApi.getAllColumns().forEach(function (column) {
-        allColumnIds.push(column.colId);
-      });
-      params.columnApi.autoSizeColumns(allColumnIds, false);
-    },
   };
 
   onGridReady5(params) {

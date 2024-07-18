@@ -22,7 +22,7 @@
       <div class="card-header d-flex align-items-center">
         <!--<h4 class="float-start">Receipts</h4>-->
 
-        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active"
+        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active" style="flex-wrap:nowrap;"
           class="nav justify-content-end nav-tabs-custom rounded card-header-tabs border-bottom-0"
           (navChange)="onNavChange($event)">
           <li [ngbNavItem]="'Receipts'" class="nav-item">

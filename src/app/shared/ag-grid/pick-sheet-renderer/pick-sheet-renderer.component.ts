@@ -87,7 +87,7 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
         `;
     }
 
-    tippy(params.eGridCell, {
+    this.instance = tippy(params.eGridCell, {
       theme: "tomato",
       // animateFill: false,
       arrow: false,
@@ -99,6 +99,8 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
     });
   }
 
+  instance: any;
+
   refresh(params?: any): boolean {
     this.params = params;
     return true;
@@ -106,6 +108,7 @@ export class PickSheetRendererComponent implements ICellRendererAngularComp {
 
   onClick($event: any) {
     $event.preventDefault();
+    this.instance?.hide();
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,

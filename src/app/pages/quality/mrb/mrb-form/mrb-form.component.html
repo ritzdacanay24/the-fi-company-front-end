@@ -5,14 +5,14 @@
   </div>
 
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Status</label>
       <select class="form-select" formControlName="status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }">
         <option selected disabled value="null">--Select--</option>
         <option *ngFor="let row of status" [value]="row">{{row}}</option>
       </select>
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Date Raised</label>
       <input class="form-control" type="date" formControlName="dateReported"
         [ngClass]="{ 'is-invalid': submitted && f.dateReported.errors }" />
@@ -30,12 +30,12 @@
 
 
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Rejected By</label>
       <input class="form-control" type="text" formControlName="type" placeholder="Enter Rejected By"
         [ngClass]="{ 'is-invalid': submitted && f.type.errors }" />
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">RMA #</label>
       <input class="form-control" type="text" formControlName="rma" placeholder="Enter RMA Number"
         [ngClass]="{ 'is-invalid': submitted && f.rma.errors }" />
@@ -54,17 +54,17 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label">Qty Rejected</label>
       <input class="form-control" type="text" formControlName="qtyRejected" placeholder="Enter QTY Rejected"
         [ngClass]="{ 'is-invalid': submitted && f.qtyRejected.errors }" (change)="calculate()" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label">Item Cost</label>
       <input class="form-control" type="text" formControlName="itemCost" placeholder="Enter Item Cost"
         [ngClass]="{ 'is-invalid': submitted && f.itemCost.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label">Value</label>
       <input class="form-control" type="text" formControlName="value" placeholder="Enter value"
         [ngClass]="{ 'is-invalid': submitted && f.value.errors }" />
@@ -72,12 +72,12 @@
   </div>
 
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Failure Type</label>
       <input class="form-control" type="text" formControlName="failureType" placeholder="Enter Failure Type"
         [ngClass]="{ 'is-invalid': submitted && f.failureType.errors }" />
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Component Type</label>
       <input class="form-control" type="text" formControlName="componentType" placeholder="Enter Component Type"
         [ngClass]="{ 'is-invalid': submitted && f.componentType.errors }" />
@@ -86,12 +86,12 @@
 
 
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">WO/SO</label>
       <input class="form-control" type="text" formControlName="wo_so" placeholder="Enter WO/SO"
         [ngClass]="{ 'is-invalid': submitted && f.wo_so.errors }" />
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-sm-6 mb-3">
       <label class="form-label">Lot #</label>
       <input class="form-control" type="text" formControlName="lotNumber" placeholder="Enter LOT Number"
         [ngClass]="{ 'is-invalid': submitted && f.lotNumber.errors }" />

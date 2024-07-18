@@ -1,15 +1,15 @@
 <form [formGroup]="form" autocomplete="off">
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="source" class="form-label">Source</label>
       <input type="text" class="form-control" id="source" formControlName="source" placeholder="Enter source">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="po_nbr" class="form-label">P.O No.</label>
       <input type="text" class="form-control" id="po_nbr" formControlName="po_nbr" placeholder="Enter PO Number">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <app-qad-wo-search (notifyParent)="setOrkOrderNumber($event)" [value]="f.wo_nbr.value"
         [disabled]="this.form.disabled" [addTag]="true"></app-qad-wo-search>
     </div>
@@ -42,44 +42,44 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="pt_nbr" class="form-label">Part No.</label>
       <input type="text" class="form-control" id="pt_nbr" formControlName="pt_nbr" placeholder="Enter Part Number">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="rev" class="form-label">Rev:</label>
       <input type="text" class="form-control" id="rev" formControlName="rev" placeholder="Enter REV Number">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="initiated_by" class="form-label">Initiated By:</label>
       <input type="text" class="form-control" id="initiated_by" formControlName="initiated_by" placeholder="Enter name">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="ret_nbr" class="form-label">Return No.</label>
       <input type="text" class="form-control" id="ret_nbr" formControlName="ret_nbr" placeholder="Enter return number">
     </div>
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="acc" class="form-label">Acc.</label>
       <input type="text" class="form-control" id="acc" formControlName="acc" placeholder="Enter acc">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="rej" class="form-label">Rej.</label>
       <input type="text" class="form-control" id="rej" formControlName="rej" placeholder="Enter reject">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="sample_size" class="form-label">Sample Size:</label>
       <input type="text" class="form-control" id="sample_size" formControlName="sample_size"
         placeholder="Enter sample size">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="dept_operator" class="form-label">Dept./Operator</label>
       <input type="text" class="form-control" id="dept_operator" formControlName="dept_operator"
         placeholder="Enter department/Operator name">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="finished_nbr" class="form-label">Finished #</label>
       <input type="text" class="form-control" id="finished_nbr" formControlName="finished_nbr"
         placeholder="Enter finished number">
@@ -113,7 +113,7 @@
     </div>
 
     <div class="row">
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light">Dspn by:</div>
@@ -122,7 +122,7 @@
             placeholder="Enter disposition by">
         </div>
       </div>
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light">Ttile:</div>
@@ -131,7 +131,7 @@
             placeholder="Enter title">
         </div>
       </div>
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light">Dt:</div>
@@ -170,7 +170,7 @@
     </div>
 
     <div class="row">
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light border-right-0">Dspn by:</div>
@@ -179,7 +179,7 @@
             placeholder="Enter Disposition By">
         </div>
       </div>
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light">Title:</div>
@@ -188,7 +188,7 @@
             placeholder="Enter Title">
         </div>
       </div>
-      <div class="col mb-3">
+      <div class="col-sm mb-3">
         <div class="input-group">
           <div class="input-group-prepend">
             <div class="input-group-text bg-light">Dt:</div>
@@ -213,25 +213,25 @@
   </div>
 
   <div class="row">
-    <div class="col-7 mb-3">
+    <div class="col-sm-7 mb-3">
       <label for="iss_by" class="form-label">Issued By:</label>
       <input type="text" class="form-control" id="iss_by" formControlName="iss_by" placeholder="Enter Issued By">
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="iss_dt" class="form-label">Issued Date:</label>
       <input type="date" class="form-control" id="iss_dt" formControlName="iss_dt">
     </div>
   </div>
 
   <div class="row">
-    <div class="col-4 mb-3">
+    <div class="col-sm-4 mb-3">
       <label for="ca_iss_to" class="form-label">Corrective Action Issued To</label>
       <select class="form-select" id="ca_iss_to" formControlName="ca_iss_to">
         <option selected disabled value="">--SELECT--</option>
         <option *ngFor="let row of corrective_action_issued_to">{{row}}</option>
       </select>
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label for="ca_due_dt" class="form-label">Due Date</label>
       <input type="date" class="form-control" id="ca_due_dt" formControlName="ca_due_dt">
     </div>

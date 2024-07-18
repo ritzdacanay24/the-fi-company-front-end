@@ -26,12 +26,12 @@
         </div>
 
         <div class="row">
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label required">Customer name:</label>
             <input type="text" class="form-control form-control" placeholder="Enter customer name"
               [(ngModel)]="data.customerName1" (change)="update()">
           </div>
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label required">Customer Phone:</label>
             <input type="text" class="form-control form-control" placeholder="Enter customer number"
               [(ngModel)]="data.phone" (change)="update()">
@@ -39,7 +39,7 @@
         </div>
 
         <div class="row">
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label required">Customer Signature:</label>
             <div class="d-grid gap-2 col-12 mx-auto">
               <button class="btn btn-primary btn-block" (click)="openSignature()">Click here for customer
@@ -49,7 +49,7 @@
                 style="border: 2px dashed #c0c0c0" class="mx-auto">
             </div>
           </div>
-          <div class="col mb-3">
+          <div class="col-sm mb-3">
             <label class="form-label required">Tech Signature:</label>
             <div class="d-grid gap-2 col-12 mx-auto">
               <button class="btn btn-primary btn-block" (click)="openTechSignature()">Click here for

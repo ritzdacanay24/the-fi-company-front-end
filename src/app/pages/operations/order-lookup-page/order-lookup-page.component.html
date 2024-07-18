@@ -7,7 +7,7 @@
                         <i class="h2 bx bx bx-search mt-2   ms-1"></i>
                     </div>
                 </div>
-                <h2 class="card-title2">Order Lookup</h2>
+                <h2 class="card-title2 text-sm-center">Order Lookup</h2>
                 <div class="my-4">
                     <app-so-search [appendToBody]="'body'" (notifyParent)="notifyParent($event)"
                         [value]="salesOrderNumber" [autoFocus]="true" [showLabel]="false"></app-so-search>
@@ -29,7 +29,7 @@
                     [showLabel]="false"></app-so-search>
             </div>
         </div>
-        <div class="col mb-3 text-end align-middle">
+        <div class="col mb-3 text-end align-middle d-none d-lg-block">
             <h5>Order Lookup</h5>
         </div>
     </div>

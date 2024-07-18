@@ -19,8 +19,8 @@
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
-      <div class="card-header d-flex align-items-center justify-content-center">
-        <div class="btn-toolbar">
+      <div class="card-header text-center">
+        <div class="btn-toolbar" style="flex-wrap:unset">
           <div class="btn-group me-2">
             <button class="btn btn-primary" [disabled]="form?.value?.supplyCompleted"
               (click)="onComplete('supplyCompleted', 'supplyCompletedBy')"

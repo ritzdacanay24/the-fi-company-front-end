@@ -1,12 +1,12 @@
 <form [formGroup]="form" autocomplete="off">
   <h4 class="mb-3 bg-light p-2 text-center">Basic Information</h4>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Product')">Product Name</label>
       <input type="text" class="form-control" name="Product" formControlName="Product"
         placeholder="Enter product number" [ngClass]="{ 'is-invalid': submitted && f['Product'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('SKU_Number')">Account Part #</label>
       <input type="text" class="form-control" name="SKU_Number" formControlName="SKU_Number"
         placeholder="Enter SKU number" [ngClass]="{ 'is-invalid': submitted && f['SKU_Number'].errors }" />
@@ -14,22 +14,22 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('ID_Product')">YFG Part Number</label>
       <input type="text" class="form-control" formControlName="ID_Product" placeholder="Enter YFG Part Number"
         [ngClass]="{ 'is-invalid': submitted && f['ID_Product'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Category')">Category</label>
       <input type="text" class="form-control" formControlName="Category" placeholder="Enter category"
         [ngClass]="{ 'is-invalid': submitted && f['Category'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Serial_Number')">Serial Number</label>
       <input type="text" class="form-control" formControlName="Serial_Number" placeholder="Enter serial number"
         [ngClass]="{ 'is-invalid': submitted && f['Serial_Number'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Status')">Status</label>
       <select class="form-select" formControlName="Status">
         <option selected disabled value="null">--Select--</option>
@@ -40,12 +40,12 @@
 
   <h4 class="mb-3 bg-light p-2 text-center">Vendor / Source Info</h4>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Account_Vendor')">Account Name</label>
       <input type="text" class="form-control" formControlName="Account_Vendor" placeholder="Enter account name"
         [ngClass]="{ 'is-invalid': submitted && f['Account_Vendor'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('Manufacturer')">Manufacture</label>
       <input type="text" class="form-control" formControlName="Manufacturer" placeholder="Enter manufacture"
         [ngClass]="{ 'is-invalid': submitted && f['Manufacturer'].errors }" />
@@ -62,17 +62,17 @@
 
   <h4 class="mb-3 bg-light p-2 text-center">Digital Info</h4>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD1_1')">Film</label>
       <input type="text" class="form-control" formControlName="DD1_1" placeholder="Enter film name"
         [ngClass]="{ 'is-invalid': submitted && f['DD1_1'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD1_2')"># Images</label>
       <input type="text" class="form-control" formControlName="DD1_2" placeholder="Enter # Images"
         [ngClass]="{ 'is-invalid': submitted && f['DD1_2'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD1_5')">TIF Size</label>
       <input type="text" class="form-control" formControlName="DD1_5" placeholder="Enter TIF Size"
         [ngClass]="{ 'is-invalid': submitted && f['DD1_5'].errors }" />
@@ -90,34 +90,34 @@
 
   <h4 class="mb-3 bg-light p-2 text-center">Production Info</h4>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_1')">Substrate</label>
       <input type="text" class="form-control" formControlName="DD2_1" placeholder="Enter substrate"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_1'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_2')">Size</label>
       <input type="text" class="form-control" formControlName="DD2_2" placeholder="Enter Size"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_2'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_6')">Production</label>
       <input type="text" class="form-control" formControlName="DD2_6" placeholder="Enter production"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_6'].errors }" />
     </div>
   </div>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_7')">1st</label>
       <input type="text" class="form-control" formControlName="DD2_7" placeholder="Enter 1st"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_7'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_8')">2nd</label>
       <input type="text" class="form-control" formControlName="DD2_8" placeholder="Enter 2nd"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_8'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD2_9')">3rd</label>
       <input type="text" class="form-control" formControlName="DD2_9" placeholder="Enter 3rd"
         [ngClass]="{ 'is-invalid': submitted && f['DD2_9'].errors }" />
@@ -133,12 +133,12 @@
 
   <h4 class="mb-3 bg-light p-2 text-center">Assembly Info</h4>
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_1')">1st Surf Lam</label>
       <input type="text" class="form-control" formControlName="DD3_1" placeholder="Enter 1st Surf Lam"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_1'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_2')">2nd Surf Lam</label>
       <input type="text" class="form-control" formControlName="DD3_2" placeholder="Enter 2nd Surf Lam"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_2'].errors }" />
@@ -146,12 +146,12 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_3')">Mounting</label>
       <input type="text" class="form-control" formControlName="DD3_3" placeholder="Enter mounting"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_3'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_6')">Meter</label>
       <input type="text" class="form-control" formControlName="DD3_6" placeholder="Enter meter"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_6'].errors }" />
@@ -159,12 +159,12 @@
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_8')">Cutting Type</label>
       <input type="text" class="form-control" formControlName="DD3_8" placeholder="Enter cutting type"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_8'].errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('DD3_9')">Template/Die</label>
       <input type="text" class="form-control" formControlName="DD3_9" placeholder="Enter Template/Die"
         [ngClass]="{ 'is-invalid': submitted && f['DD3_9'].errors }" />

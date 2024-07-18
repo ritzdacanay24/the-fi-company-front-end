@@ -30,7 +30,7 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
         this.iconColor = "text-success";
       }
 
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         content: `
         <div class="card shadow-lg bg-light">
         <div class="card-header d-flex align-items-center">
@@ -54,6 +54,8 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
     }
   }
 
+  instance
+
   refresh(params?: any): boolean {
     this.params = params.data;
 
@@ -62,6 +64,7 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
 
   onClick($event: any) {
     $event.preventDefault();
+    this.instance?.hide();
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,
@@ -70,8 +73,4 @@ export class NotesRendererComponent implements ICellRendererAngularComp {
       this.params.onClick(params);
     }
   }
-}
-
-function isEMpty(recent_notes: any) {
-  throw new Error("Function not implemented.");
 }

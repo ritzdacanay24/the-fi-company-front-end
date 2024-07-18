@@ -13,12 +13,12 @@
       </div>
 
       <div class="row">
-        <div class="col mb-3">
+        <div class="col-sm mb-3">
           <label class="form-label" [ngClass]="formValidator('main.assemblyNumber')">Assembly Number</label>
           <input type="text" class="form-control" name="assemblyNumber" formControlName="assemblyNumber"
             placeholder="Enter assembly number" [ngClass]="{ 'is-invalid': submitted && f.assemblyNumber.errors }" />
         </div>
-        <div class="col mb-3">
+        <div class="col-sm mb-3">
           <label class="form-label" [ngClass]="formValidator('main.dueDate')">Due Date</label>
           <input type="date" class="form-control" name="dueDate" formControlName="dueDate" placeholder="Enter due date"
             [ngClass]="{ 'is-invalid': submitted && f.dueDate.errors }" />
@@ -26,17 +26,17 @@
       </div>
 
       <div class="row">
-        <div class="col mb-3">
+        <div class="col-sm mb-3">
           <label class="form-label" [ngClass]="formValidator('main.pickList')">Pick List</label>
           <input type="text" class="form-control" name="pickList" formControlName="pickList"
             placeholder="Enter pick list number" [ngClass]="{ 'is-invalid': submitted && f.pickList.errors }" />
         </div>
-        <div class="col mb-3">
+        <div class="col-sm mb-3">
           <label class="form-label" [ngClass]="formValidator('main.lineNumber')">Line Number</label>
           <input type="text" class="form-control" name="lineNumber" formControlName="lineNumber"
             placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.lineNumber.errors }" />
         </div>
-        <div class="col mb-3">
+        <div class="col-sm mb-3">
           <label class="form-label" [ngClass]="formValidator('main.priority')">Priority</label>
           <select class="form-select" formControlName="priority"
             [ngClass]="{ 'is-invalid': submitted && f.priority.errors }">
@@ -92,7 +92,7 @@
 
     <div class="mb-3">
       <ace [config]="aceConfig" [mode]="'plain_text'" [theme]="aceTheme" [(value)]="value"
-        (textChanged)="onChange($event)" #editor class="border border-light mb-3"></ace>
+        (textChanged)="onChange($event)" #editor class="border border-light mb-3" id="editor"></ace>
       <button class="btn btn-primary" (click)="onValidate()" [disabled]="this.form?.disabled">Validate</button>
     </div>
   </div>

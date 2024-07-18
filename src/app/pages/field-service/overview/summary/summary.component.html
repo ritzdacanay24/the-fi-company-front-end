@@ -1,4 +1,4 @@
-<ngx-simplebar class="me-3 border-0 mb-2">
+<ngx-simplebar class="me-3 border-0 mb-2 d-none d-lg-block">
   <div class="container-fluid">
     <div class="d-flex flex-row flex-nowrap">
       <div class="card mb-3 me-3" style="max-width: 420px;min-width: 420px;">
@@ -29,8 +29,8 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Jobs</h4>
               <p class="card-text">Jobs are considered open if job is in Pending or Confirmed status</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/dashboard/field-service/jobs/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
-                class="btn btn-primary  mt-3">
+              <a [routerLink]="['/dashboard/field-service/jobs/list']"
+                [queryParams]="{selectedViewType: 'Open', isAll:true}" class="btn btn-primary  mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Open Jobs
               </a>
             </div>
@@ -47,8 +47,8 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open Tickets</h4>
               <p class="card-text">Tickets are considered open if ticket is created and not submitted.</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/dashboard/field-service/ticket/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
-                class="btn btn-primary  mt-3">
+              <a [routerLink]="['/dashboard/field-service/ticket/list']"
+                [queryParams]="{selectedViewType: 'Open', isAll:true}" class="btn btn-primary  mt-3">
                 <i class="mdi mdi-open-in-new"></i> View Open Tickets
               </a>
             </div>

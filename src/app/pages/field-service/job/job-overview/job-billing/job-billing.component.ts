@@ -5,7 +5,6 @@ import {
   Input,
   OnInit,
   Output,
-  SimpleChanges,
 } from "@angular/core";
 import { first } from "rxjs/operators";
 import { Location } from "@angular/common";

@@ -8,7 +8,7 @@
   </div>
 
   <div class="row">
-    <div class="col-6 mb-3">
+    <div class="col-lg-6 col-sm mb-3">
       <p>Sales Order: <b>{{f.so_number.value}}</b></p>
       <p>Transfer Reference: <b>{{f.transfer_reference.value}}</b></p>
       <p>Transfer Description: <b>{{f.transfer_reference_description.value}}</b></p>
@@ -16,7 +16,7 @@
       <p>IGT Internal transaction: <b>311 to {{f.to_location.value}} </b></p>
       <p>Email sent on: <b>{{f.email_sent_datetime.value}} </b></p>
     </div>
-    <div class="col-6 mb-3 text-end">
+    <div class="col-lg-6 col-sm mb-3 text-end d-none d-lg-block d-print-block">
       <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:138px" class="img-fluid">
     </div>
   </div>
@@ -51,11 +51,11 @@
             <td> {{f.to_location?.value}} </td>
             <td>
               <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
-                placeholder="Enter pallet count" />
+                placeholder="Enter pallet count"  style="min-width:150px"/>
             </td>
             <td>
               <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
-                placeholder="Enter serial numbers"/>
+                placeholder="Enter serial numbers" style="min-width:150px" />
             </td>
           </tr>
         </tbody>

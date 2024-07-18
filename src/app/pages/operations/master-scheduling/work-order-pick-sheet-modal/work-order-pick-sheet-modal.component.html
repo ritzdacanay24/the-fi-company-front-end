@@ -48,7 +48,7 @@
 
         <div id="pickSheet">
             <div class="row">
-                <div class="col mb-3">
+                <div class="col-sm mb-3">
                     <ul class="list-group">
                         <!-- <li class="list-group-item border-0 p-0">
                             <ngx-barcode6 [bc-value]="data?.mainDetails?.wo_nbr" [bc-display-value]="true"
@@ -88,7 +88,7 @@
                 </div>
 
 
-                <div class="col mb-3 d-print-none">
+                <div class="col-sm mb-3 d-print-none">
                     <div class="form-check form-check-inline mb-3" *ngFor="let row1 of filterOptionns;let i = index;">
                         <input class="form-check-input" type="checkbox" name="checkAll-{{i}}" id="checkAll-{{i}}"
                             [value]="row1" (change)="checkAll()" [(ngModel)]="row1.checked">
@@ -174,7 +174,7 @@
 </div>
 
 <div class="modal-footer">
-    <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+    <button (click)="dismiss()" type="button" class="btn btn-light d-none d-lg-block">Close</button>
     <button (click)="getData()" type="button" class="btn btn-light  me-auto">Refresh</button>
     <button type="button" class="btn btn-warning ms-auto" (click)="generateShortage()" [disabled]="isLoading">Generate
         Shortages</button>

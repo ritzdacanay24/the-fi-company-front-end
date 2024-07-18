@@ -52,10 +52,10 @@
   <div class="col-lg-12">
     <div class="card">
       <div class="card-header d-flex align-items-center">
-        <h4 class="card-title mb-0 flex-grow-1 me-auto">
+        <h4 class="card-title mb-0 flex-grow-1 me-auto me-3">
           Events {{firstDay | date:"MM/dd/YYYY"}} to {{lastDay | date:"MM/dd/YYYY"}}
         </h4>
-        <button class="btn btn-light float-end me-2" (click)="this.isExpanded = !this.isExpanded;expandTimeLine()">
+        <button class="btn btn-light float-end me-2 ms-3" (click)="this.isExpanded = !this.isExpanded;expandTimeLine()">
           {{isExpanded? 'Minimize ' : 'Expand '}} timeline
         </button>
         <button class="btn btn-light float-end me-2" (click)="showReceipts()">{{isShowingReceipts ? 'Hide' : 'Show'}}
@@ -180,7 +180,7 @@
             </tfoot>
           </table>
         </div>
-        <p class="text-center p-2 bg-light" *ngIf="data.length && !loading">End of data</p>
+        <p class="text-center p-2 bg-light w-100" *ngIf="data.length && !loading">End of data</p>
       </div>
       <div class="card-footer">
         Time:

@@ -32,7 +32,7 @@ export class ShipAccountRendererComponent implements ICellRendererAngularComp {
     if (this.miscData.lastModDate) {
       this.iconColor = "text-info";
       this.iconBgColor = "bg-info text-white";
-      tippy(params.eGridCell, {
+      this.instance = tippy(params.eGridCell, {
         content: `
         <div class="card tooltip-card tooltip-card-no-shadow p-2" style="min-width:200px">
           <div class="card-header p-1 rounded"><h5>${this.miscData.so}</h5></div>
@@ -54,6 +54,8 @@ export class ShipAccountRendererComponent implements ICellRendererAngularComp {
     }
   }
 
+  instance
+
   refresh(params?: any): boolean {
     this.params = params;
     this.data = this.data;
@@ -62,6 +64,7 @@ export class ShipAccountRendererComponent implements ICellRendererAngularComp {
 
   onClick($event: any) {
     $event.preventDefault();
+    this.instance?.hide();
     if (this.params.onClick instanceof Function) {
       const params = {
         event: $event,

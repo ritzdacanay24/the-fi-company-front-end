@@ -1,72 +1,72 @@
 <form [formGroup]="form" autocomplete="off">
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('department')">Department</label>
       <input type="text" class="form-control" name="department" formControlName="department"
-        placeholder="Enter name" [ngClass]="{ 'is-invalid': submitted && f.department.errors }" />
+        placeholder="Enter department name" [ngClass]="{ 'is-invalid': submitted && f.department.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('vin')">Vin</label>
       <input type="text" class="form-control" name="vin" formControlName="vin"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.vin.errors }" />
+        placeholder="Enter vin #" [ngClass]="{ 'is-invalid': submitted && f.vin.errors }" />
     </div>
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('vehicleMake')">Vehicle Make</label>
       <input type="text" class="form-control" name="vehicleMake" formControlName="vehicleMake"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.vehicleMake.errors }" />
+        placeholder="Enter make" [ngClass]="{ 'is-invalid': submitted && f.vehicleMake.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('vehicleNumber')">Vehicle Number</label>
       <input type="text" class="form-control" name="vehicleNumber" formControlName="vehicleNumber"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.vehicleNumber.errors }" />
+        placeholder="Enter vehicle number" [ngClass]="{ 'is-invalid': submitted && f.vehicleNumber.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('year')">Year</label>
       <input type="text" class="form-control" name="year" formControlName="year"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.year.errors }" />
+        placeholder="Enter year" [ngClass]="{ 'is-invalid': submitted && f.year.errors }" />
     </div>
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('fuelType')">Fuel Type</label>
       <input type="text" class="form-control" name="fuelType" formControlName="fuelType"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.fuelType.errors }" />
+        placeholder="Enter fuel type" [ngClass]="{ 'is-invalid': submitted && f.fuelType.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('licensePlate')">License Plate</label>
       <input type="text" class="form-control" name="licensePlate" formControlName="licensePlate"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.licensePlate.errors }" />
+        placeholder="Enter license plate #" [ngClass]="{ 'is-invalid': submitted && f.licensePlate.errors }" />
     </div>
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('exp')">Expiration Date</label>
       <input type="date" class="form-control" name="exp" formControlName="exp"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.exp.errors }" />
+        placeholder="Enter expiration date" [ngClass]="{ 'is-invalid': submitted && f.exp.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('mileage')">Mileage</label>
       <input type="text" class="form-control" name="mileage" formControlName="mileage"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.mileage.errors }" />
+        placeholder="Enter mileage" [ngClass]="{ 'is-invalid': submitted && f.mileage.errors }" />
     </div>
   </div>
 
   <div class="row">
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('lastServiceDate')">Last Service Date</label>
       <input type="date" class="form-control" name="lastServiceDate" formControlName="lastServiceDate"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.lastServiceDate.errors }" />
+        placeholder="Enter last service date" [ngClass]="{ 'is-invalid': submitted && f.lastServiceDate.errors }" />
     </div>
-    <div class="col mb-3">
+    <div class="col-sm mb-3">
       <label class="form-label" [ngClass]="formValidator('typeOfService')">Type of Service</label>
       <input type="text" class="form-control" name="typeOfService" formControlName="typeOfService"
-        placeholder="Enter email address" [ngClass]="{ 'is-invalid': submitted && f.typeOfService.errors }" />
+        placeholder="Enter type of service" [ngClass]="{ 'is-invalid': submitted && f.typeOfService.errors }" />
     </div>
   </div>
 

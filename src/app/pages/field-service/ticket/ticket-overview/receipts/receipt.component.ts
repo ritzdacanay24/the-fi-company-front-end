@@ -7,7 +7,6 @@ import {
   ViewChild,
 } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { ActivatedRoute } from "@angular/router";
 import { TripExpenseService } from "@app/core/api/field-service/trip-expense.service";
 import {
   NgbActiveModal,
@@ -23,19 +22,9 @@ import { Pipe, PipeTransform } from "@angular/core";
 import { LazyLoadImageModule } from "ng-lazyload-image";
 
 // Angular
-import {
-  DomSanitizer,
-  SafeHtml,
-  SafeStyle,
-  SafeScript,
-  SafeUrl,
-  SafeResourceUrl,
-} from "@angular/platform-browser";
+import { DomSanitizer } from "@angular/platform-browser";
 import { CreditCardComponent } from "./credit-card/credit-card.component";
-import {
-  SafePipe,
-  UploadedReceiptComponent,
-} from "./receipt-list/receipt-list.component";
+import { UploadedReceiptComponent } from "./receipt-list/receipt-list.component";
 import { ReceiptAddEditService } from "./receipt-add-edit/receipt-add-edit.service";
 import { timeConvert } from "@app/pages/field-service/shared/field-service-helpers.service";
 import { SharedModule } from "@app/shared/shared.module";
@@ -47,8 +36,8 @@ import {
   currencyFormatter,
   autoSizeColumns,
 } from "src/assets/js/util";
-import { Lightbox } from "ngx-lightbox";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { SafePipe } from "@app/shared/pipes/safe-pipe";
 
 @Pipe({
   standalone: true,
@@ -251,7 +240,7 @@ export class ReceiptComponent implements OnInit {
     private receiptAddEditService: ReceiptAddEditService,
     private offcanvasService: NgbOffcanvas,
     private tripExpenseTransactionsService: TripExpenseTransactionsService,
-    private domSanitizer: DomSanitizer,
+    private domSanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {}

@@ -9,8 +9,8 @@
       <div class="card-body" style="min-height:300px">
         <app-shortages-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-shortages-form>
       </div>
-      <div class="card-footer d-flex">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+      <div class="card-footer d-flex" style="overflow:auto;white-space: nowrap;">
+        <button class="btn btn-light me-2" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
         <button class="btn btn-primary ms-auto me-2" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit(true)">Submit & Create Another</button>
       </div>
