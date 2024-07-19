@@ -37,7 +37,7 @@ export class TripDetailsEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit Trip Detail";
 
   form: FormGroup;
 

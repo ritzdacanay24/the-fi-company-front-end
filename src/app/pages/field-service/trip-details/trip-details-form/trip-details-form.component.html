@@ -1,13 +1,5 @@
 <form [formGroup]="form" autofocus="false" autocomplete="off">
 
-    <!-- <div class="mb-3" *ngIf="!form.value?.type_of_travel">
-        <select class="form-select" formControlName="type_of_travel"
-          (change)="getTripSelection(form.value?.type_of_travel)">
-          <option selected disabled value="null">--SELECT--</option>
-          <option *ngFor="let row of trip_selection_options" [ngValue]="row.value">{{row.name}}</option>
-        </select>
-      </div> -->
-
     <div class="mb-3" *ngIf="!form.value?.type_of_travel">
         <label class="form-label">Select Trip Type</label>
         <div class="form-check" *ngFor="let row of trip_selection_options;let i = index">
@@ -30,14 +22,6 @@
             </div>
         </div>
 
-        <!-- <div class="row">
-            <div class="col-12 mb-3">
-                <label for="inputAddress2" class="form-label">FSID #</label>
-                <input type="text" class="form-control" id="inputAddress2" placeholder="Enter FSID Number"
-                    formControlName="fsId">
-            </div>
-        </div> -->
-
         <div class="row">
             <div class="col mb-3">
                 <label class="form-label">Confirmation Number</label>
@@ -58,7 +42,6 @@
             </div>
         </div>
 
-        <!--save-->
         <div class="row" *ngIf="this.form.value.type_of_travel == 'rental_car'">
             <div class="col mb-3">
                 <label class="form-label">Driver</label>
@@ -78,11 +61,6 @@
                 <input type="text" placeholder="Enter Flight In Location" class="form-control"
                     formControlName="flight_in" />
             </div>
-            <!-- <div class="col mb-3">
-            <label class="form-label">Airline</label>
-            <input type="text" placeholder="Enter airline" class="form-control"
-              formControlName="airline_name" />
-          </div> -->
         </div>
         <div class="col-12 mb-3">
             <label class="form-label">Notes</label>

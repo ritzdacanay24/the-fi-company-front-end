@@ -8,6 +8,37 @@ import { AddressSearchComponent } from "@app/shared/components/address-search/ad
 import { states } from "@app/core/data/states";
 import { AutosizeModule } from "ngx-autosize";
 
+let trip_selection_options = [
+  {
+    name: "Rental Car",
+    value: "rental_car",
+    start_datetime_name: "Pick Up Date/Time",
+    end_datetime_name: "Drop Off Date/Time",
+    location_name: "Pick Up Location",
+  },
+  {
+    name: "Equipment",
+    value: "equipment",
+    start_datetime_name: "Drop off Date/Time",
+    end_datetime_name: "Pick up Date/Time",
+    location_name: "Vendor",
+  },
+  {
+    name: "Hotel",
+    value: "hotel",
+    start_datetime_name: "Check In Date/Time",
+    end_datetime_name: "Check Out Date/Time",
+    location_name: "Hotel Location",
+  },
+  {
+    name: "Flight",
+    value: "flight",
+    start_datetime_name: "Flight Out Date/Time",
+    end_datetime_name: "Flight In Date/Time",
+    location_name: "Flight Out Location",
+  },
+];
+
 @Component({
   standalone: true,
   imports: [
@@ -43,36 +74,7 @@ export class TripDetailsFormComponent implements OnInit {
     }
   }
 
-  trip_selection_options = [
-    {
-      name: "Rental Car",
-      value: "rental_car",
-      start_datetime_name: "Pick Up Date/Time",
-      end_datetime_name: "Drop Off Date/Time",
-      location_name: "Pick Up Location",
-    },
-    {
-      name: "Equipment",
-      value: "equipment",
-      start_datetime_name: "Drop off Date/Time",
-      end_datetime_name: "Pick up Date/Time",
-      location_name: "Vendor",
-    },
-    {
-      name: "Hotel",
-      value: "hotel",
-      start_datetime_name: "Check In Date/Time",
-      end_datetime_name: "Check Out Date/Time",
-      location_name: "Hotel Location",
-    },
-    {
-      name: "Flight",
-      value: "flight",
-      start_datetime_name: "Flight Out Date/Time",
-      end_datetime_name: "Flight In Date/Time",
-      location_name: "Flight Out Location",
-    },
-  ];
+  trip_selection_options = trip_selection_options;
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 

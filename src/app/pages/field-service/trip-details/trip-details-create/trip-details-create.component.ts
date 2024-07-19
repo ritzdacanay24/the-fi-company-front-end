@@ -18,12 +18,12 @@ export class TripDetailsCreateComponent {
   constructor(
     private router: Router,
     private api: TripDetailService,
-    private toastrService: ToastrService,
+    private toastrService: ToastrService
   ) {}
 
   ngOnInit(): void {}
 
-  title = "Create request";
+  title = "Create trip detail";
 
   form: FormGroup;
 
@@ -40,13 +40,8 @@ export class TripDetailsCreateComponent {
     });
   };
 
-  setFormEmitter($event) {
+  setFormEmitter($event: FormGroup<any>) {
     this.form = $event;
-    // this.form.patchValue({
-    //   email: this.authenticationService.currentUserValue.email,
-    //   created_by: this.authenticationService.currentUserValue.id,
-    //   created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
-    // });
   }
 
   async onSubmit() {
