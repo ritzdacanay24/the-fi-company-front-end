@@ -92,8 +92,7 @@ export class JobFormComponent implements OnInit {
     private publicAttachment: PublicAttachment,
     private attachmentService: AttachmentService,
     private jobTripDetailModalService: JobTripDetailModalService,
-    private tripDetailsModalService: TripDetailsModalService,
-    private tripDetailService: TripDetailService
+    private tripDetailsModalService: TripDetailsModalService
   ) {}
 
   @Input() ngStyle = { height: "calc(100vh - 262px)" };
@@ -266,11 +265,13 @@ export class JobFormComponent implements OnInit {
     this.form.get(column).patchValue(value, { emitEvent: false });
   }
 
+  setDatData;
+  
   viewTripDetailById = (id) => {
     let modalRef = this.tripDetailsModalService.open(id);
     modalRef.result.then(
       (result: Comment) => {
-        this.summaryUpdated = true;
+        this.setDatData();
       },
       () => {}
     );

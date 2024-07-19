@@ -95,7 +95,7 @@ export class TripDetailsFormComponent implements OnInit {
         fs_travel_det_group: null,
         address: this.formBuilder.group({
           address_name: "",
-          address: "",
+          address: null,
           address1: "",
           state: "",
           zip_code: "",

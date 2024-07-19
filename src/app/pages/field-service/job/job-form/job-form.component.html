@@ -617,7 +617,7 @@
           Trip Details
         </h4>
 
-        <app-trip-details-summary [fsId]="id" [viewTripDetailById]="viewTripDetailById" [summaryUpdated]="summaryUpdated"></app-trip-details-summary>
+        <app-trip-details-summary [fsId]="id" [viewTripDetailById]="viewTripDetailById" (setDatData)="setDatData = $event"></app-trip-details-summary>
 
         <!-- <button class="btn btn-primary mt-0" (click)="addTripDetails()">Add Trip Details</button>
         <button class="btn btn-primary mt-0 ms-3" (click)="emailTripDetails()" *ngIf="tripDetailInfo?.length">Email Trip

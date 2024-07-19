@@ -9,6 +9,7 @@ import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-detail
 import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import moment from "moment";
+import { ToastrService } from "ngx-toastr";
 
 @Component({
   standalone: true,
@@ -24,7 +25,8 @@ export class TripDetailsEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
-    private api: TripDetailService
+    private api: TripDetailService,
+    private toastrService: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -72,6 +74,7 @@ export class TripDetailsEditComponent {
     });
   };
 
+  setDatData: any;
   async onSubmit() {
     this.submitted = true;
     let d = {
@@ -81,6 +84,8 @@ export class TripDetailsEditComponent {
 
     try {
       await this.api.update(this.id, d);
+      this.toastrService.success("Updated successfully");
+      this.setDatData();
     } catch (err) {}
   }
 

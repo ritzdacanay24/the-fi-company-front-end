@@ -1,4 +1,11 @@
-import { Component, Input, OnInit, SimpleChanges } from "@angular/core";
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
@@ -18,20 +25,19 @@ export class TripDetailsSummaryComponent implements OnInit {
     private api: TripDetailService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.setDatData.emit(this.getData);
+  }
 
   title = "Trip Details Summary";
-
-  icon = "mdi mdi-note-plus-outline";
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["fsId"]?.currentValue) {
       this.getData();
     }
-    if (changes["summaryUpdated"]?.currentValue) {
-      this.getData();
-    }
   }
+
+  @Output() setDatData: EventEmitter<any> = new EventEmitter();
 
   scroll(id) {
     let el = document.getElementById("test-" + id);
@@ -45,14 +51,12 @@ export class TripDetailsSummaryComponent implements OnInit {
 
   data;
 
-  async getData() {
+  getData = async () => {
     try {
-      this.data = [];
       this.data = await this.api.findByGroupFsId(this.fsId);
-      this.summaryUpdated = false;
       setTimeout(() => {
         this.scroll(this.id);
       }, null);
     } catch (err) {}
-  }
+  };
 }
