@@ -1,5 +1,5 @@
 <div class="table-responsive">
-    <table class="table table-sm table-bordered" style="font-size:11px">
+    <table class="table table-sm table-bordered" [ngClass]="fontSizeClass">
         <ng-container *ngFor="let row of data | sortBydate  : 'start_datetime'; let i = index">
             <thead>
                 <tr [ngClass]="{'bg-info':row.id == id}">

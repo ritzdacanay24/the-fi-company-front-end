@@ -58,8 +58,10 @@ export class TripDetailsEditComponent {
 
   async getData() {
     try {
+      this.isLoading = true;
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
+      this.isLoading = false;
     } catch (err) {}
   }
 

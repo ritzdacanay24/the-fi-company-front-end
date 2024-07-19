@@ -16,7 +16,7 @@ import { SharedModule } from "@app/shared/shared.module";
   imports: [SharedModule, SortBydatePipe],
   selector: "app-trip-details-summary",
   templateUrl: "./trip-details-summary.component.html",
-  styleUrls: [],
+  styleUrls: ["./trip-details-summary.component.scss"],
 })
 export class TripDetailsSummaryComponent implements OnInit {
   constructor(
@@ -43,8 +43,9 @@ export class TripDetailsSummaryComponent implements OnInit {
     let el = document.getElementById("test-" + id);
     el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
-
+  
   @Input() fsId: string;
+  @Input() fontSizeClass: string = '';
   @Input() summaryUpdated: boolean;
   @Input() id: string;
   @Input() viewTripDetailById: Function;
