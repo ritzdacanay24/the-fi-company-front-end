@@ -52,6 +52,7 @@ import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
 import { time_now } from "src/assets/js/util/time-now";
+import { TripDetailsSummaryComponent } from "../../trip-details/trip-details-summary/trip-details-summary.component";
 
 @Component({
   standalone: true,
@@ -67,6 +68,7 @@ import { time_now } from "src/assets/js/util/time-now";
     DatePickerService,
     JobSearchComponent,
     SortBydatePipe,
+    TripDetailsSummaryComponent,
   ],
   selector: "app-job-form",
   templateUrl: `./job-form.component.html`,

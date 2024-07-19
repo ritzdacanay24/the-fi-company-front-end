@@ -1,0 +1,46 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select user from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="col-sm-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> Trip Details # {{id}}</h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <app-trip-details-form (setFormEmitter)="form = $event" [submitted]="submitted"
+          [id]="id"></app-trip-details-form>
+
+      </div>
+      <div class="card-footer d-flex d-flex" *ngIf="data && id">
+        <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="sticky-top" style="top:74px">
+      <div class="card">
+        <div class="card-header d-flex align-items-center">
+          Trip Detail Summary
+        </div>
+        <div class="card-body" style="min-height:300px;height: calc(100vh - 150px);overflow:auto">
+          <app-trip-details-summary [fsId]="form.value.fs_travel_det_group" [viewTripDetailById]="viewTripDetailById"
+            [id]="id"></app-trip-details-summary>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

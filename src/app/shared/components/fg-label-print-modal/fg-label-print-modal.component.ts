@@ -55,12 +55,12 @@ export class FgLabelPrintModalService {
   styleUrls: [],
 })
 export class FgLabelPrintModalComponent {
-  monthYear: string;
-  eyefiSerialTag: any;
-  customerCo: any;
-  customerAssetTagNumber: any;
-  woNumber: any;
-  palletCount: any;
+  monthYear: string = "";
+  eyefiSerialTag: any = "";
+  customerCo: any = "";
+  customerAssetTagNumber: any = "";
+  woNumber: any = "";
+  palletCount: any = "";
 
   constructor(
     private ngbActiveModal: NgbActiveModal,
@@ -95,7 +95,7 @@ export class FgLabelPrintModalComponent {
         this.row.SOD_PART,
         this.row.SOD_LINE
       );
-      this.customerCo = data.MISC;
+      this.customerCo = data.MISC || '';
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;

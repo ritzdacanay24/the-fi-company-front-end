@@ -1,0 +1,34 @@
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+
+        <div class="form-icon me-3">
+          <input type="search" class="form-control form-control-icon" style="width:250px"
+            (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName" [(ngModel)]="searchName"
+            placeholder="Search">
+          <i class="ri-search-2-line"></i>
+        </div>
+
+        <ng-select [searchable]="false" bindLabel="name" bindValue="name" [clearable]="false"
+          [items]="selectedViewOptions" [(ngModel)]="selectedViewType" (change)="getData()" style="width:150px"
+          [appendTo]="'body'">
+        </ng-select>
+
+        <div class="ms-3 ms-auto">
+          <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+        </div>
+
+        <div class="ms-3">
+          <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+        </div>
+
+      </div>
+      <div class="card-body p-0">
+        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+          style="height: calc(100vh - 172px);" [rowData]="data" [columnDefs]="columnDefs">
+        </ag-grid-angular>
+      </div>
+    </div>
+  </div>
+</div>

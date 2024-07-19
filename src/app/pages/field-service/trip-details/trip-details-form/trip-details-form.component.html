@@ -1,0 +1,134 @@
+<form [formGroup]="form" autofocus="false" autocomplete="off">
+
+    <!-- <div class="mb-3" *ngIf="!form.value?.type_of_travel">
+        <select class="form-select" formControlName="type_of_travel"
+          (change)="getTripSelection(form.value?.type_of_travel)">
+          <option selected disabled value="null">--SELECT--</option>
+          <option *ngFor="let row of trip_selection_options" [ngValue]="row.value">{{row.name}}</option>
+        </select>
+      </div> -->
+
+    <div class="mb-3" *ngIf="!form.value?.type_of_travel">
+        <label class="form-label">Select Trip Type</label>
+        <div class="form-check" *ngFor="let row of trip_selection_options;let i = index">
+            <input class="form-check-input" type="radio" name="type_of_travel" id="type_of_travel-{{i}}"
+                formControlName="type_of_travel" (change)="getTripSelection(form.value?.type_of_travel)"
+                [value]="row.value">
+            <label class="form-check-label" for="type_of_travel-{{i}}">
+                {{row.name}}
+            </label>
+        </div>
+    </div>
+
+    <ng-container *ngIf="form.value?.type_of_travel">
+
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label for="inputAddress2" class="form-label">Group FSID Numbers</label>
+                <input type="text" class="form-control" id="inputAddress2" placeholder="Enter Group FSID Numbers"
+                    formControlName="fs_travel_det_group">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label for="inputAddress2" class="form-label">FSID #</label>
+                <input type="text" class="form-control" id="inputAddress2" placeholder="Enter FSID Number"
+                    formControlName="fsId">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Confirmation Number</label>
+                <input type="text" placeholder="Enter Confirmation Number" class="form-control"
+                    formControlName="confirmation" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">{{form.value?.start_datetime_name}}</label>
+                <input type="datetime-local" placeholder="Please Select..." class="form-control"
+                    formControlName="start_datetime" />
+            </div>
+            <div class="col mb-3">
+                <label class="form-label">{{form.value?.end_datetime_name}}</label>
+                <input type="datetime-local" placeholder="Please Select..." class="form-control"
+                    formControlName="end_datetime" />
+            </div>
+        </div>
+
+        <!--save-->
+        <div class="row" *ngIf="this.form.value.type_of_travel == 'rental_car'">
+            <div class="col mb-3">
+                <label class="form-label">Driver</label>
+                <input type="text" placeholder="Enter Driver Name" class="form-control"
+                    formControlName="rental_car_driver" />
+            </div>
+        </div>
+
+        <div class="row" *ngIf="this.form.value.type_of_travel == 'flight'">
+            <div class="col mb-3">
+                <label class="form-label">Flight Out</label>
+                <input type="text" placeholder="Enter Flight Out Location" class="form-control"
+                    formControlName="flight_out" />
+            </div>
+            <div class="col mb-3">
+                <label class="form-label">Flight In</label>
+                <input type="text" placeholder="Enter Flight In Location" class="form-control"
+                    formControlName="flight_in" />
+            </div>
+            <!-- <div class="col mb-3">
+            <label class="form-label">Airline</label>
+            <input type="text" placeholder="Enter airline" class="form-control"
+              formControlName="airline_name" />
+          </div> -->
+        </div>
+        <div class="col-12 mb-3">
+            <label class="form-label">Notes</label>
+            <textarea autosize [minRows]="3" type="text" class="form-control" id="notes" placeholder="Enter notes"
+                formControlName="notes"></textarea>
+        </div>
+
+    </ng-container>
+
+    <ng-container formGroupName="address" *ngIf="form.value?.type_of_travel">
+        <h4 class="bg-light p-1 text-center">{{this.form.value?.location_name}}</h4>
+        <div class="row g-3">
+            <div class="col-12">
+                <label for="inputAddress" class="form-label">Address</label>
+                <app-address-search [minTermLength]="1" (notifyParent)="notifyParent($event)"
+                    [editableSearchTerm]="false" [hideSelected]="false" [showLabel]="false"
+                    [placeholder]="'Search by name or address'" [showCategories]="true" [required]="true"
+                    [value]="form.value?.address?.address" [addTag]="false"></app-address-search>
+            </div>
+            <div class="col-12">
+                <label for="inputAddress2" class="form-label">Address 2</label>
+                <input type="text" class="form-control" id="inputAddress2" placeholder="Apartment, studio, or floor"
+                    autocomplete="new-address2" formControlName="address1">
+            </div>
+            <div class="col-md-6">
+                <label for="inputCity" class="form-label">City</label>
+                <input type="text" class="form-control" id="inputCity" formControlName="city"
+                    placeholder="Enter city name" autocomplete="new-city">
+            </div>
+            <div class="col-md-4">
+                <label for="inputState" class="form-label">State</label>
+                <select class="form-select" formControlName="state" autocomplete="new-state">
+                    <option disabled selected value="">--Select state--</option>
+                    <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="inputZip" class="form-label">Zip</label>
+                <input type="text" class="form-control" id="inputZip" formControlName="zip_code"
+                    placeholder="Enter zip code" autocomplete="new-zip">
+            </div>
+            <div class="col mb-5">
+                <label class="form-label">Company Name</label>
+                <input type="text" class="form-control" id="inputAddress" placeholder="Vendor Name"
+                    formControlName="address_name">
+            </div>
+        </div>
+    </ng-container>
+</form>
