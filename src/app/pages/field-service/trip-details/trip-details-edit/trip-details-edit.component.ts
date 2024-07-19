@@ -7,6 +7,8 @@ import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-
 import { NAVIGATION_ROUTE } from "../trip-details-constant";
 import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-details-summary.component";
 import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
+import moment from "moment";
 
 @Component({
   standalone: true,
@@ -79,10 +81,6 @@ export class TripDetailsEditComponent {
 
     try {
       await this.api.update(this.id, d);
-      // await this.tripDetailService.emailTripDetails(
-      //   this.fsid,
-      //   this.tripDetailInfo
-      // );
     } catch (err) {}
   }
 
@@ -95,5 +93,21 @@ export class TripDetailsEditComponent {
 
   onCancel() {
     this.goBack();
+  }
+
+  async emailTripDetails() {
+    if (!confirm("Are you sure you want to send email?")) return;
+    try {
+      SweetAlert.loading("Sending email. Please wait..");
+      await this.api.emailTripDetails(this.id, this.data);
+
+      for (let i = 0; i < this.data.length; i++) {
+        this.data[i].email_sent = moment().format("YYYY-MM-DD HH:mm:ss");
+      }
+
+      SweetAlert.close();
+    } catch (err) {
+      SweetAlert.close();
+    }
   }
 }

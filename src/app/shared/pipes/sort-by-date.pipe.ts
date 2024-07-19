@@ -6,7 +6,7 @@ import { Pipe, PipeTransform } from "@angular/core";
 })
 export class SortBydatePipe implements PipeTransform {
   transform(value: any, key?: any): any {
-    return value.sort(
+    return value?.sort(
       (a: any, b: any) =>
         new Date(a[key]).getTime() - new Date(b[key]).getTime()
     );

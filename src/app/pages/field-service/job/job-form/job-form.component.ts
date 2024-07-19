@@ -53,6 +53,7 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
 import { time_now } from "src/assets/js/util/time-now";
 import { TripDetailsSummaryComponent } from "../../trip-details/trip-details-summary/trip-details-summary.component";
+import { TripDetailsModalService } from "../../trip-details/trip-details-modal/trip-details-modal.component";
 
 @Component({
   standalone: true,
@@ -91,6 +92,7 @@ export class JobFormComponent implements OnInit {
     private publicAttachment: PublicAttachment,
     private attachmentService: AttachmentService,
     private jobTripDetailModalService: JobTripDetailModalService,
+    private tripDetailsModalService: TripDetailsModalService,
     private tripDetailService: TripDetailService
   ) {}
 
@@ -223,7 +225,6 @@ export class JobFormComponent implements OnInit {
 
     if (this.id) {
       this.getAttachments();
-      this.getTripDetail();
     } else {
       for (let i = 0; i < this.listOptions.length; i++) {
         if (
@@ -265,11 +266,15 @@ export class JobFormComponent implements OnInit {
     this.form.get(column).patchValue(value, { emitEvent: false });
   }
 
-  tripDetailInfo = [];
-
-  async getTripDetail() {
-    this.tripDetailInfo = await this.tripDetailService.find({ fsId: this.id });
-  }
+  viewTripDetailById = (id) => {
+    let modalRef = this.tripDetailsModalService.open(id);
+    modalRef.result.then(
+      (result: Comment) => {
+        this.summaryUpdated = true;
+      },
+      () => {}
+    );
+  };
 
   resetForm = () => {
     this.submitted = false;
@@ -504,36 +509,18 @@ export class JobFormComponent implements OnInit {
     resource: this.fb.array([]),
   });
 
+  summaryUpdated = false;
   addTripDetails(rowId?) {
     let modalRef = this.jobTripDetailModalService.open(this.id, rowId);
     modalRef.result.then(
       (result: Comment) => {
-        this.getTripDetail();
+        // this.summaryUpdated = true;
       },
       () => {}
     );
   }
 
-  async emailTripDetails() {
-    if (!confirm("Are you sure you want to send email?")) return;
-    try {
-      SweetAlert.loading("Sending email. Please wait..");
-      await this.tripDetailService.emailTripDetails(
-        this.id,
-        this.tripDetailInfo
-      );
-
-      for (let i = 0; i < this.tripDetailInfo.length; i++) {
-        this.tripDetailInfo[i].email_sent = moment().format(
-          "YYYY-MM-DD HH:mm:ss"
-        );
-      }
-
-      SweetAlert.close();
-    } catch (err) {
-      SweetAlert.close();
-    }
-  }
+  setGetSummaryData;
 
   /**Api */
   statusType$: any[];

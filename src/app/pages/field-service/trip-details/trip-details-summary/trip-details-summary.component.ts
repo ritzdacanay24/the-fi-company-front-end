@@ -25,17 +25,21 @@ export class TripDetailsSummaryComponent implements OnInit {
   icon = "mdi mdi-note-plus-outline";
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes["fsId"]) {
+    if (changes["fsId"]?.currentValue) {
+      this.getData();
+    }
+    if (changes["summaryUpdated"]?.currentValue) {
       this.getData();
     }
   }
 
   scroll(id) {
     let el = document.getElementById("test-" + id);
-    el.scrollIntoView({block: "nearest", inline: "nearest"});
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   @Input() fsId: string;
+  @Input() summaryUpdated: boolean;
   @Input() id: string;
   @Input() viewTripDetailById: Function;
 
@@ -43,8 +47,9 @@ export class TripDetailsSummaryComponent implements OnInit {
 
   async getData() {
     try {
-      this.data = await this.api.find({ fs_travel_det_group: this.fsId });
-
+      this.data = [];
+      this.data = await this.api.findByGroupFsId(this.fsId);
+      this.summaryUpdated = false;
       setTimeout(() => {
         this.scroll(this.id);
       }, null);
