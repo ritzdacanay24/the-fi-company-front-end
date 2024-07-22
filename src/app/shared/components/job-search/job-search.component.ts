@@ -56,6 +56,7 @@ export class JobSearchComponent implements OnInit {
   @Input() editableSearchTerm: boolean = false;
   @Input() clearSearch: boolean = false;
   @Input() autoFocus: boolean = false;
+  @Input() blur: boolean = true;
 
   data$: Observable<any[]>;
   dataLoading = false;
@@ -65,6 +66,9 @@ export class JobSearchComponent implements OnInit {
   @Output() notifyParentItsLoading: EventEmitter<any> = new EventEmitter();
 
   getSelectedValue(data) {
+    if (this.blur) {
+      this.ngSelect.blur();
+    }
     this.notifyParent.emit(data);
 
     if (this.clearSearch)
@@ -82,8 +86,6 @@ export class JobSearchComponent implements OnInit {
     }
   }
 
-  resetCalculations() {}
-
   @Input() addTag: AddTagFn | boolean = false;
 
   onRemove(e) {
@@ -92,11 +94,6 @@ export class JobSearchComponent implements OnInit {
 
   trackByFn(item: any) {
     return item.id;
-  }
-
-  async getLawFirmById(id) {
-    let data = await this.api.getById(id);
-    this.value = data.law_firm;
   }
 
   ngOnChanges(changes: SimpleChanges) {

@@ -139,41 +139,42 @@ export class FgLabelPrintModalComponent {
       lcmds = lcmds.replace(/(.{40})/g, "$1<br>");
 
       cmds = `
-        ^XA
-        ${lcmds}
-        ^FX
-        ^FWN
-        ^CF0,35
-        ^FO550,60^FD ${this.monthYear}^FS
-        ^FO50,180^FDCust Part #: ${this.row.CP_CUST_PART}^FS
-        ^FO50,220^FDCust Asset Tag #: ${this.customerAssetTagNumber}^FS
-        ^FO50,260^FDWO #: ${this.woNumber}^FS
-        ^FO50,300^FDPallet Count: ${this.palletCount}^FS
-        ^FO50,340^FDEyeFi Serial Tag #: ${this.eyefiSerialTag}^FS
-        ^FO50,380^FDCustomer CO#/POR#/SO#:${this.customerCo}^FS
+      ^XA
+      ${lcmds}
+      ^FX
+      ^FWN
+      ^CF0,35
+      ^FO550,60^FD ${this.monthYear}^FS
+      ^FO50,180^FDCust Part #: ${this.row.CP_CUST_PART}^FS
+      ^FO50,220^FDCust Asset Tag #: ${this.customerAssetTagNumber}^FS
+      ^FO50,260^FDWO #: ${this.woNumber}^FS
+      ^FO50,300^FDPallet Count: ${this.palletCount}^FS
+      ^FO50,340^FDEyeFi Serial Tag #: ${this.eyefiSerialTag}^FS
+      ^FO50,380^FDCustomer CO#/POR#/SO#:^FS
+      ^FO50,420^FD${this.customerCo}^FS
 
-        ^CF0,40
-        ^FO50,430^FDPO #:${this.poNumber}^FS
-        ^FO50,480 ^BY2,10,80 ^BC,80,N,N,N,N
-        ^FD${this.poNumber}^FS
+      ^CF0,40
+      ^FO50,460^FDPO #:${this.poNumber}^FS
+      ^FO50,510 ^BY2,10,80 ^BC,80,N,N,N,N
+      ^FD${this.poNumber}^FS
 
-        ^FO50,580^FDPN:^FS
-        ^FO50,620^FD${this.customerPartNumber || this.partNumber}^FS
-        ^FO50,670^FD${this.description}^FS
-        ^FO50,720^FD${this.description1}^FS
-        ^FO50,770 ^BY2,10,80 ^BC,80,N,N,N,N
-        ^FD${this.customerPartNumber || this.partNumber}^FS
-        ^FO50,890^FDQty:^FS
-        ^FO50,940^FD${this.qtyPerLabel}^FS
-        ^FO50,9600 ^BY2,10,80 ^BC,80,N,N,N,N
-        ^FD${this.qtyPerLabel}^FS
-        ^CF0,90
-        ^CF0,30
-        ^FO50,1170^FD${
-          this.authenticationService.currentUserValue.full_name
-        } ^FS
-        ^PQ${this.totalLabels}^FS
-        ^XZ
+      ^FO50,610^FDPN:^FS
+      ^FO50,650^FD${this.customerPartNumber || this.partNumber}^FS
+      ^FO50,700^FD${this.description}^FS
+      ^FO50,750^FD${this.description1}^FS
+      ^FO50,800 ^BY2,10,80 ^BC,80,N,N,N,N
+      ^FD${this.customerPartNumber || this.partNumber}^FS
+      ^FO50,920^FDQty:^FS
+      ^FO50,970^FD${this.qtyPerLabel}^FS
+      ^FO50,9600 ^BY2,10,80 ^BC,80,N,N,N,N
+      ^FD${this.qtyPerLabel}^FS
+      ^CF0,90
+      ^CF0,30
+      ^FO50,1170^FD${
+        this.authenticationService.currentUserValue.full_name
+      } ^FS
+      ^PQ${this.totalLabels}^FS
+      ^XZ
       `;
 
       printwindow.document.write(cmds);

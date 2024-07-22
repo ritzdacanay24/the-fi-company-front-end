@@ -32,7 +32,7 @@ export class TripDetailsSummaryComponent implements OnInit {
   title = "Trip Details Summary";
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes["fsId"]?.currentValue) {
+    if (changes["fsId"]?.currentValue && changes["fsId"]?.previousValue == null) {
       this.getData();
     }
   }
@@ -43,9 +43,9 @@ export class TripDetailsSummaryComponent implements OnInit {
     let el = document.getElementById("test-" + id);
     el?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
-  
+
   @Input() fsId: string;
-  @Input() fontSizeClass: string = '';
+  @Input() fontSizeClass: string = "";
   @Input() summaryUpdated: boolean;
   @Input() id: string;
   @Input() viewTripDetailById: Function;

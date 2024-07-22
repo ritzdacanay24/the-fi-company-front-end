@@ -7,6 +7,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { AddressSearchComponent } from "@app/shared/components/address-search/address-search.component";
 import { states } from "@app/core/data/states";
 import { AutosizeModule } from "ngx-autosize";
+import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 
 let trip_selection_options = [
   {
@@ -46,6 +47,7 @@ let trip_selection_options = [
     NgbScrollSpyModule,
     AddressSearchComponent,
     AutosizeModule,
+    JobSearchComponent,
   ],
   selector: "app-trip-details-form",
   templateUrl: "./trip-details-form.component.html",
@@ -58,6 +60,18 @@ export class TripDetailsFormComponent implements OnInit {
     public authenticationService: AuthenticationService,
     private formBuilder: UntypedFormBuilder
   ) {}
+
+  notifyParentJob($event) {
+    let ids = [];
+    for (let i = 0; i < $event.length; i++) {
+      if (typeof $event[i] === "object" && $event[i] !== null) {
+        ids.push($event[i].id);
+      } else {
+        ids.push($event[i]);
+      }
+    }
+    this.form.patchValue({ fs_travel_det_group: ids });
+  }
 
   getTripSelection($event) {
     for (let i = 0; i < this.trip_selection_options.length; i++) {
@@ -95,14 +109,15 @@ export class TripDetailsFormComponent implements OnInit {
         notes: "",
         fsId: null,
         fs_travel_det_group: null,
-        address: this.formBuilder.group({
-          address_name: "",
-          address: null,
-          address1: "",
-          state: "",
-          zip_code: "",
-          city: "",
-        }),
+        // address: this.formBuilder.group({
+        // }),
+
+        address_name: "",
+        address: null,
+        address1: "",
+        state: "",
+        zip_code: "",
+        city: "",
       },
       { emitEvent: false }
     );
@@ -144,13 +159,11 @@ export class TripDetailsFormComponent implements OnInit {
 
   notifyParent($event) {
     this.form.patchValue({
-      address: {
-        address: $event?.fullStreetName,
-        city: $event?.address?.localName,
-        state: $event?.address?.countrySubdivisionCode || null,
-        zip_code: $event?.address?.postalCode,
-        address_name: $event?.poi?.name || $event?.address?.streetName,
-      },
+      address: $event?.fullStreetName,
+      city: $event?.address?.localName,
+      state: $event?.address?.countrySubdivisionCode || null,
+      zip_code: $event?.address?.postalCode,
+      address_name: $event?.poi?.name || $event?.address?.streetName,
     });
   }
 }

@@ -56,11 +56,14 @@ export class TripDetailsCreateComponent {
       this.isLoading = true;
 
       let d = {
-        ...this.form.value,
-        ...this.form.value.address,
+        ...this.form.value
       };
 
-      let data = await this.api.create(d);
+      if (d.fs_travel_det_group) {
+        d.fs_travel_det_group = d.fs_travel_det_group?.toString();
+      }
+
+      let data = await this.api.create(d); 
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");

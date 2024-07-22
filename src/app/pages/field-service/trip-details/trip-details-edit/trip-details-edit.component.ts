@@ -60,6 +60,13 @@ export class TripDetailsEditComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
+
+      if (this.data.fs_travel_det_group) {
+        this.data.fs_travel_det_group = this.data?.fs_travel_det_group
+          ?.toString()
+          ?.split(",");
+      }
+
       this.form.patchValue(this.data);
       this.isLoading = false;
     } catch (err) {}
@@ -79,13 +86,13 @@ export class TripDetailsEditComponent {
   setDatData: any;
   async onSubmit() {
     this.submitted = true;
-    let d = {
-      ...this.form.value,
-      ...this.form.value.address,
-    };
 
     try {
-      await this.api.update(this.id, d);
+      await this.api.update(this.id, {
+        ...this.form.value,
+        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
+      });
+
       this.toastrService.success("Updated successfully");
       this.setDatData();
     } catch (err) {}

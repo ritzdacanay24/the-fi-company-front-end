@@ -1,16 +1,15 @@
 <label class="form-label" *ngIf="showLabel">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
 <ng-select #select [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag" [multiple]="multiple"
-  [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength" [loading]="dataLoading"
+  [hideSelected]="hideSelected" [minTermLength]="minTermLength" [loading]="dataLoading"
   typeToSearchText="Please enter {{minTermLength}} or more characters" [typeahead]="dataInput$" [(ngModel)]="value"
-  [virtualScroll]="virtualScroll" (change)="select.blur();getSelectedValue($event)"
+  [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
   [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
   [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="Job not found."
-  [clearSearchOnAdd]="true" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendTo"
-  [clearable]="true" (clear)="resetCalculations();">
+  [clearSearchOnAdd]="true" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendTo" [clearable]="true">
 
   <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
     <div class="text-left" style="text-align: left !important;">
-      <p class="mb-0"> Property: <b>{{ item.property }}</b> |  <b>{{item.request_date}}</b>
+      <p class="mb-0"> Property: <b>{{ item.property }}</b> | <b>{{item.request_date}}</b>
         <span class="text-end float-end">
           #{{ item.id }}
         </span>

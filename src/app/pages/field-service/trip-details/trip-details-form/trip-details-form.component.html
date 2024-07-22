@@ -17,8 +17,13 @@
         <div class="row">
             <div class="col-12 mb-3">
                 <label for="inputAddress2" class="form-label">Group FSID Numbers</label>
-                <input type="text" class="form-control" id="inputAddress2" placeholder="Enter Group FSID Numbers"
-                    formControlName="fs_travel_det_group">
+
+                <app-job-search (notifyParent)="notifyParentJob($event)" [appendTo]="'body'"
+                    [value]="this.form.value.fs_travel_det_group" [showLabel]="false"
+                    [multiple]="true" [blur]="false"></app-job-search>
+
+                <!-- <input type="text" class="form-control" id="inputAddress2" placeholder="Enter Group FSID Numbers"
+                    formControlName="fs_travel_det_group"> -->
             </div>
         </div>
 
@@ -70,7 +75,7 @@
 
     </ng-container>
 
-    <ng-container formGroupName="address" *ngIf="form.value?.type_of_travel">
+    <ng-container *ngIf="form.value?.type_of_travel">
         <h4 class="bg-light p-1 text-center">{{this.form.value?.location_name}}</h4>
         <div class="row g-3">
             <div class="col-12">
@@ -78,7 +83,7 @@
                 <app-address-search [minTermLength]="1" (notifyParent)="notifyParent($event)"
                     [editableSearchTerm]="false" [hideSelected]="false" [showLabel]="false"
                     [placeholder]="'Search by name or address'" [showCategories]="true" [required]="true"
-                    [value]="form.value?.address?.address" [addTag]="false"></app-address-search>
+                    [value]="form.value?.address" [addTag]="false"></app-address-search>
             </div>
             <div class="col-12">
                 <label for="inputAddress2" class="form-label">Address 2</label>
