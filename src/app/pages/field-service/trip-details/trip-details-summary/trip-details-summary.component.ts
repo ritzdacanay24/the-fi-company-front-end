@@ -32,7 +32,10 @@ export class TripDetailsSummaryComponent implements OnInit {
   title = "Trip Details Summary";
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes["fsId"]?.currentValue && changes["fsId"]?.previousValue == null) {
+    if (
+      changes["fsId"]?.currentValue &&
+      changes["fsId"]?.previousValue == null
+    ) {
       this.getData();
     }
   }
@@ -50,7 +53,7 @@ export class TripDetailsSummaryComponent implements OnInit {
   @Input() id: string;
   @Input() viewTripDetailById: Function;
 
-  data;
+  data: any;
 
   getData = async () => {
     try {

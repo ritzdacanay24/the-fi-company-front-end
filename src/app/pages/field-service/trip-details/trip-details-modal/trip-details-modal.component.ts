@@ -12,6 +12,7 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form.component";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-details-summary.component";
+import { ToastrService } from "ngx-toastr";
 
 @Injectable({
   providedIn: "root",
@@ -19,11 +20,20 @@ import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-detail
 export class TripDetailsModalService {
   constructor(public modalService: NgbModal) {}
 
-  open(id) {
+  open({
+    id: id,
+    fs_travel_det_group: fs_travel_det_group,
+  }: {
+    id?: any;
+    fs_travel_det_group?: any;
+  }) {
+    console.log(id, "id");
+    console.log(fs_travel_det_group, "fs_travel_det_group");
     let modalRef = this.modalService.open(TripDetailsModalComponent, {
       size: "lg",
     });
     modalRef.componentInstance.id = id;
+    modalRef.componentInstance.fs_travel_det_group = fs_travel_det_group;
     return modalRef;
   }
 }
@@ -48,7 +58,8 @@ export class TripDetailsModalComponent implements OnInit {
     public route: ActivatedRoute,
     public router: Router,
     private ngbActiveModal: NgbActiveModal,
-    private api: TripDetailService
+    private api: TripDetailService,
+    private toastrService: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -57,9 +68,14 @@ export class TripDetailsModalComponent implements OnInit {
 
   setFormElements = ($event) => {
     this.form = $event;
+
+    if (this.fs_travel_det_group) {
+      this.form.patchValue({ fs_travel_det_group: this.fs_travel_det_group });
+    }
   };
 
   @Input() id = null;
+  @Input() fs_travel_det_group = null;
 
   submitted = false;
 
@@ -83,16 +99,33 @@ export class TripDetailsModalComponent implements OnInit {
   }
 
   async onSubmit() {
-    try {
-      this.submitted = true;
-      let d = {
-        ...this.form.value,
-        ...this.form.value.address,
-      };
+    if (this.id) {
+      this.update();
+    } else {
+      this.create();
+    }
+  }
 
-      try {
-        await this.api.update(this.id, d);
-      } catch (err) {}
+  async create() {
+    try {
+      await this.api.create({
+        ...this.form.value,
+        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
+      });
+
+      this.toastrService.success("Successfully Created");
+      this.close();
+    } catch (err) {}
+  }
+
+  async update() {
+    try {
+      await this.api.update(this.id, {
+        ...this.form.value,
+        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
+      });
+
+      this.toastrService.success("Updated successfully");
       this.close();
     } catch (err) {}
   }

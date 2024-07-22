@@ -10,6 +10,7 @@ import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import moment from "moment";
 import { ToastrService } from "ngx-toastr";
+import { TripDetailsModalService } from "../trip-details-modal/trip-details-modal.component";
 
 @Component({
   standalone: true,
@@ -26,7 +27,8 @@ export class TripDetailsEditComponent {
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private api: TripDetailService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private tripDetailsModalService: TripDetailsModalService
   ) {}
 
   ngOnInit(): void {
@@ -82,6 +84,19 @@ export class TripDetailsEditComponent {
       },
     });
   };
+
+  onAdd() {
+    let modalRef = this.tripDetailsModalService.open({
+      fs_travel_det_group: this.data.fs_travel_det_group,
+    });
+    modalRef.result.then(
+      (result: any) => {
+        this.setDatData();
+      },
+      () => {
+      }
+    );
+  }
 
   setDatData: any;
   async onSubmit() {
