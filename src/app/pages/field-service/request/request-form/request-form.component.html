@@ -18,8 +18,8 @@
 
   <div class="mb-3">
     <label class="form-label required">Subject Line</label>
-    <input type="text" class="form-control" placeholder="Enter subject line"
-      [ngClass]="{ 'is-invalid': submitted && f.subject.errors }" formControlName="subject">
+    <textarea type="text" class="form-control" placeholder="Enter subject line" autosize [minRows]="2"
+      [ngClass]="{ 'is-invalid': submitted && f.subject.errors }" formControlName="subject"></textarea>
   </div>
 
   <div class="row">
@@ -144,7 +144,7 @@
         [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true" [required]="true"
         [addTag]="false" [value]="f.address1.value" [addTag]="false" [disabled]="disabled"></app-address-search>
 
-        <!-- 
+      <!-- 
         <label class="form-label required">Casino Address</label>sd
         <input type="text" class="form-control" placeholder="Enter casino address" formControlName="address1"
           [ngClass]="{ 'is-invalid': submitted && f.address1.errors }"> 

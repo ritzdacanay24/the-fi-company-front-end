@@ -39,7 +39,7 @@
           Trip Detail Summary
         </div>
         <div class="card-body" style="min-height:300px;height: calc(100vh - 150px);overflow:auto">
-          <app-trip-details-summary [fsId]="form.value.fs_travel_det_group" [viewTripDetailById]="viewTripDetailById"
+          <app-trip-details-summary [fsId]="form.value.trip_detail_group_number" [viewTripDetailById]="viewTripDetailById"
             [id]="id" (setDatData)="setDatData = $event"
             [fontSizeClass]="'trip-detail-text-sm'"></app-trip-details-summary>
         </div>

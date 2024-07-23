@@ -3,7 +3,7 @@
         <ng-container *ngFor="let row of data | sortBydate  : 'start_datetime'; let i = index">
             <thead>
                 <tr [ngClass]="{'bg-info text-dark':row.id == id}">
-                    <th colspan="5">{{row.type_of_travel?.replace('_', ' ') | uppercase}} #{{row.id}}<span
+                    <th colspan="5">{{row.type_of_travel?.replace('_', ' ') | uppercase}} #{{row.id}} FSID. {{row.fsId || 'Not Assigned to FSID #'}}<span
                             (click)="viewTripDetailById(row.id)" class="float-end pointer"><u>Edit</u></span></th>
                 </tr>
             </thead>

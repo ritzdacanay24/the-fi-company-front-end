@@ -111,6 +111,7 @@ export class TripDetailsFormComponent implements OnInit {
         fs_travel_det_group: null,
         // address: this.formBuilder.group({
         // }),
+        trip_detail_group_number: null,
 
         address_name: "",
         address: null,

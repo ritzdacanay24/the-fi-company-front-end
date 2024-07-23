@@ -1,4 +1,4 @@
-import { ControlConfig, FormControl, FormGroup, ɵElement } from "@angular/forms";
+import { FormControl, FormGroup, ɵElement } from "@angular/forms";
 
 export type ControlsOf<T extends Record<string, any>> = {
   [K in keyof T]: T[K] extends Record<any, any>

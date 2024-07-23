@@ -88,15 +88,15 @@ export class TripDetailsEditComponent {
   onAdd() {
     let modalRef = this.tripDetailsModalService.open({
       fs_travel_det_group: this.data.fs_travel_det_group,
+      trip_detail_group_number: this.data.trip_detail_group_number,
     });
     modalRef.result.then(
       (result: any) => {
         this.setDatData();
       },
-      () => {
-      }
+      () => {}
     );
-  }
+  };
 
   setDatData: any;
   async onSubmit() {

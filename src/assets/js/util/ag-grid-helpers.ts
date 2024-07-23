@@ -1,5 +1,5 @@
 import moment from "moment";
-import { FirstDataRenderedEvent, GridReadyEvent } from 'ag-grid-community'
+import { FirstDataRenderedEvent } from 'ag-grid-community'
 
 export let agGridDateFilterdateFilter = {
   comparator: function (filterLocalDateAtMidnight, cellValue) {

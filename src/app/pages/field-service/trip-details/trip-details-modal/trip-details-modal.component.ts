@@ -23,17 +23,19 @@ export class TripDetailsModalService {
   open({
     id: id,
     fs_travel_det_group: fs_travel_det_group,
+    trip_detail_group_number: trip_detail_group_number,
   }: {
     id?: any;
     fs_travel_det_group?: any;
+    trip_detail_group_number?: any;
   }) {
-    console.log(id, "id");
-    console.log(fs_travel_det_group, "fs_travel_det_group");
     let modalRef = this.modalService.open(TripDetailsModalComponent, {
       size: "lg",
     });
     modalRef.componentInstance.id = id;
     modalRef.componentInstance.fs_travel_det_group = fs_travel_det_group;
+    modalRef.componentInstance.trip_detail_group_number =
+      trip_detail_group_number;
     return modalRef;
   }
 }
@@ -70,12 +72,16 @@ export class TripDetailsModalComponent implements OnInit {
     this.form = $event;
 
     if (this.fs_travel_det_group) {
-      this.form.patchValue({ fs_travel_det_group: this.fs_travel_det_group });
+      this.form.patchValue({
+        fs_travel_det_group: this.fs_travel_det_group,
+        trip_detail_group_number: this.trip_detail_group_number,
+      });
     }
   };
 
   @Input() id = null;
   @Input() fs_travel_det_group = null;
+  @Input() trip_detail_group_number = null;
 
   submitted = false;
 
