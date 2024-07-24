@@ -24,20 +24,19 @@ export class TripDetailsModalService {
 
   open({
     id: id,
-    fs_travel_det_group: fs_travel_det_group,
-    trip_detail_group_number: trip_detail_group_number,
+    fs_travel_header_id: fs_travel_header_id,
+    fsId: fsId,
   }: {
     id?: any;
-    fs_travel_det_group?: any;
-    trip_detail_group_number?: any;
+    fs_travel_header_id?: any;
+    fsId?: any;
   }) {
     let modalRef = this.modalService.open(TripDetailsModalComponent, {
       size: "lg",
     });
     modalRef.componentInstance.id = id;
-    modalRef.componentInstance.fs_travel_det_group = fs_travel_det_group;
-    modalRef.componentInstance.trip_detail_group_number =
-      trip_detail_group_number;
+    modalRef.componentInstance.fs_travel_header_id = fs_travel_header_id;
+    modalRef.componentInstance.fsId = fsId;
     return modalRef;
   }
 }
@@ -70,7 +69,6 @@ export class TripDetailsModalComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.id) this.getData();
-    if (this.trip_detail_group_number) this.getGroupDataInformation();
   }
 
   async notifyParentJob($event) {
@@ -93,17 +91,22 @@ export class TripDetailsModalComponent implements OnInit {
   setFormElements = ($event) => {
     this.form = $event;
 
-    if (this.fs_travel_det_group && !this.id) {
+    if (this.fs_travel_header_id && !this.id) {
       this.form.patchValue({
-        fs_travel_det_group: this.fs_travel_det_group,
-        trip_detail_group_number: this.trip_detail_group_number,
+        fs_travel_header_id: this.fs_travel_header_id,
+      });
+    }
+
+    if (this.fsId && !this.id) {
+      this.form.patchValue({
+        fsId: this.fsId,
       });
     }
   };
 
   @Input() id = null;
-  @Input() fs_travel_det_group = null;
-  @Input() trip_detail_group_number = null;
+  @Input() fs_travel_header_id = null;
+  @Input() fsId = null;
 
   submitted = false;
 
@@ -124,12 +127,10 @@ export class TripDetailsModalComponent implements OnInit {
   async getGroupDataInformation() {
     try {
       this.group_details = await this.tripDetailHeaderService.getById(
-        this.trip_detail_group_number
+        this.fs_travel_header_id
       );
 
       this.group_details.fsId = this.group_details.fsId?.split(",");
-
-      // this.form.patchValue({ fs_travel_det_group: data.fsId?.split(",") });
     } catch (err) {}
   }
 
@@ -150,10 +151,7 @@ export class TripDetailsModalComponent implements OnInit {
 
   async create() {
     try {
-      await this.api.create({
-        ...this.form.value,
-        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
-      });
+      await this.api.create(this.form.value);
 
       this.toastrService.success("Successfully Created");
       this.close();
@@ -162,10 +160,7 @@ export class TripDetailsModalComponent implements OnInit {
 
   async update() {
     try {
-      await this.api.update(this.id, {
-        ...this.form.value,
-        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
-      });
+      await this.api.update(this.id, this.form.value);
 
       this.toastrService.success("Updated successfully");
       this.close();

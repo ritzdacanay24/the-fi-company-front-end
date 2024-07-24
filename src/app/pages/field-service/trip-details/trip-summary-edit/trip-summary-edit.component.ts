@@ -57,18 +57,27 @@ export class TripSummaryEditComponent {
   details: FormArray;
 
   viewTripDetailById = (id) => {
-    this.group_id = id;
 
     let modalRef = this.tripDetailsModalService.open({
       id: id,
-      trip_detail_group_number: this.group_id, //group ud is to show the group id number and to pull the details of the group id. 
+      fs_travel_header_id: this.group_id, //group ud is to show the group id number and to pull the details of the group id.
+    });
+    modalRef.result.then(() => this.setDatData());
+  };
+
+  add = (row) => {
+    this.group_id = row.fs_travel_header_id;
+
+    let modalRef = this.tripDetailsModalService.open({
+      fs_travel_header_id: row.fs_travel_header_id,
+      fsId: row.fsId,
     });
     modalRef.result.then(() => this.setDatData());
   };
 
   onAdd() {
     let modalRef = this.tripDetailsModalService.open({
-      trip_detail_group_number: this.group_id, //group ud is to show the group id number and to pull the details of the group id. 
+      fs_travel_header_id: this.group_id, //group ud is to show the group id number and to pull the details of the group id.
     });
     modalRef.result.then(() => this.setDatData());
   }

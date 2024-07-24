@@ -62,13 +62,6 @@ export class TripDetailsEditComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
-
-      if (this.data.fs_travel_det_group) {
-        this.data.fs_travel_det_group = this.data?.fs_travel_det_group
-          ?.toString()
-          ?.split(",");
-      }
-
       this.form.patchValue(this.data);
       this.isLoading = false;
     } catch (err) {}
@@ -88,16 +81,14 @@ export class TripDetailsEditComponent {
 
     let modalRef = this.tripDetailsModalService.open({
       id: id,
-      fs_travel_det_group: this.data.fs_travel_det_group,
-      trip_detail_group_number: this.data.trip_detail_group_number,
+      fs_travel_header_id: this.data.fs_travel_header_id,
     });
     modalRef.result.then(() => this.setDatData());
   };
 
   onAdd() {
     let modalRef = this.tripDetailsModalService.open({
-      fs_travel_det_group: this.data.fs_travel_det_group,
-      trip_detail_group_number: this.data.trip_detail_group_number,
+      fs_travel_header_id: this.data.fs_travel_header_id,
     });
     modalRef.result.then(() => this.setDatData());
   }
@@ -107,10 +98,7 @@ export class TripDetailsEditComponent {
     this.submitted = true;
 
     try {
-      await this.api.update(this.id, {
-        ...this.form.value,
-        fs_travel_det_group: this.form.value.fs_travel_det_group?.toString(),
-      });
+      await this.api.update(this.id, this.form.value);
 
       this.toastrService.success("Updated successfully");
       this.setDatData();

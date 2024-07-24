@@ -2,30 +2,33 @@
     <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
         <div class="card">
             <div class="card-header d-flex align-items-center">
-                <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-                    (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-                <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+                <h4 class="card-title mb-0 flex-grow-1 text-start"> {{title}} </h4>
             </div>
             <div class="card-body" style="min-height:300px">
                 <div *ngIf="!createNew">
-                    <h4>Add to an existing group</h4>
-                    <select class="form-select mb-2" [(ngModel)]="currentFsIdGroupSelection"
-                        (ngModelChange)="goToView()">
-                        <option selected disabled value="null">--SELECT--</option>
-                        <option *ngFor="let row of headerInfo" [value]="row.id">{{row.fsId}}</option>
-                    </select>
-                    <p>Or</p>
+
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Add to an existing group</label>
+                            <select class="form-select mb-4" [(ngModel)]="currentFsIdGroupSelection"
+                                (ngModelChange)="goToView()">
+                                <option selected disabled value="null">--SELECT--</option>
+                                <option *ngFor="let row of headerInfo" [value]="row.id">Group ID: {{row.id}} -
+                                    {{row.fsIds}}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p>----------- OR -----------</p>
                 </div>
 
-                <h4>Create a new group</h4>
-                <button class="btn btn-primary" [disabled]="isLoading" (click)="createNew = true">
+                <button class="btn btn-primary mt-3" [disabled]="isLoading" (click)="createNewGroup()">
                     Create New Group</button>
-                <app-trip-details-form (setFormEmitter)="setFormEmitter($event)"
-                    *ngIf="createNew"></app-trip-details-form>
             </div>
             <div class="card-footer d-flex  d-flex justify-content-between">
                 <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-                <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()" *ngIf="createNew">Submit</button>
+                <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"
+                    *ngIf="createNew">Submit</button>
             </div>
         </div>
     </div>

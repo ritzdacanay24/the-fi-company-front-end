@@ -96,6 +96,10 @@ export const MENU: MenuItem[] = [
           },
           {
             label: "Edit Trip Detail",
+            link: "/dashboard/field-service/trip-details/edit",
+          },
+          {
+            label: "Edit Trip Summary",
             link: "/dashboard/field-service/trip-details/edit-summary",
           },
         ],

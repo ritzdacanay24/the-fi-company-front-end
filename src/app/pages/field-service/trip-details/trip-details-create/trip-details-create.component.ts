@@ -30,7 +30,7 @@ export class TripDetailsCreateComponent {
     this.getHeader();
   }
 
-  title = "Create trip detail";
+  title = "Create Trip Detail";
 
   form: FormGroup;
 
@@ -63,15 +63,7 @@ export class TripDetailsCreateComponent {
     try {
       this.isLoading = true;
 
-      let d = {
-        ...this.form.value,
-      };
-
-      if (d.fs_travel_det_group) {
-        d.fs_travel_det_group = d.fs_travel_det_group?.toString();
-      }
-
-      let data = await this.api.create(d);
+      let data = await this.api.create(this.form.value);
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
@@ -81,12 +73,24 @@ export class TripDetailsCreateComponent {
     }
   };
 
+  async createNewGroup() {
+    let { insertId } = await this.tripDetailHeaderService.create({});
+
+    this.currentFsIdGroupSelection = insertId
+    this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        group_id: this.currentFsIdGroupSelection,
+      },
+    });
+  }
+
   currentFsIdGroupSelection = null;
 
   headerInfo: any;
   async getHeader() {
     this.headerInfo = await this.tripDetailHeaderService.getAll();
-  };
+  }
 
   goToView() {
     this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {

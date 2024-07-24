@@ -82,17 +82,48 @@ export class TripDetailsListComponent implements OnInit {
     });
   }
 
+  editById(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
+
   columnDefs: ColDef[] = [
     {
       field: "",
-      headerName: "View",
+      headerName: "View Group",
       filter: "agNumberColumnFilter",
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
         onClick: (e) => {
-          this.viewTripDetailById(e.rowData.trip_detail_group_number);
+          this.viewTripDetailById(e.rowData.fs_travel_header_id);
         },
-        value: "View",
+        value: "View Group",
+      },
+      pinned: "left",
+      maxWidth: 90,
+      minWidth: 90,
+      suppressHeaderMenuButton: true,
+      suppressFloatingFilterButton: true,
+      suppressHeaderFilterButton: true,
+      sortable: false,
+      floatingFilter: false,
+    },
+    {
+      field: "",
+      headerName: "Edit",
+      filter: "agNumberColumnFilter",
+      cellRenderer: LinkRendererComponent,
+      cellRendererParams: {
+        onClick: (e) => {
+          this.editById(e.rowData.id);
+        },
+        value: "Edit",
       },
       pinned: "left",
       maxWidth: 65,
@@ -106,9 +137,10 @@ export class TripDetailsListComponent implements OnInit {
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     { field: "fsId", headerName: "FSID", filter: "agMultiColumnFilter" },
     {
-      field: "fs_travel_det_group",
-      headerName: "FSID Group",
+      field: "fs_travel_header_id",
+      headerName: "Group ID",
       filter: "agMultiColumnFilter",
+      rowGroup: true,
     },
     { field: "address", headerName: "Address", filter: "agMultiColumnFilter" },
     { field: "address1", headerName: "STE", filter: "agMultiColumnFilter" },
@@ -178,6 +210,10 @@ export class TripDetailsListComponent implements OnInit {
   ];
 
   gridOptions: GridOptions = {
+    groupDefaultExpanded: 1,
+    groupAllowUnbalanced: true,
+    groupDisplayType: "groupRows",
+
     columnDefs: [],
     onGridReady: (params: any) => {
       this.gridApi = params.api;

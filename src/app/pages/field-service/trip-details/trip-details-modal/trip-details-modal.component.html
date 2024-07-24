@@ -1,20 +1,8 @@
 <div class="modal-header align-items-center d-flex border-bottom">
-    <h4 class="modal-title mb-0" id="modal-basic-title">Trip Detail - ID {{id ? 'ID ' + id : 'Create'}}</h4>
+    <h4 class="modal-title mb-0" id="modal-basic-title">Trip Detail - {{id ? 'ID ' + id : 'Create'}}</h4>
 </div>
 
 <div class="modal-body">
-    <div class="mb-3">
-        <p>Group Details:</p>
-        <p class="ms-2">Group Number: {{this.group_details?.id}}</p>
-        <p class="ms-2">FSID #'s: {{this.group_details?.fsId}}</p>
-    </div>
-    <h4>Select FSID to add to group. </h4>
-
-    <div class="mb-3">
-        <app-job-search (notifyParent)="notifyParentJob($event)" [value]="this.group_details.fsId" [showLabel]="false"
-            [multiple]="true" [blur]="false"></app-job-search>
-    </div>
-
     <app-trip-details-form (setFormEmitter)="setFormElements($event)" [submitted]="submitted"
         [id]="id"></app-trip-details-form>
 </div>

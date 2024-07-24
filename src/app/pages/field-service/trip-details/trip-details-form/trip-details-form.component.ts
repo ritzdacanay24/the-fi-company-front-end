@@ -8,6 +8,7 @@ import { AddressSearchComponent } from "@app/shared/components/address-search/ad
 import { states } from "@app/core/data/states";
 import { AutosizeModule } from "ngx-autosize";
 import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
+import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
 
 let trip_selection_options = [
   {
@@ -58,8 +59,14 @@ export class TripDetailsFormComponent implements OnInit {
     public route: ActivatedRoute,
     public router: Router,
     public authenticationService: AuthenticationService,
-    private formBuilder: UntypedFormBuilder
+    private formBuilder: UntypedFormBuilder,
+    private tripDetailHeaderService: TripDetailHeaderService
   ) {}
+
+  headerInfo: any;
+  async getHeader() {
+    this.headerInfo = await this.tripDetailHeaderService.getAll();
+  }
 
   notifyParentJob($event) {
     // let ids = [];
@@ -93,6 +100,8 @@ export class TripDetailsFormComponent implements OnInit {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   ngOnInit(): void {
+    this.getHeader();
+
     this.form = this.formBuilder.group(
       {
         start_datetime: "",
@@ -108,10 +117,7 @@ export class TripDetailsFormComponent implements OnInit {
         airline_name: "",
         notes: "",
         fsId: null,
-        fs_travel_det_group: null,
-        // address: this.formBuilder.group({
-        // }),
-        trip_detail_group_number: null,
+        fs_travel_header_id: null,
 
         address_name: "",
         address: null,
