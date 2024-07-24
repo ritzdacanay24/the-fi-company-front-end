@@ -14,26 +14,27 @@
 
     <ng-container *ngIf="form.value?.type_of_travel">
 
-        <div class="row">
+        <!-- <div class="row">
             <div class="col-12 mb-3">
                 <label for="inputAddress2" class="form-label">Group FSID Numbers</label>
 
                 <app-job-search (notifyParent)="notifyParentJob($event)"
                     [value]="this.form.value.fs_travel_det_group" [showLabel]="false" [multiple]="true"
                     [blur]="false"></app-job-search>
-
-                <!-- <input type="text" class="form-control" id="inputAddress2" placeholder="Enter Group FSID Numbers"
-                    formControlName="fs_travel_det_group"> -->
             </div>
-        </div>
+        </div> -->
 
         <div class="row">
             <div class="col mb-3">
                 <label class="form-label">FSID</label>
-                <select class="form-select" formControlName="fsId">
+
+                <app-job-search (notifyParent)="notifyParentJob($event)" [value]="this.form.value.fsId"
+                    [showLabel]="false"></app-job-search>
+
+                <!-- <select class="form-select" formControlName="fsId">
                     <option selected disabled value="null">--SELECT--</option>
                     <option *ngFor="let row of this.form.value.fs_travel_det_group">{{row}}</option>
-                </select>
+                </select> -->
             </div>
         </div>
 

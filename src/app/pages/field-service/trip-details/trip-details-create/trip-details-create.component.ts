@@ -7,6 +7,8 @@ import { NAVIGATION_ROUTE } from "../trip-details-constant";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form.component";
+import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
+import { _compressToEncodedURIComponent } from "src/assets/js/util/jslzString";
 
 @Component({
   standalone: true,
@@ -18,10 +20,15 @@ export class TripDetailsCreateComponent {
   constructor(
     private router: Router,
     private api: TripDetailService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private tripDetailHeaderService: TripDetailHeaderService
   ) {}
 
-  ngOnInit(): void {}
+  createNew = false;
+
+  ngOnInit(): void {
+    this.getHeader();
+  }
 
   title = "Create trip detail";
 
@@ -33,6 +40,7 @@ export class TripDetailsCreateComponent {
 
   submitted = false;
 
+  //Go Back button;
   @Input() goBack: Function = (id?: string) => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
@@ -44,7 +52,7 @@ export class TripDetailsCreateComponent {
     this.form = $event;
   }
 
-  async onSubmit() {
+  onSubmit = async () => {
     this.submitted = true;
 
     if (this.form.invalid) {
@@ -56,14 +64,14 @@ export class TripDetailsCreateComponent {
       this.isLoading = true;
 
       let d = {
-        ...this.form.value
+        ...this.form.value,
       };
 
       if (d.fs_travel_det_group) {
         d.fs_travel_det_group = d.fs_travel_det_group?.toString();
       }
 
-      let data = await this.api.create(d); 
+      let data = await this.api.create(d);
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
@@ -71,6 +79,22 @@ export class TripDetailsCreateComponent {
     } catch (err) {
       this.isLoading = false;
     }
+  };
+
+  currentFsIdGroupSelection = null;
+
+  headerInfo: any;
+  async getHeader() {
+    this.headerInfo = await this.tripDetailHeaderService.getAll();
+  };
+
+  goToView() {
+    this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        group_id: this.currentFsIdGroupSelection,
+      },
+    });
   }
 
   onCancel() {

@@ -13,6 +13,8 @@ import { TripDetailsFormComponent } from "../trip-details-form/trip-details-form
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
 import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-details-summary.component";
 import { ToastrService } from "ngx-toastr";
+import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
+import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 
 @Injectable({
   providedIn: "root",
@@ -50,6 +52,7 @@ export class TripDetailsModalService {
     NgbCarouselModule,
     TripDetailsSummaryComponent,
     TripDetailsFormComponent,
+    JobSearchComponent,
   ],
   selector: "app-trip-details-modal",
   templateUrl: "./trip-details-modal.component.html",
@@ -61,17 +64,36 @@ export class TripDetailsModalComponent implements OnInit {
     public router: Router,
     private ngbActiveModal: NgbActiveModal,
     private api: TripDetailService,
+    private tripDetailHeaderService: TripDetailHeaderService,
     private toastrService: ToastrService
   ) {}
 
   ngOnInit(): void {
     if (this.id) this.getData();
+    if (this.trip_detail_group_number) this.getGroupDataInformation();
+  }
+
+  async notifyParentJob($event) {
+    let ids = [];
+    for (let i = 0; i < $event.length; i++) {
+      if (typeof $event[i] === "object" && $event[i] !== null) {
+        ids.push($event[i].id);
+      } else {
+        ids.push($event[i]);
+      }
+    }
+
+    try {
+      await this.tripDetailHeaderService.update(this.id, {
+        fsId: ids?.toString(),
+      });
+    } catch (err) {}
   }
 
   setFormElements = ($event) => {
     this.form = $event;
 
-    if (this.fs_travel_det_group) {
+    if (this.fs_travel_det_group && !this.id) {
       this.form.patchValue({
         fs_travel_det_group: this.fs_travel_det_group,
         trip_detail_group_number: this.trip_detail_group_number,
@@ -95,6 +117,20 @@ export class TripDetailsModalComponent implements OnInit {
 
   close() {
     this.ngbActiveModal.close();
+  }
+
+  group_details: any;
+
+  async getGroupDataInformation() {
+    try {
+      this.group_details = await this.tripDetailHeaderService.getById(
+        this.trip_detail_group_number
+      );
+
+      this.group_details.fsId = this.group_details.fsId?.split(",");
+
+      // this.form.patchValue({ fs_travel_det_group: data.fsId?.split(",") });
+    } catch (err) {}
   }
 
   async getData() {

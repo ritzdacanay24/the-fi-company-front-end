@@ -96,7 +96,7 @@ export const MENU: MenuItem[] = [
           },
           {
             label: "Edit Trip Detail",
-            link: "/dashboard/field-service/trip-details/edit",
+            link: "/dashboard/field-service/trip-details/edit-summary",
           },
         ],
       },
@@ -936,24 +936,24 @@ export const MENU: MenuItem[] = [
         ],
       },
       {
-        label: "NCR",
+        label: "CAR",
         icon: "las la-tachometer-alt",
         isCollapsed: true,
         subItems: [
           {
-            label: "List NCR",
-            link: "/dashboard/quality/ncr/list",
-            description: "NCR list",
+            label: "List CAR",
+            link: "/dashboard/quality/car/list",
+            description: "CAR list",
           },
           {
-            label: "Create NCR",
-            link: "/dashboard/quality/ncr/create",
-            description: "NCR create",
+            label: "Create CAR",
+            link: "/dashboard/quality/car/create",
+            description: "CAR create",
           },
           {
-            label: "Edit NCR",
-            link: "/dashboard/quality/ncr/overview",
-            description: "NCR edit",
+            label: "Edit CAR",
+            link: "/dashboard/quality/car/overview",
+            description: "CAR edit",
           },
         ],
       },

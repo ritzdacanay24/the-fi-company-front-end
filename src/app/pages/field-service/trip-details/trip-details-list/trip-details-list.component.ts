@@ -71,12 +71,12 @@ export class TripDetailsListComponent implements OnInit {
     this.getData();
   }
 
-  viewTripDetailById(id) {
+  viewTripDetailById(group_id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+    this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
       queryParamsHandling: "merge",
       queryParams: {
-        id: id,
+        group_id: group_id,
         gridParams,
       },
     });
@@ -90,7 +90,7 @@ export class TripDetailsListComponent implements OnInit {
       cellRenderer: LinkRendererComponent,
       cellRendererParams: {
         onClick: (e) => {
-          this.viewTripDetailById(e.rowData.id);
+          this.viewTripDetailById(e.rowData.trip_detail_group_number);
         },
         value: "View",
       },

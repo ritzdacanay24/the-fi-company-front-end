@@ -30,7 +30,7 @@ const routes: Routes = [
     loadChildren: () => import('./mrb/mrb-routing.module').then(m => m.MrbRoutingModule)
   },
   {
-    path: 'ncr',
+    path: 'car',
     loadChildren: () => import('./ncr/ncr-routing.module').then(m => m.NcrRoutingModule)
   },
   {

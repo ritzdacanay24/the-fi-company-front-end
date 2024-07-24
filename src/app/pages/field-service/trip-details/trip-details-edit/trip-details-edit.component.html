@@ -32,18 +32,4 @@
       </div>
     </div>
   </div>
-  <div class="col-sm-6">
-    <div class="sticky-top" style="top:74px;">
-      <div class="card">
-        <div class="card-header text-center h5">
-          Trip Detail Summary
-        </div>
-        <div class="card-body" style="min-height:300px;height: calc(100vh - 150px);overflow:auto">
-          <app-trip-details-summary [fsId]="form.value.trip_detail_group_number" [viewTripDetailById]="viewTripDetailById"
-            [id]="id" (setDatData)="setDatData = $event"
-            [fontSizeClass]="'trip-detail-text-sm'"></app-trip-details-summary>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>

@@ -44,13 +44,13 @@ export class NcrOverviewComponent implements OnInit {
 
   @Input() id = null;
 
-  selectedViewType = "NCR Overview";
+  selectedViewType = "CAR Overview";
 
   goBackUrl = null;
 
   data = null;
 
-  title = "NCR Overview";
+  title = "CAR Overview";
 
   form: FormGroup;
 

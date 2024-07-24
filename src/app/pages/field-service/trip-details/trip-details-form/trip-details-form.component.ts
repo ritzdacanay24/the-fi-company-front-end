@@ -62,15 +62,15 @@ export class TripDetailsFormComponent implements OnInit {
   ) {}
 
   notifyParentJob($event) {
-    let ids = [];
-    for (let i = 0; i < $event.length; i++) {
-      if (typeof $event[i] === "object" && $event[i] !== null) {
-        ids.push($event[i].id);
-      } else {
-        ids.push($event[i]);
-      }
-    }
-    this.form.patchValue({ fs_travel_det_group: ids });
+    // let ids = [];
+    // for (let i = 0; i < $event.length; i++) {
+    //   if (typeof $event[i] === "object" && $event[i] !== null) {
+    //     ids.push($event[i].id);
+    //   } else {
+    //     ids.push($event[i]);
+    //   }
+    // }
+    this.form.patchValue({ fsId: $event.id });
   }
 
   getTripSelection($event) {

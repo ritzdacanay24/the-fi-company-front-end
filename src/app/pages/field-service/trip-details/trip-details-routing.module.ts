@@ -4,6 +4,7 @@ import { TripDetailsCreateComponent } from "./trip-details-create/trip-details-c
 import { TripDetailsComponent } from "./trip-details.component";
 import { TripDetailsListComponent } from "./trip-details-list/trip-details-list.component";
 import { TripDetailsEditComponent } from "./trip-details-edit/trip-details-edit.component";
+import { TripSummaryEditComponent } from "./trip-summary-edit/trip-summary-edit.component";
 
 const routes: Routes = [
   {
@@ -22,6 +23,10 @@ const routes: Routes = [
       {
         path: "edit",
         component: TripDetailsEditComponent,
+      },
+      {
+        path: "edit-summary",
+        component: TripSummaryEditComponent,
       },
       {
         path: "create",
