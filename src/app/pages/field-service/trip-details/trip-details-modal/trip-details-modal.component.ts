@@ -71,23 +71,6 @@ export class TripDetailsModalComponent implements OnInit {
     if (this.id) this.getData();
   }
 
-  async notifyParentJob($event) {
-    let ids = [];
-    for (let i = 0; i < $event.length; i++) {
-      if (typeof $event[i] === "object" && $event[i] !== null) {
-        ids.push($event[i].id);
-      } else {
-        ids.push($event[i]);
-      }
-    }
-
-    try {
-      await this.tripDetailHeaderService.update(this.id, {
-        fsId: ids?.toString(),
-      });
-    } catch (err) {}
-  }
-
   setFormElements = ($event) => {
     this.form = $event;
 
