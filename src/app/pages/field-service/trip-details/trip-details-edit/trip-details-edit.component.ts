@@ -11,6 +11,7 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import moment from "moment";
 import { ToastrService } from "ngx-toastr";
 import { TripDetailsModalService } from "../trip-details-modal/trip-details-modal.component";
+import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
 
 @Component({
   standalone: true,
@@ -28,7 +29,8 @@ export class TripDetailsEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: TripDetailService,
     private toastrService: ToastrService,
-    private tripDetailsModalService: TripDetailsModalService
+    private tripDetailsModalService: TripDetailsModalService,
+    private tripDetailHeaderService: TripDetailHeaderService
   ) {}
 
   ngOnInit(): void {
@@ -95,6 +97,17 @@ export class TripDetailsEditComponent {
 
   setDatData: any;
   async onSubmit() {
+    try {
+      let data = await this.tripDetailHeaderService.multipleGroups(
+        this.form.value.fsId
+      );
+
+      if (data) {
+        alert("This FSID cannot be in two different groups. ");
+        return;
+      }
+    } catch (err) {}
+
     this.submitted = true;
 
     try {

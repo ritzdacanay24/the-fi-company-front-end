@@ -63,20 +63,18 @@ export class TripDetailsFormComponent implements OnInit {
     private tripDetailHeaderService: TripDetailHeaderService
   ) {}
 
+  checkValue() {
+    if (this.form.value.fs_travel_header_id == "Remove") {
+      this.form.patchValue({ fs_travel_header_id: null });
+    }
+  }
+
   headerInfo: any;
   async getHeader() {
     this.headerInfo = await this.tripDetailHeaderService.getAll();
   }
 
   notifyParentJob($event) {
-    // let ids = [];
-    // for (let i = 0; i < $event.length; i++) {
-    //   if (typeof $event[i] === "object" && $event[i] !== null) {
-    //     ids.push($event[i].id);
-    //   } else {
-    //     ids.push($event[i]);
-    //   }
-    // }
     this.form.patchValue({ fsId: $event.id });
   }
 

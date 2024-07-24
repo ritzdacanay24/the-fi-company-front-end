@@ -53,6 +53,17 @@ export class TripDetailsCreateComponent {
   }
 
   onSubmit = async () => {
+    try {
+      let data = await this.tripDetailHeaderService.multipleGroups(
+        this.form.value.fsId
+      );
+
+      if (data) {
+        alert("This FSID cannot be in two different groups. ");
+        return;
+      }
+    } catch (err) {}
+
     this.submitted = true;
 
     if (this.form.invalid) {
@@ -76,7 +87,7 @@ export class TripDetailsCreateComponent {
   async createNewGroup() {
     let { insertId } = await this.tripDetailHeaderService.create({});
 
-    this.currentFsIdGroupSelection = insertId
+    this.currentFsIdGroupSelection = insertId;
     this.router.navigate([NAVIGATION_ROUTE.SUMMARY_EDIT], {
       queryParamsHandling: "merge",
       queryParams: {

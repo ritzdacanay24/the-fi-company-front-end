@@ -142,6 +142,17 @@ export class TripDetailsModalComponent implements OnInit {
   }
 
   async onSubmit() {
+    try {
+      let data = await this.tripDetailHeaderService.multipleGroups(
+        this.form.value.fsId
+      );
+
+      if (data) {
+        alert("This FSID cannot be in two different groups. ");
+        return;
+      }
+    } catch (err) {}
+
     if (this.id) {
       this.update();
     } else {

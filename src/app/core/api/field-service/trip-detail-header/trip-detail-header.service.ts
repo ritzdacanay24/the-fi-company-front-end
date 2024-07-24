@@ -16,4 +16,8 @@ export class TripDetailHeaderService extends DataService<any> {
   getByGroup() {
     return firstValueFrom(this.http.get(`${url}/getByGroup.php`));
   }
+
+  multipleGroups(id) {
+    return firstValueFrom(this.http.get(`${url}/multipleGroups.php?id=${id}`));
+  }
 }
