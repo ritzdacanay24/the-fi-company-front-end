@@ -54,15 +54,23 @@ export class TripDetailsSummaryComponent implements OnInit {
   @Input() viewTripDetailById: Function;
   @Input() add: Function;
   @Input() disableAddEdit = false;
+  @Input() useTravelId = false;
 
   data: any;
 
   getData = async () => {
     try {
-      this.data = await this.api.findByGroupFsId(this.fsId);
-      setTimeout(() => {
-        this.scroll(this.id);
-      }, null);
+      if (this.useTravelId) {
+        this.data = await this.api.findByGroupFsId(this.fsId);
+        setTimeout(() => {
+          this.scroll(this.id);
+        }, null);
+      } else {
+        this.data = await this.api.findByFsId(this.fsId);
+        setTimeout(() => {
+          this.scroll(this.id);
+        }, null);
+      }
     } catch (err) {}
   };
 }

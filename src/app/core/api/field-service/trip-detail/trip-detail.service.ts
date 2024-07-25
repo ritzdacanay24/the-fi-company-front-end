@@ -22,4 +22,10 @@ export class TripDetailService extends DataService<any> {
   findByGroupFsId(id) {
     return firstValueFrom(this.http.get(`${url}/findByGroupFsId.php?id=${id}`));
   }
+
+  findByFsId(id) {
+    return firstValueFrom(this.http.get(`${url}/findByFsId.php?id=${id}`));
+  }
+
+  
 }
