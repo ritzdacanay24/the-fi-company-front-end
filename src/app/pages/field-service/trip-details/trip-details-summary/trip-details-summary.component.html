@@ -6,9 +6,10 @@
                     <th colspan="5">
                         {{row.type_of_travel?.replace('_', ' ') | uppercase}} #{{row.id}} FSID. {{row.fsId
                         || 'Not Assigned to FSID #'}}
-                        <span (click)="viewTripDetailById(row.id)" class="float-end pointer"><u>  Edit </u></span>
-                        <span class="float-end mx-2"> | </span>
-                        <span (click)="add(row)" class="float-end pointer"><u> Add </u></span>
+                        <span (click)="viewTripDetailById(row.id)" class="float-end pointer" *ngIf="!disableAddEdit"><u>
+                                Edit </u></span>
+                        <span class="float-end mx-2" *ngIf="!disableAddEdit"> | </span>
+                        <span (click)="add(row)" class="float-end pointer" *ngIf="!disableAddEdit"><u> Add </u></span>
                     </th>
                 </tr>
             </thead>
@@ -41,9 +42,8 @@
                     <th colspan="3">{{row.rental_car_driver}}</th>
                 </tr>
                 <tr>
-                    <th colspan="4" [ngClass]="{'text-danger': !row.email_sent, 'text-success': row.email_sent}">Email
-                        Sent
-                        On : {{row.email_sent || 'Not Sent'}}</th>
+                    <th colspan="4" [ngClass]="{'text-danger': !row.email_sent, 'text-success': row.email_sent}">
+                        Email Sent On : {{row.email_sent || 'Not Sent'}}</th>
                 </tr>
             </tbody>
             <br />

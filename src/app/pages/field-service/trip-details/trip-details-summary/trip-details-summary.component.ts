@@ -53,6 +53,7 @@ export class TripDetailsSummaryComponent implements OnInit {
   @Input() id: string;
   @Input() viewTripDetailById: Function;
   @Input() add: Function;
+  @Input() disableAddEdit = false;
 
   data: any;
 

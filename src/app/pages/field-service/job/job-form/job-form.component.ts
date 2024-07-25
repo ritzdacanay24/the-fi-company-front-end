@@ -48,8 +48,6 @@ import { AttachmentService } from "@app/core/api/field-service/attachment.servic
 import { DatePickerService } from "@app/shared/date-picker/date-picker.component";
 import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
 import { JobTripDetailModalService } from "../job-trip-detail-modal/job-trip-detail-modal.component";
-import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
-import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
 import { time_now } from "src/assets/js/util/time-now";
 import { TripDetailsSummaryComponent } from "../../trip-details/trip-details-summary/trip-details-summary.component";
