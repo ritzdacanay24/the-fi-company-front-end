@@ -710,6 +710,27 @@ export const MENU: MenuItem[] = [
         ],
       },
       {
+        label: "Safety Incident",
+        isCollapsed: true,
+        subItems: [
+          {
+            label: "List Safety Incident",
+            link: "/dashboard/operations/forms/safety-incident/list",
+            description: "Safety Incident List",
+          },
+          {
+            label: "Create Safety Incident",
+            link: "/dashboard/operations/forms/safety-incident/create",
+            description: "Safety Incident Create",
+          },
+          {
+            label: "Edit Safety Incident",
+            link: "/dashboard/operations/forms/safety-incident/edit",
+            description: "Safety Incident Edit",
+          },
+        ],
+      },
+      {
         label: "Reports",
         isCollapsed: true,
         subItems: [

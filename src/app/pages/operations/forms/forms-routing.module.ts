@@ -61,6 +61,14 @@ const routes: Routes = [
           ).then((m) => m.ForkliftInspectionRoutingModule),
         data: { preload: true },
       },
+      {
+        path: "safety-incident",
+        loadChildren: () =>
+          import(
+            "./safety-incident/safety-incident-routing.module"
+          ).then((m) => m.SafetyIncidentRoutingModule),
+        data: { preload: true },
+      },
     ],
   },
 ];
