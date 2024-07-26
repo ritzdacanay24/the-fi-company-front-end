@@ -69,6 +69,11 @@ export class SafetyIncidentListComponent implements OnInit {
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
+      field: "date_of_incident",
+      headerName: "Date of Incident",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "first_name",
       headerName: "First Name",
       filter: "agMultiColumnFilter",
@@ -86,6 +91,26 @@ export class SafetyIncidentListComponent implements OnInit {
     {
       field: "location_of_incident",
       headerName: "Location of Incident",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "created_date",
+      headerName: "Created Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "created_by",
+      headerName: "Created By",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "proposed_corrective_action_completion_date",
+      headerName: "Proposed Correction Action Completion Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "corrective_action_owner",
+      headerName: "Corrective Action Owner",
       filter: "agMultiColumnFilter",
     },
   ];
@@ -111,7 +136,7 @@ export class SafetyIncidentListComponent implements OnInit {
 
   searchName = "";
 
-  title = "IGT Transfer List";
+  title = "Safety Incident List";
 
   gridApi: GridApi;
 

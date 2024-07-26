@@ -1,274 +1,245 @@
-<div>
-  <!-- 
-    <div class="mb-3 row">
-      <div class="col-sm-6 text-uppercase">
-        <div class="row">
-          <label for="staticEmail" class="col-sm-4 col-form-label"> Reported By: </label>
-          <div class="col-sm-8 border-0 border-bottom">
-            <input type="text" readonly class="form-control-plaintext" value="s" class="border-0 border-bottom">
+<!-- <div class="print  d-none d-print-block" id="print"> -->
+<div class="print  d-none d-print-block" id="print">
+  <h4 class="mb-5">Safety Incident Form</h4>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      Date & Time of Incident: _______________________________________
+    </div>
+  </div>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p>Person Reporting Incident: </p>
+      First Name: _______________________________________ Last Name: _______________________________________
+    </div>
+  </div>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p class="fw-bold">Type of Incident:</p>
+      <ul style="list-style-type: none;" class="ms-3">
+        <li>
+          <div class="form-check mb-3" *ngFor="let row of type_of_incident_options; let i = index">
+            <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+            <label class="form-check-label" for="flexRadioDefault1">
+              {{row.name}} <span *ngIf="row.name == 'Other'">_______________________________________</span>
+            </label>
           </div>
-        </div>
-      </div>
-      <div class="col-sm-6 text-uppercase">
-        <div class="row">
-          <label for="staticEmail" class="col-sm-3 col-form-label mb-0 pb-0"> Reported By: </label>
-          <div class="col-sm-9" style="border:none; border-bottom:1px solid rgb(83, 83, 83)">
-            <input type="text" readonly class="form-control-plaintext"
-              >
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p class="fw-bold">Location of Incident:</p>
+      <ul style="list-style-type: none;" class="ms-3">
+        <li>
+          <div class="form-check mb-3" *ngFor="let row of location_of_incident_options; let i = index">
+            <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+            <label class="form-check-label" for="flexRadioDefault1">
+              {{row.name}} <span
+                *ngIf="row.name == 'Other' || row.showLine">_______________________________________</span>
+            </label>
+            <ul style="list-style-type: none;" *ngIf="row.options">
+              <li>
+                <div class="form-check mb-3 mt-1" *ngFor="let item of row.options; let ii = index">
+                  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+                  <label class="form-check-label" for="flexRadioDefault1">
+                    {{item.name}} <span *ngIf="item.name == 'Other'">_______________________________________</span>
+                  </label>
+                </div>
+              </li>
+            </ul>
           </div>
-        </div>
-      </div>
-    </div> 
--->
-  <!-- <div class="" id="print">
-    <h4 class="mb-2">Safety Incident Form</h4>
-    <div class="mb-3 row">
-      <div class="col-sm-6 text-uppercase">
-        Reported By: _____________________________________
-      </div>
-      <div class="col-sm-6 text-uppercase">
-        Date of Report: _____________________________________
-      </div>
+        </li>
+      </ul>
     </div>
-  </div> -->
+  </div>
 
-  <!-- <div class="print  d-none d-print-block" id="print"> -->
-  <div class="print  d-none d-print-block" id="print">
-    <h4 class="mb-5">Safety Incident Form</h4>
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        Date & Time of Incident: _______________________________________
-      </div>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p>Description of Incident: </p>
+      <textarea rows="10" class="form-control"></textarea>
     </div>
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p>Person Reporting Incident: </p>
-        First Name: _______________________________________ Last Name: _______________________________________
-      </div>
-    </div>
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p class="fw-bold">Type of Incident:</p>
-        <ul style="list-style-type: none;" class="ms-3">
-          <li>
-            <div class="form-check mb-3" *ngFor="let row of type_of_incident_options; let i = index">
-              <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
-              <label class="form-check-label" for="flexRadioDefault1">
-                {{row.name}} <span *ngIf="row.name == 'Other'">_______________________________________</span>
-              </label>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p class="fw-bold">Location of Incident:</p>
-        <ul style="list-style-type: none;" class="ms-3">
-          <li>
-            <div class="form-check mb-3" *ngFor="let row of location_of_incident_options; let i = index">
-              <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
-              <label class="form-check-label" for="flexRadioDefault1">
-                {{row.name}} <span
-                  *ngIf="row.name == 'Other' || row.showLine">_______________________________________</span>
-              </label>
-              <ul style="list-style-type: none;" *ngIf="row.options">
-                <li>
-                  <div class="form-check mb-3 mt-1" *ngFor="let item of row.options; let ii = index">
-                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
-                    <label class="form-check-label" for="flexRadioDefault1">
-                      {{item.name}} <span *ngIf="item.name == 'Other'">_______________________________________</span>
-                    </label>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
+  </div>
 
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p>Description of Incident: </p>
-        <textarea rows="10" class="form-control"></textarea>
-      </div>
+  <div style="page-break-after: always;break-after: page;"></div>
+
+  <h4 class="mb-3">Admin Only</h4>
+
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      Corrective Action Owner: _______________________________________
     </div>
+  </div>
 
-    <div style="page-break-after: always;break-after: page;"></div>
-
-    <h4 class="mb-3">Admin Only</h4>
-
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        Corrective Action Owner: _______________________________________
-      </div>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p>Proposed Corrective Action:</p>
+      <textarea rows="10" class="form-control"></textarea>
     </div>
+  </div>
 
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p>Proposed Corrective Action:</p>
-        <textarea rows="10" class="form-control"></textarea>
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      Proposed Corrective Action Completion Date: _______________________________________
+    </div>
+  </div>
+
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p>Notes/Comments:</p>
+      <textarea rows="10" class="form-control"></textarea>
+    </div>
+  </div>
+
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      Confirmed Corrective Action Completion Date: _______________________________________
+    </div>
+  </div>
+
+</div>
+
+
+<form [formGroup]="form" autocomplete="off">
+
+  <p class="mb-3">Reported By:</p>
+  <div class="row">
+    <div class="col-sm-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
+      <input type="text" class="form-control" name="first_name" formControlName="first_name"
+        placeholder="Enter First Name" [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" />
+    </div>
+    <div class="col-sm-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
+      <input type="text" class="form-control" name="last_name" formControlName="last_name" placeholder="Enter Last Name"
+        [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('date_of_incident')">Date of Incident</label>
+      <input type="date" class="form-control" name="date_of_incident" formControlName="date_of_incident"
+        [ngClass]="{ 'is-invalid': submitted && f.date_of_incident.errors }" />
+    </div>
+    <div class="col-sm-6 mb-3">
+      <label class="form-label" [ngClass]="formValidator('time_of_incident')">Time of Incident </label>
+      <input type="time" class="form-control" name="time_of_incident" formControlName="time_of_incident"
+        [ngClass]="{ 'is-invalid': submitted && f.time_of_incident.errors }" />
+    </div>
+  </div>
+
+  <!---Type of incident--->
+  <div [ngClass]="{'border rounded p-2 mb-3': form.value.type_of_incident == 'Other'}">
+
+    <div class="row">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('type_of_incident')">Type of Incident</label>
+        <select formControlName="type_of_incident" class="form-select">
+          <option disabled selected [value]="null">--SELECT--</option>
+          <option *ngFor="let row of type_of_incident_options" [value]="row.name">{{row.name}}</option>
+        </select>
       </div>
     </div>
 
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        Proposed Corrective Action Completion Date: _______________________________________
-      </div>
-    </div>
-
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        <p>Notes/Comments:</p>
-        <textarea rows="10" class="form-control"></textarea>
-      </div>
-    </div>
-
-    <div class="mb-3 row">
-      <div class="col-sm-12 text-uppercase">
-        Confirmed Corrective Action Completion Date: _______________________________________
+    <div class="row" *ngIf="form.value.type_of_incident == 'Other'">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('type_of_incident_other')">Please specify</label>
+        <input type="text" class="form-control" name="type_of_incident_other" formControlName="type_of_incident_other"
+          placeholder="type_of_incident_other"
+          [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }" />
       </div>
     </div>
 
   </div>
 
+  <!---Location of incident--->
 
-  <form [formGroup]="form" autocomplete="off">
-
-    <p class="mb-3">Reported By:</p>
+  <div [ngClass]="{'border rounded p-2 mb-3': form.value.location_of_incident != ''}">
     <div class="row">
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
-        <input type="text" class="form-control" name="first_name" formControlName="first_name"
-          placeholder="Enter First Name" [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" />
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('location_of_incident')">Location of Incident</label>
+        <select formControlName="location_of_incident" class="form-select" (change)="onChangeLocationOfIncident()">
+          <option disabled selected [value]="null">--SELECT--</option>
+          <option *ngFor="let row of location_of_incident_options" [value]="row.name">{{row.name}}</option>
+        </select>
       </div>
-      <div class="col-sm-6 mb-3">
-        <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
-        <input type="text" class="form-control" name="last_name" formControlName="last_name"
-          placeholder="Enter Last Name" [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" />
+    </div>
+
+    <div class="row" *ngIf="form.value.location_of_incident == 'Las Vegas Facility'">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('location_of_incident_other')">Please specify</label>
+        <select formControlName="location_of_incident_other" class="form-select">
+          <option disabled selected [value]="null">--SELECT--</option>
+          <option *ngFor="let row of lasVegasFacilityOptions" [value]="row.name">{{row.name}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row"
+      *ngIf="form.value.location_of_incident == 'Las Vegas Facility' && form.value.location_of_incident_other == 'Other'">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('location_of_incident_other_other')">Please specify</label>
+        <input type="text" class="form-control" name="location_of_incident_other_other"
+          formControlName="location_of_incident_other_other" placeholder="Please specify"
+          [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other_other.errors }" />
+      </div>
+    </div>
+
+    <div class="row" *ngIf="form.value.location_of_incident != 'Las Vegas Facility' && form.value.location_of_incident">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('location_of_incident_other')">Please specify</label>
+        <input type="text" class="form-control" name="location_of_incident_other"
+          formControlName="location_of_incident_other" placeholder="Please specify"
+          [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }" />
       </div>
     </div>
 
     <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidator('date_of_incident')"> Date of Incident</label>
-      <input type="date" class="form-control" name="date_of_incident" formControlName="date_of_incident"
-        [ngClass]="{ 'is-invalid': submitted && f.date_of_incident.errors }" />
+      <label class="form-label" [ngClass]="formValidator('description_of_incident')">Description of Incident</label>
+      <textarea type="text" class="form-control" name="description_of_incident"
+        formControlName="description_of_incident" placeholder="Description of Incident"
+        [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }" rows="5"></textarea>
     </div>
+  </div>
 
+  <h4 class="my-3">Admin Section</h4>
 
-    <!---Type of incident--->
-    <div [ngClass]="{'border rounded p-2 mb-3': form.value.type_of_incident == 'Other'}">
+  <div class="mb-3">
+    <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
+      [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
+      [form_label]="'Corrective Action Owner'"></app-user-search>
+  </div>
 
-      <div class="row">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('type_of_incident')">Type of Incident</label>
-          <select formControlName="type_of_incident" class="form-select">
-            <option disabled selected [value]="null">--SELECT--</option>
-            <option *ngFor="let row of type_of_incident_options" [value]="row.name">{{row.name}}</option>
-          </select>
-        </div>
-      </div>
+  <div class="mb-3">
+    <label class="form-label" [ngClass]="formValidator('proposed_corrective_action')">Proposed Corrective
+      Action</label>
+    <textarea type="text" class="form-control" name="proposed_corrective_action"
+      formControlName="proposed_corrective_action" placeholder="Proposed Corrective Action"
+      [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }" rows="5"></textarea>
+  </div>
 
-      <div class="row" *ngIf="form.value.type_of_incident == 'Other'">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('type_of_incident_other')">Please specify</label>
-          <input type="text" class="form-control" name="type_of_incident_other" formControlName="type_of_incident_other"
-            placeholder="type_of_incident_other"
-            [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }" />
-        </div>
-      </div>
+  <div class="mb-3">
+    <label class="form-label" [ngClass]="formValidator('proposed_corrective_action_completion_date')"> Proposed
+      Corrective Action Completion Date
+    </label>
+    <input type="date" class="form-control" name="proposed_corrective_action_completion_date"
+      formControlName="proposed_corrective_action_completion_date"
+      [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
+  </div>
 
-    </div>
+  <div class="mb-3">
+    <label class="form-label" [ngClass]="formValidator('confirmed_corrective_action_completion_date')">
+      Confirmed Corrective Action Completion Date
+    </label>
+    <input type="date" class="form-control" formControlName="confirmed_corrective_action_completion_date"
+      [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
+  </div>
 
-    <!---Location of incident--->
+  <div class="mb-3">
+    <label class="form-label" [ngClass]="formValidator('comments')">Comments</label>
+    <textarea type="text" class="form-control" name="comments" formControlName="comments" placeholder="comments"
+      [ngClass]="{ 'is-invalid': submitted && f.comments.errors }" rows="5"></textarea>
+  </div>
 
-    <div [ngClass]="{'border rounded p-2 mb-3': form.value.location_of_incident != ''}">
-      <div class="row">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('location_of_incident')">Location of Incident</label>
-          <select formControlName="location_of_incident" class="form-select" (change)="onChangeLocationOfIncident()">
-            <option disabled selected [value]="null">--SELECT--</option>
-            <option *ngFor="let row of location_of_incident_options" [value]="row.name">{{row.name}}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row" *ngIf="form.value.location_of_incident == 'Las Vegas Facility'">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('location_of_incident_other')">Please specify</label>
-          <select formControlName="location_of_incident_other" class="form-select">
-            <option disabled selected [value]="null">--SELECT--</option>
-            <option *ngFor="let row of lasVegasFacilityOptions" [value]="row.name">{{row.name}}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row"
-        *ngIf="form.value.location_of_incident == 'Las Vegas Facility' && form.value.location_of_incident_other == 'Other'">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('location_of_incident_other_other')">Please specify</label>
-          <input type="text" class="form-control" name="location_of_incident_other_other"
-            formControlName="location_of_incident_other_other" placeholder="Please specify"
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other_other.errors }" />
-        </div>
-      </div>
-
-      <div class="row"
-        *ngIf="form.value.location_of_incident != 'Las Vegas Facility' && form.value.location_of_incident">
-        <div class="col-sm-12 mb-3">
-          <label class="form-label" [ngClass]="formValidator('location_of_incident_other')">Please specify</label>
-          <input type="text" class="form-control" name="location_of_incident_other"
-            formControlName="location_of_incident_other" placeholder="Please specify"
-            [ngClass]="{ 'is-invalid': submitted && f.location_of_incident_other.errors }" />
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label" [ngClass]="formValidator('description_of_incident')">Description of Incident</label>
-        <textarea type="text" class="form-control" name="description_of_incident"
-          formControlName="description_of_incident" placeholder="Description of Incident"
-          [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }" rows="5"></textarea>
-      </div>
-    </div>
-
-    <h4 class="my-3">Admin Section</h4>
-
-    <div class="mb-3">
-      <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
-        [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
-        [form_label]="'Corrective Action Owner'"></app-user-search>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidator('proposed_corrective_action')">Proposed Corrective
-        Action</label>
-      <textarea type="text" class="form-control" name="proposed_corrective_action"
-        formControlName="proposed_corrective_action" placeholder="Proposed Corrective Action"
-        [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }" rows="5"></textarea>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidator('proposed_corrective_action_completion_date')"> Proposed
-        Corrective Action Completion Date
-      </label>
-      <input type="date" class="form-control" name="proposed_corrective_action_completion_date"
-        formControlName="proposed_corrective_action_completion_date"
-        [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidator('confirmed_corrective_action_completion_date')">
-        Confirmed Corrective Action Completion Date
-      </label>
-      <input type="date" class="form-control" formControlName="confirmed_corrective_action_completion_date"
-        [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label" [ngClass]="formValidator('comments')">Comments</label>
-      <textarea type="text" class="form-control" name="comments" formControlName="comments" placeholder="comments"
-        [ngClass]="{ 'is-invalid': submitted && f.comments.errors }" rows="5"></textarea>
-    </div>
-
-  </form>
+</form>

@@ -144,6 +144,7 @@ export class SafetyIncidentFormComponent {
 
   form = this.fb.group({
     date_of_incident: new FormControl(null),
+    time_of_incident: new FormControl(null),
 
     first_name: new FormControl(null),
     last_name: new FormControl(""),
