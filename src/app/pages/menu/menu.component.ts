@@ -32,6 +32,10 @@ export class MenuComponent implements OnInit {
           link: "/quality-incident-request",
         },
         {
+          name: "Safety Incident Form",
+          link: "/dashboard/operations/forms/safety-incident/create",
+        },
+        {
           name: "FS App",
           link: "https://dashboard.eye-fi.com/dist/fsm-mobile/assignments",
         },
