@@ -110,6 +110,8 @@ export class SafetyIncidentCreateComponent {
   }
 
   clear() {
+    
+    this.form.markAsPristine();
     this.form.reset(
       {
         created_date: moment().format("YYYY-MM-DD HH:mm:ss"),

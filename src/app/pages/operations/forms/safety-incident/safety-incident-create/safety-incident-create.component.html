@@ -9,7 +9,7 @@
           Print Form</button>
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
-      <div class="card-body" style="min-height:300px">
+      <div class="card-body"  style="min-height:300;height: calc(100vh - 230px);overflow:auto">
         <app-safety-incident-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
           (setOnPrintEmitter)="onPrint = $event"></app-safety-incident-form>
 

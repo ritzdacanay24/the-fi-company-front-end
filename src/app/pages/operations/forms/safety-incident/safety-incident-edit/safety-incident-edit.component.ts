@@ -75,7 +75,6 @@ export class SafetyIncidentEditComponent {
   }
 
   viewImage(row) {
-    console.log(row);
     window.open(row.directory + "/safetyIncident/" + row.fileName, "_blank");
   }
 
@@ -92,6 +91,7 @@ export class SafetyIncidentEditComponent {
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
+      this.form.markAsPristine()
       this.goBack();
     } catch (err) {
       this.isLoading = false;
