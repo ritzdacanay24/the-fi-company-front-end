@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, HostListener, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -54,6 +54,14 @@ export class SafetyIncidentEditComponent {
 
   data: any;
 
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm("You have unsaved changes. Discard and leave?");
+    }
+    return true;
+  }
+
   async getData() {
     try {
       this.isLoading = true;
@@ -67,7 +75,8 @@ export class SafetyIncidentEditComponent {
   }
 
   viewImage(row) {
-    window.open(row.directory + '/safetyIncident/' + row.fileName, "_blank");
+    console.log(row);
+    window.open(row.directory + "/safetyIncident/" + row.fileName, "_blank");
   }
 
   async onSubmit() {
@@ -111,7 +120,7 @@ export class SafetyIncidentEditComponent {
 
   myFiles: string[] = [];
 
-  onFilechange(event: any) {
+  onFileChange(event: any) {
     this.myFiles = [];
     for (var i = 0; i < event.target.files.length; i++) {
       this.myFiles.push(event.target.files[i]);

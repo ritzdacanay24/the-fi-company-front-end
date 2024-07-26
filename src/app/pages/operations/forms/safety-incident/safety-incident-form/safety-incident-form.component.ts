@@ -43,6 +43,7 @@ export class SafetyIncidentFormComponent {
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() setOnPrintEmitter: EventEmitter<any> = new EventEmitter();
+  @Input() id: any;
 
   @Input() submitted = false;
 

@@ -1,4 +1,10 @@
-import { Component, Input } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  ViewChild,
+} from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -58,6 +64,14 @@ export class SafetyIncidentCreateComponent {
 
   onPrint;
 
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm("You have unsaved changes. Discard and leave?");
+    }
+    return true;
+  }
+
   async onSubmit() {
     this.submitted = true;
     if (this.form.invalid) {
@@ -84,14 +98,26 @@ export class SafetyIncidentCreateComponent {
 
       this.isLoading = false;
       this.toastrService.success("Successfully Created");
+      this.clear();
 
-      this.router.navigate([NAVIGATION_ROUTE.EDIT], {
-        queryParamsHandling: "merge",
-        queryParams: { id: insertId },
-      });
+      // this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+      //   queryParamsHandling: "merge",
+      //   queryParams: { id: insertId },
+      // });
     } catch (err) {
       this.isLoading = false;
     }
+  }
+
+  clear() {
+    this.form.reset(
+      {
+        created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        created_by: this.authenticationService.currentUserValue.id,
+      },
+      { emitEvent: false }
+    );
+    this.myInputVariable.nativeElement.value = "";
   }
 
   onCancel() {
@@ -105,4 +131,7 @@ export class SafetyIncidentCreateComponent {
       this.myFiles.push(event.target.files[i]);
     }
   }
+
+  @ViewChild("myInput")
+  myInputVariable: ElementRef;
 }

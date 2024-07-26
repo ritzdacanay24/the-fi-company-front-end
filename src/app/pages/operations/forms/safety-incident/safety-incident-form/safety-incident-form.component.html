@@ -63,7 +63,7 @@
 
   <div style="page-break-after: always;break-after: page;"></div>
 
-  <h4 class="mb-3">Admin Only</h4>
+  <h4 class="mb-3 text-center">Admin Only</h4>
 
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
@@ -146,8 +146,7 @@
       <div class="col-sm-12 mb-3">
         <label class="form-label" [ngClass]="formValidator('type_of_incident_other')">Please specify</label>
         <input type="text" class="form-control" name="type_of_incident_other" formControlName="type_of_incident_other"
-          placeholder="Please specify"
-          [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }" />
+          placeholder="Please specify" [ngClass]="{ 'is-invalid': submitted && f.type_of_incident_other.errors }" />
       </div>
     </div>
 
@@ -203,43 +202,45 @@
     </div>
   </div>
 
-  <h4 class="my-3">Admin Section</h4>
+  <div *ngIf="id">
+    <h4 class="my-3 bg-light text center p-2">Admin Section</h4>
 
-  <div class="mb-3">
-    <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
-      [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
-      [form_label]="'Corrective Action Owner'"></app-user-search>
-  </div>
+    <div class="mb-3">
+      <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"
+        [ngClass]="{ 'is-invalid': submitted && f.corrective_action_owner.errors }"
+        [form_label]="'Corrective Action Owner'"></app-user-search>
+    </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('proposed_corrective_action')">Proposed Corrective
-      Action</label>
-    <textarea type="text" class="form-control" name="proposed_corrective_action"
-      formControlName="proposed_corrective_action" placeholder="Proposed Corrective Action"
-      [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }" rows="5"></textarea>
-  </div>
+    <div class="mb-3">
+      <label class="form-label" [ngClass]="formValidator('proposed_corrective_action')">Proposed Corrective
+        Action</label>
+      <textarea type="text" class="form-control" name="proposed_corrective_action"
+        formControlName="proposed_corrective_action" placeholder="Proposed Corrective Action"
+        [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action.errors }" rows="5"></textarea>
+    </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('proposed_corrective_action_completion_date')"> Proposed
-      Corrective Action Completion Date
-    </label>
-    <input type="date" class="form-control" name="proposed_corrective_action_completion_date"
-      formControlName="proposed_corrective_action_completion_date"
-      [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
-  </div>
+    <div class="mb-3">
+      <label class="form-label" [ngClass]="formValidator('proposed_corrective_action_completion_date')"> Proposed
+        Corrective Action Completion Date
+      </label>
+      <input type="date" class="form-control" name="proposed_corrective_action_completion_date"
+        formControlName="proposed_corrective_action_completion_date"
+        [ngClass]="{ 'is-invalid': submitted && f.proposed_corrective_action_completion_date.errors }" />
+    </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('confirmed_corrective_action_completion_date')">
-      Confirmed Corrective Action Completion Date
-    </label>
-    <input type="date" class="form-control" formControlName="confirmed_corrective_action_completion_date"
-      [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
-  </div>
+    <div class="mb-3">
+      <label class="form-label" [ngClass]="formValidator('confirmed_corrective_action_completion_date')">
+        Confirmed Corrective Action Completion Date
+      </label>
+      <input type="date" class="form-control" formControlName="confirmed_corrective_action_completion_date"
+        [ngClass]="{ 'is-invalid': submitted && f.confirmed_corrective_action_completion_date.errors }" />
+    </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('comments')">Comments</label>
-    <textarea type="text" class="form-control" name="comments" formControlName="comments" placeholder="comments"
-      [ngClass]="{ 'is-invalid': submitted && f.comments.errors }" rows="5"></textarea>
+    <div class="mb-3">
+      <label class="form-label" [ngClass]="formValidator('comments')">Comments</label>
+      <textarea type="text" class="form-control" name="comments" formControlName="comments" placeholder="comments"
+        [ngClass]="{ 'is-invalid': submitted && f.comments.errors }" rows="5"></textarea>
+    </div>
   </div>
 
 </form>
