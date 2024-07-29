@@ -72,8 +72,10 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginBetween((d) => 15)
       .compactMarginPair((d) => 80)
       .expandAll()
+      .onNodeClick(function (d, i, arr, state) {
+        console.log(d.data);
+      })
       .nodeContent(function (d, i, arr, state) {
-        console.log(d.data, "fff");
         return `
                     <div style="padding-top:30px;background-color:none;margin-left:1px;height:${
                       d.height

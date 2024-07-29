@@ -212,7 +212,7 @@
         <label class="form-label" [ngClass]="formValidator('status')">Status</label>
         <select formControlName="status" class="form-select">
           <option disabled selected [value]="null">--SELECT--</option>
-          <option *ngFor="let row of ['Open', 'CLosed', 'In Process']" [value]="row">{{row}}</option>
+          <option *ngFor="let row of ['Open', 'Closed', 'In Process']" [value]="row">{{row}}</option>
         </select>
       </div>
     </div>
