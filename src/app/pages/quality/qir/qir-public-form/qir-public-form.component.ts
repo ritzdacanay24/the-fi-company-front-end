@@ -131,7 +131,7 @@ export class QirPublicFormComponent {
     lotNumber: new FormControl(""),
     first_name: new FormControl("", [Validators.required]),
     last_name: new FormControl("", [Validators.required]),
-    email: new FormControl("", [Validators.required]),
+    email: new FormControl("", [Validators.required, Validators.email]),
     location: new FormControl(null),
     warranty_replacement: new FormControl(null),
     cc_email: new FormControl(null),

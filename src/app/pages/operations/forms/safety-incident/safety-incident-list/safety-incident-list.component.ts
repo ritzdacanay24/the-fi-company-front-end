@@ -109,22 +109,32 @@ export class SafetyIncidentListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "confirmed_corrective_action_completion_date",
+      headerName: "Confirmed Correction Action Completion Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "corrective_action_owner",
       headerName: "Corrective Action Owner",
       filter: "agMultiColumnFilter",
     },
   ];
 
-  @Input() selectedViewType = "Active";
+  @Input() selectedViewType = "Open";
 
   selectedViewOptions = [
     {
-      name: "Active",
+      name: "Open",
       value: 1,
       selected: false,
     },
     {
-      name: "Inactive",
+      name: "Closed",
       value: 0,
       selected: false,
     },
@@ -212,7 +222,12 @@ export class SafetyIncidentListComponent implements OnInit {
         params = { active: status.value };
       }
 
-      this.data = await this.api.getAll();
+      this.data = await this.api.getList(
+        this.selectedViewType,
+        this.dateFrom,
+        this.dateTo,
+        this.isAll
+      );
 
       this.router.navigate(["."], {
         queryParams: {

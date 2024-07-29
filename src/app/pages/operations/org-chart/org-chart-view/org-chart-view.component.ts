@@ -21,61 +21,36 @@ export class OrgChartViewComponent implements OnInit {
   title = "Org Chart";
 
   icon = "mdi-cogs";
-
   data: TreeNode[] = [
     {
+        label: 'F.C Barcelona',
         expanded: true,
-        type: 'person',
-        styleClass: 'bg-indigo-500 text-white',
-        data: {
-            image: 'https://primefaces.org/cdn/primeng/images/demo/avatar/amyelsner.png',
-            name: 'Amy Elsner',
-            title: 'CEO'
-        },
         children: [
             {
+                label: 'Argentina',
                 expanded: true,
-                type: 'person',
-                styleClass: 'bg-purple-500 text-white',
-                data: {
-                    image: 'https://primefaces.org/cdn/primeng/images/demo/avatar/annafali.png',
-                    name: 'Anna Fali',
-                    title: 'CMO'
-                },
                 children: [
                     {
-                        label: 'Sales',
-                        styleClass: 'bg-purple-500 text-white',
-                        style: ' border-radius: 12px'
+                        label: 'Argentina'
                     },
                     {
-                        label: 'Marketing',
-                        styleClass: 'bg-purple-500 text-white',
-                        style: ' border-radius: 12px'
+                        label: 'France'
                     }
                 ]
             },
             {
+                label: 'France',
                 expanded: true,
-                type: 'person',
-                styleClass: 'bg-teal-500 text-white',
-                data: {
-                    image: 'https://primefaces.org/cdn/primeng/images/demo/avatar/stephenshaw.png',
-                    name: 'Stephen Shaw',
-                    title: 'CTO'
-                },
                 children: [
                     {
-                        label: 'Development',
-                        styleClass: 'bg-teal-500 text-white'
+                        label: 'France'
                     },
                     {
-                        label: 'UI/UX Design',
-                        styleClass: 'bg-teal-500 text-white'
+                        label: 'Morocco'
                     }
                 ]
             }
         ]
-    }
+    },
 ];
 }

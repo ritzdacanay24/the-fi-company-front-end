@@ -13,8 +13,17 @@ export class SafetyIncidentService extends DataService<any> {
     super(url, http);
   }
 
-  getList = async () =>
-    await firstValueFrom(this.http.get<any[]>(`${url}/getList`));
+  getList = async (
+    selectedViewType: string,
+    dateFrom: string,
+    dateTo: string,
+    isAll = false
+  ) =>
+    await firstValueFrom(
+      this.http.get<any[]>(
+        `${url}/getList?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`
+      )
+    );
 
   async _create(params: any) {
     return await firstValueFrom(

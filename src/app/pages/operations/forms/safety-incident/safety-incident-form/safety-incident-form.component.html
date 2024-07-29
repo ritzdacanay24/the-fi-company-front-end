@@ -102,6 +102,7 @@
 
 <form [formGroup]="form" autocomplete="off">
 
+  <h4 class="my-3 bg-light text-center p-2 sticky-top" style="top:-16px">Safety Incident Report</h4>
   <p class="mb-2">Reported By:</p>
   <div class="row">
     <div class="col-sm-6 mb-3">
@@ -203,7 +204,18 @@
   </div>
 
   <div *ngIf="id">
-    <h4 class="my-3 bg-light text center p-2">Admin Section</h4>
+    <h4 class="my-3 bg-light text-center p-2 sticky-top" style="top:-16px">Admin Section</h4>
+
+    
+    <div class="row">
+      <div class="col-sm-12 mb-3">
+        <label class="form-label" [ngClass]="formValidator('status')">Status</label>
+        <select formControlName="status" class="form-select">
+          <option disabled selected [value]="null">--SELECT--</option>
+          <option *ngFor="let row of ['Open', 'CLosed', 'In Process']" [value]="row">{{row}}</option>
+        </select>
+      </div>
+    </div>
 
     <div class="mb-3">
       <app-user-search (notifyParent)="notifyParent($event)" [value]="form.value['corrective_action_owner']"

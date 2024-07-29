@@ -52,7 +52,10 @@ export class SafetyIncidentFormComponent {
   }
 
   notifyParent($event) {
-    this.form.patchValue({ corrective_action_owner: $event.username });
+    console.log($event, 'dddd')
+    this.form.patchValue({ corrective_action_owner: $event?.username || null });
+    this.form.patchValue({ corrective_action_owner_user_id: $event?.id || null  });
+    this.form.patchValue({ corrective_action_owner_user_email: $event?.email || null  });
   }
 
   states = states;
@@ -160,6 +163,8 @@ export class SafetyIncidentFormComponent {
     description_of_incident: new FormControl(null),
 
     corrective_action_owner: new FormControl(null),
+    corrective_action_owner_user_id: new FormControl(null),
+    corrective_action_owner_user_email: new FormControl(null),
     proposed_corrective_action: new FormControl(""),
     proposed_corrective_action_completion_date: new FormControl(""),
     comments: new FormControl(""),
@@ -167,6 +172,7 @@ export class SafetyIncidentFormComponent {
 
     created_date: new FormControl(""),
     created_by: new FormControl(""),
+    status: new FormControl("Open"),
   });
 
   onPrint = () => {

@@ -6996,13 +6996,6 @@ ngx-nestable@^0.9.4:
   dependencies:
     tslib "^1.9.0"
 
-ngx-org-chart@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.npmjs.org/ngx-org-chart/-/ngx-org-chart-1.1.1.tgz"
-  integrity sha512-CNn14L+VmQ4SeS//SB3sb5GwNnBAV7n1DbR6tzp+Zp/l5e730McdOrwym4NE8k9QsypUYBllIGy0w37Q8iIY1A==
-  dependencies:
-    tslib "^1.9.0"
-
 ngx-pipes@^3.2.2:
   version "3.2.2"
   resolved "https://registry.npmjs.org/ngx-pipes/-/ngx-pipes-3.2.2.tgz"
