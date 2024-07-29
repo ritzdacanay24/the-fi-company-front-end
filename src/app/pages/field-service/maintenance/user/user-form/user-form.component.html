@@ -20,6 +20,14 @@
 
   <div class="row">
     <div class="col-md mb-3">
+      <label class="form-label">Paret ID</label>
+      <input type="text" class="form-control" name="parentId" formControlName="parentId" placeholder="Enter parent ID"
+        [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }" />
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md mb-3">
       <label class="form-label">Title</label>
       <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title"
         [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />

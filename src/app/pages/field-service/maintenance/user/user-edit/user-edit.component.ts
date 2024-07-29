@@ -59,7 +59,9 @@ export class UserEditComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      return;
+    }
 
     try {
       this.isLoading = true;

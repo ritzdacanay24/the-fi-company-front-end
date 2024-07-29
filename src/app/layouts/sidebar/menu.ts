@@ -436,11 +436,15 @@ export const MENU: MenuItem[] = [
     icon: "las la-bookmark",
     isCollapsed: true,
     subItems: [
-      // {
-      //   label: "Org Chart",
-      //   link: "/dashboard/operations/org-chart/org-chart-view",
-      //   description: "Org Chart",
-      // },
+      {
+        label: "Org Chart",
+        link: "/dashboard/operations/org-chart/org-chart-view",
+        description: "Org Chart",
+        badge: {
+          variant: "badge bg-success",
+          text: "New",
+        },
+      },
       {
         label: "Labels",
         link: "/dashboard/operations/labels/list",

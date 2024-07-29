@@ -43,6 +43,7 @@ export class UserFormComponent {
     workPhone: [""],
     department: [null],
     workArea: [""],
+    parentId: "",
   });
 
   setBooleanToNumber(key) {

@@ -1,14 +1,10 @@
-<div class="card flex justify-content-center overflow-x-auto">
-    <p-organizationChart [value]="data" [collapsible]="true">
-        <ng-template let-node pTemplate="person">
-            <div class="p-2 text-center">
-                <div class="font-bold">
-                    {{ node.data.name }}
-                </div>
-                <div>
-                    {{ node.data.title }}
-                </div>
+<div class="row">
+    <div class="col-12 col-xl-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <!--height: calc(100vh - 170px);"-->
+                <div #chartContainer id="chartContainer"></div>
             </div>
-        </ng-template>
-    </p-organizationChart>
+        </div>
+    </div>
 </div>

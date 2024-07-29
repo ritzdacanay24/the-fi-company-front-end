@@ -42,8 +42,9 @@ export class UserFormComponent {
     leadInstaller: [0],
     title: [""],
     workPhone: [""],
-    pass: ["", Validators.required],
+    pass: [""],
     department: [""],
+    parentId: "",
   });
 
   setBooleanToNumber(key) {

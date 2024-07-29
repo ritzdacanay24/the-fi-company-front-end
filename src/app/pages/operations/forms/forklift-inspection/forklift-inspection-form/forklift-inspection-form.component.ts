@@ -38,7 +38,7 @@ export class ForkliftInspectionFormComponent implements OnInit {
     this.restValues();
     this.submitted = false;
   }
-
+  
   changeValue(row, index) {
     row.status = !row.status;
 
@@ -62,20 +62,6 @@ export class ForkliftInspectionFormComponent implements OnInit {
 
   get dateTimeNow() {
     return moment().format("YYYY-MM-DD");
-  }
-
-  private checkIfChecklistIsComplete() {
-    var totalErrors = 0;
-    for (var i = 0; i < this.formValues.checklist.length; i++) {
-      for (var ii = 0; ii < this.formValues.checklist[i].details.length; ii++) {
-        this.formValues.checklist[i].details[ii].error = false;
-        if (this.formValues.checklist[i].details[ii].status == undefined) {
-          this.formValues.checklist[i].details[ii].error;
-          totalErrors++;
-        }
-      }
-    }
-    return totalErrors;
   }
 
   private restValues() {

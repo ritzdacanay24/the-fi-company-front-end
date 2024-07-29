@@ -53,6 +53,7 @@ export class UserInfoComponent {
     pass: ["", Validators.required],
     department: [""],
     employeeType: [0],
+    parentId: [0],
   });
 
   setBooleanToNumber(key) {
