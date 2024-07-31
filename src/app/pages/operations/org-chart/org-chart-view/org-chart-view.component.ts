@@ -95,7 +95,7 @@ export class OrgChartViewComponent implements OnInit {
       .initialZoom(0.7)
       .nodeHeight((d) => 190)
       .childrenMargin((d) => 75)
-      .compactMarginBetween((d) => 15)
+      .compactMarginBetween((d) => 30)
       .compactMarginPair((d) => 80)
       .expandAll()
       .nodeContent(function (d, i, arr, state) {
@@ -105,9 +105,13 @@ export class OrgChartViewComponent implements OnInit {
         <div class="card bg-light"  style="height:${
           d.height
         }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
-        <img class="bg-light" src=" ${
+
+        <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" >
+
+        <img class=" border border-1" src=" ${
           d.data.imageUrl
-        }" style="position:absolute;top:-14px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" />
+        }" style="border-radius:100px;width:60px;height:60px;" />
+        </div>
 
         <div class="card-header rounded-top py-3 text-end" style="background-color:${
           d.data.bgColor
