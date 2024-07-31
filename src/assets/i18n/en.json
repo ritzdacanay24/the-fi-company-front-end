@@ -54,7 +54,8 @@
             "name": "Office"
           },
           {
-            "name": "Other"
+            "name": "Other",
+            "showLine": true
           }
         ]
       },
