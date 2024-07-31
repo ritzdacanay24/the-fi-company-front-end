@@ -72,10 +72,11 @@ export class OrgChartViewComponent implements OnInit {
     });
 
     let e = [];
+    //#85144b
     for (let i = 0; i < data.length; i++) {
       let bgColor = "#3AB6E3";
       if (data[i].employeeType == 1) {
-        bgColor = "#7CB9E8";
+        bgColor = "#85144b";
       } else if (data[i].employeeType == 2) {
         bgColor = "orange";
       } else if (data[i].employeeType == 3) {
