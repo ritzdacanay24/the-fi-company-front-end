@@ -5,7 +5,7 @@
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
 
-        <div class="input-group input-group-sm ms-3 me-3 w-25">
+        <div class="input-group input-group-sm ms-3 me-3" style="min-width:200px;max-width: 200px;">
           <select class="form-select form-select-sm" [(ngModel)]="printFormLanguage">
             <option selected>Choose...</option>
             <option *ngFor="let row of printFormOptions" [value]="row.value">{{row.name}}</option>
