@@ -14,6 +14,7 @@ import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-custo
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
 import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
+import { TranslateModule, TranslateService } from "@ngx-translate/core";
 
 @Component({
   standalone: true,
@@ -25,12 +26,13 @@ import { UserSearchComponent } from "@app/shared/components/user-search/user-sea
     QadWoSearchComponent,
     QadCustomerPartSearchComponent,
     UserSearchComponent,
+    TranslateModule,
   ],
   selector: "app-safety-incident-form",
   templateUrl: "./safety-incident-form.component.html",
 })
 export class SafetyIncidentFormComponent {
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, public translate: TranslateService) {}
 
   onChangeLocationOfIncident() {
     this.form.patchValue({ location_of_incident_other: null });
@@ -52,13 +54,25 @@ export class SafetyIncidentFormComponent {
   }
 
   notifyParent($event) {
-    console.log($event, 'dddd')
-    this.form.patchValue({ corrective_action_owner: $event?.username || null });
-    this.form.patchValue({ corrective_action_owner_user_id: $event?.id || null  });
-    this.form.patchValue({ corrective_action_owner_user_email: $event?.email || null  });
+    this.form.patchValue({
+      corrective_action_owner_user_id: $event?.id || null,
+      corrective_action_owner: $event?.username || null,
+      corrective_action_owner_user_email: $event?.email || null,
+    });
   }
 
   states = states;
+
+  
+  type_of_incident_options_v1 = [
+    "Serious Personnel Injury (Paramedics called)",
+    "Personal Injury requiring 3rd party medical support (e.g. ER or Doctor visit)",
+    "First Aid Incident",
+    "Buildings or Product Damage",
+    "Near miss (personnel or buildings)",
+    "Safety Procedure non-conformance",
+    "Other"
+  ]
 
   type_of_incident_options = [
     {
@@ -131,7 +145,6 @@ export class SafetyIncidentFormComponent {
     {
       id: 2,
       name: "Customer Job Site",
-      description: "",
       showLine: true,
     },
     {
@@ -175,7 +188,9 @@ export class SafetyIncidentFormComponent {
     status: new FormControl("Open"),
   });
 
-  onPrint = () => {
+  onPrint = (language = "en") => {
+    this.translate.use(language);
+
     setTimeout(() => {
       var printContents = document.getElementById("print").innerHTML;
       var popupWin = window.open("", "_blank", "width=1000,height=600");

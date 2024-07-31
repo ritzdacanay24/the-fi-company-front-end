@@ -46,9 +46,10 @@
     <div class="col-md mb-3">
       <label class="form-label required">Department</label>
       <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
-        <option
-          *ngFor="let row of ['Warehouse', 'Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering']">
-          {{row}}</option>
+        <option selected disabled value="null">--SELECT--</option>
+        <option *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering', 'IT']">
+          {{row}} </option>
+
       </select>
     </div>
   </div>
@@ -94,6 +95,14 @@
       <input class="form-check-input" type="checkbox" id="active" formControlName="active"
         (change)="setBooleanToNumber('active')">
       <label class="form-check-label" for="active">Active</label>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check form-switch form-switch-md">
+      <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
+        (change)="setBooleanToNumber('isEmployee')">
+      <label class="form-check-label" for="isEmployee">isEmplyee</label>
     </div>
   </div>
 

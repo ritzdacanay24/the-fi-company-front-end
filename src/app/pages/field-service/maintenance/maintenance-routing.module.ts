@@ -95,12 +95,6 @@ const routes: Routes = [
           ),
         data: { preload: true },
       },
-      {
-        path: "user",
-        loadChildren: () =>
-          import("./user/user-routing.module").then((m) => m.UserRoutingModule),
-        data: { preload: true },
-      },
     ],
   },
 ];

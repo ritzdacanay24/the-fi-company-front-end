@@ -33,6 +33,12 @@ export class SafetyIncidentCreateComponent {
     private uploadService: UploadService
   ) {}
 
+  printFormLanguage = "en";
+  printFormOptions = [
+    { name: "Spanish", value: "es" },
+    { name: "English", value: "en" },
+  ];
+
   ngOnInit(): void {}
 
   title = "Create Safety Incident";
@@ -110,7 +116,6 @@ export class SafetyIncidentCreateComponent {
   }
 
   clear() {
-    
     this.form.markAsPristine();
     this.form.reset(
       {

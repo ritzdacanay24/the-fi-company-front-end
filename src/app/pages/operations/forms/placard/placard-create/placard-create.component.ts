@@ -52,6 +52,14 @@ export class PlacardCreateComponent {
       },
       { emitEvent: false }
     );
+    this.form.get("customer_name").valueChanges.subscribe((val) => {
+      if (val?.toLocaleUpperCase() == "BALTEC") {
+        this.form.patchValue({ customer_co_por_so: "" }, { emitEvent: false });
+        this.form.get("customer_co_por_so").disable();
+      } else {
+        this.form.get("customer_co_por_so").enable();
+      }
+    });
   }
 
   async onSubmit() {

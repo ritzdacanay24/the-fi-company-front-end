@@ -95,7 +95,7 @@ export class PlacardModalComponent {
         this.lineNumber
       );
 
-      if (data)
+      if (data) {
         this.form.patchValue({
           description: data.FULLDESC,
           location: data.LOCATION,
@@ -105,8 +105,25 @@ export class PlacardModalComponent {
           po_number: data.SO_PO,
           eyefi_so_number: data.SOD_NBR,
           eyefi_part_number: data.SOD_PART,
-          customer_co_por_so: data.MISC,
+          customer_co_por_so: data.SO_CUST == "BALTEC" ? "" : data.MISC,
         });
+
+        if(data.SO_CUST == "BALTEC"){
+          this.form.get("customer_co_por_so").disable();
+        }
+
+        this.form.get("customer_name").valueChanges.subscribe((val) => {
+          if (val?.toLocaleUpperCase() == "BALTEC") {
+            this.form.patchValue(
+              { customer_co_por_so: "" },
+              { emitEvent: true }
+            );
+            this.form.get("customer_co_por_so").disable();
+          } else {
+            this.form.get("customer_co_por_so").enable();
+          }
+        });
+      }
 
       this.isLoading = false;
     } catch (err) {

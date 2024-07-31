@@ -1,26 +1,26 @@
 <!-- <div class="print  d-none d-print-block" id="print"> -->
 <div class="print  d-none d-print-block" id="print">
-  <h4 class="mb-5">Safety Incident Form</h4>
+  <h4 class="mb-5">{{'SAFETY_INCIDENT_FORM.TITLE' | translate}}</h4>
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
-      Date & Time of Incident: _______________________________________
+      {{'SAFETY_INCIDENT_FORM.DATE_AND_TIME_OF_INCIDENT' | translate}}: _______________________________________
     </div>
   </div>
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
-      <p>Person Reporting Incident: </p>
-      First Name: _______________________________________ Last Name: _______________________________________
+      <p>{{'SAFETY_INCIDENT_FORM.PERSON_REPORTING_INCIDENT' | translate}}: </p>
+      {{'SAFETY_INCIDENT_FORM.FIRST_NAME' | translate}}: _______________________________________ {{'SAFETY_INCIDENT_FORM.LAST_NAME' | translate}}: _______________________________________
     </div>
   </div>
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
-      <p class="fw-bold">Type of Incident:</p>
+      <p class="fw-bold">{{'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT' | translate}}:</p>
       <ul style="list-style-type: none;" class="ms-3">
         <li>
-          <div class="form-check mb-3" *ngFor="let row of type_of_incident_options; let i = index">
+          <div class="form-check mb-3" *ngFor="let row of 'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT_OPTIONS' | translate; let i = index">
             <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
             <label class="form-check-label" for="flexRadioDefault1">
-              {{row.name}} <span *ngIf="row.name == 'Other'">_______________________________________</span>
+              {{row.name}} <span *ngIf="row.showLine">_______________________________________</span>
             </label>
           </div>
         </li>
@@ -29,21 +29,20 @@
   </div>
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
-      <p class="fw-bold">Location of Incident:</p>
+      <p class="fw-bold">{{'SAFETY_INCIDENT_FORM.TYPE_OF_INCIDENT' | translate}}:</p>
       <ul style="list-style-type: none;" class="ms-3">
         <li>
-          <div class="form-check mb-3" *ngFor="let row of location_of_incident_options; let i = index">
+          <div class="form-check mb-3" *ngFor="let row of 'SAFETY_INCIDENT_FORM.LOCATION_OF_INCIDENT_OPTIONS' | translate; let i = index">
             <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
             <label class="form-check-label" for="flexRadioDefault1">
-              {{row.name}} <span
-                *ngIf="row.name == 'Other' || row.showLine">_______________________________________</span>
+              {{row.name}} <span *ngIf="row.showLine">_______________________________________</span>
             </label>
             <ul style="list-style-type: none;" *ngIf="row.options">
               <li>
                 <div class="form-check mb-3 mt-1" *ngFor="let item of row.options; let ii = index">
                   <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
                   <label class="form-check-label" for="flexRadioDefault1">
-                    {{item.name}} <span *ngIf="item.name == 'Other'">_______________________________________</span>
+                    {{item.name}} <span  *ngIf="item.showLine">_______________________________________</span>
                   </label>
                 </div>
               </li>
@@ -56,44 +55,8 @@
 
   <div class="mb-3 row">
     <div class="col-sm-12 text-uppercase">
-      <p>Description of Incident: </p>
+      <p>{{'SAFETY_INCIDENT_FORM.DESCRIPTION_OF_INCIDENT' | translate}}: </p>
       <textarea rows="10" class="form-control"></textarea>
-    </div>
-  </div>
-
-  <div style="page-break-after: always;break-after: page;"></div>
-
-  <h4 class="mb-3 text-center">Admin Only</h4>
-
-  <div class="mb-3 row">
-    <div class="col-sm-12 text-uppercase">
-      Corrective Action Owner: _______________________________________
-    </div>
-  </div>
-
-  <div class="mb-3 row">
-    <div class="col-sm-12 text-uppercase">
-      <p>Proposed Corrective Action:</p>
-      <textarea rows="10" class="form-control"></textarea>
-    </div>
-  </div>
-
-  <div class="mb-3 row">
-    <div class="col-sm-12 text-uppercase">
-      Proposed Corrective Action Completion Date: _______________________________________
-    </div>
-  </div>
-
-  <div class="mb-3 row">
-    <div class="col-sm-12 text-uppercase">
-      <p>Notes/Comments:</p>
-      <textarea rows="10" class="form-control"></textarea>
-    </div>
-  </div>
-
-  <div class="mb-3 row">
-    <div class="col-sm-12 text-uppercase">
-      Confirmed Corrective Action Completion Date: _______________________________________
     </div>
   </div>
 

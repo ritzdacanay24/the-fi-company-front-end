@@ -983,6 +983,7 @@ export class ShippingComponent implements OnInit {
       field: "sod_per_date",
       headerName: "Performance Date",
       filter: "agDateColumnFilter",
+      filterParams: agGridDateFilter,
     },
     {
       field: "sod_req_date",

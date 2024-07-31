@@ -1,0 +1,18 @@
+<label class="form-label" *ngIf="showLabel">{{form_label}} <span *ngIf="required" class="text-danger">*</span></label>
+
+<ng-select  [clearOnBackspace]="false" [items]="data$ | async" [addTag]="addTag"
+  [multiple]="multiple" [hideSelected]="hideSelected" [trackByFn]="trackByFn" [minTermLength]="minTermLength"
+  [loading]="dataLoading" typeToSearchText="Please enter {{minTermLength}} or more characters" [typeahead]="dataInput$"
+  [(ngModel)]="value" [virtualScroll]="virtualScroll" (change)="getSelectedValue($event)"
+  [editableSearchTerm]="editableSearchTerm" [placeholder]="placeholder" [class]="className"
+  [dropdownPosition]="dropdownPosition" [closeOnSelect]="closeOnSelect" notFoundText="User not found."
+  [clearSearchOnAdd]="clearSearchOnAdd" [disabled]="disabled" [openOnEnter]="openOnEnter" [appendTo]="appendToBody"
+  [ngClass]="ngClass">
+
+  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+    <div>
+      <p> {{ item.username }} <span class="text-end float-end">#{{ item.id }}</span></p>
+      <p> {{ item.email }}</p>
+    </div>
+  </ng-template>
+</ng-select>

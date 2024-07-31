@@ -28,13 +28,12 @@
                     </div>
 
                     <div class="row">
-                      <div class="col-md mb-3">
-                        <label class="form-label">Parent ID</label>
-                        <input type="text" class="form-control" name="parentId" formControlName="parentId" placeholder="Enter parent ID"
-                          [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }" />
-                      </div>
+                        <div class="col-md mb-3">
+                            <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
+                                [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }"
+                                [form_label]="'Parent Id'"></app-user-search-v1>
+                        </div>
                     </div>
-                  
 
                     <div class="row">
                         <div class="col-md mb-3">
@@ -46,30 +45,45 @@
 
                     <div class="row">
                         <div class="col-md mb-3">
-                          <label class="form-label required">Department</label>
-                          <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
-                            <option selected disabled value="">--SELECT--</option>
-                            <option *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering', 'Graphics']">{{row}}</option>
-                          </select>
+                            <label class="form-label required">Last Login Date</label>
+                            <input type="text" class="form-control" name="lastLoggedIn" formControlName="lastLoggedIn"
+                                [ngClass]="{ 'is-invalid': submitted && f.lastLoggedIn.errors }" />
                         </div>
-                      </div>
+                    </div>
 
-                      <div class="row">
-                          <div class="col-md mb-3">
-                              <label class="form-label required">Access Rights</label>
-                              <input type="text" class="form-control" name="employeeType" formControlName="employeeType"
-                                  placeholder="Enter Access Rights" [ngClass]="{ 'is-invalid': submitted && f.employeeType.errors }" />
-                                  <small>0 = Regular, 1 = Lead, 2 = Supervisor, 3 = Manager, 4 = Director </small>
-                          </div>
-                      </div>
-  
-                      <div class="row">
+                    <div class="row">
                         <div class="col-md mb-3">
-                          <label class="form-label">User Roles</label>
-                          <input type="text" class="form-control" name="workArea" formControlName="workArea" placeholder="Enter user role"
-                            [ngClass]="{ 'is-invalid': submitted && f.workArea.errors }" />
+                            <label class="form-label required">Department</label>
+                            <select class="form-select" formControlName="area"
+                                [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
+                                <option selected disabled value="null">--SELECT--</option>
+                                <option
+                                    *ngFor="let row of ['Logsitics', 'Production', 'Quality', 'NPI', 'Accounting', 'Engineering', 'Graphics', 'IT']">
+                                    {{row}}</option>
+                            </select>
                         </div>
-                      </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md mb-3">
+                            <label class="form-label required">Access Rights</label>
+                            <select class="form-select" formControlName="employeeType"
+                                [ngClass]="{ 'is-invalid': submitted && f.employeeType.errors }">
+                                <option selected disabled value="null">--SELECT--</option>
+                                <option *ngFor="let row of accessRight" [value]="row.value">
+                                    {{row.name}}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md mb-3">
+                            <label class="form-label">User Roles</label>
+                            <input type="text" class="form-control" name="workArea" formControlName="workArea"
+                                placeholder="Enter user role"
+                                [ngClass]="{ 'is-invalid': submitted && f.workArea.errors }" />
+                        </div>
+                    </div>
 
                     <div class="mb-3">
                         <label class="form-label">Work Phone</label>
@@ -92,19 +106,27 @@
                         <small>Set access to 1 to login to dashboard</small>
                     </div>
 
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                         <div class="form-check form-switch form-switch-md">
                             <input class="form-check-input" type="checkbox" id="leadInstaller"
                                 formControlName="leadInstaller" (change)="setBooleanToNumber('leadInstaller')">
                             <label class="form-check-label" for="leadInstaller">Lead Installer</label>
                         </div>
-                    </div>
+                    </div> -->
 
                     <div class="mb-3">
                         <div class="form-check form-switch form-switch-md">
                             <input class="form-check-input" type="checkbox" id="active" formControlName="active"
                                 (change)="setBooleanToNumber('active')">
                             <label class="form-check-label" for="active">Active</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch form-switch-md">
+                            <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
+                                (change)="setBooleanToNumber('isEmployee')">
+                            <label class="form-check-label" for="isEmployee">isEmployee</label>
                         </div>
                     </div>
 

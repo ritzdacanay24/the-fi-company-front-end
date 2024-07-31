@@ -4,12 +4,18 @@
       <div class="card-header d-flex align-items-center">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 ms-2 me-2 me-auto"
-          (click)="onPrint()">
-          Print Form</button>
+
+        <div class="input-group input-group-sm ms-3 me-3 w-25">
+          <select class="form-select form-select-sm" [(ngModel)]="printFormLanguage">
+            <option selected>Choose...</option>
+            <option *ngFor="let row of printFormOptions" [value]="row.value">{{row.name}}</option>
+          </select>
+          <label class="input-group-text pointer" for="inputGroupSelect02" (click)="onPrint(printFormLanguage)">Print</label>
+        </div>
+
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
-      <div class="card-body"  style="min-height:300;height: calc(100vh - 230px);overflow:auto">
+      <div class="card-body" style="min-height:300;height: calc(100vh - 230px);overflow:auto">
         <app-safety-incident-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
           (setOnPrintEmitter)="onPrint = $event"></app-safety-incident-form>
 
@@ -17,10 +23,9 @@
         <div class="mt-3">
           <div class="form-group">
             <label for="file">Upload Supporting documents (photos, reports etc)</label>
-            <input id="file" type="file" multiple class="form-control" #myInput  (change)="onFileChange($event)">
+            <input id="file" type="file" multiple class="form-control" #myInput (change)="onFileChange($event)">
           </div>
         </div>
-
 
       </div>
       <div class="card-footer d-flex d-flex justify-content-between">

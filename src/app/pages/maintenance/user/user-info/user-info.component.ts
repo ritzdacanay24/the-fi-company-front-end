@@ -2,12 +2,13 @@ import { Component, Input } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { states } from "@app/core/data/states";
+import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ReactiveFormsModule],
+  imports: [SharedModule, ReactiveFormsModule, UserSearchV1Component],
   selector: "app-user-info",
   templateUrl: "./user-info.component.html",
 })
@@ -37,6 +38,18 @@ export class UserInfoComponent {
     return this.form.controls;
   }
 
+  notifyParent($event) {
+    this.form.patchValue({ parentId: $event?.id });
+  }
+
+  accessRight = [
+    { name: "Regular", value: 0 },
+    { name: "Lead", value: 1 },
+    { name: "Supervisor", value: 2 },
+    { name: "Manager", value: 3 },
+    { name: "Director", value: 4 },
+  ];
+
   form = this.fb.group({
     access: [1],
     active: [1],
@@ -51,9 +64,11 @@ export class UserInfoComponent {
     title: [""],
     workPhone: [""],
     pass: ["", Validators.required],
-    department: [""],
+    department: [null],
     employeeType: [0],
     parentId: [0],
+    isEmployee: [0],
+    lastLoggedIn: [""],
   });
 
   setBooleanToNumber(key) {

@@ -1,8 +1,10 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
-            <div class="card-body p-0">
-                <!--height: calc(100vh - 170px);"-->
+            <div class="card-header">
+                <input [(ngModel)]="query" type="search" placeholder="search by name" (ngModelChange)="filterChart()" class="form-control"/>
+            </div>
+            <div class="card-body p-0" style="height: calc(100vh - 170px);">
                 <div #chartContainer id="chartContainer"></div>
             </div>
         </div>

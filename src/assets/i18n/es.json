@@ -1,4 +1,77 @@
 {
+  "SAFETY_INCIDENT_FORM": {
+    "TITLE": "Formulario de incidentes de seguridad",
+    "FIRST_NAME": "Nombre de pila",
+    "LAST_NAME": "Apellido",
+    "DESCRIPTION_OF_INCIDENT": "Descripción del incidente",
+    "DATE_AND_TIME_OF_INCIDENT": "Fecha y hora del incidente",
+    "PERSON_REPORTING_INCIDENT": "Persona que informa el incidente",
+    "TYPE_OF_INCIDENT": "Tipo de incidente",
+    "TYPE_OF_INCIDENT_OPTIONS": [
+      {
+        "name": "Lesiones personales graves (se llama a los paramédicos)"
+      },
+      {
+        "name": "Lesiones personales que requieren apoyo médico de terceros (por ejemplo, emergencias o visita al médico)"
+      },
+      {
+        "name": "Incidente de primeros auxilios"
+      },
+      {
+        "name": "Daños a edificios o productos"
+      },
+      {
+        "name": "Casi accidente (personal o edificios)"
+      },
+      {
+        "name": "No conformidad con el procedimiento de seguridad"
+      },
+      {
+        "name": "Otro",
+        "showLine": true
+      }
+    ],
+    "LOCATION_OF_INCIDENT_OPTIONS": [
+      {
+        "name": "Instalaciones de Las Vegas",
+        "options": [
+          {
+            "name": "Producción"
+          },
+          {
+            "name": "Depósito"
+          },
+          {
+            "name": "Prototipo"
+          },
+          {
+            "name": "Gráficos"
+          },
+          {
+            "name": "Patio"
+          },
+          {
+            "name": "Oficina"
+          },
+          {
+            "name": "Otro"
+          }
+        ]
+      },
+      {
+        "name": "Sitio de trabajo del cliente",
+        "showLine": true
+      },
+      {
+        "name": "Incidente de vehículo de carretera",
+        "showLine": true
+      },
+      {
+        "name": "Otro",
+        "showLine": true
+      }
+    ]
+  },
   "HEADER": {
     "MORE": {
       "TEXT": "Más"

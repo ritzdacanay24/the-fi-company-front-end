@@ -4,7 +4,6 @@ import { OrgChartModule } from "../org-chart.module";
 
 import { Component, OnInit, Input, ViewChild, ElementRef } from "@angular/core";
 import { OrgChart } from "d3-org-chart";
-import * as d3 from "d3";
 import { UserService } from "@app/core/api/field-service/user.service";
 
 @Component({
@@ -29,30 +28,59 @@ export class OrgChartViewComponent implements OnInit {
     this.chart = new OrgChart();
   }
 
-  getNestedChildren(arr, parent?) {
-    var out = [];
-    for (var i in arr) {
-      if (arr[i].parentId == parent) {
-        var childs = this.getNestedChildren(arr, arr[i].id);
-
-        if (childs.length) {
-          arr[i].childs = childs;
-        }
-        out.push(arr[i]);
-      }
-    }
-    return out;
-  }
-
   orgChart;
+
+  query = "";
+  filterChart() {
+    // Get input value
+    const value = this.query;
+
+    // Clear previous higlighting
+    this.chart.clearHighlighting();
+
+    // Get chart nodes
+    const data = this.chart.data();
+
+    // Mark all previously expanded nodes for collapse
+    if (value != "") {
+      data.forEach((d) => (d._expanded = false));
+
+      // Loop over data and check if input value matches any name
+      data.forEach((d) => {
+        if (value != "" && d.name.toLowerCase().includes(value.toLowerCase())) {
+          // If matches, mark node as highlighted
+          d._highlighted = true;
+          d._expanded = true;
+        }
+      });
+    } else {
+      data.forEach((d) => (d._expanded = true));
+    }
+
+    // Update data and rerender graph
+    this.chart.data(data).render().fit();
+  }
 
   async getData() {
     let data = await this.userService.find({ active: 1, isEmployee: 1 });
 
     let e = [];
     for (let i = 0; i < data.length; i++) {
+      let bgColor = "#3AB6E3";
+      if (data[i].employeeType == 1) {
+        bgColor = "yellow";
+      } else if (data[i].employeeType == 2) {
+        bgColor = "orange";
+      } else if (data[i].employeeType == 3) {
+        bgColor = "purple";
+      } else if (data[i].employeeType == 4) {
+        bgColor = "green";
+      } else if (data[i].employeeType == 5) {
+        bgColor = "black";
+      }
       e.push({
         id: data[i].id,
+        bgColor: bgColor,
         name: data[i].first + " " + data[i].last,
         parentId: data[i].parentId,
         title: data[i].title,
@@ -72,14 +100,11 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginBetween((d) => 15)
       .compactMarginPair((d) => 80)
       .expandAll()
-      .onNodeClick(function (d, i, arr, state) {
-        console.log(d.data);
-      })
       .nodeContent(function (d, i, arr, state) {
         return `
                     <div style="padding-top:30px;background-color:none;margin-left:1px;height:${
                       d.height
-                    }px;border-radius:5px;overflow:visible">
+                    }px;border-radius:10px;overflow:visible">
                             <div style="height:${
                               d.height - 32
                             }px;padding-top:0px;background-color:white;border:1px solid lightgray;">
@@ -92,9 +117,9 @@ export class OrgChartViewComponent implements OnInit {
                               d.data.id
                             }</div>
     
-                            <div style="margin-top:-30px;background-color:#3AB6E3;height:10px;width:${
-                              d.width - 2
-                            }px;border-radius:1px"></div>
+                            <div style="margin-top:-30px;background-color:${
+                              d.data.bgColor
+                            };height:10px;width:${d.width - 2}px;border-radius:1px"></div>
     
                             <div style="padding:20px; padding-top:35px;text-align:center">
                                 <div style="color:#111672;font-size:16px;font-weight:bold"> ${

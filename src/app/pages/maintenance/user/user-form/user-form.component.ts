@@ -43,8 +43,9 @@ export class UserFormComponent {
     title: [""],
     workPhone: [""],
     pass: [""],
-    department: [""],
+    department: [null],
     parentId: "",
+    isEmployee: "",
   });
 
   setBooleanToNumber(key) {

@@ -40,6 +40,7 @@ export const agGridOptions: GridOptions = {
     skipPinnedBottom: true,
   },
   defaultColDef: {
+    
     cellDataType: false,
     sortable: true,
     filter: true,

@@ -1,4 +1,77 @@
 {
+  "SAFETY_INCIDENT_FORM": {
+    "TITLE": "Safety Incident Form",
+    "FIRST_NAME": "First name",
+    "LAST_NAME": "Last name",
+    "DESCRIPTION_OF_INCIDENT": "Description of Incident",
+    "DATE_AND_TIME_OF_INCIDENT": "Date & Time of Incident",
+    "PERSON_REPORTING_INCIDENT": "Person reporting incident",
+    "TYPE_OF_INCIDENT": "Type of Incident",
+    "TYPE_OF_INCIDENT_OPTIONS": [
+      {
+        "name": "Serious Personnel Injury (Paramedics called)"
+      },
+      {
+        "name": "Personal Injury requiring 3rd party medical support (e.g. ER or Doctor visit)"
+      },
+      {
+        "name": "First Aid Incident"
+      },
+      {
+        "name": "Buildings or Product Damage"
+      },
+      {
+        "name": "Near miss (personnel or buildings)"
+      },
+      {
+        "name": "Safety Procedure non-conformance"
+      },
+      {
+        "name": "Other",
+        "showLine": true
+      }
+    ],
+    "LOCATION_OF_INCIDENT_OPTIONS": [
+      {
+        "name": "Las Vegas Facility",
+        "options": [
+          {
+            "name": "Production"
+          },
+          {
+            "name": "Warehouse"
+          },
+          {
+            "name": "Proto"
+          },
+          {
+            "name": "Graphics"
+          },
+          {
+            "name": "Yard"
+          },
+          {
+            "name": "Office"
+          },
+          {
+            "name": "Other"
+          }
+        ]
+      },
+      {
+        "name": "Customer Job Site",
+        "showLine": true
+      },
+      {
+        "name": "Road Vehicle Incident",
+        "showLine": true
+      },
+      {
+        "name": "Other",
+        "showLine": true
+      }
+    ]
+  },
   "HEADER": {
     "MORE": {
       "TEXT": "More"
@@ -101,8 +174,8 @@
         "NEGATIVE_LOCATION_REPORT": "Negative Locations",
         "EMPTY_LOCATION_REPORT": "Empty Locations",
         "INVENTORY_REPORT": "Inventory",
-        "ONE_SKU_LOCATION_REPORT": "One SKU Location", 
-        "ITEM_CONSOLIDATION_REPORT": "Item Consolidation", 
+        "ONE_SKU_LOCATION_REPORT": "One SKU Location",
+        "ITEM_CONSOLIDATION_REPORT": "Item Consolidation",
         "WORK_ORDER_VARIANCE": "Work Order Variance"
       },
       "GRAPHICS": {

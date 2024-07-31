@@ -33,7 +33,6 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
 })
 export class PlacardFormComponent {
   constructor(
-    private fb: FormBuilder,
     private placardService: PlacardService
   ) {}
 
