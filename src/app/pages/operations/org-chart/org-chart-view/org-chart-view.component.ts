@@ -83,7 +83,7 @@ export class OrgChartViewComponent implements OnInit {
         bgColor: bgColor,
         name: data[i].first + " " + data[i].last,
         parentId: data[i].parentId,
-        title: data[i].title,
+        title: data[i].title || 'No Title',
         imageUrl: data[i].image || "assets/images/default-user.png",
       });
     }
@@ -108,7 +108,7 @@ export class OrgChartViewComponent implements OnInit {
 
         <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" >
 
-        <img class=" border border-1" src=" ${
+        <img class="object-fit-cover border border-1" src=" ${
           d.data.imageUrl
         }" style="border-radius:100px;width:60px;height:60px;" />
         </div>

@@ -8,10 +8,11 @@ import { UserFormComponent } from "../user-form/user-form.component";
 import moment from "moment";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserFormComponent],
+  imports: [SharedModule, UserFormComponent, UserSearchV1Component],
   selector: "app-user-create",
   templateUrl: "./user-create.component.html",
   styleUrls: ["./user-create.component.scss"],
@@ -44,6 +45,10 @@ export class UserCreateComponent {
     return this.form.controls;
   }
 
+  notifyParent($event) {
+    this.form.patchValue({ parentId: $event?.id });
+  }
+
   form = this.fb.group({
     access: [1],
     active: [1],
@@ -61,6 +66,7 @@ export class UserCreateComponent {
     confirmPassword: ["", Validators.required],
     passRegistrationEmail: 1,
     created_by: "",
+    parentId: null,
   });
 
   async onSubmit() {
