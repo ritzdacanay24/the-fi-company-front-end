@@ -63,6 +63,11 @@ export class OrgChartViewComponent implements OnInit {
 
   async getData() {
     let data = await this.userService.find({ active: 1, isEmployee: 1 });
+    data.sort((a, b) => {
+      let username = a.first + " " + a.last
+      let username1 = b.first + " " + b.last
+      return username.localeCompare(username1);
+    });
 
     let e = [];
     for (let i = 0; i < data.length; i++) {
@@ -83,7 +88,7 @@ export class OrgChartViewComponent implements OnInit {
         bgColor: bgColor,
         name: data[i].first + " " + data[i].last,
         parentId: data[i].parentId,
-        title: data[i].title || 'No Title',
+        title: data[i].title || "No Title",
         imageUrl: data[i].image || "assets/images/default-user.png",
       });
     }
@@ -106,7 +111,9 @@ export class OrgChartViewComponent implements OnInit {
           d.height
         }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
 
-        <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" >
+        <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${
+          d.width / 2 - 30
+        }px;border-radius:100px;width:60px;height:60px;" >
 
         <img class="object-fit-cover border border-1" src=" ${
           d.data.imageUrl
