@@ -5,6 +5,7 @@ import { OrgChartModule } from "../org-chart.module";
 import { Component, OnInit, Input, ViewChild, ElementRef } from "@angular/core";
 import { OrgChart } from "d3-org-chart";
 import { UserService } from "@app/core/api/field-service/user.service";
+import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-modal.component";
 
 @Component({
   standalone: true,
@@ -17,7 +18,8 @@ export class OrgChartViewComponent implements OnInit {
   constructor(
     public route: ActivatedRoute,
     public router: Router,
-    private userService: UserService
+    private userService: UserService,
+    private userModalService: UserModalService
   ) {}
 
   @ViewChild("chartContainer") chartContainer: ElementRef;
@@ -64,8 +66,8 @@ export class OrgChartViewComponent implements OnInit {
   async getData() {
     let data = await this.userService.find({ active: 1, isEmployee: 1 });
     data.sort((a, b) => {
-      let username = a.first + " " + a.last
-      let username1 = b.first + " " + b.last
+      let username = a.first + " " + a.last;
+      let username1 = b.first + " " + b.last;
       return username.localeCompare(username1);
     });
 
@@ -103,6 +105,16 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginBetween((d) => 30)
       .compactMarginPair((d) => 80)
       .expandAll()
+      .onNodeClick((d, i, arr, state) => {
+        const modalRef: any = this.userModalService.open(d.data.id);
+        modalRef.result.then(
+          (data: any) => {
+            console.log(data, 'afasdf')
+            this.getData();
+          },
+          () => {}
+        );
+      })
       .nodeContent(function (d, i, arr, state) {
         return `
 
