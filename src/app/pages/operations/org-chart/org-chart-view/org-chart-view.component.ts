@@ -68,13 +68,13 @@ export class OrgChartViewComponent implements OnInit {
     for (let i = 0; i < data.length; i++) {
       let bgColor = "#3AB6E3";
       if (data[i].employeeType == 1) {
-        bgColor = "yellow";
+        bgColor = "#7CB9E8";
       } else if (data[i].employeeType == 2) {
         bgColor = "orange";
       } else if (data[i].employeeType == 3) {
-        bgColor = "purple";
+        bgColor = "#662d91";
       } else if (data[i].employeeType == 4) {
-        bgColor = "green";
+        bgColor = "#17B169";
       } else if (data[i].employeeType == 5) {
         bgColor = "black";
       }
@@ -84,9 +84,7 @@ export class OrgChartViewComponent implements OnInit {
         name: data[i].first + " " + data[i].last,
         parentId: data[i].parentId,
         title: data[i].title,
-        imageUrl:
-          data[i].image ||
-          "https://dashboard.eye-fi.com/attachments/images/employees/default-user.png",
+        imageUrl: data[i].image || "assets/images/default-user.png",
       });
     }
 
@@ -95,50 +93,43 @@ export class OrgChartViewComponent implements OnInit {
       .data(e)
       .nodeWidth((d) => 250)
       .initialZoom(0.7)
-      .nodeHeight((d) => 175)
-      .childrenMargin((d) => 40)
+      .nodeHeight((d) => 190)
+      .childrenMargin((d) => 75)
       .compactMarginBetween((d) => 15)
       .compactMarginPair((d) => 80)
       .expandAll()
       .nodeContent(function (d, i, arr, state) {
         return `
-                    <div style="padding-top:30px;background-color:none;margin-left:1px;height:${
-                      d.height
-                    }px;border-radius:10px;overflow:visible">
-                            <div style="height:${
-                              d.height - 32
-                            }px;padding-top:0px;background-color:white;border:1px solid lightgray;">
-    
-                            <img src=" ${
-                              d.data.imageUrl
-                            }" style="margin-top:-30px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" />
-    
-                            <div style="margin-right:10px;margin-top:15px;float:right" class="text-dark">${
-                              d.data.id
-                            }</div>
-    
-                            <div style="margin-top:-30px;background-color:${
-                              d.data.bgColor
-                            };height:10px;width:${d.width - 2}px;border-radius:1px"></div>
-    
-                            <div style="padding:20px; padding-top:35px;text-align:center">
-                                <div style="color:#111672;font-size:16px;font-weight:bold"> ${
-                                  d.data.name
-                                } </div>
-                                <div style="color:#404040;font-size:16px;margin-top:4px"> ${
-                                  d.data.title
-                                } </div>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;padding-left:15px;padding-right:15px;">
-                            <div class="text-dark"> Manages:  ${
-                              d.data._directSubordinates
-                            } 👤</div>
-                            <div  class="text-dark"> Oversees: ${
-                              d.data._totalSubordinates
-                            } 👤</div>
-                            </div>
-                            </div>
-                    </div>
+
+        <div style="padding-top:00px;height:${d.height}px">
+        <div class="card bg-light"  style="height:${
+          d.height
+        }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
+        <img class="bg-light" src=" ${
+          d.data.imageUrl
+        }" style="position:absolute;top:-14px;margin-left:${d.width / 2 - 30}px;border-radius:100px;width:60px;height:60px;" />
+
+        <div class="card-header rounded-top py-3 text-end" style="background-color:${
+          d.data.bgColor
+        }">
+                
+          </div>
+          <div class="card-body text-center">
+            <p class="text-end">${d.data.id}</p>
+            <div style="font-size:17px;font-weight:bold;margin-top:10px"> ${
+              d.data.name
+            } </div>
+            <div style="font-size:15px;margin-top:4px" class="fst-italic"> ${
+              d.data.title
+            } </div>
+          </div>
+          <div class="card-footer bg-light py-2 d-flex justify-content-between">
+          <div> Manages:  ${d.data._directSubordinates} 👤</div>
+          <div> Oversees:  ${d.data._totalSubordinates} 👤</div>
+          </div>
+        </div>
+        </div>
+                    
                 `;
       })
       .render();
