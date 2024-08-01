@@ -2,7 +2,6 @@ import { Component, Input } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
-import { UserFormComponent } from "../user-form/user-form.component";
 import { NAVIGATION_ROUTE } from "../user-constant";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { SharedModule } from "@app/shared/shared.module";
@@ -10,19 +9,18 @@ import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { UserEditComponent } from "../user-edit/user-edit.component";
 import { UserPasswordComponent } from "../user-password/user-password.component";
 import { UserPermissionsComponent } from "../user-permissions/user-permissions.component";
-import { UserInfoComponent } from "../user-info/user-info.component";
+import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
-    UserFormComponent,
+    UserEditFormComponent,
     NgbDropdownModule,
     NgbNavModule,
     UserEditComponent,
     UserPasswordComponent,
     UserPermissionsComponent,
-    UserInfoComponent,
   ],
   selector: "app-user-overview",
   templateUrl: "./user-overview.component.html",
@@ -48,6 +46,7 @@ export class UserOverviewComponent {
   showTicket;
   workOrderInfo;
   connectingJobs;
+  submitted
 
   active = 1;
 
@@ -61,21 +60,22 @@ export class UserOverviewComponent {
 
   isLoading = false;
 
-  submitted = false;
-
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
     });
   };
 
+  setFormEmitter($event){
+    this.form = $event;
+    this.form.patchValue(this.data);
+  }
+
   data: any;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      this.form.patchValue(this.data);
-      this.form.get("type").disable();
     } catch (err) {}
   }
 

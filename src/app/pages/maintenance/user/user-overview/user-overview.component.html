@@ -45,14 +45,32 @@
                                 </div>
                             </div>
 
-                            <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
-                                class="nav nav-tabs-custom border-bottom-0" role="tablist">
+                            <ul [destroyOnHide]="false" (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav"
+                                [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist">
                                 <li [ngbNavItem]="1" class="nav-item">
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                                         <i class="ri-file-info-line text-muted align-bottom me-1"></i> User Info
                                     </a>
                                     <ng-template ngbNavContent>
-                                        <app-user-info [id]="id"></app-user-info>
+
+                                        <div class="row">
+                                            <div
+                                                class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+                                                <div class="card">
+                                                    <div class="card-body" style="min-height:300px">
+                                                        <app-user-edit-form (setFormEmitter)="setFormEmitter($event)"
+                                                            [submitted]="submitted"></app-user-edit-form>
+                                                    </div>
+                                                    <div class="card-footer d-flex  d-flex justify-content-between">
+                                                        <button class="btn btn-light" [disabled]="isLoading"
+                                                            (click)="onCancel()">Cancel</button>
+                                                        <button class="btn btn-primary" [disabled]="isLoading"
+                                                            (click)="onSubmit()">Submit</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </ng-template>
                                 </li>
                                 <li [ngbNavItem]="3" class="nav-item">

@@ -2,23 +2,22 @@ import { Component, Input } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
-import { UserFormComponent } from "../user-form/user-form.component";
 import { NAVIGATION_ROUTE } from "../user-constant";
-import { UserService } from "@app/core/api/field-service/user.service";
 import { SharedModule } from "@app/shared/shared.module";
+import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
+import { NewUserService } from "@app/core/api/users/users.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserFormComponent],
+  imports: [SharedModule, UserEditFormComponent],
   selector: "app-user-edit",
   templateUrl: "./user-edit.component.html",
-  styleUrls: ["./user-edit.component.scss"],
 })
 export class UserEditComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
-    private api: UserService,
+    private api: NewUserService,
     private toastrService: ToastrService
   ) {}
 

@@ -2,12 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DataService } from '../DataService';
 
-let url = 'users';
+let url = 'user';
 
 @Injectable({
   providedIn: 'root'
 })
-export class UserService extends DataService<any> {
+export class NewUserService extends DataService<any> {
 
   constructor(http: HttpClient) {
     super(url, http);

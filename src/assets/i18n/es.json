@@ -1,7 +1,7 @@
 {
   "SAFETY_INCIDENT_FORM": {
     "TITLE": "Formulario de incidentes de seguridad",
-    "FIRST_NAME": "Nombre de pila",
+    "FIRST_NAME": "Nombre",
     "LAST_NAME": "Apellido",
     "DESCRIPTION_OF_INCIDENT": "Descripción del incidente",
     "DATE_AND_TIME_OF_INCIDENT": "Fecha y hora del incidente",
@@ -39,7 +39,7 @@
             "name": "Producción"
           },
           {
-            "name": "Depósito"
+            "name": "Almacen"
           },
           {
             "name": "Prototipo"

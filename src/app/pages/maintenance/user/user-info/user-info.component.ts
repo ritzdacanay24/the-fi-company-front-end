@@ -1,14 +1,12 @@
 import { Component, Input } from "@angular/core";
-import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
-import { UserService } from "@app/core/api/field-service/user.service";
-import { states } from "@app/core/data/states";
-import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
+import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
+import { NewUserService } from "@app/core/api/users/users.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ReactiveFormsModule, UserSearchV1Component],
+  imports: [SharedModule, UserEditFormComponent],
   selector: "app-user-info",
   templateUrl: "./user-info.component.html",
 })
@@ -17,8 +15,7 @@ export class UserInfoComponent {
   isLoading = false;
 
   constructor(
-    private fb: FormBuilder,
-    private userService: UserService,
+    private userService: NewUserService,
     private toastrService: ToastrService
   ) {}
 
@@ -28,53 +25,13 @@ export class UserInfoComponent {
 
   @Input() id = null;
 
-  states = states;
-
-  priceTables: any = [];
-
   @Input() submitted = false;
 
   get f() {
     return this.form.controls;
   }
 
-  notifyParent($event) {
-    this.form.patchValue({ parentId: $event?.id });
-  }
-
-  accessRight = [
-    { name: "Regular", value: 0 },
-    { name: "Lead", value: 1 },
-    { name: "Supervisor", value: 2 },
-    { name: "Manager", value: 3 },
-    { name: "Director", value: 4 },
-  ];
-
-  form = this.fb.group({
-    access: [1],
-    active: [1],
-    area: [""],
-    workArea: [""],
-    attempts: [0],
-    createdDate: [""],
-    email: ["", Validators.required],
-    first: ["", Validators.required],
-    last: ["", Validators.required],
-    leadInstaller: [0],
-    title: [""],
-    workPhone: [""],
-    pass: ["", Validators.required],
-    department: [null],
-    employeeType: [0],
-    parentId: [0],
-    isEmployee: [0],
-    lastLoggedIn: [""],
-  });
-
-  setBooleanToNumber(key) {
-    let e = this.form.value[key];
-    this.form.get(key).patchValue(e ? 1 : 0);
-  }
+  form: any;
 
   async onSubmit() {
     this.submitted = true;

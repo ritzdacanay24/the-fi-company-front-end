@@ -110,7 +110,6 @@ export class OrgChartViewComponent implements OnInit {
         const modalRef: any = this.userModalService.open(d.data.id);
         modalRef.result.then(
           (data: any) => {
-            console.log(data, 'afasdf')
             this.getData();
           },
           () => {}

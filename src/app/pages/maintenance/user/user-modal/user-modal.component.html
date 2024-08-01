@@ -6,7 +6,7 @@
 
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
-  <app-user-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-form>
+  <app-user-edit-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-edit-form>
 
   <h4 *ngIf="!isLoading && !data">Sorry, no data found.</h4>
 

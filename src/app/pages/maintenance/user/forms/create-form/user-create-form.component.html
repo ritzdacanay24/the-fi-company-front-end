@@ -1,0 +1,70 @@
+<form [formGroup]="form" autocomplete="off">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label required">First Name</label>
+            <input type="text" class="form-control" name="first" formControlName="first" placeholder="Enter first name"
+                [ngClass]="{ 'is-invalid': submitted && f.first.errors }" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label required">Last Name</label>
+            <input type="text" class="form-control" name="last" formControlName="last" placeholder="Enter last name"
+                [ngClass]="{ 'is-invalid': submitted && f.last.errors }" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label required">Email</label>
+        <input type="text" class="form-control" name="email" formControlName="email" placeholder="Enter email"
+            [ngClass]="{ 'is-invalid': submitted && f.email.errors }" />
+    </div>
+
+    <div class="row">
+        <div class="col-md mb-3">
+            <label class="form-label required">Title</label>
+            <input type="text" class="form-control" name="title" formControlName="title" placeholder="Enter title"
+                [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md mb-3">
+            <label class="form-label required">Department</label>
+            <select class="form-select" formControlName="area" [ngClass]="{ 'is-invalid': submitted && f.area.errors }">
+                <option selected disabled [value]="null"> --SELECT-- </option>
+                <option *ngFor="let row of departments" [value]="row"> {{row}} </option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md mb-3">
+            <label class="form-label required">Employee Type</label>
+            <select class="form-select" formControlName="employeeType"
+                [ngClass]="{ 'is-invalid': submitted && f.employeeType.errors }">
+                <option selected disabled value="null">--SELECT--</option>
+                <option *ngFor="let row of accessRight" [value]="row.value">
+                    {{row.name}}</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md">
+            <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
+                [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }"
+                [form_label]="'Reports to'"></app-user-search-v1>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label required">Password</label>
+        <input type="password" class="form-control" name="pass" formControlName="pass" placeholder="Enter password"
+            [ngClass]="{ 'is-invalid': submitted && f.pass.errors }" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label required">Confirm Password</label>
+        <input type="password" class="form-control" name="confirmPassword" formControlName="confirmPassword"
+            placeholder="Repeat password" [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" />
+    </div>
+
+</form>

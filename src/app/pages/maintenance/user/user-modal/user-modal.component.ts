@@ -4,10 +4,10 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { SharedModule } from "@app/shared/shared.module";
-import { UserService } from "@app/core/api/users/users.service";
-import { UserFormComponent } from "../user-form/user-form.component";
+import { NewUserService } from "@app/core/api/users/users.service";
 import { FormGroup } from "@angular/forms";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 
 @Injectable({
   providedIn: "root",
@@ -28,14 +28,14 @@ export class UserModalService {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, UserFormComponent],
+  imports: [SharedModule, UserEditFormComponent],
   selector: "app-user-modal",
   templateUrl: `./user-modal.component.html`,
   styleUrls: [],
 })
 export class UserModalComponent {
   constructor(
-    private api: UserService,
+    private api: NewUserService,
     private ngbActiveModal: NgbActiveModal,
     private authenticationService: AuthenticationService
   ) {}
@@ -52,9 +52,22 @@ export class UserModalComponent {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-      this.form.get("pass").disable();
 
-      if (this.authenticationService.currentUserValue.employeeType === 0 && !this.authenticationService.currentUserValue.isAdmin){
+
+      for (const fieldName of [
+        "access",
+        "workArea",
+        "lastLoggedIn",
+        "attempts"
+      ]) {
+        const control = this.form.get(fieldName);
+        control.disable();
+      }
+
+      if (
+        this.authenticationService.currentUserValue.employeeType === 0 &&
+        !this.authenticationService.currentUserValue.isAdmin
+      ) {
         this.form.disable();
       }
 
