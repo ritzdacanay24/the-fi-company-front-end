@@ -53,12 +53,11 @@ export class UserModalComponent {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
 
-
       for (const fieldName of [
         "access",
         "workArea",
         "lastLoggedIn",
-        "attempts"
+        "attempts",
       ]) {
         const control = this.form.get(fieldName);
         control.disable();
@@ -89,6 +88,28 @@ export class UserModalComponent {
   }
 
   submitted = false;
+
+  file: File = null;
+
+  myFiles: any;
+
+  onFilechange(event: any) {
+    this.myFiles = event.target.files;
+  }
+
+  async onUploadAttachments() {
+    if (this.myFiles) {
+      this.isLoading = true;
+      const formData = new FormData();
+      formData.append("file", this.myFiles[0]);
+      try {
+        await this.api.uploadfile(this.id, formData);
+      } catch (err) {}
+
+      this.isLoading = false;
+    }
+  }
+
   async onSubmit() {
     this.submitted = true;
 
@@ -99,6 +120,9 @@ export class UserModalComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
+      if (this.myFiles) {
+        await this.onUploadAttachments()
+      }
       this.isLoading = false;
       this.close();
     } catch (err) {

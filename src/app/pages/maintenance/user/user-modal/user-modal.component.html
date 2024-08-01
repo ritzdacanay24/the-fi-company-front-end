@@ -8,10 +8,16 @@
 
   <app-user-edit-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-edit-form>
 
+  <div class="mb-3 mt-3">
+    <p class="mb-2">Select profile picture</p>
+    <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" name="file">
+  </div>
+
   <h4 *ngIf="!isLoading && !data">Sorry, no data found.</h4>
 
 </div>
 <div class="modal-footer">
   <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-primary" [disabled]="isLoading || this.form.disabled">Update</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary"
+    [disabled]="isLoading || this.form.disabled">Update</button>
 </div>

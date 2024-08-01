@@ -33,7 +33,7 @@
                 [ngClass]="{ 'is-invalid': submitted && f.title.errors }" />
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-md mb-3">
             <label class="form-label required">Department</label>
@@ -99,6 +99,12 @@
                 (change)="setBooleanToNumber('isEmployee')">
             <label class="form-check-label" for="isEmployee">isEmployee</label>
         </div>
+    </div>
+
+
+    <div class="input-group mb-3" *ngIf="form.value.image">
+        <input type="text" class="form-control" placeholder="No profile image found" formControlName="image" readonly>
+        <span class="input-group-text pointer" id="basic-addon2" (click)="removeImage()">Remove</span>
     </div>
 
 </form>

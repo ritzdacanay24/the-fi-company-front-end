@@ -53,10 +53,15 @@ export class UserEditFormComponent {
     parentId: [0],
     isEmployee: [0],
     lastLoggedIn: [""],
+    image: "",
   });
 
   setBooleanToNumber(key) {
     let e = this.form.value[key];
     this.form.get(key).patchValue(e ? 1 : 0);
+  }
+
+  removeImage() {
+    this.form.get("image").patchValue(null);
   }
 }

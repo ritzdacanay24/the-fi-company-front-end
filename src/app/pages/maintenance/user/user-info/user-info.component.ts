@@ -43,6 +43,32 @@ export class UserInfoComponent {
     this.toastrService.success("Updated successfully");
   }
 
+  file: File = null;
+
+  myFiles: any;
+
+  onFilechange(event: any) {
+    this.myFiles = event.target.files;
+  }
+
+  async onUploadAttachments() {
+    if (this.myFiles) {
+      let totalAttachments = 0;
+      this.isLoading = true;
+      const formData = new FormData();
+      
+      formData.append("file", this.myFiles);
+
+      try {
+        await this.userService.uploadfile(this.id, formData);
+        totalAttachments++;
+      } catch (err) {}
+
+      this.isLoading = false;
+      await this.getData();
+    }
+  }
+
   async getData() {
     let data = await this.userService.getById(this.id);
     this.form.patchValue(data);

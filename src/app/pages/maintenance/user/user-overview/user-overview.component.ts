@@ -3,13 +3,13 @@ import { FormGroup } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
 import { NAVIGATION_ROUTE } from "../user-constant";
-import { UserService } from "@app/core/api/field-service/user.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { UserEditComponent } from "../user-edit/user-edit.component";
 import { UserPasswordComponent } from "../user-password/user-password.component";
 import { UserPermissionsComponent } from "../user-permissions/user-permissions.component";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
+import { NewUserService } from "@app/core/api/users/users.service";
 
 @Component({
   standalone: true,
@@ -29,7 +29,7 @@ export class UserOverviewComponent {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
-    private api: UserService,
+    private api: NewUserService,
     private toastrService: ToastrService
   ) {}
 
@@ -46,7 +46,7 @@ export class UserOverviewComponent {
   showTicket;
   workOrderInfo;
   connectingJobs;
-  submitted
+  submitted;
 
   active = 1;
 
@@ -66,7 +66,7 @@ export class UserOverviewComponent {
     });
   };
 
-  setFormEmitter($event){
+  setFormEmitter($event) {
     this.form = $event;
     this.form.patchValue(this.data);
   }
@@ -97,5 +97,27 @@ export class UserOverviewComponent {
 
   onCancel() {
     this.goBack();
+  }
+
+  file: File = null;
+
+  myFiles: any;
+
+  onFilechange(event: any) {
+    this.myFiles = event.target.files;
+  }
+
+  async onUploadAttachments() {
+    if (this.myFiles) {
+      this.isLoading = true;
+      const formData = new FormData();
+      formData.append("file", this.myFiles[0]);
+      try {
+        await this.api.uploadfile(this.id, formData);
+      } catch (err) {}
+
+      this.isLoading = false;
+      await this.getData();
+    }
   }
 }

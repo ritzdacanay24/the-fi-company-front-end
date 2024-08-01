@@ -60,6 +60,19 @@
                                                     <div class="card-body" style="min-height:300px">
                                                         <app-user-edit-form (setFormEmitter)="setFormEmitter($event)"
                                                             [submitted]="submitted"></app-user-edit-form>
+
+                                                        <div class="mb-3 mt-3">
+                                                            <p class="mb-2">Select profile picture</p>
+                                                            <input (change)="this.onFilechange($event)"
+                                                                class="form-control" type="file" id="file" name="file">
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <button (click)="this.onUploadAttachments()" type="button"
+                                                                class="btn btn-primary"
+                                                                [disabled]="isLoading || myFiles?.length == 0">
+                                                                <i class="feather icon-upload"></i> Upload Image</button>
+                                                        </div>
                                                     </div>
                                                     <div class="card-footer d-flex  d-flex justify-content-between">
                                                         <button class="btn btn-light" [disabled]="isLoading"

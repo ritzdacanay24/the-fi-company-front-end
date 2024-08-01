@@ -88,7 +88,6 @@ export class TopbarComponent implements OnInit {
     private authService: AuthenticationService,
     private router: Router,
     private TokenStorageService: TokenStorageService,
-    private chartService: ChartService,
     private store: Store<RootReducerState>,
     private searchModalService: SearchModalService
   ) {}
