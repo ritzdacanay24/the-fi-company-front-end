@@ -26,13 +26,13 @@ export class TripDetailsSummaryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    alert('asdf')
     this.setDatData.emit(this.getData);
   }
 
   title = "Trip Details Summary";
 
   ngOnChanges(changes: SimpleChanges) {
+    console.log(changes)
     if (
       changes["fsId"]?.currentValue &&
       changes["fsId"]?.previousValue == null

@@ -63,6 +63,45 @@ export class OrgChartViewComponent implements OnInit {
     this.chart.data(data).render().fit();
   }
 
+  nodeContentfunction = (d, i, arr, state) => {
+    return `
+    <div style="padding-top:00px;height:${d.height}px">
+    <div class="card bg-light"  style="height:${
+      d.height
+    }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
+
+    <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${
+      d.width / 2 - 30
+    }px;border-radius:100px;width:60px;height:60px;" >
+
+    <img class="object-fit-cover border border-1" src=" ${
+      d.data.imageUrl
+    }" style="border-radius:100px;width:60px;height:60px;" />
+    </div>
+
+    <div class="card-header rounded-top py-3 text-end" style="background-color:${
+      d.data.bgColor
+    }">
+            
+      </div>
+      <div class="card-body text-center">
+        <p class="text-end">${d.data.id}</p>
+        <div style="font-size:17px;font-weight:bold;margin-top:10px"> ${
+          d.data.name
+        } </div>
+        <div style="font-size:15px;margin-top:4px" class="fst-italic"> ${
+          d.data.title
+        } </div>
+      </div>
+      <div class="card-footer bg-light py-2 d-flex justify-content-between">
+      <div> Manages:  ${d.data._directSubordinates} 👤</div>
+      <div> Oversees:  ${d.data._totalSubordinates} 👤</div>
+      </div>
+    </div>
+    </div>
+    `;
+  };
+
   async getData() {
     let data = await this.userService.find({ active: 1, isEmployee: 1 });
     data.sort((a, b) => {
@@ -95,6 +134,7 @@ export class OrgChartViewComponent implements OnInit {
         imageUrl: data[i].image || "assets/images/default-user.png",
       });
     }
+    
 
     this.chart
       .container(this.chartContainer?.nativeElement)
@@ -107,13 +147,12 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginPair((d) => 80)
       .expandAll()
       .onNodeClick((d, i, arr, state) => {
-        console.log(d)
-
+        this.chart.clearHighlighting();
         //hightlight card on click
-        d._highlighted = true;
+        d.data._highlighted = true;
 
         this.chart.render();
-        
+
         const modalRef: any = this.userModalService.open(d.data.id);
         modalRef.result.then(
           (data: any) => {
@@ -122,46 +161,7 @@ export class OrgChartViewComponent implements OnInit {
           () => {}
         );
       })
-      .nodeContent(function (d, i, arr, state) {
-        return `
-
-        <div style="padding-top:00px;height:${d.height}px">
-        <div class="card bg-light"  style="height:${
-          d.height
-        }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
-
-        <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${
-          d.width / 2 - 30
-        }px;border-radius:100px;width:60px;height:60px;" >
-
-        <img class="object-fit-cover border border-1" src=" ${
-          d.data.imageUrl
-        }" style="border-radius:100px;width:60px;height:60px;" />
-        </div>
-
-        <div class="card-header rounded-top py-3 text-end" style="background-color:${
-          d.data.bgColor
-        }">
-                
-          </div>
-          <div class="card-body text-center">
-            <p class="text-end">${d.data.id}</p>
-            <div style="font-size:17px;font-weight:bold;margin-top:10px"> ${
-              d.data.name
-            } </div>
-            <div style="font-size:15px;margin-top:4px" class="fst-italic"> ${
-              d.data.title
-            } </div>
-          </div>
-          <div class="card-footer bg-light py-2 d-flex justify-content-between">
-          <div> Manages:  ${d.data._directSubordinates} 👤</div>
-          <div> Oversees:  ${d.data._totalSubordinates} 👤</div>
-          </div>
-        </div>
-        </div>
-                    
-                `;
-      })
+      .nodeContent(this.nodeContentfunction)
       .render();
   }
 
