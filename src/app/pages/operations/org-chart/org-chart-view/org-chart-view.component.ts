@@ -102,8 +102,25 @@ export class OrgChartViewComponent implements OnInit {
     `;
   };
 
-  async getData() {
+  onNodeClick = (d) => {
+    this.chart.clearHighlighting();
+    //hightlight card on click
+    d.data._highlighted = true;
+
+    this.chart.render();
+
+    const modalRef: any = this.userModalService.open(d.data.id);
+    modalRef.result.then(
+      (data: any) => {
+        this.getData(false);
+      },
+      () => {}
+    );
+  };
+
+  async getData(dontZoom = true) {
     let data = await this.userService.find({ active: 1, isEmployee: 1 });
+
     data.sort((a, b) => {
       let username = a.first + " " + a.last;
       let username1 = b.first + " " + b.last;
@@ -134,7 +151,6 @@ export class OrgChartViewComponent implements OnInit {
         imageUrl: data[i].image || "assets/images/default-user.png",
       });
     }
-    
 
     this.chart
       .container(this.chartContainer?.nativeElement)
@@ -146,21 +162,7 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginBetween((d) => 30)
       .compactMarginPair((d) => 80)
       .expandAll()
-      .onNodeClick((d, i, arr, state) => {
-        this.chart.clearHighlighting();
-        //hightlight card on click
-        d.data._highlighted = true;
-
-        this.chart.render();
-
-        const modalRef: any = this.userModalService.open(d.data.id);
-        modalRef.result.then(
-          (data: any) => {
-            this.getData();
-          },
-          () => {}
-        );
-      })
+      .onNodeClick(this.onNodeClick)
       .nodeContent(this.nodeContentfunction)
       .render();
   }
