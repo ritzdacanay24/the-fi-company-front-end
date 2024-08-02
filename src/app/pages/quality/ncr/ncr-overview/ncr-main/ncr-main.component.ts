@@ -72,7 +72,7 @@ export class NcrMainComponent implements OnInit {
 
   isLoading = false;
 
-  title = "NCR Info";
+  title = "CAR Info";
 
   form: FormGroup;
 

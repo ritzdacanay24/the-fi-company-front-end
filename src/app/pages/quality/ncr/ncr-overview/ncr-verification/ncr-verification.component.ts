@@ -53,7 +53,7 @@ export class NcrVerificationComponent implements OnInit {
 
   isLoading = false;
 
-  title = "NCR Verification";
+  title = "CAR Verification";
 
   form: FormGroup;
 
