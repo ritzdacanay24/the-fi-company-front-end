@@ -18,9 +18,10 @@ export const departments = [
 ].sort();
 
 export const accessRight = [
-  { name: "Regular", value: 0 },
-  { name: "Lead", value: 1 },
-  { name: "Supervisor", value: 2 },
-  { name: "Manager", value: 3 },
-  { name: "Director", value: 4 },
+  { name: "Regular", value: 0, bgColor: "#3AB6E3" },
+  { name: "Lead", value: 1, bgColor: "#85144b" },
+  { name: "Supervisor", value: 2, bgColor: "#orange" },
+  { name: "Manager", value: 3, bgColor: "#662d91" },
+  { name: "Director", value: 4, bgColor: "#17B169" },
+  { name: "CEO", value: 5, bgColor: "black" },
 ];

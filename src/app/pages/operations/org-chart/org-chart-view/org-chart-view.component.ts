@@ -6,6 +6,7 @@ import { Component, OnInit, Input, ViewChild, ElementRef } from "@angular/core";
 import { OrgChart } from "d3-org-chart";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-modal.component";
+import { accessRight } from "@app/pages/maintenance/user/user-constant";
 
 @Component({
   standalone: true,
@@ -130,18 +131,14 @@ export class OrgChartViewComponent implements OnInit {
     let e = [];
     //#85144b
     for (let i = 0; i < data.length; i++) {
+
       let bgColor = "#3AB6E3";
-      if (data[i].employeeType == 1) {
-        bgColor = "#85144b";
-      } else if (data[i].employeeType == 2) {
-        bgColor = "orange";
-      } else if (data[i].employeeType == 3) {
-        bgColor = "#662d91";
-      } else if (data[i].employeeType == 4) {
-        bgColor = "#17B169";
-      } else if (data[i].employeeType == 5) {
-        bgColor = "black";
+      for(let ii = 0; ii < accessRight.length; ii++){
+          if(accessRight[ii].value == data[i].employeeType){
+            bgColor = accessRight[ii].bgColor;
+          }
       }
+
       e.push({
         id: data[i].id,
         bgColor: bgColor,
@@ -156,7 +153,7 @@ export class OrgChartViewComponent implements OnInit {
       .container(this.chartContainer?.nativeElement)
       .data(e)
       .nodeWidth((d) => 250)
-      .initialZoom(0.7)
+      .initialZoom(1)
       .nodeHeight((d) => 190)
       .childrenMargin((d) => 75)
       .compactMarginBetween((d) => 30)
