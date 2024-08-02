@@ -26,6 +26,7 @@ export class TripDetailsSummaryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    alert('asdf')
     this.setDatData.emit(this.getData);
   }
 
