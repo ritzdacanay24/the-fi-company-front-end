@@ -107,6 +107,13 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginPair((d) => 80)
       .expandAll()
       .onNodeClick((d, i, arr, state) => {
+        console.log(d)
+
+        //hightlight card on click
+        d._highlighted = true;
+
+        this.chart.render();
+        
         const modalRef: any = this.userModalService.open(d.data.id);
         modalRef.result.then(
           (data: any) => {

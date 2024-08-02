@@ -155,7 +155,7 @@ export class NcrMainComponent implements OnInit {
 
   async onSubmitAndClose() {
     if (this.form.value?.submitted_date) {
-      alert("This NCR is already closed.");
+      alert("This CAR is already closed.");
       return;
     }
 
@@ -165,7 +165,7 @@ export class NcrMainComponent implements OnInit {
         this.form.value?.verify_of_ca_dt == "")
     ) {
       alert(
-        "Unable to close NCR. Corrective action is marked as required and must be validated by the Quality Team."
+        "Unable to close CAR. Corrective action is marked as required and must be validated by the Quality Team."
       );
       return;
     }

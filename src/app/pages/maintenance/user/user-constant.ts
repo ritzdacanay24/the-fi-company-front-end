@@ -13,7 +13,8 @@ export const departments = [
   "Engineering",
   "IT",
   "Field Service",
-];
+  "Warehouse",
+].sort();
 
 export const accessRight = [
   { name: "Regular", value: 0 },

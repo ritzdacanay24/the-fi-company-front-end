@@ -57,8 +57,8 @@
     <div class="row">
         <div class="col-md mb-3">
             <label class="form-label">User Roles</label>
-            <input type="text" class="form-control" name="workArea" formControlName="workArea"
-                placeholder="Enter user role" [ngClass]="{ 'is-invalid': submitted && f.workArea.errors }" />
+            <ng-select [searchable]="true" [addTag]="true" formControlName="workArea" placeholder="Select roles"
+                multiple="true" [bindLabel]="'label'" [bindValue]="'label'"></ng-select>
         </div>
     </div>
 

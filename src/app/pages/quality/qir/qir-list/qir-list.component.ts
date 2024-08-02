@@ -129,7 +129,7 @@ export class QirListComponent implements OnInit {
       headerName: "Platform Type",
       filter: "agTextColumnFilter",
     },
-    { field: "ncr_id", headerName: "NCR ID", filter: "agTextColumnFilter" },
+    { field: "ncr_id", headerName: "CAR ID", filter: "agTextColumnFilter" },
     {
       field: "platformType",
       headerName: "Platform Type",

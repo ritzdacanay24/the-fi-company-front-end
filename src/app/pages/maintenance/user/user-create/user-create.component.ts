@@ -69,7 +69,13 @@ export class UserCreateComponent {
         this.toastrService.error(data?.message);
       } else {
         this.toastrService.success("Successfully Created");
-        this.goBack(data.insertId);
+
+        this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+          queryParamsHandling: "merge",
+          queryParams: { id: data.insertId },
+        });
+
+        //this.goBack(data.insertId);
       }
 
       this.isLoading = false;

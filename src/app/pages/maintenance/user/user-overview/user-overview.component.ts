@@ -76,6 +76,9 @@ export class UserOverviewComponent {
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
+      if (this.data.workArea) {
+        this.data.workArea = this.data.workArea.split(",");
+      }
     } catch (err) {}
   }
 
@@ -86,7 +89,10 @@ export class UserOverviewComponent {
 
     try {
       this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
+      await this.api.update(this.id, {
+        ...this.form.value,
+        workArea: this.form.value.workArea?.toString(),
+      });
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.goBack();

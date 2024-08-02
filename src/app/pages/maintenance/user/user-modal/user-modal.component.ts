@@ -51,6 +51,10 @@ export class UserModalComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
+      if (this.data.workArea) {
+        this.data.workArea = this.data.workArea.split(",");
+      }
+
       this.form.patchValue(this.data);
 
       for (const fieldName of [
@@ -119,9 +123,12 @@ export class UserModalComponent {
 
     try {
       this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
+      await this.api.update(this.id, {
+        ...this.form.value,
+        workArea: this.form.value.workArea?.toString(),
+      });
       if (this.myFiles) {
-        await this.onUploadAttachments()
+        await this.onUploadAttachments();
       }
       this.isLoading = false;
       this.close();

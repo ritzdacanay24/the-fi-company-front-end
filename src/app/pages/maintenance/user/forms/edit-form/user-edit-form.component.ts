@@ -3,10 +3,16 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { accessRight, departments } from "../../user-constant";
+import { NgSelectModule } from "@ng-select/ng-select";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, ReactiveFormsModule, UserSearchV1Component],
+  imports: [
+    SharedModule,
+    ReactiveFormsModule,
+    UserSearchV1Component,
+    NgSelectModule,
+  ],
   selector: "app-user-edit-form",
   templateUrl: "./user-edit-form.component.html",
 })
