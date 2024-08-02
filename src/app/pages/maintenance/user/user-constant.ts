@@ -14,6 +14,7 @@ export const departments = [
   "IT",
   "Field Service",
   "Warehouse",
+  "Sales",
 ].sort();
 
 export const accessRight = [

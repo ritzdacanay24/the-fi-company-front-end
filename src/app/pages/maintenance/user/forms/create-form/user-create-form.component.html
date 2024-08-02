@@ -52,7 +52,7 @@
         <div class="col-md">
             <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
                 [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }"
-                [form_label]="'Reports to'"></app-user-search-v1>
+                [form_label]="'Reports to (User ID)'"></app-user-search-v1>
         </div>
     </div>
 

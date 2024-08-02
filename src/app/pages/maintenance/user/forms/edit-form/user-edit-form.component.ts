@@ -70,4 +70,8 @@ export class UserEditFormComponent {
   removeImage() {
     this.form.get("image").patchValue(null);
   }
+
+  clearAttempts() {
+    this.form.get("attempts").patchValue(0);
+  }
 }

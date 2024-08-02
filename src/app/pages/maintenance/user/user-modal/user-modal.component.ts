@@ -126,6 +126,7 @@ export class UserModalComponent {
       await this.api.update(this.id, {
         ...this.form.value,
         workArea: this.form.value.workArea?.toString(),
+        access: this.form.value.access ? 1 : 100,
       });
       if (this.myFiles) {
         await this.onUploadAttachments();
