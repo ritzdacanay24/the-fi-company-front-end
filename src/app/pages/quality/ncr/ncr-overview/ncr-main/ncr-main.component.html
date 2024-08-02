@@ -15,7 +15,7 @@
           class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
           role="alert">
           <i class="ri-error-warning-line label-icon"></i>
-          The user that created this request is the only user that can modify this NCR.
+          The user that created this request is the only user that can modify this CAR.
           <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
 
@@ -23,7 +23,7 @@
           class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
           role="alert">
           <i class="ri-checkbox-line label-icon"></i>
-          This NCR was submitted on {{this.form?.value?.submitted_date}}.
+          This CAR was submitted on {{this.form?.value?.submitted_date}}.
           <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
         </div>
 
@@ -32,10 +32,10 @@
       </div>
       <div class="card-footer d-flex  d-flex justify-content-between">
         <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">Update
-          NCR</button>
+          CAR</button>
         <button class="btn btn-primary" [disabled]="isLoading || this.form?.disabled"
           (click)="onSubmitAndClose()">Update & Close
-          NCR</button>
+          CAR</button>
       </div>
     </div>
   </div>
@@ -49,10 +49,10 @@
       <td colspan="2">Source: {{data?.source}}</td>
       <td>P.O No. {{data?.po_nbr}}</td>
       <td>WO No. {{data?.wo_nbr}}</td>
-      <td>NCR No. {{data?.id}}</td>
+      <td>CAR No. {{data?.id}}</td>
     </tr>
     <tr>
-      <td colspan="5">NCR Type: {{data?.ncr_type}}</td>
+      <td colspan="5">CAR Type: {{data?.ncr_type}}</td>
     </tr>
     <tr>
       <td colspan="2">Part No. {{data?.pt_nbr}}</td>
