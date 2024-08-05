@@ -6,12 +6,14 @@
 
   <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 
-  <app-user-edit-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-edit-form>
-
-  <div class="mb-3 mt-3">
-    <p class="mb-2">Select profile picture</p>
+  <div class="mb-3 mt-3 text-center">
+    <img class="img-thumbnail" [src]="data?.image" style="width:100px" *ngIf="form?.value?.image">
+    <p class="mb-2 pointer text-danger" (click)="removeImage()" *ngIf="form?.value?.image">Remove Image</p>
+    <p class="mb-2" *ngIf="!form?.value?.image">Select profile picture</p>
     <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" name="file">
   </div>
+
+  <app-user-edit-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-user-edit-form>
 
   <h4 *ngIf="!isLoading && !data">Sorry, no data found.</h4>
 

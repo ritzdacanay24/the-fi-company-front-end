@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { ChangeDetectorRef, Component, Input } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
 import { Injectable } from "@angular/core";
@@ -37,8 +37,13 @@ export class UserModalComponent {
   constructor(
     private api: NewUserService,
     private ngbActiveModal: NgbActiveModal,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private cdref: ChangeDetectorRef
   ) {}
+
+  ngAfterContentChecked() {
+    this.cdref.detectChanges();
+  }
 
   @Input() public id;
 
@@ -46,6 +51,12 @@ export class UserModalComponent {
   isLoading = true;
 
   form: FormGroup;
+
+  removeImage() {
+    this.data.image = null;
+    this.myFiles = null;
+    this.form.patchValue({ image: "" });
+  }
 
   getData = async () => {
     try {
@@ -99,6 +110,10 @@ export class UserModalComponent {
 
   onFilechange(event: any) {
     this.myFiles = event.target.files;
+    if (this.myFiles[0]) {
+      this.form.patchValue({ image: URL.createObjectURL(this.myFiles[0]) });
+      this.data.image = URL.createObjectURL(this.myFiles[0]);
+    }
   }
 
   async onUploadAttachments() {
