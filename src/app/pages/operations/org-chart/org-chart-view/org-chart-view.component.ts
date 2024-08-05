@@ -67,11 +67,11 @@ export class OrgChartViewComponent implements OnInit {
   nodeContentfunction = (d, i, arr, state) => {
     return `
     <div style="padding-top:00px;height:${d.height}px">
-    <div class="card bg-light"  style="height:${
+    <div class="card bg-light shadow "  style="height:${
       d.height
     }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
 
-    <div class="bg-light" style="padding:0px;position:absolute;top:-14px;margin-left:${
+    <div class="bg-light shadow border-0" style="padding:0px;position:absolute;top:-14px;margin-left:${
       d.width / 2 - 30
     }px;border-radius:100px;width:60px;height:60px;" >
 
@@ -82,7 +82,7 @@ export class OrgChartViewComponent implements OnInit {
     }" />
     </div>
 
-    <div class="card-header rounded-top py-3 text-end" style="background-color:${
+    <div class="card-header  border-0 shadow rounded-top py-3 text-end" style="background-color:${
       d.data.bgColor
     }">
             
@@ -102,8 +102,12 @@ export class OrgChartViewComponent implements OnInit {
         } </div>
       </div>
       <div class="card-footer bg-light py-2 d-flex justify-content-between">
-      <div> Manages:  ${d.data._directSubordinates} 👤</div>
-      <div> Oversees:  ${d.data._totalSubordinates} 👤</div>
+      <div> Manages:  ${d.data._directSubordinates} <span class="mdi mdi-account" style="color:${
+        d.data.bgColor
+      }"></span></div>
+      <div> Oversees:  ${d.data._totalSubordinates} <span class="mdi mdi-account"  style="color:${
+        d.data.bgColor
+      }"></span></div>
       </div>
     </div>
     </div>

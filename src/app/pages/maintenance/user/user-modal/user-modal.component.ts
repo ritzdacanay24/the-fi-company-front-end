@@ -71,7 +71,7 @@ export class UserModalComponent {
       for (const fieldName of [
         "workArea",
         "lastLoggedIn",
-        "attempts",
+        "attempts", 
       ]) {
         const control = this.form.get(fieldName);
         control.disable();

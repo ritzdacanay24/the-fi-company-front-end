@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, HostListener, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -26,6 +26,14 @@ export class VehicleCreateComponent {
     private authenticationService: AuthenticationService,
     private attachmentsService: AttachmentsService
   ) {}
+
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm("You have unsaved changes. Discard and leave?");
+    }
+    return true;
+  }
 
   ngOnInit(): void {}
 

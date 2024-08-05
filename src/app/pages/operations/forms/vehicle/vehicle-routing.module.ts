@@ -5,6 +5,7 @@ import { VehicleListComponent } from "./vehicle-list/vehicle-list.component";
 import { VehicleComponent } from "./vehicle.component";
 import { VehicleEditComponent } from "./vehicle-edit/vehicle-edit.component";
 import { VehicleCreateComponent } from "./vehicle-create/vehicle-create.component";
+import { CanDeactivateGuard } from "@app/core/guards/CanDeactivateGuard";
 
 const routes: Routes = [
   {
@@ -23,10 +24,12 @@ const routes: Routes = [
       {
         path: "edit",
         component: VehicleEditComponent,
+        canDeactivate: [CanDeactivateGuard],
       },
       {
         path: "create",
         component: VehicleCreateComponent,
+        canDeactivate: [CanDeactivateGuard],
       },
     ],
   },
