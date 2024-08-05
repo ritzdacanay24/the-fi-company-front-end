@@ -75,9 +75,9 @@ export class OrgChartViewComponent implements OnInit {
       d.width / 2 - 30
     }px;border-radius:100px;width:60px;height:60px;" >
 
-    <img class="object-fit-cover border border-1" src=" ${
+    <img class="object-fit-cover border border-1"  src=" ${
       d.data.imageUrl
-    }" style="border-radius:100px;width:60px;height:60px;" />
+    }" style="border-radius:100px;width:60px;height:60px;border-color:${d.data.bgColor}" />
     </div>
 
     <div class="card-header rounded-top py-3 text-end" style="background-color:${
