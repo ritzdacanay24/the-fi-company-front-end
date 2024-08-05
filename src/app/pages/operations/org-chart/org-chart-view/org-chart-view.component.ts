@@ -75,9 +75,11 @@ export class OrgChartViewComponent implements OnInit {
       d.width / 2 - 30
     }px;border-radius:100px;width:60px;height:60px;" >
 
-    <img class="object-fit-cover border border-1"  src=" ${
+    <img class="object-fit-cover border border-1" src=" ${
       d.data.imageUrl
-    }" style="border-radius:100px;width:60px;height:60px;border-color:${d.data.bgColor}" />
+    }" style="border-radius:100px;width:60px;height:60px;border-color:${
+      d.data.bgColor
+    }" />
     </div>
 
     <div class="card-header rounded-top py-3 text-end" style="background-color:${
@@ -86,7 +88,12 @@ export class OrgChartViewComponent implements OnInit {
             
       </div>
       <div class="card-body text-center">
-        <p class="text-end">${d.data.id}</p>
+    ${
+      d.data.access == 0
+        ? '<span class="text-start"><span class="mdi mdi-lock text-danger"></span></span>'
+        : ''
+    }
+      <span class="text-end">${d.data.id}</span>
         <div style="font-size:17px;font-weight:bold;margin-top:10px"> ${
           d.data.name
         } </div>
@@ -131,18 +138,18 @@ export class OrgChartViewComponent implements OnInit {
     let e = [];
     //#85144b
     for (let i = 0; i < data.length; i++) {
-
       let bgColor = "#3AB6E3";
-      for(let ii = 0; ii < accessRight.length; ii++){
-          if(accessRight[ii].value == data[i].employeeType){
-            bgColor = accessRight[ii].bgColor;
-          }
+      for (let ii = 0; ii < accessRight.length; ii++) {
+        if (accessRight[ii].value == data[i].employeeType) {
+          bgColor = accessRight[ii].bgColor;
+        }
       }
 
       e.push({
         id: data[i].id,
         bgColor: bgColor,
         name: data[i].first + " " + data[i].last,
+        access: data[i].access,
         parentId: data[i].parentId,
         title: data[i].title || "No Title",
         imageUrl: data[i].image || "assets/images/default-user.png",

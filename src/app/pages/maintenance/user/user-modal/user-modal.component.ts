@@ -69,7 +69,6 @@ export class UserModalComponent {
       this.form.patchValue(this.data);
 
       for (const fieldName of [
-        "access",
         "workArea",
         "lastLoggedIn",
         "attempts",
