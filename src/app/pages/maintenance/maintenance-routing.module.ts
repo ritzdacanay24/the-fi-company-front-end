@@ -1,7 +1,7 @@
 import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { MaintenanceComponent } from "./maintenance.component";
-import { EmailNotificationComponent } from "./email-notification/email-notification.component";
+import { ScheduledJobsListComponent } from "./scheduled-jobs/scheduled-jobs-list/scheduled-jobs-list.component";
 
 const routes: Routes = [
   {
@@ -21,6 +21,10 @@ const routes: Routes = [
             (m) => m.EmailNotificationRoutingModule
           ),
         data: { preload: true },
+      },
+      {
+        path: "scheduled-jobs",
+        component: ScheduledJobsListComponent,
       },
     ],
   },

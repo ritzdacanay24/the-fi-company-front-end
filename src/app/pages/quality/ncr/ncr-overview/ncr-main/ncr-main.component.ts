@@ -56,6 +56,14 @@ export class NcrMainComponent implements OnInit {
 
   @Output() setFormEmitterParent: EventEmitter<any> = new EventEmitter();
 
+  async reopen() {
+    try {
+      if(!confirm('Are you sure you want to reopen CAR?')) return;
+      await this.api.update(this.id, { submitted_date: null });
+      this.getData();
+    } catch (err) {}
+  }
+
   setFormEmitter($event) {
     this.form = $event;
     this.setFormEmitterParent.emit(this.form);
