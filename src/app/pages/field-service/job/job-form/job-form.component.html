@@ -67,7 +67,7 @@
                 <td>
                   <div style="min-width:200px">
                     <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
-                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
+                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)" [appendTo]="'body'">
 
                     </ng-select>
                   </div>
