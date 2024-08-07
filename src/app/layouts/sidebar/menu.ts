@@ -505,16 +505,16 @@ export const MENU: MenuItem[] = [
             link: "/dashboard/operations/master-scheduling/qc-routing",
             description: "QC",
           },
-          {
-            label: "Work Order Tracker",
-            link: "/dashboard/operations/master-scheduling/work-order-tracker",
-            description: "Work Order Tracker",
-          },
-          {
-            label: "List Work Order Tracker",
-            link: "/dashboard/operations/master-scheduling/list-work-order-tracker",
-            description: "Work Order Tracker List",
-          },
+          // {
+          //   label: "Work Order Tracker",
+          //   link: "/dashboard/operations/master-scheduling/work-order-tracker",
+          //   description: "Work Order Tracker",
+          // },
+          // {
+          //   label: "List Work Order Tracker",
+          //   link: "/dashboard/operations/master-scheduling/list-work-order-tracker",
+          //   description: "Work Order Tracker List",
+          // },
           {
             label: "Cables",
             link: "/dashboard/operations/master-scheduling/cables",
