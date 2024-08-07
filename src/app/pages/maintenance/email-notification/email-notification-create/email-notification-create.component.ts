@@ -33,7 +33,8 @@ export class EmailNotificationCreateComponent {
       this.form.patchValue({ notification_emails: $event });
       await this.api.create(this.form.value);
       this.form.patchValue({ notification_emails: null });
-      this.getByFileName(this.fileNameLocation);
+      await this.getByFileName(this.fileNameLocation);
+      return;
     } catch (err) {}
   };
 
@@ -86,7 +87,7 @@ export class EmailNotificationCreateComponent {
     this.getByFileName(this.fileNameLocation);
   }
 
-  title = "Create User";
+  title = "Create Notification & Access";
 
   isLoading = false;
 

@@ -31,8 +31,10 @@ export class EmailNotificationEditComponent {
       this.form.patchValue({ notification_emails: $event });
       await this.api.create({ ...this.form.getRawValue() });
       this.form.patchValue({ notification_emails: null });
-      this.getByFileName();
-    } catch (err) {}
+      await this.getByFileName();
+      return $event;
+    } catch (err) {
+      return "";}
   };
 
   ngOnInit(): void {
@@ -43,7 +45,7 @@ export class EmailNotificationEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit User";
+  title = "Edit";
 
   form: FormGroup;
 

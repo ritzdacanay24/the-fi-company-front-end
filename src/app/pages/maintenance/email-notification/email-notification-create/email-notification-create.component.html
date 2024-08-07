@@ -15,7 +15,8 @@
           <div class="col-md">
             <app-user-search-v1 (notifyParent)="notifyParent($event)"
               [ngClass]="{ 'is-invalid': submitted && form.value.user_id.errors }"
-              [form_label]="'Search & add users to list'" [addTag]="addTag"></app-user-search-v1>
+              [form_label]="'Search & add users to list'" [addTag]="addTag"
+              [appendToBody]="'body'"></app-user-search-v1>
           </div>
         </div>
 
