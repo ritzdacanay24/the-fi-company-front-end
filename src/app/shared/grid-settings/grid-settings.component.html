@@ -50,8 +50,8 @@
                 <small>Created by {{row.created_by_user}}</small>
             </button>
 
-            <div class="dropdown-divider"></div>
-            <li class="sticky-top" style="bottom:2px">
+            <li class="sticky-top bg-light" style="bottom:2px">
+                <div class="dropdown-divider"></div>
                 <button ngbDropdownItem (click)="update();myDrop.close()" *ngIf="value">
                     <i class="mdi mdi-content-save me-2"></i> Update <span
                         class="text-primary">"{{currentView?.table_name}}"</span> View </button>

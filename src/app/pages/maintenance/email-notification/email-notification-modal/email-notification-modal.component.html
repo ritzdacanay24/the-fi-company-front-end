@@ -1,0 +1,18 @@
+<div class="modal-header">
+  <h4 class="modal-title">Email Notification & Access</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
+</div>
+<div class="modal-body mh-250">
+
+  <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+
+  <app-email-notification-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-email-notification-form>
+
+  <h4 *ngIf="!isLoading && !data">Sorry, no data found.</h4>
+
+</div>
+<div class="modal-footer">
+  <button (click)="dismiss()" type="button" class="btn btn-light">Close</button>
+  <button (click)="onSubmit()" type="button" class="btn btn-primary"
+    [disabled]="isLoading || this.form.disabled">Update</button>
+</div>

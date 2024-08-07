@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormBuilder } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
-import { emailNotificationfileNames } from "../email-notification-constant";
 import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
 import _ from "lodash";
 

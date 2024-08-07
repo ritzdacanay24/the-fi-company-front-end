@@ -59,6 +59,8 @@ export class NcrVerificationComponent implements OnInit {
 
   submitted = false;
 
+  @Input() getHeaderData;
+
   async onSubmit() {
     try {
       this.isLoading = true;
@@ -89,6 +91,7 @@ export class NcrVerificationComponent implements OnInit {
         submitted_date: moment().format("YYYY-MM-DD HH:mm:ss"),
       });
       await this.ncrService.update(this.id, this.form.value);
+      this.getHeaderData()
       this.form.markAsPristine();
       this.form.disable();
     } catch (err) {

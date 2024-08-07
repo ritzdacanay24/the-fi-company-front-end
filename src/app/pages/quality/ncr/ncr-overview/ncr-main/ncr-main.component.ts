@@ -58,9 +58,11 @@ export class NcrMainComponent implements OnInit {
 
   async reopen() {
     try {
-      if(!confirm('Are you sure you want to reopen CAR?')) return;
+      if(!confirm('Are you sure you want to re-open CAR?')) return;
       await this.api.update(this.id, { submitted_date: null });
+      this.form.enable();
       this.getData();
+      this.getHeaderData()
     } catch (err) {}
   }
 
@@ -75,8 +77,9 @@ export class NcrMainComponent implements OnInit {
       this.getData();
     }
   }
-
+  
   @Input() id = null;
+  @Input() getHeaderData;
 
   isLoading = false;
 
