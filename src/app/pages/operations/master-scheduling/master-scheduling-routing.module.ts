@@ -22,22 +22,27 @@ const routes: Routes = [
         pathMatch: "full",
       },
       {
+        title: "Open Shipment Report",
         path: "shipping",
         component: ShippingComponent,
       },
       {
+        title: "Master Production",
         path: "all-routing",
         component: AllRoutingComponent,
       },
       {
+        title: "Picking Routing",
         path: "picking-routing",
         component: PickingRoutingComponent,
       },
       {
+        title: "Production Routing",
         path: "production-routing",
         component: ProductionRoutingComponent,
       },
       {
+        title: "Final Test Routing",
         path: "qc-routing",
         component: QcRoutingComponent,
       },
@@ -50,6 +55,7 @@ const routes: Routes = [
       //   component: WorkOrderTrackerListComponent,
       // },
       {
+        title: "Cables Report",
         path: "cables",
         component: CablesComponent,
       },

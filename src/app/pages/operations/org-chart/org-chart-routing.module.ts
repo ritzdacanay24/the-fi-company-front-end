@@ -9,6 +9,7 @@ const routes: Routes = [
     component: OrgChartComponent,
     children: [
       {
+        title:"Org Chart Las Vegas", 
         path: "org-chart-view",
         component: OrgChartViewComponent,
       },

@@ -13,18 +13,22 @@ const routes: Routes = [
     pathMatch: "full",
   },
   {
+    title: "Overview",
     path: "overview",
     component: OverviewComponent,
   },
   {
+    title: "Order Lookup",
     path: "order-lookup",
     component: OrderLookupPageComponent,
   },
   {
+    title: "Part Lookup",
     path: "part-lookup",
     component: PartLookupPageComponent,
   },
   {
+    title: "WO Lookup",
     path: "wo-lookup",
     component: WoLookupPageComponent,
   },

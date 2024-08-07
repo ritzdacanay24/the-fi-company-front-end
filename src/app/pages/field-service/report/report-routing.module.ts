@@ -21,46 +21,57 @@ const routes: Routes = [
     children: [
       {
         path: '',
+        title: "Main Report",
         redirectTo: 'report-main',
         pathMatch: 'full'
       },
       {
+        title: "Main Report",
         path: 'report-main',
         component: ReportMainComponent
       },
       {
+        title: "Job By Location Report",
         path: 'jobs-by-location',
         component: JobsByLocationComponent,
       },
       {
+        title: "Platform Avg",
         path: 'platform-avg',
         component: PlatformAvgComponent,
       },
       {
+        title: "Expense Report",
         path: 'expense-report',
         component: ExpenseReportComponent,
       },
       {
+        title: "Service Report",
         path: 'service-report',
         component: ServiceReportComponent,
       },
       {
+        title: "Customer Report",
         path: 'customer-report',
         component: CustomerReportComponent,
       },
       {
+        title: "Invoice Report",
         path: 'invoice-report',
         component: InvoiceReportComponent,
       },
       {
+        title: "Job By User Report",
         path: 'job-by-user-report',
         component: JobByUserReportComponent,
       },
       {
+        title: "Contractor VS Tech Report",
         path: 'contractor-vs-tech-report',
         component: ContractorVsTechComponent,
       },
       {
+        title: "Ticket Event Report",
         path: 'ticket-event-report',
         component: TicketEventReportComponent,
       }

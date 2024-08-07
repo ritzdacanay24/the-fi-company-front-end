@@ -28,78 +28,97 @@ const routes: Routes = [
     children: [
       {
         path: '',
+        title: "WIP Report",
         redirectTo: 'wip-report',
         pathMatch: 'full'
       },
       {
+        title: "Inventory Report",
         path: 'inventory-report',
         component: InventoryReportComponent
       },
       {
+        title: "Daily Report",
         path: 'daily-report',
         component: DailyReportComponent
       },
       {
+        title: "Reveny By Customer Report",
         path: 'revenue-by-customer',
         component: RevenueByCustomerComponent
       },
       {
+        title: "WIP Report",
         path: 'wip-report',
         component: WipReportComponent
       },
       {
+        title: "Transit Location Report",
         path: 'transit-location-value-report',
         component: TransitLocationValueReportComponent
       },
       {
+        title: "FG Report",
         path: 'fg-value-report',
         component: FgValueReportComponent
       },
       {
+        title: "JX Report",
         path: 'jx-value-report',
         component: JxValueReportComponent
       },
       {
+        title: "Las Vegas Raw Material Report",
         path: 'las-vegas-raw-material-report',
         component: LasVegasRawMaterialReportComponent
       },
       {
+        title: "Safety Stock Report",
         path: 'safety-stock-report',
         component: SafetyStockReportComponent
       },
       {
+        title: "Shipped Orders Report",
         path: 'shipped-orders-report',
         component: ShippedOrdersReportComponent
       },
       {
+        title: "Negative Location Report",
         path: 'negative-location-report',
         component: NegativeLocationReportComponent
       },
       {
+        title: "Empty Location Report",
         path: 'empty-location-report',
         component: EmptyLocationReportComponent
       },
       {
+        title: "One Sku Location Report",
         path: 'one-sku-location-report',
         component: OneSkuLocationReportComponent
       },
       {
+        title: "Item Consolidation Report",
         path: 'item-consolidation-report',
         component: ItemConsolidationReportComponent
       },
       {
+        title: "Revenue Report",
         path: 'revenue',
         component: RevenueComponent
       },
       {
+        title: "Work Order Variance Report",
         path: 'work-order-variance-report',
         component: WorkOrderVarianceReport
       },
       {
+        title: "OTD Report",
         path: 'otd-report',
         component: OtdReportComponent
       },
       {
+        title: "Reason Code Report",
         path: 'reason-code-report',
         component: ReasonCodeReportComponent
       },

@@ -22,6 +22,7 @@ const routes: Routes = [
         component: CalendarComponent
       },
       {
+        title: "Tech Schedule",
         path: 'tech-schedule',
         component: TechSchedulePageComponent
       }
