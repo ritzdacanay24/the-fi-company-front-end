@@ -1,6 +1,7 @@
 import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { MaintenanceComponent } from "./maintenance.component";
+import { EmailNotificationComponent } from "./email-notification/email-notification.component";
 
 const routes: Routes = [
   {
@@ -11,6 +12,14 @@ const routes: Routes = [
         path: "user",
         loadChildren: () =>
           import("./user/user-routing.module").then((m) => m.UserRoutingModule),
+        data: { preload: true },
+      },
+      {
+        path: "email-notification",
+        loadChildren: () =>
+          import("./email-notification/email-notification-routing.module").then(
+            (m) => m.EmailNotificationRoutingModule
+          ),
         data: { preload: true },
       },
     ],

@@ -14,10 +14,7 @@ export class EmailNotificationComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  title: string = "Email Notifications";
+  title: string = "Email Notification";
 
   icon = "mdi-account-group";
-
-  //select which scheduled job users would like to be added to
-  //must also select user./
 }

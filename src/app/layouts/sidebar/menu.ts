@@ -1071,18 +1071,43 @@ export const MENU: MenuItem[] = [
     subItems: [
       {
         label: "Users",
-        link: "/dashboard/maintenance/user/list",
-        description: "Users",
+        subItems: [
+          {
+            label: "List Users",
+            link: "/dashboard/maintenance/user/list",
+            description: "Users",
+          },
+          {
+            label: "Create User",
+            link: "/dashboard/maintenance/user/create",
+            description: "User Create",
+          },
+          {
+            label: "Edit User",
+            link: "/dashboard/maintenance/user/edit",
+            description: "User Edit",
+          },
+        ],
       },
       {
-        label: "Create User",
-        link: "/dashboard/maintenance/user/create",
-        description: "User Create",
-      },
-      {
-        label: "Edit User",
-        link: "/dashboard/maintenance/user/edit",
-        description: "User Edit",
+        label: "Email Notifications",
+        subItems: [
+          {
+            label: "List EN",
+            link: "/dashboard/maintenance/email-notification/list",
+            description: "List Email Notifications",
+          },
+          {
+            label: "Create EN",
+            link: "/dashboard/maintenance/email-notification/create",
+            description: "Create Email Notifications",
+          },
+          {
+            label: "Edit EN",
+            link: "/dashboard/maintenance/email-notification/edit",
+            description: "Edit Email Notifications",
+          },
+        ],
       },
     ],
   },

@@ -1,0 +1,51 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select user from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+
+        <div class="row">
+          <div class="col-md">
+            <app-user-search-v1 (notifyParent)="notifyParent($event)"
+              [ngClass]="{ 'is-invalid': submitted && form.value.user_id.errors }"
+              [form_label]="'Search & add users to list'" [addTag]="addTag"></app-user-search-v1>
+          </div>
+        </div>
+
+        <app-email-notification-form (setFormEmitter)="form = $event"
+          [submitted]="submitted"></app-email-notification-form>
+
+        <table class="table table-bordered">
+          <tbody>
+            <tr *ngFor="let row of listByFileName">
+              <td>{{row.id}}</td>
+              <td>{{row.email}}</td>
+              <td class="text-danger text-center"><span (click)="removeById(row.id)" class="pointer">X</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between" *ngIf="data && id">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -26,6 +26,11 @@ export class UserService extends DataService<any> {
     return this.http.get(apiURL)
   }
 
+  searchUserV1(q: string): Observable<any> {
+    let apiURL = `${url}/searchUserV1?text=${q}`;
+    return this.http.get(apiURL)
+  }
+
   public resetPassword(params) {
     return firstValueFrom(this.http.post(`/Auth/ResetPassword/resetPassword`, params))
   }
