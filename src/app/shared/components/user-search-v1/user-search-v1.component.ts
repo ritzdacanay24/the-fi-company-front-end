@@ -72,6 +72,7 @@ export class UserSearchV1Component implements OnInit {
     return item.id;
   }
   ngOnChanges(changes: SimpleChanges) {
+    console.log(changes)
     if (changes["value"]?.currentValue) {
       if (!changes["multiple"]?.currentValue) {
         this.dataInput$.next(this.value);
