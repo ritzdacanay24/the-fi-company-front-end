@@ -1090,20 +1090,20 @@ export const MENU: MenuItem[] = [
         ],
       },
       {
-        label: "Email Notifications",
+        label: "Email Notice & Access",
         subItems: [
           {
-            label: "List EN",
+            label: "List ENA",
             link: "/dashboard/maintenance/email-notification/list",
             description: "List Email Notifications",
           },
           {
-            label: "Create EN",
+            label: "Create ENA",
             link: "/dashboard/maintenance/email-notification/create",
             description: "Create Email Notifications",
           },
           {
-            label: "Edit EN",
+            label: "Edit ENA",
             link: "/dashboard/maintenance/email-notification/edit",
             description: "Edit Email Notifications",
           },
