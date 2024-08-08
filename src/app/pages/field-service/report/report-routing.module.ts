@@ -1,88 +1,88 @@
+import { Routes, RouterModule } from "@angular/router";
+import { NgModule } from "@angular/core";
 
-import { Routes, RouterModule } from '@angular/router';
-import { NgModule } from '@angular/core';
-
-import { ReportComponent } from './report.component';
-import { ReportMainComponent } from './report-main/report-main.component';
-import { JobsByLocationComponent } from './jobs-by-location/jobs-by-location.component';
-import { PlatformAvgComponent } from './platform-avg/platform-avg.component';
-import { ExpenseReportComponent } from './expense-report/expense-report.component';
-import { ServiceReportComponent } from './service-report/service-report.component';
-import { CustomerReportComponent } from './customer-report/customer-report.component';
-import { InvoiceReportComponent } from './invoice-report/invoice-report.component';
-import { JobByUserReportComponent } from './job-by-user-report/job-by-user-report.component';
-import { ContractorVsTechComponent } from './contractor-vs-tech-report/contractor-vs-tech-report.component';
-import { TicketEventReportComponent } from './ticket-event-report/ticket-event-report.component';
+import { ReportComponent } from "./report.component";
+import { ReportMainComponent } from "./report-main/report-main.component";
+import { JobsByLocationComponent } from "./jobs-by-location/jobs-by-location.component";
+import { PlatformAvgComponent } from "./platform-avg/platform-avg.component";
+import { ExpenseReportComponent } from "./expense-report/expense-report.component";
+import { ServiceReportComponent } from "./service-report/service-report.component";
+import { CustomerReportComponent } from "./customer-report/customer-report.component";
+import { InvoiceReportComponent } from "./invoice-report/invoice-report.component";
+import { JobByUserReportComponent } from "./job-by-user-report/job-by-user-report.component";
+import { ContractorVsTechComponent } from "./contractor-vs-tech-report/contractor-vs-tech-report.component";
+import { TicketEventReportComponent } from "./ticket-event-report/ticket-event-report.component";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
-    path: '',
+    path: "",
     component: ReportComponent,
     children: [
       {
-        path: '',
+        path: "",
         title: "Main Report",
-        redirectTo: 'report-main',
-        pathMatch: 'full'
+        redirectTo: "report-main",
+        pathMatch: "full",
       },
       {
         title: "Main Report",
-        path: 'report-main',
-        component: ReportMainComponent
+        path: "report-main",
+        component: ReportMainComponent,
       },
       {
         title: "Job By Location Report",
-        path: 'jobs-by-location',
+        path: "jobs-by-location",
         component: JobsByLocationComponent,
+        canActivate: [AccessGuard],
       },
       {
         title: "Platform Avg",
-        path: 'platform-avg',
+        path: "platform-avg",
         component: PlatformAvgComponent,
+        canActivate: [AccessGuard],
       },
       {
         title: "Expense Report",
-        path: 'expense-report',
+        path: "expense-report",
         component: ExpenseReportComponent,
       },
       {
         title: "Service Report",
-        path: 'service-report',
+        path: "service-report",
         component: ServiceReportComponent,
       },
       {
         title: "Customer Report",
-        path: 'customer-report',
+        path: "customer-report",
         component: CustomerReportComponent,
       },
       {
         title: "Invoice Report",
-        path: 'invoice-report',
+        path: "invoice-report",
         component: InvoiceReportComponent,
       },
       {
         title: "Job By User Report",
-        path: 'job-by-user-report',
+        path: "job-by-user-report",
         component: JobByUserReportComponent,
       },
       {
         title: "Contractor VS Tech Report",
-        path: 'contractor-vs-tech-report',
+        path: "contractor-vs-tech-report",
         component: ContractorVsTechComponent,
       },
       {
         title: "Ticket Event Report",
-        path: 'ticket-event-report',
+        path: "ticket-event-report",
         component: TicketEventReportComponent,
-      }
-    ]
+      },
+    ],
   },
-]
+];
 
 @NgModule({
-  imports: [
-    RouterModule.forChild(routes)
-  ],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
-export class ReportRoutingModule { }
+export class ReportRoutingModule {}

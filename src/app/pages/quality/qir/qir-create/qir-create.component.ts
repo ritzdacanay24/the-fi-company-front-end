@@ -104,7 +104,7 @@ export class QirCreateComponent {
 
     try {
       this.isLoading = true;
-      let { insertId } = await this.api.create(this.form.value);
+      let { insertId } = await this.api.create(this.form.getRawValue());
 
       if (this.myFiles) {
         const formData = new FormData();

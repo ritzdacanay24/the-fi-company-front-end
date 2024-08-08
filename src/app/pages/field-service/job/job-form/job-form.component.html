@@ -43,7 +43,7 @@
           Tech Information
         </h4>
 
-        <div class="table-responsive" *ngIf="getTeams.length">
+        <div class="table-responsive-" *ngIf="getTeams.length">
           <table class="table table text-nowrap">
             <thead>
               <tr>
@@ -67,7 +67,7 @@
                 <td>
                   <div style="min-width:200px">
                     <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
-                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)" [appendTo]="'body'">
+                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
 
                     </ng-select>
                   </div>

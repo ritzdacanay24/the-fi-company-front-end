@@ -106,7 +106,7 @@ export class QirEditComponent {
 
     try {
       this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
+      await this.api.update(this.id, this.form.getRawValue());
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.form.markAsPristine();

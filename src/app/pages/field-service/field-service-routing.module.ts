@@ -2,7 +2,7 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { SharedModule } from "src/app/shared/shared.module";
 import { MapComponent } from "./map/map.component";
-import { FieldServiceReportGuard } from "@app/core/guards/field-service-report.guard";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
@@ -27,7 +27,6 @@ const routes: Routes = [
       import("./report/report-routing.module").then(
         (m) => m.ReportRoutingModule
       ),
-    canActivate: [FieldServiceReportGuard],
   },
   {
     path: "maintenance",
@@ -88,6 +87,5 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forChild(routes), SharedModule],
   exports: [RouterModule],
-  providers: [FieldServiceReportGuard],
 })
 export class FieldServiceRoutingModule {}
