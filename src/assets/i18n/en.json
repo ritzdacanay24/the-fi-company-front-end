@@ -6,6 +6,7 @@
     "DESCRIPTION_OF_INCIDENT": "Description of Incident",
     "DATE_AND_TIME_OF_INCIDENT": "Date & Time of Incident",
     "PERSON_REPORTING_INCIDENT": "Person reporting incident",
+    "DETAILS_OF_ANY_DAMAGE_OR_PERSONAL_INJURY": "Details of any damage or personal injury",
     "TYPE_OF_INCIDENT": "Type of Incident",
     "TYPE_OF_INCIDENT_OPTIONS": [
       {

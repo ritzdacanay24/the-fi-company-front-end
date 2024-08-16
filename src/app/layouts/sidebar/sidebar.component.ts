@@ -13,6 +13,8 @@ import { MENU } from "./menu";
 import { MenuItem } from "./menu.model";
 import { environment } from "src/environments/environment";
 import { FavoriteService } from "@app/core/api/favorites/favorites.service";
+import { PageAccessService } from "@app/core/api/page-access/page-access.service";
+import { MenuService } from "@app/core/api/menu/menu.service";
 
 @Component({
   selector: "app-sidebar",
@@ -36,20 +38,44 @@ export class SidebarComponent implements OnInit {
   constructor(
     private router: Router,
     public translate: TranslateService,
-    private favoriteService: FavoriteService
+    private favoriteService: FavoriteService,
+    public pageAccessService: PageAccessService,
+    public menuService: MenuService
   ) {
+    this.getMenu();
+    
     translate.setDefaultLang("en");
     this.favoriteService.getData$.subscribe(() => {
       this.favs = this.favoriteService.getFavorites();
     });
 
-    this.router.events.subscribe((event) => {
+    this.router.events.subscribe((event: any) => {
       if (document.documentElement.getAttribute("data-layout") != "twocolumn") {
         if (event instanceof NavigationEnd) {
           this.initActiveMenu();
         }
       }
     });
+  }
+
+  generateChild = (arr) => {
+    return arr.reduce((acc, val, ind, array) => {
+      const childs = [];
+      array.forEach((el: any, i) => {
+        if (childs.includes(el.parent_id) || el.parent_id === val.id) {
+          childs.push(el);
+        }
+      });
+      return acc.concat({ ...val, childs });
+    }, []);
+  };
+
+  async getMenu() {
+    this.menuItems = await this.menuService.getMenu();
+
+    setTimeout(() => {
+      this.initActiveMenu();
+    }, 0);
   }
 
   compare(a, b) {
@@ -65,40 +91,16 @@ export class SidebarComponent implements OnInit {
   initalLoad = false;
   ngOnInit(): void {
     // Menu Items
-    this.menuItems = MENU;
-
-    for (let i = 0; i < this.menuItems.length; i++) {
-      if (this.menuItems[i].subItems) {
-        this.menuItems[i].subItems.sort((a, b) => this.compare(a, b));
-        for (let ii = 0; ii < this.menuItems[i].subItems.length; ii++) {
-          if (this.menuItems[i].subItems[ii].subItems) {
-            this.menuItems[i].subItems[ii].subItems.sort((a, b) =>
-              this.compare(a, b)
-            );
-            for (
-              let iii = 0;
-              iii < this.menuItems[i].subItems[ii].subItems.length;
-              iii++
-            ) {
-              if (this.menuItems[i].subItems[ii].subItems[iii].subItems) {
-                this.menuItems[i].subItems[ii].subItems[iii].subItems.sort(
-                  (a, b) => this.compare(a, b)
-                );
-              }
-            }
-          }
-        }
-      }
-    }
+    // this.menuItems = MENU;
   }
 
   /***
    * Activate droup down set
    */
   ngAfterViewInit() {
-    setTimeout(() => {
-      this.initActiveMenu();
-    }, 0);
+    // setTimeout(() => {
+    //   this.initActiveMenu();
+    // }, 0);
   }
 
   removeActivation(items: any) {
@@ -287,7 +289,13 @@ export class SidebarComponent implements OnInit {
   }
 
   initActiveMenu() {
-    let pathName = window.location.pathname;
+    let params = new URL(document.location.toString()).searchParams;
+    let returnUrl = params.get("returnUrl");
+
+    let pathName = returnUrl?.split("?")[0] || window.location.pathname;
+
+    if (pathName == "/dashboard/access-denied") return;
+
     // Check if the application is running in production
     if (environment.production) {
       // Modify pathName for production build

@@ -11,5 +11,7 @@ export interface MenuItem {
   isCollapsed?: any;
   showStar?: boolean | any;
   showStarColor?: boolean | any;
-  description?: string
+  description?: string;
+  accessRequired?: boolean;
+  hideCheckBox?: boolean;
 }

@@ -5,12 +5,14 @@ export const MENU: MenuItem[] = [
     id: 1,
     label: "Menu",
     isTitle: true,
+    hideCheckBox: true,
   },
   {
-    id: 3,
+    id: 2,
     label: "Field Service",
     icon: "las la-tachometer-alt",
     isCollapsed: true,
+    hideCheckBox: true,
     subItems: [
       {
         label: "Dashboard",
@@ -168,55 +170,46 @@ export const MENU: MenuItem[] = [
         isCollapsed: true,
         subItems: [
           {
-            id: 6,
             label: "Jobs By Location",
             link: "/dashboard/field-service/reports/jobs-by-location",
             description: "Field Service Jobs by location report",
           },
           {
-            id: 6,
             label: "Platform Avg",
             link: "/dashboard/field-service/reports/platform-avg",
             description: "Field Service Platform avg report",
           },
           {
-            id: 6,
             label: "Expense Report",
             link: "/dashboard/field-service/reports/expense-report",
             description: "Field Service expense report",
           },
           {
-            id: 6,
             label: "Service Report",
             link: "/dashboard/field-service/reports/service-report",
             description: "Field Service service report",
           },
           {
-            id: 6,
             label: "Customer Report",
             link: "/dashboard/field-service/reports/customer-report",
             description: "Field Service Customer Report",
           },
           {
-            id: 6,
             label: "Invoice Report",
             link: "/dashboard/field-service/reports/invoice-report",
             description: "Field Service Invoice Report",
           },
           {
-            id: 6,
             label: "Job By User",
             link: "/dashboard/field-service/reports/job-by-user-report",
             description: "Field Service Jobs By User Report",
           },
           {
-            id: 6,
             label: "Contractor Vs Tech",
             link: "/dashboard/field-service/reports/contractor-vs-tech-report",
             description: "Field Service Contract Vs Tech Report",
           },
           {
-            id: 6,
             label: "Ticket Events",
             link: "/dashboard/field-service/reports/ticket-event-report",
             description: "Field Service Ticket Report",
@@ -227,6 +220,7 @@ export const MENU: MenuItem[] = [
         label: "Maintenance",
         icon: "las la-cog",
         isCollapsed: true,
+        hideCheckBox: true,
         subItems: [
           {
             label: "Job Status",
@@ -435,6 +429,7 @@ export const MENU: MenuItem[] = [
     label: "Operations",
     icon: "las la-bookmark",
     isCollapsed: true,
+    hideCheckBox: true,
     subItems: [
       {
         label: "Org Chart",
@@ -444,26 +439,31 @@ export const MENU: MenuItem[] = [
           variant: "badge bg-success",
           text: "New",
         },
+        accessRequired: false,
       },
       {
         label: "Labels",
         link: "/dashboard/operations/labels/list",
         description: "Labels",
+        accessRequired: false,
       },
       {
         label: "Order Lookup",
         link: "/dashboard/operations/order-lookup",
         description: "Order Lookup",
+        accessRequired: false,
       },
       {
         label: "Part Lookup",
         link: "/dashboard/operations/part-lookup",
         description: "Part Lookup",
+        accessRequired: false,
       },
       {
         label: "WO Lookup",
         link: "/dashboard/operations/wo-lookup",
         description: "WO Lookup",
+        accessRequired: false,
       },
       {
         label: "Logistics",
@@ -530,16 +530,19 @@ export const MENU: MenuItem[] = [
             label: "List Shipping Request",
             link: "/dashboard/operations/forms/shipping-request/list",
             description: "Shipping List",
+            accessRequired: false,
           },
           {
             label: "Create Shipping Request",
             link: "/dashboard/operations/forms/shipping-request/create",
             description: "Shipping Request Create",
+            accessRequired: false,
           },
           {
             label: "Edit Shipping Request",
             link: "/dashboard/operations/forms/shipping-request/edit",
             description: "Shipping Request Edit",
+            accessRequired: false,
           },
         ],
       },
@@ -593,16 +596,19 @@ export const MENU: MenuItem[] = [
             label: "List Forklift",
             link: "/dashboard/operations/forms/forklift-inspection/list",
             description: "Forklift List",
+            accessRequired: false,
           },
           {
             label: "Create Forklift",
             link: "/dashboard/operations/forms/forklift-inspection/create",
             description: "Forklift Create",
+            accessRequired: false,
           },
           {
             label: "Edit Forklift",
             link: "/dashboard/operations/forms/forklift-inspection/edit",
             description: "Forklift Edit",
+            accessRequired: false,
           },
         ],
       },
@@ -655,14 +661,17 @@ export const MENU: MenuItem[] = [
           {
             label: "List Vehicle Inspections",
             link: "/dashboard/operations/forms/vehicle-inspection/list",
+            accessRequired: false,
           },
           {
             label: "Create Vehicle Inspection",
             link: "/dashboard/operations/forms/vehicle-inspection/create",
+            accessRequired: false,
           },
           {
             label: "Edit Vehicle Inspection",
             link: "/dashboard/operations/forms/vehicle-inspection/edit",
+            accessRequired: false,
           },
         ],
       },
@@ -695,16 +704,19 @@ export const MENU: MenuItem[] = [
             label: "List Material Request",
             link: "/dashboard/operations/material-request/list",
             description: "Material Request List",
+            accessRequired: false,
           },
           {
             label: "Create Material Request",
             link: "/dashboard/operations/material-request/create",
             description: "Material Request Create",
+            accessRequired: false,
           },
           {
             label: "Edit Material Request",
             link: "/dashboard/operations/material-request/edit",
             description: "Material Request Edit",
+            accessRequired: false,
           },
           {
             label: "Validate Material Request",
@@ -726,16 +738,19 @@ export const MENU: MenuItem[] = [
             label: "List Safety Incident",
             link: "/dashboard/operations/forms/safety-incident/list",
             description: "Safety Incident List",
+            accessRequired: false,
           },
           {
             label: "Create Safety Incident",
             link: "/dashboard/operations/forms/safety-incident/create",
             description: "Safety Incident Create",
+            accessRequired: false,
           },
           {
             label: "Edit Safety Incident",
             link: "/dashboard/operations/forms/safety-incident/edit",
             description: "Safety Incident Edit",
+            accessRequired: false,
           },
         ],
       },
@@ -801,6 +816,7 @@ export const MENU: MenuItem[] = [
             label: "Shipped Orders Report",
             link: "/dashboard/operations/reports/shipped-orders-report",
             description: "Shipped orders report",
+            accessRequired: false,
           },
           {
             label: "Negative Location Report",
@@ -842,6 +858,7 @@ export const MENU: MenuItem[] = [
       {
         label: "Graphics",
         isCollapsed: true,
+        hideCheckBox: true,
         subItems: [
           {
             label: "List Graphics",
@@ -889,14 +906,16 @@ export const MENU: MenuItem[] = [
       {
         label: "Physical Inventory",
         link: "/dashboard/operations/physical-inventory/tags",
+        accessRequired: false,
       },
     ],
   },
   {
-    id: 3,
+    id: 4,
     label: "Quality",
     icon: "las la-tools",
     isCollapsed: true,
+    hideCheckBox: true,
     subItems: [
       {
         label: "Dashboard",
@@ -1017,21 +1036,25 @@ export const MENU: MenuItem[] = [
         label: "QIR",
         icon: "las la-tachometer-alt",
         isCollapsed: true,
+        hideCheckBox: true,
         subItems: [
           {
             label: "List QIR",
             link: "/dashboard/quality/qir/list",
             description: "QIR list",
+            accessRequired: false,
           },
           {
             label: "Create QIR",
             link: "/dashboard/quality/qir/create",
             description: "QIR create",
+            accessRequired: false,
           },
           {
             label: "Edit QIR",
             link: "/dashboard/quality/qir/edit",
             description: "QIR edit",
+            accessRequired: false,
           },
           {
             label: "QIR Settings",
@@ -1059,15 +1082,17 @@ export const MENU: MenuItem[] = [
   },
 
   {
-    id: 2,
+    id: 5,
     label: "Admin",
     isTitle: true,
+    hideCheckBox: true,
   },
   {
-    id: 3,
+    id: 6,
     label: "Maintenance",
     icon: "las la-cog",
     isCollapsed: true,
+    hideCheckBox: true,
     subItems: [
       {
         label: "Users",

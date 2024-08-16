@@ -48,6 +48,7 @@ export class AppComponent {
     _lightboxConfig.fitImageInViewPort = true;
 
     this.titleService.init();
+    
   }
 
   isMobile = false;

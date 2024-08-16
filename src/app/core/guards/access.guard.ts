@@ -8,42 +8,43 @@ import {
 // Auth Services
 import { AuthenticationService } from "../services/auth.service";
 import { THE_FI_COMPANY_CURRENT_USER } from "./admin.guard";
-import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
-import { AccessService } from "../api/access/access.service";
+import { MenuService } from "../api/menu/menu.service";
 
 @Injectable({ providedIn: "root" })
 export class AccessGuard {
   constructor(
     private router: Router,
     private authenticationService: AuthenticationService,
-    private accessService: AccessService
+    private menuService: MenuService
   ) {}
 
   async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
     const currentUser = this.authenticationService.currentUserValue;
     if (currentUser) {
-      console.log(route, "route");
-      let accessCheck = await this.accessService.getAccess(
-        currentUser.id,
-        route.component.name?.toString()
-      );
+
+      return true
+
+
+      let d = state.url.split("?")[0];
+
+      let res = await this.menuService.checkUserPermission(currentUser.id, d);
+
+      //All file need access UNLESS specified in the MENU as accessRequired = false.
+      if (res && res.accessRequired == false) return true;
+
+      //Check server if user has access to file.
+      let accessCheck = res && res.page_access_id != null;
 
       if (accessCheck) return true;
 
-      let d = await SweetAlert.fire({
-        title: "Access Denied",
-        text: "File Name: " + route.component.name?.toString(),
-        showDenyButton: true,
-        confirmButtonText: `Ok`,
-        denyButtonText: `Try Again`,
+      this.router.navigate(["dashboard/access-denied"], {
+        queryParams: {
+          returnUrl: state.url,
+          title: res?.label || route.routeConfig.title || d,
+          menu_id: res.id,
+          loadData: false,
+        }
       });
-
-      if (d.isDenied) {
-        this.router.navigate([state.url]);
-        return false;
-      }
-
-      this.router.navigate(["/dashboard/operations/overview"]);
 
       return false;
     }

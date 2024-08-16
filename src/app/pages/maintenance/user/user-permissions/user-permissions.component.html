@@ -1,29 +1,15 @@
-<!-- <div class="row">
-    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+<div class="row">
+    <div class="col-lg-12">
         <div class="card">
-            <div class="card-header d-flex align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
             </div>
-            <div class="card-body" style="min-height:300px">
-                <form [formGroup]="form" autocomplete="off">
-                    <div class="mb-3">
-                        <label class="form-label required">Password</label>
-                        <input type="password" class="form-control" name="pass" formControlName="pass"
-                            placeholder="Enter password" [ngClass]="{ 'is-invalid': submitted && f.pass.errors }" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label required">Confirm Password</label>
-                        <input type="password" class="form-control" name="confirmPassword"
-                            formControlName="confirmPassword" placeholder="Repeat password"
-                            [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" />
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer d-flex  d-flex justify-content-between">
-                <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+            <div class="card-body p-0"><ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data"
+                    [columnDefs]="columnDefs" [gridOptions]="gridOptions"
+                    style="width: 100%;height: calc(100vh - 293px);">
+                </ag-grid-angular>
+
             </div>
         </div>
     </div>
-</div> -->
-
-<p>Under Construction</p>
+</div>

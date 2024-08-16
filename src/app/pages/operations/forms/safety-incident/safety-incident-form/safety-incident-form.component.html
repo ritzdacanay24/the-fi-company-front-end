@@ -60,21 +60,28 @@
     </div>
   </div>
 
+  <div class="mb-3 row">
+    <div class="col-sm-12 text-uppercase">
+      <p>{{'SAFETY_INCIDENT_FORM.DETAILS_OF_ANY_DAMAGE_OR_PERSONAL_INJURY' | translate}}: </p>
+      <textarea rows="10" class="form-control"></textarea>
+    </div>
+  </div>
+
 </div>
 
 
 <form [formGroup]="form" autocomplete="off">
 
   <h4 class="my-3 bg-light text-center p-2 sticky-top" style="top:-16px">Safety Incident Report</h4>
-  <p class="mb-2">Reported By:</p>
+  <p class="mb-2">Reported By</p>
   <div class="row">
     <div class="col-sm-6 mb-3">
-      <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
+      <label class="form-label" [ngClass]="formValidator('first_name')">First Name (Optional)</label>
       <input type="text" class="form-control" name="first_name" formControlName="first_name"
         placeholder="Enter First Name" [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" />
     </div>
     <div class="col-sm-6 mb-3">
-      <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
+      <label class="form-label" [ngClass]="formValidator('last_name')">Last Name (Optional)</label>
       <input type="text" class="form-control" name="last_name" formControlName="last_name" placeholder="Enter Last Name"
         [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" />
     </div>
@@ -164,6 +171,15 @@
         formControlName="description_of_incident" placeholder="Description of Incident"
         [ngClass]="{ 'is-invalid': submitted && f.description_of_incident.errors }" rows="5"></textarea>
     </div>
+
+    <div class="mb-3">
+      <label class="form-label" [ngClass]="formValidator('details_of_any_damage_or_personal_injury')">Details of any damage or personal injury</label>
+      <textarea type="text" class="form-control" name="details_of_any_damage_or_personal_injury"
+        formControlName="details_of_any_damage_or_personal_injury" placeholder="Enter details of any damage or personal injury"
+        [ngClass]="{ 'is-invalid': submitted && f.details_of_any_damage_or_personal_injury.errors }" rows="5"></textarea>
+    </div>
+
+    
   </div>
 
   <div *ngIf="id">

@@ -5,6 +5,7 @@ import { OverviewComponent } from "./overview/overview.component";
 import { OrderLookupPageComponent } from "./order-lookup-page/order-lookup-page.component";
 import { PartLookupPageComponent } from "./part-lookup-page/part-lookup-page.component";
 import { WoLookupPageComponent } from "./wo-lookup-page/wo-lookup-page.component";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
@@ -21,16 +22,22 @@ const routes: Routes = [
     title: "Order Lookup",
     path: "order-lookup",
     component: OrderLookupPageComponent,
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     title: "Part Lookup",
     path: "part-lookup",
     component: PartLookupPageComponent,
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     title: "WO Lookup",
     path: "wo-lookup",
     component: WoLookupPageComponent,
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "reports",
@@ -38,6 +45,8 @@ const routes: Routes = [
       import("./reports/reports-routing.module").then(
         (m) => m.ReportsRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "forms",
@@ -50,6 +59,8 @@ const routes: Routes = [
       import("./maintenance/maintenance-routing.module").then(
         (m) => m.MaintenanceRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "shortages",
@@ -57,6 +68,8 @@ const routes: Routes = [
       import("./shortages/shortages-routing.module").then(
         (m) => m.ShortagesRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "material-request",
@@ -64,6 +77,8 @@ const routes: Routes = [
       import("./material-request/material-request-routing.module").then(
         (m) => m.MaterialRequestRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "logistics",
@@ -71,6 +86,8 @@ const routes: Routes = [
       import("./logistics/logistics-routing.module").then(
         (m) => m.LogisticsRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "graphics",
@@ -78,6 +95,8 @@ const routes: Routes = [
       import("./graphics/graphics-routing.module").then(
         (m) => m.GraphicsRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "physical-inventory",
@@ -85,6 +104,8 @@ const routes: Routes = [
       import("./physical-inventory/physical-inventory-routing.module").then(
         (m) => m.PhysicalInventoryRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "master-scheduling",
@@ -92,6 +113,8 @@ const routes: Routes = [
       import("./master-scheduling/master-scheduling-routing.module").then(
         (m) => m.MasterSchedulingRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "labels",
@@ -99,6 +122,8 @@ const routes: Routes = [
       import("./labels/labels-routing.module").then(
         (m) => m.LabelsRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
   {
     path: "org-chart",
@@ -106,6 +131,8 @@ const routes: Routes = [
       import("./org-chart/org-chart-routing.module").then(
         (m) => m.OrgChartRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
 ];
 

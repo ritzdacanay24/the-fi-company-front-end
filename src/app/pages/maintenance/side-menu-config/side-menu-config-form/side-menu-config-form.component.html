@@ -1,0 +1,22 @@
+<form [formGroup]="form" autocomplete="off">
+
+    <div class="row">
+        <div class="col-md mb-3">
+            <label class="form-label required">File Name</label>
+
+            <select class="form-select" name="cars" id="cars" formControlName="location">
+                <option disabled="disabled" selected="selected" value="null">--Select--</option>
+                <optgroup label="{{row.key}}" *ngFor="let row of fileName | keyvalue">
+                  <option *ngFor="let item of $any(row.value)" [value]="item.value">{{item.name}}</option>
+                </optgroup>
+              </select>
+
+            <!-- <select class="form-select" formControlName="location"
+                [ngClass]="{ 'is-invalid': submitted && f.location.errors }">
+                <option selected disabled [value]="null"> --SELECT-- </option>
+                <option *ngFor="let row of fileName" [value]="row.value"> {{row.name}} </option>
+            </select> -->
+        </div>
+    </div>
+
+</form>

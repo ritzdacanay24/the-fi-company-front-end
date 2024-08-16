@@ -48,6 +48,7 @@ import { DragulaModule } from "ng2-dragula";
 import { provideGlobalGridOptions } from "ag-grid-community";
 import { agGridOptions } from "./shared/config/ag-grid.config";
 import { AccessGuard } from "./core/guards/access.guard";
+import { Deactivate } from "./core/guards/deactivate.guard";
 
 provideGlobalGridOptions(agGridOptions);
 
@@ -93,6 +94,7 @@ export function createTranslateLoader(http: HttpClient): any {
     { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
     CanDeactivateGuard,
     AccessGuard,
+    Deactivate,
     provideEnvironmentNgxMask(),
     provideHttpClient(withInterceptorsFromDi()),
   ],

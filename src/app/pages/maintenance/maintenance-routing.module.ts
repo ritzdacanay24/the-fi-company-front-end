@@ -2,6 +2,7 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { MaintenanceComponent } from "./maintenance.component";
 import { ScheduledJobsListComponent } from "./scheduled-jobs/scheduled-jobs-list/scheduled-jobs-list.component";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
@@ -20,11 +21,23 @@ const routes: Routes = [
           import("./email-notification/email-notification-routing.module").then(
             (m) => m.EmailNotificationRoutingModule
           ),
-        data: { preload: true },
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
       },
       {
         path: "scheduled-jobs",
         component: ScheduledJobsListComponent,
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
+      },
+      {
+        path: "side-menu-config",
+        loadChildren: () =>
+          import("./side-menu-config/side-menu-config-routing.module").then(
+            (m) => m.SideMenuConfigRoutingModule
+          ),
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
       },
     ],
   },

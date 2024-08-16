@@ -186,6 +186,7 @@ export class SafetyIncidentFormComponent {
     created_date: new FormControl(""),
     created_by: new FormControl(""),
     status: new FormControl("Open"),
+    details_of_any_damage_or_personal_injury: new FormControl("Open"),
   });
 
   onPrint = (language = "en") => {

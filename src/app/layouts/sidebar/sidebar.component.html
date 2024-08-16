@@ -93,7 +93,7 @@
                 @for(subitem of item.subItems; track $index){
                 <li class="nav-item">
                   @if(hasItems(subitem)){
-                  <a class="nav-link" [attr.data-parent]="subitem.parentId" data-bs-toggle="collapse"
+                  <a class="nav-link" [attr.data-parent]="subitem.parent_id" data-bs-toggle="collapse"
                     aria-expanded="false" [attr.aria-expanded]="!subitem.isCollapsed" (click)="toggleItem(subitem)">
                     {{ subitem.label}}
                     @if(subitem.badge && !subitem.showStar){<span
@@ -107,7 +107,7 @@
                       @for(subSubitem of subitem.subItems; track $index){
                       <li class="nav-item">
                         @if(hasItems(subSubitem)){
-                        <a class="nav-link" [attr.data-parent]="subSubitem.parentId" data-bs-toggle="collapse"
+                        <a class="nav-link" [attr.data-parent]="subSubitem.parent_id" data-bs-toggle="collapse"
                           aria-expanded="false" [attr.aria-expanded]="!subSubitem.isCollapsed"
                           (click)="toggleItem(subSubitem)">
                           {{ subSubitem.label}}
@@ -120,7 +120,7 @@
                           <ul class="nav nav-sm flex-column" aria-expanded="false">
                             @for(subSubitem1 of subSubitem.subItems; track $index){
                             <li class="nav-item">
-                              <a [attr.data-parent]="subSubitem1.parentId" [routerLink]="subSubitem1.link"
+                              <a [attr.data-parent]="subSubitem1.parent_id" [routerLink]="subSubitem1.link"
                                 class="nav-link" (click)="updateActive($event)"
                                 (mouseenter)="mouseHovering(subSubitem1)" (mouseleave)="mouseLeft(subSubitem1)">
                                 {{ subSubitem1.label }}
@@ -138,7 +138,7 @@
                           </ul>
                         </div>
                         }@else{
-                        <a [attr.data-parent]="subSubitem.parentId" [routerLink]="subSubitem.link" class="nav-link"
+                        <a [attr.data-parent]="subSubitem.parent_id" [routerLink]="subSubitem.link" class="nav-link"
                           (click)="updateActive($event)" (mouseenter)="mouseHovering(subSubitem)"
                           (mouseleave)="mouseLeft(subSubitem)">
                           {{ subSubitem.label }}
@@ -160,7 +160,7 @@
                     </ul>
                   </div>
                   }@else{
-                  <a [routerLink]="subitem.link" class="nav-link" [attr.data-parent]="subitem.parentId"
+                  <a [routerLink]="subitem.link" class="nav-link" [attr.data-parent]="subitem.parent_id"
                     (click)="updateActive($event)" (mouseenter)="mouseHovering(subitem)"
                     (mouseleave)="mouseLeft(subitem)">
                     {{ subitem.label}}

@@ -12,7 +12,6 @@ import { InvoiceReportComponent } from "./invoice-report/invoice-report.componen
 import { JobByUserReportComponent } from "./job-by-user-report/job-by-user-report.component";
 import { ContractorVsTechComponent } from "./contractor-vs-tech-report/contractor-vs-tech-report.component";
 import { TicketEventReportComponent } from "./ticket-event-report/ticket-event-report.component";
-import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
@@ -34,13 +33,11 @@ const routes: Routes = [
         title: "Job By Location Report",
         path: "jobs-by-location",
         component: JobsByLocationComponent,
-        canActivate: [AccessGuard],
       },
       {
         title: "Platform Avg",
         path: "platform-avg",
         component: PlatformAvgComponent,
-        canActivate: [AccessGuard],
       },
       {
         title: "Expense Report",

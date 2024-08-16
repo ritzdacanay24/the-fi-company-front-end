@@ -45,7 +45,7 @@
                                 </div>
                             </div>
 
-                            <ul [destroyOnHide]="false" (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav"
+                            <ul [destroyOnHide]="true" (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav"
                                 [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist">
                                 <li [ngbNavItem]="1" class="nav-item">
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">

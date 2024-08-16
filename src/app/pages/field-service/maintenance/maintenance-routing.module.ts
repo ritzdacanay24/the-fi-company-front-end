@@ -1,10 +1,12 @@
 import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { MaintenanceComponent } from "./maintenance.component";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
     path: "",
+    title: "Field Service Maintenance",
     component: MaintenanceComponent,
     children: [
       {
@@ -24,6 +26,7 @@ const routes: Routes = [
         data: { preload: true },
       },
       {
+        title: "Customers",
         path: "customer",
         loadChildren: () =>
           import("./customer/customer-routing.module").then(

@@ -1,40 +1,39 @@
+import { Routes, RouterModule } from "@angular/router";
+import { NgModule } from "@angular/core";
 
-import { Routes, RouterModule } from '@angular/router';
-import { NgModule } from '@angular/core';
-
-import { NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
-import { SchedulerComponent } from './scheduler.component';
-import { CalendarComponent } from './calendar/calendar.component';
-import { TechSchedulePageComponent } from './tech-schedule/tech-schedule-page/tech-schedule-page.component';
+import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
+import { SchedulerComponent } from "./scheduler.component";
+import { CalendarComponent } from "./calendar/calendar.component";
+import { TechSchedulePageComponent } from "./tech-schedule/tech-schedule-page/tech-schedule-page.component";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
-    path: '',
+    path: "",
     component: SchedulerComponent,
     children: [
       {
-        path: '',
-        redirectTo: 'calendar',
-        pathMatch: 'full'
+        path: "",
+        title: "Field Service Calendar",
+        redirectTo: "calendar",
+        pathMatch: "full",
       },
       {
-        path: 'calendar',
-        component: CalendarComponent
+        title: "Field Service Calendar",
+        path: "calendar",
+        component: CalendarComponent,
       },
       {
         title: "Tech Schedule",
-        path: 'tech-schedule',
-        component: TechSchedulePageComponent
-      }
-    ]
-  }
-]
+        path: "tech-schedule",
+        component: TechSchedulePageComponent,
+      },
+    ],
+  },
+];
 
 @NgModule({
-  imports: [
-    RouterModule.forChild(routes),
-    NgbNavModule
-  ],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes), NgbNavModule],
+  exports: [RouterModule],
 })
-export class SchedulerRoutingModule { }
+export class SchedulerRoutingModule {}

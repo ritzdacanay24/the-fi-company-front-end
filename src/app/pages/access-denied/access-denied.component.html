@@ -1,0 +1,31 @@
+<div class="container text-center">
+    <div class="row vcenter" style="margin-top: 20%;">
+        <div class="col-md-12">
+            <div class="error-template">
+                <h1 class="oops">Oops!</h1>
+                <h2 class="message">403 Permission Denied</h2>
+                <div class="error-details mb-3">
+                    Sorry, you do not have access to '<span class="text-primary"> {{title}} </span>', please contact
+                    your
+                    administrator
+                </div>
+                <div class="error-details mb-3">
+                    Your user ID number is {{authenticationService.currentUserValue.id}}
+                </div>
+                <div class="error-details mb-3">
+                    Access Page ID '<span class="text-primary"> {{menu_id}} </span>'
+                </div>
+                <button (click)="refresh()" [disabled]="isLoading" class="btn btn-primary me-3">Refresh</button>
+
+                <button (click)="request_access()" class="btn btn-success"
+                    [disabled]="data?.active == 0 || isLoading">Request Access</button>
+            </div>
+
+
+            <div class="spinner-border text-primary mt-3" role="status" *ngIf="isLoading">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+
+        </div>
+    </div>
+</div>

@@ -90,11 +90,12 @@
       placeholder="Select reason code" [clearable]="true" [editableSearchTerm]="true" class="mb-3">
     </ng-select>
 
-    <div class="mb-3">
+    <div class="mb-3" style="overflow:auto">
       <ace [config]="aceConfig" [mode]="'plain_text'" [theme]="aceTheme" [(value)]="value"
         (textChanged)="onChange($event)" #editor class="border border-light mb-3" id="editor"></ace>
-      <button class="btn btn-primary" (click)="onValidate()" [disabled]="this.form?.disabled">Validate</button>
     </div>
+    <button class="btn btn-primary" (click)="onValidate()" [disabled]="this.form?.disabled">Validate</button>
+
   </div>
 
   <div class="table-responsive text-nowrap">

@@ -16,14 +16,17 @@ const routes: Routes = [
         pathMatch: "full",
       },
       {
+        title: "List IGT Transfer",
         path: "list",
         component: IgtTransferListComponent,
       },
       {
+        title: "Edit IGT Transfer",
         path: "edit",
         component: IgtTransferEditComponent,
       },
       {
+        title: "Create IGT Transfer",
         path: "create",
         component: IgtTransferCreateComponent,
       },

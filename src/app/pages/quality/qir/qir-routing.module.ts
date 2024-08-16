@@ -5,6 +5,7 @@ import { QirComponent } from "./qir.component";
 import { QirEditComponent } from "./qir-edit/qir-edit.component";
 import { QirCreateComponent } from "./qir-create/qir-create.component";
 import { CanDeactivateGuard } from "@app/core/guards/CanDeactivateGuard";
+import { AccessGuard } from "@app/core/guards/access.guard";
 
 const routes: Routes = [
   {
@@ -38,6 +39,8 @@ const routes: Routes = [
       import("../qir-settings/qir-settings-routing.module").then(
         (m) => m.QirSettingsRoutingModule
       ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
   },
 ];
 
