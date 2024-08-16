@@ -5,15 +5,13 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { ActivatedRoute, Router } from "@angular/router";
-import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
+import { autoSizeColumns } from "src/assets/js/util";
 import { NAVIGATION_ROUTE } from "../side-menu-config-constant";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   _decompressFromEncodedURIComponent,
   _compressToEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { EmailNotificationService } from "@app/core/api/email-notification/email-notification.component";
 import { MenuService } from "@app/core/api/menu/menu.service";
 
 @Component({
@@ -28,6 +26,12 @@ export class SideMenuConfigListComponent implements OnInit {
     public router: Router,
     private activatedRoute: ActivatedRoute
   ) {}
+
+  searchName = "";
+
+  onFilterTextBoxChanged(value: any) {
+    this.gridApi.setGridOption("quickFilterText", value);
+  }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {

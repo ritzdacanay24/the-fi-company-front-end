@@ -16,6 +16,12 @@ import { autoSizeColumns } from "src/assets/js/util";
   styleUrls: [],
 })
 export class UserPermissionsComponent implements OnInit {
+  searchName = "";
+
+  onFilterTextBoxChanged(value: any) {
+    this.gridApi.setGridOption("quickFilterText", value);
+  }
+
   constructor(
     public route: ActivatedRoute,
     public router: Router,
@@ -52,6 +58,12 @@ export class UserPermissionsComponent implements OnInit {
       field: "accessRequired",
       headerName: "Access Required",
       filter: "agMultiColumnFilter",
+      cellClassRules: {
+        "text-danger": (params) => {
+          return params.data?.accessRequired == false || params.data?.isTitle;
+        },
+      },
+      cellRenderer: params => params.data?.accessRequired == false || params.data?.isTitle ? false: params.data?.accessRequired
     },
     {
       field: "description",
@@ -65,10 +77,17 @@ export class UserPermissionsComponent implements OnInit {
     groupAggFiltering: true,
     groupDisplayType: "singleColumn",
     getRowStyle: (params) => {
-      if (params.data?.page_access_requested == "Requested Access") {
-        return { borderColor: "#72A0C1", color: "#fff" };
-      }
-      return null;
+      console.log(params.data?.accessRequired);
+      if (!params.data?.accessRequired || params.data?.isTitle) {
+        return {
+          cursor: "not-allowed",
+          pointerEvents: "none",
+        };
+      } else if (params.data?.page_access_requested == "Requested Access") {
+        return {
+          fontWeight: "900",
+        };
+      } else return null;
     },
 
     treeData: true,
@@ -153,7 +172,6 @@ export class UserPermissionsComponent implements OnInit {
       data[i].orgHierarchy = data[i]?.orgHierarchy?.split("/");
     }
     this.data = data;
-
   }
 
   returnZero() {

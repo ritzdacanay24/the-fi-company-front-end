@@ -24,7 +24,6 @@ export class AccessGuard {
 
       return true
 
-
       let d = state.url.split("?")[0];
 
       let res = await this.menuService.checkUserPermission(currentUser.id, d);
