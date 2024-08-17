@@ -36,6 +36,7 @@ export class UserOverviewComponent {
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.id = params["id"];
+      this.active = Number(params["active"]) || this.active;
     });
 
     if (this.id) this.getData();
@@ -50,7 +51,16 @@ export class UserOverviewComponent {
 
   active = 1;
 
-  onNavChange($event) {}
+  onNavChange($event) {
+    $event.preventDefault();
+    this.router.navigate(["."], {
+      queryParams: {
+        active: $event?.nextId,
+      },
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+    });
+  }
 
   title = "Edit User";
 

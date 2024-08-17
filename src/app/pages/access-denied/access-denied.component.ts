@@ -1,8 +1,5 @@
 import { Component } from "@angular/core";
-import {
-  ActivatedRoute,
-  Router,
-} from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { MenuService } from "@app/core/api/menu/menu.service";
 import { PageAccessService } from "@app/core/api/page-access/page-access.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
@@ -40,16 +37,18 @@ export class AccessDeniedComponent {
   title;
   returnUrl;
   menu_id;
+  disableRunData;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.title = params["title"];
       this.returnUrl = params["returnUrl"];
       this.menu_id = params["menu_id"];
+
+      //need a way to disable this if canactivate already ran. 
+      this.checkAccess();
+      //this.getById();
     });
-
-    //this.getById();
-
   }
 
   async getById() {
@@ -104,6 +103,11 @@ export class AccessDeniedComponent {
         user_id: this.authenticationService.currentUserValue.id,
         menu_id: this.menu_id,
       });
+
+      if (this.data && this.data.active == 1) {
+        this.refresh();
+      }
+
     } catch (err) {}
   }
 }

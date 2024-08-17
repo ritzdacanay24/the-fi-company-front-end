@@ -152,7 +152,7 @@ export class SideMenuConfigListComponent implements OnInit {
       delete event.data.orgHierarchy;
       await this.api.update(event.data.id, event.data);
     },
-    groupDefaultExpanded: -1, // expand all groups by default
+    groupDefaultExpanded: -1, 
     getDataPath: (data: any) => {
       return data.orgHierarchy;
     },

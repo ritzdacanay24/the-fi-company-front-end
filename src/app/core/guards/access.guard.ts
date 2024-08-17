@@ -21,11 +21,12 @@ export class AccessGuard {
   async canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
     const currentUser = this.authenticationService.currentUserValue;
     if (currentUser) {
-
-      return true
+      //console.log('Running CanActivate')
+      //return true
 
       let d = state.url.split("?")[0];
 
+      //checks to see if user has access to component.
       let res = await this.menuService.checkUserPermission(currentUser.id, d);
 
       //All file need access UNLESS specified in the MENU as accessRequired = false.
@@ -40,9 +41,8 @@ export class AccessGuard {
         queryParams: {
           returnUrl: state.url,
           title: res?.label || route.routeConfig.title || d,
-          menu_id: res.id,
-          loadData: false,
-        }
+          menu_id: res.id
+        },
       });
 
       return false;

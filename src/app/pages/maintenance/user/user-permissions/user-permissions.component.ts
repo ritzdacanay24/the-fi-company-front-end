@@ -26,15 +26,21 @@ export class UserPermissionsComponent implements OnInit {
     public route: ActivatedRoute,
     public router: Router,
     private pageAccessService: PageAccessService,
-    private menuService: MenuService
-  ) {}
+    private menuService: MenuService,
+    private activatedRoute: ActivatedRoute
+  ) {
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.menu_id = params["menu_id"];
+    });
+  }
+
+  menu_id = 1;
 
   columnDefs: ColDef[] = [
     {
       field: "id",
-      headerName: "ID",
-      filter: "agMultiColumnFilter",
-      hide: true,
+      headerName: "Page ID",
+      filter: "agNumberColumnFilter",
     },
     {
       field: "page_access_requested",
@@ -63,7 +69,10 @@ export class UserPermissionsComponent implements OnInit {
           return params.data?.accessRequired == false || params.data?.isTitle;
         },
       },
-      cellRenderer: params => params.data?.accessRequired == false || params.data?.isTitle ? false: params.data?.accessRequired
+      cellRenderer: (params) =>
+        params.data?.accessRequired == false || params.data?.isTitle
+          ? false
+          : params.data?.accessRequired,
     },
     {
       field: "description",
@@ -77,7 +86,6 @@ export class UserPermissionsComponent implements OnInit {
     groupAggFiltering: true,
     groupDisplayType: "singleColumn",
     getRowStyle: (params) => {
-      console.log(params.data?.accessRequired);
       if (!params.data?.accessRequired || params.data?.isTitle) {
         return {
           cursor: "not-allowed",
@@ -120,6 +128,15 @@ export class UserPermissionsComponent implements OnInit {
         node.setSelected(!!node.data && node.data.page_access_id !== null);
       });
       autoSizeColumns(params);
+
+      if (this.menu_id) {
+        this.gridApi!.setColumnFilterModel("id", {
+          type: "equal",
+          filter: this.menu_id,
+        }).then(() => {
+          this.gridApi!.onFilterChanged();
+        });
+      }
     },
     onRowSelected: async (event) => {
       if (event.source == "checkboxSelected") {

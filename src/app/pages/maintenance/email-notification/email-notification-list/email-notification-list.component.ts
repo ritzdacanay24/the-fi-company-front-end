@@ -54,8 +54,19 @@ export class EmailNotificationListComponent implements OnInit {
       minWidth: 115,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
-    { field: "user_id", headerName: "User Id", filter: "agMultiColumnFilter" },
-    { field: "location", headerName: "Location", filter: "agMultiColumnFilter" },
+    {
+      field: "user_id",
+      headerName: "User Id",
+      filter: "agMultiColumnFilter",
+      hide: true,
+    },
+    {
+      field: "location",
+      headerName: "Location",
+      filter: "agMultiColumnFilter",
+      rowGroup: true,
+      hide: true,
+    },
     { field: "email", headerName: "User Email", filter: "agMultiColumnFilter" },
   ];
 
@@ -87,6 +98,8 @@ export class EmailNotificationListComponent implements OnInit {
   id = null;
 
   gridOptions: GridOptions = {
+    groupDisplayType: "singleColumn",
+    groupDefaultExpanded: -1, 
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
