@@ -29,6 +29,19 @@ export class AccessGuard {
       //checks to see if user has access to component.
       let res = await this.menuService.checkUserPermission(currentUser.id, d);
 
+
+      if (res && res.active == 0) {
+        this.router.navigate(["dashboard/in-active"], {
+          queryParams: {
+            returnUrl: state.url,
+            title: res?.label || route.routeConfig.title || d,
+            menu_id: res.id,
+          },
+        });
+
+        return false;
+      }
+
       //All file need access UNLESS specified in the MENU as accessRequired = false.
       if (res && res.accessRequired == false) return true;
 
@@ -41,7 +54,7 @@ export class AccessGuard {
         queryParams: {
           returnUrl: state.url,
           title: res?.label || route.routeConfig.title || d,
-          menu_id: res.id
+          menu_id: res.id,
         },
       });
 

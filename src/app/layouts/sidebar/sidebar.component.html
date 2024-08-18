@@ -45,7 +45,7 @@
 
           <li class="nav-item" *ngIf="favs?.length" style="word-break: break-all;">
             <a [attr.aria-expanded]="!isCollapsed" (click)="collapse.toggle();toggleItemFavorite()"
-              class="pointer is-parent nav-link menu-link" data-bs-toggle="collapse">
+              class="nav-item nav-link pointer" data-bs-toggle="collapse">
               <i class="las la-star icon nav-icon"></i>
               <span class="">Favorites</span>
             </a>
@@ -71,7 +71,45 @@
           </li>
         </ul>
 
+
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav">
+          <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: menuItems }">
+          </ng-container>
+        </ul>
+
+        <ng-template #recursiveMenu let-menuItems>
+          <li *ngFor="let menu of menuItems;" class="pointer nav-item">
+            @if(menu.isTitle){
+          <li class="menu-title is-parent navbar-nav"><span data-key="t-menu">{{ menu.label }}</span></li>
+
+          }@else if(hasItems(menu)){
+          <a title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="!menu.isCollapsed"
+            data-bs-toggle="collapse" (click)="toggleItem(menu)" class="nav-item nav-link">
+            <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.parent_id == 0"></i>
+            <span class=""> {{ menu.label }} </span>
+          </a>
+          }@else{
+          <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
+            (click)="updateActive($event)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
+            {{ menu.label }}
+
+            <i style="position:absolute;right:10px" *ngIf="menu.showStar && !menu.showStarColor"
+              class="las la-star text-end icon nav-icon"
+              (click)="$event.preventDefault();saveAsFavorite(menu);$event.stopPropagation()"></i>
+            <i style="position:absolute;right:10px" *ngIf="menu.showStar && menu.showStarColor"
+              class="las la-star text-end icon nav-icon text-warning"
+              (click)="$event.preventDefault();removeAsFavorite(menu);$event.stopPropagation()"></i>
+          </a>
+          }
+          <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="menu.isCollapsed">
+            <ul class="nav nav-sm flex-column" aria-expanded="false">
+              <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: menu.subItems }"></ng-container>
+            </ul>
+          </div>
+          </li>
+        </ng-template>
+
+        <!-- <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav">
 
           @for(item of menuItems; track $index){
           @if(item.isTitle){
@@ -190,7 +228,7 @@
           </li>
           }
           }
-        </ul>
+        </ul> -->
       </ngx-simplebar>
     </div>
     <!-- Sidebar -->

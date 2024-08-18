@@ -12,6 +12,12 @@ export const agGridOptions: GridOptions = {
   suppressMenuHide: false,
   suppressCopyRowsToClipboard: true,
   enableRangeSelection: true,
+
+  // turns OFF row hover, it's on by default
+  suppressRowHoverHighlight: false,
+  // turns ON column hover, it's off by default
+  columnHoverHighlight: true,
+
   rowSelection: "multiple",
   // undoRedoCellEditing: true,
   // undoRedoCellEditingLimit: 5,
@@ -40,7 +46,6 @@ export const agGridOptions: GridOptions = {
     skipPinnedBottom: true,
   },
   defaultColDef: {
-    
     cellDataType: false,
     sortable: true,
     filter: true,

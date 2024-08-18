@@ -17,8 +17,8 @@
                 </div>
                 <button (click)="refresh()" [disabled]="isLoading" class="btn btn-primary me-3">Refresh</button>
 
-                <button (click)="request_access()" class="btn btn-success"
-                    [disabled]="data?.active == 0 || isLoading">Request Access</button>
+                <button (click)="request_access()" class="btn btn-success" [disabled]="data?.active == 0 || isLoading">
+                    {{data?.active == 0 ? 'Pending Access' : 'Request Access'}}</button>
             </div>
 
 

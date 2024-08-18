@@ -1071,12 +1071,10 @@ export class ShippingComponent implements OnInit {
     animateRows: true,
     tooltipShowDelay: 0,
     columnDefs: [],
-    rowBuffer: 0,
     enableCharts: true,
     enableAdvancedFilter: false,
     enableBrowserTooltips: true,
     suppressColumnMoveAnimation: true,
-
     getRowId: (data: any) => data?.data.id,
     onGridReady: (params) => {
       this.gridApi = params.api;

@@ -10,6 +10,8 @@ $agHeight: 4px;
     border-bottom: unset
 }
 
+
+
 // .ag-theme-quartz {
 //     --ag-card-radius: 10px;
 //     --ag-selected-tab-underline-width: 2px;
@@ -23,6 +25,15 @@ $agHeight: 4px;
 // }
 
 .ag-theme-quartz {
+   
+    :not(.ag-row-last) {
+        --ag-row-border-width:0px;
+      }
+
+      :has(.ag-row-last) {
+        --ag-row-border-width:1px;
+      }
+
     --ag-header-cell-hover-background-color: --vz-primary;
     --ag-header-cell-moving-background-color: --vz-primary;
     --ag-selected-tab-underline-width: 2px;

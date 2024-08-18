@@ -18,6 +18,7 @@ import { MenuComponent } from "./pages/menu/menu.component";
 import { DashboardComponent } from "./pages/dashboard/dashboard.component";
 import { AccessDeniedComponent } from "./pages/access-denied/access-denied.component";
 import { AccessGuard } from "./core/guards/access.guard";
+import { InActiveComponent } from "./pages/in-active/in-active.component";
 
 const routes: Routes = [
   { path: "menu", component: MenuComponent },
@@ -84,6 +85,10 @@ const routes: Routes = [
       {
         path: "access-denied",
         component: AccessDeniedComponent,
+      },
+      {
+        path: "in-active",
+        component: InActiveComponent,
       },
     ],
   },
