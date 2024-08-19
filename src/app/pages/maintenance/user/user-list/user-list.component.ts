@@ -208,8 +208,6 @@ export class UserListComponent implements OnInit {
         this.data[i].orgHierarchy = this.data[i]?.orgHierarchy?.split("/");
       }
 
-      console.log(this.data);
-
       this.router.navigate(["."], {
         queryParams: {
           selectedViewTypeUserList: this.selectedViewTypeUserList,

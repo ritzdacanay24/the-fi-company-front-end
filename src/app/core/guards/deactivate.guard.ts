@@ -12,7 +12,6 @@ export class Deactivate  {
     currentState: RouterStateSnapshot,
     nextState: RouterStateSnapshot
   ): MaybeAsync<GuardResult> {
-    console.log('dsfdf')
     return true
   }
 }
