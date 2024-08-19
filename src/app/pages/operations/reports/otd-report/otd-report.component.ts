@@ -8,7 +8,7 @@ import {
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
-import { ColDef, Column, GridApi, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import moment from "moment";
 import { autoSizeColumns } from "src/assets/js/util";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
@@ -232,7 +232,7 @@ export class OtdReportComponent implements OnInit {
       filter: "agTextColumnFilter",
     },
     {
-      field: "lateReasonCode",
+      field: "latereasoncode",
       headerName: "Late Reason Code",
       filter: "agTextColumnFilter",
     },

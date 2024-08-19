@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, ViewChildren } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 
 @Injectable({
@@ -31,10 +31,11 @@ import { SharedModule } from "@app/shared/shared.module";
 import { ShippingService } from "@app/core/api/operations/shipping/shipping.service";
 import { LateReasonCodesService } from "@app/core/api/operations/late-reason-codes/late-reason-codes.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { FilterPipe } from "@app/shared/pipes/filter.pipe";
 
 @Component({
   standalone: true,
-  imports: [SharedModule],
+  imports: [SharedModule, FilterPipe],
   selector: "app-late-reason-code-modal",
   templateUrl: "./late-reason-code-modal.component.html",
   styleUrls: [],
@@ -45,6 +46,8 @@ export class LateReasonCodeModalComponent implements OnInit {
   @Input() public key: string;
   @Input() public department: string = "";
 
+  @ViewChildren("someVar") filteredItems;
+
   selectedDate: any;
   selectedDateView: any;
   recoveryDate: any;
@@ -52,6 +55,7 @@ export class LateReasonCodeModalComponent implements OnInit {
   newItem: any;
   currentUserInfo: any;
   lateReasonCode: any;
+  lateReasonCodeComment: any;
 
   ngAfterViewChecked() {
     this.cdRef.detectChanges();
@@ -134,14 +138,26 @@ export class LateReasonCodeModalComponent implements OnInit {
         (data) => {
           this.data = data;
           this.lateReasonCode = this.miscData[this.key];
+
+          this.lateReasonCodeComment = this.miscData['lateReasonCodeComment'];
+
           this.isLoading = false;
+          this.scrollTo();
         },
         () => (this.isLoading = false)
       );
   }
 
+  scrollTo() {
+    setTimeout(() => {
+      let el = document.getElementById(this.lateReasonCode);
+      if (el) el.scrollIntoView();
+    }, 100);
+  }
+
   save() {
     this.miscData[this.key] = this.lateReasonCode;
+    this.miscData['lateReasonCodeComment'] = this.lateReasonCodeComment;
     this.miscData.so = this.miscData.so ? this.miscData.so : this.soLineNumber;
     this.update();
   }

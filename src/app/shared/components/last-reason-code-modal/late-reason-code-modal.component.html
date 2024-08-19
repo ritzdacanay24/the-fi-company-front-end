@@ -14,18 +14,24 @@
     </div>
 </div>
 
-<div class="modal-header" *ngIf="!isLoading">
-    <div class="input-group" *ngIf="isAuthorized()">
-        <span class="input-group-text pointer" id="basic-addon1" (click)="addNew()">Add Item</span>
-        <input type="text" class="form-control" placeholder="Enter new item" aria-label=""
-            aria-describedby="basic-addon1" [(ngModel)]="newItem">
+<div class="modal-headerd p-3" *ngIf="!isLoading">
+    <div class="input-group mb-3" *ngIf="isAuthorized()">
+        <input type="text" class="form-control" placeholder="Search Item" aria-label="" aria-describedby="basic-addon1"
+            [(ngModel)]="newItem">
+        <span class="input-group-text pointer btn-success" id="basic-addon1"
+            *ngIf="isAuthorized() && filteredItems?.length == 0" (click)="addNew()">Add Item</span>
+    </div>
+    <div class="mb-1">
+        <label class="form-label">Additional Information</label>
+        <textarea type="text" class="form-control" [(ngModel)]="lateReasonCodeComment"
+            placeholder="Enter additional information" rows="5"></textarea>
     </div>
 </div>
 
 <div class="modal-body" *ngIf="!isLoading">
     <ul class="list-group">
         <li class="list-group-item d-flex justify-content-between align-items-center border-0 p-0 mb-2"
-            *ngFor="let row of data;let i = index">
+            *ngFor="let row of data | filter: newItem as result;let i = index" #someVar id="{{row.name}}">
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="optionsRadios" [(ngModel)]="lateReasonCode"
                     id="optionsRadios-{{i}}" [value]="row.name" [checked]="row.name == lateReasonCode">
@@ -36,6 +42,7 @@
             <button class="btn btn-danger btn-sm" (click)="$event.stopPropagation();remove(row.id)">X</button>
         </li>
     </ul>
+
 </div>
 
 <div class="modal-footer">
