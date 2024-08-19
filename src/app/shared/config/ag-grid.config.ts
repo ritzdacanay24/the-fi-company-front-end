@@ -16,7 +16,7 @@ export const agGridOptions: GridOptions = {
   // turns OFF row hover, it's on by default
   suppressRowHoverHighlight: false,
   // turns ON column hover, it's off by default
-  columnHoverHighlight: true,
+  columnHoverHighlight: false,
 
   rowSelection: "multiple",
   // undoRedoCellEditing: true,

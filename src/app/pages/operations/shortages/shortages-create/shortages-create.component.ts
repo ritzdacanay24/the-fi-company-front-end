@@ -7,7 +7,7 @@ import { ShortagesFormComponent } from '../shortages-form/shortages-form.compone
 import { ShortagesService } from '@app/core/api/operations/shortages/shortages.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
-import { getFormValidationErrors } from 'src/assets/js/util';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,

@@ -5,7 +5,7 @@ import { PageAccessService } from "@app/core/api/page-access/page-access.service
 import { MENU } from "@app/layouts/sidebar/menu";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
-import { ColDef, GridOptions } from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { autoSizeColumns } from "src/assets/js/util";
 
 @Component({
@@ -81,7 +81,7 @@ export class UserPermissionsComponent implements OnInit {
     },
   ];
 
-  gridApi;
+  gridApi: GridApi;
   gridOptions: GridOptions = {
     groupAggFiltering: true,
     groupDisplayType: "singleColumn",
@@ -97,7 +97,6 @@ export class UserPermissionsComponent implements OnInit {
         };
       } else return null;
     },
-
     treeData: true,
     suppressRowClickSelection: true,
     rowSelection: "multiple",
@@ -105,9 +104,11 @@ export class UserPermissionsComponent implements OnInit {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
+      this.gridApi!.resetRowHeights();
     },
     autoGroupColumnDef: {
       headerName: "Page Name",
+      filter: "agTextColumnFilter",
       minWidth: 300,
       cellRendererParams: {
         suppressCount: true,

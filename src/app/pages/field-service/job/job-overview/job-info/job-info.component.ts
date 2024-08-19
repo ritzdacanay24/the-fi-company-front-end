@@ -10,7 +10,7 @@ import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { ToastrService } from "ngx-toastr";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { SharedModule } from "@app/shared/shared.module";
-import { getFormValidationErrors } from "src/assets/js/util";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
   standalone: true,

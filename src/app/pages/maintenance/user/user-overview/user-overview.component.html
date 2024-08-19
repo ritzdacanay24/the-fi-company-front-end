@@ -45,13 +45,13 @@
                                 </div>
                             </div>
 
-                            <ul [destroyOnHide]="true" (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav"
+                            <ul [destroyOnHide]="false" (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav"
                                 [activeId]="active" class="nav nav-tabs-custom border-bottom-0" role="tablist">
                                 <li [ngbNavItem]="1" class="nav-item">
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                                         <i class="ri-file-info-line text-muted align-bottom me-1"></i> User Info
                                     </a>
-                                    <ng-template ngbNavContent>
+                                    <ng-template ngbNavContent *ngIf="active == 1">
 
                                         <div class="row">
                                             <div
@@ -90,7 +90,7 @@
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                                         <i class="ri-file-info-line text-muted align-bottom me-1"></i> Update Password
                                     </a>
-                                    <ng-template ngbNavContent>
+                                    <ng-template ngbNavContent  *ngIf="active == 2">
                                         <app-user-password [id]="id"></app-user-password>
                                     </ng-template>
                                 </li>
@@ -98,7 +98,7 @@
                                     <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
                                         <i class="ri-file-info-line text-muted align-bottom me-1"></i> Permissions
                                     </a>
-                                    <ng-template ngbNavContent>
+                                    <ng-template ngbNavContent  *ngIf="active == 3">
                                         <app-user-permissions [id]="id"></app-user-permissions>
                                     </ng-template>
                                 </li>

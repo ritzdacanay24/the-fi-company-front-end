@@ -6,6 +6,7 @@ import { NAVIGATION_ROUTE } from "../user-constant";
 import { SharedModule } from "@app/shared/shared.module";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 import { NewUserService } from "@app/core/api/users/users.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
   standalone: true,
@@ -58,7 +59,13 @@ export class UserEditComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (this.form.invalid) {
+    if (
+      this.form.invalid &&
+      this.form.value.isEmployee == 1 &&
+      this.form.value.active == 1
+    ) {
+      this.submitted = false;
+      getFormValidationErrors();
       return;
     }
 

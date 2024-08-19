@@ -17,26 +17,26 @@ export function getDirtyValues2(form: any) {
 
   return dirtyValues;
 }
-export function getFormValidationErrors(form?:any) {
-  let errorForm = [];
-  Object.keys(form.controls).forEach((key) => {
-    const controlErrors: ValidationErrors = form.get(key).errors;
-    if (controlErrors != null) {
-      Object.keys(controlErrors).forEach((keyError) => {
-        let keyName = key
-          .replace(/([A-Z])/g, " $1")
-          // uppercase the first character
-          .replace(/^./, function (str) {
-            return str.toUpperCase();
-          });
-        errorForm.push(
-          `${keyName} is ${keyError} => ErrValue: ${controlErrors[keyError]}`
-        );
-      });
-    }
-  });
-  return errorForm;
-}
+// export function getFormValidationErrors(form?:any) {
+//   let errorForm = [];
+//   Object.keys(form.controls).forEach((key) => {
+//     const controlErrors: ValidationErrors = form.get(key).errors;
+//     if (controlErrors != null) {
+//       Object.keys(controlErrors).forEach((keyError) => {
+//         let keyName = key
+//           .replace(/([A-Z])/g, " $1")
+//           // uppercase the first character
+//           .replace(/^./, function (str) {
+//             return str.toUpperCase();
+//           });
+//         errorForm.push(
+//           `${keyName} is ${keyError} => ErrValue: ${controlErrors[keyError]}`
+//         );
+//       });
+//     }
+//   });
+//   return errorForm;
+// }
 
 export function must_be_email(control: FormControl) {
   var EMAIL_REGEXP =

@@ -10,6 +10,7 @@ import { UserPasswordComponent } from "../user-password/user-password.component"
 import { UserPermissionsComponent } from "../user-permissions/user-permissions.component";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 import { NewUserService } from "@app/core/api/users/users.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
   standalone: true,
@@ -95,7 +96,13 @@ export class UserOverviewComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (this.form.invalid) return;
+    if (
+      this.form.invalid &&
+      (this.form.value.isEmployee == 1 && this.form.value.active == 1)
+    ) {
+      getFormValidationErrors();
+      return;
+    }
 
     try {
       this.isLoading = true;

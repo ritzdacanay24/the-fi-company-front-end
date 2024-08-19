@@ -3,6 +3,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { ToastrService } from "ngx-toastr";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 import { NewUserService } from "@app/core/api/users/users.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Component({
   standalone: true,
@@ -36,7 +37,14 @@ export class UserInfoComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (this.form.invalid) return;
+    if (
+      this.form.invalid &&
+      (this.form.value.isEmployee == 1 && this.form.value.active == 1)
+    ) {
+      this.submitted = false;
+      getFormValidationErrors();
+      return;
+    }
 
     await this.userService.update(this.id, this.form.value);
 
@@ -56,7 +64,7 @@ export class UserInfoComponent {
       let totalAttachments = 0;
       this.isLoading = true;
       const formData = new FormData();
-      
+
       formData.append("file", this.myFiles);
 
       try {

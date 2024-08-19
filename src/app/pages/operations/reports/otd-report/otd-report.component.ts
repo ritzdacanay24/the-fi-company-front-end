@@ -231,6 +231,12 @@ export class OtdReportComponent implements OnInit {
       headerName: "Qty Ordered",
       filter: "agTextColumnFilter",
     },
+    {
+      field: "lateReasonCode",
+      headerName: "Late Reason Code",
+      filter: "agTextColumnFilter",
+    },
+    
   ];
 
   gridOptions: GridOptions = {

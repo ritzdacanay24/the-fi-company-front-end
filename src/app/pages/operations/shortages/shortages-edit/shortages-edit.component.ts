@@ -9,8 +9,8 @@ import { ShortagesService } from '@app/core/api/operations/shortages/shortages.s
 import moment from 'moment';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SharedModule } from '@app/shared/shared.module';
-import { getFormValidationErrors } from 'src/assets/js/util';
 import { MyFormGroup } from 'src/assets/js/util/_formGroup';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,

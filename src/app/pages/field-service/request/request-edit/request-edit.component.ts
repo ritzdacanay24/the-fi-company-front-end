@@ -14,7 +14,6 @@ import { RequestScheduleJobComponent } from '../request-schedule-job/request-sch
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { FIELD_SERVICE } from '../../field-service-constant';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { getFormValidationErrors } from 'src/assets/js/util';
 import { AutosizeModule } from 'ngx-autosize';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
@@ -22,6 +21,7 @@ import { TechScheduleModalService } from '../../scheduler/tech-schedule/tech-sch
 import { JobModalCreateService } from '../../job/job-modal-create/job-modal-create.component';
 import { JobService } from '@app/core/api/field-service/job.service';
 import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
+import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 
 @Component({
   standalone: true,
