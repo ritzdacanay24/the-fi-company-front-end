@@ -17,6 +17,10 @@ import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.c
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
 import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { OtdChartComponent } from "./otd-chart/otd-chart.component";
+import { OtdReasonCodeChartComponent } from "./otd-reason-code-chart/otd-reason-code-chart.component";
+import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
+import { LateReasonCodeRendererComponent } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component";
+import { LateReasonCodeModalService } from "@app/shared/components/last-reason-code-modal/late-reason-code-modal.component";
 
 @Component({
   standalone: true,
@@ -27,6 +31,8 @@ import { OtdChartComponent } from "./otd-chart/otd-chart.component";
     GridSettingsComponent,
     GridFiltersComponent,
     OtdChartComponent,
+    OtdReasonCodeChartComponent,
+    NgbNavModule
   ],
   selector: "app-otd-report",
   templateUrl: "./otd-report.component.html",
@@ -38,7 +44,8 @@ export class OtdReportComponent implements OnInit {
     public router: Router,
     public reportService: ReportService,
     private commentsModalService: CommentsModalService,
-    private salesOrderInfoModalService: SalesOrderInfoModalService
+    private salesOrderInfoModalService: SalesOrderInfoModalService,
+    private lateReasonCodeModalService: LateReasonCodeModalService,
   ) {}
 
   ngOnInit(): void {
@@ -232,13 +239,40 @@ export class OtdReportComponent implements OnInit {
       filter: "agTextColumnFilter",
     },
     {
-      field: "latereasoncode",
+      field: "misc.lateReasonCode",
       headerName: "Late Reason Code",
-      filter: "agTextColumnFilter",
+      filter: "agSetColumnFilter",
+      cellRenderer: LateReasonCodeRendererComponent,
+      cellRendererParams: {
+        onClick: (e) => {
+          this.viewReasonCode(
+            "lateReasonCode",
+            e.rowData.misc,
+            e.rowData.SOD_NBR + "-" + e.rowData.SOD_LINE,
+            e.rowData
+          );
+        },
+      },
     },
     
   ];
 
+  
+  viewReasonCode = (key, misc, soLineNumber, rowData) => {
+    let modalRef = this.lateReasonCodeModalService.open(
+      key,
+      misc,
+      soLineNumber,
+      "Shipping"
+    );
+    modalRef.result.then(
+      (result: any) => {
+        rowData.misc = result;
+        this.getData()
+      },
+      () => {}
+    );
+  };
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
@@ -362,6 +396,8 @@ export class OtdReportComponent implements OnInit {
   ontime = 0;
   allInfo;
   goal = 0;
+  reasonChart
+  active = 1
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
@@ -377,6 +413,7 @@ export class OtdReportComponent implements OnInit {
       this.summary = data?.summary;
       this.allInfo = data;
       this.goal = data?.goal;
+      this.reasonChart = data?.reasonChart;
 
       this.router.navigate(["."], {
         queryParams: {

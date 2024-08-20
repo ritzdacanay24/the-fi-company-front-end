@@ -44,7 +44,6 @@
           </h4>
         </div>
         <div [hidden]="isLoading">
-
           <app-otd-chart [data]="dataChart?.chartnew" [labels]="dataChart?.obj?.label" [title]="displayCustomers"
             [average]="average" [stacked]="true" [typeOfView]="typeOfView" [goal]="goal">
           </app-otd-chart>
@@ -53,60 +52,85 @@
     </div>
   </div>
   <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-nowrap">
-        <h4 class="card-title mb-0 flex-grow-1"> OTD Summary </h4>
-        <div class="f-flex-column">
-          <h6 class="fs- mb-0">
-            {{allInfo?.todayInfo?.value || 0 | number : '1.2-2' }}% Today OTD</h6>
-          <p class="mb-0 text-muted">
-            <span class="badge bg-success-subtle text-success mb-0"
-              [ngClass]="{'bg-danger-subtle text-danger':getValue <= 0}">
-              <i class="align-middle"
-                [ngClass]="{'ri-arrow-down-line':getValue <= 0,'ri-arrow-up-line':getValue > 0}"></i>
-              {{getValue | number : '1.2-2' }}%
-            </span> vs. previous day
-          </p>
+    <ul ngbNav #nav="ngbNav"  [destroyOnHide]="false" [(activeId)]="active" class="nav nav-tabs-custom border-bottom-0">
+      <li [ngbNavItem]="1" class="nav-item">
+        <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+          <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Reason Codes
+        </a>
+        <ng-template ngbNavContent *ngIf="active == 1">
+          <div class="card">
+            <div class="card-body p-0" style="max-height:433px;min-height:433px;overflow:auto;margin:0 auto">
+              <app-otd-reason-code-chart [data]="reasonChart">
+              </app-otd-reason-code-chart>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+      <li [ngbNavItem]="2" class="nav-item">
+        <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+          <i class="ri-dashboard-line text-muted align-bottom me-1"></i> By Customers
+        </a>
+        <ng-template ngbNavContent *ngIf="active == 2">
+          <div class="card">
+            <div class="card-header d-flex align-items-center text-nowrap">
+              <h4 class="card-title mb-0 flex-grow-1"> OTD Summary </h4>
+              <div class="f-flex-column">
+                <h6 class="fs- mb-0">
+                  {{allInfo?.todayInfo?.value || 0 | number : '1.2-2' }}% Today OTD</h6>
+                <p class="mb-0 text-muted">
+                  <span class="badge bg-success-subtle text-success mb-0"
+                    [ngClass]="{'bg-danger-subtle text-danger':getValue <= 0}">
+                    <i class="align-middle"
+                      [ngClass]="{'ri-arrow-down-line':getValue <= 0,'ri-arrow-up-line':getValue > 0}"></i>
+                    {{getValue | number : '1.2-2' }}%
+                  </span> vs. previous day
+                </p>
+              </div>
+            </div>
+
+            <div class="card-body p-0" style="max-height:359px;min-height:359px;overflow:auto">
+              <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="summary" [columnDefs]="columnDefs1"
+                [gridOptions]="gridOptions1" style="width: 100%;height: calc(100vh - 586px);">
+              </ag-grid-angular>
+            </div>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+
+    <div [ngbNavOutlet]="nav"></div>
+  </div>
+</div>
+
+<div class="col-lg-12">
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex align-items-center">
+        <div class="form-icon">
+          <input type="search" class="form-control form-control-icon" style="width:250px"
+            (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+            placeholder="Search">
+          <i class="ri-search-2-line"></i>
+        </div>
+
+        <div class="ms-3">
+          <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+        </div>
+
+
+        <div class="ms-3 me-3">
+          <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+        </div>
+
+        <div class="ms-auto">
+          <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
         </div>
       </div>
-
-      <div class="card-body p-0" style="max-height:400px;min-height:400px;overflow:auto">
-        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="summary" [columnDefs]="columnDefs1"
-          [gridOptions]="gridOptions1" style="width: 100%;height: calc(100vh - 577px);">
-        </ag-grid-angular>
-      </div>
+    </div>
+    <div class="card-body p-0">
+      <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+        [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
+      </ag-grid-angular>
     </div>
   </div>
-
-  <div class="col-lg-12">
-    <div class="card">
-      <div class="card-header">
-        <div class="d-flex align-items-center">
-          <div class="form-icon">
-            <input type="search" class="form-control form-control-icon" style="width:250px"
-              (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
-              placeholder="Search">
-            <i class="ri-search-2-line"></i>
-          </div>
-
-          <div class="ms-3">
-            <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
-          </div>
-
-
-          <div class="ms-3 me-3">
-            <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-          </div>
-
-          <div class="ms-auto">
-            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
-          </div>
-        </div>
-      </div>
-      <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
-        </ag-grid-angular>
-      </div>
-    </div>
-  </div>
+</div>

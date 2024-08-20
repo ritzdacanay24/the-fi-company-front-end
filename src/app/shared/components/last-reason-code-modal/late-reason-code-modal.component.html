@@ -18,7 +18,7 @@
     <div class="input-group mb-3" *ngIf="isAuthorized()">
         <input type="text" class="form-control" placeholder="Search Item" aria-label="" aria-describedby="basic-addon1"
             [(ngModel)]="newItem">
-        <span class="input-group-text pointer btn-success" id="basic-addon1"
+        <span class="input-group-text pointer btn-success btn no-shadow shadow-none" id="basic-addon1"
             *ngIf="isAuthorized() && filteredItems?.length == 0" (click)="addNew()">Add Item</span>
     </div>
     <div class="mb-1">
@@ -42,6 +42,8 @@
             <button class="btn btn-danger btn-sm" (click)="$event.stopPropagation();remove(row.id)">X</button>
         </li>
     </ul>
+
+    <p *ngIf="filteredItems?.length == 0" class="text-danger">No results found.</p>
 
 </div>
 
