@@ -44,18 +44,11 @@ export class OtdReasonCodeChartComponent {
     this.chartOptions = {
       series: [],
       chart: {
-        width: 350,
+        width: 400,
+        height: 400,
         type: "pie",
       },
       labels: [],
-      legend: {
-        show: false,
-      },
-      theme: {
-        monochrome: {
-          enabled: true
-        }
-      },
     };
   }
 
@@ -70,26 +63,49 @@ export class OtdReasonCodeChartComponent {
         height: 400,
         type: "pie",
       },
+      stroke: {
+        colors: "#fff",
+      },
       dataLabels: {
         enabled: true,
-        style: {
-          fontSize: "10px",
-          fontFamily: "Helvetica, Arial, sans-serif",
-          fontWeight: "bold",
+        formatter(val, opts) {
+          const name = opts.w.globals.labels[opts.seriesIndex];
+          return ["", val.toFixed(0) + "%"];
         },
+        dropShadow: {},
       },
-      theme: {
-        monochrome: {
-          enabled: true
-        }
+
+      grid: {
+        padding: {
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+        },
       },
       legend: {
         fontSize: "10px",
         position: "bottom",
-        horizontalAlign: "center",
+        horizontalAlign: "left",
+        formatter: function (val, opts) {
+          return val + " - " + opts.w.globals.series[opts.seriesIndex];
+        },
+      },
+      theme: {
+        monochrome: {
+          enabled: true,
+        },
       },
       labels: this.data?.label,
     };
     this.chartOptions.series = this.data?.value;
+    this.chartOptions.colors = [
+      "#a8c7f4",
+      "#83aff0",
+      "#4779c4",
+      "#3c649f",
+      "#2c456b",
+      "#1b2d48",
+    ];
   }
 }
