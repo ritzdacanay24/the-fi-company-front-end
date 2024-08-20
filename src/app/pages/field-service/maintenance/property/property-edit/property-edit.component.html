@@ -23,6 +23,7 @@
       <div class="card-body" style="min-height:300px">
         <app-property-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-property-form>
 
+        <h4 class="bg-light p-2 mb-3">License Information</h4>
         <div class="mb-3">
           <label class="form-label">Search by license entity</label>
           <app-license-entity-search (notifyParent)="notifyLicenseParent($event)" [editableSearchTerm]="false"
@@ -65,8 +66,8 @@
             <table class="table table-bordered table-sm">
               <thead>
                 <tr>
-                  <th>Tech</th>
-                  <th>Licensed Required</th>
+                  <th>Licensed Tech</th>
+                  <th>Approved Tech</th>
                   <th>Expired Date</th>
                   <th>Notes</th>
                 </tr>

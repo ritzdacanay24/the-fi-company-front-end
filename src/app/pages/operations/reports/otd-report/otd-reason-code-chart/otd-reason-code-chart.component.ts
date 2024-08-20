@@ -44,12 +44,17 @@ export class OtdReasonCodeChartComponent {
     this.chartOptions = {
       series: [],
       chart: {
-        width: 500,
+        width: 350,
         type: "pie",
       },
       labels: [],
       legend: {
         show: false,
+      },
+      theme: {
+        monochrome: {
+          enabled: true
+        }
       },
     };
   }
@@ -65,10 +70,23 @@ export class OtdReasonCodeChartComponent {
         height: 400,
         type: "pie",
       },
+      dataLabels: {
+        enabled: true,
+        style: {
+          fontSize: "10px",
+          fontFamily: "Helvetica, Arial, sans-serif",
+          fontWeight: "bold",
+        },
+      },
+      theme: {
+        monochrome: {
+          enabled: true
+        }
+      },
       legend: {
+        fontSize: "10px",
         position: "bottom",
         horizontalAlign: "center",
-        
       },
       labels: this.data?.label,
     };
