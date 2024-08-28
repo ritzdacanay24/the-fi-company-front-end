@@ -64,7 +64,6 @@ export class AppComponent {
 
   ngOnInit(): void {
     this.isMobile = isMobile();
-    this.showNewVersionMessage();
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
@@ -96,7 +95,7 @@ export class AppComponent {
 
         this.hasUpdate = true;
 
-        //await this.showNewVersionMessage();
+        await this.showNewVersionMessage();
       }
 
       if (event.type === "VERSION_READY") {
@@ -114,9 +113,9 @@ export class AppComponent {
 
   async showNewVersionMessage() {
     let { isConfirmed } = await SweetAlert.fire({
-      toast:true,
-      imageUrl:"",
-      position: 'bottom-end',
+      toast: true,
+      imageUrl: "",
+      position: "bottom-end",
       title: `A new version of the dashboard is available`,
       showCloseButton: false,
       showCancelButton: true,
