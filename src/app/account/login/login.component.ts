@@ -1,29 +1,35 @@
-import { Component, OnInit } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from "@angular/core";
+import {
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators,
+} from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
 
 // Login Auth
-import { AuthenticationService } from '../../core/services/auth.service';
-import { ToastService } from './toast-service';
-import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
-
+import { AuthenticationService } from "../../core/services/auth.service";
+import { ToastService } from "./toast-service";
+import {
+  THE_FI_COMPANY_CURRENT_USER,
+  THE_FI_COMPANY_TWOSTEP_TOKEN,
+} from "@app/core/guards/admin.guard";
+import { TwostepService } from "@app/core/api/twostep/twostep.service";
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  selector: "app-login",
+  templateUrl: "./login.component.html",
+  styleUrls: ["./login.component.scss"],
 })
 
 /**
  * Login Component
  */
 export class LoginComponent implements OnInit {
-
   // Login Form
   loginForm!: UntypedFormGroup;
   submitted = false;
   fieldTextType!: boolean;
-  error = '';
+  error = "";
   returnUrl!: string;
   // set the current year
   year: number = new Date().getFullYear();
@@ -33,31 +39,37 @@ export class LoginComponent implements OnInit {
     private authenticationService: AuthenticationService,
     private router: Router,
     private route: ActivatedRoute,
-    public toastservice: ToastService
+    public toastservice: ToastService,
+    private twostepService: TwostepService
   ) {
     // redirect to home if already logged in
     if (this.authenticationService.currentUserValue) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(["/dashboard"]);
     }
   }
 
   ngOnInit(): void {
     if (localStorage.getItem(THE_FI_COMPANY_CURRENT_USER)) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(["/dashboard"]);
     }
     /**
      * Form Validatyion
      */
     this.loginForm = this.formBuilder.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]],
+      email: ["", [Validators.required, Validators.email]],
+      password: ["", [Validators.required]],
     });
     // get return url from route parameters or default to '/'
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    this.returnUrl =
+      this.route.snapshot.queryParams["returnUrl"] || "/dashboard";
   }
 
   // convenience getter for easy access to form fields
-  get f() { return this.loginForm.controls; }
+  get f() {
+    return this.loginForm.controls;
+  }
+
+  twostep = true;
 
   /**
    * Form submit
@@ -70,18 +82,55 @@ export class LoginComponent implements OnInit {
     }
 
     // Login Api
-    this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data: any) => {
-      if (data.status == 'success') {
-        localStorage.setItem('toast', 'true');
-        localStorage.setItem(THE_FI_COMPANY_CURRENT_USER, JSON.stringify(data.user));
-        localStorage.setItem('token', data.access_token);
-        //this.router.navigate([this.returnUrl]);
-        this.router.navigateByUrl(this.returnUrl);
+    this.authenticationService
+      .login(this.f["email"].value, this.f["password"].value)
+      .subscribe(async (data: any) => {
+        if (data.status == "success") {
+          let twostep = localStorage.getItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
-      } else {
-        this.toastservice.show(data?.message, { classname: 'bg-danger text-white', delay: 15000 });
-      }
-    });
+          let isTwostepEnabled = await this.twostepService.isTwostepEnabled();
+
+          //if twostep is enabled
+          if (!twostep && isTwostepEnabled == 1) {
+            try {
+              let { passCode } = await this.twostepService.twoStepGenerateCode({
+                email: data.user.email,
+              });
+
+              this.router.navigate(["auth/twostep/basic"], {
+                state: {
+                  email: data.user.email,
+                  passCode,
+                  returnUrl: this.returnUrl,
+                  data: data,
+                },
+                queryParams: { passCode, returnUrl: this.returnUrl },
+              });
+              return;
+            } catch (err) {
+              return;
+            }
+          } else {
+
+            localStorage.setItem("toast", "true");
+
+            localStorage.setItem("token", data.access_token);
+
+            localStorage.setItem(
+              THE_FI_COMPANY_CURRENT_USER,
+              JSON.stringify(data.user)
+            );
+
+            //this.router.navigate([this.returnUrl]);
+            this.router.navigateByUrl(this.returnUrl);
+          }
+        } else {
+          this.toastservice.show(data?.message, {
+            classname: "bg-danger text-white",
+            delay: 15000,
+          });
+        }
+      });
   }
 
   /**
@@ -90,5 +139,4 @@ export class LoginComponent implements OnInit {
   toggleFieldTextType() {
     this.fieldTextType = !this.fieldTextType;
   }
-
 }

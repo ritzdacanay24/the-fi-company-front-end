@@ -56,23 +56,34 @@ export class OtdReasonCodeChartComponent {
 
   ngOnChanges(data: SimpleChanges) {
     if (!this.data) return;
-
     this.chartOptions = {
       chart: {
-        width: 400,
-        height: 400,
+        width: 500,
         type: "pie",
+        toolbar: {
+          show: true,
+        },
       },
       stroke: {
-        colors: "#fff",
+        show: true,
+        colors: undefined,
+        width: 0.5,
       },
       dataLabels: {
         enabled: true,
         formatter(val, opts) {
           const name = opts.w.globals.labels[opts.seriesIndex];
-          return ["", val.toFixed(0) + "%"];
+          return [val.toFixed(0) + "%"];
         },
+        textAnchor: "end",
         dropShadow: {},
+        background: {
+          enabled: true,
+          color: "#000",
+          opacity: 0.2,
+        },
+        offsetX: -50,
+        offsetY: 0,
       },
 
       grid: {
@@ -86,10 +97,11 @@ export class OtdReasonCodeChartComponent {
       legend: {
         fontSize: "10px",
         position: "bottom",
-        horizontalAlign: "left",
+        horizontalAlign: "center",
         formatter: function (val, opts) {
           return val + " - " + opts.w.globals.series[opts.seriesIndex];
         },
+        onItemHover: false,
       },
       theme: {
         monochrome: {
@@ -97,6 +109,10 @@ export class OtdReasonCodeChartComponent {
         },
       },
       labels: this.data?.label,
+      title: {
+        align: "center",
+        text: "Late Reason Codes",
+      }
     };
     this.chartOptions.series = this.data?.value;
     this.chartOptions.colors = [

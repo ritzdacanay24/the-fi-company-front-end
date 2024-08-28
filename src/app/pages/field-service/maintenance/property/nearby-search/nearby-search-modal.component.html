@@ -1,0 +1,24 @@
+<div class="modal-header">
+  <h4 class="modal-title">{{category}}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="activeModal.dismiss('Cross click')"
+    aria-label="Close"></button>
+</div>
+<div class="modal-body">
+
+  <ol class="list-group list-group-numbered">
+    <li class="list-group-item d-flex justify-content-between align-items-start" *ngFor="let row of data"
+      (click)="add(row)">
+      <div class="ms-2 me-auto">
+        <div class="fw-bold">{{row.poi.name}}</div>
+        {{row.address.freeformAddress}}
+      </div>
+      <span class="badge bg-primary rounded-pill">{{getMiles(row.dist, true)}} miles</span>
+    </li>
+  </ol>
+
+
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-light" (click)="activeModal.dismiss('Cross click')">Close</button>
+  <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
+</div>

@@ -49,6 +49,8 @@ import { provideGlobalGridOptions } from "ag-grid-community";
 import { agGridOptions } from "./shared/config/ag-grid.config";
 import { AccessGuard } from "./core/guards/access.guard";
 import { Deactivate } from "./core/guards/deactivate.guard";
+import { TwostepGuard } from "./core/guards/twostep.guard";
+
 
 provideGlobalGridOptions(agGridOptions);
 
@@ -95,6 +97,7 @@ export function createTranslateLoader(http: HttpClient): any {
     CanDeactivateGuard,
     AccessGuard,
     Deactivate,
+    TwostepGuard,
     provideEnvironmentNgxMask(),
     provideHttpClient(withInterceptorsFromDi()),
   ],

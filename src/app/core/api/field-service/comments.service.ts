@@ -22,5 +22,9 @@ export class CommentsService extends DataService<any> {
     return firstValueFrom(this.http.post(`https://dashboard.eye-fi.com/tasks/fieldService/comments/createComment.php?token=${token}&toEmail=${toEmail}`, params));
   }
 
+  updateById(id, params) {
+    return firstValueFrom(this.http.put(`https://dashboard.eye-fi.com/tasks/fieldService/comments/updateById.php?id=${id}`, params));
+  }
+
 
 }

@@ -1,9 +1,10 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { NgModule } from "@angular/core";
+import { Routes, RouterModule } from "@angular/router";
 
 // Component Pages
 import { RegisterComponent } from "./register/register.component";
 import { LoginComponent } from "./login/login.component";
+import { TwostepGuard } from "@app/core/guards/twostep.guard";
 
 const routes: Routes = [
   // {
@@ -27,25 +28,28 @@ const routes: Routes = [
   // {
   //   path: 'success-msg', loadChildren: () => import('./auth/success-msg/success-msg.module').then(m => m.SuccessMsgModule)
   // },
-  // {
-  //   path: 'twostep', loadChildren: () => import('./auth/twostep/twostep.module').then(m => m.TwostepModule)
-  // },
+  {
+    path: "twostep",
+    loadChildren: () =>
+      import("./auth/twostep/twostep.module").then((m) => m.TwostepModule),
+    canActivate: [TwostepGuard],
+    runGuardsAndResolvers: "always",
+  },
   // {
   //   path: 'errors', loadChildren: () => import('./auth/errors/errors.module').then(m => m.ErrorsModule)
   // },
   {
     path: "register",
-    component: RegisterComponent
+    component: RegisterComponent,
   },
   {
     path: "login",
-    component: LoginComponent
-  }
-
+    component: LoginComponent,
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AccountRoutingModule { }
+export class AccountRoutingModule {}

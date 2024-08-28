@@ -93,7 +93,7 @@
     "ngx-barcode6": "^1.0.24",
     "ngx-chips": "^3.0.0",
     "ngx-color-picker": "^16.0.0",
-    "ngx-cookie-service": "^17.0.0",
+    "ngx-cookie-service": "^17.1.0",
     "ngx-countup": "^13.1.0",
     "ngx-csv": "^0.3.2",
     "ngx-drag-drop": "^17.0.0",

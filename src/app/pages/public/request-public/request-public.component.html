@@ -21,7 +21,8 @@
                 Service date set for <b>{{jobInfo?.request_date}} {{jobInfo?.start_time}}</b>
               </p>
             </div>
-            <app-request-form [disabled]="disabled" (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-request-form>
+            <app-request-form [disabled]="disabled" (setFormEmitter)="setFormEmitter($event)"
+              [submitted]="submitted"></app-request-form>
 
             <div class="mb-3 mt-3">
               <div class="form-group">
@@ -46,8 +47,6 @@
                 </li>
               </ul>
             </div>
-
-
           </div>
           <div class="card-footer d-flex d-flex justify-content-between bg-light sticky-top p-3" *ngIf="!data"
             style="bottom: 0px; left: 0; right: 0;">
@@ -59,6 +58,13 @@
           <h4 class="mt-2 mb-2" *ngIf="comments?.length">Comments ({{comments?.length}})</h4>
 
           <div *ngFor="let row of comments" class="mb-2 card">
+            <div class="card-header py-2 bg-primary text-white"
+              *ngIf="row?.request_change && !row?.request_change_completed">
+              Pending Request Change
+            </div>
+            <div class="card-header py-2 bg-success text-white" *ngIf="row?.request_change_completed">
+              Request Change Completed on {{row?.request_change_completed}}
+            </div>
             <div class="card-body">
               <p class="mb-2">- {{row.comment}}</p>
               <small>Created Date: {{row.created_date}}</small> <br />
@@ -72,13 +78,24 @@
                 <label class="form-label required">Your full name</label>
                 <input rows="5" class="form-control mb-2" placeholder="Enter your full name" [(ngModel)]="name">
               </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" value="" id="request_change"
+                  [(ngModel)]="request_change">
+                <label class="form-check-label" for="request_change">
+                  Request Change <i class="mdi mdi-help"
+                    title="Check this box if you need to make changes to this request. Specify what needs to be changed."></i>
+                </label>
+              </div>
+
               <div class="mb-3">
-                <label class="form-label required">Enter comments</label>
+                <label class="form-label required">
+                  {{request_change ? 'Please specify the changes' : 'Enter comments'}}</label>
                 <textarea rows="5" autosize [minRows]="5" class="form-control mb-2"
-                  placeholder="If you need to make changes to this request, please specify the change in this comment box."
+                  placeholder="{{request_change ? 'Please specify the changes' : 'Enter comments'}}"
                   [(ngModel)]="comment"></textarea>
               </div>
-              <button class="btn btn-primary" (click)="onSubmitComment()">Submit comment</button>
+              <button class="btn btn-primary" (click)="onSubmitComment()">{{request_change ? 'Submit Request Change' : 'Submit Comment'}} </button>
             </div>
           </div>
         </div>

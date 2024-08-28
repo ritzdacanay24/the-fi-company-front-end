@@ -49,7 +49,10 @@ export class MenuComponent implements OnInit {
   ];
 
   isLink(row) {
-    if (row.link?.includes("https")) {
+    if (row.name == "SouthFi") {
+      window.open(row.link, row.name, "height=800,width=800");
+
+    } else if (row.link?.includes("https")) {
       window.open(row.link, "_blank");
     } else {
       let link = row.link;

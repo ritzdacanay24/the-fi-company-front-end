@@ -34,4 +34,7 @@ export class RequestService extends DataService<any> {
     await firstValueFrom(this.http.get<any>(`${url}/getChart?dateFrom=${dateFrom}&dateTo=${dateTo}&displayCustomers=${encodeURIComponent(displayCustomers)}&typeOfView=${typeOfView}`))
 
 
+  onRequestChanges(params, sendEmail = false) {
+    return firstValueFrom(this.http.post<{ message: string, id?: number }>(`https://dashboard.eye-fi.com/tasks/onRequestChanges.php?sendEmail=${sendEmail}`, params))
+  }
 }

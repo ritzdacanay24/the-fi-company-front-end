@@ -9,6 +9,9 @@ import { NAVIGATION_ROUTE } from "../property-constant";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { LicenseService } from "@app/core/api/field-service/license.service";
 import { LicenseEntitySearchComponent } from "@app/shared/components/license-entity-search/license-entity-search.component";
+import { AddressSearch } from "@app/core/api/address-search/address-search.service";
+import { getMeters } from "src/assets/js/util/getMeters";
+import { listCategories } from "../nearby-search/nearby-search-modal.component";
 
 @Component({
   standalone: true,
@@ -23,8 +26,10 @@ export class PropertyEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: PropertyService,
     private licenseService: LicenseService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
   ) {}
+
+  listCategories = listCategories;
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -73,6 +78,7 @@ export class PropertyEditComponent {
       if (this.data.fs_licensed_id) {
         this.getLicensedInformation();
       }
+
     } catch (err) {}
   }
 

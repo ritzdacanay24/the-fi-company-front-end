@@ -34,6 +34,7 @@ const routes: Routes = [
     path: "dashboard",
     component: LayoutComponent,
     canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
     children: [
       { path: "", redirectTo: "dashboard", pathMatch: "full" },
       { path: "dashboard", component: DashboardComponent },

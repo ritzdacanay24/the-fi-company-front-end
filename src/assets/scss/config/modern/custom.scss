@@ -25,6 +25,13 @@ File: Custom Css File
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
 
+
+.twostep-input .wrapper input{
+  background-color: --vz-light;
+  color:#000;
+}
+
+
 .ng-select.ng-select-multiple
   .ng-select-container
   .ng-value-container

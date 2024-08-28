@@ -8,18 +8,21 @@ import { SweetAlert } from "./shared/sweet-alert/sweet-alert.service";
 import { THE_FI_COMPANY_LAYOUT } from "./layouts/topbar/topbar.component";
 import { LightboxConfig } from "ngx-lightbox";
 import { isMobile } from "src/assets/js/util/is-mobile-helpers";
+import { ToastrService } from "ngx-toastr";
 
 export function setThemeColor(data) {
-  var metaThemeColor = document.querySelector("meta[name=theme-color]");
-  if (!data) {
-    metaThemeColor.setAttribute("content", `#D0D0D0`);
-  } else if (data.SIDEBAR_COLOR == "light") {
-    metaThemeColor.setAttribute("content", `#D0D0D0`);
-  } else if (data.SIDEBAR_COLOR == "dark" && data.LAYOUT_MODE == "light") {
-    metaThemeColor.setAttribute("content", `#D0D0D0`);
-  } else {
-    metaThemeColor.setAttribute("content", `#343b40`);
-  }
+  setTimeout(function () {
+    var metaThemeColor = document.querySelector("meta[name=theme-color]");
+    if (!data) {
+      metaThemeColor.setAttribute("content", `#D0D0D0`);
+    } else if (data.SIDEBAR_COLOR == "light") {
+      metaThemeColor.setAttribute("content", `#D0D0D0`);
+    } else if (data.SIDEBAR_COLOR == "dark" && data.LAYOUT_MODE == "light") {
+      metaThemeColor.setAttribute("content", `#D0D0D0`);
+    } else {
+      metaThemeColor.setAttribute("content", `#343b40`);
+    }
+  }, 500);
 }
 
 @Component({
@@ -32,7 +35,8 @@ export class AppComponent {
     ngbModalConfig: NgbModalConfig,
     private titleService: TitleService,
     private swUpdate: SwUpdate,
-    private _lightboxConfig: LightboxConfig
+    private _lightboxConfig: LightboxConfig,
+    private toastr: ToastrService
   ) {
     ngbModalConfig.backdrop = "static";
     ngbModalConfig.keyboard = false;
@@ -48,7 +52,6 @@ export class AppComponent {
     _lightboxConfig.fitImageInViewPort = true;
 
     this.titleService.init();
-    
   }
 
   isMobile = false;
@@ -61,6 +64,7 @@ export class AppComponent {
 
   ngOnInit(): void {
     this.isMobile = isMobile();
+    this.showNewVersionMessage();
 
     if (localStorage.getItem(THE_FI_COMPANY_LAYOUT)) {
       let d = JSON.parse(localStorage.getItem(THE_FI_COMPANY_LAYOUT));
@@ -110,6 +114,9 @@ export class AppComponent {
 
   async showNewVersionMessage() {
     let { isConfirmed } = await SweetAlert.fire({
+      toast:true,
+      imageUrl:"",
+      position: 'bottom-end',
       title: `A new version of the dashboard is available`,
       showCloseButton: false,
       showCancelButton: true,

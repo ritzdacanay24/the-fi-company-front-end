@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { DomSanitizer } from "@angular/platform-browser";
+import { AddressSearch } from "@app/core/api/address-search/address-search.service";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { states } from "@app/core/data/states";
 import { AddressSearchComponent } from "@app/shared/components/address-search/address-search.component";
@@ -9,6 +10,7 @@ import { UserSearchComponent } from "@app/shared/components/user-search/user-sea
 import { SharedModule } from "@app/shared/shared.module";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { merge } from "rxjs";
+import { NearbySearchModalService } from "../nearby-search/nearby-search-modal.component";
 
 @Component({
   standalone: true,
@@ -28,8 +30,23 @@ export class PropertyFormComponent {
   constructor(
     private fb: FormBuilder,
     private sanitizer: DomSanitizer,
-    private userService: UserService
+    private userService: UserService,
+    private nearbySearchModalService: NearbySearchModalService
   ) {}
+
+  async openNearbySearch(category) {
+    const modalRef = this.nearbySearchModalService.open({
+      category: category,
+      lat: this.form.value.lat,
+      lon: this.form.value.lon,
+    });
+
+    modalRef.result.then(
+      async (result: any) => {
+      },
+      () => {}
+    );
+  }
 
   currentUrlAddress;
   ngOnInit(): void {

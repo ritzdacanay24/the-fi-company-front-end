@@ -1,34 +1,42 @@
-import { ChangeDetectorRef, Component, Input } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
-import { FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
-import { NAVIGATION_ROUTE } from '../request-constant';
-import { RequestFormComponent } from '../request-form/request-form.component';
-import { RequestService } from '@app/core/api/field-service/request.service';
-import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
-import { CommentsService } from '@app/core/api/field-service/comments.service';
-import moment from 'moment';
-import { JobFormComponent } from '../../job/job-form/job-form.component';
-import { RequestScheduleJobComponent } from '../request-schedule-job/request-schedule-job.component';
-import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
-import { FIELD_SERVICE } from '../../field-service-constant';
-import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { AutosizeModule } from 'ngx-autosize';
-import { AuthenticationService } from '@app/core/services/auth.service';
-import { SafeHtmlPipe } from '@app/shared/pipes/safe-html.pipe';
-import { TechScheduleModalService } from '../../scheduler/tech-schedule/tech-schedule-modal/tech-schedule-modal.component';
-import { JobModalCreateService } from '../../job/job-modal-create/job-modal-create.component';
-import { JobService } from '@app/core/api/field-service/job.service';
-import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
-import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
+import { ChangeDetectorRef, Component, Input } from "@angular/core";
+import { SharedModule } from "@app/shared/shared.module";
+import { FormGroup } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ToastrService } from "ngx-toastr";
+import { NAVIGATION_ROUTE } from "../request-constant";
+import { RequestFormComponent } from "../request-form/request-form.component";
+import { RequestService } from "@app/core/api/field-service/request.service";
+import { SchedulerService } from "@app/core/api/field-service/scheduler.service";
+import { CommentsService } from "@app/core/api/field-service/comments.service";
+import moment from "moment";
+import { JobFormComponent } from "../../job/job-form/job-form.component";
+import { RequestScheduleJobComponent } from "../request-schedule-job/request-schedule-job.component";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { FIELD_SERVICE } from "../../field-service-constant";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
+import { AutosizeModule } from "ngx-autosize";
+import { AuthenticationService } from "@app/core/services/auth.service";
+import { SafeHtmlPipe } from "@app/shared/pipes/safe-html.pipe";
+import { TechScheduleModalService } from "../../scheduler/tech-schedule/tech-schedule-modal/tech-schedule-modal.component";
+import { JobModalCreateService } from "../../job/job-modal-create/job-modal-create.component";
+import { JobService } from "@app/core/api/field-service/job.service";
+import { JobModalService } from "../../job/job-modal-edit/job-modal.service";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { RequestChangeModalService } from "../request-change/request-change-modal.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, RequestFormComponent, JobFormComponent, RequestScheduleJobComponent, AutosizeModule, SafeHtmlPipe],
-  selector: 'app-request-edit',
-  templateUrl: './request-edit.component.html',
-  styleUrls: ['./request-edit.component.scss']
+  imports: [
+    SharedModule,
+    RequestFormComponent,
+    JobFormComponent,
+    RequestScheduleJobComponent,
+    AutosizeModule,
+    SafeHtmlPipe,
+  ],
+  selector: "app-request-edit",
+  templateUrl: "./request-edit.component.html",
+  styleUrls: ["./request-edit.component.scss"],
 })
 export class RequestEditComponent {
   constructor(
@@ -45,17 +53,34 @@ export class RequestEditComponent {
     private jobModalCreateService: JobModalCreateService,
     private jobService: JobService,
     private jobModalEditService: JobModalService,
+    private requestChangeModalService: RequestChangeModalService
   ) {
+    this.name = this.authenticationService.currentUserValue.full_name;
+  }
 
-    this.name = this.authenticationService.currentUserValue.full_name
+  async onRequestChanges(row) {
+    this.requestChangeModalService
+      .open({
+        comment_id: row.id,
+        request_id: this.id,
+        data: row,
+      })
+      .result.then(
+        async (result) => {
+          await this.getComments();
+        },
+        (reason) => {}
+      );
   }
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.id = params['request_id'] || params['id'];
-      this.addToSchedule = params['addToSchedule']
-      this.viewComment = params['viewComment']
-      this.goBackUrl = params['goBackUrl']
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.id = params["request_id"] || params["id"];
+      this.addToSchedule = params["addToSchedule"];
+      this.viewComment = params["viewComment"];
+      this.goBackUrl = params["goBackUrl"];
+      this.comment_id = params["comment_id"];
+
     });
 
     if (this.id) this.getData();
@@ -67,6 +92,7 @@ export class RequestEditComponent {
 
   viewComment = false;
   goBackUrl;
+  comment_id;
 
   title = "Edit Request";
 
@@ -82,46 +108,49 @@ export class RequestEditComponent {
 
   @Input() goBack: Function = () => {
     if (this.goBackUrl) {
-      this.router.navigate([this.goBackUrl], { queryParamsHandling: 'merge' });
+      this.router.navigate([this.goBackUrl], { queryParamsHandling: "merge" });
     } else {
-      this.router.navigate([NAVIGATION_ROUTE.LIST], { queryParamsHandling: 'merge' });
+      this.router.navigate([NAVIGATION_ROUTE.LIST], {
+        queryParamsHandling: "merge",
+      });
     }
-  }
+  };
   @Input() goBackToRequest: Function = () => {
     this.addToSchedule = false;
-    this.router.navigate(['.'], {
+    this.router.navigate(["."], {
       queryParams: {
-        addToSchedule: null
+        addToSchedule: null,
       },
       relativeTo: this.activatedRoute,
-      queryParamsHandling: 'merge'
+      queryParamsHandling: "merge",
     });
-    this.getData()
-  }
+    this.getData();
+  };
 
   data: any;
 
-  schedulerInfo
+  schedulerInfo;
 
-
-  attachments
+  attachments;
   async getAttachments() {
-    this.attachments = await this.attachmentsService.find({ field: 'Field Service Request', uniqueId: this.id });
+    this.attachments = await this.attachmentsService.find({
+      field: "Field Service Request",
+      uniqueId: this.id,
+    });
   }
 
   async deleteAttachment(id) {
-
     const { value: accept } = await SweetAlert.confirm();
 
     if (!accept) return;
 
     try {
-      SweetAlert.loading('Deleting. Please wait.')
-      await this.attachmentsService.delete(id)
+      SweetAlert.loading("Deleting. Please wait.");
+      await this.attachmentsService.delete(id);
       await this.getData();
-      SweetAlert.close()
+      SweetAlert.close();
     } catch (err) {
-      SweetAlert.close(0)
+      SweetAlert.close(0);
     }
   }
 
@@ -136,7 +165,7 @@ export class RequestEditComponent {
     }
   }
 
-  UPLOAD_LINK = FIELD_SERVICE.UPLOAD_LINK
+  UPLOAD_LINK = FIELD_SERVICE.UPLOAD_LINK;
 
   async onUploadAttachments() {
     if (this.myFiles) {
@@ -150,12 +179,11 @@ export class RequestEditComponent {
         formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
         try {
           await this.attachmentsService.uploadfile(formData);
-          totalAttachments++
-        } catch (err) {
-        }
+          totalAttachments++;
+        } catch (err) {}
       }
       this.isLoading = false;
-      await this.getAttachments()
+      await this.getAttachments();
     }
   }
 
@@ -164,100 +192,128 @@ export class RequestEditComponent {
   async getData() {
     try {
       this.data = await this.requestService.getById(this.id);
-      this.schedulerInfo = await this.schedulerService.findOne({ request_id: this.id });
+      this.schedulerInfo = await this.schedulerService.findOne({
+        request_id: this.id,
+      });
 
       if (this.data?.cc_email) {
-        this.data.cc_email = this.data.cc_email.split(',')
+        this.data.cc_email = this.data.cc_email.split(",");
       }
-
 
       if (this.schedulerInfo) {
         this.form.disable();
       }
 
-      this.form.get('g-recaptcha-response').clearValidators();
-      this.form.get('g-recaptcha-response').updateValueAndValidity();
-      this.form.get('g-recaptcha-response').disable();
+      this.form.get("g-recaptcha-response").clearValidators();
+      this.form.get("g-recaptcha-response").updateValueAndValidity();
+      this.form.get("g-recaptcha-response").disable();
 
       this.form.patchValue(this.data);
 
-      await this.getAttachments()
+      await this.getAttachments();
 
       await this.getComments();
-
-      if (this.viewComment) {
-        this.goToComments()
+      
+      if (this.comment_id) {
+        this.scrollTo();
       }
 
-    } catch (err) { }
+      if (this.viewComment) {
+        this.goToComments();
+      }
+    } catch (err) {}
   }
 
   async onSubmit() {
     this.submitted = true;
 
     if (this.form.value?.cc_email) {
-      this.form.value.cc_email = this.form.value?.cc_email?.toString()
+      this.form.value.cc_email = this.form.value?.cc_email?.toString();
     }
 
-    this.schedulerInfo = await this.schedulerService.findOne({ request_id: this.id });
+    this.schedulerInfo = await this.schedulerService.findOne({
+      request_id: this.id,
+    });
 
     if (this.schedulerInfo) {
-      alert('FSID already created. Unable to modify')
+      alert("FSID already created. Unable to modify");
       return;
     }
 
     if (this.form.invalid && this.form.value.active == 1) {
-      getFormValidationErrors()
-      return
-    };
+      getFormValidationErrors();
+      return;
+    }
 
     try {
       this.isLoading = true;
       await this.requestService.update(this.id, this.form.value);
       this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
+      this.toastrService.success("Successfully Updated");
       //this.goBack();
-      this.form.markAsPristine()
+      this.form.markAsPristine();
     } catch (err) {
       this.isLoading = false;
     }
   }
 
   onCancel() {
-    this.goBack()
+    this.goBack();
   }
 
-  comments: any = []
+  comments: any = [];
   async getComments() {
     this.comments = await this.commentsService.getByRequestId(this.id);
   }
 
-  name = "";
-  comment = ""
-  async onSubmitComment() {
+  async updateComment(row) {
+    try {
+      await this.commentsService.updateById(row.id, {
+        request_change_completed: row.request_change_completed,
+      });
+      row.request_change_completed = moment().format("YYYY-MM-DD");
+    } catch (err) {
+      alert(`Something went wrong. Please contact administrator`);
+      SweetAlert.close(0);
+    }
+  }
 
+  name = "";
+  comment = "";
+  async onSubmitComment() {
     if (this.name == "" || this.comment == "") {
-      alert('All comment fields required')
-      return
+      alert("All comment fields required");
+      return;
     }
 
-    SweetAlert.loading("Saving. Please wait.")
+    SweetAlert.loading("Saving. Please wait.");
     try {
-      await this.commentsService.createComment(this.form.value.token, this.form.value.email, {
-        name: this.name,
-        comment: this.comment,
-        fs_request_id: this.id,
-        created_date: moment().format('YYYY-MM-DD HH:mm:ss'),
-      });
+      await this.commentsService.createComment(
+        this.form.value.token,
+        this.form.value.email,
+        {
+          name: this.name,
+          comment: this.comment,
+          fs_request_id: this.id,
+          created_date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        }
+      );
       this.comment = "";
       await this.getComments();
-      SweetAlert.close()
+      SweetAlert.close();
     } catch (err) {
-      alert(`Something went wrong. Please contact administrator`)
-      SweetAlert.close(0)
-
+      alert(`Something went wrong. Please contact administrator`);
+      SweetAlert.close(0);
     }
+  }
 
+  scrollTo() {
+    setTimeout(() => {
+      
+      let el = document.getElementById("comment_id_" + this.comment_id?.toString());
+      console.log(el)
+      if (el) el.scrollIntoView();
+    }, 100);
   }
 
   goToComments() {
@@ -270,20 +326,20 @@ export class RequestEditComponent {
   jobInfo;
   async scheduleRequest() {
     try {
-
-      this.jobInfo = await this.jobService.findOne({ request_id: this.id })
+      this.jobInfo = await this.jobService.findOne({ request_id: this.id });
 
       if (this.jobInfo) {
-        let modalRef = this.jobModalEditService.open(this.jobInfo.id)
-        modalRef.result.then(async (result: any) => {
-          await this.getData()
-        }, () => {
-        });
+        let modalRef = this.jobModalEditService.open(this.jobInfo.id);
+        modalRef.result.then(
+          async (result: any) => {
+            await this.getData();
+          },
+          () => {}
+        );
         return;
       }
 
-
-      let res = await this.requestService.getById(this.id)
+      let res = await this.requestService.getById(this.id);
 
       let d = {
         job: {
@@ -293,7 +349,7 @@ export class RequestEditComponent {
           service_type: res.type_of_service,
           requested_by: res.requested_by,
           customer: res.customer,
-          billable: 'Yes',
+          billable: "Yes",
           onsite_customer_name: res.onsite_customer_name,
           onsite_customer_phone_number: res.onsite_customer_phone_number,
           licensing_required: res.licensing_required,
@@ -317,42 +373,41 @@ export class RequestEditComponent {
           request_id: this.id,
           site_survey_requested: res.site_survey_requested,
           comments: `
-${res.special_instruction || 'No Comments'}
+${res.special_instruction || "No Comments"}
 
 -------
 
-Serial #: ${res.serial_number || ''}
-Customer Sign Part #: ${res.eyefi_customer_sign_part || ''}
-Sign Manufacture: ${res.sign_manufacture || ''}
-Customer Product #: ${res.customer_product_number || ''}
+Serial #: ${res.serial_number || ""}
+Customer Sign Part #: ${res.eyefi_customer_sign_part || ""}
+Sign Manufacture: ${res.sign_manufacture || ""}
+Customer Product #: ${res.customer_product_number || ""}
           `,
-          sign_responsibility: 'N/A'
-
-        }
+          sign_responsibility: "N/A",
+        },
       };
 
-      let modalRef = this.jobModalCreateService.open(d)
-      modalRef.result.then(async (result: any) => {
-        this.disabled = true
-        try {
-          this.comment = "This has been added to the calendar."
-          await this.onSubmitComment()
-        } catch (err) {
-          alert('Unable to send confirmation message')
-        } finally {
-          this.getData()
-        }
-      }, () => {
-
-      });
-    } catch (err) {
-    }
+      let modalRef = this.jobModalCreateService.open(d);
+      modalRef.result.then(
+        async (result: any) => {
+          this.disabled = true;
+          try {
+            this.comment = "This has been added to the calendar.";
+            await this.onSubmitComment();
+          } catch (err) {
+            alert("Unable to send confirmation message");
+          } finally {
+            this.getData();
+          }
+        },
+        () => {}
+      );
+    } catch (err) {}
   }
 
   onPrint() {
     setTimeout(() => {
-      var printContents = document.getElementById('print').innerHTML;
-      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
 
       popupWin.document.write(`
@@ -368,8 +423,7 @@ Customer Product #: ${res.customer_product_number || ''}
           </style>
         </head>
         <body onload="window.print();window.close()">${printContents}</body>
-      </html>`
-      );
+      </html>`);
 
       popupWin.document.close();
 

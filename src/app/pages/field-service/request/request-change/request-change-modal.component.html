@@ -1,0 +1,24 @@
+<div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Request Change - {{comment_id}}</h4>
+</div>
+
+<div class="modal-body">
+    <div class="mb-3">
+        <label for="exampleFormControlInput1" class="form-label">Your full name</label>
+        <input type="text" class="form-control" id="exampleFormControlInput1" [(ngModel)]="name" [disabled]="this.comment_id">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Request Change</label>
+        <textarea class="form-control" rows="3" [(ngModel)]="comment" [disabled]="this.comment_id"></textarea>
+    </div>
+    <div class="mb-3" *ngIf="comment_id">
+        <label class="form-label">Completed Date</label>
+        <input type="date" class="form-control" [(ngModel)]="request_change_completed">
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-2 ms-auto">Close</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary" *ngIf="!comment_id">Submit </button>
+    <button (click)="onUpdate()" type="button" class="btn btn-primary" *ngIf="comment_id">Update</button>
+</div>

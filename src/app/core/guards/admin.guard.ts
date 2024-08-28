@@ -9,6 +9,7 @@ import {
 import { AuthenticationService } from "../services/auth.service";
 
 export const THE_FI_COMPANY_CURRENT_USER = "THE_FI_COMPANY_CURRENT_USER";
+export const THE_FI_COMPANY_TWOSTEP_TOKEN = "THE_FI_COMPANY_TWOSTEP_TOKEN";
 
 @Injectable({ providedIn: "root" })
 export class AdminGuard {

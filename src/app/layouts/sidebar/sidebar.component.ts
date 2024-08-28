@@ -9,7 +9,6 @@ import {
 import { NavigationEnd, Router } from "@angular/router";
 import { TranslateService } from "@ngx-translate/core";
 
-import { MENU } from "./menu";
 import { MenuItem } from "./menu.model";
 import { environment } from "src/environments/environment";
 import { FavoriteService } from "@app/core/api/favorites/favorites.service";

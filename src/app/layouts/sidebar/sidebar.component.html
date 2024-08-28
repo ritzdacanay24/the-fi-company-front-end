@@ -102,7 +102,7 @@
           </a>
           }
           <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="menu.isCollapsed">
-            <ul class="nav nav-sm flex-column" aria-expanded="false">
+            <ul class="nav nav-sm flex-column" aria-expanded="!menu.isCollapsed">
               <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: menu.subItems }"></ng-container>
             </ul>
           </div>

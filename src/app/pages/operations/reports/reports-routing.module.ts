@@ -43,7 +43,7 @@ const routes: Routes = [
         component: DailyReportComponent
       },
       {
-        title: "Reveny By Customer Report",
+        title: "Revenue By Customer Report",
         path: 'revenue-by-customer',
         component: RevenueByCustomerComponent
       },
