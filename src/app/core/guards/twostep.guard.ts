@@ -1,4 +1,4 @@
-import { inject, Injectable } from "@angular/core";
+import { Injectable } from "@angular/core";
 import {
   Router,
   ActivatedRouteSnapshot,
@@ -6,7 +6,6 @@ import {
 } from "@angular/router";
 
 import { TwostepService } from "../api/twostep/twostep.service";
-import { Location } from "@angular/common";
 
 @Injectable({ providedIn: "root" })
 export class TwostepGuard {

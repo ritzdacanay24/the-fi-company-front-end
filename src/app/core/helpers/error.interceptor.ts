@@ -33,9 +33,11 @@ export class ErrorInterceptor implements HttpInterceptor {
         if (error.status === 401 || error.status === 900) {
           // auto logout if 401 response returned from api
 
-          if (error?.error?.code == "TWOSTEP") {
-            localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
-          }
+          // if (error?.error?.code == "TWOSTEP") {
+          //   localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
+          // }
+
+          localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
           this.authenticationService.logout();
 

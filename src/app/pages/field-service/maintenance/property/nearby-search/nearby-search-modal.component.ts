@@ -71,13 +71,19 @@ export class NearbySearchModalComponent implements OnInit {
     this.activeModal.close(row);
   }
 
+  rerun(){
+    
+    this.getNearByAirport();
+  }
+
   data;
+  miles = 10
   async getNearByAirport() {
     let d = {
       q: "San jose",
       lat: this.lat,
       lon: this.lon,
-      radius: getMeters(10),
+      radius: getMeters(this.miles),
       limit: 100,
       categorySet: this.category,
     };

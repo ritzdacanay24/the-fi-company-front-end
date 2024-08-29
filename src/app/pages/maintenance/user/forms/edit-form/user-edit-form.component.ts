@@ -60,6 +60,7 @@ export class UserEditFormComponent {
     isEmployee: [0],
     lastLoggedIn: [""],
     image: "",
+    enableTwostep:0
   });
 
   setBooleanToNumber(key) {

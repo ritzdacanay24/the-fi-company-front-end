@@ -85,13 +85,14 @@ export class LoginComponent implements OnInit {
     this.authenticationService
       .login(this.f["email"].value, this.f["password"].value)
       .subscribe(async (data: any) => {
+        
         if (data.status == "success") {
           let twostep = localStorage.getItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
           let isTwostepEnabled = await this.twostepService.isTwostepEnabled();
 
           //if twostep is enabled
-          if (!twostep && isTwostepEnabled == 1) {
+          if (!twostep && isTwostepEnabled == 1 && data?.user?.enableTwostep == 1) {
             try {
               let { passCode } = await this.twostepService.twoStepGenerateCode({
                 email: data.user.email,

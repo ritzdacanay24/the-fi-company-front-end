@@ -119,6 +119,15 @@
         </div>
     </div>
 
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
+                (change)="setBooleanToNumber('enableTwostep')">
+            <label class="form-check-label" for="enableTwostep">Enable Two Factor Authentication (Email)</label>
+        </div>
+    </div>
+
+    
 
     <div class="input-group mb-3" *ngIf="form.value.image">
         <input type="text" class="form-control" placeholder="No profile image found" formControlName="image" readonly>

@@ -23,12 +23,20 @@ export class JwtInterceptor implements HttpInterceptor {
     let twostep = localStorage.getItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
     if (currentUser && currentUser.token) {
-      request = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${currentUser.token}`,
-          AuthorizationTwoStep: `Bearer ${twostep}`,
-        },
-      });
+      if (currentUser?.enableTwostep == 1) {
+        request = request.clone({
+          setHeaders: {
+            Authorization: `Bearer ${currentUser.token}`,
+            AuthorizationTwoStep: `Bearer ${twostep}`,
+          },
+        });
+      } else {
+        request = request.clone({
+          setHeaders: {
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+        });
+      }
     }
     return next.handle(request);
   }

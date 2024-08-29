@@ -5,6 +5,8 @@
 </div>
 <div class="modal-body">
 
+  <input class="form-control" [(ngModel)]="miles">
+
   <ol class="list-group list-group-numbered">
     <li class="list-group-item d-flex justify-content-between align-items-start" *ngFor="let row of data"
       (click)="add(row)">
@@ -19,6 +21,7 @@
 
 </div>
 <div class="modal-footer">
+  <button type="button" class="btn btn-primary" (click)="rerun()">Re-run</button>
   <button type="button" class="btn btn-light" (click)="activeModal.dismiss('Cross click')">Close</button>
   <button type="button" class="btn btn-primary" (click)="onSubmit()">Submit</button>
 </div>
