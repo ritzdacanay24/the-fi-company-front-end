@@ -34,7 +34,6 @@ export class MenuService extends DataService<any> {
 
   getMenu = async (groupData = true) => {
     let data = await firstValueFrom(this.http.get<any[]>(`${url}/menu`));
-
     if (groupData) {
       return formatData(data);
     } else {

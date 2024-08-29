@@ -71,7 +71,6 @@ export class SidebarComponent implements OnInit {
 
   async getMenu() {
     this.menuItems = await this.menuService.getMenu();
-
     setTimeout(() => {
       this.initActiveMenu();
     }, 0);

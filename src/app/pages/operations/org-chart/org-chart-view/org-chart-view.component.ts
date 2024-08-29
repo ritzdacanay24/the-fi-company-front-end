@@ -169,10 +169,11 @@ export class OrgChartViewComponent implements OnInit {
       .childrenMargin((d) => 75)
       .compactMarginBetween((d) => 30)
       .compactMarginPair((d) => 80)
-      .expandAll()
       .onNodeClick(this.onNodeClick)
       .nodeContent(this.nodeContentfunction)
-      .render();
+      .render()
+      // .expandAll()
+
   }
 
   ngOnInit() {
