@@ -8,6 +8,8 @@ import { NewUserService } from "@app/core/api/users/users.service";
 import { FormGroup } from "@angular/forms";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
+import moment from "moment";
+import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 
 @Injectable({
   providedIn: "root",
@@ -48,7 +50,7 @@ export class UserModalComponent {
   @Input() public id;
 
   data: any;
-  isLoading = true;
+  isLoading: any;
 
   form: FormGroup;
 
@@ -62,17 +64,18 @@ export class UserModalComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
+
+      if (!this.data) {
+        this.form.disable();
+      }
+
       if (this.data.workArea) {
         this.data.workArea = this.data.workArea.split(",");
       }
 
       this.form.patchValue(this.data);
 
-      for (const fieldName of [
-        "workArea",
-        "lastLoggedIn",
-        "attempts", 
-      ]) {
+      for (const fieldName of ["workArea", "lastLoggedIn", "attempts"]) {
         const control = this.form.get(fieldName);
         control.disable();
       }
@@ -90,15 +93,15 @@ export class UserModalComponent {
     }
   };
   ngOnInit() {
-    this.getData();
+    if (this.id) this.getData();
   }
 
   dismiss() {
     this.ngbActiveModal.dismiss("dismiss");
   }
 
-  close() {
-    this.ngbActiveModal.close();
+  close(value) {
+    this.ngbActiveModal.close(value);
   }
 
   submitted = false;
@@ -107,11 +110,20 @@ export class UserModalComponent {
 
   myFiles: any;
 
+  imageTemp;
   onFilechange(event: any) {
     this.myFiles = event.target.files;
     if (this.myFiles[0]) {
       this.form.patchValue({ image: URL.createObjectURL(this.myFiles[0]) });
-      this.data.image = URL.createObjectURL(this.myFiles[0]);
+
+      if (this.id) {
+        this.data.image = URL.createObjectURL(this.myFiles[0]);
+      } else {
+        this.imageTemp = URL.createObjectURL(this.myFiles[0]);
+      }
+    } else {
+      this.form.patchValue({ image: null });
+      this.imageTemp = null;
     }
   }
 
@@ -121,7 +133,8 @@ export class UserModalComponent {
       const formData = new FormData();
       formData.append("file", this.myFiles[0]);
       try {
-        await this.api.uploadfile(this.id, formData);
+        let image: any = await this.api.uploadfile(this.id, formData);
+        this.form.patchValue({ image: image.url });
       } catch (err) {}
 
       this.isLoading = false;
@@ -131,10 +144,26 @@ export class UserModalComponent {
   async onSubmit() {
     this.submitted = true;
 
-    if (this.form.invalid) {
+    if (
+      this.form.invalid &&
+      this.form.value.isEmployee == 1 &&
+      this.form.value.active == 1 &&
+      this.form.value.orgChartPlaceHolder == 1
+    ) {
+      this.submitted = false;
+      console.log(this.form)
+      getFormValidationErrors();
       return;
     }
 
+    if (this.id) {
+      this.update();
+    } else {
+      this.create();
+    }
+  }
+
+  async update() {
     try {
       this.isLoading = true;
       await this.api.update(this.id, {
@@ -146,7 +175,30 @@ export class UserModalComponent {
         await this.onUploadAttachments();
       }
       this.isLoading = false;
-      this.close();
+      this.close({ ...this.form.value, id: this.id });
+    } catch (err) {
+      this.isLoading = false;
+    }
+  }
+
+  async create() {
+    try {
+      this.isLoading = true;
+
+      this.form.patchValue({
+        createdDate: moment().format("YYYY-MM-DD HH:mm:ss"),
+        created_by: this.authenticationService.currentUserValue.id,
+      });
+
+      let data: any = await this.api.create(this.form.value);
+      this.id = data.insertId;
+      
+      if (this.myFiles) {
+        await this.onUploadAttachments();
+        await this.api.update(data.insertId, this.form.value);
+      }
+      this.isLoading = false;
+      this.close({ ...this.form.value, id: data.insertId });
     } catch (err) {
       this.isLoading = false;
     }

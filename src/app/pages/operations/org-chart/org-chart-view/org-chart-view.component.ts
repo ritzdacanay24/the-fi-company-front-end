@@ -8,130 +8,408 @@ import { UserService } from "@app/core/api/field-service/user.service";
 import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-modal.component";
 import { accessRight } from "@app/pages/maintenance/user/user-constant";
 
+import { UserSearchV1Component } from "@app/shared/components/user-search-v1/user-search-v1.component";
+import moment from "moment";
+import * as d3 from "d3";
+
 @Component({
   standalone: true,
-  imports: [SharedModule, OrgChartModule],
+  imports: [SharedModule, OrgChartModule, UserSearchV1Component],
   selector: "app-org-chart-view",
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
 })
 export class OrgChartViewComponent implements OnInit {
   constructor(
-    public route: ActivatedRoute,
+    public activatedRoute: ActivatedRoute,
     public router: Router,
     private userService: UserService,
     private userModalService: UserModalService
-  ) {}
+  ) {
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.query = params["username"];
+      this.userId = params["userId"];
+      this.user_edit = params["user_edit"];
+    });
+  }
+
+  userId;
+  user_edit;
 
   @ViewChild("chartContainer") chartContainer: ElementRef;
   @Input() data: any[];
   chart;
 
+  clearMark() {
+    this.chart.clearHighlighting();
+    this.currentView = null;
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        user_edit: null,
+      },
+    });
+  }
+
   ngAfterViewInit() {
     this.chart = new OrgChart();
   }
 
+  expandImmediate() {
+    const data = this.chart.data();
+
+    // Mark all previously expanded nodes for collapse
+    data.forEach((d) => (d._expanded = false));
+    let parent;
+    // Loop over data and check if input value matches any name
+    data.forEach((d) => {
+      // if (d._directSubordinates == 1 || d.org_chart_expand == 1) {
+      if (d.org_chart_expand == 1) {
+        d._expanded = true;
+        this.chart.setExpanded(d.id, true).render();
+      }
+    });
+  }
+
+  addNode() {
+    const modalRef: any = this.userModalService.open(null);
+    modalRef.result.then(
+      (data: any) => {
+        data = {
+          ...data,
+          name: data.first + " " + data.last || "",
+          imageUrl: data.image || "assets/images/default-user.png",
+          bgColor: this.bgColor(data),
+        };
+
+        this.chart.addNode(data).setCentered(data.id).render();
+
+        const d = this.chart.data();
+
+        this.originalData = structuredClone(d);
+        //this.getData(data.id);
+      },
+      () => {}
+    );
+  }
+
   orgChart;
 
-  query = "";
-  filterChart() {
+  query = null;
+
+  notifyParent($event) {
+    this.query = $event?.username;
+
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        username: $event?.username,
+        userId: $event?.id,
+      },
+    });
+
+    this.filterChart($event?.id || null);
+
+    if (!$event?.id) {
+      this.expandImmediate();
+    }
+  }
+
+  filterChart(id) {
     // Get input value
-    const value = this.query;
+    const value = id;
 
     // Clear previous higlighting
     this.chart.clearHighlighting();
 
     // Get chart nodes
+    if (Number(value) == 0) {
+      this.chart.data(structuredClone(this.originalData)).render().fit();
+    } else {
+      let data = this.viewOnlyTree(Number(value) == 0 ? null : Number(value));
+      this.chart.data(data).render().fit();
+    }
+
+    // // Mark all previously expanded nodes for collapse
+    // if (value != "") {
+    //   data.forEach((d) => (d._expanded = false));
+
+    //   // Loop over data and check if input value matches any name
+    //   data.forEach((d) => {
+    //     if (value != "" && d.name.toLowerCase().includes(value.toLowerCase())) {
+    //       // If matches, mark node as highlighted
+    //       d._highlighted = true;
+    //       d._expanded = true;
+    //     }
+    //   });
+    // } else {
+    //   data.forEach((d) => (d._expanded = true));
+    // }
+
+    // Update data and rerender graph
+  }
+
+  defaultExpand() {
     const data = this.chart.data();
 
     // Mark all previously expanded nodes for collapse
-    if (value != "") {
-      data.forEach((d) => (d._expanded = false));
+    //data.forEach((d) => (d._expanded = false));
 
-      // Loop over data and check if input value matches any name
-      data.forEach((d) => {
-        if (value != "" && d.name.toLowerCase().includes(value.toLowerCase())) {
-          // If matches, mark node as highlighted
-          d._highlighted = true;
-          d._expanded = true;
-        }
-      });
-    } else {
-      data.forEach((d) => (d._expanded = true));
-    }
+    let parent;
+    // Loop over data and check if input value matches any name
+    data.forEach((d) => {
+      if (d._directSubordinates == 1 || d.org_chart_expand == 1) {
+        parent = d.id;
+        // If matches, mark node as highlighted
+        d._expanded = true;
+        this.chart.setExpanded(d.id, true).render();
+      }
+    });
 
     // Update data and rerender graph
-    this.chart.data(data).render().fit();
+    //this.chart.data(data).render().fit();
   }
 
   nodeContentfunction = (d, i, arr, state) => {
+    let height = !d.data.orgChartPlaceHolder ? d.height : 130;
+    let textTop = !d.data.orgChartPlaceHolder ? 60 : 5;
+
+    let image = `${
+      d.data.showImage
+        ? `<div class="bg-light shadow" style="padding:0px;position:absolute;top:-61px;margin-left:${
+            d.width / 2 - 75
+          }px;border-radius:100px;width:154px;height:154px;border:2px solid ${
+            d.data.hire_date_color
+          }"" >
+  
+      <img class="object-fit-cover border border-1" 
+      src=" ${
+        d.data.imageUrl
+      }" style="border-radius:100px;width:150px;height:150px;border:2px solid ${
+            d.data.hire_date_color
+          }" />
+      </div>`
+        : ""
+    }`;
+
     return `
-    <div style="padding-top:00px;height:${d.height}px">
-    <div class="card bg-light shadow "  style="height:${
-      d.height
-    }px;position:relative;background-color:none;margin-left:1px;border-radius:10px;overflow:visible">
+      <div class="card bg-light" style="height:${height}px;position:relative;overflow:visible">
+        ${image}
+        ${
+          !d.data.orgChartPlaceHolder
+            ? `<div class="card-header  border-0 shadow rounded-top text-end" style="background-color:${d.data.hire_date_color}">
+        </div>`
+            : `<div class="card-header bg-light  border-0 border border-light"></div>`
+        }
+        
+    
+        <div class="card-body text-center" style="padding-top:${textTop}px;">
+          <div style="font-size:17px;font-weight:bold;margin-top:10px"> 
+            ${
+              d.data.orgChartPlaceHolder
+                ? d.data.first
+                : d.data.first + " " + d.data.last
+            } 
+          </div>
+          <div style="font-size:15px;margin-top:4px" class="fst-italic"> 
+            ${d.data.title || "<br/>"}
+          </div>
 
-    <div class="bg-light shadow border-0" style="padding:0px;position:absolute;top:-14px;margin-left:${
-      d.width / 2 - 30
-    }px;border-radius:100px;width:60px;height:60px;" >
-
-    <img class="object-fit-cover border border-1" src=" ${
-      d.data.imageUrl
-    }" style="border-radius:100px;width:60px;height:60px;border-color:${
-      d.data.bgColor
-    }" />
-    </div>
-
-    <div class="card-header  border-0 shadow rounded-top py-3 text-end" style="background-color:${
-      d.data.bgColor
-    }">
-            
+        </div>
+        <div class="card-footer bg-light py-2 d-flex justify-content-between">
+          <div> Manages: 
+            ${d.data._directSubordinates} 
+            <span class="mdi mdi-account" style="color:${
+              d.data.hire_date_color
+            }"></span>
+          </div>
+          <div> Oversees: 
+          ${d.data._totalSubordinates} 
+          <span class="mdi mdi-account" style="color:${
+            d.data.hire_date_color
+          }"></span>
+        </div>
       </div>
-      <div class="card-body text-center">
-    ${
-      d.data.access == 0
-        ? '<span class="text-start"><span class="mdi mdi-lock text-danger"></span></span>'
-        : ''
-    }
-      <span class="text-end">${d.data.id}</span>
-        <div style="font-size:17px;font-weight:bold;margin-top:10px"> ${
-          d.data.name
-        } </div>
-        <div style="font-size:15px;margin-top:4px" class="fst-italic"> ${
-          d.data.title
-        } </div>
-      </div>
-      <div class="card-footer bg-light py-2 d-flex justify-content-between">
-      <div> Manages:  ${d.data._directSubordinates} <span class="mdi mdi-account" style="color:${
-        d.data.bgColor
-      }"></span></div>
-      <div> Oversees:  ${d.data._totalSubordinates} <span class="mdi mdi-account"  style="color:${
-        d.data.bgColor
-      }"></span></div>
-      </div>
-    </div>
-    </div>
     `;
   };
 
+  currentView;
   onNodeClick = (d) => {
+    this.router.navigate([`.`], {
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+      queryParams: {
+        user_edit: d.data.id,
+      },
+    });
+
     this.chart.clearHighlighting();
     //hightlight card on click
     d.data._highlighted = true;
+
+    this.currentView = d.data.id;
 
     this.chart.render();
 
     const modalRef: any = this.userModalService.open(d.data.id);
     modalRef.result.then(
       (data: any) => {
-        this.getData(false);
+        let attrs = this.chart.getChartState();
+
+        d.data = {
+          ...d.data,
+          ...data,
+          name:
+            data.first + " " + !data.last ||
+            data.last == undefined ||
+            data.last == "null"
+              ? ""
+              : data.last,
+          imageUrl: data.image || "assets/images/default-user.png",
+          bgColor: this.bgColor(data),
+        };
+
+        let dd = attrs.data.map((e) => {
+          return d.data.id == e.id
+            ? {
+                ...e.data,
+                ...d.data,
+              }
+            : e;
+        });
+
+        if (d.data.parentId != data.parentId) {
+          this.chart.data(dd).setCentered(d.data.id).render();
+        } else {
+          this.chart.data(dd).render();
+        }
+
+        //this.getData(d.data.id);
       },
       () => {}
     );
   };
+  bgColor(data) {
+    for (let ii = 0; ii < accessRight.length; ii++) {
+      if (accessRight[ii].value == data.employeeType) {
+        return accessRight[ii].bgColor;
+      }
+    }
 
-  async getData(dontZoom = true) {
-    let data = await this.userService.find({ active: 1, isEmployee: 1 });
+    return "#3AB6E3";
+  }
+
+  locations = ["All", "Seattle", "Las Vegas"];
+
+  getChildren = (array, idToFind) => {
+    return array.reduce((r, { id, parentId }) => {
+      if (parentId === idToFind) {
+        r.push(id, ...this.getChildren(array, id));
+      }
+      return r;
+    }, []);
+  };
+
+  findParent(id) {
+    let ddd = structuredClone(this.originalData);
+    for (let i = 0; i < ddd.length; i++) {
+      if (id == ddd[i].id) {
+        return ddd[i];
+      }
+    }
+  }
+
+  viewOnlyTree(userIdSearch = null) {
+    let ddd = structuredClone(this.originalData);
+    let allParentsAndChilds = this.getChildren(ddd, userIdSearch);
+
+    allParentsAndChilds.push(userIdSearch);
+
+    let data = [];
+    for (let i = 0; i < ddd.length; i++) {
+      if (ddd[i].parentId == null && userIdSearch != null) {
+        ddd[i].parentId = -1;
+      }
+      if (userIdSearch == ddd[i].id) {
+        if (ddd[i].orgChartPlaceHolder) {
+          let parentId = this.findParent(ddd[i].parentId);
+          parentId.parentId = null;
+          data.push(parentId);
+        } else {
+          ddd[i].parentId = null;
+        }
+      }
+    }
+    this.chart.data(data).compact(false).render();
+
+    let alot = false;
+    for (let i = 0; i < ddd.length; i++) {
+      if (allParentsAndChilds.includes(ddd[i]?.id)) {
+        ddd[i]._expanded = true;
+        if (ddd[i]._directSubordinates > 5) {
+          alot = true;
+        }
+        data.push(ddd[i]);
+      }
+    }
+
+    if (alot) this.chart.data(data).compact(true).render();
+
+    return data;
+  }
+
+  checkHireColor(yourMoment) {
+    if (!yourMoment) {
+      return "gray";
+    }
+
+    let A = moment();
+    let B = moment(yourMoment);
+    let months = A.diff(B, "months");
+
+    if (months > 12) {
+      return "#002D62";
+    } else if (months > 6) {
+      return "#4B0082";
+    } else if (months >= 1) {
+      return "rgb(0, 195, 255)";
+    } else {
+      return "orange";
+    }
+  }
+
+  shouldShowItem = (item: any, value = true): any => {
+    if (value) {
+      item.forEach((d) => {
+        d?._children?.forEach((e) => {
+          e.data._expanded = true;
+          this.chart.setExpanded(e.data.id, true).render();
+
+          if (e._children) {
+            this.shouldShowItem(e._children, false);
+          }
+        });
+      });
+    } else {
+      // item.forEach((d) => {
+      //   d.data._expanded = true;
+      //   this.chart.setExpanded(d.data.id, true).render();
+      //   if (d._children) {
+      //     this.shouldShowItem(d._children, false);
+      //   }
+      // });
+    }
+    // Logic to display the item here based on result
+  };
+
+  originalData;
+  async getData(id?) {
+    let data: any = await this.userService.getOrgchart({
+      active: 1,
+      isEmployee: 1,
+    });
 
     data.sort((a, b) => {
       let username = a.first + " " + a.last;
@@ -142,38 +420,160 @@ export class OrgChartViewComponent implements OnInit {
     let e = [];
     //#85144b
     for (let i = 0; i < data.length; i++) {
-      let bgColor = "#3AB6E3";
-      for (let ii = 0; ii < accessRight.length; ii++) {
-        if (accessRight[ii].value == data[i].employeeType) {
-          bgColor = accessRight[ii].bgColor;
-        }
-      }
+      data[i].bgColor = this.bgColor(data[i]);
 
       e.push({
         id: data[i].id,
-        bgColor: bgColor,
-        name: data[i].first + " " + data[i].last,
+        bgColor: data[i].bgColor,
+        name:
+          data[i].first + " " + !data[i].last ||
+          data[i].last == undefined ||
+          data[i].last == "null"
+            ? ""
+            : data[i].last,
+        first: data[i].first,
+        last:
+          !data[i].last || data[i].last == undefined || data[i].last == "null"
+            ? ""
+            : data[i].last,
         access: data[i].access,
         parentId: data[i].parentId,
-        title: data[i].title || "No Title",
+        title: data[i].title || "",
         imageUrl: data[i].image || "assets/images/default-user.png",
+        orgChartPlaceHolder: data[i].orgChartPlaceHolder,
+        showImage: data[i].showImage,
+        openPosition: data[i].openPosition,
+        hire_date_color: data[i].openPosition
+          ? "red"
+          : this.checkHireColor(data[i].hire_date),
+        org_chart_expand: data[i].org_chart_expand,
       });
     }
 
-    this.chart
-      .container(this.chartContainer?.nativeElement)
-      .data(e)
-      .nodeWidth((d) => 250)
-      .initialZoom(1)
-      .nodeHeight((d) => 190)
-      .childrenMargin((d) => 75)
-      .compactMarginBetween((d) => 30)
-      .compactMarginPair((d) => 80)
-      .onNodeClick(this.onNodeClick)
-      .nodeContent(this.nodeContentfunction)
-      .render()
-      // .expandAll()
+    if (!id) {
+      this.chart
+        .container(this.chartContainer?.nativeElement)
+        .data(e)
+        .onNodeClick(this.onNodeClick)
+        .nodeContent(this.nodeContentfunction)
+        .nodeWidth((d) => 300)
+        .childrenMargin((d) => {
+          if (d.data.orgChartPlaceHolder) return 190;
+          return 190;
+        })
+        .nodeHeight((d) => {
+          if (d.data.orgChartPlaceHolder) return 135;
+          return 190;
+        })
+        .compactMarginBetween((d) => 100)
+        .compactMarginPair((d) => 80)
+        .compact(true)
+        .onExpandOrCollapse((d) => {
+          // console.log(d, 'parent')
+          let children = d.children;
 
+          this.shouldShowItem(children);
+          // children.forEach((d) => {
+          //   // d?._children?.forEach((e) => {
+          //   //   e.data._expanded = true;
+          //   //   this.chart.setExpanded(e.data.id, true).render();
+          //   // });
+          // });
+        })
+        .buttonContent(({ node, state }) => {
+          return `<div style="px;color:#fff;border-radius:5px;padding:4px;font-size:15px;margin:auto auto;background-color:${
+            node.data.hire_date_color
+          };border: 1px solid #E4E2E9;white-space:nowrap"> <span style="font-size:15px">${
+            node.children
+              ? `<i class="mdi mdi-chevron-up"></i>`
+              : `<i class="mdi mdi-chevron-down"></i>`
+          }</span> ${node.data._directSubordinates}  </div>`;
+        })
+
+        .linkUpdate(function (d, i, arr) {
+          d3.select(this)
+            .attr("stroke", (d) =>
+              d.data._upToTheRootHighlighted ? "#318CE7" : "#2CAAE5"
+            )
+            .attr("stroke-width", (d) =>
+              d.data._upToTheRootHighlighted ? 10 : 2
+            );
+
+          if (d.data._upToTheRootHighlighted) {
+            d3.select(this).raise();
+          }
+        })
+        .nodeUpdate(function (d, i, arr) {
+          d3.select(this)
+            .select(".node-rect")
+            .attr("stroke", (d) =>
+              d.data._highlighted || d.data._upToTheRootHighlighted
+                ? "#318CE7"
+                : "none"
+            )
+            .attr(
+              "stroke-width",
+              d.data._highlighted || d.data._upToTheRootHighlighted ? 20 : 2
+            );
+        })
+        .render()
+
+        .fit();
+    } else {
+      this.chart.data(e).setCentered(id).render();
+    }
+    // .expandAll()
+    // this.defaultExpand();
+
+    let d = this.chart.data();
+    this.originalData = structuredClone(d);
+    this.expandImmediate();
+
+    if (this.query) {
+      this.filterChart(this.userId);
+    }
+
+    if (this.user_edit) {
+      this.currentView = this.user_edit;
+      this.chart
+        .data(e)
+        .setHighlighted(this.user_edit)
+        .setCentered(this.user_edit)
+        .render();
+    }
+  }
+
+  horizontal() {
+    this.chart
+      .childrenMargin((d) => {
+        if (d.data.orgChartPlaceHolder) return 190;
+        return 190;
+      })
+      .nodeHeight((d) => {
+        if (d.data.orgChartPlaceHolder) return 135;
+        return 190;
+      })
+      .compact(false)
+      .render()
+      .fit();
+  }
+
+  compact() {
+    this.chart
+      .nodeWidth((d) => 300)
+      .childrenMargin((d) => {
+        if (d.data.orgChartPlaceHolder) return 190;
+        return 190;
+      })
+      .nodeHeight((d) => {
+        if (d.data.orgChartPlaceHolder) return 135;
+        return 190;
+      })
+      .compactMarginBetween((d) => 100)
+      .compactMarginPair((d) => 80)
+      .compact(true)
+      .render()
+      .fit();
   }
 
   ngOnInit() {

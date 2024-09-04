@@ -13,7 +13,7 @@ import { ICellRendererParams } from "ag-grid-community";
       </div>
       <img
         class="rounded pointer employee-image"
-        [src]="image"
+        [src]="image || 'assets/images/default-user.png'"
         [alt]="value?.toLowerCase()"
         style="margin-bottom:2px !important;width:24px"
       />

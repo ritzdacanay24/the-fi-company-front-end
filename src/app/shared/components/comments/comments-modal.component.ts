@@ -123,8 +123,32 @@ export class CommentsModalComponent implements OnInit {
           const matchedPeople = await suggestPeople(searchTerm, this.listUsers);
           renderList(matchedPeople);
         },
+        renderLoading: () => {
+          return "Loading...";
+        },
         renderItem(item) {
-          return item.id;
+          const memberName = document.createElement("span");
+          memberName.textContent = item.id;
+          let img = document.createElement("img");
+          img.src = item.image || "assets/images/default-user.png";
+          img.style.width = "30px";
+          img.style.height = "30px";
+          img.style.borderRadius = "50px";
+          img.style.marginRight = "10px";
+          memberName.prepend(img);
+          return memberName;
+
+          return `
+          <div class="row flex flex-nowrap" style="border:none;margin-left:5px;">
+		        <div class="col-xs-6">
+			        <img src="${item.image}" style="height: 40px; margin-left: -15px; border-radius:50px" />
+            </div>
+            <div class="col-xs-6">
+              <p style="margin-top: 3px;margin-left: 8px;">${item.value}</p>
+              <p style="margin-left: 8px;font-size:10px;padding:0px;">${item.id}</p>
+            </div>
+          </div>
+                    `;
         },
       },
     };
@@ -191,7 +215,12 @@ export class CommentsModalComponent implements OnInit {
 
   listUsers = [];
   public getUsers = async () => {
-    this.listUsers = await this.userService.find({ active: 1, access: 1 });
+    this.listUsers = await this.userService.find({
+      active: 1,
+      access: 1,
+      openPosition: 0,
+      orgChartPlaceHolder: 0,
+    });
     for (let i = 0; i < this.listUsers.length; i++) {
       this.listUsers[i].value =
         this.listUsers[i].first + " " + this.listUsers[i].last;

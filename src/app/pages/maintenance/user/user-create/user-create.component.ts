@@ -50,8 +50,12 @@ export class UserCreateComponent {
     });
 
     if (this.form.invalid) {
-      getFormValidationErrors();
-      return;
+      if (confirm("This form is incomplete? Are you sure you want to continue?")
+      ) {
+      } else {
+        getFormValidationErrors();
+        return;
+      }
     }
 
     if (this.form.value.confirmPassword !== this.form.value.pass) {

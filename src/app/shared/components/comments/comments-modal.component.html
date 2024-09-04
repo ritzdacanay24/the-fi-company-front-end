@@ -38,6 +38,9 @@
     <div class="card-header py-2">
       <div class="d-flex align-items-center">
         <div>
+          <img [src]="row.image" style="width:30px;height:30px;border-radius: 40px;" class="me-2">
+        </div>
+        <div>
           <p class="mb-0">{{row.userName}}</p>
           <p class="text-muted mb-0">{{row.createdDate}}</p>
         </div>
@@ -59,9 +62,19 @@
           <blockquote class="blockquote">
             <span class="mb-3 tx-14 pl-3" [innerHTML]="row1.comments | safeHtml"></span>
           </blockquote>
-          <span class="text-info"> -
-            {{row1.userName}}</span> <span class="tx-11 text-muted" [class.text-success]="row1.insert">
-            {{row1.createdDate | dateAgo}} </span>
+
+          <div class="d-flex align-items-center">
+            <div>
+              <img [src]="row1.image" style="width:30px;height:30px;border-radius: 40px;" class="me-2">
+            </div>
+            <div>
+              <p class="mb-0">{{row1.userName}}</p>
+              <p class="text-muted mb-0" [class.text-success]="row1.insert">{{row1.createdDate | dateAgo}}</p>
+            </div>
+            <i class="mdi mdi-trash-can-outline text-danger pointer ms-3" (click)="deleteComment(row1.id, row.childs)"
+              *ngIf="row1.userId == userInfo?.id"></i>
+          </div>
+
           <i class="mdi mdi-trash-can-outline-2 text-danger mr-3 float-right pointer"
             (click)="deleteComment(row1.id, row.childs)" *ngIf="row1.userId == userInfo?.id"></i>
         </li>

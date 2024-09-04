@@ -4,6 +4,7 @@ import { UserSearchV1Component } from "@app/shared/components/user-search-v1/use
 import { SharedModule } from "@app/shared/shared.module";
 import { accessRight, departments } from "../../user-constant";
 import { NgSelectModule } from "@ng-select/ng-select";
+import { merge } from "rxjs";
 
 @Component({
   standalone: true,
@@ -22,7 +23,33 @@ export class UserEditFormComponent {
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder) {
+    merge(
+      this.form.get("orgChartPlaceHolder").valueChanges,
+      this.form.get("openPosition").valueChanges
+    ).subscribe((change) => {
+      if (change) {
+        this.form.get("last").disable();
+        this.form.get("email").disable();
+        this.form.get("area").disable();
+        this.form.get("workArea").disable();
+        this.form.get("access").disable();
+        this.form.get("employeeType").disable();
+        this.form.get("enableTwostep").disable();
+        this.form.get("hire_date").disable();
+      } else {
+        this.form.get("last").enable();
+        this.form.get("email").enable();
+        this.form.get("area").enable();
+        this.form.get("workArea").enable();
+        this.form.get("access").enable();
+        this.form.get("employeeType").enable();
+        this.form.get("enableTwostep").enable();
+        this.form.get("hire_date").enable();
+      }
+    });
+    this.form.get("lastLoggedIn").disable();
+  }
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
@@ -47,7 +74,7 @@ export class UserEditFormComponent {
   form = this.fb.group({
     access: [1],
     active: [1],
-    area: [""],
+    area: [null],
     workArea: [""],
     attempts: [0],
     createdDate: [""],
@@ -56,11 +83,17 @@ export class UserEditFormComponent {
     last: ["", Validators.required],
     title: [""],
     employeeType: [0],
-    parentId: [0],
-    isEmployee: [0],
-    lastLoggedIn: [""],
+    parentId: [null],
+    isEmployee: [1],
+    lastLoggedIn: [null],
     image: "",
-    enableTwostep:0
+    enableTwostep: 0,
+    orgChartPlaceHolder: [0],
+    showImage: [1],
+    openPosition: 0,
+    hire_date: null,
+    org_chart_department: "",
+    org_chart_expand: 0,
   });
 
   setBooleanToNumber(key) {

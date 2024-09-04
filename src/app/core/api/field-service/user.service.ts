@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 import { Observable, firstValueFrom } from "rxjs";
+import { queryString } from "src/assets/js/util/queryString";
 
 let url = "FieldServiceMobile/user";
 
@@ -47,7 +48,11 @@ export class UserService extends DataService<any> {
   public async getUserTree() {
     let data = await firstValueFrom(this.http.get(`${url}/find.php?active=1`));
     return formatData(data);
+  }
 
+  public async getOrgchart(params) {
+    const result = queryString(params);
+    return await firstValueFrom(this.http.get(`${url}/orgchart.php${result}`));
   }
 }
 
@@ -67,4 +72,3 @@ function formatData(data) {
 
   return data.filter((a) => a.parentId == null).map(addChild);
 }
-

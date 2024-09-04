@@ -14,6 +14,7 @@ import {
   THE_FI_COMPANY_TWOSTEP_TOKEN,
 } from "@app/core/guards/admin.guard";
 import { TwostepService } from "@app/core/api/twostep/twostep.service";
+import { ToastrService } from "ngx-toastr";
 
 @Component({
   selector: "app-login",
@@ -40,7 +41,8 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     public toastservice: ToastService,
-    private twostepService: TwostepService
+    private twostepService: TwostepService,
+    private toastrService: ToastrService
   ) {
     // redirect to home if already logged in
     if (this.authenticationService.currentUserValue) {
@@ -121,6 +123,8 @@ export class LoginComponent implements OnInit {
               THE_FI_COMPANY_CURRENT_USER,
               JSON.stringify(data.user)
             );
+
+            this.toastrService.clear();
 
             //this.router.navigate([this.returnUrl]);
             this.router.navigateByUrl(this.returnUrl);

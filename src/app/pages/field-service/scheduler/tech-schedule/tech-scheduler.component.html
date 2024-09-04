@@ -35,7 +35,7 @@
       <div *ngIf="!resource.isParent" class="employee-shifts-title" style="margin-left:40px;font-size:10px">
         {{resource.title}} {{resource.lead_tech ? ' | Lead Tech' : ''}}</div>
       <img *ngIf="!resource.isParent && resource.depth !== 0 " class="employee-shifts-avatar rounded-circle header-profile-user"
-        [attr.alt]="resource.name" [src]="'assets/images/users/user-dummy-img.jpg'" />
+        [attr.alt]="resource.name" [src]="resource.image || 'assets/images/users/user-dummy-img.jpg'" />
     </div>
   </ng-template>
 

@@ -81,8 +81,8 @@ export class KitLabelModalComponent implements OnInit {
     var cmds = `
             ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
             ^XA
-            ^FO30,30^A0N,30,20^FD${row.partNumber.toUpperCase()}^FS
-            ^FO350,23^BXN,4,200,,,,,^FD${row.partNumber.toUpperCase()}^FS
+            ^FO30,30^A0N,30,20^FD${row.partNumber.toString().toUpperCase()}^FS
+            ^FO350,23^BXN,4,200,,,,,^FD${row.partNumber.toString().toUpperCase()}^FS
             ^FO30,60^A0N,28,20^FD${row.description || ""}^FS
             ^FO30,85^A0N,28,20^FD${row.description2 || ""}^FS
             ^FO30,113^A0N,28,20^FDQTY: ${row.qty}^FS

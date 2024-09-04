@@ -80,8 +80,8 @@ export class CustomerLabelModalComponent implements OnInit {
     var cmds = `
         ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
         ^XA
-        ^FO30,30^A0N,120,55^FD${this.form.value.customerPartNumber.toUpperCase()}^FS
-        ^FO600,35^BXN,10,200,,,,,^FD${this.form.value.customerPartNumber.toUpperCase()}^FS
+        ^FO30,30^A0N,120,55^FD${this.form.value.customerPartNumber.toString().toUpperCase()}^FS
+        ^FO600,35^BXN,10,200,,,,,^FD${this.form.value.customerPartNumber.toString().toUpperCase()}^FS
         ^FO30,140^A0N,60,30^FD${this.form.value.description || ""}^FS
         ^FO30,210^A0N,60,30^FD${this.form.value.description2 || ""}^FS
         ^FO30,280^A0N,60,30^FDSerial number: ${this.form.value.serialNumber}^FS

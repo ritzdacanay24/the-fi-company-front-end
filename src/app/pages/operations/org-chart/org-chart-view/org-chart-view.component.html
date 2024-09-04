@@ -1,12 +1,101 @@
 <div class="row">
     <div class="col-12 col-xl-12">
         <div class="card">
-            <div class="card-header">
-                <input [(ngModel)]="query" type="search" placeholder="search by name" (ngModelChange)="filterChart()" class="form-control"/>
+            <div class="card-header pb-0">
+                <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
+                    [appendToBody]="'body'" [ngClass]="'mb-0'" [placeholder]="'Search'"
+                    [editableSearchTerm]="false"></app-user-search-v1>
             </div>
             <div class="card-body p-0" style="height: calc(100vh - 170px);">
                 <div #chartContainer id="chartContainer"></div>
             </div>
         </div>
+
+        <div class="row" style="position: absolute;top: 54px;left: 35px;">
+            <div class="col-lg-12">
+                <div class="text-center mt-sm-5 text-white-50">
+                    <div>
+                        <a routerLink="/" class="d-inline-block auth-logo">
+                            <img src="assets/images/fi-color.png" alt="" width="270">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="row" style="position: absolute;top: 92px;right: 35px;">
+            <div class="col-lg-12">
+                <table class="table table-sm bg-light">
+                    <tbody>
+
+
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1" style="border-radius:100px;background-color:gray;margin-top:6px"></div>
+                            </td>
+                            <td>Hire date not set</td>
+                        </tr>
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1" style="border-radius:50px;background-color:orange;margin-top:6px">
+                                </div>
+                            </td>
+                            <td>New Position</td>
+                        </tr>
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1 bg-info"
+                                    style="border-radius:50px;background-color:rgb(0, 195, 255);margin-top:6px"></div>
+                            </td>
+                            <td>Less than 6 months</td>
+                        </tr>
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1 " style="border-radius:50px;background-color:#4B0082;margin-top:6px">
+                                </div>
+                            </td>
+                            <td>Less than 12 months</td>
+                        </tr>
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1" style="border-radius:50px;background-color:#002D62;margin-top:6px">
+                                </div>
+                            </td>
+                            <td>12 + months</td>
+                        </tr>
+                        <tr>
+                            <td class=" px-2">
+                                <div class="p-1" style="border-radius:50px;background-color:red;margin-top:6px"></div>
+                            </td>
+                            <td>Open</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="action-buttons" style="position: absolute;bottom: 40px;right: 35px;">
+            <div class="btn-group-vertical">
+                <p class="mb-2 bg-info py-1 px-1 w-100 text-center text-white" *ngIf="this.currentView">Viewing User Id: {{this.currentView}}</p>
+                <button (click)="chart.setExpanded(this.currentView).render()" *ngIf="this.currentView"
+                    class="btn btn-info mb-2">Set Expand</button>
+                <button (click)="chart.setExpanded(this.currentView,false).render()" *ngIf="this.currentView"
+                    class="btn btn-info mb-2">Collapse</button>
+                <button (click)="chart.setUpToTheRootHighlighted(this.currentView).render().fit()"
+                    *ngIf="this.currentView" class="btn btn-info mb-2">Mark Root</button>
+                <button (click)="clearMark()"
+                    *ngIf="this.currentView" class="btn btn-info mb-2">Clear Mark</button>
+
+                <!-- <button (click)="expandImmediate()" class="btn btn-primary mb-2">Expand By User Default </button> -->
+                <button (click)="chart.expandAll()" class="btn btn-primary mb-2">Expand All </button>
+                <button (click)="chart.collapseAll()" class="btn btn-primary mb-2">Collpase All </button>
+                <button (click)="chart.fit()" class="btn btn-primary mb-2">Fit </button>
+                <button (click)="addNode()" class="btn btn-primary mb-2">Add Node </button>
+                <button class="btn btn-primary mb-2" (click)="horizontal()">Horizontal</button>
+                <button class="btn btn-primary mb-2" (click)="compact()">Compact</button>
+            </div>
+        </div>
+
     </div>
 </div>

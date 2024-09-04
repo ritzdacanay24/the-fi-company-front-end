@@ -38,6 +38,23 @@
 
     <div class="row">
         <div class="col-md mb-3">
+            <label class="form-label required">Hire Date</label>
+            <input type="date" class="form-control" formControlName="hire_date"
+                [ngClass]="{ 'is-invalid': submitted && f.hire_date.errors }" />
+        </div>
+    </div>
+
+    <!-- <div class="row">
+        <div class="col-md mb-3">
+            <label class="form-label required">Org Chart Department</label>
+            <input type="text" class="form-control" name="org_chart_department" formControlName="org_chart_department" placeholder="Org Chart Department"
+                [ngClass]="{ 'is-invalid': submitted && f.org_chart_department.errors }" />
+        </div>
+    </div> -->
+    
+
+    <div class="row">
+        <div class="col-md mb-3">
             <label class="form-label required">Employee Type</label>
             <select class="form-select" formControlName="employeeType"
                 [ngClass]="{ 'is-invalid': submitted && f.employeeType.errors }">
@@ -48,10 +65,61 @@
         </div>
     </div>
 
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+                (change)="setBooleanToNumber('active')">
+            <label class="form-check-label" for="active">Active</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
+                (change)="setBooleanToNumber('isEmployee')">
+            <label class="form-check-label" for="isEmployee">isEmployee</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
+                (change)="setBooleanToNumber('enableTwostep')">
+            <label class="form-check-label" for="enableTwostep">Enable Two Factor Authentication (Email)</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="orgChartPlaceHolder" formControlName="orgChartPlaceHolder"
+                (change)="setBooleanToNumber('orgChartPlaceHolder')">
+            <label class="form-check-label" for="orgChartPlaceHolder">Department Placeholder</label>
+        </div>
+    </div>
+
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="showImage" formControlName="showImage"
+                (change)="setBooleanToNumber('showImage')">
+            <label class="form-check-label" for="showImage">Show image in org chart</label>
+        </div>
+    </div>
+
+
+    <div class="mb-3">
+        <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="openPosition" formControlName="openPosition"
+                (change)="setBooleanToNumber('openPosition')">
+            <label class="form-check-label" for="openPosition">Open Position</label>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md">
             <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
-                [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }"
+                [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }" [disabled]="form?.disabled"
                 [form_label]="'Reports to (User ID)'"></app-user-search-v1>
         </div>
     </div>

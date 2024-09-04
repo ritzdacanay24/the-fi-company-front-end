@@ -39,9 +39,12 @@ export class UserInfoComponent {
 
     if (
       this.form.invalid &&
-      (this.form.value.isEmployee == 1 && this.form.value.active == 1)
+      this.form.value.isEmployee == 1 &&
+      this.form.value.active == 1 &&
+      this.form.value.orgChartPlaceHolder == 1
     ) {
       this.submitted = false;
+      console.log(this.form)
       getFormValidationErrors();
       return;
     }
