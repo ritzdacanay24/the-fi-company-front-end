@@ -69,6 +69,7 @@ export class QirCreatePublicComponent {
   };
 
   onCreateNew() {
+    this.form.markAsPristine();
     window.location.reload();
   }
 

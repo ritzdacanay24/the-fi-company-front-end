@@ -83,7 +83,7 @@ export class QirEditComponent {
       this.form.get("last_name").disable();
       this.form.get("email").disable();
 
-      await this.getAttachments();
+      this.getAttachments();
     } catch (err) {}
   }
 

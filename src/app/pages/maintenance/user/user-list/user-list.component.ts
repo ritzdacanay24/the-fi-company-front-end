@@ -79,6 +79,7 @@ export class UserListComponent implements OnInit {
       hide: true,
     },
     { field: "area", headerName: "Department", filter: "agMultiColumnFilter" },
+    { field: "title", headerName: "Title", filter: "agMultiColumnFilter" },
     {
       field: "isEmployee",
       headerName: "isEmployee",

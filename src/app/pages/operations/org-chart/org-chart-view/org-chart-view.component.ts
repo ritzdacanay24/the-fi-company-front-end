@@ -465,9 +465,7 @@ export class OrgChartViewComponent implements OnInit {
           if (d.data.orgChartPlaceHolder) return 135;
           return 190;
         })
-        .compactMarginBetween((d) => 100)
-        .compactMarginPair((d) => 80)
-        .compact(true)
+        .compact(false)
         .onExpandOrCollapse((d) => {
           // console.log(d, 'parent')
           let children = d.children;

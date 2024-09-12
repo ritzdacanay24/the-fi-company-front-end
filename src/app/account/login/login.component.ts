@@ -100,6 +100,8 @@ export class LoginComponent implements OnInit {
                 email: data.user.email,
               });
 
+              this.toastrService.clear();
+              
               this.router.navigate(["auth/twostep/basic"], {
                 state: {
                   email: data.user.email,

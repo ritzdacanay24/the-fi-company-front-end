@@ -21,6 +21,8 @@
           <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 ms-2 me-2 me-auto"
             (click)="onAdd()">
             Add to Trip Detail</button>
+          <button class="btn btn-light btn-sm shadow-none bg-light ms-2" [disabled]="isLoading" (click)="emailTripDetails()">Email Tech</button>
+
           <h4 class="card-title mb-0 flex-grow-1 text-end"> Group # {{group_id}}</h4>
         </div>
         <div class="card-body" style="min-height:300px;height: calc(100vh - 158px);overflow:auto">

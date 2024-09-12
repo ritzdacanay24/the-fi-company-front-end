@@ -40,6 +40,7 @@ export class MenuComponent implements OnInit {
           link: "https://dashboard.eye-fi.com/dist/fsm-mobile/assignments",
         },
         { name: "MRO", link: "https://mro.swstms.com/users/sign_in" },
+        { name: "Org Chart", link: "/dashboard/operations/org-chart/org-chart-view" },
       ],
     },
     {

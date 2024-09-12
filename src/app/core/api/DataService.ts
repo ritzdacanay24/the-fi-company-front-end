@@ -64,7 +64,7 @@ export class DataService<T> {
    */
   update = async (id: string | number, params: Partial<T>): Promise<{ message: string }> => {
     const result = queryString(params);
-    return await firstValueFrom(this.http.put<{ message: string }>(`${this.url}/updateById.php${result}&id=${id}`, params));
+    return await firstValueFrom(this.http.put<{ message: string }>(`${this.url}/updateById.php?id=${id}`, params));
   }
 
   /**

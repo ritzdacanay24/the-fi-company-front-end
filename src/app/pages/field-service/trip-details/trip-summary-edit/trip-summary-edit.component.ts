@@ -37,6 +37,22 @@ export class TripSummaryEditComponent {
     });
   }
 
+  async emailTripDetails() {
+    if (!confirm("Are you sure you want to send email?")) return;
+    try {
+      SweetAlert.loading("Sending email. Please wait..");
+      await this.api.emailTripDetails(this.group_id, this.data);
+
+      for (let i = 0; i < this.data.length; i++) {
+        this.data[i].email_sent = moment().format("YYYY-MM-DD HH:mm:ss");
+      }
+
+      SweetAlert.close();
+    } catch (err) {
+      SweetAlert.close();
+    }
+  }
+
   title = "Edit Trip Detail";
 
   form: FormGroup;
@@ -57,7 +73,6 @@ export class TripSummaryEditComponent {
   details: FormArray;
 
   viewTripDetailById = (id) => {
-
     let modalRef = this.tripDetailsModalService.open({
       id: id,
       fs_travel_header_id: this.group_id, //group ud is to show the group id number and to pull the details of the group id.
