@@ -118,6 +118,7 @@ export class PropertyFormComponent {
     created_by: [null],
     created_date: [null],
     fs_licensed_id: [null],
+    equipment_drop_off_location:"",
 
     compliance_name: "",
     compliance_address1: [null],

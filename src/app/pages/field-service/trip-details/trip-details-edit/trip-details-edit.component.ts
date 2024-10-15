@@ -122,6 +122,7 @@ export class TripDetailsEditComponent {
     if (!confirm("Are you sure you want to delete?")) return;
     try {
       await this.api.delete(this.id);
+      this.setDatData();
     } catch (err) {}
   }
 

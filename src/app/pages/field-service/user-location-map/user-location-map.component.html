@@ -1,0 +1,26 @@
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-body">
+                <div id="map" class="map" style="width:100%;height:calc(100vh - 130px);overflow:hidden"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card">
+            <div class="card-header">
+                
+                <input type="date" id="start" name="trip-start" [(ngModel)]="dateFrom"/>
+                <input type="date" id="start" name="trip-start" [(ngModel)]="dateTo"/>
+                <button class="btn btn-primary btn-sm" (click)="getData()">Submit</button>
+
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary btn-sm mb-3" (click)="showAll()">Show All</button>
+                <ul class="list-group">
+                    <li [style.background-color]="row.color" *ngFor="let row of list" (click)="viewUser(row.user_id)" class="pointer list-group-item" [ngClass]="{'active':currentUserIdView == row.user_id}">{{row.user}} - {{row.total}}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

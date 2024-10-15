@@ -160,4 +160,12 @@ export class TripDetailsModalComponent implements OnInit {
       this.close();
     } catch (err) {}
   }
+
+  async onDelete() {
+    try {
+      await this.api.delete(this.id);
+      this.toastrService.success("Deleted successfully");
+      this.close();
+    } catch (err) {}
+  }
 }

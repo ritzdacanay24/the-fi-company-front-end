@@ -27,6 +27,7 @@
       </div>
       <div class="card-footer d-flex d-flex" *ngIf="data && id">
         <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <!-- <button class="btn btn-danger me-2" [disabled]="isLoading" (click)="onDelete()">Delete</button> -->
         <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
       </div>
     </div>

@@ -9,5 +9,6 @@
 
 <div class="modal-footer border-top">
     <button (click)="dismiss()" type="button" class="btn btn-light me-2 ms-auto">Close</button>
+    <button class="btn btn-danger" (click)="onDelete()">Delete</button>
     <button (click)="onSubmit()" type="button" class="btn btn-primary">{{id ? 'Update' : 'Create'}}</button>
 </div>
