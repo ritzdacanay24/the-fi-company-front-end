@@ -125,6 +125,11 @@ export class UserLocationMapComponent implements OnInit {
 
   currentDate: any;
 
+  collapsed = true;
+  collapseExpand() {
+    this.collapsed = this.collapsed ? false : true;
+  }
+
   constructor(
     private api: SchedulerService,
     private propertyService: PropertyService,
@@ -186,15 +191,15 @@ export class UserLocationMapComponent implements OnInit {
     },
   ];
 
-  scroll = (id: number) => {
+  scroll = (id: number | string) => {
     if (!id) return;
 
     //let el = document.getElementById();
 
-    let el = document.getElementsByClassName("test-" + id.toString());
+    let el = document.getElementById("user-" + id.toString());
 
     setTimeout(() => {
-      el[0]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      el[0]?.scrollTo({ top: 0 });
     }, 500);
   };
 
@@ -214,7 +219,8 @@ export class UserLocationMapComponent implements OnInit {
     markerContentElement.className = `marker-content`;
     markerContentElement.style.backgroundColor = color;
     markerContentElement.style.color = "#fff";
-    markerContentElement.style.borderColor = " #fff";
+    markerContentElement.style.borderColor =
+      popupText.type_of == "event" ? "black" : " #fff";
     markerElement.appendChild(markerContentElement);
 
     var iconElement = document.createElement("div");
@@ -223,7 +229,10 @@ export class UserLocationMapComponent implements OnInit {
     // let img = document.createElement('img');
     // img.src = popupText.image
     // img.width = 20; // Set the width to 300 pixels
-
+    markerContentElement.innerHTML =
+      popupText.type_of == "event"
+        ? "<span style='margin-left:6px;margin-bottom:15px;transform: rotate(90deg);'>EV</span>"
+        : " ";
     // markerContentElement.appendChild(img);
 
     markerContentElement.appendChild(iconElement);
@@ -241,6 +250,7 @@ export class UserLocationMapComponent implements OnInit {
             <div style="padding:2px;border-radius:4px;" class="text-dark">
             <p>User: ${popupText.user}</p>
             <p>Time: ${popupText?.created_date}</p>
+                <p>Event: ${popupText?.type_of_event || "NA"}</p>
             <img src="${popupText.image}" style="width:0px"/>
             </div>
         `;
@@ -248,6 +258,7 @@ export class UserLocationMapComponent implements OnInit {
                 <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
                 <p>${popupText.user}</p>
                 <p>Time: ${popupText?.created_date}</p>
+                <p>Event: ${popupText?.type_of_event || "NA"}</p>
                 <img src="${popupText.image}" style="width:30px"/>
                 </div>
             `;
@@ -266,7 +277,7 @@ export class UserLocationMapComponent implements OnInit {
 
   styleOptions = {
     style: "dark",
-    layerType: "basic"
+    layerType: "basic",
   };
 
   getCurrentStyleUrl() {
@@ -285,7 +296,7 @@ export class UserLocationMapComponent implements OnInit {
     this.store.select("layout").subscribe((data) => {
       this.styleOptions = {
         style: data.LAYOUT_MODE,
-        layerType: "basic"
+        layerType: "basic",
       };
 
       this.map?.setStyle(this.getCurrentStyleUrl());
@@ -390,19 +401,18 @@ export class UserLocationMapComponent implements OnInit {
     }
   }
 
-
   clearMarkers() {
     for (let i = 0; i < this.markersArray.length; i++) {
-      console.log(this.markersArray[i]._popup, 'removing')
+      console.log(this.markersArray[i]._popup, "removing");
       this.markersArray[i].remove();
     }
   }
 
   active = null;
   fs_scheduler_id;
-  geo_id
+  geo_id;
   viewJob(data, index) {
-    console.log(this.markersArray, 'this.markersArray')
+    console.log(this.markersArray, "this.markersArray");
     //this.clearMarkers();
 
     this.geo_id = data.geo_id;
@@ -421,7 +431,6 @@ export class UserLocationMapComponent implements OnInit {
       .setLngLat([data.longitude, data.latitude])
       .addTo(this.map);
 
-      
     let d = `
     <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
     <p>${data.user}</p>
@@ -432,16 +441,10 @@ export class UserLocationMapComponent implements OnInit {
 
     let pop_up = new tt.Popup({ offset: 30 }).setHTML(d);
 
-      console.log(this._marker, 'asdfffffff')
+    console.log(this._marker, "asdfffffff");
     this._marker.setPopup(pop_up).togglePopup();
 
-    
-    this.createMarker(
-      [data.longitude, data.latitude],
-      data.color,
-      data,
-      true
-    );
+    this.createMarker([data.longitude, data.latitude], data.color, data, true);
   }
 
   async getLocation() {
@@ -488,5 +491,4 @@ export class UserLocationMapComponent implements OnInit {
     let to = moment(this.currentDate["to"]).format("YYYY-MM-DD");
     this.listData = await this.api.getMap(from, to);
   };
-
 }

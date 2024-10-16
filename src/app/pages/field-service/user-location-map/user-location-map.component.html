@@ -1,35 +1,44 @@
 <div class="row">
     <div class="col-lg-9">
         <div class="card">
-            <div class="card-body">
-                <div id="map" class="map" style="width:100%;height:calc(100vh - 130px);overflow:hidden"></div>
+            <div class="card-body p-0">
+                <div id="map" class="map" style="width:100%;height:calc(100vh - 98px);overflow:hidden"></div>
             </div>
         </div>
     </div>
     <div class="col-lg-3">
         <div class="card">
             <div class="card-header">
-                
-                <input type="date" id="start" name="trip-start" [(ngModel)]="dateFrom"/>
-                <input type="date" id="start" name="trip-start" [(ngModel)]="dateTo"/>
-                <button class="btn btn-primary btn-sm" (click)="getData()">Submit</button>
+                <div class="input-group">
+                    <input class="form-control" type="date" id="start" name="trip-start" [(ngModel)]="dateFrom" />
+                    <input class="form-control" type="date" id="start" name="trip-start" [(ngModel)]="dateTo" />
+                    <button class="btn btn-primary btn-sm" (click)="getData()">Submit</button>
+                </div>
 
             </div>
-            <div class="card-body">
-                <button class="btn btn-primary btn-sm mb-3 me-3" (click)="showAll()">Show All</button>
-                <button class="btn btn-primary btn-sm mb-3" (click)="getData()">Refresh</button>
+            <div class="card-header border-bottom-0">
+                <button class="btn btn-primary btn-sm me-3" (click)="showAll()">Show All</button>
+                <button class="btn btn-primary btn-sm me-3" (click)="getData()">Refresh</button>
+                <!-- <button class="btn btn-primary btn-sm" (click)="collapseExpand()">{{collapsed ? 'Expand' : 'Collapse'}} All</button> -->
 
-                <div ngbAccordion [closeOthers]="true" style="height:calc(100vh - 236px);overflow:auto" class="rounded">
-                    <div ngbAccordionItem [destroyOnHide]="false" [collapsed]="activeIds?.indexOf(row.id) !== 0"
-                        *ngFor="let row of list;let i = index">
-    
-                        <h2 ngbAccordionHeader class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
-                            <button ngbAccordionButton class="p-2" style="border-left:5px solid {{row.color}}">
+            </div>
+            <div class="card-body p-0">
+                <div ngbAccordion [closeOthers]="true" style="height:calc(100vh - 230px);overflow:auto" class="rounded">
+
+                    <div ngbAccordionItem [destroyOnHide]="true" [collapsed]="collapsed"
+                        (click)="scroll('user-' + row.user_id)" *ngFor="let row of list;let i = index">
+                        <h2 id="test-{{row.user_id}}" ngbAccordionHeader
+                            class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
+                            <button ngbAccordionButton class="p-2 sticky-top"
+                                style="border-left:5px solid {{row.color}}">
                                 {{row.user}}
-                                <span class="text-end ms-1"> {{row.total ? '- ' + row.total : ''}}</span></button>
+                                <span class="text-end ms-1 badge bg-primary p-1" *ngIf="row.total"> {{row.total ?
+                                    row.total : ''}}</span>
+                                
+                                </button>
                         </h2>
                         <div ngbAccordionCollapse>
-    
+
                             <div class="list-group list-group-flush p-0">
                                 <a href="javascript:void(0);" ngbAccordionBody (click)="viewUser(item.user_id)"
                                     [ngClass]="{'bg-primary-subtle text-primary':geo_id == item.geo_id}"
@@ -43,9 +52,12 @@
                                             <h5 class="list-text mb-0 fs-12">Time: {{item.created_date}}</h5>
                                             <p class="list-text mb-0 fs-12">Latitude: {{item.latitude}}</p>
                                             <p class="list-text mb-0 fs-12">Longitude: {{item.longitude}}</p>
-                                            <p class="list-text mb-0 fs-12">Accuracy: Within {{item.accuracy  | number : '1.2-2'}} meters</p>
+                                            <p class="list-text mb-0 fs-12">Accuracy: Within {{item.accuracy | number :
+                                                '1.2-2'}} meters</p>
                                             <p class="list-text mb-0 fs-12 pointer">
-                                                <u (click)="$event.stopPropagation();viewUser(item.user_id);viewJob(item, i)">Go to marker</u>
+                                                <u
+                                                    (click)="$event.stopPropagation();viewUser(item.user_id);viewJob(item, i)">Go
+                                                    to marker</u>
                                             </p>
                                         </div>
                                     </div>
