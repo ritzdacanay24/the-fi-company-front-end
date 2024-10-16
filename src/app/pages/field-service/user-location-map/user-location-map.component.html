@@ -16,10 +16,48 @@
 
             </div>
             <div class="card-body">
-                <button class="btn btn-primary btn-sm mb-3" (click)="showAll()">Show All</button>
-                <ul class="list-group">
+                <button class="btn btn-primary btn-sm mb-3 me-3" (click)="showAll()">Show All</button>
+                <button class="btn btn-primary btn-sm mb-3" (click)="getData()">Refresh</button>
+
+                <div ngbAccordion [closeOthers]="true" style="height:calc(100vh - 236px);overflow:auto" class="rounded">
+                    <div ngbAccordionItem [destroyOnHide]="false" [collapsed]="activeIds?.indexOf(row.id) !== 0"
+                        *ngFor="let row of list;let i = index">
+    
+                        <h2 ngbAccordionHeader class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
+                            <button ngbAccordionButton class="p-2" style="border-left:5px solid {{row.color}}">
+                                {{row.user}}
+                                <span class="text-end ms-1"> {{row.total ? '- ' + row.total : ''}}</span></button>
+                        </h2>
+                        <div ngbAccordionCollapse>
+    
+                            <div class="list-group list-group-flush p-0">
+                                <a href="javascript:void(0);" ngbAccordionBody (click)="viewUser(item.user_id)"
+                                    [ngClass]="{'bg-primary-subtle text-primary':geo_id == item.geo_id}"
+                                    class="list-group-item list-group-item-action test-{{item.geo_id}}"
+                                    *ngFor="let item of row.details; let i = index">
+                                    <div class="float-end">
+                                        {{item.geo_id}}
+                                    </div>
+                                    <div class="d-flex mb-2 align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h5 class="list-text mb-0 fs-12">Time: {{item.created_date}}</h5>
+                                            <p class="list-text mb-0 fs-12">Latitude: {{item.latitude}}</p>
+                                            <p class="list-text mb-0 fs-12">Longitude: {{item.longitude}}</p>
+                                            <p class="list-text mb-0 fs-12">Accuracy: {{item.accuracy}}</p>
+                                            <p class="list-text mb-0 fs-12 pointer">
+                                                <u (click)="$event.stopPropagation();viewJob(item, i)">Go to marker</u>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- <ul class="list-group">
                     <li [style.background-color]="row.color" *ngFor="let row of list" (click)="viewUser(row.user_id)" class="pointer list-group-item" [ngClass]="{'active':currentUserIdView == row.user_id}">{{row.user}} - {{row.total}}</li>
-                </ul>
+                </ul> -->
             </div>
         </div>
     </div>

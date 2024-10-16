@@ -211,22 +211,20 @@ export class UserLocationMapComponent implements OnInit {
 
     markerElement.className = "marker";
     var markerContentElement = document.createElement("div");
-     markerContentElement.className = `marker-content`;
-     markerContentElement.style.backgroundColor = color;
-     markerContentElement.style.color = "#fff";
+    markerContentElement.className = `marker-content`;
+    markerContentElement.style.backgroundColor = color;
+    markerContentElement.style.color = "#fff";
     markerContentElement.style.borderColor = " #fff";
     markerElement.appendChild(markerContentElement);
 
     var iconElement = document.createElement("div");
     iconElement.className = "marker-icon text-white";
 
-
     // let img = document.createElement('img');
     // img.src = popupText.image
     // img.width = 20; // Set the width to 300 pixels
 
     // markerContentElement.appendChild(img);
-
 
     markerContentElement.appendChild(iconElement);
 
@@ -235,9 +233,9 @@ export class UserLocationMapComponent implements OnInit {
       this.activeIds = popupText.timestamp;
     });
 
-    console.log(popupText)
-
-    var dateString = moment.unix(popupText.timestamp).format("MM/DD/YYYY HH:mm:ss");
+    var dateString = moment
+      .unix(popupText.timestamp)
+      .format("MM/DD/YYYY HH:mm:ss");
 
     let dw = `
             <div style="padding:2px;border-radius:4px;" class="text-dark">
@@ -246,7 +244,7 @@ export class UserLocationMapComponent implements OnInit {
             <img src="${popupText.image}" style="width:0px"/>
             </div>
         `;
-        let d = `
+    let d = `
                 <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
                 <p>${popupText.user}</p>
                 <p>Time: ${popupText?.created_date}</p>
@@ -268,7 +266,7 @@ export class UserLocationMapComponent implements OnInit {
 
   styleOptions = {
     style: "dark",
-    layerType: "basic",
+    layerType: "basic"
   };
 
   getCurrentStyleUrl() {
@@ -287,7 +285,7 @@ export class UserLocationMapComponent implements OnInit {
     this.store.select("layout").subscribe((data) => {
       this.styleOptions = {
         style: data.LAYOUT_MODE,
-        layerType: "basic",
+        layerType: "basic"
       };
 
       this.map?.setStyle(this.getCurrentStyleUrl());
@@ -319,7 +317,7 @@ export class UserLocationMapComponent implements OnInit {
   activeIds = ["241", "125"];
 
   showAll() {
-    this.currentUserIdView = null
+    this.currentUserIdView = null;
     this.activeIds = [];
 
     this.clearMarkers();
@@ -337,38 +335,47 @@ export class UserLocationMapComponent implements OnInit {
       }
     }
   }
-
-  currentUserIdView = null
-  viewUser(user_id){
-    this.currentUserIdView = user_id
+  currentUserIdView = null;
+  viewUser(user_id) {
+    this.currentUserIdView = user_id;
     this.activeIds = [];
 
     this.clearMarkers();
 
     let index = 1;
+    let coord = [];
     for (let i = 0; i < this.data.length; i++) {
-      if (this.data[i].longitude && this.data[i].latitude && this.data[i].user_id == user_id) {
+      if (
+        this.data[i].longitude &&
+        this.data[i].latitude &&
+        this.data[i].user_id == user_id
+      ) {
         this.createMarker(
           [this.data[i].longitude, this.data[i].latitude],
           this.data[i].color,
           this.data[i],
-          true
+          false
         );
         index++;
+        coord.push([this.data[i].longitude, this.data[i].latitude]);
       }
     }
+
+    console.log(coord, "coord");
+    // this.drawLine(coord);
   }
 
-  list
+  list;
   async getData() {
     this.clearMarkers();
 
+    let data: any = await this.geoLocationTrackerService.getGeoLocationTracker(
+      this.dateFrom,
+      this.dateTo
+    );
 
-    let data: any =
-      await this.geoLocationTrackerService.getGeoLocationTracker(this.dateFrom, this.dateTo);
-
-      this.data = data.results;
-      this.list = data.list;
+    this.data = data.results;
+    this.list = data.list;
     let index = 1;
     for (let i = 0; i < this.data.length; i++) {
       if (this.data[i].longitude && this.data[i].latitude) {
@@ -383,78 +390,58 @@ export class UserLocationMapComponent implements OnInit {
     }
   }
 
+
   clearMarkers() {
     for (let i = 0; i < this.markersArray.length; i++) {
+      console.log(this.markersArray[i]._popup, 'removing')
       this.markersArray[i].remove();
     }
   }
 
-  viewTech(user) {
-    this.clearMarkers();
-
-    let index = 1;
-    for (let i = 0; i < this.data.length; i++) {
-      if (this.data[i].fs_lon && this.data[i].fs_lat) {
-        let techs = this.data[i]?.techs?.split(", ") || [];
-        if (techs.indexOf(user) !== -1) {
-          this.createMarker(
-            [this.data[i].fs_lon, this.data[i].fs_lat],
-            this.data[i].backgroundColor,
-            this.data[i],
-            false,
-            index
-          );
-          index++;
-        }
-      }
-    }
-
-    this.map.setCenter([-115.23419, 36.1634]);
-
-    this.map.easeTo({
-      zoom: 3,
-    });
-  }
-
-  viewJobInfo(fsId) {
-    let modalRef = this.jobModalEditService.open(fsId);
-    modalRef.result.then(
-      (result: any) => {},
-      () => {
-        //this.getList();
-      }
-    );
-  }
-
   active = null;
   fs_scheduler_id;
-
+  geo_id
   viewJob(data, index) {
-    this.fs_scheduler_id = data.fs_scheduler_id;
-    if (!data.fs_lon && !data.fs_lat) return alert("lat and lon not set");
+    console.log(this.markersArray, 'this.markersArray')
+    this.clearMarkers();
+
+    this.geo_id = data.geo_id;
+    if (!data.longitude && !data.latitude) return alert("lat and lon not set");
 
     if (this._marker) this._marker.remove();
 
     this.map.easeTo({
-      center: [data.fs_lon, data.fs_lat],
-      zoom: 5,
+      center: [data.longitude, data.latitude],
+      zoom: 15,
     });
 
     var element = document.createElement("div");
     element.id = "marker";
     this._marker = new tt.Marker({ element: element })
-      .setLngLat([data.fs_lon, data.fs_lat])
+      .setLngLat([data.longitude, data.latitude])
       .addTo(this.map);
-    let pop_up = new tt.Popup({ offset: 30 }).setHTML(`
-            <div style="padding:6px;border-radius:4px;" class="text-dark">
-                <p>FSID: ${data.fs_scheduler_id}</p>
-                <p>Start Date: ${data.start}</p>
-                <p>Title: ${data.service_type}</p>
-                <p>Techs: ${data.techs}</p>
-            </div>
-      `);
 
+      
+    let d = `
+    <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
+    <p>${data.user}</p>
+    <p>Time: ${data?.created_date}</p>
+    <img src="${data.image}" style="width:30px"/>
+    </div>
+`;
+
+    let pop_up = new tt.Popup({ offset: 30 }).setHTML(d);
+
+      console.log(this._marker, 'asdfffffff')
     this._marker.setPopup(pop_up).togglePopup();
+
+    
+    this.createMarker(
+      [data.longitude, data.latitude],
+      data.color,
+      data,
+      true
+    );
   }
 
   async getLocation() {
@@ -495,19 +482,6 @@ export class UserLocationMapComponent implements OnInit {
 
   eventListenersAdded = false;
 
-  startingLocationInfo: Object | any = {
-    position: {
-      lat: "",
-      long: "",
-    },
-    address: {
-      municipality: "",
-      countrySubdivision: "",
-      postalCode: "",
-    },
-    is_excluded: "",
-  };
-
   listData;
   getList = async () => {
     let from = moment(this.currentDate["from"]).format("YYYY-MM-DD");
@@ -515,79 +489,4 @@ export class UserLocationMapComponent implements OnInit {
     this.listData = await this.api.getMap(from, to);
   };
 
-  listProperties;
-  getProperties = async () => {
-    this.listProperties = await this.propertyService.find({
-      address_complete: "Yes",
-    });
-    for (let i = 0; i < this.listProperties.length; i++) {
-      if (this.listProperties[i].lon && this.listProperties[i].lat) {
-        this.createPropertyMarker(
-          [this.listProperties[i].lon, this.listProperties[i].lat],
-          this.listProperties[i]?.backgroundColor,
-          this.listProperties[i],
-          false
-        );
-      }
-    }
-  };
-
-  createPropertyMarker = (
-    position: any,
-    color: string,
-    popupText: any | any,
-    showPopup?,
-    index?
-  ) => {
-    if (this._marker) this._marker.remove();
-
-    var markerElement = document.createElement("div");
-
-    markerElement.className = "marker";
-    var markerContentElement = document.createElement("div");
-    markerContentElement.className = `marker-content`;
-    markerContentElement.style.backgroundColor = color;
-    markerContentElement.style.color = "#fff";
-   markerContentElement.style.borderColor = " #fff";
-    markerElement.appendChild(markerContentElement);
-
-    var iconElement = document.createElement("div");
-    iconElement.className = "marker-icon";
-    iconElement.innerText = index ? index : null;
-    markerContentElement.appendChild(iconElement);
-
-    markerElement.addEventListener("click", (e) => {
-      this.fs_scheduler_id = popupText.fs_scheduler_id;
-      this.activeIds = popupText.techId?.split(",");
-      this.scroll(popupText.fs_scheduler_id);
-    });
-
-    let d = `
-            <div style="padding:6px;border-radius:4px;" class="text-dark">
-                <p>FSID: ${popupText.fs_scheduler_id}</p>
-                <p>Start Date: ${popupText.start}</p>
-                <p>Title: ${popupText.service_type}</p>
-                <p>Techs: ${popupText.techs}</p>
-            </div>
-        `;
-    if (color == "red") {
-      d = `
-                <div style="padding:6px;border-radius:4px;">
-                <h6>${popupText?.address?.freeformAddress}</h6>
-                </div>
-            `;
-    }
-
-    let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(d);
-
-    // add marker to map
-    let e = new tt.Marker({ element: markerElement, anchor: "bottom" })
-      .setLngLat(position)
-      .setPopup(popup)
-      .addTo(this.map);
-
-    this.markersArray.push(e);
-
-    if (showPopup) e.setPopup(popup).togglePopup();
-  };
 }
