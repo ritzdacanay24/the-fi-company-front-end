@@ -329,7 +329,7 @@ export class UserLocationMapComponent implements OnInit {
           [this.data[i].longitude, this.data[i].latitude],
           this.data[i].color,
           this.data[i],
-          true
+          false
         );
         index++;
       }
@@ -383,7 +383,7 @@ export class UserLocationMapComponent implements OnInit {
           [this.data[i].longitude, this.data[i].latitude],
           this.data[i].color,
           this.data[i],
-          true
+          false
         );
         index++;
       }
@@ -403,7 +403,7 @@ export class UserLocationMapComponent implements OnInit {
   geo_id
   viewJob(data, index) {
     console.log(this.markersArray, 'this.markersArray')
-    this.clearMarkers();
+    //this.clearMarkers();
 
     this.geo_id = data.geo_id;
     if (!data.longitude && !data.latitude) return alert("lat and lon not set");

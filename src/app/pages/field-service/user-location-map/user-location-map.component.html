@@ -43,9 +43,9 @@
                                             <h5 class="list-text mb-0 fs-12">Time: {{item.created_date}}</h5>
                                             <p class="list-text mb-0 fs-12">Latitude: {{item.latitude}}</p>
                                             <p class="list-text mb-0 fs-12">Longitude: {{item.longitude}}</p>
-                                            <p class="list-text mb-0 fs-12">Accuracy: {{item.accuracy}}</p>
+                                            <p class="list-text mb-0 fs-12">Accuracy: Within {{item.accuracy  | number : '1.2-2'}} meters</p>
                                             <p class="list-text mb-0 fs-12 pointer">
-                                                <u (click)="$event.stopPropagation();viewJob(item, i)">Go to marker</u>
+                                                <u (click)="$event.stopPropagation();viewUser(item.user_id);viewJob(item, i)">Go to marker</u>
                                             </p>
                                         </div>
                                     </div>

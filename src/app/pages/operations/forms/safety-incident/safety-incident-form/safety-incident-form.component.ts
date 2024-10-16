@@ -71,6 +71,7 @@ export class SafetyIncidentFormComponent {
     "Buildings or Product Damage",
     "Near miss (personnel or buildings)",
     "Safety Procedure non-conformance",
+    "Vehicle Incident / Road Traffic Incident",
     "Other"
   ]
 
@@ -98,6 +99,10 @@ export class SafetyIncidentFormComponent {
     {
       id: 6,
       name: "Safety Procedure non-conformance",
+    },
+    {
+      id: 6,
+      name: "Vehicle Incident / Road Traffic Incident",
     },
     {
       id: 7,
