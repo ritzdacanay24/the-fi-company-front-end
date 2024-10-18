@@ -310,8 +310,9 @@ export class UserLocationMapComponent implements OnInit {
       boxZoom: true,
       style: this.getCurrentStyleUrl(),
       stylesVisibility: {
-        poi: false,
-        trafficFlow: false,
+        map: true,
+        poi: true,
+        trafficFlow: true,
         trafficIncidents: true,
       },
     });
@@ -420,9 +421,11 @@ export class UserLocationMapComponent implements OnInit {
 
     if (this._marker) this._marker.remove();
 
-    this.map.easeTo({
+    this.map.flyTo({
+      curve:true,
       center: [data.longitude, data.latitude],
       zoom: 15,
+      speed:5
     });
 
     var element = document.createElement("div");

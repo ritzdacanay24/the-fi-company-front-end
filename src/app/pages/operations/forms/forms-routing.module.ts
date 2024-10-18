@@ -2,12 +2,19 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { FormsComponent } from "./forms.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
+import { TimeTrackerComponent } from "./time-tracker/time-tracker.component";
 
 const routes: Routes = [
   {
     path: "",
     component: FormsComponent,
     children: [
+      {
+        title: "Time Tracker",
+        path: "time-tracker",
+        component: TimeTrackerComponent,
+        runGuardsAndResolvers: "always",
+      },
       {
         title: "Shipping Request",
         path: "shipping-request",
@@ -35,7 +42,7 @@ const routes: Routes = [
           import("./placard/placard-routing.module").then(
             (m) => m.PlacardRoutingModule
           ),
-          canActivate: [AccessGuard],
+        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
       {
@@ -45,7 +52,7 @@ const routes: Routes = [
           import("./igt-transfer/igt-transfer-routing.module").then(
             (m) => m.IgtTransferRoutingModule
           ),
-          canActivate: [AccessGuard],
+        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
       {

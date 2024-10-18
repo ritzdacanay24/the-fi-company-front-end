@@ -1,0 +1,11 @@
+::ng-deep {
+  .offcanvas {
+    --bs-offcanvas-height: 60vh !important;
+    z-index: 1060 !important;
+    --bs-offcanvas-zindex: 1060 !important;
+  }
+  .offcanvas.offcanvas-bottom {
+    --bs-offcanvas-height: 60vh !important;
+    height: 60vh !important;
+  }
+}
