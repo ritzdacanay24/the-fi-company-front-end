@@ -18,7 +18,9 @@ const routes: Routes = [
       },
       {
         path: "signatures",
-        component:SignaturesComponent
+        component:SignaturesComponent,
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
       },
       {
         path: "email-notification",

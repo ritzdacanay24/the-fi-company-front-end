@@ -9,7 +9,6 @@ import { ProductionRoutingComponent } from "./production-routing/production-rout
 import { AllRoutingComponent } from "./all-routing/all-routing.component";
 import { WorkOrderTrackerComponent } from "./work-order-tracker/work-order-tracker.component";
 import { CablesComponent } from "./cables/cables.component";
-import { WorkOrderTrackerListComponent } from "./work-order-tracker/work-order-tracker-list/work-order-tracker-list.component";
 
 const routes: Routes = [
   {
