@@ -242,26 +242,22 @@ export class UserLocationMapComponent implements OnInit {
       this.activeIds = popupText.timestamp;
     });
 
-    var dateString = moment
-      .unix(popupText.timestamp)
-      .format("MM/DD/YYYY HH:mm:ss");
-
-    let dw = `
-            <div style="padding:2px;border-radius:4px;" class="text-dark">
-            <p>User: ${popupText.user}</p>
-            <p>Time: ${popupText?.created_date}</p>
-                <p>Event: ${popupText?.type_of_event || "NA"}</p>
-            <img src="${popupText.image}" style="width:0px"/>
-            </div>
-        `;
     let d = `
-                <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
-                <p>${popupText.user}</p>
-                <p>Time: ${popupText?.created_date}</p>
-                <p>Event: ${popupText?.type_of_event || "NA"}</p>
-                <img src="${popupText.image}" style="width:30px"/>
-                </div>
-            `;
+<div class="card mb-0">
+  <div class="card-body text-center">
+    <p>${popupText.user}</p>
+    <p>Time: ${popupText?.created_date}</p>
+    ${
+      popupText?.type_of_event
+        ? `<p>Event: ${popupText?.type_of_event}</p>`
+        : ""
+    }
+    <img src="${popupText.image}" style="width:70px"/>
+  </div>
+</div>
+          
+      `;
+
     let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(d);
 
     // add marker to map
@@ -277,7 +273,7 @@ export class UserLocationMapComponent implements OnInit {
 
   styleOptions = {
     style: "dark",
-    layerType: "basic",
+    layerType: "satellite",
   };
 
   getCurrentStyleUrl() {
@@ -387,6 +383,10 @@ export class UserLocationMapComponent implements OnInit {
     );
 
     this.data = data.results;
+    let jobs = data.jobs;
+
+    console.log(jobs);
+
     this.list = data.list;
     let index = 1;
     for (let i = 0; i < this.data.length; i++) {
@@ -400,7 +400,84 @@ export class UserLocationMapComponent implements OnInit {
         index++;
       }
     }
+
+    for (let i = 0; i < jobs.length; i++) {
+      if (jobs[i].fs_lon && jobs[i].fs_lat) {
+        this.createJobMarker(
+          [jobs[i].fs_lon, jobs[i].fs_lat],
+          "#000",
+          jobs[i],
+          false
+        );
+        index++;
+      }
+    }
   }
+
+  createJobMarker = (
+    position: any,
+    color: string,
+    popupText: any | any,
+    showPopup?,
+    index?
+  ) => {
+    if (this._marker) this._marker.remove();
+
+    var markerElement = document.createElement("div");
+
+    markerElement.className = "marker";
+    var markerContentElement = document.createElement("div");
+    markerContentElement.className = `marker-content`;
+    markerContentElement.style.backgroundColor = color;
+    markerContentElement.style.color = "#fff";
+    markerContentElement.style.borderColor =
+      popupText.type_of == "event" ? "black" : " #fff";
+    markerElement.appendChild(markerContentElement);
+
+    var iconElement = document.createElement("div");
+    iconElement.className = "marker-icon text-white";
+
+    // let img = document.createElement('img');
+    // img.src = popupText.image
+    // img.width = 20; // Set the width to 300 pixels
+    markerContentElement.innerHTML =
+      popupText.type_of == "event"
+        ? "<span style='margin-left:6px;margin-bottom:15px;transform: rotate(90deg);'>EV</span>"
+        : " ";
+    // markerContentElement.appendChild(img);
+
+    markerContentElement.appendChild(iconElement);
+
+    markerElement.addEventListener("click", (e) => {
+      this.fs_scheduler_id = popupText.user_id;
+      this.activeIds = popupText.timestamp;
+    });
+
+    let d = `
+      <div class="card mb-0">
+        <div class="card-header p-2">
+          <h4 class="card-title mb-0">Job Info</h4>
+        </div>
+        <div class="card-body">
+        <p>Service: ${popupText.service_type}</p>
+                <p>Time: ${popupText?.start} ${popupText?.start_time}</p>
+                <p>Techs: ${popupText?.techs || "NA"}</p>
+        </div>
+      </div>
+                
+            `;
+    let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(d);
+
+    // add marker to map
+    let e = new tt.Marker({ element: markerElement, anchor: "bottom" })
+      .setLngLat(position)
+      .setPopup(popup)
+      .addTo(this.map);
+
+    this.markersArray.push(e);
+
+    if (showPopup) e.setPopup(popup).togglePopup();
+  };
 
   clearMarkers() {
     for (let i = 0; i < this.markersArray.length; i++) {
@@ -422,10 +499,10 @@ export class UserLocationMapComponent implements OnInit {
     if (this._marker) this._marker.remove();
 
     this.map.flyTo({
-      curve:true,
+      curve: true,
       center: [data.longitude, data.latitude],
       zoom: 15,
-      speed:5
+      speed: 5,
     });
 
     var element = document.createElement("div");
@@ -434,13 +511,24 @@ export class UserLocationMapComponent implements OnInit {
       .setLngLat([data.longitude, data.latitude])
       .addTo(this.map);
 
+    //     let d = `
+    //     <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
+    //     <p>${data.user}</p>
+    //     <p>Time: ${data?.created_date}</p>
+    //     <img src="${data.image}" style="width:30px"/>
+    //     </div>
+    // `;
+
     let d = `
-    <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
-    <p>${data.user}</p>
-    <p>Time: ${data?.created_date}</p>
-    <img src="${data.image}" style="width:30px"/>
-    </div>
-`;
+<div class="card mb-0">
+  <div class="card-body">
+  <p>${data.user}</p>
+          <p>Time: ${data?.created_date}</p>
+    <img src="${data.image}" style="width:70px"/>
+  </div>
+</div>
+          
+      `;
 
     let pop_up = new tt.Popup({ offset: 30 }).setHTML(d);
 

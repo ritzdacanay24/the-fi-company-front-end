@@ -46,10 +46,10 @@ const routes: Routes = [
         path: "qc-routing",
         component: QcRoutingComponent,
       },
-      // {
-      //   path: "work-order-tracker",
-      //   component: WorkOrderTrackerComponent,
-      // },
+      {
+        path: "work-order-tracker",
+        component: WorkOrderTrackerComponent,
+      },
       // {
       //   path: "list-work-order-tracker",
       //   component: WorkOrderTrackerListComponent,

@@ -1139,6 +1139,11 @@ export const MENU: MenuItem[] = [
         link: "/dashboard/maintenance/scheduled-jobs",
         description: "Scheduled Jobs",
       },
+      {
+        label: "Signatures",
+        link: "/dashboard/maintenance/signatures",
+        description: "Signatures",
+      },
     ],
   },
   {

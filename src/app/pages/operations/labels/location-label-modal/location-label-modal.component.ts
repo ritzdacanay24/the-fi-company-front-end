@@ -41,7 +41,7 @@ export class LocationLabelModalComponent implements OnInit {
   form = new FormGroup<any>({
     start_location: new FormControl(""),
     end_location: new FormControl(""),
-    arrowDirection: new FormControl(""),
+    arrowDirection: new FormControl("Up"),
   });
 
   @Input() data: any;
@@ -62,6 +62,9 @@ export class LocationLabelModalComponent implements OnInit {
       this.form.value.end_location
     );
 
+    console.log(res, 'fff')
+
+    //up
     let e = `
 ^XA
 ^FO5,20^GFA,15444,15444,36,,::::::::gT038,gT03C,gT07E,gT0FF,gS01FF8,gS03FFC,gS07FFE,gS0JF
@@ -84,7 +87,9 @@ export class LocationLabelModalComponent implements OnInit {
 ^FS
 ^FX
 `;
-    if (!res[1]) {
+
+//down
+    if (this.form.value.arrowDirection == 'Down') {
       e = `
 ^XA
 ^FO20,20^GFA,13696,13696,32,,:::::::::gH01VFE,:::::::::::::::::::::::::::

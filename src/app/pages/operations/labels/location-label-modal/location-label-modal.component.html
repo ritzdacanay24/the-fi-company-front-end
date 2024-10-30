@@ -23,7 +23,7 @@
         <div class="mb-3">
             <label class="form-label">Arrow Direction</label>
             <select class="form-select" formControlName="arrowDirection">
-                <option *ngFor="let row of ['Up','Down']">{{row}}</option>
+                <option *ngFor="let row of ['Up','Down']" [value]="row">{{row}}</option>
             </select>
         </div>
 

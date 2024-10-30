@@ -3,6 +3,7 @@ import { NgModule } from "@angular/core";
 import { MaintenanceComponent } from "./maintenance.component";
 import { ScheduledJobsListComponent } from "./scheduled-jobs/scheduled-jobs-list/scheduled-jobs-list.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
+import { SignaturesComponent } from "./signatures/signatures.component";
 
 const routes: Routes = [
   {
@@ -14,6 +15,10 @@ const routes: Routes = [
         loadChildren: () =>
           import("./user/user-routing.module").then((m) => m.UserRoutingModule),
         data: { preload: true },
+      },
+      {
+        path: "signatures",
+        component:SignaturesComponent
       },
       {
         path: "email-notification",

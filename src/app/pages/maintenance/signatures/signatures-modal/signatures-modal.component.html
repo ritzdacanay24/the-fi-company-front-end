@@ -1,0 +1,15 @@
+<div class="modal-header mb-0 pb-0">
+    <h4 class="modal-title" id="modal-basic-title">Signature</h4>
+</div>
+
+<div class="modal-body">
+    <div class="mb-3">
+        <app-signatures-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-signatures-form>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-3">Close</button>
+    <button (click)="onDelete()" type="button" class="btn btn-danger" *ngIf="id">Delete</button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary ms-auto">Save</button>
+</div>

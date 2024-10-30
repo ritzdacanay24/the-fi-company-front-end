@@ -49,4 +49,10 @@ export class QirResponseFormComponent {
   public setValue(column, value) {
     this.form.controls[column].setValue(value, { emitEvent: false });
   }
+
+  //need to add attachments from a new table since the attachments can contain more than one attachments. 
+  addAttachment() {}
+  getAttachment() {}
+  deleteAttachment() {}
+
 }
