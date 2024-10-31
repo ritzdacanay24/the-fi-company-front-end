@@ -110,7 +110,7 @@ export class UserLocationMapComponent implements OnInit {
   geoJson;
   markersOnTheMap = {};
 
-  dateFrom = moment().format("YYYY-MM-DD");
+  dateFrom = moment().subtract('30', 'days').format("YYYY-MM-DD");
   dateTo = moment().format("YYYY-MM-DD");
   dateRange1 = [this.dateFrom, this.dateTo];
 
@@ -343,6 +343,8 @@ export class UserLocationMapComponent implements OnInit {
       }
     }
   }
+
+  
   currentUserIdView = null;
   viewUser(user_id) {
     this.currentUserIdView = user_id;
@@ -373,10 +375,87 @@ export class UserLocationMapComponent implements OnInit {
     // this.drawLine(coord);
   }
 
+  refreshMarkers = () => {
+    Object.keys(this.markersOnTheMap).forEach((id) => {
+      console.log(id, "id");
+      this.markersOnTheMap[id].remove();
+      delete this.markersOnTheMap[id];
+    });
+
+    this.map.querySourceFeatures("point-source").forEach((feature) => {
+      if (feature.properties && !feature.properties.cluster) {
+        var id = parseInt(feature.properties.id, 10);
+        if (!this.markersOnTheMap[id]) {
+          var markerElement = document.createElement("div");
+
+          let popupText = feature.properties;
+          markerElement.className = "marker";
+          var markerContentElement = document.createElement("div");
+          markerContentElement.className = `marker-content`;
+          markerContentElement.style.backgroundColor = popupText.color;
+          markerContentElement.style.color = "#fff";
+          markerContentElement.style.borderColor =
+            popupText.type_of == "event" ? "black" : " #fff";
+          markerElement.appendChild(markerContentElement);
+
+          var iconElement = document.createElement("div");
+          iconElement.className = "marker-icon text-white";
+
+          // let img = document.createElement('img');
+          // img.src = popupText.image
+          // img.width = 20; // Set the width to 300 pixels
+          markerContentElement.innerHTML =
+            popupText.type_of == "event"
+              ? "<span style='margin-left:6px;margin-bottom:15px;transform: rotate(90deg);'>EV</span>"
+              : " ";
+          // markerContentElement.appendChild(img);
+
+          markerContentElement.appendChild(iconElement);
+
+          markerElement.addEventListener("click", (e) => {
+            this.fs_scheduler_id = popupText.user_id;
+            this.activeIds = popupText.timestamp;
+          });
+
+          let d = `
+            <div class="card mb-0">
+              <div class="card-body text-center">
+                <p>${popupText.user}</p>
+                <p>Time: ${popupText?.created_date}</p>
+                ${
+                  popupText?.type_of_event
+                    ? `<p>Event: ${popupText?.type_of_event}</p>`
+                    : ""
+                }
+                <img src="${popupText.image}" style="width:70px"/>
+              </div>
+            </div>
+                      
+        `;
+
+          let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(
+            d
+          );
+
+          // add marker to map
+          let newMarker = new tt.Marker({
+            element: markerElement,
+            anchor: "bottom",
+          })
+            .setLngLat(feature.geometry.coordinates)
+            .setPopup(popup)
+            .addTo(this.map);
+
+          this.markersOnTheMap[id] = newMarker;
+        }
+      }
+    });
+  };
+
   list;
   async getData() {
     this.clearMarkers();
-
+    this.data = [];
     let data: any = await this.geoLocationTrackerService.getGeoLocationTracker(
       this.dateFrom,
       this.dateTo
@@ -385,33 +464,168 @@ export class UserLocationMapComponent implements OnInit {
     this.data = data.results;
     let jobs = data.jobs;
 
-    console.log(jobs);
-
     this.list = data.list;
-    let index = 1;
+    let points = [];
     for (let i = 0; i < this.data.length; i++) {
       if (this.data[i].longitude && this.data[i].latitude) {
-        this.createMarker(
-          [this.data[i].longitude, this.data[i].latitude],
-          this.data[i].color,
-          this.data[i],
-          false
-        );
-        index++;
+        // this.createMarker(
+        //   [this.data[i].longitude, this.data[i].latitude],
+        //   this.data[i].color,
+        //   this.data[i],
+        //   false
+        // );
+
+        points.push({
+          coordinates: [this.data[i].longitude, this.data[i].latitude],
+          properties: this.data[i],
+        });
       }
     }
+
+    console.log(points, "points");
 
     for (let i = 0; i < jobs.length; i++) {
       if (jobs[i].fs_lon && jobs[i].fs_lat) {
-        this.createJobMarker(
-          [jobs[i].fs_lon, jobs[i].fs_lat],
-          "#000",
-          jobs[i],
-          false
-        );
-        index++;
+        // this.createJobMarker(
+        //   [jobs[i].fs_lon, jobs[i].fs_lat],
+        //   "#000",
+        //   jobs[i],
+        //   false
+        // );
+        
+        points.push({
+          coordinates: [jobs[i].fs_lon, jobs[i].fs_lat],
+          properties: jobs[i],
+        });
       }
     }
+
+    points.concat(jobs);
+
+    //cluster
+
+    this.markersOnTheMap = {};
+    this.eventListenersAdded = false;
+
+    // var points = [
+    //   {
+    //     coordinates: [-0.13389631465156526, 51.510387047712356],
+    //     properties: {
+    //       id: 1,
+    //       name: "Checkpoint A",
+    //     },
+    //   },
+    // ];
+
+    // if (this.map.getSource("point-source")) {
+    //   this.map.removeLayer("cluster-count");
+    //   this.map.removeLayer("clusters");
+    //   this.map.removeSource("point-source");
+    // }
+
+    var geoJson = {
+      type: "FeatureCollection",
+      features: points.map((point) => {
+        return {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: point.coordinates,
+          },
+          properties: point.properties,
+        };
+      }),
+    };
+
+    this.map.on("load", () => {
+      this.map.addSource("point-source", {
+        type: "geojson",
+        data: geoJson,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 30,
+      });
+
+      this.map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "point-source",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": [
+            "step",
+            ["get", "point_count"],
+            "#EC619F",
+            4,
+            "#008D8D",
+            7,
+            "#004B7F",
+          ],
+          "circle-radius": ["step", ["get", "point_count"], 15, 4, 20, 7, 25],
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "white",
+          "circle-stroke-opacity": 1,
+        },
+      });
+
+      this.map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "point-source",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": "{point_count_abbreviated}",
+          "text-size": 16,
+        },
+        paint: {
+          "text-color": "white",
+        },
+      });
+
+      this.map.on("data", (e) => {
+        if (
+          e.sourceId !== "point-source" ||
+          !this.map.getSource("point-source").loaded()
+        ) {
+          return;
+        }
+
+        this.refreshMarkers();
+
+        if (!this.eventListenersAdded) {
+          this.map.on("move", this.refreshMarkers);
+          this.map.on("moveend", this.refreshMarkers);
+          this.eventListenersAdded = true;
+        }
+      });
+
+      this.map.on("click", "clusters", (e) => {
+        var features = this.map.queryRenderedFeatures(e.point, {
+          layers: ["clusters"],
+        });
+        var clusterId = features[0].properties.cluster_id;
+        this.map
+          .getSource("point-source")
+          .getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) {
+              return;
+            }
+
+            this.map.easeTo({
+              center: features[0].geometry.coordinates,
+              zoom: zoom + 0.5,
+            });
+          });
+      });
+
+      this.map.on("mouseenter", "clusters", () => {
+        this.map.getCanvas().style.cursor = "pointer";
+      });
+
+      this.map.on("mouseleave", "clusters", () => {
+        this.map.getCanvas().style.cursor = "";
+      });
+    });
   }
 
   createJobMarker = (
