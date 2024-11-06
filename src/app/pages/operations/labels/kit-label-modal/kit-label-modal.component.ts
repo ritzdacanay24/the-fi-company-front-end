@@ -45,8 +45,9 @@ export class KitLabelModalComponent implements OnInit {
     description2: new FormControl(""),
     qty: new FormControl(""),
     totalLabels: new FormControl(""),
-    mfgDate: new FormControl(""),
+    mfgDate: new FormControl(moment().format('YYYY-MM-DD')),
     mfgName: new FormControl("The-Fi-Company"),
+    includeMfg: new FormControl(false),
   });
 
   @Input() data: any;
@@ -84,13 +85,19 @@ export class KitLabelModalComponent implements OnInit {
             ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
             ^XA
             ^FO30,30^A0N,30,20^FD${row.partNumber.toString().toUpperCase()}^FS
-            ^FO350,23^BXN,4,200,,,,,^FD${row.partNumber.toString().toUpperCase()}^FS
+            ^FO350,23^BXN,4,200,,,,,^FD${row.partNumber
+              .toString()
+              .toUpperCase()}^FS
             ^FO30,60^A0N,28,20^FD${row.description || ""}^FS
             ^FO30,85^A0N,28,20^FD${row.description2 || ""}^FS
             ^FO30,113^A0N,28,20^FDQTY: ${row.qty}^FS
             ^FO30,138^A0N,28,20^FDDate: ${moment().format("MM/DD/YYYY")}^FS
-            ${row.mfgDate ? `^FO240,113^A0N,28,20^FDMFG: ${row.mfgDate}^FS` : ``}
-            ${row.mfgDate ? `^FO240,138^A0N,28,20^FD${row.mfgName}^FS` : ``}
+            ${
+              row.includeMfg
+                ? `^FO240,113^A0N,28,20^FDMFG: ${row.mfgDate}^FS`
+                : ``
+            }
+            ${row.includeMfg ? `^FO240,138^A0N,28,20^FD${row.mfgName}^FS` : ``}
             ^PQ${row.totalLabels}^FS
             ^XZ
             ^XA^XZ

@@ -24,12 +24,18 @@
             <input formControlName="description2" type="text" class="form-control" placeholder="Enter Part Description">
         </div>
 
-        <div class="mb-3">
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="exampleCheck1" formControlName="includeMfg">
+            <label class="form-check-label" for="exampleCheck1">Include MFG Info on Label?</label>
+        </div>
+
+        <div class="mb-3" *ngIf="form.value.includeMfg">
             <label class="form-label">MFG Date</label>
             <input formControlName="mfgDate" type="date" class="form-control" placeholder="Enter Part Description">
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3" *ngIf="form.value.includeMfg">
             <label class="form-label">MFG Name</label>
             <input formControlName="mfgName" type="text" class="form-control" placeholder="Enter Part Description">
         </div>
