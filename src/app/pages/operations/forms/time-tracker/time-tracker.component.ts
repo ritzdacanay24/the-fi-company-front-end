@@ -28,9 +28,7 @@ export class TimeTrackerComponent {
     private attachmentsService: AttachmentsService,
     private timeTrackerService: TimeTrackerService,
     private timeTrackerDetailService: TimeTrackerDetailService
-  ) {
-    console.log(this.authenticationService.currentUserValue);
-  }
+  ) {}
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -45,6 +43,17 @@ export class TimeTrackerComponent {
   data: any;
   async getData() {
     this.data = await this.timeTrackerService.getById(this.id);
+
+    if (!this.data) {
+      this.goBack();
+    }
+  }
+
+  goBack() {
+    this.router.navigate(["/dashboard/operations/forms/time-tracker"], {
+      relativeTo: this.activatedRoute,
+      queryParams: { id: null },
+    });
   }
 
   async getDetails() {
@@ -112,7 +121,6 @@ export class TimeTrackerComponent {
 
   edit_id = null;
   edit(content: TemplateRef<any>, row) {
-    console.log(row);
     this.name = row.title;
     this.start_time = row.start_time;
     this.end_time = row.end_time;
@@ -124,7 +132,6 @@ export class TimeTrackerComponent {
       })
       .result.then(
         async (result) => {
-          console.log(result, "asdfasdf");
           let data = {
             title: result.name,
             time_tracker_id: this.id,
@@ -155,8 +162,16 @@ export class TimeTrackerComponent {
     // this.offcanvas.close();
   }
 
-  getTotalTime(start, end) {
+  async onDeleteMain() {
+    if (!confirm("Are you sure you want to delete?")) return;
+    await this.timeTrackerService.delete(this.data?.id);
 
+    this.goBack();
+
+    await this.getData();
+  }
+
+  getTotalTime(start, end) {
     const formatString = "YYYY-MM-DD HH:mm:ss";
 
     const isValidStart = moment(start, formatString).isValid();
@@ -184,14 +199,12 @@ export class TimeTrackerComponent {
   times = [];
 
   async finish() {
+    let now = time_now();
     await this.timeTrackerService.update(this.id, {
-      completed_date: time_now(),
+      completed_date: now,
     });
 
-    this.router.navigate(["/dashboard/operations/forms/time-tracker"], {
-      relativeTo: this.activatedRoute,
-      queryParams: { id: null },
-    });
+    this.data.completed_date = now;
 
     await this.getData();
 

@@ -42,6 +42,8 @@
         <p>Created Date: {{data?.created_date}}</p>
         <p>Created By: {{data?.created_by_name}}</p>
         <p>Completed Date: {{data?.completed_date}}</p>
+        <button type="button" class="btn btn-danger me-2" (click)="onDeleteMain()"
+            *ngIf="!data?.completed_date">Delete</button>
     </div>
     <div class="row">
         <div class="col-xl-5">
@@ -101,8 +103,7 @@
             <div class="text-end">
                 <button type="button" class="btn btn-light me-2"
                     (click)="offcanvas.close('Close click')">Cancel</button>
-                <button type="button" class="btn btn-danger me-2"
-                    (click)="onDelete()">Delete</button>
+                <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="edit_id">Delete</button>
                 <button type="button" class="btn btn-outline-success"
                     (click)="offcanvas.close({name,start_time,end_time})">Save</button>
             </div>
