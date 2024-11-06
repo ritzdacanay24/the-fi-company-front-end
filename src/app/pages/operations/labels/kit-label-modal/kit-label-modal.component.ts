@@ -45,6 +45,8 @@ export class KitLabelModalComponent implements OnInit {
     description2: new FormControl(""),
     qty: new FormControl(""),
     totalLabels: new FormControl(""),
+    mfgDate: new FormControl(""),
+    mfgName: new FormControl("The-Fi-Company"),
   });
 
   @Input() data: any;
@@ -87,6 +89,8 @@ export class KitLabelModalComponent implements OnInit {
             ^FO30,85^A0N,28,20^FD${row.description2 || ""}^FS
             ^FO30,113^A0N,28,20^FDQTY: ${row.qty}^FS
             ^FO30,138^A0N,28,20^FDDate: ${moment().format("MM/DD/YYYY")}^FS
+            ${row.mfgDate ? `^FO240,113^A0N,28,20^FDMFG: ${row.mfgDate}^FS` : ``}
+            ${row.mfgDate ? `^FO240,138^A0N,28,20^FD${row.mfgName}^FS` : ``}
             ^PQ${row.totalLabels}^FS
             ^XZ
             ^XA^XZ

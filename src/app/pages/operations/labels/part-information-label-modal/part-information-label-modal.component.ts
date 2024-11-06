@@ -46,6 +46,8 @@ export class PartInformationLabelModalComponent implements OnInit {
     description2: new FormControl(""),
     qty: new FormControl(""),
     totalLabels: new FormControl(""),
+    mfgDate: new FormControl(""),
+    mfgName: new FormControl("The-Fi-Company"),
   });
 
   @Input() data: any;
@@ -89,6 +91,8 @@ export class PartInformationLabelModalComponent implements OnInit {
             ^FO30,210^A0N,60,30^FD${row.description2 || ""}^FS
             ^FO30,280^A0N,60,30^FDQTY: ${row.qty}^FS
             ^FO30,350^A0N,60,30^FDDate: ${moment().format("MM/DD/YYYY")}^FS
+            ${row.mfgDate ? `^FO400,280^A0N,60,30^FDMFG: ${row.mfgDate}^FS` : ``}
+            ${row.mfgDate ? `^FO400,350^A0N,60,30^FD${row.mfgName}^FS` : ``}
             ^PQ${row.totalLabels}^FS
             ^XZ
             ^XA^XZ
