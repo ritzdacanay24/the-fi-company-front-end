@@ -68,6 +68,18 @@
                                                                             </p>
                                                                         </td>
                                                                     </tr>
+                                                                    <tr *ngIf="row.officePhone">
+                                                                        <td style="padding:0px">
+                                                                            <img src="https://dashboard.eye-fi.com/test/signatures/phone-custom.png"
+                                                                                width="12" height="12">
+                                                                        </td>
+                                                                        <td style="padding:0px">
+                                                                            <p class="my-font-regular"
+                                                                                style="margin:0px;font-size:11px;margin-bottom:0px;margin-left:5px;color: #002F6C;">
+                                                                                <span>O:{{row.officePhone}}</span>
+                                                                            </p>
+                                                                        </td>
+                                                                    </tr>
                                                                     <tr *ngIf="row.mobilePhone">
                                                                         <td style="padding:0px">
                                                                             <img src="https://dashboard.eye-fi.com/test/signatures/phone-custom.png"
@@ -76,7 +88,7 @@
                                                                         <td style="padding:0px">
                                                                             <p class="my-font-regular"
                                                                                 style="margin:0px;font-size:11px;margin-bottom:0px;margin-left:5px;color: #002F6C;">
-                                                                                <span>{{row.mobilePhone}}</span>
+                                                                                <span>M:{{row.mobilePhone}}</span>
                                                                             </p>
                                                                         </td>
                                                                     </tr>

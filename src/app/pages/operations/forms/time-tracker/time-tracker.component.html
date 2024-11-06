@@ -1,6 +1,20 @@
-<div *ngIf="!id" class="d-lg-none">
-    <h4>Click on the start button to get started.</h4>
-    <button class="btn-primary btn ms-auto" (click)="start()" *ngIf="!id">Start</button>
+<div *ngIf="!id">
+    <div class="row">
+        <div class="col-xl-5">
+            <div class="card card-body">
+                <h4>Please enter the title in the designated field and click the start button to begin the process.
+
+                </h4>
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input class="form-control" [(ngModel)]="name" type="text" placeholder="Enter name">
+                </div>
+
+                <button class="btn-primary btn ms-auto" (click)="start()" *ngIf="!id" [disabled]="!name">Start</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card mb-3" *ngIf="completed?.length > 0">
@@ -21,7 +35,14 @@
     </div>
 </div>
 
-<div *ngIf="id" class="d-lg-none">
+<div *ngIf="id">
+    <div class="mb-3">
+        <h5>ID#: {{data?.id}}</h5>
+        <h5>Title: {{data?.title}}</h5>
+        <p>Created Date: {{data?.created_date}}</p>
+        <p>Created By: {{data?.created_by_name}}</p>
+        <p>Completed Date: {{data?.completed_date}}</p>
+    </div>
     <div class="row">
         <div class="col-xl-5">
             <div class="card">
@@ -30,27 +51,25 @@
                 </div>
                 <div class="card-body">
 
-
-                    <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        <input class="form-control" [(ngModel)]="time_tracker_title" type="text" placeholder="Enter name">
-                    </div>
-
-                    <h4 *ngIf="!times.length">No record found.</h4>
+                    <h4 *ngIf="!times.length">No times recorded.</h4>
                     <ol class="list-group list-group-numbered">
-                        <li class="list-group-item d-flex justify-content-between align-items-start"
-                            *ngFor="let row of times" (click)="edit(content, row)">
+                        <li class="list-group-item d-flex justify-content-between align-items-start pointer"
+                            *ngFor="let row of times" (click)="!data?.completed_date && edit(content, row)">
                             <div class="ms-2 me-auto">
-                                <div class="fw-bold">{{row.name}}</div>
+                                <div class="fw-bold">{{row.title}}
+                                </div>
                                 <p>Start: {{row.start_time}}</p>
                                 <p>End: {{row.end_time}}</p>
+                                <p>Total Time: {{getTotalTime(row.start_time, row.end_time) || 0}}</p>
                             </div>
                         </li>
                     </ol>
                 </div>
                 <div class="card-footer d-flex">
-                    <button class="btn-success btn" (click)="finish();" *ngIf="times.length > 0">Finished</button>
-                    <button class="btn-primary btn ms-auto" (click)="openBottom(content)">Add Time</button>
+                    <button class="btn-success btn" (click)="finish();" *ngIf="times.length > 0"
+                        [disabled]="data?.completed_date">Finished</button>
+                    <button class="btn-primary btn ms-auto" (click)="openBottom(content)"
+                        [disabled]="data?.completed_date">Add Time</button>
                 </div>
             </div>
         </div>
@@ -82,6 +101,8 @@
             <div class="text-end">
                 <button type="button" class="btn btn-light me-2"
                     (click)="offcanvas.close('Close click')">Cancel</button>
+                <button type="button" class="btn btn-danger me-2"
+                    (click)="onDelete()">Delete</button>
                 <button type="button" class="btn btn-outline-success"
                     (click)="offcanvas.close({name,start_time,end_time})">Save</button>
             </div>

@@ -110,7 +110,7 @@ export class UserLocationMapComponent implements OnInit {
   geoJson;
   markersOnTheMap = {};
 
-  dateFrom = moment().subtract('30', 'days').format("YYYY-MM-DD");
+  dateFrom = moment().format("YYYY-MM-DD");
   dateTo = moment().format("YYYY-MM-DD");
   dateRange1 = [this.dateFrom, this.dateTo];
 
@@ -194,12 +194,11 @@ export class UserLocationMapComponent implements OnInit {
   scroll = (id: number | string) => {
     if (!id) return;
 
-    //let el = document.getElementById();
+    let el = document.getElementById("test-" + id.toString());
 
-    let el = document.getElementById("user-" + id.toString());
-
+    console.log(el);
     setTimeout(() => {
-      el[0]?.scrollTo({ top: 0 });
+      el[0]?.scrollIntoView();
     }, 500);
   };
 
@@ -304,19 +303,20 @@ export class UserLocationMapComponent implements OnInit {
       center: [-115.23419, 36.1634],
       zoom: 8,
       boxZoom: true,
-      style: this.getCurrentStyleUrl(),
+      // style: this.getCurrentStyleUrl(),
       stylesVisibility: {
         map: true,
         poi: true,
-        trafficFlow: true,
-        trafficIncidents: true,
+        trafficFlow: false,
+        trafficIncidents: false,
       },
+      interactive: true,
     });
 
     this.map.addControl(new tt.FullscreenControl());
     this.map.addControl(new tt.NavigationControl());
 
-    this.getData();
+    await this.getData();
     //this.getProperties()
   }
 
@@ -344,40 +344,36 @@ export class UserLocationMapComponent implements OnInit {
     }
   }
 
-  
   currentUserIdView = null;
-  viewUser(user_id) {
-    this.currentUserIdView = user_id;
-    this.activeIds = [];
+  viewUser(user_id, row?) {
 
-    this.clearMarkers();
-
-    let index = 1;
-    let coord = [];
-    for (let i = 0; i < this.data.length; i++) {
-      if (
-        this.data[i].longitude &&
-        this.data[i].latitude &&
-        this.data[i].user_id == user_id
-      ) {
-        this.createMarker(
-          [this.data[i].longitude, this.data[i].latitude],
-          this.data[i].color,
-          this.data[i],
-          false
-        );
-        index++;
-        coord.push([this.data[i].longitude, this.data[i].latitude]);
-      }
-    }
-
-    console.log(coord, "coord");
+    console.log(row, 'fffffff')
+    // this.currentUserIdView = user_id;
+    // this.activeIds = [];
+    // this.clearMarkers();
+    // let index = 1;
+    // let coord = [];
+    // for (let i = 0; i < this.data.length; i++) {
+    //   if (
+    //     this.data[i].longitude &&
+    //     this.data[i].latitude &&
+    //     this.data[i].user_id == user_id
+    //   ) {
+    //     this.createMarker(
+    //       [this.data[i].longitude, this.data[i].latitude],
+    //       this.data[i].color,
+    //       this.data[i],
+    //       false
+    //     );
+    //     index++;
+    //     coord.push([this.data[i].longitude, this.data[i].latitude]);
+    //   }
+    // }
     // this.drawLine(coord);
   }
 
   refreshMarkers = () => {
     Object.keys(this.markersOnTheMap).forEach((id) => {
-      console.log(id, "id");
       this.markersOnTheMap[id].remove();
       delete this.markersOnTheMap[id];
     });
@@ -413,8 +409,15 @@ export class UserLocationMapComponent implements OnInit {
           markerContentElement.appendChild(iconElement);
 
           markerElement.addEventListener("click", (e) => {
-            this.fs_scheduler_id = popupText.user_id;
+            this.geo_id = popupText.geo_id;
             this.activeIds = popupText.timestamp;
+
+
+            setTimeout(() => {
+              if (this.geo_id) {
+                this.scroll(this.geo_id);
+              }
+            }, 500);
           });
 
           let d = `
@@ -465,6 +468,11 @@ export class UserLocationMapComponent implements OnInit {
     let jobs = data.jobs;
 
     this.list = data.list;
+
+    for (let i = 0; i < this.list.length; i++) {
+      this.list[i].collapsed = true;
+    }
+
     let points = [];
     for (let i = 0; i < this.data.length; i++) {
       if (this.data[i].longitude && this.data[i].latitude) {
@@ -492,7 +500,8 @@ export class UserLocationMapComponent implements OnInit {
         //   jobs[i],
         //   false
         // );
-        
+
+        jobs[i].color = "#000";
         points.push({
           coordinates: [jobs[i].fs_lon, jobs[i].fs_lat],
           properties: jobs[i],
@@ -517,11 +526,15 @@ export class UserLocationMapComponent implements OnInit {
     //   },
     // ];
 
-    // if (this.map.getSource("point-source")) {
-    //   this.map.removeLayer("cluster-count");
-    //   this.map.removeLayer("clusters");
-    //   this.map.removeSource("point-source");
-    // }
+    for (let i = 0; i < this.markersArray.length; i++) {
+      this.markersArray[i].remove();
+    }
+
+    if (this.map.getSource("point-source")) {
+      this.map.removeLayer("cluster-count");
+      this.map.removeLayer("clusters");
+      this.map.removeSource("point-source");
+    }
 
     var geoJson = {
       type: "FeatureCollection",
@@ -537,13 +550,21 @@ export class UserLocationMapComponent implements OnInit {
       }),
     };
 
-    this.map.on("load", () => {
+    // if (this.map.getSource("point-source")) {
+    //   this.map.removeLayer("cluster-count");
+    //   this.map.removeLayer("clusters");
+    //   this.map.removeSource("point-source");
+    // }
+
+    console.log(geoJson);
+
+    setTimeout(() => {
       this.map.addSource("point-source", {
         type: "geojson",
         data: geoJson,
         cluster: true,
         clusterMaxZoom: 14,
-        clusterRadius: 30,
+        clusterRadius: 50,
       });
 
       this.map.addLayer({
@@ -585,7 +606,7 @@ export class UserLocationMapComponent implements OnInit {
       this.map.on("data", (e) => {
         if (
           e.sourceId !== "point-source" ||
-          !this.map.getSource("point-source").loaded()
+          !this.map?.getSource("point-source")?.loaded()
         ) {
           return;
         }
@@ -625,7 +646,7 @@ export class UserLocationMapComponent implements OnInit {
       this.map.on("mouseleave", "clusters", () => {
         this.map.getCanvas().style.cursor = "";
       });
-    });
+    }, 500);
   }
 
   createJobMarker = (
@@ -695,7 +716,6 @@ export class UserLocationMapComponent implements OnInit {
 
   clearMarkers() {
     for (let i = 0; i < this.markersArray.length; i++) {
-      console.log(this.markersArray[i]._popup, "removing");
       this.markersArray[i].remove();
     }
   }
@@ -703,10 +723,8 @@ export class UserLocationMapComponent implements OnInit {
   active = null;
   fs_scheduler_id;
   geo_id;
-  viewJob(data, index) {
-    console.log(this.markersArray, "this.markersArray");
+  viewJob(data, index, row?) {
     //this.clearMarkers();
-
     this.geo_id = data.geo_id;
     if (!data.longitude && !data.latitude) return alert("lat and lon not set");
 
@@ -725,31 +743,35 @@ export class UserLocationMapComponent implements OnInit {
       .setLngLat([data.longitude, data.latitude])
       .addTo(this.map);
 
-    //     let d = `
-    //     <div style="padding:0px;border-radius:4px; text-align:center" class="text-dark">
-    //     <p>${data.user}</p>
-    //     <p>Time: ${data?.created_date}</p>
-    //     <img src="${data.image}" style="width:30px"/>
-    //     </div>
-    // `;
-
     let d = `
-<div class="card mb-0">
-  <div class="card-body">
-  <p>${data.user}</p>
-          <p>Time: ${data?.created_date}</p>
-    <img src="${data.image}" style="width:70px"/>
-  </div>
-</div>
+            <div class="card mb-0">
+              <div class="card-body text-center">
+                <p>${data.user}</p>
+                <p>Time: ${data?.created_date}</p>
+                ${
+                  data?.type_of_event
+                    ? `<p>Event: ${data?.type_of_event}</p>`
+                    : ""
+                }
+                <img src="${data.image}" style="width:70px"/>
+              </div>
+            </div>
           
       `;
 
     let pop_up = new tt.Popup({ offset: 30 }).setHTML(d);
 
-    console.log(this._marker, "asdfffffff");
     this._marker.setPopup(pop_up).togglePopup();
 
-    this.createMarker([data.longitude, data.latitude], data.color, data, true);
+    //this.createMarker([data.longitude, data.latitude], data.color, data, true);
+
+    row.collapsed = false;
+
+    setTimeout(() => {
+      if (this.geo_id) {
+        this.scroll(this.geo_id);
+      }
+    }, 200);
   }
 
   async getLocation() {

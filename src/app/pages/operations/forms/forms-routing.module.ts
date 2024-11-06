@@ -3,6 +3,7 @@ import { NgModule } from "@angular/core";
 import { FormsComponent } from "./forms.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { TimeTrackerComponent } from "./time-tracker/time-tracker.component";
+import { TimeTrackerListComponent } from "./time-tracker-list/time-tracker-list.component";
 
 const routes: Routes = [
   {
@@ -13,6 +14,12 @@ const routes: Routes = [
         title: "Time Tracker",
         path: "time-tracker",
         component: TimeTrackerComponent,
+        runGuardsAndResolvers: "always",
+      },
+      {
+        title: "Time Tracker List",
+        path: "time-tracker-list",
+        component: TimeTrackerListComponent,
         runGuardsAndResolvers: "always",
       },
       {

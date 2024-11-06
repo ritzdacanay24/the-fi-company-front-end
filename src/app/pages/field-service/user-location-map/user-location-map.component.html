@@ -25,12 +25,12 @@
             <div class="card-body p-0">
                 <div ngbAccordion [closeOthers]="true" style="height:calc(100vh - 230px);overflow:auto" class="rounded">
 
-                    <div ngbAccordionItem [destroyOnHide]="true" [collapsed]="collapsed"
+                    <div ngbAccordionItem [destroyOnHide]="true" [collapsed]="row.collapsed"
                         (click)="scroll('user-' + row.user_id)" *ngFor="let row of list;let i = index">
                         <h2 id="test-{{row.user_id}}" ngbAccordionHeader
                             class="accordion-header border-0 bg-light sticky-top" style="z-index:3">
                             <button ngbAccordionButton class="p-2 sticky-top"
-                                style="border-left:5px solid {{row.color}}">
+                                style="border-left:5px solid {{row.color}}" >
                                 {{row.user}}
                                 <span class="text-end ms-1 badge bg-primary p-1" *ngIf="row.total"> {{row.total ?
                                     row.total : ''}}</span>
@@ -48,7 +48,7 @@
                                         {{item.geo_id}}
                                     </div>
                                     <div class="d-flex mb-2 align-items-center">
-                                        <div class="flex-grow-1">
+                                        <div class="flex-grow-1"  id="test-{{ item.geo_id }}">
                                             <h5 class="list-text mb-0 fs-12">Time: {{item.created_date}}</h5>
                                             <p class="list-text mb-0 fs-12">Latitude: {{item.latitude}}</p>
                                             <p class="list-text mb-0 fs-12">Longitude: {{item.longitude}}</p>
@@ -56,7 +56,7 @@
                                                 '1.2-2'}} meters</p>
                                             <p class="list-text mb-0 fs-12 pointer">
                                                 <u
-                                                    (click)="$event.stopPropagation();viewUser(item.user_id);viewJob(item, i)">Go
+                                                    (click)="$event.stopPropagation();viewUser(item.user_id, row);viewJob(item, i, row)">Go
                                                     to marker</u>
                                             </p>
                                         </div>
