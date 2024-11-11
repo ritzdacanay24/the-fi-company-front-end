@@ -1084,6 +1084,7 @@ export class ShippingComponent implements OnInit {
   dataRenderered = false;
 
   gridOptions: GridOptions = {
+    rowBuffer: 20,
     animateRows: true,
     tooltipShowDelay: 0,
     columnDefs: [],
@@ -1091,7 +1092,7 @@ export class ShippingComponent implements OnInit {
     enableAdvancedFilter: false,
     enableBrowserTooltips: true,
     suppressColumnMoveAnimation: true,
-    getRowId: (data: any) => data?.data.id,
+    getRowId: (data: any) => data?.data.id?.toString(),
     onGridReady: (params) => {
       this.gridApi = params.api;
     },

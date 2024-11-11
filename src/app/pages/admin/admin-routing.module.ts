@@ -3,6 +3,7 @@ import { NgModule } from "@angular/core";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { QueryComponent } from "./query/query.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
+import { LogComponent } from "./log/log.component";
 
 const routes: Routes = [
   {
@@ -13,6 +14,12 @@ const routes: Routes = [
   {
     path: "query",
     component: QueryComponent,
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    path: "log",
+    component: LogComponent,
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },

@@ -134,6 +134,15 @@ const routes: Routes = [
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
+  {
+    path: "cycle-time",
+    loadChildren: () =>
+      import("./cycle-time/cycle-time-routing.module").then(
+        (m) => m.CycleTimeRoutingModule
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({

@@ -1,0 +1,14 @@
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0 flex-grow-1 text-start"> {{title}} </h4>
+            </div>
+            <div class="card-body p-0">
+                <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+                    [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 150px);">
+                </ag-grid-angular>
+            </div>
+        </div>
+    </div>
+</div>
