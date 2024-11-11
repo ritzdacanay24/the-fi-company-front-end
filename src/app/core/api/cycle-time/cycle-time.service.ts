@@ -15,4 +15,17 @@ export class CycleTimeService extends DataService<any> {
 
   getList = async () =>
     await firstValueFrom(this.http.get<any[]>(`${url}/cycle-time-list`));
+
+  getAvailabilityList = async () =>
+    await firstValueFrom(this.http.get<any[]>(`${url}/availability-list`));
+
+  createAvailability = async (params) =>
+    await firstValueFrom(
+      this.http.post<any>(`${url}/availability-create`, params)
+    );
+
+  getCycleTimes = async () =>
+    await firstValueFrom(
+      this.http.get<any>(`/CycleTimes/index?getShippingCycleTimes=1`)
+    );
 }
