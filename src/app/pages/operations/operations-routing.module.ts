@@ -6,6 +6,7 @@ import { OrderLookupPageComponent } from "./order-lookup-page/order-lookup-page.
 import { PartLookupPageComponent } from "./part-lookup-page/part-lookup-page.component";
 import { WoLookupPageComponent } from "./wo-lookup-page/wo-lookup-page.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
+import { LocationLookupComponent } from "./location-lookup/location-lookup.component";
 
 const routes: Routes = [
   {
@@ -38,6 +39,11 @@ const routes: Routes = [
     component: WoLookupPageComponent,
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Location Lookup",
+    path: "location-lookup",
+    component: LocationLookupComponent,
   },
   {
     path: "reports",

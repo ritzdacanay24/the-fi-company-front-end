@@ -86,8 +86,8 @@ export class InvoiceSummaryComponent implements OnInit {
         caretPadding: 10,
         displayColors: true,
         enabled: true,
-        intersect: false,
-        mode: "x",
+        intersect: true,
+        mode: "nearest",
         titleMarginBottom: 10,
         callbacks: {
           label: function (tooltipIte: any) {

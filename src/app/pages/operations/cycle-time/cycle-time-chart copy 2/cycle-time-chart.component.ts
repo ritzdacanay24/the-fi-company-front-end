@@ -1,11 +1,8 @@
 import { Component, ViewChild } from "@angular/core";
 import { CycleTimeService } from "@app/core/api/cycle-time/cycle-time.service";
-import { AuthenticationService } from "@app/core/services/auth.service";
-import { EditIconComponent } from "@app/shared/ag-grid/edit-icon/edit-icon.component";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridOptions } from "ag-grid-community";
-import moment from "moment";
 
 import {
   ChartComponent,
@@ -44,8 +41,8 @@ export class CycleTimeChartComponent {
 
   dataTable: any;
   typeOfView = "Weekly";
-  dateFrom = moment().subtract(2,'week').format('YYYY-MM-DD');
-  dateTo = moment().add(1,'month').format('YYYY-MM-DD');
+  dateFrom = "2024-08-01";
+  dateTo = "2025-05-01";
 
   async getData() {
     let cycleTimeChart = await this.cycleTimesService.cycleTimeChart(
@@ -53,6 +50,7 @@ export class CycleTimeChartComponent {
       this.dateFrom,
       this.dateTo
     );
+    console.log(cycleTimeChart.chart.headCountData.dataset);
 
     this.dataTable = cycleTimeChart.allData;
 
@@ -75,10 +73,7 @@ export class CycleTimeChartComponent {
   }
   series = [];
 
-  constructor(
-    private cycleTimesService: CycleTimeService,
-    public authenticationService: AuthenticationService
-  ) {
+  constructor(private cycleTimesService: CycleTimeService) {
     this.getData();
     this.chartOptions = {
       series: [],
@@ -93,9 +88,6 @@ export class CycleTimeChartComponent {
         text: "Cycle Times",
       },
       dataLabels: {
-        animations: {
-          enabled: false
-        },
         enabled: true,
         enabledOnSeries: [0],
         formatter: function (data) {
@@ -113,6 +105,7 @@ export class CycleTimeChartComponent {
           title: {
             text: "Total Hrs",
           },
+
         },
         // {
         //   display: false,
@@ -153,13 +146,8 @@ export class CycleTimeChartComponent {
     },
     {
       field: "cycleTime",
-      headerName: "Cycle Time (HRS)",
+      headerName: "Cycle Time",
       filter: "agTextColumnFilter",
-      editable: true,
-      cellRenderer: EditIconComponent,
-      cellRendererParams: {
-        iconName: "mdi mdi-pencil",
-      },
     },
     {
       field: "open_qty",
@@ -197,34 +185,6 @@ export class CycleTimeChartComponent {
       this.gridApi = params.api;
     },
     onFirstDataRendered: (params) => {},
-    getRowId: (params) => params.data.wo_nbr?.toString(),
-    onCellEditingStopped: (event) => {
-      if (event.oldValue == event.newValue || event.value === undefined) return;
-      this.update(event.data);
-    },
+    getRowId: (params) => params.data.pt_part?.toString(),
   };
-
-  public async update(data: any) {
-    console.log(data);
-
-    try {
-      this.gridApi?.showLoadingOverlay();
-      let res = await this.cycleTimesService.create({
-        partNumber: data.part_number,
-        updatedDate: moment().format("YYYY-MM-DD HH:mm:ss"),
-        updatedBy: this.authenticationService.currentUserValue.full_name,
-        cycleTime: data.cycleTime,
-      });
-
-      await this.getData();
-
-      let rowNode = this.gridApi.getRowNode(data.wo_nbr);
-      rowNode.data.cycleTime = data.cycleTime;
-      this.gridApi.redrawRows({ rowNodes: [rowNode] });
-
-      this.gridApi?.hideOverlay();
-    } catch (err) {
-      this.gridApi?.hideOverlay();
-    }
-  }
 }

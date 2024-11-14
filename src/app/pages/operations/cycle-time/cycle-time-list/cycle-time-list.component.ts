@@ -102,7 +102,7 @@ export class CycleTimeListComponent implements OnInit {
       filter: "agTextColumnFilter",
     },
     {
-      field: "data.cycleTime",
+      field: "cycleTime",
       headerName: "Cycle Time (HRS)",
       filter: "agMultiColumnFilter",
       editable: true,
@@ -112,12 +112,12 @@ export class CycleTimeListComponent implements OnInit {
       },
     },
     {
-      field: "data.updatedDate",
+      field: "updatedDate",
       headerName: "Updated date",
       filter: "agMultiColumnFilter",
     },
     {
-      field: "data.updatedBy",
+      field: "updatedBy",
       headerName: "Updated By",
       filter: "agMultiColumnFilter",
     },
@@ -139,7 +139,7 @@ export class CycleTimeListComponent implements OnInit {
   };
 
   public async update(data: any) {
-    let item = data?.data;
+    let item = data;
 
     item.partNumber = data.pt_part;
     item.updatedDate = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -150,7 +150,7 @@ export class CycleTimeListComponent implements OnInit {
       let res = await this.api.create(item);
 
       let rowNode = this.gridApi.getRowNode(data.pt_part);
-      rowNode.data.data = item;
+      rowNode.data = item;
       this.gridApi.redrawRows({ rowNodes: [rowNode] });
 
       this.gridApi?.hideOverlay();

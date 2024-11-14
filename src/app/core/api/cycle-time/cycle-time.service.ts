@@ -24,8 +24,23 @@ export class CycleTimeService extends DataService<any> {
       this.http.post<any>(`${url}/availability-create`, params)
     );
 
+  cycleTimeChart = async (typeOfView, dateFrom, dateTo) =>
+    await firstValueFrom(
+      this.http.get<any>(
+        `${url}/cycle-time-chart?typeOfView=${typeOfView}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+      )
+    );
+
   getCycleTimes = async () =>
     await firstValueFrom(
-      this.http.get<any>(`/CycleTimes/index?getShippingCycleTimes=1`)
+      this.http.get<any>(`/CycleTimes/index?getProductionCycleTimes=1`)
     );
+
+  async getCycleTimesDaily(dateFrom: string, dateTo: string) {
+    return await firstValueFrom(
+      this.http.get<any>(
+        `/CycleTimes/index?cycleTimesDaily=1&dateFrom=${dateFrom}&dateTo=${dateTo}`
+      )
+    );
+  }
 }

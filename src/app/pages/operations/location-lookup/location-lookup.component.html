@@ -1,0 +1,23 @@
+<div class="input-group mb-3" style="width:400px">
+    <input type="search" class="form-control" placeholder="Enter Location" aria-label="Enter Location"
+        aria-describedby="basic-addon1" [(ngModel)]="location" (keyup.enter)="getData()" autofocus>
+    <span class="input-group-text pointer" id="basic-addon1" (click)="getData()">Go</span>
+</div>
+
+<div class="modal-body" *ngIf="isLoading">
+    <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
+</div>
+
+<div class="card" *ngIf="data?.length > 0 && !isLoading">
+    <div class="card-header ">
+        <h4 class="card-title mb-0 flex-grow-1">Location Details</h4>
+    </div>
+    <div class="card-body  p-0">
+        <ag-grid-angular class="ag-theme-quartz no-border w-100" [rowData]="data" [gridOptions]="gridOptions"
+            style="width: 100%;height: calc(100vh - 205px);">
+        </ag-grid-angular>
+    </div>
+    <div class="card-body " *ngIf="data?.length == 0">
+        <h5 *ngIf="!isLoading" class="text-danger">No records Found</h5>
+    </div>
+</div>
