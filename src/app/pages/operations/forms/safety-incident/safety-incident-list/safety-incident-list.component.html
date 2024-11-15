@@ -3,11 +3,11 @@
     <div class="card">
       <div class="card-header">
         <div class="d-flex align-items-center">
-          
+
           <div class="form-icon me-3">
             <input type="search" class="form-control form-control-icon" style="width:250px"
-              (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName" [(ngModel)]="searchName"
-              placeholder="Search">
+              (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName"
+              [(ngModel)]="searchName" placeholder="Search">
             <i class="ri-search-2-line"></i>
           </div>
 
@@ -24,14 +24,25 @@
               (change)="getData()">
             <label class="form-check-label" for="flexSwitchCheckDefault">Show All</label>
           </div>
+
+
+          <div class="ms-3">
+            <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+          </div>
+
+          <div class="ms-3">
+            <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+          </div>
+
+
           <div class="ms-auto">
             <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
           </div>
         </div>
       </div>
       <div class="card-body p-0">
-        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs" [gridOptions]="gridOptions"
-          style="width: 100%;height: calc(100vh - 172px);">
+        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 172px);">
         </ag-grid-angular>
       </div>
     </div>

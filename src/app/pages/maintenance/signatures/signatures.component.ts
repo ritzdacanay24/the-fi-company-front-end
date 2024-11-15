@@ -14,6 +14,8 @@ import { SignaturesModalService } from "./signatures-modal/signatures-modal.comp
 import { Pipe, PipeTransform } from "@angular/core";
 import { ClipboardModule } from "@angular/cdk/clipboard";
 import { Clipboard } from "@angular/cdk/clipboard";
+import html2canvas from "html2canvas";
+import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
 @Pipe({
   standalone: true,
@@ -45,6 +47,10 @@ export class SearchPipe implements PipeTransform {
   styleUrls: ["./signatures.component.scss"],
 })
 export class SignaturesComponent implements OnInit {
+  @ViewChild("screen") screen: ElementRef;
+  @ViewChild("canvas") canvas: ElementRef;
+  @ViewChild("downloadLink") downloadLink: ElementRef;
+
   constructor(
     private api: SignaturesService,
     private store: Store<RootReducerState>,
@@ -58,15 +64,53 @@ export class SignaturesComponent implements OnInit {
 
   @ViewChild("divToCopy") divToCopy: ElementRef;
 
-  copyText() {
-    const content = this.divToCopy.nativeElement.innerHTML;
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
-    
-    console.log(content)
+  async copyAsImage(id, row) {
+    SweetAlert.loading("Copying Image. Please wait..");
+    await this.sleep(100);
+
+    html2canvas(document.getElementById(id), { useCORS: false }).then(
+      (canvas) => {
+        canvas.toBlob(function (blob) {
+          navigator.clipboard
+            .write([
+              new ClipboardItem(
+                Object.defineProperty({}, blob.type, {
+                  value: blob,
+                  enumerable: true,
+                })
+              ),
+            ])
+            .then(function () {
+              // do something
+              SweetAlert.close();
+            });
+        });
+      }
+    );
+  }
+
+  async copyText(id, row) {
+    SweetAlert.loading("Downloading Image. Please wait..");
+    await this.sleep(100);
+
+    html2canvas(document.getElementById(id), { useCORS: false }).then(
+      (canvas) => {
+        this.downloadLink.nativeElement.href = canvas
+          .toDataURL("image/png")
+          .replace("image/png", "image/octet-stream");
+        this.downloadLink.nativeElement.download = row.Name + ".png";
+        this.downloadLink.nativeElement.click();
+        SweetAlert.close();
+      }
+    );
   }
 
   copyToClipboard(text: string) {
-    console.log('sssss')
+    console.log("sssss");
     // Implementation to copy text to clipboard
   }
 

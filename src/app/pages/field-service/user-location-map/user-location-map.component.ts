@@ -346,8 +346,7 @@ export class UserLocationMapComponent implements OnInit {
 
   currentUserIdView = null;
   viewUser(user_id, row?) {
-
-    console.log(row, 'fffffff')
+    console.log(row, "fffffff");
     // this.currentUserIdView = user_id;
     // this.activeIds = [];
     // this.clearMarkers();
@@ -412,7 +411,6 @@ export class UserLocationMapComponent implements OnInit {
             this.geo_id = popupText.geo_id;
             this.activeIds = popupText.timestamp;
 
-
             setTimeout(() => {
               if (this.geo_id) {
                 this.scroll(this.geo_id);
@@ -420,7 +418,10 @@ export class UserLocationMapComponent implements OnInit {
             }, 500);
           });
 
-          let d = `
+          let d;
+
+          if (!popupText.service_type) {
+            d = `
             <div class="card mb-0">
               <div class="card-body text-center">
                 <p>${popupText.user}</p>
@@ -435,6 +436,21 @@ export class UserLocationMapComponent implements OnInit {
             </div>
                       
         `;
+          } else {
+            d = `
+    <div class="card mb-0">
+      <div class="card-header p-2">
+        <h4 class="card-title mb-0">Job Info</h4>
+      </div>
+      <div class="card-body">
+      <p>Service: ${popupText.service_type}</p>
+              <p>Time: ${popupText?.start} ${popupText?.start_time}</p>
+              <p>Techs: ${popupText?.techs || "NA"}</p>
+      </div>
+    </div>
+              
+          `;
+          }
 
           let popup = new tt.Popup({ offset: 30, closeOnMove: false }).setHTML(
             d
@@ -564,7 +580,7 @@ export class UserLocationMapComponent implements OnInit {
         data: geoJson,
         cluster: true,
         clusterMaxZoom: 14,
-        clusterRadius: 50,
+        clusterRadius: 15,
       });
 
       this.map.addLayer({

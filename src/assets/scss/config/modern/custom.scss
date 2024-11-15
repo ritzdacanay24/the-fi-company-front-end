@@ -31,6 +31,11 @@ File: Custom Css File
   color:#000;
 }
 
+.line-through {
+  text-decoration: line-through !important;
+  text-decoration-thickness:2px !important;
+  text-decoration-color: #fff !important;
+}
 
 .ng-select.ng-select-multiple
   .ng-select-container

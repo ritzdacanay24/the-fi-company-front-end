@@ -1,22 +1,7 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  SimpleChanges,
-} from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
-import { ItemService } from "@app/core/api/operations/item/item.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
-import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
-import {
-  ColDef,
-  ColGroupDef,
-  DateStringAdvancedFilterModel,
-  GridApi,
-  GridOptions,
-} from "ag-grid-community";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { LocationLookupService } from "@app/core/api/location-lookup/location-lookup.service";
 import { Router, ActivatedRoute } from "@angular/router";
 

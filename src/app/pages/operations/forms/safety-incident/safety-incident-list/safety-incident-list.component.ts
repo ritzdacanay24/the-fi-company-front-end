@@ -16,6 +16,8 @@ import moment from "moment";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 
 @Component({
   standalone: true,
@@ -25,11 +27,16 @@ import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: "app-safety-incident-list",
   templateUrl: "./safety-incident-list.component.html",
 })
 export class SafetyIncidentListComponent implements OnInit {
+  
+  pageId = '/safety-incident/list'
+
   constructor(
     public api: SafetyIncidentService,
     public router: Router,
