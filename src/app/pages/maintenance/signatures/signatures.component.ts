@@ -72,32 +72,33 @@ export class SignaturesComponent implements OnInit {
     SweetAlert.loading("Copying Image. Please wait..");
     await this.sleep(100);
 
-    html2canvas(document.getElementById(id), { useCORS: false }).then(
-      (canvas) => {
-        canvas.toBlob(function (blob) {
-          navigator.clipboard
-            .write([
-              new ClipboardItem(
-                Object.defineProperty({}, blob.type, {
-                  value: blob,
-                  enumerable: true,
-                })
-              ),
-            ])
-            .then(function () {
-              // do something
-              SweetAlert.close();
-            });
-        });
-      }
-    );
+    html2canvas(document.getElementById(id), {
+      useCORS: false,
+      scale: 2,
+    }).then((canvas) => {
+      canvas.toBlob(function (blob) {
+        navigator.clipboard
+          .write([
+            new ClipboardItem(
+              Object.defineProperty({}, blob.type, {
+                value: blob,
+                enumerable: true,
+              })
+            ),
+          ])
+          .then(function () {
+            // do something
+            SweetAlert.close();
+          });
+      });
+    });
   }
 
   async copyText(id, row) {
     SweetAlert.loading("Downloading Image. Please wait..");
     await this.sleep(100);
 
-    html2canvas(document.getElementById(id), { useCORS: false }).then(
+    html2canvas(document.getElementById(id), { useCORS: false, scale: 2 }).then(
       (canvas) => {
         this.downloadLink.nativeElement.href = canvas
           .toDataURL("image/png")
