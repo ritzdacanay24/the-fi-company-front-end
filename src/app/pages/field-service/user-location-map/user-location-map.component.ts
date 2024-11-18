@@ -572,6 +572,8 @@ export class UserLocationMapComponent implements OnInit {
     //   this.map.removeSource("point-source");
     // }
 
+    
+
     console.log(geoJson);
 
     setTimeout(() => {
@@ -580,7 +582,7 @@ export class UserLocationMapComponent implements OnInit {
         data: geoJson,
         cluster: true,
         clusterMaxZoom: 14,
-        clusterRadius: 15,
+        clusterRadius: 50,
       });
 
       this.map.addLayer({

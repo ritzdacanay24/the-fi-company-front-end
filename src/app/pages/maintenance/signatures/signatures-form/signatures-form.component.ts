@@ -3,7 +3,6 @@ import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { states } from "@app/core/data/states";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { ControlsOf } from "src/assets/js/util/_formGroup";
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
@@ -47,5 +46,8 @@ export class SignaturesFormComponent {
     mobilePhone: new FormControl(""),
     Address1: new FormControl(""),
     Address2: new FormControl(""),
+    city: new FormControl(""),
+    state: new FormControl(""),
+    zipCode: new FormControl(""),
   });
 }

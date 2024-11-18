@@ -98,16 +98,17 @@ export class SignaturesComponent implements OnInit {
     SweetAlert.loading("Downloading Image. Please wait..");
     await this.sleep(100);
 
-    html2canvas(document.getElementById(id), { useCORS: false, scale: 2 }).then(
-      (canvas) => {
-        this.downloadLink.nativeElement.href = canvas
-          .toDataURL("image/png")
-          .replace("image/png", "image/octet-stream");
-        this.downloadLink.nativeElement.download = row.Name + ".png";
-        this.downloadLink.nativeElement.click();
-        SweetAlert.close();
-      }
-    );
+    html2canvas(document.getElementById(id), {
+      useCORS: false,
+      scale: 8,
+    }).then((canvas) => {
+      this.downloadLink.nativeElement.href = canvas
+        .toDataURL("image/png")
+        .replace("image/png", "image/octet-stream");
+      this.downloadLink.nativeElement.download = row.Name + ".png";
+      this.downloadLink.nativeElement.click();
+      SweetAlert.close();
+    });
   }
 
   copyToClipboard(text: string) {
