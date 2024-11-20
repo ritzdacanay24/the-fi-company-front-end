@@ -24,8 +24,8 @@ export class RevenueService {
         return this.http.get<any>(`/revenue/future_revenue_by_customer`).toPromise()
     }
     // Read revenue future by customer
-    getFutureRevenueByCustomerByWeekly(date) {
-        return this.http.get<any>(`/revenue/future_revenue_by_customer?getFutureRevenueByCustomerByWeekly=${date}`).toPromise()
+    getFutureRevenueByCustomerByWeekly(start, end, weekStart, weekEnd) {
+        return this.http.get<any>(`/revenue/future_revenue_by_customer?getFutureRevenueByCustomerByWeekly=1&start=${start}&end=${end}&weekStart=${weekStart}&weekEnd=${weekEnd}`).toPromise()
     }
 
 }

@@ -1,67 +1,327 @@
-import { KeyValue } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { RevenueService } from '@app/core/api/operations/report/revenue.service';
-import { SharedModule } from '@app/shared/shared.module';
+import { KeyValue } from "@angular/common";
+import { Component, OnInit } from "@angular/core";
+import { RevenueService } from "@app/core/api/operations/report/revenue.service";
+import { SharedModule } from "@app/shared/shared.module";
+import { AgGridModule } from "ag-grid-angular";
+import { GridOptions } from "ag-grid-community";
+import moment from "moment";
+import { currency, currencyFormatter } from "src/assets/js/util";
 
 @Component({
-    standalone: true,
-    imports: [SharedModule],
-    selector: 'app-revenue-by-customer',
-    templateUrl: './revenue-by-customer.component.html',
-    styleUrls: []
+  standalone: true,
+  imports: [SharedModule, AgGridModule],
+  selector: "app-revenue-by-customer",
+  templateUrl: "./revenue-by-customer.component.html",
+  styleUrls: [],
 })
 export class RevenueByCustomerComponent implements OnInit {
-    data: any;
+  data: any;
+  gridApi: any;
+  test: any;
+  chart2: any;
 
-    constructor(
-        private revenueService: RevenueService
-    ) { }
+  constructor(private revenueService: RevenueService) {}
 
-    ngOnInit() {
-        this.getData()
+  ngOnInit() {
+    this.getData();
+  }
+
+  columnDefs: any = [
+    { field: "DATE1", headerName: "DATE1", filter: "agTextColumnFilter" },
+    {
+      field: "SO_CUST",
+      headerName: "SO_CUST",
+      filter: "agTextColumnFilter",
+      rowGroupIndex: 0,
+      hide: true,
+    },
+    {
+      field: "TOTAL",
+      headerName: "TOTAL",
+      filter: "agTextColumnFilter",
+      cellRenderer: (params) => currency(params.value),
+      aggFunc: "sum",
+    },
+    {
+      field: "weekAndYear",
+      headerName: "weekAndYear",
+      filter: "agTextColumnFilter",
+      rowGroupIndex: 1,
+      hide: true,
+    },
+  ];
+
+  gridOptions: GridOptions = {
+    columnDefs: [],
+    // getRowId: params => params.data.id?.toString(),
+    onGridReady: (params: any) => {
+      this.gridApi = params.api;
+    },
+    groupDefaultExpanded: 1,
+    onFirstDataRendered: (params) => {},
+    groupDisplayType: "singleColumn",
+    suppressAggFuncInHeader: true,
+    grandTotalRow: "top",
+    groupTotalRow: "bottom",
+    autoGroupColumnDef: {
+      headerName: "Customer",
+      minWidth: 400,
+      cellRendererParams: {
+        suppressCount: true,
+        checkbox: false,
+      },
+    },
+  };
+
+  ////////////////
+
+  columnDefs1: any = [
+    { field: "DATE1", headerName: "DATE1", filter: "agTextColumnFilter" },
+    {
+      field: "SO_CUST",
+      headerName: "SO_CUST",
+      filter: "agTextColumnFilter",
+      hide: true,
+    },
+    {
+      field: "TOTAL",
+      headerName: "TOTAL",
+      filter: "agTextColumnFilter",
+      cellRenderer: (params) => currency(params.value),
+      aggFunc: "sum",
+    },
+    {
+      field: "weekAndYear",
+      headerName: "weekAndYear",
+      filter: "agTextColumnFilter",
+      rowGroupIndex: 0,
+      hide: true,
+    },
+  ];
+
+  gridOptions1: GridOptions = {
+    columnDefs: [],
+    // getRowId: params => params.data.id?.toString(),
+    onGridReady: (params: any) => {
+      this.gridApi = params.api;
+    },
+    groupDefaultExpanded: 1,
+    onFirstDataRendered: (params) => {},
+    groupDisplayType: "singleColumn",
+    suppressAggFuncInHeader: true,
+    grandTotalRow: "top",
+    groupTotalRow: "bottom",
+    autoGroupColumnDef: {
+      headerName: "Customer",
+      minWidth: 400,
+      cellRendererParams: {
+        suppressCount: true,
+        checkbox: false,
+      },
+    },
+  };
+
+  ////////////////
+
+  isLoading = false;
+  async getData() {
+    try {
+      this.isLoading = true;
+      this.data = await this.revenueService.getFutureRevenueByCustomer();
+
+      this.isLoading = false;
+    } catch (err) {
+      this.isLoading = false;
     }
+  }
 
-    isLoading = false;
-    async getData() {
-        try {
-            this.isLoading = true;
-            this.data = await this.revenueService.getFutureRevenueByCustomer();
-            this.isLoading = false;
-        } catch (err) {
-            this.isLoading = false;
-        }
-    }
+  total = 0;
+  getTotal(col) {
+    this.total = 0;
+    this.data.forEach((row, value) => {
+      return this.getSumCol(row[col]);
+    });
+    return this.total;
+  }
 
-    total = 0;
-    getTotal(col) {
-        this.total = 0;
-        this.data.forEach((row, value) => {
-            return this.getSumCol(row[col]);
-        });
-        return this.total;
+  getSumCol(score) {
+    this.total += score;
+  }
+
+  data1: any;
+  d: any;
+  isLoadingSubData = false;
+
+  getWeekDates(year, month) {
+    // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
+    // array is 'year', 'month', 'day', etc
+    var startDate = moment([year, month - 1]);
+
+    // Clone the value before .endOf()
+    var endDate = moment(startDate).endOf("month");
+
+    // make sure to call toDate() for plain JavaScript date type
+    return {
+      start: startDate.format("YYYY-MM-DD"),
+      end: endDate.format("YYYY-MM-DD"),
     };
+  }
 
-    getSumCol(score) {
-        this.total += (score);
+  getWeekDatesInfo(weekNumber, year) {
+    const startDate = moment().year(year).isoWeek(weekNumber).startOf("month");
+    const endDate = moment().year(year).isoWeek(weekNumber);
+
+    return (
+      startDate.format("YYYY-MM-DD") + " - " + endDate.format("YYYY-MM-DD")
+    );
+  }
+
+  loopThroughWeeks(startDate, endDate) {
+    let currentDate = moment(startDate);
+    const end = moment(endDate);
+
+    let data = [];
+    while (currentDate <= end) {
+      const weekStart = currentDate.clone().startOf("isoWeek").day(1);
+      const weekEnd = currentDate.clone().startOf("isoWeek").day(7);
+
+      console.log("Week starting:", weekStart.format("YYYY-MM-DD"));
+      console.log("Week ending:", weekEnd.format("YYYY-MM-DD"));
+
+      let e =
+        weekStart.format("YYYY-MM-DD") + " " + weekEnd.format("YYYY-MM-DD");
+
+      currentDate.add(1, "week"); // Move to the next week
+      data.push({
+        start: weekStart.format("YYYY-MM-DD"),
+        end: weekEnd.format("YYYY-MM-DD"),
+        weekNumber: weekStart.isoWeek(),
+        yearNumber: weekStart.isoWeekYear(),
+        value: 0,
+      });
     }
 
-    data1: any
-    d: any
-    isLoadingSubData = false;
-    async getData1(d) {
-        try {
-            this.isLoadingSubData = true;
-            this.data1 = []
-            this.d = d;
-            this.data1 = await this.revenueService.getFutureRevenueByCustomerByWeekly(d);
-            this.isLoadingSubData = false;
-        } catch (err) {
-            this.isLoadingSubData = false;
+    return data;
+  }
+
+  async getData1(d) {
+    const explodedArray = d.split("-");
+
+    let year = explodedArray[1];
+    let month = explodedArray[0];
+
+    let { start, end } = this.getWeekDates(year, month);
+
+    var startweeknumber = moment(start).isoWeek();
+    var startyearNumber = moment(start).isoWeekYear();
+
+    let weekStart = moment()
+      .isoWeekYear(startyearNumber)
+      .isoWeek(startweeknumber)
+      .startOf("isoWeek")
+      .day(1)
+      .format("YYYY-MM-DD");
+
+    var weeknumber = moment(end).isoWeek();
+    var yearNumber = moment(end).isoWeekYear();
+
+    let weekEnd = moment()
+      .isoWeekYear(yearNumber)
+      .isoWeek(weeknumber)
+      .startOf("isoWeek")
+      .day(7)
+      .format("YYYY-MM-DD");
+
+    let eee = this.loopThroughWeeks(weekStart, weekEnd);
+
+    try {
+      this.isLoadingSubData = true;
+      this.data1 = [];
+      this.d = d;
+      this.data1 = await this.revenueService.getFutureRevenueByCustomerByWeekly(
+        start,
+        end,
+        weekStart,
+        weekEnd
+      );
+
+      const uniqueNames: any = [
+        ...new Set(this.data1.results.map((user) => user.SO_CUST)),
+      ];
+
+      for (let i = 0; i < eee.length; i++) {
+        eee[i].value = 0;
+        for (let ii = 0; ii < this.data1.results.length; ii++) {
+          const dateToCheck = moment(this.data1.results[ii].DATE1);
+
+          const startDate = moment(eee[i].start);
+          const endDate = moment(eee[i].end);
+
+          const isBetween = dateToCheck.isBetween(
+            startDate,
+            endDate,
+            "day",
+            "[)"
+          );
+
+          if (isBetween) {
+            eee[i].value += this.data1.results[ii].TOTAL;
+          }
         }
-    }
+      }
 
-    originalOrder = (a: KeyValue<number, string>, b: KeyValue<number, string>): number => {
-        return 0;
+      this.chart2 = eee;
+
+      let test = {};
+      for (let i = 0; i < uniqueNames.length; i++) {
+        test[uniqueNames[i]] = [];
+        for (let f = 0; f < eee.length; f++) {
+          test[uniqueNames[i]].push({
+            start: eee[f].start,
+            end: eee[f].end,
+            weekNumber: eee[f].weekNumber,
+            yearNumber: eee[f].yearNumber,
+            value: 0,
+          });
+        }
+      }
+
+      for (var key in test) {
+        if (test.hasOwnProperty(key)) {
+          for (let f = 0; f < test[key].length; f++) {
+            for (let ii = 0; ii < this.data1.results.length; ii++) {
+              const dateToCheck = moment(this.data1.results[ii].DATE1);
+
+              const startDate = moment(test[key][f].start);
+              const endDate = moment(test[key][f].end);
+
+              const isBetween = dateToCheck.isBetween(
+                startDate,
+                endDate,
+                "day",
+                "[)"
+              );
+
+              if (isBetween && key == this.data1.results[ii].SO_CUST) {
+                test[key][f].value += this.data1.results[ii].TOTAL;
+              }
+            }
+          }
+        }
+      }
+
+      this.test = test;
+
+      this.isLoadingSubData = false;
+    } catch (err) {
+      this.isLoadingSubData = false;
     }
-    
+  }
+
+  originalOrder = (
+    a: KeyValue<number, string>,
+    b: KeyValue<number, string>
+  ): number => {
+    return 0;
+  };
 }
