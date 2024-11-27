@@ -1,0 +1,40 @@
+<div style="position:relative;width:310px;padding-right:5px">
+    <div class="p-2 sticky-top text-center border-bottom border-2 border-primary bg-light" style="z-index:1">Grid Settings</div>
+
+    <div class="list-group list-group-flush pointer border-bottom">
+        <a class="list-group-item list-group-item-action py-2" (click)="updateToDefault()"
+            [ngClass]="{'active': !value}">
+            Use Default View
+        </a>
+    </div>
+
+    <div class="p-2 sticky-top text-center border-bottom border-2 border-primary" style="z-index:0">My Grid</div>
+
+    <div class="list-group list-group-flush pointer">
+        <a class="list-group-item list-group-item-action py-2 d-flex justify-content-between " aria-current="true" (click)="selectTable(row)"
+            [ngClass]="{ active: value == row.id }" id="test-{{ row.id }}"
+            *ngFor="let row of currentUserGrids; let i = index">
+            <p class="me-2">{{i+1}}. </p>
+            <p class="me-auto">{{ row.table_name || "No name" }}</p>
+
+            <span class="mdi mdi-star ms-2 text-end"
+                [ngClass]="{'text-warning mdi-star' : row.table_default,'mdi-star-outline' : !row.table_default}"
+                (click)="$event.stopPropagation(); saveDefault(row)"></span>
+        </a>
+    </div>
+
+    <div class="list-group list-group-flush sticky-top border-top border-primary border-2 pointer" style="bottom:-1px">
+        <a class="sticky-top bg-light list-group-item list-group-item-action" (click)="update()" *ngIf="value">
+            <i class="mdi mdi-content-save me-2"></i> Update
+            <span class="text-primary">"{{ currentView?.table_name }}"</span>
+            View
+        </a>
+
+        <a class="sticky-top bg-light list-group-item list-group-item-action" (click)="createNewView()">
+            <i class="mdi mdi-content-save-cog me-2"></i> Save as New View
+        </a>
+        <a class="sticky-top bg-light list-group-item list-group-item-action" (click)="viewAll()">
+            <i class="mdi mdi-cogs me-2"></i> View All
+        </a>
+    </div>
+</div>

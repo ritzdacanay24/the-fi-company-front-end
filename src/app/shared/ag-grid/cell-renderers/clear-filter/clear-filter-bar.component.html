@@ -1,0 +1,5 @@
+<div class="ag-status-name-value p-0 m-0" style="margin-top:6px !important" >
+    <span class="text-muted pointer" *ngIf="(params.api?.getFilterModel() | json) != '{}'"
+        (click)="$event.stopPropagation();this.clearFilters();" title="Clear filters">
+        <i class="ri-filter-2-line text-warning  align-middle ms-2 fs-15"></i></span>
+</div>

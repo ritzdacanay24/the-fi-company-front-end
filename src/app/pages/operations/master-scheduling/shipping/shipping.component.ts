@@ -1084,8 +1084,8 @@ export class ShippingComponent implements OnInit {
   dataRenderered = false;
 
   gridOptions: GridOptions = {
-    rowBuffer: 20,
-    animateRows: true,
+    // rowBuffer: 30,
+    // animateRows: false,
     tooltipShowDelay: 0,
     columnDefs: [],
     enableCharts: true,
@@ -1120,6 +1120,9 @@ export class ShippingComponent implements OnInit {
       }
       return null;
     },
+    context: {
+      pageId: this.pageId
+    }
   };
 
   public async update(data: any) {

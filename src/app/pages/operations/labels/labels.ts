@@ -255,4 +255,17 @@ export let labelData = [
             ^XZ
         `
     },
+    {
+        "id": 22,
+        "labelName": "Hardware Kit in this Box Label",
+        "labelSize": "4 X 6",
+        "orientation": "Landscape",
+        "labelImage": "assets/images/labels/hardwarekitinthisbox.png",
+        "service": "justLabelModalService",
+        zebraCode: `
+            ^XA ^FWR ^FO340,90^A0,400,180^FD Hardware Kit^FS
+            ^FO0,180^A0,400,180^FD in this Box^FS 
+            ^XZ
+        `
+    },
 ]

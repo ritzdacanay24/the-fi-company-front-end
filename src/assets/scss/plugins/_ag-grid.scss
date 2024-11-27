@@ -1,6 +1,18 @@
 // AG GRID all themes
 $agHeight: 4px;
 
+// .ag-theme-quartz .ag-status-bar {
+//   font-weight: normal;
+//   position: absolute;
+//   top: 50px;
+//   right: 5px;
+//   border-top: none !important;
+// }
+// .ag-theme-quartz .ag-body-viewport {
+//   top: 50px;
+//   border-top: solid 1px lightgrey;
+// }
+
 .ag-theme-quartz.no-border .ag-root-wrapper {
   border: unset !important;
   border-radius: 0 !important;
@@ -51,7 +63,6 @@ $agHeight: 4px;
   --ag-grid-size: 6px;
   --ag-list-item-height: 30px;
   --ag-font-size: 14px;
-
 }
 
 .ag-theme-quartz.large,
@@ -92,11 +103,9 @@ $agHeight: 4px;
 
   // --ag-font-family: monospace;
 
-  
   img.employee-image {
     width: 15px !important;
   }
-
 
   .btn {
     --vz-btn-line-height: 10.5px;

@@ -1,0 +1,79 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-9 col-xxxl-12">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select user from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-9 col-xxxl-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+        <h4 class="card-title mb-0 flex-grow-1 text-end"> Customer Visit Log #{{id}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+        <app-customer-visit-form (setFormEmitter)="form = $event" [submitted]="submitted"
+          [id]="id"></app-customer-visit-form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h4 *ngIf="details?.length == 0">No Details Found</h4>
+
+<div class="card" *ngIf="details?.length > 0">
+  <div class="card-header d-flex align-items-center">
+    <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
+      (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+    <h4 class="card-title mb-0 flex-grow-1 text-end"> Customer Visit Details </h4>
+  </div>
+  <div class="card-body p-0" style="height: calc(100vh - 170px);overflow:auto">
+    <div class="table-responsives">
+      <table class="table table-bordered">
+        <thead class="table-dark sticky-top">
+          <tr class="sticky-top">
+            <th>Sign Theme</th>
+            <th>Manufacture</th>
+            <th>Bank Location</th>
+            <th>Issue: Y/N</th>
+            <th>Serial #</th>
+            <th>Description of Issue</th>
+            <th>Created Date</th>
+          </tr>
+        </thead>
+        <tbody *ngFor="let row of details">
+          <tr>
+            <td>{{row.sign_theme || '-'}}</td>
+            <td>{{row.manufacture || '-'}}</td>
+            <td>{{row.bank_location || '-'}}</td>
+            <td>{{row.issue || '-'}}</td>
+            <td>{{row.serial_number || '-'}}</td>
+            <td>{{row.description_of_issue || '-'}}</td>
+            <td>{{row.created_date || '-'}}</td>
+          </tr>
+          <tr *ngIf="row.attachments?.length > 0">
+            <td colspan="8">
+              <table class="table mb-0 table-striped table-borderless">
+                <p>Attachments</p>
+                <tbody>
+                  <tr *ngFor="let item of row.attachments;let i = index" (click)="viewAttachment(item.index)" class="pointer">
+                    <td style="width:50px" class="text-info pointer">View</td>
+                    <td>{{item.fileName}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -20,8 +20,8 @@
                         <thead class="table-primary">
                             <tr class="text-nowrap">
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
-                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">{{ item.key
-                                    }}</th>
+                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">
+                                    {{ convert(item.key) }}</th>
                         </thead>
                         <tbody>
                             <tr *ngFor="let row of data">
@@ -30,7 +30,7 @@
                                     (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
                                     <span *ngIf="i == 0"> {{ column.value }}</span>
                                     <span *ngIf="i != 0"
-                                        [ngClass]="{'bg-success-subtle' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">
+                                        [ngClass]="{'bg-success-subtle text-end' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">
                                         {{ column.value | currency }}</span>
                                 </td>
                             </tr>
@@ -74,17 +74,23 @@
                 <h4 class="card-title mb-0 flex-grow-1">Open revenue by customer and week {{d}}</h4>
             </div>
             <div class="card-body">
-                <table class="table table-bordered mb-2" *ngFor="let item of $any(test) | keyvalue">
+                <table class="table table-bordered mb-2 table-hover" *ngFor="let item of $any(test) | keyvalue">
                     <tbody>
                         <tr>
                             <th colspan="3">{{item.key}}</th>
                         </tr>
-                        <tr *ngFor="let r of $any(item?.value)">
-                            <td>{{r.weekNumber}} {{r.yearNumber}}</td>
-                            <td>{{r.start}} {{r.end}}</td>
+                        <tr *ngFor="let r of $any(item?.value)"  [ngClass]="{'text-info fw-bold':r.weekNumber == currentWeek}">
+                            <td>{{r.weekNumber}}-{{r.yearNumber}}</td>
+                            <td>{{r.start}} to {{r.end}}</td>
                             <td class="text-end">{{r.value | currency}}</td>
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-light">
+                            <th colspan="2" class="text-end">Total:</th>
+                            <th class="text-end">{{sumSub(item?.value) | currency}}</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -95,14 +101,20 @@
                 <h4 class="card-title mb-0 flex-grow-1">Open revenue by week {{d}}</h4>
             </div>
             <div class="card-body">
-                <table class="table table-bordered">
+                <table class="table table-bordered table-hover">
                     <tbody>
-                        <tr *ngFor="let r of chart2">
-                            <td>{{r.weekNumber}} {{r.yearNumber}}</td>
-                            <td>{{r.start}} {{r.end}}</td>
+                        <tr *ngFor="let r of chart2" [ngClass]="{'text-info fw-bold':r.weekNumber == currentWeek}">
+                            <td>{{r.weekNumber}}-{{r.yearNumber}}</td>
+                            <td>{{r.start}} to {{r.end}}</td>
                             <td class="text-end">{{r.value | currency}}</td>
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-light">
+                            <th colspan="2" class="text-end">Total:</th>
+                            <th class="text-end">{{sumSub(chart2) | currency}}</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>

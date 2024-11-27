@@ -1,4 +1,7 @@
-import { GridOptions } from "ag-grid-community";
+import { GridOptions, ModelUpdatedEvent } from "ag-grid-community";
+import { GridFiltersToolPanel } from "../ag-grid/grid-filters-tool-panel/grid-filters-tool-panel.component";
+import { GridSettingsToolPanel } from "../ag-grid/grid-settings-tool-panel/grid-settings-tool-panel.component";
+import { ClearFilterStatusBarComponent } from "../ag-grid/cell-renderers/clear-filter/clear-filter-bar.component";
 
 let popupParent: HTMLElement | null = document.querySelector("card");
 export const agGridOptions: GridOptions = {
@@ -96,6 +99,24 @@ export const agGridOptions: GridOptions = {
           syncLayoutWithGrid: true,
         },
       },
+      // {
+      //   id: "grid-settings",
+      //   labelDefault: "Grid Settings",
+      //   labelKey: "grid-settings",
+      //   iconKey: "pivot",
+      //   toolPanel: GridSettingsToolPanel,
+      //   minWidth: 310,
+      //   width: 310,
+      // },
+      // {
+      //   id: "grid-custom-filters",
+      //   labelDefault: "Custom Filter",
+      //   labelKey: "grid-customer-filter",
+      //   iconKey: "filter",
+      //   toolPanel: GridFiltersToolPanel,
+      //   minWidth: 310,
+      //   width: 310,
+      // },
     ],
   },
   enableCharts: true,
@@ -110,12 +131,20 @@ export const agGridOptions: GridOptions = {
           aggFuncs: ["count", "sum", "min", "max", "avg"],
         },
       },
+      // {
+      //   statusPanel: ClearFilterStatusBarComponent,
+      // },
     ],
   },
   suppressScrollOnNewData: true,
   overlayLoadingTemplate:
     '<span class="ag-overlay-loading-center">Please wait while we load the data.</span>',
   suppressColumnVirtualisation: true,
+  onModelUpdated: (event: ModelUpdatedEvent) => {
+    event.api.getDisplayedRowCount() === 0
+      ? event.api.showNoRowsOverlay()
+      : event.api.hideOverlay();
+  },
 };
 
 export const isDarkTheme = () => {

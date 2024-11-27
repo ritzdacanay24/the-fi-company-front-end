@@ -2,138 +2,61 @@ import { KeyValue } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
 import { RevenueService } from "@app/core/api/operations/report/revenue.service";
 import { SharedModule } from "@app/shared/shared.module";
-import { AgGridModule } from "ag-grid-angular";
-import { GridOptions } from "ag-grid-community";
 import moment from "moment";
-import { currency, currencyFormatter } from "src/assets/js/util";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule],
+  imports: [SharedModule],
   selector: "app-revenue-by-customer",
   templateUrl: "./revenue-by-customer.component.html",
   styleUrls: [],
 })
 export class RevenueByCustomerComponent implements OnInit {
-  data: any;
-  gridApi: any;
-  test: any;
-  chart2: any;
-
   constructor(private revenueService: RevenueService) {}
 
   ngOnInit() {
     this.getData();
   }
 
-  columnDefs: any = [
-    { field: "DATE1", headerName: "DATE1", filter: "agTextColumnFilter" },
-    {
-      field: "SO_CUST",
-      headerName: "SO_CUST",
-      filter: "agTextColumnFilter",
-      rowGroupIndex: 0,
-      hide: true,
-    },
-    {
-      field: "TOTAL",
-      headerName: "TOTAL",
-      filter: "agTextColumnFilter",
-      cellRenderer: (params) => currency(params.value),
-      aggFunc: "sum",
-    },
-    {
-      field: "weekAndYear",
-      headerName: "weekAndYear",
-      filter: "agTextColumnFilter",
-      rowGroupIndex: 1,
-      hide: true,
-    },
-  ];
+   currentWeek = moment().isoWeek()
+        currentYear =  moment().isoWeekYear()
 
-  gridOptions: GridOptions = {
-    columnDefs: [],
-    // getRowId: params => params.data.id?.toString(),
-    onGridReady: (params: any) => {
-      this.gridApi = params.api;
-    },
-    groupDefaultExpanded: 1,
-    onFirstDataRendered: (params) => {},
-    groupDisplayType: "singleColumn",
-    suppressAggFuncInHeader: true,
-    grandTotalRow: "top",
-    groupTotalRow: "bottom",
-    autoGroupColumnDef: {
-      headerName: "Customer",
-      minWidth: 400,
-      cellRendererParams: {
-        suppressCount: true,
-        checkbox: false,
-      },
-    },
-  };
-
-  ////////////////
-
-  columnDefs1: any = [
-    { field: "DATE1", headerName: "DATE1", filter: "agTextColumnFilter" },
-    {
-      field: "SO_CUST",
-      headerName: "SO_CUST",
-      filter: "agTextColumnFilter",
-      hide: true,
-    },
-    {
-      field: "TOTAL",
-      headerName: "TOTAL",
-      filter: "agTextColumnFilter",
-      cellRenderer: (params) => currency(params.value),
-      aggFunc: "sum",
-    },
-    {
-      field: "weekAndYear",
-      headerName: "weekAndYear",
-      filter: "agTextColumnFilter",
-      rowGroupIndex: 0,
-      hide: true,
-    },
-  ];
-
-  gridOptions1: GridOptions = {
-    columnDefs: [],
-    // getRowId: params => params.data.id?.toString(),
-    onGridReady: (params: any) => {
-      this.gridApi = params.api;
-    },
-    groupDefaultExpanded: 1,
-    onFirstDataRendered: (params) => {},
-    groupDisplayType: "singleColumn",
-    suppressAggFuncInHeader: true,
-    grandTotalRow: "top",
-    groupTotalRow: "bottom",
-    autoGroupColumnDef: {
-      headerName: "Customer",
-      minWidth: 400,
-      cellRendererParams: {
-        suppressCount: true,
-        checkbox: false,
-      },
-    },
-  };
-
-  ////////////////
-
-  isLoading = false;
   async getData() {
     try {
       this.isLoading = true;
       this.data = await this.revenueService.getFutureRevenueByCustomer();
-
+      this.data.sort((a, b) => {
+        if (a.Customer < b.Customer) {
+          return -1;
+        } else if (a.Customer > b.Customer) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
     }
   }
+
+  convert(value) {
+    let e = value.split("-");
+    if (e?.length == 2) {
+      return moment()
+        .month(e[0] - 1)
+        .format("MMM") + '-' + e[1];
+    } else return value;
+  }
+
+  isLoading = false;
+  data: any;
+  test: any;
+  chart2: any;
+
+  data1: any;
+  d: any;
+  isLoadingSubData = false;
 
   total = 0;
   getTotal(col) {
@@ -147,10 +70,6 @@ export class RevenueByCustomerComponent implements OnInit {
   getSumCol(score) {
     this.total += score;
   }
-
-  data1: any;
-  d: any;
-  isLoadingSubData = false;
 
   getWeekDates(year, month) {
     // month in moment is 0 based, so 9 is actually october, subtract 1 to compensate
@@ -167,15 +86,6 @@ export class RevenueByCustomerComponent implements OnInit {
     };
   }
 
-  getWeekDatesInfo(weekNumber, year) {
-    const startDate = moment().year(year).isoWeek(weekNumber).startOf("month");
-    const endDate = moment().year(year).isoWeek(weekNumber);
-
-    return (
-      startDate.format("YYYY-MM-DD") + " - " + endDate.format("YYYY-MM-DD")
-    );
-  }
-
   loopThroughWeeks(startDate, endDate) {
     let currentDate = moment(startDate);
     const end = moment(endDate);
@@ -184,12 +94,6 @@ export class RevenueByCustomerComponent implements OnInit {
     while (currentDate <= end) {
       const weekStart = currentDate.clone().startOf("isoWeek").day(1);
       const weekEnd = currentDate.clone().startOf("isoWeek").day(7);
-
-      console.log("Week starting:", weekStart.format("YYYY-MM-DD"));
-      console.log("Week ending:", weekEnd.format("YYYY-MM-DD"));
-
-      let e =
-        weekStart.format("YYYY-MM-DD") + " " + weekEnd.format("YYYY-MM-DD");
 
       currentDate.add(1, "week"); // Move to the next week
       data.push({
@@ -202,6 +106,21 @@ export class RevenueByCustomerComponent implements OnInit {
     }
 
     return data;
+  }
+
+  originalOrder = (
+    a: KeyValue<number, string>,
+    b: KeyValue<number, string>
+  ): number => {
+
+    return 0;
+  };
+
+  sumSub(value) {
+    let total = 0;
+    return value.reduce((a, b) => {
+      return (total += b.value);
+    }, 0);
   }
 
   async getData1(d) {
@@ -317,11 +236,4 @@ export class RevenueByCustomerComponent implements OnInit {
       this.isLoadingSubData = false;
     }
   }
-
-  originalOrder = (
-    a: KeyValue<number, string>,
-    b: KeyValue<number, string>
-  ): number => {
-    return 0;
-  };
 }

@@ -1,0 +1,85 @@
+<form [formGroup]="form" autocomplete="off">
+    <ng-container formGroupName="header">
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" placeholder="Start Date" formControlName="start_date">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Start Time</label>
+                <input type="time" class="form-control" placeholder="Start Date" formControlName="start_time">
+            </div>
+            <div class="col mb-3">
+                <label class="form-label">End Time</label>
+                <input type="time" class="form-control" placeholder="End Time" formControlName="end_time">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12 mb-3">
+                <label class="form-label">Property name</label>
+                <input type="text" class="form-control" placeholder="Enter Property Name"
+                    formControlName="property_name">
+            </div>
+            <div class="col-sm-12 mb-3">
+                <label class="form-label">Techs</label>
+                <input type="text" class="form-control" placeholder="Enter Techs" formControlName="techs">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Contact Name</label>
+                <input type="text" class="form-control" placeholder="Enter Contact Name" formControlName="contact_name">
+            </div>
+        </div>
+
+    </ng-container>
+
+    <!-- <ng-container formGroupName="details" *ngIf="id">
+        <h5 class="mb-3 bg-light p-3">Details</h5>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Sign Theme</label>
+                <input type="text" class="form-control" placeholder="Sign Theme" formControlName="sign_theme">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Manufacture</label>
+                <input type="text" class="form-control" placeholder="Manufacture" formControlName="manufacture">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Bank Location</label>
+                <input type="text" class="form-control" placeholder="Enter Bank Location"
+                    formControlName="bank_location">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Issue: Y/N</label>
+                <select class="form-select" formControlName="issue">
+                    <option selected disable value="null">--SELECT--</option>
+                    <option *ngFor="let row of ['Yes', 'No']" [value]="row">{{row}}</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Serial Number</label>
+                <input type="text" class="form-control" placeholder="Serial Number" formControlName="serial_number">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Description of Issue</label>
+                <textarea type="text" class="form-control" placeholder="Description of Issue"
+                    formControlName="description_of_issue" rows="5"></textarea>
+            </div>
+        </div>
+
+    </ng-container> -->
+
+</form>

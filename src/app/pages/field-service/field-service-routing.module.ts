@@ -117,6 +117,15 @@ const routes: Routes = [
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
+  {
+    path: "customer-visit",
+    loadChildren: () =>
+      import("./customer-visit/customer-visit-routing.module").then(
+        (m) => m.CustomerVisitRoutingModule
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({
