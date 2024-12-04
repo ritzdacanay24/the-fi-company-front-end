@@ -30,7 +30,6 @@ import { CreditCardComponent } from "../credit-card/credit-card.component";
 import { WorkOrderService } from "@app/core/api/field-service/work-order.service";
 import { ReceiptAddEditService } from "../receipt-add-edit/receipt-add-edit.service";
 import { timeConvert } from "@app/pages/field-service/shared/field-service-helpers.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { LinkImageRendererComponent } from "@app/shared/ag-grid/cell-renderers/link-image-renderer.component";
 import { LinksImageRendererComponent } from "@app/shared/ag-grid/cell-renderers/links-image-renderer.component";
 import { SharedModule } from "@app/shared/shared.module";
@@ -40,11 +39,12 @@ import {
   currencyFormatter,
   autoSizeColumns,
 } from "src/assets/js/util";
-import { EditIconComponent } from "@app/shared/ag-grid/edit-icon/edit-icon.component";
 import printJS from "print-js";
 import { Lightbox } from "ngx-lightbox";
 import { GridApi, GridOptions } from "ag-grid-community";
 import { SafePipe } from "@app/shared/pipes/safe-pipe";
+import { EditIconV2Component } from "@app/shared/ag-grid/edit-icon-v2/edit-icon-v2.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Pipe({
   standalone: true,
@@ -69,13 +69,10 @@ export class MyFilterPipe implements PipeTransform {
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    MyFilterPipe,
     LazyLoadImageModule,
     NgbDropdownModule,
     NgbNavModule,
     AgGridModule,
-    SafePipe,
-    CreditCardComponent,
   ],
   providers: [NgbActiveModal, NgbActiveOffcanvas],
   selector: "app-uploaded-receipt",
@@ -576,7 +573,7 @@ export class UploadedReceiptComponent implements OnInit {
           headerName: "Reason Code",
           filter: "agMultiColumnFilter",
           editable: true,
-          cellRenderer: EditIconComponent,
+          cellRenderer: EditIconV2Component,
           cellRendererParams: {
             iconName: "mdi mdi-pencil",
             placeholder: "Enter reason code",
@@ -687,7 +684,7 @@ export class UploadedReceiptComponent implements OnInit {
           field: "Edit",
           headerName: "Edit",
           filter: "agMultiColumnFilter",
-          cellRenderer: LinkRendererComponent,
+          cellRenderer: LinkRendererV2Component,
           cellRendererParams: {
             onClick: (e) => this.edit(e.rowData.id, null),
             iconName: "mdi mdi-view-list",

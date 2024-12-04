@@ -9,7 +9,6 @@ import { NAVIGATION_ROUTE as REQUEST_NAVIGATION_ROUTE } from "../../request/requ
 import { NgSelectModule } from "@ng-select/ng-select";
 import { JobService } from "@app/core/api/field-service/job.service";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   currencyFormatter,
@@ -22,6 +21,7 @@ import {
 } from "src/assets/js/util/jslzString";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -180,7 +180,7 @@ export class JobListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.view(e.rowData.id),
         value: "SELECT",
@@ -198,7 +198,7 @@ export class JobListComponent implements OnInit {
       field: "request_id",
       headerName: "Request ID",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         isLink: true,
         onClick: (e: any) =>
@@ -209,7 +209,7 @@ export class JobListComponent implements OnInit {
       field: "workOrderTicketId",
       headerName: "Work Order ID",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         isLink: true,
         onClick: (e: any) => this.viewTicket(e.rowData.id),
@@ -219,7 +219,7 @@ export class JobListComponent implements OnInit {
       field: "id",
       headerName: "Billing",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         isLink: true,
         onClick: (e: any) => this.viewBilling(e.rowData.id),

@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { SharedModule } from "@app/shared/shared.module";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
@@ -16,6 +15,7 @@ import moment from "moment";
 import { NAVIGATION_ROUTE } from "../shipping-request-constant";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { ShippingRequestService } from "@app/core/api/operations/shippging-request/shipping-request.service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -66,7 +66,7 @@ export class ShippingRequestListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

@@ -15,12 +15,13 @@ import { CommentsModalService } from "@app/shared/components/comments/comments-m
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { OtdChartComponent } from "./otd-chart/otd-chart.component";
 import { OtdReasonCodeChartComponent } from "./otd-reason-code-chart/otd-reason-code-chart.component";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { LateReasonCodeRendererComponent } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component";
 import { LateReasonCodeModalService } from "@app/shared/components/last-reason-code-modal/late-reason-code-modal.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -32,7 +33,7 @@ import { LateReasonCodeModalService } from "@app/shared/components/last-reason-c
     GridFiltersComponent,
     OtdChartComponent,
     OtdReasonCodeChartComponent,
-    NgbNavModule
+    NgbNavModule,
   ],
   selector: "app-otd-report",
   templateUrl: "./otd-report.component.html",
@@ -45,7 +46,7 @@ export class OtdReportComponent implements OnInit {
     public reportService: ReportService,
     private commentsModalService: CommentsModalService,
     private salesOrderInfoModalService: SalesOrderInfoModalService,
-    private lateReasonCodeModalService: LateReasonCodeModalService,
+    private lateReasonCodeModalService: LateReasonCodeModalService
   ) {}
 
   ngOnInit(): void {
@@ -226,7 +227,7 @@ export class OtdReportComponent implements OnInit {
       field: "so_nbr",
       headerName: "SO #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.so_nbr),
         isLink: true,
@@ -242,7 +243,7 @@ export class OtdReportComponent implements OnInit {
       field: "misc.lateReasonCode",
       headerName: "Late Reason Code",
       filter: "agSetColumnFilter",
-      cellRenderer: LateReasonCodeRendererComponent,
+      cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.viewReasonCode(
@@ -254,10 +255,8 @@ export class OtdReportComponent implements OnInit {
         },
       },
     },
-    
   ];
 
-  
   viewReasonCode = (key, misc, soLineNumber, rowData) => {
     let modalRef = this.lateReasonCodeModalService.open(
       key,
@@ -268,7 +267,7 @@ export class OtdReportComponent implements OnInit {
     modalRef.result.then(
       (result: any) => {
         rowData.misc = result;
-        this.getData()
+        this.getData();
       },
       () => {}
     );
@@ -296,7 +295,7 @@ export class OtdReportComponent implements OnInit {
       field: "label",
       headerName: "Customer",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onCustomerChange(e.rowData),
         isLink: true,
@@ -396,8 +395,8 @@ export class OtdReportComponent implements OnInit {
   ontime = 0;
   allInfo;
   goal = 0;
-  reasonChart
-  active = 1
+  reasonChart;
+  active = 1;
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();

@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { SharedModule } from "@app/shared/shared.module";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
@@ -16,6 +15,7 @@ import moment from "moment";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { NAVIGATION_ROUTE } from "../rfq-constant";
 import { RfqService } from "@app/core/api/rfq/rfq-service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -59,7 +59,7 @@ export class RfqListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

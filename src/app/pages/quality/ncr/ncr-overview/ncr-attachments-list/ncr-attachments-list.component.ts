@@ -4,23 +4,21 @@ import { SharedModule } from "@app/shared/shared.module";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormGroup } from "@angular/forms";
 import { NcrService } from "@app/core/api/quality/ncr-service";
-import { NcrCorrectiveActionFormComponent } from "../../ncr-corrective-action-form/ncr-corrective-action-form.component";
 import { ToastrService } from "ngx-toastr";
 import { AgGridModule } from "ag-grid-angular";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { autoSizeColumns } from "src/assets/js/util";
 import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
 import { Lightbox } from "ngx-lightbox";
 import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { ColDef, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     NgbNavModule,
-    NcrCorrectiveActionFormComponent,
     AgGridModule,
   ],
   selector: "app-ncr-attachments-list",
@@ -132,7 +130,7 @@ export class NcrAttachmentsListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData?.fileName),
         value: "SELECT",

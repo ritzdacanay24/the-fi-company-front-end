@@ -7,7 +7,6 @@ import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
 import moment from "moment";
@@ -16,6 +15,7 @@ import { NAVIGATION_ROUTE } from "../graphics-bom-constant";
 import { ImageRendererComponent } from "@app/shared/ag-grid/cell-renderers/image-renderer/image-renderer.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -90,7 +90,7 @@ export class GraphicsBomListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

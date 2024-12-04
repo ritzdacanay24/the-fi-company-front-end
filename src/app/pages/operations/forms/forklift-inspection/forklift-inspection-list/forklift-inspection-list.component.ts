@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { SharedModule } from "@app/shared/shared.module";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
@@ -13,9 +12,9 @@ import {
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { NAVIGATION_ROUTE } from "../forklift-inspection-constant";
 import { ForkliftInspectionService } from "@app/core/api/operations/forklift-inspection/forklift-inspection.service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -24,7 +23,6 @@ import { ForkliftInspectionService } from "@app/core/api/operations/forklift-ins
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
   ],
   selector: "app-forklift-inspection-list",
   templateUrl: "./forklift-inspection-list.component.html",
@@ -66,7 +64,7 @@ export class ForkliftInspectionListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

@@ -2,11 +2,11 @@ import { first } from "rxjs/operators";
 
 import { Component, OnInit } from "@angular/core";
 import { CablesService } from "@app/core/api/cables/cables.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
 import { GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -28,7 +28,7 @@ export class CablesComponent implements OnInit {
       field: "WO_PART",
       headerName: "WO Part #",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.openItemInfo(e.rowData.WO_PART),
         isLink: true,

@@ -4,18 +4,17 @@ import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { NAVIGATION_ROUTE } from "../trip-details-constant";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import moment from "moment";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-detail.service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -23,7 +22,6 @@ import { TripDetailService } from "@app/core/api/field-service/trip-detail/trip-
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
   ],
@@ -98,7 +96,7 @@ export class TripDetailsListComponent implements OnInit {
       field: "",
       headerName: "View Group",
       filter: "agNumberColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.viewTripDetailById(e.rowData.fs_travel_header_id);
@@ -118,7 +116,7 @@ export class TripDetailsListComponent implements OnInit {
       field: "",
       headerName: "Edit",
       filter: "agNumberColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.editById(e.rowData.id);

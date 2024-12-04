@@ -9,10 +9,10 @@ import moment from 'moment'
 import { SgAssetService } from '@app/core/api/quality/sg-asset.service'
 import { NAVIGATION_ROUTE } from '../sg-asset-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
-import { LinkRendererComponent } from '@app/shared/ag-grid/cell-renderers'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
 import { _decompressFromEncodedURIComponent, _compressToEncodedURIComponent } from 'src/assets/js/util/jslzString'
+import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component'
 
 @Component({
   standalone: true,
@@ -53,7 +53,7 @@ export class SgAssetListComponent implements OnInit {
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: 'SELECT'

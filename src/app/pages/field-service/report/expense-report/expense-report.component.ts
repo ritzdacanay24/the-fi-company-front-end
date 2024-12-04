@@ -8,11 +8,11 @@ import { ExpenseReportChartComponent } from './expense-report-chart/expense-repo
 import { BaseChartDirective } from 'ng2-charts';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ReportService } from 'src/app/core/api/field-service/report.service';
-import { LinkRendererComponent } from 'src/app/shared/ag-grid/cell-renderers';
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { currencyFormatter, autoSizeColumns } from 'src/assets/js/util';
 import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
+import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component';
 
 @Component({
   standalone: true,
@@ -98,7 +98,7 @@ export class ExpenseReportComponent implements OnInit {
     {
       field: "View", headerName: "View", filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.view(e.rowData.fs_scheduler_id),
         value: 'SELECT'

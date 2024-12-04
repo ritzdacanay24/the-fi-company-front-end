@@ -12,16 +12,15 @@ import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import moment from "moment";
 import { currencyFormatter, autoSizeColumns } from "src/assets/js/util";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
-import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { FgLabelPrintModalService } from "@app/shared/components/fg-label-print-modal/fg-label-print-modal.component";
-import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
-import { ShippedOrdersChartComponent } from "./shipped-orders-chart/shipped-orders-chart.component";
 import { PartsOrderModalService } from "@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component";
+import { IconRendererV2Component } from "@app/shared/ag-grid/icon-renderer-v2/icon-renderer-v2.component";
+import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -31,7 +30,6 @@ import { PartsOrderModalService } from "@app/pages/field-service/parts-order/par
     DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
-    ShippedOrdersChartComponent,
   ],
   selector: "app-shipped-orders-report-v1",
   templateUrl: "./shipped-orders-report.component.html",
@@ -113,7 +111,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       field: "SOD_PART",
       headerName: "Part",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
         isLink: true,
@@ -130,7 +128,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       headerName: "SO #",
       filter: "agTextColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.SOD_NBR),
         isLink: true,
@@ -172,7 +170,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       field: "FG-Label",
       headerName: "FG Label",
       filter: "agSetColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.fgLabelPrintModal.open(
@@ -198,7 +196,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       field: "add_comments",
       headerName: "Comments",
       filter: "agSetColumnFilter",
-      cellRenderer: CommentsRendererComponent,
+      cellRenderer: CommentsRendererV2Component,
       cellRendererParams: {
         onClick: (params: any) =>
           this.viewComment(
@@ -268,7 +266,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       field: "VIEW_PARTS_ORDER_REQUEST",
       headerName: "View Parts Order Request",
       filter: "agMultiColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.viewPartsOrder(e.rowData.SOD_NBR),
         iconName: "mdi mdi-ballot-outline",

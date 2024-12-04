@@ -8,21 +8,20 @@ import {
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { GraphicsService } from "@app/core/api/operations/graphics/graphics.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   agGridDateFilterdateFilter,
   highlightRowView,
   autoSizeColumns,
 } from "src/assets/js/util";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
-import { EditIconComponent } from "@app/shared/ag-grid/edit-icon/edit-icon.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GraphicsBomModalService } from "../graphics-production/graphics-bom-modal/graphics-bom-modal.component";
 import moment from "moment";
 import { AuthenticationService } from "@app/core/services/auth.service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { EditIconV2Component } from "@app/shared/ag-grid/edit-icon-v2/edit-icon-v2.component";
 
 @Component({
   standalone: true,
@@ -30,7 +29,6 @@ import { AuthenticationService } from "@app/core/services/auth.service";
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
   ],
@@ -87,7 +85,7 @@ export class GraphicsDemandComponent implements OnInit {
       editable: true,
       pinned: "left",
       lockPinned: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -98,7 +96,7 @@ export class GraphicsDemandComponent implements OnInit {
       field: "part",
       headerName: "Part Needed",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         isLink: true,
         onClick: (e) => this.itemInfoModalService.open(e.rowData.part),
@@ -174,7 +172,7 @@ export class GraphicsDemandComponent implements OnInit {
       field: "graphicsWorkOrderNumber",
       headerName: "Graphics Work #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         isLink: true,
         onClick: (e) => this.openGraphicsBom(e.rowData.graphicsWorkOrderNumber),

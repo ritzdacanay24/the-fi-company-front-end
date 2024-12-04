@@ -4,7 +4,6 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { AttachmentService } from "@app/core/api/field-service/attachment.service";
 import { AttachmentsService as PublicAttachment } from "@app/core/api/attachments/attachments.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
@@ -12,6 +11,7 @@ import {
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -44,7 +44,7 @@ export class JobAttachmentsComponent implements OnInit {
       field: "View",
       headerName: "View",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.openImage(e.rowData.link);

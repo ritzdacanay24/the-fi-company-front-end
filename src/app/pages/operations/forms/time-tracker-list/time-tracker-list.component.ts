@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { SharedModule } from "@app/shared/shared.module";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
@@ -13,9 +12,8 @@ import {
 import { ActivatedRoute, Router } from "@angular/router";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
-import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 import { TimeTrackerService } from "@app/core/api/time-tracker/time-tracker.service";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -24,7 +22,6 @@ import { TimeTrackerService } from "@app/core/api/time-tracker/time-tracker.serv
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
-    DateRangeComponent,
   ],
   selector: "app-time-tracker-list",
   templateUrl: "./time-tracker-list.component.html",
@@ -59,7 +56,7 @@ export class TimeTrackerListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",
@@ -79,8 +76,16 @@ export class TimeTrackerListComponent implements OnInit {
       headerName: "Created Date",
       filter: "agMultiColumnFilter",
     },
-    { field: "completed_date", headerName: "Completed Date", filter: "agMultiColumnFilter" },
-    { field: "total_time", headerName: "Total Time (Hrs)", filter: "agMultiColumnFilter" },
+    {
+      field: "completed_date",
+      headerName: "Completed Date",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "total_time",
+      headerName: "Total Time (Hrs)",
+      filter: "agMultiColumnFilter",
+    },
   ];
 
   @Input() selectedViewType = "Active";

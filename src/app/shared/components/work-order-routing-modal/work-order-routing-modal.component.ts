@@ -5,7 +5,6 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { WorkOrderInfoModalService } from "../work-order-info-modal/work-order-info-modal.component";
 import { isEmpty } from "src/assets/js/util/util";
 import { WorkOrderPickSheetModalService } from "@app/pages/operations/master-scheduling/work-order-pick-sheet-modal/work-order-pick-sheet-modal.component";
@@ -13,6 +12,7 @@ import { WorkOrderRoutingService } from "@app/core/api/work-order-routing/work-o
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Injectable({
   providedIn: "root",
@@ -107,7 +107,7 @@ export class WorkOrderRoutingComponent {
       field: "WR_NBR",
       headerName: "WO #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.workOrderInfoModalService.open(e.rowData.WR_NBR),
         isLink: true,

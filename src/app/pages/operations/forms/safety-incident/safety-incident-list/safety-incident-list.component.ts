@@ -5,7 +5,6 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import { SharedModule } from "@app/shared/shared.module";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
@@ -18,6 +17,7 @@ import { NAVIGATION_ROUTE } from "../safety-incident-constant";
 import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/safety-incident.service";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -34,8 +34,7 @@ import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.c
   templateUrl: "./safety-incident-list.component.html",
 })
 export class SafetyIncidentListComponent implements OnInit {
-  
-  pageId = '/safety-incident/list'
+  pageId = "/safety-incident/list";
 
   constructor(
     public api: SafetyIncidentService,
@@ -66,7 +65,7 @@ export class SafetyIncidentListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

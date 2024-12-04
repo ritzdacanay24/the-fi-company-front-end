@@ -7,13 +7,13 @@ import { AgGridModule } from "ag-grid-angular";
 import { ActivatedRoute, Router } from "@angular/router";
 import { NAVIGATION_ROUTE } from "../customer-constant";
 import { CustomerService } from "src/app/core/api/field-service/customer.service";
-import { LinkRendererComponent } from "src/app/shared/ag-grid/cell-renderers";
 import { SharedModule } from "src/app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -44,7 +44,7 @@ export class CustomerListComponent implements OnInit {
       headerName: "View",
       filter: "agMultiColumnFilter",
       pinned: "left",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
         value: "SELECT",

@@ -1,17 +1,13 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { SharedModule } from "@app/shared/shared.module";
 import {
   _compressToEncodedURIComponent,
   _decompressFromEncodedURIComponent,
 } from "src/assets/js/util/jslzString";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
-import moment from "moment";
 import {
-  agGridDateFilterdateFilter,
   highlightRowView,
 } from "src/assets/js/util";
 import { CycleTimeService } from "@app/core/api/cycle-time/cycle-time.service";
@@ -20,7 +16,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, DateRangeComponent],
+  imports: [SharedModule, AgGridModule],
   selector: "app-availability-list",
   templateUrl: "./availability-list.component.html",
   styleUrls: [],

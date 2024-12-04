@@ -1,5 +1,5 @@
 import { ColDef, GridOptions } from "ag-grid-community";
-import { GridReadyEvent, GridApi } from "ag-grid-community";
+import { GridApi } from "ag-grid-community";
 import { Component, OnInit } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { NgbDropdownModule, NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
@@ -7,11 +7,10 @@ import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
 import moment from "moment";
-import { TripExpenseTransactionsService } from "@app/core/api/field-service/trip-expense-transactions";
 import { SharedModule } from "@app/shared/shared.module";
 import { CustomerVisitService } from "@app/core/api/field-service/customer-visit/customer-visit.service";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers/link-renderer/link-renderer.component";
-import { ActivatedRoute, Route, Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
@@ -68,7 +67,7 @@ export class CustomerVisitListComponent implements OnInit {
       field: "",
       headerName: "View",
       filter: "agNumberColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.view(e.rowData.id);

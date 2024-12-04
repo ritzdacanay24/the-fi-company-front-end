@@ -8,15 +8,14 @@ import {
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ItemService } from "@app/core/api/operations/item/item.service";
-import { QadPartSearchComponent } from "../qad-part-search/qad-part-search.component";
 import { SalesOrderInfoModalService } from "../sales-order-info-modal/sales-order-info-modal.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 import { ColDef, ColGroupDef, GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, QadPartSearchComponent],
+  imports: [SharedModule, AgGridModule],
   selector: "app-part-lookup",
   templateUrl: `./part-lookup.component.html`,
   styleUrls: [],
@@ -159,7 +158,7 @@ export class PartLookupComponent {
       field: "wr_nbr",
       headerName: "Work Order #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: ({ rowData }) =>
           this.workOrderInfoModalService.open(rowData.wr_nbr),
@@ -196,7 +195,7 @@ export class PartLookupComponent {
       field: "sod_nbr",
       headerName: "SO #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.sod_nbr),
         isLink: true,

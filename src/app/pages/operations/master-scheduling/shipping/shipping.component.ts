@@ -8,7 +8,6 @@ import {
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import moment from "moment";
 import {
@@ -19,33 +18,25 @@ import {
   isEmpty,
 } from "src/assets/js/util";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
-import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
 import { WorkOrderRoutingModalService } from "@app/shared/components/work-order-routing-modal/work-order-routing-modal.component";
-import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
 import { FgLabelPrintModalService } from "@app/shared/components/fg-label-print-modal/fg-label-print-modal.component";
 import { AddressInfoModalService } from "@app/shared/components/address-info-modal/address-info-modal.component";
-import { OwnerRendererComponent } from "@app/shared/ag-grid/owner-renderer/owner-renderer.component";
 import { OwnerTransactionsService } from "@app/shared/components/owner-transactions/owner-transactions.component";
 import { CustomerOrderInfoModalService } from "@app/shared/components/customer-order-info/customer-order-info.component";
 import { SalesOrderInfoModalService } from "@app/shared/components/sales-order-info-modal/sales-order-info-modal.component";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
 import { PorLabelPrintModalService } from "@app/shared/components/por-label-print-modal/por-label-print-modal.component";
 import { PlacardModalService } from "@app/shared/components/placard-modal/placard-modal.component";
-import { LateReasonCodeRendererComponent } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component";
 import { LateReasonCodeModalService } from "@app/shared/components/last-reason-code-modal/late-reason-code-modal.component";
 import { NotesModalService } from "@app/shared/components/notes-modal/notes-modal.component";
-import { NotesRendererComponent } from "@app/shared/ag-grid/notes-renderer/notes-renderer.component";
 import { RfqModalService } from "@app/shared/components/rfq-modal/rfq-modal.component";
 import { ShippingMiscModalService } from "@app/shared/components/shipping-misc-modal/shipping-misc-modal.component";
-import { ShipAccountRendererComponent } from "@app/shared/ag-grid/cell-renderers/ship-account-renderer/ship-account-renderer.component";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { TableSettingsService } from "@app/core/api/table-settings/table-settings.service";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { WebsocketService } from "@app/core/services/websocket.service";
 import { AuthenticationService } from "@app/core/services/auth.service";
-import { CheckboxRendererComponent } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component";
-import { GridLayoutComponent } from "@app/shared/grid-layout/grid-layout.component";
 import { PartsOrderModalService } from "@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { ShipAccountRendererV2Component } from "@app/shared/ag-grid/cell-renderers/ship-account-renderer-v2/ship-account-renderer-v2.component";
@@ -58,7 +49,6 @@ import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-r
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
 
-const SALES_ORDER = "Sales Order";
 const WS_SHIPPING = "WS_SHIPPING";
 
 @Component({
@@ -67,12 +57,9 @@ const WS_SHIPPING = "WS_SHIPPING";
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
     NgbDropdownModule,
     GridSettingsComponent,
     GridFiltersComponent,
-    DateRangeComponent,
-    GridLayoutComponent,
   ],
   selector: "app-shipping",
   templateUrl: "./shipping.component.html",
@@ -522,24 +509,24 @@ export class ShippingComponent implements OnInit {
         }
         return null;
       },
-      cellRenderer: (params) => {
-        if (params.data) {
-          if (params.data && this.isInspection(params.data?.misc)) {
-            let startdate = moment(params.data.SOD_DUE_DATE);
-            const dow = startdate.day();
+      // cellRenderer: (params) => {
+      //   if (params.data) {
+      //     if (params.data && this.isInspection(params.data?.misc)) {
+      //       let startdate = moment(params.data.SOD_DUE_DATE);
+      //       const dow = startdate.day();
 
-            if (dow == 1) {
-              startdate = startdate.subtract(3, "days");
-              return startdate.format("YYYY-MM-DD");
-            } else {
-              startdate = startdate.subtract(1, "days");
-              return startdate.format("YYYY-MM-DD");
-            }
-          } else {
-            return params.data.SOD_DUE_DATE;
-          }
-        }
-      },
+      //       if (dow == 1) {
+      //         startdate = startdate.subtract(3, "days");
+      //         return startdate.format("YYYY-MM-DD");
+      //       } else {
+      //         startdate = startdate.subtract(1, "days");
+      //         return startdate.format("YYYY-MM-DD");
+      //       }
+      //     } else {
+      //       return params.data.SOD_DUE_DATE;
+      //     }
+      //   }
+      // },
     },
     {
       field: "SOD_ORDER_CATEGORY",
@@ -914,7 +901,6 @@ export class ShippingComponent implements OnInit {
       field: "misc.lateReasonCode",
       headerName: "Late Reason Code",
       filter: "agSetColumnFilter",
-
       cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {

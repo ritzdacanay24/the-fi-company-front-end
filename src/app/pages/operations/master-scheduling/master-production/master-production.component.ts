@@ -14,9 +14,7 @@ import {
 } from "src/assets/js/util/jslzString";
 import { AgGridModule } from "ag-grid-angular";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { WorkOrderPickSheetModalService } from "../work-order-pick-sheet-modal/work-order-pick-sheet-modal.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 import { ItemInfoModalService } from "@app/shared/components/item-info-modal/item-info-modal.component";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
@@ -26,15 +24,14 @@ import {
   highlightRowView,
   isEmpty,
 } from "src/assets/js/util";
-import { LateReasonCodeRendererComponent } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer/late-reason-code-renderer.component";
-import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
-import { PickSheetRendererComponent } from "@app/shared/ag-grid/pick-sheet-renderer/pick-sheet-renderer.component";
-import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import { KanbanAddModalService } from "@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component";
 import { WebsocketService } from "@app/core/services/websocket.service";
-import { KanbanRendererComponent } from "@app/shared/ag-grid/cell-renderers/kanban-renderer/kanban-renderer.component";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
+import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
+import { PickSheetRendererV2Component } from "@app/shared/ag-grid/pick-sheet-renderer-v2/pick-sheet-renderer.component";
 
 const MASTER_PRODUCTION = "MASTER_PRODUCTION";
 const WORK_ORDER_ROUTING = "Work Order Routing";
@@ -45,8 +42,6 @@ const WORK_ORDER_ROUTING = "Work Order Routing";
     SharedModule,
     AgGridModule,
     NgSelectModule,
-    DateRangeComponent,
-    GridSettingsComponent,
   ],
   selector: "app-master-production",
   templateUrl: "./master-production.component.html",
@@ -255,22 +250,22 @@ export class MasterProductionComponent implements OnInit {
   }
 
   columnDefs: ColDef[] = [
-    {
-      field: "kanban_info.wo_nbr",
-      headerName: "Add To WO Tracker",
-      filter: "agSetColumnFilter",
-      cellRenderer: KanbanRendererComponent,
-      cellRendererParams: {
-        onClick: (e) => this.addToWorkOrderTracker(e.rowData, e.rowData.WR_NBR),
-        isLink: true,
-        value: "Add",
-      },
-    },
+    // {
+    //   field: "kanban_info.wo_nbr",
+    //   headerName: "Add To WO Tracker",
+    //   filter: "agSetColumnFilter",
+    //   cellRenderer: KanbanRendererComponent,
+    //   cellRendererParams: {
+    //     onClick: (e) => this.addToWorkOrderTracker(e.rowData, e.rowData.WR_NBR),
+    //     isLink: true,
+    //     value: "Add",
+    //   },
+    // },
     {
       field: "WR_NBR",
       headerName: "Pick Sheet",
       filter: "agSetColumnFilter",
-      cellRenderer: PickSheetRendererComponent,
+      cellRenderer: PickSheetRendererV2Component,
       cellRendererParams: {
         onClick: (params) => this.openPickSheet(params.rowData.WR_NBR),
         iconName: "mdi-clipboard-outline",
@@ -298,7 +293,7 @@ export class MasterProductionComponent implements OnInit {
       field: "WR_NBR",
       headerName: "Work #",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.openWorkOrderInfo(e.rowData.WR_NBR),
         isLink: true,
@@ -308,7 +303,7 @@ export class MasterProductionComponent implements OnInit {
       field: "Comments",
       headerName: "Comments",
       filter: "agMultiColumnFilter",
-      cellRenderer: CommentsRendererComponent,
+      cellRenderer: CommentsRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.viewComment(e.rowData.WR_NBR, e.rowData.SO),
       },
@@ -352,7 +347,7 @@ export class MasterProductionComponent implements OnInit {
       field: "WR_PART",
       headerName: "Part",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.openItemInfo(e.rowData.WR_PART),
         isLink: true,
@@ -434,7 +429,7 @@ export class MasterProductionComponent implements OnInit {
       field: "misc.lateReasonCode",
       headerName: "Late Reason Code",
       filter: "agSetColumnFilter",
-      cellRenderer: LateReasonCodeRendererComponent,
+      cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.openReasonCodes(

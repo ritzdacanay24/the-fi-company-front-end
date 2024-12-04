@@ -4,10 +4,10 @@ import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { SalesOrderInfoService } from "@app/core/api/sales-order/sales-order-info.service";
 import { SalesOrderInfoModalService } from "../sales-order-info-modal/sales-order-info-modal.component";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 
 @Injectable({
   providedIn: "root",
@@ -41,7 +41,7 @@ export class CustomerOrderInfoModalComponent {
       field: "SOD_NBR",
       headerName: "SO #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.salesOrderInfoModalService.open(e.rowData.SOD_NBR);
