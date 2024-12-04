@@ -12,7 +12,6 @@ export class LateReasonCodeRendererV2Component {
     this.eGui = document.createElement("div");
 
     if (this.params.data) {
-      console.log(this.params.value)
       this.eGui.style.cssText = "width:auto;text-overflow: ellipsis;";
       this.eGui.className = "d-flex flex-row text-nowrap overflow-hidden";
       this.eButton = document.createElement("span");
