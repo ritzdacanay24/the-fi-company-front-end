@@ -196,7 +196,6 @@ export class UserLocationMapComponent implements OnInit {
 
     let el = document.getElementById("test-" + id.toString());
 
-    console.log(el);
     setTimeout(() => {
       el[0]?.scrollIntoView();
     }, 500);
@@ -346,7 +345,6 @@ export class UserLocationMapComponent implements OnInit {
 
   currentUserIdView = null;
   viewUser(user_id, row?) {
-    console.log(row, "fffffff");
     // this.currentUserIdView = user_id;
     // this.activeIds = [];
     // this.clearMarkers();
@@ -506,7 +504,6 @@ export class UserLocationMapComponent implements OnInit {
       }
     }
 
-    console.log(points, "points");
 
     for (let i = 0; i < jobs.length; i++) {
       if (jobs[i].fs_lon && jobs[i].fs_lat) {
@@ -574,7 +571,6 @@ export class UserLocationMapComponent implements OnInit {
 
     
 
-    console.log(geoJson);
 
     setTimeout(() => {
       this.map.addSource("point-source", {

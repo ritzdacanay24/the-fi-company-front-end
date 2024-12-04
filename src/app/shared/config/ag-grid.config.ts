@@ -32,6 +32,7 @@ export const agGridOptions: GridOptions = {
   popupParent: popupParent,
   autoSizeStrategy: {
     type: "fitCellContents",
+    skipHeader: false,
   },
 
   // autoGroupColumnDef: {
@@ -139,7 +140,7 @@ export const agGridOptions: GridOptions = {
   suppressScrollOnNewData: true,
   overlayLoadingTemplate:
     '<span class="ag-overlay-loading-center">Please wait while we load the data.</span>',
-  suppressColumnVirtualisation: true,
+  suppressColumnVirtualisation: false,
   onModelUpdated: (event: ModelUpdatedEvent) => {
     event.api.getDisplayedRowCount() === 0
       ? event.api.showNoRowsOverlay()

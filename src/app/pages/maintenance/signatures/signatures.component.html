@@ -5,7 +5,55 @@
                 <div class="card-header">
                     <h4 style="margin-bottom:0px">{{row.city}}, {{row.state}}</h4>
                 </div>
-                <div class="card-body pb-0" #screen id="{{row.id}}" style="width:800px">
+                <div class="card-body p-2" #screen id="{{row.id}}" style="width:800px">
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            <a href="https://the-fi-company.com/" target="_blank">
+                                <img width="95" src="assets/images/fi-color.png">
+                            </a>
+                        </div>
+                        <div class="ps-2" style="border-left: 1px solid #002F6C !important">
+                            <p style=" color: #002F6C;font-size: 14px;" class="my-font">
+                                {{row.Name}}
+                            </p>
+                            <p style="color: #FF1200;font-size: 9px;font-weight: 800;"
+                                class="mb-1 my-fontd my-font-regular">
+                                <i>{{row.Title}}</i>
+                            </p>
+                            <p style="color: #002F6C;font-size: 9px;" class="my-font-regular">
+                                <i class="mdi mdi-web"></i>
+                                www.the-fi-company.com
+                            </p>
+                            <p style="color: #002F6C;font-size: 9px;" class="my-font-regular">
+                                <i class="mdi mdi-email-outline"></i>
+                                {{row.Email}}
+                            </p>
+                            <p style="color: #002F6C;font-size: 9px;" class="my-font-regular" *ngIf="row.officePhone">
+                                <i class="mdi mdi-phone-outline"></i>
+                                O:{{row.officePhone}}
+                            </p>
+                            <p style="color: #002F6C;font-size: 9px;" class="my-font-regular" *ngIf="row.mobilePhone">
+                                <i class="mdi mdi-phone-outline"></i>
+                                M:{{row.mobilePhone}}
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="my-font-regular mt-2"
+                        style="margin: 0.75pt; color: #666; font-size: 8px; line-height: 12px">
+                        CONFIDENTIALITY NOTICE: This e-mail (including any documents
+                        referred to in or attached to this e-mail) may contain
+                        information that is personal,
+                        confidential, or the subject of copyright or other
+                        proprietary rights in favor of fi
+                        Holdings, its affiliates, or third parties. Any unauthorized
+                        reading,
+                        distribution, copying, or
+                        other use of this message or its attachments is strictly prohibited.
+                    </p>
+                </div>
+
+                <!-- <div class="card-body pb-0" #screen id="{{row.id}}" style="width:800px">
                     <table cellpadding="0" cellspacing="0" border="0"
                         style="border:0px thin #fff;margin-bottom:10px;padding-bottom:10px">
                         <tr>
@@ -23,7 +71,7 @@
                                                     <tbody>
                                                         <tr>
                                                             <td valign="top" style="padding-bottom:0px;">
-                                                                <p class="my-font" style="margin: 0px;font-size: 24px;color: #002F6C;margin-bottom: -7px;
+                                                                <p class="my-font" style="margin: 0px;font-size: 20px;color: #002F6C;margin-bottom: -7px;
                                                                 ">
                                                                     {{row.Name}}
                                                                 </p>
@@ -132,7 +180,7 @@
                         <a #downloadLink></a>
                     </div>
 
-                </div>
+                </div> -->
                 <div class="card-footer d-flex">
                     <button class="btn-primary btn me-3" (click)="edit(row.id)">Edit</button>
                     <!-- <button class="btn-primary btn me-3" (click)="copyText(row.id, row)">Download</button> -->

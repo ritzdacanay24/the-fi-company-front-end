@@ -259,7 +259,6 @@ export class OtdReportComponent implements OnInit {
 
   
   viewReasonCode = (key, misc, soLineNumber, rowData) => {
-    console.log(soLineNumber)
     let modalRef = this.lateReasonCodeModalService.open(
       key,
       misc,

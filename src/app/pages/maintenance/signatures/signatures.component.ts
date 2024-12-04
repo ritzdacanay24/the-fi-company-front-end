@@ -112,12 +112,10 @@ export class SignaturesComponent implements OnInit {
   }
 
   copyToClipboard(text: string) {
-    console.log("sssss");
     // Implementation to copy text to clipboard
   }
 
   onCopy() {
-    console.log("copied");
   }
 
   data: any;
@@ -153,8 +151,6 @@ export class SignaturesComponent implements OnInit {
 
     let el = document.getElementById("test-" + this.searchByName.toString());
 
-    console.log(this.searchByName);
-    console.log(el);
     setTimeout(() => {
       el[0]?.scrollIntoView();
     }, 500);

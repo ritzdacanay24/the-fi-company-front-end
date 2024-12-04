@@ -77,9 +77,7 @@ export class CycleTimeChartComponent implements OnInit {
   public barChartLabels: any[] = [];
   async getData() {
     let cycleTimeChart = await this.cycleTimesService.cycleTimeChart();
-    console.log(cycleTimeChart);
     this.dataTable = cycleTimeChart.allData;
-    console.log(this.dataTable);
 
     this.barChartData[0].data = cycleTimeChart.chart.headCount;
     // this.barChartData[1].data = this.data.totalHrsOverdueArray;
@@ -90,7 +88,6 @@ export class CycleTimeChartComponent implements OnInit {
 
     let data = await this.cycleTimesService.getCycleTimes();
     // this.data = data.chart;
-    // console.log(this.data);
 
     // this.barChartData[0].data = this.data.weeklyUsers;
     // this.barChartData[1].data = this.data.totalHrsOverdueArray;
@@ -103,14 +100,12 @@ export class CycleTimeChartComponent implements OnInit {
   @ViewChild(BaseChartDirective) chart: BaseChartDirective | undefined;
 
   getDataByDate = async (dateFrom, dateTo) => {
-    console.log(dateFrom, dateTo);
     let data = await this.cycleTimesService.getCycleTimesDaily(
       dateFrom,
       dateTo
     );
     this.data = data.chart;
 
-    console.log(data, "ddddddddd");
     this.barChartData[0].data = this.data.weeklyUsers;
     this.barChartData[1].data = this.data.totalHrsOverdueArray;
     this.barChartData[2].data = this.data.values;
@@ -131,7 +126,6 @@ export class CycleTimeChartComponent implements OnInit {
     },
     onClick: (c, i) => {
       let e: any = i[0];
-      console.log(e);
       var x_value = this.data.label[e.index];
       const myArr = x_value.split(" ");
       this.dateFrom = moment(myArr[0]).format("YYYY-MM-DD");
@@ -157,9 +151,6 @@ export class CycleTimeChartComponent implements OnInit {
           autoSkip: false,
           maxTicksLimit: 10,
           // callback: (value: any, index, values) => {
-          //     console.log(value)
-          //     console.log(index)
-          //     console.log(values)
           //     return value
           // //   const myArr = value?.split(" ");
           // //   if (myArr.length > 1) {
@@ -167,7 +158,6 @@ export class CycleTimeChartComponent implements OnInit {
           // //       return "Total Past Due";
           // //     } else {
           // //       var weeknumber = moment(myArr[0], "MM-DD-YYYY").isoWeek();
-          // //       console.log(myArr);
           // //       return [
           // //         `${moment(myArr[0], "M/D/YYYY").format("M/D/YY")} - ${moment(
           // //           myArr[2],

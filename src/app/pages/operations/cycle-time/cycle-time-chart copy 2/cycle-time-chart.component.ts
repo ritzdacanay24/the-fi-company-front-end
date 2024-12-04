@@ -50,7 +50,6 @@ export class CycleTimeChartComponent {
       this.dateFrom,
       this.dateTo
     );
-    console.log(cycleTimeChart.chart.headCountData.dataset);
 
     this.dataTable = cycleTimeChart.allData;
 

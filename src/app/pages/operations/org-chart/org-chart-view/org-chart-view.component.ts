@@ -467,7 +467,6 @@ export class OrgChartViewComponent implements OnInit {
         })
         .compact(false)
         .onExpandOrCollapse((d) => {
-          // console.log(d, 'parent')
           let children = d.children;
 
           this.shouldShowItem(children);

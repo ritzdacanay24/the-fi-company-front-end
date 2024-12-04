@@ -311,7 +311,6 @@ export class RequestEditComponent {
     setTimeout(() => {
       
       let el = document.getElementById("comment_id_" + this.comment_id?.toString());
-      console.log(el)
       if (el) el.scrollIntoView();
     }, 100);
   }

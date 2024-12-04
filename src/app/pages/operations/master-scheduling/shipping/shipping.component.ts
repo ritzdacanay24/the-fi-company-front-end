@@ -20,7 +20,6 @@ import {
 } from "src/assets/js/util";
 import { CommentsModalService } from "@app/shared/components/comments/comments-modal.service";
 import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
-import { LinkRendererComponent } from "@app/shared/ag-grid/cell-renderers";
 import { WorkOrderRoutingModalService } from "@app/shared/components/work-order-routing-modal/work-order-routing-modal.component";
 import { IconRendererComponent } from "@app/shared/ag-grid/icon-renderer/icon-renderer.component";
 import { FgLabelPrintModalService } from "@app/shared/components/fg-label-print-modal/fg-label-print-modal.component";
@@ -39,7 +38,6 @@ import { NotesRendererComponent } from "@app/shared/ag-grid/notes-renderer/notes
 import { RfqModalService } from "@app/shared/components/rfq-modal/rfq-modal.component";
 import { ShippingMiscModalService } from "@app/shared/components/shipping-misc-modal/shipping-misc-modal.component";
 import { ShipAccountRendererComponent } from "@app/shared/ag-grid/cell-renderers/ship-account-renderer/ship-account-renderer.component";
-import { EditIconComponent } from "@app/shared/ag-grid/edit-icon/edit-icon.component";
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap";
 import { TableSettingsService } from "@app/core/api/table-settings/table-settings.service";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
@@ -49,6 +47,16 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { CheckboxRendererComponent } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer/checkbox-renderer.component";
 import { GridLayoutComponent } from "@app/shared/grid-layout/grid-layout.component";
 import { PartsOrderModalService } from "@app/pages/field-service/parts-order/parts-order-modal/parts-order-modal.component";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { ShipAccountRendererV2Component } from "@app/shared/ag-grid/cell-renderers/ship-account-renderer-v2/ship-account-renderer-v2.component";
+import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
+import { EditIconV2Component } from "@app/shared/ag-grid/edit-icon-v2/edit-icon-v2.component";
+import { IconRendererV2Component } from "@app/shared/ag-grid/icon-renderer-v2/icon-renderer-v2.component";
+import { NotesRendererV2Component } from "@app/shared/ag-grid/notes-renderer-v2/notes-renderer-v2.component";
+import { StatusDateRenderer } from "@app/shared/ag-grid/cell-renderers/status-date-renderer-v2.component";
+import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";
+import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
+import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
 
 const SALES_ORDER = "Sales Order";
 const WS_SHIPPING = "WS_SHIPPING";
@@ -380,7 +388,7 @@ export class ShippingComponent implements OnInit {
           return null;
         }
       },
-      cellRenderer: ShipAccountRendererComponent,
+      cellRenderer: ShipAccountRendererV2Component,
       cellRendererParams: {
         onClick: (e) =>
           this.openMisc(
@@ -412,7 +420,8 @@ export class ShippingComponent implements OnInit {
       field: "SOD_PART",
       headerName: "Part",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
         isLink: true,
@@ -437,7 +446,7 @@ export class ShippingComponent implements OnInit {
           return { borderColor: "#0074D9", borderWidth: "1px" };
         return null;
       },
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.salesOrderInfoModalService.open(e.rowData.SOD_NBR),
         isLink: true,
@@ -454,7 +463,7 @@ export class ShippingComponent implements OnInit {
       field: "SO_SHIP",
       headerName: "Ship To",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.addressInfoModalService.open(e.rowData.SO_SHIP),
         isLink: true,
@@ -536,7 +545,7 @@ export class ShippingComponent implements OnInit {
       field: "SOD_ORDER_CATEGORY",
       headerName: "Customer CO #",
       filter: "agTextColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.customerOrderInfoModalService.open(e.rowData.SOD_ORDER_CATEGORY);
@@ -555,7 +564,7 @@ export class ShippingComponent implements OnInit {
       field: "Comments",
       headerName: "Comments",
       filter: "agMultiColumnFilter",
-      cellRenderer: CommentsRendererComponent,
+      cellRenderer: CommentsRendererV2Component,
       cellRendererParams: {
         onClick: (params: any) =>
           this.viewComment(
@@ -575,14 +584,6 @@ export class ShippingComponent implements OnInit {
           return "No Comments";
         }
       },
-      // , valueGetter: (params) => {
-      //   if (params.data) {
-      //     return {
-      //       title: `SO#: ${params.data.SOD_NBR}-${params.data.SOD_LINE}`,
-      //       description: `${params.data.SOD_PART}`
-      //     }
-      //   }
-      // },
       filterParams: {
         valueGetter: (params) => {
           let data = params.value;
@@ -626,7 +627,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Owner",
       filter: "agMultiColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -635,7 +636,7 @@ export class ShippingComponent implements OnInit {
       field: "ownerTransactions",
       headerName: "Owner Transactions",
       filter: "agSetColumnFilter",
-      cellRenderer: OwnerRendererComponent,
+      cellRenderer: OwnerRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.ownerTransactionsService.open(
@@ -700,7 +701,7 @@ export class ShippingComponent implements OnInit {
       field: "WORK_ORDER_ROUTING",
       headerName: "View Work Order Routing",
       filter: "agMultiColumnFilter",
-      cellRenderer: LinkRendererComponent,
+      cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.viewRouting(e.rowData.SOD_PART),
         isLink: true,
@@ -716,7 +717,7 @@ export class ShippingComponent implements OnInit {
       field: "RFQ",
       headerName: "RFQ",
       filter: "agSetColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.vewRfq(e);
@@ -744,7 +745,7 @@ export class ShippingComponent implements OnInit {
       field: "generate_placard",
       headerName: "Generate Placard",
       filter: "agSetColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.viewPlacard(
@@ -760,7 +761,7 @@ export class ShippingComponent implements OnInit {
       field: "recent_notes.notes",
       headerName: "Notes",
       filter: "agSetColumnFilter",
-      cellRenderer: NotesRendererComponent,
+      cellRenderer: NotesRendererV2Component,
       cellRendererParams: {
         onClick: this.viewNotes.bind(this),
       },
@@ -785,7 +786,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Container",
       filter: "agMultiColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -795,7 +796,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Container due date",
       filter: "agSetColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -805,7 +806,7 @@ export class ShippingComponent implements OnInit {
       headerName: "TJ PO #",
       filter: "agSetColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -815,7 +816,7 @@ export class ShippingComponent implements OnInit {
       headerName: "TJ Due Date",
       filter: "agSetColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -825,7 +826,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Pallet Count",
       filter: "agSetColumnFilter",
       editable: true,
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
       },
@@ -834,7 +835,7 @@ export class ShippingComponent implements OnInit {
       field: "FG-Label",
       headerName: "FG Label",
       filter: "agSetColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.fgLabelPrintModal.open(
@@ -853,7 +854,7 @@ export class ShippingComponent implements OnInit {
       field: "POR-Label",
       headerName: "POR Label",
       filter: "agSetColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.porLabelPrintModalService.open(
@@ -871,7 +872,7 @@ export class ShippingComponent implements OnInit {
       field: "misc.g2e_comments",
       headerName: "G2E",
       filter: "agMultiColumnFilter",
-      cellRenderer: EditIconComponent,
+      cellRenderer: EditIconV2Component,
       editable: true,
       cellRendererParams: {
         iconName: "mdi mdi-pencil",
@@ -881,7 +882,7 @@ export class ShippingComponent implements OnInit {
       field: "misc.shortages_review",
       headerName: "Shortages Review",
       filter: "agSetColumnFilter",
-      cellRenderer: CheckboxRendererComponent,
+      cellRenderer: ChecboxRendererV2,
       cellRendererParams: {
         onClick: (e) => this.update(e.rowData),
       },
@@ -897,7 +898,7 @@ export class ShippingComponent implements OnInit {
       field: "misc.lateReasonCodePerfDate",
       headerName: "Late Reason Code (Perf Date)",
       filter: "agSetColumnFilter",
-      cellRenderer: LateReasonCodeRendererComponent,
+      cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.viewReasonCode(
@@ -914,7 +915,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Late Reason Code",
       filter: "agSetColumnFilter",
 
-      cellRenderer: LateReasonCodeRendererComponent,
+      cellRenderer: LateReasonCodeRendererV2Component,
       cellRendererParams: {
         onClick: (e) => {
           this.viewReasonCode(
@@ -932,14 +933,6 @@ export class ShippingComponent implements OnInit {
       filter: "agSetColumnFilter",
       cellEditor: "agRichSelectCellEditor",
       editable: true,
-      cellRenderer: (params) => {
-        if (params.data) {
-          if (params.value && params.value !== "NA") {
-            return params.value;
-          }
-          return "--Select status--";
-        }
-      },
       cellClass: (params: any) => {
         if (params.value == "CTB in Period") {
           return ["bg-success bg-opacity-50"];
@@ -958,20 +951,20 @@ export class ShippingComponent implements OnInit {
       },
 
       valueGetter: (params) => {
-        if (params?.data?.misc?.clear_to_build_status != "NA")
-          return params?.data?.misc?.clear_to_build_status;
-        return "";
+        if (params.data) {
+          if (params?.data?.misc?.clear_to_build_status != "NA"){
+            return params?.data?.misc?.clear_to_build_status || "--Select status--";
+          }
+          return "--Select status--";
+        } else {
+          return "--Select status--";
+        }
       },
     },
     {
       field: "clear_to_build_period",
       headerName: "CTB Report Period",
       filter: "agMultiColumnFilter",
-      cellRenderer: (params) => {
-        if (params.data)
-          return moment(params?.data?.SOD_DUE_DATE).format("MM-YYYY");
-        return "";
-      },
       valueGetter: (params) => {
         if (params.data)
           return moment(params?.data?.SOD_DUE_DATE).format("MM-YYYY");
@@ -984,22 +977,7 @@ export class ShippingComponent implements OnInit {
       headerName: "Performance Date",
       filter: "agDateColumnFilter",
       filterParams: agGridDateFilter,
-      cellRenderer: (params: any) => {
-        if (params.data) {
-          let dateToCheck = moment(params.value);
-          let today = moment().startOf("day");
-          let diffInDays = dateToCheck.diff(today, "days");
-
-          if (diffInDays > 0)
-            return `<span class="badge bg-success-subtle text-success mb-0">${params.value}</span>`;
-          if (diffInDays < 0)
-            return `<span class="badge bg-danger-subtle text-danger mb-0">${params.value}</span>`;
-          if (diffInDays == 0)
-            return `<span class="badge bg-warning-subtle text-warning mb-0">${params.value}</span>`;
-          return params.value;
-        }
-        return null;
-      },
+      cellRenderer: StatusDateRenderer,
     },
     {
       field: "sod_req_date",
@@ -1016,7 +994,7 @@ export class ShippingComponent implements OnInit {
       field: "VIEW_PARTS_ORDER_REQUEST",
       headerName: "View Parts Order Request",
       filter: "agMultiColumnFilter",
-      cellRenderer: IconRendererComponent,
+      cellRenderer: IconRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.viewPartsOrder(e.rowData.SOD_NBR),
         iconName: "mdi mdi-ballot-outline",
@@ -1084,8 +1062,7 @@ export class ShippingComponent implements OnInit {
   dataRenderered = false;
 
   gridOptions: GridOptions = {
-    // rowBuffer: 30,
-    // animateRows: false,
+    animateRows: true,
     tooltipShowDelay: 0,
     columnDefs: [],
     enableCharts: true,
@@ -1121,8 +1098,8 @@ export class ShippingComponent implements OnInit {
       return null;
     },
     context: {
-      pageId: this.pageId
-    }
+      pageId: this.pageId,
+    },
   };
 
   public async update(data: any) {

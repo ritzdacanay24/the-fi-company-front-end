@@ -205,7 +205,6 @@ export class CycleTimeChartComponent {
   };
 
   public async update(data: any) {
-    console.log(data);
 
     try {
       this.gridApi?.showLoadingOverlay();

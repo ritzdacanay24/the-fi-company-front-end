@@ -80,7 +80,6 @@ export class BasicComponent implements OnInit {
         this.router.navigateByUrl(this.returnUrl);
       }
     } catch (err) {
-      console.log(err);
     }
   }
 }

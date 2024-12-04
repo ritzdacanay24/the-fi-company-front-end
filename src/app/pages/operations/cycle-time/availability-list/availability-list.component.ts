@@ -116,7 +116,6 @@ export class AvailabilityListComponent implements OnInit {
   public async update(data: any) {
     let item = data?.data;
 
-    console.log(data);
 
     item.date = data.dueby;
 

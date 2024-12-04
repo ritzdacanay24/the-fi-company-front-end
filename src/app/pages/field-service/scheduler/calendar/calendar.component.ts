@@ -159,7 +159,6 @@ export class CalendarComponent implements OnInit {
       }
     }
 
-    console.log(newEvents)
     this.myEvents = newEvents;
   }
 

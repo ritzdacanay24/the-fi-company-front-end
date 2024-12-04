@@ -1,0 +1,7 @@
+<div *ngIf="isLink">
+  <a href (click)="onClick($event)" class="link-info link-offset-1 link-underline-opacity-50 link-underline-opacity-100-hover" style="text-decoration: underline;text-underline-offset: 2px;">{{params?.value}}</a>
+</div>
+<div *ngIf="!isLink && !params?.node?.rowPinned">
+  <button *ngIf="params?.data" class="btn btn-primary pt-0 pb-0 ps-3 pe-3" (click)="onClick($event)"
+    style="margin-bottom:4px">{{params?.value}}</button>
+</div>

@@ -62,7 +62,6 @@ export class SignaturesModalComponent implements OnInit {
 
   form: FormGroup;
   setFormEmitter($event) {
-    console.log($event);
     this.form = $event;
   }
 

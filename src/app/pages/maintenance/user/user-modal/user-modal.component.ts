@@ -151,7 +151,6 @@ export class UserModalComponent {
       this.form.value.orgChartPlaceHolder == 1
     ) {
       this.submitted = false;
-      console.log(this.form)
       getFormValidationErrors();
       return;
     }

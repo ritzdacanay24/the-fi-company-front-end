@@ -1,0 +1,8 @@
+<ng-container *ngIf="data">
+  <div class="{{atRisk ? 'indicator' : ''}}">
+    <div class="circle"></div>
+  </div>
+  <span role="button">
+    <i class="mdi {{icon}} icon-md-lg mr-2 {{icon_color}}" (click)="onClick($event)"></i>
+  </span>
+</ng-container>

@@ -83,7 +83,6 @@ export class GridSettingsComponent implements OnInit {
 
       // if (d?.rowGroupExpansion?.expandedRowGroupIds) {
       //     setTimeout(() => {
-      //         console.log('asdfasdf')
       //         this.gridApi!.expandAll();
       //     }, 500);
       // }
