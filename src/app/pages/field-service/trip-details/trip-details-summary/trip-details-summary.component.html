@@ -46,12 +46,12 @@
                         Attachments
                     </th>
                 </tr>
-                <tr *ngIf="!row.attachments.length">
+                <tr *ngIf="!row.attachments?.length">
                     <th colspan="4">
                         <span class="text-info">No Attachments found</span>
                     </th>
                 </tr>
-                <tr *ngFor="let row of row.attachments; let ii = index">
+                <tr *ngFor="let row of row?.attachments; let ii = index">
                     <th style="width:50px">{{ii+1}}</th>
                     <th colspan="4">
                         <i class="feather icon-users"></i> <a [href]="row.url" target="_blank">{{row.fileName}}</a>
