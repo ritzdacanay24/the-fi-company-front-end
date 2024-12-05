@@ -102,4 +102,5 @@ export class TripSummaryEditComponent {
   onCancel() {
     this.goBack();
   }
+  
 }

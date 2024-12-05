@@ -5,6 +5,20 @@
 <div class="modal-body">
     <app-trip-details-form (setFormEmitter)="setFormElements($event)" [submitted]="submitted"
         [id]="id"></app-trip-details-form>
+
+
+    <input type="file" multiple class="form-control form-control" id="inputGroupFile013" (change)="onChange($event)"
+        *ngIf="form.value?.type_of_travel">
+
+    <table class="table table-bordered mt-3">
+        <tbody>
+            <tr *ngFor="let row of attachments">
+                <td>{{row.fileName}}</td>
+                <td (click)="deleteAttachment(row.id)">Delete</td>
+            </tr>
+        </tbody>
+    </table>
+
 </div>
 
 <div class="modal-footer border-top">

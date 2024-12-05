@@ -15,6 +15,10 @@ import { TripDetailsSummaryComponent } from "../trip-details-summary/trip-detail
 import { ToastrService } from "ngx-toastr";
 import { TripDetailHeaderService } from "@app/core/api/field-service/trip-detail-header/trip-detail-header.service";
 import { JobSearchComponent } from "@app/shared/components/job-search/job-search.component";
+import { UploadService } from "@app/core/api/upload/upload.service";
+import { first } from "rxjs";
+import { AttachmentsService } from "@app/core/api/attachments/attachments.service";
+import { uniqueId } from "lodash";
 
 @Injectable({
   providedIn: "root",
@@ -64,11 +68,35 @@ export class TripDetailsModalComponent implements OnInit {
     private ngbActiveModal: NgbActiveModal,
     private api: TripDetailService,
     private tripDetailHeaderService: TripDetailHeaderService,
-    private toastrService: ToastrService
+    private toastrService: ToastrService,
+    private uploadService: UploadService,
+    private attachmentsService: AttachmentsService
   ) {}
 
   ngOnInit(): void {
-    if (this.id) this.getData();
+    if (this.id) {
+      this.getData();
+    }
+  }
+
+  attachments = [];
+  async getAttachments() {
+    this.attachments = [];
+    this.attachments = await this.attachmentsService.find({
+      field: "Field Service Trip Details",
+      mainId: this.id,
+    });
+  }
+
+  attachmentsToDelete = [];
+  async deleteAttachment(id) {
+
+    if(!confirm('Are you sure you want to delete?')) return;
+    
+    try {
+      await this.attachmentsService.delete(id);
+      this.getAttachments();
+    } catch (err) {}
   }
 
   setFormElements = ($event) => {
@@ -120,6 +148,7 @@ export class TripDetailsModalComponent implements OnInit {
   async getData() {
     try {
       let data = await this.api.getById(this.id);
+      await this.getAttachments();
       this.form.patchValue(data);
     } catch (err) {}
   }
@@ -145,7 +174,11 @@ export class TripDetailsModalComponent implements OnInit {
 
   async create() {
     try {
-      await this.api.create(this.form.value);
+      let data: any = await this.api.create(this.form.value);
+
+      if (this.myAttachmentFiles) {
+        this.uploadAttachments(data?.id);
+      }
 
       this.toastrService.success("Successfully Created");
       this.close();
@@ -155,6 +188,10 @@ export class TripDetailsModalComponent implements OnInit {
   async update() {
     try {
       await this.api.update(this.id, this.form.value);
+
+      if (this.myAttachmentFiles) {
+        this.uploadAttachments(this.id);
+      }
 
       this.toastrService.success("Updated successfully");
       this.close();
@@ -167,5 +204,31 @@ export class TripDetailsModalComponent implements OnInit {
       this.toastrService.success("Deleted successfully");
       this.close();
     } catch (err) {}
+  }
+
+  myAttachmentFiles: string[] = [];
+  async onChange(event) {
+    this.myAttachmentFiles = [];
+    for (var i = 0; i < event.target.files.length; i++) {
+      this.myAttachmentFiles.push(event.target.files[i]);
+    }
+  }
+
+  async uploadAttachments(insertId) {
+    if (this.myAttachmentFiles) {
+      const formData = new FormData();
+      for (var i = 0; i < this.myAttachmentFiles.length; i++) {
+        formData.append("file", this.myAttachmentFiles[i]);
+        formData.append("field", "Field Service Trip Details");
+        formData.append("uniqueData", this.fs_travel_header_id);
+        formData.append("mainId", insertId);
+        formData.append("folderName", "fieldService");
+        this.uploadService
+          .upload(formData)
+          .pipe(first())
+          .subscribe((data) => {});
+      }
+      this.myAttachmentFiles = [];
+    }
   }
 }
