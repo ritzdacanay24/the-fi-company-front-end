@@ -1,59 +1,60 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { QadCustomerPartSearchComponent } from '@app/shared/components/qad-customer-part-search/qad-customer-part-search.component';
-import { SharedModule } from '@app/shared/shared.module';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
+import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
+import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     ReactiveFormsModule,
-    QadCustomerPartSearchComponent
+    QadCustomerPartSearchComponent,
+    QadWoSearchComponent,
   ],
-  selector: 'app-sg-asset-form',
-  templateUrl: './sg-asset-form.component.html',
-  styleUrls: ['./sg-asset-form.component.scss']
+  selector: "app-sg-asset-form",
+  templateUrl: "./sg-asset-form.component.html",
+  styleUrls: ["./sg-asset-form.component.scss"],
 })
 export class SgAssetFormComponent {
-
-  constructor(
-    private fb: FormBuilder,
-  ) { }
+  constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    this.setFormEmitter.emit(this.form)
+    this.setFormEmitter.emit(this.form);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
 
-
   get f() {
-    return this.form.controls
+    return this.form.controls;
   }
 
   form = this.fb.group({
-    timeStamp: [''],
-    poNumber: [''],
-    property_site: [''],
+    timeStamp: [""],
+    poNumber: [""],
+    property_site: [""],
     sgPartNumber: [null],
-    inspectorName: [''],
-    generated_SG_asset: [''],
-    serialNumber: [''],
-    lastUpdate: [''],
+    inspectorName: [""],
+    generated_SG_asset: [""],
+    serialNumber: [""],
+    lastUpdate: [""],
     active: [1],
-    manualUpdate: [''],
-    created_by: [''],
-  })
+    manualUpdate: [""],
+    created_by: [""],
+  });
 
   setBooleanToNumber(key) {
-    let e = this.form.value[key]
-    this.form.get(key).patchValue(e ? 1 : 0)
+    let e = this.form.value[key];
+    this.form.get(key).patchValue(e ? 1 : 0);
   }
 
   getCustomerPartNumber($event) {
-    this.form.patchValue({ sgPartNumber: $event.cp_cust_part })
+    this.form.patchValue({ sgPartNumber: $event.cp_cust_part });
   }
 
+  getWoNumber($event) {
+    this.form.patchValue({ poNumber: $event.wo_nbr });
+  }
 }

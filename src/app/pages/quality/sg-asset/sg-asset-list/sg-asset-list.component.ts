@@ -66,7 +66,7 @@ export class SgAssetListComponent implements OnInit {
     { field: 'inspectorName', headerName: 'Inspector Name', filter: 'agMultiColumnFilter' },
     { field: 'lastUpdate', headerName: 'Last Update', filter: 'agMultiColumnFilter' },
     { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter', cellDataType: 'text' },
-    { field: 'poNumber', headerName: 'PO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
+    { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'property_site', headerName: 'Property Site', filter: 'agMultiColumnFilter' },
     { field: 'serialNumber', headerName: 'Serial Number', filter: 'agMultiColumnFilter' },
     { field: 'sgPartNumber', headerName: 'SG Part Number', filter: 'agMultiColumnFilter' },

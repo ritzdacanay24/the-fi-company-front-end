@@ -200,7 +200,9 @@ export class GridSettingsToolPanel implements IToolPanelAngularComp {
       this.pageId = this.params.context?.pageId;
     }
     
-    this.getOtherGridByUsers();
+    const elements = document.querySelectorAll(".ag-icon.ag-icon-pivot"); 
+
+    //this.getOtherGridByUsers();
   }
 
   pageId: any;

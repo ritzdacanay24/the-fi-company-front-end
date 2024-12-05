@@ -330,7 +330,7 @@ export class ShippingComponent implements OnInit {
     modalRef.result.then(
       (result: any) => {
         e.rowData.recent_notes = result;
-        this.sendAndUpdateByUser(e.rowData, e.rowData.id);
+        this.sendAndUpdate(e.rowData, e.rowData.id);
       },
       () => {}
     );
@@ -598,6 +598,7 @@ export class ShippingComponent implements OnInit {
       field: "CMT_CMMT",
       headerName: "QAD Comments",
       filter: "agMultiColumnFilter",
+      tooltipField: "CMT_CMMT",
       filterParams: {
         valueGetter: (params) => {
           let data = params.data.CMT_CMMT;
@@ -938,8 +939,10 @@ export class ShippingComponent implements OnInit {
 
       valueGetter: (params) => {
         if (params.data) {
-          if (params?.data?.misc?.clear_to_build_status != "NA"){
-            return params?.data?.misc?.clear_to_build_status || "--Select status--";
+          if (params?.data?.misc?.clear_to_build_status != "NA") {
+            return (
+              params?.data?.misc?.clear_to_build_status || "--Select status--"
+            );
           }
           return "--Select status--";
         } else {
@@ -1048,6 +1051,7 @@ export class ShippingComponent implements OnInit {
   dataRenderered = false;
 
   gridOptions: GridOptions = {
+    // rowBuffer: 0,
     animateRows: true,
     tooltipShowDelay: 0,
     columnDefs: [],

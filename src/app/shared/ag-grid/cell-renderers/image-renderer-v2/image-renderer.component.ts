@@ -44,7 +44,6 @@ export class ImageRendererComponentV2Renderer implements ICellRendererComp {
   };
 
   onClick = ($event: any) => {
-    console.log($event)
     window.open($event);
   };
 }
