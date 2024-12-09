@@ -8,13 +8,13 @@ export interface CustomMenuItemParams extends IMenuItemParams {
   buttonValue: string;
 }
 
-export class MenuPin implements IMenuItemComp {
+export class MenuUnPin implements IMenuItemComp {
   eGui!: HTMLDivElement;
   eButton!: HTMLButtonElement;
   eventListener!: () => void;
 
   init(params: any): void {
-    console.log(params, 'ddd')
+    console.log(params, "ddd");
     this.eGui = document.createElement("div");
 
     this.eGui.innerHTML = ` 
@@ -25,8 +25,8 @@ export class MenuPin implements IMenuItemComp {
     `;
 
     this.eventListener = () => {
-      
-      let data = params.api.getSelectedRows();
+      let data = params.api.getRowNode(params);
+
 
       params.api.setGridOption("pinnedTopRowData", data);
     };

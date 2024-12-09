@@ -67,6 +67,10 @@ export class PlacardModalComponent {
       },
       { emitEvent: false }
     );
+
+    this.form.valueChanges.subscribe((val) => {
+      this.cdr.detectChanges();
+    });
   }
 
   submitted = false;
@@ -108,7 +112,7 @@ export class PlacardModalComponent {
           customer_co_por_so: data.SO_CUST == "BALTEC" ? "" : data.MISC,
         });
 
-        if(data.SO_CUST == "BALTEC"){
+        if (data.SO_CUST == "BALTEC") {
           this.form.get("customer_co_por_so").disable();
         }
 

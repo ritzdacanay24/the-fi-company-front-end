@@ -8,6 +8,7 @@ import { GridSettingsToolPanel } from "../ag-grid/grid-settings-tool-panel/grid-
 import { ClearFilterStatusBarComponent } from "../ag-grid/cell-renderers/clear-filter/clear-filter-bar.component";
 import { MenuItem } from "./menuItem";
 import { MenuPin } from "./menuPin";
+import { MenuUnPin } from "./menuUnpin";
 
 let popupParent: HTMLElement | null = document.querySelector("card");
 export const agGridOptions: GridOptions = {
@@ -21,6 +22,13 @@ export const agGridOptions: GridOptions = {
   suppressMenuHide: false,
   // suppressCopyRowsToClipboard: true,
   // enableRangeSelection: true,
+  getRowStyle: ({ node }) =>
+    node.rowPinned
+      ? {
+          "font-weight": "bold",
+          "font-style": "italic",
+        }
+      : {},
 
   rowSelection: {
     mode: "multiRow",
@@ -123,6 +131,16 @@ export const agGridOptions: GridOptions = {
         },
         icon: "ag-icon icon-copy",
       },
+      // {
+      //   name: "Unpin top",
+      //   suppressCloseOnSelect: false,
+      //   menuItem: MenuUnPin,
+      //   menuItemParams: {
+      //     buttonValue: "UnPin Row To Top",
+      //     params: params,
+      //   },
+      //   icon: "ag-icon icon-copy",
+      // },
     ];
   },
   sideBar: {
