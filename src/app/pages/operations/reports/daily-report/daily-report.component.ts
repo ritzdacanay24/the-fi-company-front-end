@@ -230,10 +230,10 @@ export class DailyReportComponent implements OnInit {
                     isVisible: true,
                     titleInfo: {
                         title: `Future Open Revenue, Current Month`,
-                        subtitle: ''
+                        subtitle: `${this.logistics?.futuerOpenRevenueCurrentMonth?.dateFrom} - ${this.logistics?.futuerOpenRevenueCurrentMonth?.dateTo}`,
                     },
                     valueInfo: {
-                        title: currency(this.logistics?.openRevenue?.VALUE),
+                        title: currency(this.logistics?.futuerOpenRevenueCurrentMonth?.value),
                         subtitle: ''
                     }
                 },
