@@ -201,6 +201,7 @@
             <table class="table align-middle table-bordered">
                 <thead>
                     <tr class="text-nowrap">
+                        <th></th>
                         <th>Part Number</th>
                         <th>Billable</th>
                         <th>Qty</th>
@@ -209,6 +210,9 @@
                 </thead>
                 <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
                     <tr class="p-0 m-0 align-middle text-center text-nowrap">
+                        <td>
+                            <button class="btn-sm btn btn-primary" (click)="copy(row.value.part_number)">Copy</button>
+                        </td>
                         <td style="min-width:200px">
 
                             <!-- <app-qad-part-search appendToBody="body" (notifyParent)="notifyQadParentRow($event, row)"

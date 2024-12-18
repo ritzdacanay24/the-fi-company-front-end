@@ -9,6 +9,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AutosizeModule } from 'ngx-autosize';
+import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -46,7 +47,8 @@ export class PartsOrderFormComponent {
     constructor(
         private fb: FormBuilder,
         private partsOrderService: PartsOrderService,
-        private qadService: QadService
+        private qadService: QadService,
+        private toastrService: ToastrService
     ) { }
 
     ngOnInit(): void {
@@ -56,6 +58,24 @@ export class PartsOrderFormComponent {
 
     addTag(tag: string) {
         return tag;
+    }
+
+    copy(partNumber){
+        const selBox = document.createElement('textarea');
+        selBox.style.position = 'fixed';
+        selBox.style.left = '0';
+        selBox.style.top = '0';
+        selBox.style.opacity = '0';
+        selBox.value = partNumber;
+        document.body.appendChild(selBox);
+        selBox.focus();
+        selBox.select();
+        document.execCommand('copy');
+        document.body.removeChild(selBox);
+
+
+        this.toastrService.success('Copied ' + partNumber)
+
     }
 
     notifyParent($event) {

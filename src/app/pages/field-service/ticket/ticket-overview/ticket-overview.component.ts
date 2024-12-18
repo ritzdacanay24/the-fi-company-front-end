@@ -13,6 +13,7 @@ import { WorkOrderComponent } from './work-order/work-order.component';
 import { NAVIGATION_ROUTE } from '../ticket-constant';
 import { SharedModule } from '@app/shared/shared.module';
 import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
+import { BillingComponent } from './billing/billing.component';
 
 @Component({
   standalone: true,
@@ -26,7 +27,8 @@ import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
     CrashKitComponent,
     QirComponent,
     WorkOrderComponent,
-    NgbDropdownModule
+    NgbDropdownModule,
+    BillingComponent
   ],
   selector: 'app-ticket-overview',
   templateUrl: './ticket-overview.component.html',

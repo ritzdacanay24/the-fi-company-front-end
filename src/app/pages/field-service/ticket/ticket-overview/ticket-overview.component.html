@@ -102,8 +102,17 @@
                   <app-work-order [workOrderId]="this.ticketInfo?.id"></app-work-order>
                 </ng-template>
               </li>
+              <li [ngbNavItem]="7" class="nav-item">
+                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
+                  <i class="ri-logout-box-r-line text-muted align-bottom me-1"></i> Billing
+                </a>
+                <ng-template ngbNavContent>
+                  <app-billing [workOrderId]="this.ticketInfo?.id" [fsId]="this.ticketInfo?.fs_scheduler_id"></app-billing>
+                </ng-template>
+              </li>
 
             </ul>
+
           </div>
           <!-- end card body -->
         </div>
