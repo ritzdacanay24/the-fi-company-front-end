@@ -29,5 +29,7 @@ export class WorkOrderService extends DataService<any>  {
     return firstValueFrom(this.http.get(`${url}/getAll.php?selectedViewType=${selectedViewType}&dateFrom=${dateFrom}&dateTo=${dateTo}&isAll=${isAll}`))
   }
 
-
+  updateByIdBillingReview(id, params) {
+    return firstValueFrom(this.http.put(`${url}/updateByIdBillingReview.php?id=${id}`, params))
+  }
 }

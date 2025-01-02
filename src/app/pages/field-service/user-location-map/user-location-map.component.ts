@@ -23,7 +23,6 @@ import { Store } from "@ngrx/store";
 import { JobModalService } from "../job/job-modal-edit/job-modal.service";
 import { FlatpickrModule } from "angularx-flatpickr";
 import moment from "moment";
-import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { PropertyService } from "@app/core/api/field-service/property.service";
 import { GeoLocationTrackerService } from "@app/core/api/field-service/geoLocationTracker";
 
@@ -44,7 +43,6 @@ import { GeoLocationTrackerService } from "@app/core/api/field-service/geoLocati
     NgbAccordionModule,
     NgbCollapseModule,
     FlatpickrModule,
-    DateRangeComponent,
   ],
   selector: "app-user-location-map",
   encapsulation: ViewEncapsulation.None,

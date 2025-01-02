@@ -56,15 +56,20 @@ export class UserListComponent implements OnInit {
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
       field: "first",
-      headerName: "First",
+      headerName: "first",
       filter: "agTextColumnFilter",
-      hide: true,
     },
     {
       field: "last",
       headerName: "Last",
       filter: "agMultiColumnFilter",
-      hide: true,
+      hide: false,
+    },
+    {
+      field: "state",
+      headerName: "state",
+      filter: "agMultiColumnFilter",
+      hide: false,
     },
     {
       field: "email",
@@ -127,30 +132,9 @@ export class UserListComponent implements OnInit {
   id = null;
 
   gridOptions: GridOptions = {
-    treeData: true,
-    groupDisplayType: "singleColumn",
-    suppressRowClickSelection: true,
-    rowSelection: "multiple",
-    groupSelectsChildren: true,
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
-    },
-    autoGroupColumnDef: {
-      filter: "agTextColumnFilter",
-      headerName: "Username",
-      minWidth: 300,
-      cellRenderer: "agGroupCellRenderer",
-      wrapText: false,
-      autoHeight: false,
-      cellRendererParams: {
-        suppressCount: true,
-        innerRenderer: EmployeeCellRenderer,
-      },
-    },
-    groupDefaultExpanded: -1, // expand all groups by default
-    getDataPath: (data: any) => {
-      return data.orgHierarchy;
     },
     onFirstDataRendered: (params) => {
       highlightRowView(params, "id", this.id);
@@ -182,32 +166,7 @@ export class UserListComponent implements OnInit {
         params = { active: status.value };
       }
 
-      this.data = await this.api.getUserTree();
-
-      function myFlat(a, prefix = "") {
-        return a.reduce(function (flattened, { first, subItems, ...a }) {
-          let last = a["last"] ? a["last"] : "";
-          first =
-            prefix == ""
-              ? first + " " + last
-              : prefix + "/" + first + " " + last;
-
-          return flattened
-            .concat([
-              {
-                orgHierarchy: first,
-                ...a,
-              },
-            ])
-            .concat(subItems ? myFlat(subItems, first) : []);
-        }, []);
-      }
-
-      this.data = myFlat(this.data);
-
-      for (let i = 0; i < this.data.length; i++) {
-        this.data[i].orgHierarchy = this.data[i]?.orgHierarchy?.split("/");
-      }
+      this.data = await this.api.find({ active: 1 });
 
       this.router.navigate(["."], {
         queryParams: {

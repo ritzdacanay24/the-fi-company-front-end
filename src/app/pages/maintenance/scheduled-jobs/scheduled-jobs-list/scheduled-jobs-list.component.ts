@@ -37,6 +37,46 @@ export class ScheduledJobsListComponent implements OnInit {
       selected:
         "https://dashboard.eye-fi.com/tasks/createGraphicsWorkOrder.class.php",
     },
+    {
+      name: "Overdue Safety Incident's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_safety_incident.php",
+    },
+    {
+      name: "Overdue CAR's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_car.php",
+    },
+    {
+      name: "Overdue QIR's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_qir.php",
+    },
+    {
+      name: "Overdue Shipping Requests (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_shipping_request.php",
+    },
+    {
+      name: "Overdue Shortages (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_shortage_request.php",
+    },
+    {
+      name: "Overdue Field Service Work Orders's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_field_service_workorder.php",
+    },
+    {
+      name: "Overdue Field Service Invoices's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_field_service_open_invoice.php",
+    },
+    {
+      name: "Overdue RMA's (Email)",
+      selected:
+        "https://dashboard.eye-fi.com/tasks/overdue_rma.php",
+    },
   ];
 
   title = "Scheduled Jobs";

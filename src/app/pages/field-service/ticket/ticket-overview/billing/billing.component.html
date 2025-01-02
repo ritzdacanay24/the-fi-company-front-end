@@ -1,4 +1,4 @@
-<label class="btn btn-primary btn-sm mb-0" for="inputGroupFile013">Upload</label>
+<!-- <label class="btn btn-primary btn-sm mb-0" for="inputGroupFile013">Upload</label>
 <input type="file" class="form-control form-control" id="inputGroupFile013" [disabled]="loading"
     (change)="onChange($event)" style="display:none">
 
@@ -17,4 +17,57 @@
             </td>
         </tr>
     </tbody>
-</table>
+</table> -->
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <label for="formGroupExampleInput" class="form-label">Sharepoint Link</label>
+                <div class="input-group mb-3">
+                    <span class="input-group-text pointer" id="basic-addon1" (click)="viewLink()">View Link</span>
+                    <textarea type="text" class="form-control" placeholder="Enter Link" rows="7"
+                        [(ngModel)]="this.data.review_link"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Next Queue</label>
+                    <select class="form-select mb-3" [(ngModel)]="this.data.review_status">
+                        <option selected disabled value="null">--SELECT--</option>
+                        <option *ngFor="let row of ['Pending Review', 'Accounting', 'Completed']" [value]="row">
+                            {{row}}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Approved/Denied</label>
+                    <select class="form-select mb-3" [(ngModel)]="this.data.review_approved_denied">
+                        <option selected disabled value="null">--SELECT--</option>
+                        <option *ngFor="let row of ['Approved', 'Denied']" [value]="row">
+                            {{row}}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Billing Comments</label>
+                    <textarea type="text" class="form-control" placeholder="Enter billing comments" rows="8"
+                        [(ngModel)]="this.data.review_billing_comments"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="formGroupExampleInput" class="form-label">Comments</label>
+                    <textarea type="text" class="form-control" placeholder="Enter comments" rows="8"
+                        [(ngModel)]="this.data.review_comments"></textarea>
+                </div>
+
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-light" (click)="submit()">Submit</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div [innerHTML]="this.data.review_link | safe"></div>
+    </div>
+</div>

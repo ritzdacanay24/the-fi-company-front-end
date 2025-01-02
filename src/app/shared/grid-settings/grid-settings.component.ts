@@ -91,10 +91,12 @@ export class GridSettingsComponent implements OnInit {
       //     this.gridApi!.ensureColumnVisible(d.focusedCell?.colId, 'middle');
       // }
 
-      this.gridApi!.applyColumnState({
-        state: JSON.parse(current.data),
-        applyOrder: true,
-      });
+      setTimeout(() => {
+        this.gridApi!.applyColumnState({
+          state: JSON.parse(current.data),
+          applyOrder: true,
+        });
+      }, 200);
 
       // onFirstDataRendered: (params) => {
       //     let groups = store.getItem(OPEN_GROUP_KEY);
