@@ -143,8 +143,10 @@ export class ReceiptAddEditComponent implements OnInit {
 
   predictInfo
 
-  async handleFileInput(files) {
+  receiptMessage = "";
 
+  async handleFileInput(files) {
+    this.receiptMessage = "" ;
     this.predictInfo = "";
 
     const imageFile = files[0];
@@ -182,7 +184,8 @@ export class ReceiptAddEditComponent implements OnInit {
     try {
       if (this.autoExtract) {
 
-        let res: any = await this.api.predictApi(data);
+        let apiKey: any = await this.api.getPredictApi(data);
+        let res: any = await this.api.predictApi(data, apiKey);
 
         let obj = res
         let prediction = obj.document.inference.prediction;
@@ -202,7 +205,7 @@ export class ReceiptAddEditComponent implements OnInit {
         SweetAlert.close();
       }
     } catch (err) {
-      alert('Unable to extract the data from the receipt but you can still enter the information manually.')
+      this.receiptMessage = 'Unable to extract the data from the receipt but you can still enter the information manually.' ;
       SweetAlert.close(0);
     } finally {
 

@@ -15,6 +15,8 @@ import moment from "moment";
 import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspection/vehicle-inspection.service";
 import { NAVIGATION_ROUTE } from "../vehicle-inspection-constant";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 
 @Component({
   standalone: true,
@@ -23,6 +25,8 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: "app-vehicle-inspection-list",
   templateUrl: "./vehicle-inspection-list.component.html",
@@ -35,6 +39,7 @@ export class VehicleInspectionListComponent implements OnInit {
   ) {}
 
   disable = false;
+  pageId = "/vehicle-inspection/list";
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {

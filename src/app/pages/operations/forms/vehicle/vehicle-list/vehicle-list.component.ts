@@ -15,6 +15,8 @@ import moment from "moment";
 import { NAVIGATION_ROUTE } from "../vehicle-constant";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 
 @Component({
   standalone: true,
@@ -23,6 +25,8 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: "app-vehicle-list",
   templateUrl: "./vehicle-list.component.html",
@@ -50,6 +54,9 @@ export class VehicleListComponent implements OnInit {
 
     this.getData();
   }
+
+  
+  pageId = "/vehicle/list";
 
   columnDefs: ColDef[] = [
     {

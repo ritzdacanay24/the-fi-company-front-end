@@ -9,15 +9,9 @@ export class ApiPrefixInterceptor implements HttpInterceptor {
 
     if (request.url.indexOf("https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict") == 0) {
       request = request.clone({
-        url: request.url, setHeaders: {
-          Authorization: `Token 8e7001abc09642659a7ff08f22509226`
-        }
-      });
-
-    }else if (request.url.indexOf("https://api.mindee.net/v1/products/mindee/invoices/v4/predict") == 0) {
-      request = request.clone({
-        url: request.url, setHeaders: {
-          Authorization: `Token 8e7001abc09642659a7ff08f22509226`
+        url: request.url
+        , setHeaders: {
+          Authorization: `Token ${request.body.apikey}`
         }
       });
 

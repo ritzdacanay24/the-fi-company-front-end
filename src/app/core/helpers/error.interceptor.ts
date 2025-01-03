@@ -36,12 +36,17 @@ export class ErrorInterceptor implements HttpInterceptor {
           // if (error?.error?.code == "TWOSTEP") {
           //   localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
           // }
+          if (
+            error.url ==
+            "https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict"
+          ) {
+          } else {
+            localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
-          localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
+            this.authenticationService.logout();
 
-          this.authenticationService.logout();
-
-          this.router.navigateByUrl("/auth/login");
+            this.router.navigateByUrl("/auth/login");
+          }
 
           //location.reload();
         }

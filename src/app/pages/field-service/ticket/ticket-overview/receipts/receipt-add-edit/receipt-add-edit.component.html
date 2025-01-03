@@ -23,6 +23,11 @@
       <hr />
     </div>
 
+
+    <div class="alert alert-danger" role="alert" *ngIf="this.receiptMessage">
+      {{this.receiptMessage}}
+    </div>
+
     <div style="text-align: center;margin: 10px;" *ngIf="!url && !link">
       <div>
         Upload receipt
@@ -108,8 +113,8 @@
         <input step="600" type="time" class="form-control" id="time" placeholder="time" formControlName="time">
       </div>
     </div>
-    
-    
+
+
   </form>
 </div>
 
