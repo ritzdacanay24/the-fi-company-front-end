@@ -268,4 +268,12 @@ export let labelData = [
             ^XZ
         `
     },
+    {
+        "id": 23,
+        "labelName": "Bulk Bin Label",
+        "labelSize": "4 X 1.5",
+        "orientation": "Landscape",
+        "labelImage": "assets/images/labels/bulk-bin-label.png",
+        "service": "partInformationLabelModalSmService",
+    },
 ]

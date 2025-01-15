@@ -1,4 +1,10 @@
-import { Component, HostListener, Input } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  ViewChild,
+} from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -172,6 +178,7 @@ export class QirEditComponent {
     }
   }
 
+  @ViewChild("fileInput") fileInput: ElementRef;
   async onUploadAttachments() {
     if (this.myFiles) {
       let totalAttachments = 0;
@@ -187,9 +194,11 @@ export class QirEditComponent {
           totalAttachments++;
         } catch (err) {}
       }
+      this.fileInput.nativeElement.value = "";
+
       this.isLoading = false;
       try {
-        await this.getAttachments();
+        this.getAttachments();
         this.myFiles = [];
       } catch (err) {}
     }

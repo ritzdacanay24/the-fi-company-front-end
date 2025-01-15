@@ -196,7 +196,7 @@ export class TagsComponent implements OnInit {
           headerName: "Unit Cost",
           filter: "agNumberColumnFilter",
           valueFormatter: currencyFormatter,
-          cellDataType:"number",
+          cellDataType: "number",
         },
         {
           field: "tag_serial",
@@ -352,7 +352,6 @@ export class TagsComponent implements OnInit {
 
               let total = params.node.allLeafChildren.length;
 
-
               if (total - outstanding == total) {
                 return ["bg-success-subtle bg-opacity-75 text-success"];
               } else if (total - outstanding > 0) {
@@ -380,7 +379,7 @@ export class TagsComponent implements OnInit {
           field: "COV",
           headerName: "COV $",
           filter: "agNumberColumnFilter",
-          cellDataType:"number",
+          cellDataType: "number",
           valueFormatter: currencyFormatter,
           valueGetter: (params) => {
             if (params.data === undefined) {
@@ -552,6 +551,13 @@ export class TagsComponent implements OnInit {
             node.data.tag_rcnt_dt &&
             node.data.tag_posted == 0
           );
+        // case "Second_Count_Variance":
+        //   return (
+        //     node.data &&
+        //     node.data.LD_QTY_OH != node.data.TAG_RCNT_QTY &&
+        //     node.data.tag_rcnt_dt &&
+        //     node.data.tag_posted == 0
+        //   );
         case "First_Count_Variance":
           return (
             node.data.tag_cnt_dt &&

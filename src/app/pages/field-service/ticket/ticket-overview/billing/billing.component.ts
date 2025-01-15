@@ -20,6 +20,7 @@ import { ToastrService } from "ngx-toastr";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 
 import { Pipe, PipeTransform } from "@angular/core";
+import { BillingService } from "./billing-modal/billing-modal.component";
 
 @Pipe({ name: "safe", standalone: true })
 export class SafePipe implements PipeTransform {
@@ -56,7 +57,8 @@ export class BillingComponent implements OnInit {
     private billingModalService: BillingModalService,
     private workOrderService: WorkOrderService,
     private toastrService: ToastrService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private billingService: BillingService
   ) {}
 
   ngOnInit() {}
@@ -66,7 +68,7 @@ export class BillingComponent implements OnInit {
   approved_denied: any;
   data: any;
 
-  safeHtml: SafeHtml = '';
+  safeHtml: SafeHtml = "";
 
   async getData() {
     this.data = [];
@@ -75,8 +77,9 @@ export class BillingComponent implements OnInit {
       this.data = await this.workOrderService.findOne({ id: this.workOrderId });
       if (!this.data.review_status) this.data.review_status = "Pending Review";
 
-      this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(this.data.review_link);
-      
+      this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(
+        this.data.review_link
+      );
 
       this.loading = false;
     } catch (err) {
@@ -84,12 +87,26 @@ export class BillingComponent implements OnInit {
     }
   }
 
+  
+  getURLFromWord(text) {
+    const regex = /<iframe.*?src=['"](.*?)['"]/;
+
+    return regex.exec(text)[1];
+    // or alternatively
+    // return text.replace(urlRegex, '<a href="$1">$1</a>')
+  }
+
   viewLink() {
-    if (!this.data.review_link) {
-      alert("Please add link");
-      return;
-    }
-    window.open(this.data.review_link, "_blank").focus();
+    // if (!this.data.review_link) {
+    //   alert("Please add link");
+    //   return;
+    // }
+    
+    let e = this.data.review_link;
+    window.open(e, e, "height=800,width=800");
+
+    //this.billingService.open(this.data.review_link)
+    //window.open(this.data.review_link, "_blank").focus();
   }
 
   async submit() {

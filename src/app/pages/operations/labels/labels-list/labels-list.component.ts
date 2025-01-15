@@ -24,6 +24,7 @@ import { AgsLabelModalService } from "../ags-label-modal/ags-label-modal.compone
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { PartInformationLabelModalSmService } from "../part-information-label-modal-sm/part-information-label-modal-sm.component";
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -53,7 +54,8 @@ export class LabelsListComponent implements OnInit {
     private justLabelModalService: JustLabelModalService,
     private issueToWorkOrderLabelModalService: IssueToWorkOrderLabelModalService,
     private partInformationLabelLgModalService: PartInformationLabelLgModalService,
-    private agsLabelModalService: AgsLabelModalService
+    private agsLabelModalService: AgsLabelModalService,
+    private partInformationLabelModalSmService: PartInformationLabelModalSmService
   ) {}
 
   ngOnInit(): void {

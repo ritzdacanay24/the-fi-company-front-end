@@ -331,6 +331,8 @@ export class UploadedReceiptComponent implements OnInit {
         this.images.push(item);
       }
 
+      console.log(this.images)
+
       this.getTripExenses(this.data);
       this.setColumDef1();
     } catch (err) {
@@ -525,9 +527,9 @@ export class UploadedReceiptComponent implements OnInit {
   }
 
   viewReceipt(e) {
-    this.lightbox.open(this.images, e.index, {});
+    //this.lightbox.open(this.images, e.index, {});
 
-    //window.open(link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
+    window.open(e.rowData.link, 'Image', 'width=largeImage.stylewidth,height=largeImage.style.height,resizable=1');
   }
 
   gridApi: GridApi;

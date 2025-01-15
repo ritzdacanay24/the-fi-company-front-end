@@ -36,12 +36,12 @@ export class JobOpenInvoiceComponent implements OnInit {
       this.id = params["id"];
       this.isAll = params["isAll"]
         ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
+        : true;
     });
     this.getData();
   }
 
-  isAll = false;
+  isAll = true;
 
   previous_fsid;
 
@@ -107,6 +107,23 @@ export class JobOpenInvoiceComponent implements OnInit {
     });
   }
 
+  billingView(fsid) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([`/dashboard/field-service/ticket/overview`], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        selectedViewType:'Open',
+        isAll:true,
+        id: fsid,
+        gridParams,
+        start: this.dateFrom,
+        end: this.dateTo,
+        goBackUrl: NAVIGATION_ROUTE.INVOICE,
+        active: 7,
+      },
+    });
+  }
+
   columnDefs: ColDef[] = [
     {
       field: "View",
@@ -117,6 +134,19 @@ export class JobOpenInvoiceComponent implements OnInit {
       cellRendererParams: {
         onClick: (e: any) => this.view(e.rowData.id),
         value: "SELECT",
+      },
+      maxWidth: 115,
+      minWidth: 115,
+    },
+    {
+      field: "Billing View",
+      headerName: "Billing View",
+      filter: "agMultiColumnFilter",
+      pinned: "left",
+      cellRenderer: LinkRendererV2Component,
+      cellRendererParams: {
+        onClick: (e: any) => this.billingView(e.rowData.id),
+        value: "View Billing",
       },
       maxWidth: 115,
       minWidth: 115,
@@ -138,6 +168,12 @@ export class JobOpenInvoiceComponent implements OnInit {
       headerName: "Ticket Submitted Date",
       filter: "agMultiColumnFilter",
     },
+    {
+      field: "review_status",
+      headerName: "Billing Review Status",
+      filter: "agMultiColumnFilter",
+    },
+    
   ];
 
   gridOptions: GridOptions = {

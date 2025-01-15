@@ -109,6 +109,8 @@ export class VehicleEditComponent {
     for (var i = 0; i < event.target.files.length; i++) {
       this.myFiles.push(event.target.files[i]);
     }
+
+    console.log(this.myFiles);
   }
 
   async onUploadAttachments() {

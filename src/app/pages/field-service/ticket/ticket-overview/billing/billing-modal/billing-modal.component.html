@@ -1,0 +1,11 @@
+<div class="modal-header">
+  <h4 class="modal-title" id="modal-basic-title">Billing Review</h4>
+</div>
+<div class="modal-body p-0">
+  <!-- <div [innerHTML]="this.data | safe" style="width:100%;"></div> -->
+  <iframe [src]="this.url | safe" style="width:100%;height: calc(100vh - 156px);"></iframe>
+
+</div>
+<div class="modal-footer d-flex">
+  <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
+</div>
