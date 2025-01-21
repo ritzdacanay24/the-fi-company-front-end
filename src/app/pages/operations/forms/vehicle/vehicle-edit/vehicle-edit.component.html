@@ -35,12 +35,12 @@
         </div>
 
         <div class="mb-3 mt-3">
-          <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+          <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file" #userPhoto>
         </div>
 
         <div class="mb-3">
           <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary"
-            [disabled]="isLoading || myFiles?.length == 0">
+            [disabled]="myFiles?.length == 0">
             <i class="feather icon-upload"></i> Upload Documents</button>
         </div>
 

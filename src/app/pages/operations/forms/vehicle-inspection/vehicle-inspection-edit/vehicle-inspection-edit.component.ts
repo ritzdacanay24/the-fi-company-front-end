@@ -6,6 +6,7 @@ import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { NAVIGATION_ROUTE } from "../vehicle-inspection-constant";
 import { VehicleInspectionService } from "@app/core/api/operations/vehicle-inspection/vehicle-inspection.service";
 import { VehicleInspectionFormComponent } from "../vehicle-inspection-form/vehicle-inspection-form.component";
+import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 
 @Component({
   standalone: true,
@@ -17,6 +18,7 @@ export class VehicleInspectionEditComponent {
   constructor(
     private router: Router,
     private api: VehicleInspectionService,
+    private vehicleService: VehicleService,
     private toastrService: ToastrService,
     private activatedRoute: ActivatedRoute,
     private fb: FormBuilder
@@ -78,11 +80,18 @@ export class VehicleInspectionEditComponent {
   }
   formValues;
 
+  info: any;
+  async getVehicleInfo(license) {
+    this.info = await this.vehicleService.findOne({licensePlate:license});
+  }
+
   attachments = [];
   async getData() {
     try {
       this.isLoading = true;
       let data = await this.api._searchById(this.id);
+      await this.getVehicleInfo(data.main?.truck_license_plate)
+
       this.attachments = data?.attachments;
       this.form.patchValue({
         ...data.main,

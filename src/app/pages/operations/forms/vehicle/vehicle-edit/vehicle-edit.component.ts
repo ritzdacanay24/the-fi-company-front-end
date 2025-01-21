@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, Input, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -22,7 +22,8 @@ export class VehicleEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: VehicleService,
     private toastrService: ToastrService,
-    private attachmentsService: AttachmentsService
+    private attachmentsService: AttachmentsService,
+    private ref: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -109,8 +110,14 @@ export class VehicleEditComponent {
     for (var i = 0; i < event.target.files.length; i++) {
       this.myFiles.push(event.target.files[i]);
     }
+    this.ref.markForCheck();
 
-    console.log(this.myFiles);
+  }
+
+  @ViewChild("userPhoto") userPhoto!: ElementRef;
+  clearFile() {
+    this.file = null;
+    this.userPhoto.nativeElement.value = null;
   }
 
   async onUploadAttachments() {
@@ -129,6 +136,7 @@ export class VehicleEditComponent {
         } catch (err) {}
       }
       this.isLoading = false;
+      this.clearFile()
       await this.getAttachments();
     }
   }

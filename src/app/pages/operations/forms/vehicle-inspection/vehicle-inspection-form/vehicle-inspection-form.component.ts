@@ -92,10 +92,30 @@ export class VehicleInspectionFormComponent implements OnInit {
       create: [1],
       created_by: ["", Validators.required],
       created_by_name: ["", Validators.required],
+      mileage: [null],
+      not_used: [0],
     });
     this.setDetailsFormEmitter.emit(this.formValues);
     this.setFormEmitter.emit(this.form);
 
     this.getVehicle();
+  }
+
+  failureMessage = "";
+  failureErrors: any;
+  failureClass: any;
+  async checkAnyFailures() {
+    this.failureMessage = "";
+    this.failureClass = "";
+    this.failureErrors = await this.vehicleService.checkAnyFailures(
+      this.form.value.truck_license_plate
+    );
+    if (this.failureErrors?.total_errors) {
+      this.failureClass = "alert alert-danger";
+      this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.total_errors} unresolved failures that need to be addressed.`;
+    }else {
+      this.failureClass = "alert alert-success";
+      this.failureMessage = `Vehicle Status Update: This vehicle is in excellent condition and does not have any reported failures. `;
+    }
   }
 }

@@ -1,28 +1,49 @@
 <form [formGroup]="form" autocomplete="off">
     <div class="row">
-        <div class="col-lg-6 mb-3">
+        <div class="col-lg-4 mb-3 col-sm-12">
             <div class="form-group">
                 <label for="date" class="control-label required">Inspector Name</label>
-                <input type="type" class="form-control" placeholder="Enter inspectors name"
-                    formControlName="created_by"
+                <input type="type" class="form-control" placeholder="Enter inspectors name" formControlName="created_by"
                     [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
             </div>
         </div>
-        <div class="col-lg-6 mb-3">
+        <div class="col-lg-4 mb-3 col-sm-12">
             <div class="form-group">
                 <label for="date" class="control-label required">Truck License Plate</label>
-                <select class="form-select" formControlName="truck_license_plate">
+                <select class="form-select" formControlName="truck_license_plate" (change)="checkAnyFailures()">
                     <option class="form-select" disabled selected value="null">--SELECT--</option>
-                    <option *ngFor="let row of vehicleList" [value]="row.licensePlate">License Plate #: {{row.licensePlate}}</option>
+                    <option *ngFor="let row of vehicleList" [value]="row.licensePlate">License Plate #:
+                        {{row.licensePlate}} - {{row.vehicleNumber}}</option>
                 </select>
-                <!-- <input type="type" class="form-control" id="date" name="date" placeholder="Enter license plate number"
-                    formControlName="truck_license_plate"
-                    [ngClass]="{ 'is-invalid': submitted && f['truck_license_plate'].errors }"> -->
             </div>
         </div>
     </div>
+
+    <div class="row" *ngIf="form?.value?.truck_license_plate">
+        <div class="col-lg-4 mb-3 col-sm-12">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="not_used" formControlName="not_used">
+                <label class="form-check-label" for="not_used">
+                    Not Used
+                </label>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3 col-sm-12">
+            <label for="date" class="control-label">Mileage</label>
+            <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter mileage"
+                formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
+        </div>
+    </div>
+
+
+
+    <div [ngClass]="failureClass" role="alert" *ngIf="failureMessage">
+        {{failureMessage}}
+    </div>
+
+
     <hr>
-    <div class="row">
+    <div class="row" *ngIf="!form?.value?.not_used && form?.value?.truck_license_plate">
         <div class="col-lg-12 mb-3">
             <div class="table-responsive">
                 <table class="table table-bordered mb-3" *ngFor="let row of formValues?.checklist; let i = index">
@@ -45,14 +66,15 @@
                                     <label class="form-check-label">
                                         <input type="checkbox" class="form-check-input" id="needMaint-{{i}}"
                                             [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
-                                            (change)="groupSelect(row, row.details, 'needMaint')" [disabled]="this.form.disabled">
+                                            (change)="groupSelect(row, row.details, 'needMaint')"
+                                            [disabled]="this.form.disabled">
                                         <i class="input-frame"></i> Fail
                                     </label>
                                 </div>
                             </th>
                         </tr>
                     </thead>
-                    <tbody  style="white-space: nowrap;" *ngFor="let row1 of row.details; let ii = index;">
+                    <tbody style="white-space: nowrap;" *ngFor="let row1 of row.details; let ii = index;">
                         <tr>
                             <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
                                     class="text-danger" *ngIf="row1.error">(Required)</span>

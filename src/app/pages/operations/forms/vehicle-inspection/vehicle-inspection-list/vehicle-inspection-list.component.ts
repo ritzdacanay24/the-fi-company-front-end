@@ -109,6 +109,11 @@ export class VehicleInspectionListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "not_used",
+      headerName: "Not Used",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "percent",
       headerName: "Percent",
       filter: "agMultiColumnFilter",
@@ -121,7 +126,7 @@ export class VehicleInspectionListComponent implements OnInit {
           return [];
         }
       },
-      cellRenderer: (params: any) => params.value + "%",
+      cellRenderer: (params: any) => params.value ? params.value + "%" : '',
     },
   ];
 
