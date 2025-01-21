@@ -8,6 +8,7 @@
           <div class=" me-3">
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [displayOptions]="true"></app-date-range>
           </div>
+          
           <div class="ms-auto">
             <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
           </div>
@@ -37,6 +38,16 @@
           <div class=" me-3">
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [displayOptions]="true"></app-date-range>
           </div>
+
+          <div class="ms-3">
+            <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+          </div>
+
+          <div class="ms-3">
+            <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+          </div>
+
+          
           <div class="ms-auto">
             <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
           </div>

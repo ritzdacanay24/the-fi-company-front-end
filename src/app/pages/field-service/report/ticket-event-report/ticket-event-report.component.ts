@@ -1,53 +1,68 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ColDef, GridApi, GridOptions } from 'ag-grid-community';
-import moment from 'moment';
-import { TicketEventReportChartComponent } from './ticket-event-report-chart/ticket-event-report-chart.component';
-import { ReportService } from 'src/app/core/api/field-service/report.service';
-import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component';
-import { SharedModule } from 'src/app/shared/shared.module';
-import { autoSizeColumns } from 'src/assets/js/util';
-import { _compressToEncodedURIComponent, _decompressFromEncodedURIComponent } from 'src/assets/js/util/jslzString';
-import { AgGridModule } from 'ag-grid-angular';
-import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from '../../ticket/ticket-constant';
-import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component';
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ColDef, GridApi, GridOptions } from "ag-grid-community";
+import moment from "moment";
+import { TicketEventReportChartComponent } from "./ticket-event-report-chart/ticket-event-report-chart.component";
+import { ReportService } from "src/app/core/api/field-service/report.service";
+import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
+import { SharedModule } from "src/app/shared/shared.module";
+import { autoSizeColumns } from "src/assets/js/util";
+import {
+  _compressToEncodedURIComponent,
+  _decompressFromEncodedURIComponent,
+} from "src/assets/js/util/jslzString";
+import { AgGridModule } from "ag-grid-angular";
+import { NAVIGATION_ROUTE as TICKET_NAVIGATION_ROUTE } from "../../ticket/ticket-constant";
+import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, DateRangeComponent, TicketEventReportChartComponent],
-  selector: 'app-ticket-event-report',
-  templateUrl: './ticket-event-report.component.html',
-  styleUrls: []
+  imports: [
+    SharedModule,
+    AgGridModule,
+    DateRangeComponent,
+    TicketEventReportChartComponent,
+    GridSettingsComponent,
+    GridFiltersComponent,
+  ],
+  selector: "app-ticket-event-report",
+  templateUrl: "./ticket-event-report.component.html",
+  styleUrls: [],
 })
 export class TicketEventReportComponent implements OnInit {
+  pageId = "/field-service/report/ticket-event";
+
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
     public reportService: ReportService
-  ) {
-  }
+  ) {}
 
   ngOnInit(): void {
-    this.activatedRoute.queryParams.subscribe(params => {
-      this.dateFrom = params['dateFrom'] || this.dateFrom;
-      this.dateTo = params['dateTo'] || this.dateTo;
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.dateFrom = params["dateFrom"] || this.dateFrom;
+      this.dateTo = params["dateTo"] || this.dateTo;
       this.dateRange = [this.dateFrom, this.dateTo];
     });
 
-
-    this.getData()
+    this.getData();
   }
 
-  title = 'Ticket Event Report';
+  title = "Ticket Event Report";
 
-  dateFrom = moment().subtract(12, 'months').startOf('month').format('YYYY-MM-DD');;
-  dateTo = moment().endOf('month').format('YYYY-MM-DD');
+  dateFrom = moment()
+    .subtract(12, "months")
+    .startOf("month")
+    .format("YYYY-MM-DD");
+  dateTo = moment().endOf("month").format("YYYY-MM-DD");
   dateRange = [this.dateFrom, this.dateTo];
 
   onChangeDate($event) {
-    this.dateFrom = $event['dateFrom']
-    this.dateTo = $event['dateTo']
-    this.getData()
+    this.dateFrom = $event["dateFrom"];
+    this.dateTo = $event["dateTo"];
+    this.getData();
   }
 
   gridApi: GridApi;
@@ -61,85 +76,144 @@ export class TicketEventReportComponent implements OnInit {
   view(fsid) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([TICKET_NAVIGATION_ROUTE.OVERVIEW], {
-      queryParamsHandling: 'merge',
+      queryParamsHandling: "merge",
       queryParams: {
         id: fsid,
         gridParams,
-        'start': this.dateFrom,
-        'end': this.dateTo,
+        start: this.dateFrom,
+        end: this.dateTo,
         goBackUrl: location.pathname,
-        active: 2
-      }
+        active: 2,
+      },
     });
   }
 
   columnDefs: ColDef[] = [
     {
-      field: "View", headerName: "View", filter: "agMultiColumnFilter",
+      field: "View",
+      headerName: "View",
+      filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e: any) => this.view(e.rowData.fs_scheduler_id),
-        value: 'SELECT'
+        value: "SELECT",
       },
       maxWidth: 115,
-      minWidth: 115
+      minWidth: 115,
     },
-    { field: 'fs_scheduler_id', headerName: 'FSID', filter: 'agMultiColumnFilter' },
-    { field: 'workOrderId', headerName: 'Ticket ID', filter: 'agMultiColumnFilter' },
-    { field: 'label', headerName: 'Label', filter: 'agMultiColumnFilter' },
-    { field: 'event_name', headerName: 'Event Name', filter: 'agMultiColumnFilter' },
-    { field: 'projectStart', headerName: 'Start', filter: 'agMultiColumnFilter' },
-    { field: 'projectFinish', headerName: 'Finish', filter: 'agMultiColumnFilter' },
-    { field: 'qtr_hrs', headerName: 'Qtr Hrs', filter: 'agMultiColumnFilter' },
-    { field: 'mins', headerName: 'Mins', filter: 'agMultiColumnFilter' },
-    { field: 'time', headerName: 'Time', filter: 'agMultiColumnFilter' },
-    { field: 'userId', headerName: 'User ID', filter: 'agMultiColumnFilter' },
-    { field: 'description', headerName: 'Description', filter: 'agMultiColumnFilter', maxWidth: 300 },
-    { field: 'include_calculation', headerName: 'Billable', filter: 'agMultiColumnFilter' },
-  ]
+    {
+      field: "fs_scheduler_id",
+      headerName: "FSID",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "workOrderId",
+      headerName: "Ticket ID",
+      filter: "agMultiColumnFilter",
+    },
+    { field: "label", headerName: "Label", filter: "agMultiColumnFilter" },
+    {
+      field: "event_name",
+      headerName: "Event Name",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "projectStart",
+      headerName: "Start",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "projectFinish",
+      headerName: "Finish",
+      filter: "agMultiColumnFilter",
+    },
+    { field: "qtr_hrs", headerName: "Qtr Hrs", filter: "agMultiColumnFilter" },
+    { field: "mins", headerName: "Mins", filter: "agMultiColumnFilter" },
+    { field: "time", headerName: "Time", filter: "agMultiColumnFilter" },
+    { field: "userId", headerName: "User ID", filter: "agMultiColumnFilter" },
+    {
+      field: "description",
+      headerName: "Description",
+      filter: "agMultiColumnFilter",
+      maxWidth: 300,
+    },
+    {
+      field: "include_calculation",
+      headerName: "Billable",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "service_type",
+      headerName: "Service Type",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "customer",
+      headerName: "Customer",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "sign_theme",
+      headerName: "Sign Theme",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "sign_type",
+      headerName: "Sign Type",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "platform",
+      headerName: "Platform",
+      filter: "agMultiColumnFilter",
+    },
+  ];
 
   gridOptions: GridOptions = {
     columnDefs: this.columnDefs,
     onGridReady: (params: any) => {
       this.gridApi = params.api;
 
-      let data = this.activatedRoute.snapshot.queryParams['gridParams']
+      let data = this.activatedRoute.snapshot.queryParams["gridParams"];
       _decompressFromEncodedURIComponent(data, params);
     },
     onFirstDataRendered: (params) => {
-      autoSizeColumns(params)
+      autoSizeColumns(params);
     },
-    onFilterChanged: params => this.updateUrl(params),
-    onSortChanged: params => this.updateUrl(params),
+    onFilterChanged: (params) => this.updateUrl(params),
+    onSortChanged: (params) => this.updateUrl(params),
   };
 
   updateUrl = (params) => {
     let gridParams = _compressToEncodedURIComponent(params.api);
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
-      queryParamsHandling: 'merge',
+      queryParamsHandling: "merge",
       queryParams: {
-        gridParams
-      }
+        gridParams,
+      },
     });
-  }
+  };
 
   async getData() {
     try {
       this.isLoading = true;
       this.gridApi?.showLoadingOverlay();
-      this.data = await this.reportService.getTicketEventReport(this.dateFrom, this.dateTo)
+      this.data = await this.reportService.getTicketEventReport(
+        this.dateFrom,
+        this.dateTo
+      );
 
-      await this.getChartData()
+      await this.getChartData();
 
-      this.router.navigate(['.'], {
+      this.router.navigate(["."], {
         queryParams: {
           dateFrom: this.dateFrom,
-          dateTo: this.dateTo
+          dateTo: this.dateTo,
         },
         relativeTo: this.activatedRoute,
-        queryParamsHandling: 'merge'
+        queryParamsHandling: "merge",
       });
 
       this.isLoading = false;
@@ -148,11 +222,12 @@ export class TicketEventReportComponent implements OnInit {
       this.isLoading = false;
       this.gridApi?.hideOverlay();
     }
-
   }
 
   async getChartData() {
-    this.chartData = await this.reportService.getTicketEventReportChart(this.dateFrom, this.dateTo)
+    this.chartData = await this.reportService.getTicketEventReportChart(
+      this.dateFrom,
+      this.dateTo
+    );
   }
-
 }
