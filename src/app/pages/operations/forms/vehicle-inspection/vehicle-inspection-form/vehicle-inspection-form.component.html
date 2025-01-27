@@ -72,6 +72,7 @@
                                     </label>
                                 </div>
                             </th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody style="white-space: nowrap;" *ngFor="let row1 of row.details; let ii = index;">
@@ -100,6 +101,14 @@
                                         <i class="input-frame"></i> Fail
                                     </label>
                                 </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm" (click)="resolveIssue(row1)" [disabled]="!row1?.id"
+                                    [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-light'">
+                                    {{
+                                    row1?.resolved_confirmed_date ? 'Resolved' : row1?.resolved_confirmed_date ?
+                                    'Pending Review': 'Resolve'
+                                    }}</button>
                             </td>
                         </tr>
                         <!-- <tr *ngIf="row1.status == 0">

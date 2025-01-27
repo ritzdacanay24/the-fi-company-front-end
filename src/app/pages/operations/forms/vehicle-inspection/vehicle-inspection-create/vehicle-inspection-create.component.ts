@@ -78,6 +78,7 @@ export class VehicleInspectionCreateComponent {
     this.submitted = true;
     this.form.value.details = this.details;
 
+    
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);

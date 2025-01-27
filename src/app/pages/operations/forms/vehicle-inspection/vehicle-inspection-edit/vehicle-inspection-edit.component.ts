@@ -82,15 +82,15 @@ export class VehicleInspectionEditComponent {
 
   info: any;
   async getVehicleInfo(license) {
-    this.info = await this.vehicleService.findOne({licensePlate:license});
+    this.info = await this.vehicleService.findOne({ licensePlate: license });
   }
 
   attachments = [];
-  async getData() {
+  getData = async () => {
     try {
       this.isLoading = true;
       let data = await this.api._searchById(this.id);
-      await this.getVehicleInfo(data.main?.truck_license_plate)
+      await this.getVehicleInfo(data.main?.truck_license_plate);
 
       this.attachments = data?.attachments;
       this.form.patchValue({
@@ -105,7 +105,7 @@ export class VehicleInspectionEditComponent {
     } catch (err) {
       this.isLoading = false;
     }
-  }
+  };
 
   setFormEmitter($event) {
     this.form = $event;

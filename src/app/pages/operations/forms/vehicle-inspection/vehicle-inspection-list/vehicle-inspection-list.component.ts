@@ -126,7 +126,19 @@ export class VehicleInspectionListComponent implements OnInit {
           return [];
         }
       },
-      cellRenderer: (params: any) => params.value ? params.value + "%" : '',
+      cellRenderer: (params: any) => (params.value ? params.value + "%" : ""),
+    },
+    {
+      headerName: "Pending Resolved Count",
+      field: "confirmed_resolved_count",
+      filter: "agMultiColumnFilter",
+      cellClass: (params: any) => {
+        if (params.value > 0) {
+          return ["bg-danger-subtle bg-opacity-75 text-danger"];
+        } else {
+          return [];
+        }
+      },
     },
   ];
 

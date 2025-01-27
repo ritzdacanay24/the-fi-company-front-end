@@ -1,0 +1,41 @@
+<div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Resolution</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
+</div>
+<div class="modal-body">
+    <div class="mb-3">
+        <label for="formGroupExampleInput" class="form-label">Resolved By</label>
+        <input type="text" class="form-control" id="formGroupExampleInput" placeholder="Resolved by"
+            [(ngModel)]="formData.resolved_by">
+    </div>
+    <div class="mb-3">
+        <label for="formGroupExampleInput" class="form-label">Resolved Date</label>
+        <input type="date" class="form-control" id="formGroupExampleInput" placeholder="Resolved Date"
+            [(ngModel)]="formData.resolved_by_date">
+    </div>
+    <div class="mb-3">
+        <label for="formGroupExampleInput2" class="form-label">Notes</label>
+        <textarea type="text" class="form-control" id="formGroupExampleInput2" placeholder="notes"
+            [(ngModel)]="formData.resolved_by_notes"></textarea>
+    </div>
+
+    <h4>Authorized Access</h4>
+    <div class="mb-3">
+        <label for="formGroupExampleInput" class="form-label">Confirmed By</label>
+        <input type="text" class="form-control" id="formGroupExampleInput" placeholder="Confirmed By"
+            [(ngModel)]="formData.resolved_confirmed_by">
+    </div>
+    <div class="mb-3">
+        <label for="formGroupExampleInput" class="form-label">Confirmed Date</label>
+        <input type="date" class="form-control" id="formGroupExampleInput" placeholder="Example input placeholder"
+            [(ngModel)]="formData.resolved_confirmed_date">
+    </div>
+    <div class="mb-3">
+        <label for="formGroupExampleInput2" class="form-label">Confirmed Notes</label>
+        <textarea type="text" class="form-control" id="formGroupExampleInput2" placeholder="notes"
+            [(ngModel)]="formData.resolved_confirmed_notes"></textarea>
+    </div>
+</div>
+<div class="modal-footer">
+    <button class="btn btn-primary" (click)="onSubmit()">Submit</button>
+</div>

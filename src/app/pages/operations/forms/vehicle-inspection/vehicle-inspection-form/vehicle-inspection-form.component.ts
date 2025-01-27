@@ -13,6 +13,7 @@ import { formValues } from "./formData";
 import { SharedModule } from "@app/shared/shared.module";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
 import { AutosizeModule } from "ngx-autosize";
+import { VehicleInspectionResolveModalService } from "./vehicle-inspection-resolve-modal/vehicle-inspection-resolve-modal.component";
 
 @Component({
   standalone: true,
@@ -68,7 +69,8 @@ export class VehicleInspectionFormComponent implements OnInit {
   constructor(
     private router: Router,
     private fb: FormBuilder,
-    private vehicleService: VehicleService
+    private vehicleService: VehicleService,
+    private vehicleInspectionResolveModalService: VehicleInspectionResolveModalService
   ) {}
 
   vehicleList = [];
@@ -113,9 +115,17 @@ export class VehicleInspectionFormComponent implements OnInit {
     if (this.failureErrors?.total_errors) {
       this.failureClass = "alert alert-danger";
       this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.total_errors} unresolved failures that need to be addressed.`;
-    }else {
+    } else {
       this.failureClass = "alert alert-success";
       this.failureMessage = `Vehicle Status Update: This vehicle is in excellent condition and does not have any reported failures. `;
     }
+  }
+
+  @Input() getData: any;
+  async resolveIssue(data) {
+    console.log(data);
+    this.vehicleInspectionResolveModalService.open(data).result.then((res) => {
+      this.getData();
+    });
   }
 }
