@@ -69,6 +69,10 @@ export class VehicleInspectionEditComponent {
 
   viewImage(row) {}
 
+  setFormErrorsEmitter($event){
+    console.log($event, '----')
+  }
+
   compare(a, b) {
     if (a.name > b.name) {
       return -1;

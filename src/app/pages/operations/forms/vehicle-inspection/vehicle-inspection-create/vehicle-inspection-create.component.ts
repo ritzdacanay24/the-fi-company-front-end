@@ -65,6 +65,10 @@ export class VehicleInspectionCreateComponent {
   setDetailsFormEmitter($event) {
     this.details = $event?.checklist;
   }
+  
+  setFormErrorsEmitter($event){
+    console.log($event, '----')
+  }
 
   myFiles: string[] | any = [];
   onFileChange(event: any) {

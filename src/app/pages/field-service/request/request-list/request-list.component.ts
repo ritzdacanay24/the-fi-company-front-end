@@ -215,6 +215,7 @@ export class RequestsListComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     { field: "active", headerName: "Active", filter: "agMultiColumnFilter" },
+    { field: "customer", headerName: "Customer", filter: "agMultiColumnFilter" },
   ];
 
   gridOptions: GridOptions = {

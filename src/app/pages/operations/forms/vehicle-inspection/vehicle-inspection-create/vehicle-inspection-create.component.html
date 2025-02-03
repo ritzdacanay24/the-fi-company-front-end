@@ -9,7 +9,7 @@
             <div class="card-body" style="min-height:300px">
                 <app-vehicle-inspection-form (setFormEmitter)="setFormEmitter($event)"
                     (setDetailsFormEmitter)="setDetailsFormEmitter($event)"
-                    [submitted]="submitted"></app-vehicle-inspection-form>
+                    [submitted]="submitted"  (setFormErrorsEmitter)="setFormErrorsEmitter($event)"></app-vehicle-inspection-form>
 
 
                 <div class="mt-3">

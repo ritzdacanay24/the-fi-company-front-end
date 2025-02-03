@@ -28,6 +28,7 @@ export class VehicleInspectionFormComponent implements OnInit {
 
   @Input() submitted: boolean;
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
+  @Output() setFormErrorsEmitter: EventEmitter<any> = new EventEmitter();
 
   // convenience getter for easy access to form fields
   get f() {
@@ -71,7 +72,7 @@ export class VehicleInspectionFormComponent implements OnInit {
     private fb: FormBuilder,
     private vehicleService: VehicleService,
     private vehicleInspectionResolveModalService: VehicleInspectionResolveModalService
-  ) {}
+  ) { }
 
   vehicleList = [];
   async getVehicle() {
@@ -112,13 +113,27 @@ export class VehicleInspectionFormComponent implements OnInit {
     this.failureErrors = await this.vehicleService.checkAnyFailures(
       this.form.value.truck_license_plate
     );
-    if (this.failureErrors?.total_errors) {
+    if (this.failureErrors?.length > 0) {
       this.failureClass = "alert alert-danger";
-      this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.total_errors} unresolved failures that need to be addressed.`;
+      this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.length} unresolved failures that need to be addressed.`;
     } else {
       this.failureClass = "alert alert-success";
       this.failureMessage = `Vehicle Status Update: This vehicle is in excellent condition and does not have any reported failures. `;
     }
+
+    for (let i = 0; i < this.formValues?.checklist?.length; i++) {
+
+      for (let ii = 0; ii < this.formValues?.checklist[i].details?.length; ii++) {
+        this.formValues.checklist[i].details[ii].allErrors = []
+        for (let v = 0; v < this.failureErrors?.length; v++) {
+          if (this.failureErrors[v].checklist_name == this.formValues?.checklist[i].details[ii].name) {
+            this.formValues?.checklist[i].details[ii].allErrors.push(this.failureErrors[v])
+          }
+        }
+      }
+    }
+    console.log(this.formValues)
+
   }
 
   @Input() getData: any;

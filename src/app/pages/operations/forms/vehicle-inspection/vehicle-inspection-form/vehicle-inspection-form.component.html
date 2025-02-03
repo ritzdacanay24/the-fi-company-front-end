@@ -79,6 +79,9 @@
                         <tr>
                             <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
                                     class="text-danger" *ngIf="row1.error">(Required)</span>
+                                    <div *ngFor="let item of row1.allErrors" class="text-danger">
+                                        <a href="https://dashboard.eye-fi.com/dist/web/dashboard/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" target="_blank" class="text-danger"><u>Unresolved Errors {{item.date_created}}</u></a> 
+                                    </div>
                             </td>
                             <td style="width:250px;cursor:pointer;text-align:center">
                                 <div class="form-check  form-check-success m-0 p-0">
