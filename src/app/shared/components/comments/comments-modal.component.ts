@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import { QuillModule, QuillModules } from "ngx-quill";
 import "quill-mention/autoregister";
@@ -23,6 +24,9 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 Quill.register("modules/blotFormatter", BlotFormatter);
 
 Quill.register({ "modules/better-table": QuillBetterTable }, true);
+import { AngularDraggableModule } from 'angular2-draggable';
+
+import { ResizableModule, ResizeEvent } from 'angular-resizable-element';
 
 @Pipe({
   standalone: true,
@@ -61,12 +65,69 @@ export class DateAgoPipe implements PipeTransform {
 }
 @Component({
   standalone: true,
-  imports: [SharedModule, QuillModule, SafeHtmlPipe, DateAgoPipe],
+  imports: [SharedModule, QuillModule, SafeHtmlPipe, DateAgoPipe, DragDropModule, AngularDraggableModule, ResizableModule],
   selector: "app-comments",
   templateUrl: "./comments-modal.component.html",
-  styleUrls: [],
+  styles: [
+    `
+      .rectangle {
+        position: relative;
+        top: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        height: 150px;
+        background-color: #fd4140;
+        border: solid 1px #121621;
+        color: #121621;
+        margin: auto;
+      }
+
+      mwlResizable {
+        box-sizing: border-box; // required for the enableGhostResize option to work
+      }
+
+      .resize-handle-top,
+      .resize-handle-bottom {
+        position: absolute;
+        height: 5px;
+        cursor: row-resize;
+        width: 100%;
+      }
+
+      .resize-handle-top {
+        top: 0;
+      }
+
+      .resize-handle-bottom {
+        bottom: 0;
+      }
+
+      .resize-handle-left,
+      .resize-handle-right {
+        position: absolute;
+        height: 100%;
+        cursor: col-resize;
+        width: 5px;
+      }
+
+      .resize-handle-left {
+        left: 0;
+      }
+
+      .resize-handle-right {
+        right: 0;
+      }
+    `,
+  ],
 })
 export class CommentsModalComponent implements OnInit {
+
+  onResizeEnd(event: ResizeEvent): void {
+    console.log('Element was resized', event);
+  }
+
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private userService: UserService,
@@ -77,10 +138,57 @@ export class CommentsModalComponent implements OnInit {
 
     this.userInfo = this.authenticationService.currentUserValue;
   }
+  elements: any
+  elements1: any
+  elements2: any
+  minimize() {
+    const element: any = this.elements = document.getElementsByClassName('modal-content');
+    const element1: any = this.elements1 = document.getElementsByClassName('backgroundTransparent d-block');
+
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+
+    // Store original styles
+    for (let i = 0; i < this.elements.length; i++) {
+      this.elements[i].setAttribute("data-original-style", this.elements[i].style.cssText);
+    }
+
+    for (let i = 0; i < this.elements1.length; i++) {
+      this.elements1[i].setAttribute("data-original-style", this.elements1[i].style.cssText);
+    }
+
+
+
+    let test = element[0]
+    test.style.width = "100px";
+    test.style.height = "49px";
+    test.style.bottom = "6px";
+    test.style.right = "7px";
+    test.style.position = "fixed";
+
+  }
+
+
+  // Revert to original styles
+  revertStyles() {
+    for (let i = 0; i < this.elements.length; i++) {
+      this.elements[i].style.cssText = this.elements[i].getAttribute("data-original-style");
+    }
+    for (let i = 0; i < this.elements1.length; i++) {
+      this.elements1[i].style.cssText = this.elements1[i].getAttribute("data-original-style");
+    }
+
+    const backdrop = document.querySelector('.backgroundTransparent ');
+    if (backdrop) {
+      backdrop[0].addClass('. modal-backdrop ');
+    }
+  }
 
   commentEmailNotification = false;
 
-  onCommentEmailNotification() {}
+  onCommentEmailNotification() { }
 
   ngOnInit() {
     this.quillConfig = {
@@ -296,9 +404,8 @@ export class CommentsModalComponent implements OnInit {
       pageName: location.pathname,
       comments: pid ? addCommentText : this.htmlText,
       emailToSendFromMention: em,
-      emailCallBackUrl: `${window.location.href.split("?")[0]}?comment=${
-        this.orderNum
-      }`,
+      emailCallBackUrl: `${window.location.href.split("?")[0]}?comment=${this.orderNum
+        }`,
       created_by_name: this.userInfo.full_name,
       createdDate: moment().format("YYYY-MM-DD HH:mm:ss"),
       comments_html: stripHtml(pid ? addCommentText : this.htmlText),

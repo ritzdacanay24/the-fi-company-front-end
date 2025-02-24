@@ -238,14 +238,22 @@ export class ShippingComponent implements OnInit {
         data.source_inspection_completed == null)
     );
   }
+  isModalOpen = false;
 
   viewComment = (salesOrderLineNumber: any, id: string, so?) => {
+
+    if (this.isModalOpen) return;
+    
+    this.isModalOpen = true;
+
     let modalRef = this.commentsModalService.open(
       salesOrderLineNumber,
       "Sales Order"
     );
     modalRef.result.then(
       (result: any) => {
+        this.isModalOpen = false;
+
         let rowNode = this.gridApi.getRowNode(id);
         rowNode.data.recent_comments = result;
         this.gridApi.redrawRows({ rowNodes: [rowNode] });
@@ -269,6 +277,7 @@ export class ShippingComponent implements OnInit {
         });
       },
       () => {
+        this.isModalOpen = false;
         this.router.navigate([`.`], {
           relativeTo: this.activatedRoute,
           queryParamsHandling: "merge",
@@ -283,24 +292,24 @@ export class ShippingComponent implements OnInit {
   viewPartsOrder = (so_number_and_line) => {
     let modalRef = this.partsOrderModalService.open(so_number_and_line);
     modalRef.result.then(
-      (result: any) => {},
-      () => {}
+      (result: any) => { },
+      () => { }
     );
   };
 
   viewRouting = (partNumber) => {
     let modalRef = this.workOrderRoutingModalService.open(partNumber);
     modalRef.result.then(
-      (result: any) => {},
-      () => {}
+      (result: any) => { },
+      () => { }
     );
   };
 
   viewPlacard = (so, line, partNumber) => {
     let modalRef = this.placardModalService.open(so, line, partNumber);
     modalRef.result.then(
-      (result: any) => {},
-      () => {}
+      (result: any) => { },
+      () => { }
     );
   };
 
@@ -316,7 +325,7 @@ export class ShippingComponent implements OnInit {
         rowData.misc = result;
         this.sendAndUpdate(rowData, rowData.id);
       },
-      () => {}
+      () => { }
     );
   };
 
@@ -332,7 +341,7 @@ export class ShippingComponent implements OnInit {
         e.rowData.recent_notes = result;
         this.sendAndUpdate(e.rowData, e.rowData.id);
       },
-      () => {}
+      () => { }
     );
   };
 
@@ -345,7 +354,7 @@ export class ShippingComponent implements OnInit {
       (result: any) => {
         this.getData();
       },
-      () => {}
+      () => { }
     );
   };
 

@@ -12,13 +12,17 @@ import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
 import { byteConverter } from 'src/assets/js/util/byteConverter';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { JobSearchComponent } from '@app/shared/components/job-search/job-search.component';
+import { JobService } from '@app/core/api/field-service/job.service';
+import { Observable, Subject, concat, of, filter, debounceTime, distinctUntilChanged, tap, switchMap, catchError } from 'rxjs';
 
 @Component({
   standalone: true,
   imports: [
     SharedModule,
     NgSelectModule,
-    LazyLoadImageModule
+    LazyLoadImageModule,
+    JobSearchComponent
   ],
   selector: 'app-receipt-add-edit',
   templateUrl: './receipt-add-edit.component.html'
@@ -60,7 +64,27 @@ export class ReceiptAddEditComponent implements OnInit {
     time: null,
     created_by: null,
     fs_scheduler_id: null,
+    jobs: null,
+    fromId: null,
   })
+
+  jobsToView = []
+  onMaterialGroupChange(event) {
+    this.jobsToView = event;
+
+    console.log(event)
+
+  }
+
+
+  notifyParent($event) {
+    // for (let i = 0; i < $event.length; i++) {
+
+    //   this.form.patchValue({
+    //     jobs: $event[i].id
+    //   })
+    // }
+  }
 
   link: any;
 
@@ -70,13 +94,26 @@ export class ReceiptAddEditComponent implements OnInit {
     private api: TripExpenseService,
     public schedulerService: SchedulerService,
     public authenticationService: AuthenticationService,
+    private jobService: JobService
   ) {
+    this.getList();
   }
 
   async getData() {
     let data: any = await this.api.getById(this.id);
+    if (data && data.jobs) {
+      let test = []
+      data.jobs = String(data.jobs)?.split(',')
+      for (let i = 0; i < data.jobs.length; i++) {
+        test.push({ id: data.jobs[i] })
+      }
+      data.jobs = test
+    }
+
     this.form.patchValue(data)
     this.link = data.link;
+
+    this.form.get('jobs').disable()
   }
 
   ngOnInit(): void {
@@ -146,7 +183,7 @@ export class ReceiptAddEditComponent implements OnInit {
   receiptMessage = "";
 
   async handleFileInput(files) {
-    this.receiptMessage = "" ;
+    this.receiptMessage = "";
     this.predictInfo = "";
 
     const imageFile = files[0];
@@ -205,7 +242,7 @@ export class ReceiptAddEditComponent implements OnInit {
         SweetAlert.close();
       }
     } catch (err) {
-      this.receiptMessage = 'Unable to extract the data from the receipt but you can still enter the information manually.' ;
+      this.receiptMessage = 'Unable to extract the data from the receipt but you can still enter the information manually.';
       SweetAlert.close(0);
     } finally {
 
@@ -222,13 +259,16 @@ export class ReceiptAddEditComponent implements OnInit {
   }
 
   async create() {
+
     if (this.form.value.date && this.form.value.time) {
     } else {
       alert('Date and time is now required')
       return
     }
 
+
     let formData = new FormData();
+
 
     if (this.fileToUpload_) {
       formData.append("file", this.fileToUpload_, this.fileToUpload_.name);
@@ -237,13 +277,44 @@ export class ReceiptAddEditComponent implements OnInit {
 
     this.form.value.created_date = moment().format('YYYY-MM-DD HH:mm:ss')
 
+    let e = []
     Object.keys(this.form.value).map((key) => {
-      formData.append(key, this.form.value[key]);
+      if (key == 'jobs') {
+        for (let i = 0; i < this.form.value[key]?.length; i++) {
+          e.push(this.form.value[key][i].id)
+        }
+        formData.append(key, e?.toString());
+      } else {
+        formData.append(key, this.form.value[key]);
+      }
     });
 
     try {
       SweetAlert.loading();
-      await this.api.create(formData)
+      let { insertId }: any = await this.api.create(formData)
+
+
+      let errors = []
+      if (this.form.value.jobs) {
+        let d = this.form.value.jobs;
+        for (let i = 0; i < d?.length; i++) {
+          formData.append('jobs', e?.toString());
+          formData.append('fs_scheduler_id', d[i].id);
+          formData.append('fromId', insertId || null);
+          formData.append('workOrderId', d[i].workOrderId || null);
+          if (d[i].workOrderId) {
+            await this.api.create(formData)
+          } else {
+            errors.push({ message: "Could not upload receipt to " + d[i].id })
+          }
+        }
+      }
+
+      if (errors.length) {
+        alert(JSON.stringify(errors));
+      }
+
+
       SweetAlert.close();
       this.ngbActiveModal.close()
     } catch (err) {
@@ -288,4 +359,31 @@ export class ReceiptAddEditComponent implements OnInit {
     }
   }
 
+
+  data$: Observable<any[]>;
+  dataLoading = false;
+  dataInput$ = new Subject<string>();
+
+
+  private getList() {
+    this.data$ = concat(
+      of([]), // default items
+      this.dataInput$.pipe(
+        filter((term) => term != null),
+        debounceTime(500),
+        distinctUntilChanged(),
+        tap(() => {
+          this.dataLoading = true;
+        }),
+        switchMap((term) =>
+          this.jobService.searchByJob(term).pipe(
+            catchError(() => of([])), // empty list on error
+            tap(() => {
+              this.dataLoading = false;
+            })
+          )
+        )
+      )
+    );
+  }
 }

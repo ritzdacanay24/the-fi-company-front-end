@@ -81,6 +81,41 @@
       </ng-select>
     </div>
 
+
+    <div class="mb-3">
+      <label class="form-label w-100">Jobs</label>
+      <ng-select #select [clearOnBackspace]="false" [items]="data$ | async" [multiple]="true" [typeahead]="dataInput$"
+        formControlName="jobs" [clearable]="true" placeholder="Select FSID"
+        (change)="onMaterialGroupChange($event)">
+
+        <ng-template ng-label-tmp let-item="item" let-clear="clear">
+          <span (click)="clear(item)">&times;</span>
+          <span class="p-1">{{ item.id }}</span>
+        </ng-template>
+
+        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+          <div class="text-left" style="text-align: left !important;">
+            <p class="mb-0"> Property: <b>{{ item.property }}</b> | <b>{{item.request_date}}</b>
+              <span class="text-end float-end">
+                #{{ item.id }}
+              </span>
+            </p>
+            <p class="mb-0">Customer: <b>{{item.customer}}</b> | Service: <b>{{item.service_type}}</b></p>
+          </div>
+        </ng-template>
+      </ng-select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label w-100">Vendor Name
+        <span *ngIf="predictInfo" class="float-end text-success"
+          [ngClass]="{'text-danger': predictInfo?.inference?.prediction?.supplier?.confidence <= 0.75}">{{predictInfo?.inference?.prediction?.supplier?.confidence
+          * 100
+          || 0}}%</span>
+      </label>
+      <input type="search" class="form-control" placeholder="Ex) Lowes, Shell, Enterprise"
+        formControlName="vendor_name">
+    </div>
     <div class="mb-3">
       <label class="form-label w-100">Vendor Name
         <span *ngIf="predictInfo" class="float-end text-success"

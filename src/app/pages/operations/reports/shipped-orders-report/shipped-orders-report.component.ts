@@ -49,7 +49,7 @@ export class ShippedOrdersReportComponent implements OnInit {
     private salesOrderInfoModalService: SalesOrderInfoModalService,
     private fgLabelPrintModal: FgLabelPrintModalService,
     private partsOrderModalService: PartsOrderModalService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -101,7 +101,7 @@ export class ShippedOrdersReportComponent implements OnInit {
         rowNode.data.recent_comments = result;
         this.gridApi.redrawRows({ rowNodes: [rowNode] });
       },
-      () => {}
+      () => { }
     );
   };
 
@@ -244,6 +244,18 @@ export class ShippedOrdersReportComponent implements OnInit {
     },
     { field: "ABS_INV_NBR", headerName: "Inv #", filter: "agTextColumnFilter" },
     {
+      field: "SOD_LIST_PR",
+      headerName: "SOD List Price",
+      filter: "agTextColumnFilter",
+      valueFormatter: currencyFormatter,
+    },
+    {
+      field: "SOD_PRICE",
+      headerName: "SOD Price",
+      filter: "agTextColumnFilter",
+      valueFormatter: currencyFormatter,
+    },
+    {
       field: "EXT",
       headerName: "Extended Amount",
       filter: "agTextColumnFilter",
@@ -281,8 +293,8 @@ export class ShippedOrdersReportComponent implements OnInit {
   viewPartsOrder = (so_number_and_line) => {
     let modalRef = this.partsOrderModalService.open(so_number_and_line);
     modalRef.result.then(
-      (result: any) => {},
-      () => {}
+      (result: any) => { },
+      () => { }
     );
   };
 

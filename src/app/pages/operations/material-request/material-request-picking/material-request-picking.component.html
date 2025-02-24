@@ -1,4 +1,3 @@
-
 <div *ngIf="isLoading" class="text-center m-5">
   <div class="spinner-grow text-primary" role="status">
     <span class="visually-hidden">Loading...</span>
@@ -80,20 +79,30 @@
                 <td>
                   <p *ngIf="!item.locations">No Locations Found</p>
                   <table class="table table-sm table-bordered mb-0 pb-0" *ngIf="item.locations">
+                    <thead>
+                      <tr>
+                        <th>Location</th>
+                        <th>OH/Qty</th>
+                        <th>Lot</th>
+                        <th>Ref</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      <tr *ngFor="let location of item.locations">
+                      <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
                         <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
                         <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                        <td class="p-0 px-2">{{location.ld_lot}}</td>
+                        <td class="p-0 px-2">{{location.ld_ref}}</td>
                       </tr>
                     </tbody>
                   </table>
                 </td>
                 <td>{{item.qty}}</td>
                 <td>
-                  
+
                   <input (click)="$any($event.target).select()" type="number" name="qtyPicked" class="form-control"
-                    placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked" [disabled]="row.disabled"
-                    style="min-width:100px">
+                    placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked"
+                    [disabled]="row.disabled" style="min-width:100px">
 
                 </td>
                 <td>{{item.trType}}</td>
@@ -146,12 +155,24 @@
               <td>{{item.itemDescription}}</td>
               <td>
                 <p *ngIf="!item.locations">No Locations Found</p>
-                <table class="table table-sm table-bordered m-0 p-0 text-left border-0 border border-white"
+                <table class="table table-sm table-bordered m-0 p-0 text-left"
                   *ngIf="item.locations">
-                  <tr *ngFor="let location of item.locations">
-                    <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
-                    <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
-                  </tr>
+                  <thead>
+                    <tr>
+                      <th>Location</th>
+                      <th>OH/Qty</th>
+                      <th>Lot</th>
+                      <th>Ref</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
+                      <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
+                      <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                      <td class="p-0 px-2">{{location.ld_lot}}</td>
+                      <td class="p-0 px-2">{{location.ld_ref}}</td>
+                    </tr>
+                  </tbody>
                 </table>
               </td>
               <td>{{item.qty}}</td>
@@ -166,7 +187,8 @@
 
       <div class="card-footer border-top-0">
         <button class="btn btn-warning me-2" (click)="onPrint(row)" [disabled]="row.disabled">Print</button>
-        <button class="btn btn-primary" (click)="onComplete(row)" [disabled]="!row.printedDate || row.disabled">Complete</button>
+        <button class="btn btn-primary" (click)="onComplete(row)"
+          [disabled]="!row.printedDate || row.disabled">Complete</button>
       </div>
     </div>
   </div>

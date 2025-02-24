@@ -6,7 +6,7 @@ import { CommentsModalComponent } from "./comments-modal.component";
   providedIn: "root",
 })
 export class CommentsModalService {
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(
     orderNum?: undefined,
@@ -16,10 +16,15 @@ export class CommentsModalService {
     userName?: undefined
   ) {
     let modalRef = this.modalService.open(CommentsModalComponent, {
+      backdrop:false,
       size: "lg",
       fullscreen: false,
       scrollable: true,
       centered: true,
+      backdropClass: 'backgroundTransparent',
+      modalDialogClass: 'backgroundTransparent1',
+      windowClass: 'backgroundTransparent'
+
     });
     modalRef.componentInstance.orderNum = orderNum;
     modalRef.componentInstance.type = type;

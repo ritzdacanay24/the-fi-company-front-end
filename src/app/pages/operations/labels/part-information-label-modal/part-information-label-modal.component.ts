@@ -86,8 +86,8 @@ export class PartInformationLabelModalComponent implements OnInit {
     var cmds = `
             ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
             ^XA
-            ^FO30,30^A0N,120,55^FD${row.partNumber.toUpperCase()}^FS
-            ^FO690,35^BXN,4,200,,,,,^FD${row.partNumber.toUpperCase()}^FS
+            ^FO30,30^A0N,120,55^FD${String(row.partNumber)?.toUpperCase()}^FS
+            ^FO690,35^BXN,4,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}^FS
             ^FO30,140^A0N,60,30^FD${row.description || ""}^FS
             ^FO30,210^A0N,60,30^FD${row.description2 || ""}^FS
             ^FO30,280^A0N,60,30^FDQTY: ${row.qty}^FS

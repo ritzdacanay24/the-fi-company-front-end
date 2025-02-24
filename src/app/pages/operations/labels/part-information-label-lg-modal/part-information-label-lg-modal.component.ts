@@ -85,8 +85,8 @@ export class PartInformationLabelLgModalComponent implements OnInit {
             ^XA
             ^FWR
             ^BY5,2,270
-            ^FO580,990^BXN,8,200,,,,,^FD${row.partNumber?.toUpperCase()}^FS
-            ^FO605,50^A0,80,80^FD${row.partNumber?.toUpperCase()}^FS
+            ^FO580,990^BXN,8,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}^FS
+            ^FO605,50^A0,80,80^FD${String(row.partNumber)?.toUpperCase()}^FS
             ^FO505,50^A0,70,70^FD${row.description || ""}^FS
             ^FO405,50^A0,70,70^FD${row.description2 || ""}^FS
             ^FO305,50^A0,70,70^FDQty: ${row.qty}^FS

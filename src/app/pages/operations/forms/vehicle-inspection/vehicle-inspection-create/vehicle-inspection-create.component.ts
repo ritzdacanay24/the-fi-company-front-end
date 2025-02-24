@@ -1,6 +1,6 @@
 import { Component, Input } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
 import moment from "moment";
 import { FormGroup } from "@angular/forms";
@@ -21,11 +21,20 @@ import { first } from "rxjs";
 export class VehicleInspectionCreateComponent {
   constructor(
     private router: Router,
+    private activatedRoute: ActivatedRoute,
     private api: VehicleInspectionService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService,
     private uploadService: UploadService
-  ) {}
+  ) {
+
+    this.activatedRoute.queryParams.subscribe((params) => {
+      this.license_plate = params["license_plate"];
+      this.not_used = Number(params["not_used"]) || 0;
+      
+    });
+
+  }
 
   ngOnInit(): void {
     resetVehicleInspectionFormValues();
@@ -46,7 +55,8 @@ export class VehicleInspectionCreateComponent {
       queryParamsHandling: "merge",
     });
   };
-
+  license_plate:any
+  not_used:any
   setFormEmitter($event) {
     this.form = $event;
 
@@ -56,6 +66,8 @@ export class VehicleInspectionCreateComponent {
         date_created: moment().format("YYYY-MM-DD HH:mm:ss"),
         created_by: this.authenticationService.currentUserValue.full_name,
         created_by_name: this.authenticationService.currentUserValue.full_name,
+        truck_license_plate:this.license_plate || null,
+        not_used:this.not_used
       },
       { emitEvent: false }
     );
@@ -65,8 +77,8 @@ export class VehicleInspectionCreateComponent {
   setDetailsFormEmitter($event) {
     this.details = $event?.checklist;
   }
-  
-  setFormErrorsEmitter($event){
+
+  setFormErrorsEmitter($event) {
     console.log($event, '----')
   }
 
@@ -82,7 +94,7 @@ export class VehicleInspectionCreateComponent {
     this.submitted = true;
     this.form.value.details = this.details;
 
-    
+
     try {
       this.isLoading = true;
       let { insertId } = await this.api._create(this.form.value);
@@ -97,7 +109,7 @@ export class VehicleInspectionCreateComponent {
         this.uploadService
           .upload(formData)
           .pipe(first())
-          .subscribe((data) => {});
+          .subscribe((data) => { });
       }
 
       this.isLoading = false;

@@ -127,7 +127,7 @@
                             <th>Qty Picked</th>
                         </tr>
                     </thead>
-                    <tbody class="align-middle">
+                    <tbody class="align-middle" *ngFor="let row of data?.details" class="align-middle">
                         <tr *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines" class="d-print-none">
                             <td colspan="9" class="p-2"> All lines picked</td>
                         </tr>
@@ -137,7 +137,7 @@
                         <!-- <tr *ngIf="data?.totalWorkOrderCount == 0 " class="table-danger d-print-none">
                             <td colspan="9" class="p-2"> No records found.</td>
                         </tr> -->
-                        <tr *ngFor="let row of data?.details" class="align-middle">
+                        <tr>
                             <td>
                                 <div class="d-none d-print-block">
                                     <ngx-barcode6 [bc-value]="row.wod_part" [bc-display-value]="true" [bc-height]="20"
@@ -148,21 +148,40 @@
                                 </div>
                                 <div class="d-print-none">
                                     <p>{{row.wod_part}}</p>
-                                    <p>{{row.PT_DESC1}}</p>
                                 </div>
                             </td>
                             <td>
-                                <ul class="list-unstyled align-middle m-0 p-0">
-                                    <li *ngFor="let loc of row.locations | slice:0:4;">
-                                        {{loc['LD_LOC'] | uppercase}} ({{loc['LD_QTY_OH']}})
-                                    </li>
-                                </ul>
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <td>Location</td>
+                                            <td>Qty</td>
+                                            <td>Lot</td>
+                                            <td>Ref</td>
+                                            <td></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let loc of row.locations | slice:0:4;">
+                                            <td>{{loc['LD_LOC'] | uppercase}}</td>
+                                            <td>{{loc['LD_QTY_OH']}}</td>
+                                            <td>{{loc['ld_lot']}}</td>
+                                            <td>{{loc['ld_ref']}}</td>
+                                            <td><input type="checkbox"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </td>
                             <td>{{row.WOD_QTY_REQ}}</td>
                             <td>{{row.WOD_QTY_ISS}}</td>
                             <td> {{row.LINESTATUS | number: '1.0-0' }}%</td>
                             <td></td>
                             <td></td>
+                        </tr>
+                        <tr>
+                          <td colspan="10" class="py-2 text-start">
+                            <p>{{row.PT_DESC1}}</p>
+                          </td>
                         </tr>
                     </tbody>
                 </table>

@@ -19,7 +19,7 @@ import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
   providedIn: "root",
 })
 export class WorkOrderPickSheetModalService {
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(workOrderNumber: number, closeOnPrint = false) {
     let modalRef = this.modalService.open(WorkOrderPickSheetModalComponent, {
@@ -52,7 +52,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
     private fb: FormBuilder,
     private authenticationService: AuthenticationService,
     private createShortageModalService: CreateShortageModalService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -122,8 +122,8 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
 
     const modalRef = this.createShortageModalService.open(this.shortages);
     modalRef.result.then(
-      async (result: any) => {},
-      () => {}
+      async (result: any) => { },
+      () => { }
     );
   }
 
@@ -246,13 +246,17 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
             <head>
               <title>Work Order Picking</title>
               <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-              <style>          
+              <style>         
+               
               @page {
                 size: landscape;
                 margin-top: 48px;
                 margin-bottom: 48px;
               }
               @media print {
+
+                ::-webkit-scrollbar { width: 0px; background: transparent; }
+              
                 footer {
                   position: fixed;
                   bottom:0px
@@ -268,7 +272,7 @@ export class WorkOrderPickSheetModalComponent implements OnInit {
             </head>
             <body onload="window.print();window.close()">
               ${printContents}
-              <footer>
+              <footer style="margin-bottom:2px">
                 Work order number:  ${this.data.mainDetails.wo_nbr}
               </footer>
             </body>

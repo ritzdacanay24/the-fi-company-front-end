@@ -40,7 +40,7 @@
                                     <p *ngIf="valid == false" class="text-center text-danger mb-2">Incorrect Passcode</p>
                                     <div class="row twostep-input">
                                         <ng-otp-input (onInputChange)="onOtpChange($event)" [config]="config"
-                                            containerClass="text-dark" inputClass="text-dark"></ng-otp-input>
+                                            containerClass="text-dark" inputClass="text-dark" (keydown.enter)="onSubmit()"></ng-otp-input>
                                     </div>
                                 </form><!-- end form -->
 
