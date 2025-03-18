@@ -23,9 +23,9 @@ export class PlacardCreateComponent {
     private api: PlacardService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService
-  ) {}
+  ) { }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   title = "Create Placard";
 
@@ -43,6 +43,8 @@ export class PlacardCreateComponent {
     });
   };
 
+  totalPrints = [];
+  
   setFormEmitter($event) {
     this.form = $event;
     this.form.patchValue(
@@ -58,6 +60,18 @@ export class PlacardCreateComponent {
         this.form.get("customer_co_por_so").disable();
       } else {
         this.form.get("customer_co_por_so").enable();
+      }
+    });
+
+
+    this.form.valueChanges.subscribe(value => {
+      this.totalPrints = []
+      for (let i = 0; i < this.form.value.total_label_count; i++) {
+        let count = i + 1;
+        this.totalPrints.push({
+          ...this.form.value,
+          label_count: count
+        })
       }
     });
   }

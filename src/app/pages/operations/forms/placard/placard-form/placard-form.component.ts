@@ -34,7 +34,7 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
 export class PlacardFormComponent {
   constructor(
     private placardService: PlacardService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
@@ -69,6 +69,7 @@ export class PlacardFormComponent {
     created_date: new FormControl(null),
     created_by: new FormControl(null),
     active: new FormControl(1),
+    uom: new FormControl(null),
   });
 
   setBooleanToNumber(key) {

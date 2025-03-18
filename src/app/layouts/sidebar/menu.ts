@@ -918,6 +918,11 @@ export const MENU: MenuItem[] = [
     hideCheckBox: true,
     subItems: [
       {
+        label: "Checklist",
+        link: "/dashboard/quality/checklist",
+        description: "Checklist",
+      },
+      {
         label: "Dashboard",
         link: "/dashboard/quality/overview/summary",
         description: "Quality overview",

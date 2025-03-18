@@ -1,0 +1,42 @@
+<div class="modal-header mb-0 pb-0">
+    <h4 class="modal-title" id="modal-basic-title">{{data?.labelName}} - {{data?.labelSize}}</h4>
+</div>
+
+<div class="modal-body">
+
+    <div class="mb-5 text-center">
+        <img [src]="data?.labelImage" style="width:200px" class="img-fluid img-thumbnail">
+    </div>
+
+    <form [formGroup]="form" autocomplete="off">
+
+        <!-- <div class="mb-3">
+            <app-qad-part-search (notifyParent)="notifyParent($event)"></app-qad-part-search>
+        </div> -->
+
+        <div class="mb-3">
+            <label class="form-label">Start Number</label>
+            <input formControlName="start_number" type="number" class="form-control" placeholder="Enter Start Number"
+                min="1">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Total Labels</label>
+            <input formControlName="total_labels" type="text" class="form-control" placeholder="Enter Total Labels">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">UOM</label>
+            <select class="form-select" formControlName="uom">
+                <option *ngFor="let row of ['Pallets', 'Boxes', 'Each']">{{row}}</option>
+            </select>
+        </div>
+
+    </form>
+
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
+    <button (click)="onPrint()" type="button" class="btn btn-primary">Print</button>
+</div>

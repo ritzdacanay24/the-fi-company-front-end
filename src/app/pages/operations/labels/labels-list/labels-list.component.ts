@@ -25,6 +25,10 @@ import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.comp
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
 import { PartInformationLabelModalSmService } from "../part-information-label-modal-sm/part-information-label-modal-sm.component";
+import { PartAndSNModalService } from "../part-and-sn-modal/part-and-sn-modal.component";
+import { SNULAssetModalService } from "../sn-ul-asset-modal/sn-ul-asset-modal.component";
+import { ContinuityModalService } from "../continuity-test-modal/continuity-test-modal.component";
+import { TotalLabelsModalService } from "../total-labels-modal/total-labels-modal.component";
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -55,8 +59,12 @@ export class LabelsListComponent implements OnInit {
     private issueToWorkOrderLabelModalService: IssueToWorkOrderLabelModalService,
     private partInformationLabelLgModalService: PartInformationLabelLgModalService,
     private agsLabelModalService: AgsLabelModalService,
-    private partInformationLabelModalSmService: PartInformationLabelModalSmService
-  ) {}
+    private partInformationLabelModalSmService: PartInformationLabelModalSmService,
+    private partAndSNModalService: PartAndSNModalService,
+    private sNULAssetModalService: SNULAssetModalService,
+    private continuityModalService: ContinuityModalService,
+    private totalLabelsModalService: TotalLabelsModalService
+  ) { }
 
   ngOnInit(): void {
     this.getData();

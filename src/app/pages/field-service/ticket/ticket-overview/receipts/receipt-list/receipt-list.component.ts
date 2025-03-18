@@ -148,11 +148,17 @@ export class UploadedReceiptComponent implements OnInit {
 
     this.printedReceipts = selectedData;
 
+    console.log(this.printedReceipts)
     let print = [];
-    selectedData.forEach((element) => print.push(element.link));
+    selectedData.forEach((element) => {
+      if (this.isPdf(element.fileName))
+        print.push(element.link)
+    });
 
     printJS({
       printable: print,
+      showModal: true, 
+      modalMessage: "Document Loading...",
       type: "image",
       header: "FSID: " + this.fsId,
       imageStyle: "width:50%;margin-bottom:20px;",
@@ -250,9 +256,9 @@ export class UploadedReceiptComponent implements OnInit {
     private domSanitizer: DomSanitizer,
     private workOrderService: WorkOrderService,
     private lightbox: Lightbox
-  ) {}
+  ) { }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   getTripExenses(data) {
     this.tripExpenseTotal = 0;
@@ -350,7 +356,7 @@ export class UploadedReceiptComponent implements OnInit {
       async (result: any) => {
         await this.getData();
       },
-      () => {}
+      () => { }
     );
   }
 
@@ -365,7 +371,7 @@ export class UploadedReceiptComponent implements OnInit {
       async (result: any) => {
         await this.getData();
       },
-      () => {}
+      () => { }
     );
   }
 
@@ -625,14 +631,15 @@ export class UploadedReceiptComponent implements OnInit {
   gridOptions: GridOptions = {
     columnDefs: [],
     onGridReady: this.onGridReady.bind(this),
-
+    rowSelection: 'multiple',
+    
     suppressRowClickSelection: true,
     onFirstDataRendered: (params) => {
       params.api.forEachNode((node) => {
         node.setSelected(
           !!node.data &&
-            node.data.case_manager_email !== null &&
-            node.data.policy_limit_usage >= node.data.min_policy_limit_usage
+          node.data.case_manager_email !== null &&
+          node.data.policy_limit_usage >= node.data.min_policy_limit_usage
         );
       });
 
@@ -645,7 +652,7 @@ export class UploadedReceiptComponent implements OnInit {
         await this.tripExpenseTransactionsService.updateById(event.data.id, {
           reason_code: event.data.reason_code,
         });
-      } catch (err) {}
+      } catch (err) { }
     },
   };
 

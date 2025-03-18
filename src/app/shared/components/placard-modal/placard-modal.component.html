@@ -23,74 +23,77 @@
     </div>
 </div>
 
-<div id="pickSheet" class="d-none d-print-block">
-    <div class="margin-bottom-10" style="margin-bottom:20px">
-        <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
-            style="width: 230px;" />
-    </div>
-    <div class="table-responsive">
-        <table class="table table-bordered" style="font-size:25px; font-weight:600;">
-            <thead>
-                <tr>
-                    <td style="width:43%">Created on</td>
-                    <td>{{form?.value?.created_date}}</td>
+<div id="pickSheet">
+    <div class="d-none d-print-block" style="
+    page-break-after: always;" *ngFor="let row of totalPrints; let  i = index">
+        <div class="margin-bottom-10" style="margin-bottom:20px">
+            <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+                style="width: 230px;" />
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered" style="font-size:25px; font-weight:600;">
+                <thead>
+                    <tr>
+                        <td style="width:43%">Created on</td>
+                        <td>{{row?.created_date}}</td>
+                    </tr>
+                    <tr>
+                        <td style="width:43%">Customer</td>
+                        <td>{{row?.customer_name}}</td>
+                    </tr>
+                    <tr>
+                        <td>Eye-Fi W.O.#</td>
+                        <td>{{row?.eyefi_wo_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>P.O. #</td>
+                        <td>{{row?.po_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>Eye-Fi S.O.#</td>
+                        <td>{{row?.eyefi_so_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>Customer CO#/POR#/SO#</td>
+                        <td>{{row?.customer_co_por_so}}</td>
+                    </tr>
+                    <tr>
+                        <td>Description</td>
+                        <td>{{row?.description}}</td>
+                    </tr>
+                    <tr>
+                        <td>Eye-Fi P/N</td>
+                        <td>{{row?.eyefi_part_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>Customer P/N</td>
+                        <td>{{row?.customer_part_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>Location</td>
+                        <td>{{row?.location}}</td>
+                    </tr>
+                    <tr>
+                        <td>EyeFi Serial Tag #(s)</td>
+                        <td>{{row?.eyefi_serial_tag}}</td>
+                    </tr>
+                    <tr>
+                        <td>Customer Serial Tag #(s)</td>
+                        <td>{{row?.customer_serial_tag}}</td>
+                    </tr>
+                    <tr>
+                        <td>Qty</td>
+                        <td>{{row?.qty}}</td>
+                    </tr>
+                </thead>
+                <tr style="border: none;">
+                    <td class="text-center" colspan="2" rowspan="3" style="border: none;">
+                        <div>
+                            {{row?.label_count}} of {{row?.total_label_count}} {{row?.uom}}
+                        </div>
+                    </td>
                 </tr>
-                <tr>
-                    <td style="width:43%">Customer</td>
-                    <td>{{form?.value?.customer_name}}</td>
-                </tr>
-                <tr>
-                    <td>Eye-Fi W.O.#</td>
-                    <td>{{form?.value?.eyefi_wo_number}}</td>
-                </tr>
-                <tr>
-                    <td>P.O. #</td>
-                    <td>{{form?.value?.po_number}}</td>
-                </tr>
-                <tr>
-                    <td>Eye-Fi S.O.#</td>
-                    <td>{{form?.value?.eyefi_so_number}}</td>
-                </tr>
-                <tr>
-                    <td>Customer CO#/POR#/SO#</td>
-                    <td>{{form?.value?.customer_co_por_so}}</td>
-                </tr>
-                <tr>
-                    <td>Description</td>
-                    <td>{{form?.value?.description}}</td>
-                </tr>
-                <tr>
-                    <td>Eye-Fi P/N</td>
-                    <td>{{form?.value?.eyefi_part_number}}</td>
-                </tr>
-                <tr>
-                    <td>Customer P/N</td>
-                    <td>{{form?.value?.customer_part_number}}</td>
-                </tr>
-                <tr>
-                    <td>Location</td>
-                    <td>{{form?.value?.location}}</td>
-                </tr>
-                <tr>
-                    <td>EyeFi Serial Tag #(s)</td>
-                    <td>{{form?.value?.eyefi_serial_tag}}</td>
-                </tr>
-                <tr>
-                    <td>Customer Serial Tag #(s)</td>
-                    <td>{{form?.value?.customer_serial_tag}}</td>
-                </tr>
-                <tr>
-                    <td>Qty</td>
-                    <td>{{form?.value?.qty}}</td>
-                </tr>
-            </thead>
-            <tr style="border: none;">
-                <td class="text-center" colspan="2" rowspan="3" style="border: none;">
-                    <div>
-                        {{form?.value?.label_count}} of {{form?.value?.total_label_count}}
-                    </div>
-                </td>
-            </tr>
-        </table>
+            </table>
+        </div>
     </div>
 </div>

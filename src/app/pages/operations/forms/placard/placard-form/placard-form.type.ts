@@ -17,5 +17,6 @@ export interface IPlacardForm {
   total_label_count: number;
   created_date?: string
   created_by?: number
-  active: number
+  active: number,
+  uom?: string,
 }

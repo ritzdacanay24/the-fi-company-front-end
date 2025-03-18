@@ -288,6 +288,7 @@ export class ShippedOrdersReportComponent implements OnInit {
         iconName: "mdi mdi-ballot-outline",
       },
     },
+    { field: "tj_po_number", headerName: "TJ PO #", filter: "agTextColumnFilter" },
   ];
 
   viewPartsOrder = (so_number_and_line) => {

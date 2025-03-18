@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   HostListener,
@@ -26,7 +27,7 @@ import { QirResponseService } from "@app/core/api/quality/qir-response.service";
   imports: [SharedModule, QirFormComponent],
   selector: "app-qir-edit",
   templateUrl: "./qir-edit.component.html",
-  styleUrls: ["./qir-edit.component.scss"],
+  styleUrls: ["./qir-edit.component.scss"]
 })
 export class QirEditComponent {
   constructor(
@@ -39,7 +40,7 @@ export class QirEditComponent {
     private authenticationService: AuthenticationService,
     private qirResponseModalService: QirResponseModalService,
     private qirResponseService: QirResponseService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -61,7 +62,7 @@ export class QirEditComponent {
 
   async openQirResponse() {
     const modalRef = this.qirResponseModalService.open(this.id);
-    modalRef.result.then(async (result: any) => {});
+    modalRef.result.then(async (result: any) => { });
   }
 
   @Input() goBack: Function = () => {
@@ -90,7 +91,7 @@ export class QirEditComponent {
       this.form.get("email").disable();
 
       this.getAttachments();
-    } catch (err) {}
+    } catch (err) { }
   }
 
   async onSubmit() {
@@ -113,6 +114,7 @@ export class QirEditComponent {
     try {
       this.isLoading = true;
       await this.api.update(this.id, this.form.getRawValue());
+      await this.onUploadAttachments()
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.form.markAsPristine();
@@ -192,7 +194,7 @@ export class QirEditComponent {
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++;
-        } catch (err) {}
+        } catch (err) { }
       }
       this.fileInput.nativeElement.value = "";
 
@@ -200,7 +202,7 @@ export class QirEditComponent {
       try {
         this.getAttachments();
         this.myFiles = [];
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 

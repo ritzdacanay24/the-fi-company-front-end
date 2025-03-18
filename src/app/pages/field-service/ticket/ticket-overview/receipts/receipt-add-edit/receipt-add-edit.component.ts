@@ -278,19 +278,23 @@ export class ReceiptAddEditComponent implements OnInit {
     this.form.value.created_date = moment().format('YYYY-MM-DD HH:mm:ss')
 
     let e = []
+    if (this.form.value.jobs) {
+      for (let i = 0; i < this.form.value.jobs?.length; i++) {
+        e.push(this.form.value.jobs[i].id)
+      }
+    }
+
     Object.keys(this.form.value).map((key) => {
-      if (key == 'jobs') {
-        for (let i = 0; i < this.form.value[key]?.length; i++) {
-          e.push(this.form.value[key][i].id)
-        }
+      if(key == 'jobs'){
         formData.append(key, e?.toString());
-      } else {
+      } else{
         formData.append(key, this.form.value[key]);
       }
     });
 
     try {
       SweetAlert.loading();
+
       let { insertId }: any = await this.api.create(formData)
 
 

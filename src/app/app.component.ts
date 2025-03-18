@@ -106,7 +106,7 @@ export class AppComponent {
       }
       if (event.type === "VERSION_INSTALLATION_FAILED") {
         // this._clearCacheAndReload will be set to true, asking a cache clear and full page reload on next navigation
-        //console.warn('Error while installing update, cache will be cleared and page reloaded');
+        //console.warn('Error while installing update, cache will be cleared and page reloaded');number
       }
 
       if (event.type == "NO_NEW_VERSION_DETECTED") return;
@@ -118,7 +118,7 @@ export class AppComponent {
       toast: true,
       imageUrl: "",
       position: "bottom-end",
-      title: `A new version of the dashboard is available`,
+      html: `<p class="text-dark">A new version of the dashboard is available</p>`,
       showCloseButton: false,
       showCancelButton: true,
       focusConfirm: true,

@@ -2,12 +2,17 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { AccessGuard } from "@app/core/guards/access.guard";
+import { ChecklistComponent } from "./checklist/checklist.component";
 
 const routes: Routes = [
   {
     path: "",
     redirectTo: "overview",
     pathMatch: "full",
+  },
+  {
+    path: "checklist",
+    component: ChecklistComponent,
   },
   {
     path: "overview",
@@ -77,4 +82,4 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes), NgbNavModule],
   exports: [RouterModule],
 })
-export class QualityRoutingModule {}
+export class QualityRoutingModule { }

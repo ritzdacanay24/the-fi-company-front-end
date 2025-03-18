@@ -96,17 +96,24 @@
   <div class="row">
     <div class="col-sm">
       <label class="form-label" [ngClass]="formValidator('label_count')">Labels</label>
-      <input type="text" class="form-control" name="label_count" formControlName="label_count"
+      <input type="number" class="form-control" name="label_count" formControlName="label_count"
         placeholder="Current Print #" [ngClass]="{ 'is-invalid': submitted && f.label_count.errors }" />
     </div>
     <div class="col-sm-2">
-      <label class="form-label"></label>
-      <input type="text" class="form-control mt-2 text-center border-0" value="OF" readonly disabled/>
+      <label class="form-label">_</label>
+      <input type="text" class="form-control mt-2 text-center border-0" value="OF" readonly disabled />
     </div>
     <div class="col-sm">
-      <label class="form-label"></label>
-      <input type="text" class="form-control mt-2" name="total_label_count" formControlName="total_label_count"
+      <label class="form-label">Total Papers</label>
+      <input type="number" class="form-control mt-2" name="total_label_count" formControlName="total_label_count"
         placeholder="Total Print #" [ngClass]="{ 'is-invalid': submitted && f.total_label_count.errors }" />
+    </div>
+    <div class="col-sm">
+      <label class="form-label">UOM</label>
+      <select class="form-select"  formControlName="uom">
+        <option selected disabled value="null">--SELECT--</option>
+        <option *ngFor="let row of ['PALLETS', 'BOXES', 'EA']" [value]="row">{{row}}</option>
+      </select>
     </div>
   </div>
 </form>

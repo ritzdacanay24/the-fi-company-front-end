@@ -10,6 +10,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { UserEditFormComponent } from "../forms/edit-form/user-edit-form.component";
 import moment from "moment";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
+import { UserService } from "@app/core/api/field-service/user.service";
 
 @Injectable({
   providedIn: "root",
@@ -17,7 +18,7 @@ import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErr
 export class UserModalService {
   modalRef: any;
 
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(id: string) {
     this.modalRef = this.modalService.open(UserModalComponent, {
@@ -40,12 +41,20 @@ export class UserModalComponent {
     private api: NewUserService,
     private ngbActiveModal: NgbActiveModal,
     private authenticationService: AuthenticationService,
-    private cdref: ChangeDetectorRef
-  ) {}
+    private cdref: ChangeDetectorRef,
+    private userService: UserService
+  ) { }
 
   ngAfterContentChecked() {
     this.cdref.detectChanges();
   }
+
+
+  async hasSubordinates(id?) {
+    return await this.userService.hasSubordinates(id);
+  }
+
+
 
   @Input() public id;
 
@@ -135,7 +144,7 @@ export class UserModalComponent {
       try {
         let image: any = await this.api.uploadfile(this.id, formData);
         this.form.patchValue({ image: image.url });
-      } catch (err) {}
+      } catch (err) { }
 
       this.isLoading = false;
     }
@@ -153,6 +162,16 @@ export class UserModalComponent {
       this.submitted = false;
       getFormValidationErrors();
       return;
+    }
+
+    if (
+      this.form.value.access == 0 ||
+      this.form.value.active == 0) {
+      let test: any = await this.hasSubordinates(this.id)
+      if (test && test.length > 0) {
+        alert(`Unable able to deactivate user because this user has a total of ${test.length} subordinate(s).`)
+        return
+      }
     }
 
     if (this.id) {
@@ -191,7 +210,7 @@ export class UserModalComponent {
 
       let data: any = await this.api.create(this.form.value);
       this.id = data.insertId;
-      
+
       if (this.myFiles) {
         await this.onUploadAttachments();
         await this.api.update(data.insertId, this.form.value);

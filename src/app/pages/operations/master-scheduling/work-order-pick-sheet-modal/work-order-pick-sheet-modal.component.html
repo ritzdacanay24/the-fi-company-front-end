@@ -127,7 +127,7 @@
                             <th>Qty Picked</th>
                         </tr>
                     </thead>
-                    <tbody class="align-middle" *ngFor="let row of data?.details" class="align-middle">
+                    <tbody class="align-middle p-0" *ngFor="let row of data?.details" class="align-middle">
                         <tr *ngIf="data?.openWorkOrderCount == 0 && data?.doesOrderHaveLines" class="d-print-none">
                             <td colspan="9" class="p-2"> All lines picked</td>
                         </tr>
@@ -144,7 +144,6 @@
                                         [bc-width]="1" [bc-font-size]="14" [bc-margin-left]="0"
                                         [bc-text-align]="'center'">
                                     </ngx-barcode6>
-                                    <small>{{row.PT_DESC1}}</small>
                                 </div>
                                 <div class="d-print-none">
                                     <p>{{row.wod_part}}</p>
@@ -167,7 +166,7 @@
                                             <td>{{loc['LD_QTY_OH']}}</td>
                                             <td>{{loc['ld_lot']}}</td>
                                             <td>{{loc['ld_ref']}}</td>
-                                            <td><input type="checkbox"></td>
+                                            <td class="text-center"><input type="checkbox"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -179,8 +178,8 @@
                             <td></td>
                         </tr>
                         <tr>
-                          <td colspan="10" class="py-2 text-start">
-                            <p>{{row.PT_DESC1}}</p>
+                          <td colspan="10" class="text-start float-start text-left">
+                            {{row.PT_DESC1}}
                           </td>
                         </tr>
                     </tbody>

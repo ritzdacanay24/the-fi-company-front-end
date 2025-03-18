@@ -90,7 +90,7 @@ export class OrgChartViewComponent implements OnInit {
         this.originalData = structuredClone(d);
         //this.getData(data.id);
       },
-      () => {}
+      () => { }
     );
   }
 
@@ -171,70 +171,31 @@ export class OrgChartViewComponent implements OnInit {
     // Update data and rerender graph
     //this.chart.data(data).render().fit();
   }
+  isMoreThan6MonthsAgo = (dateString: string) => {
+    if (!dateString) return "#3AB6E3";
+    const now = moment();
 
-  nodeContentfunction = (d, i, arr, state) => {
-    let height = !d.data.orgChartPlaceHolder ? d.height : 130;
-    let textTop = !d.data.orgChartPlaceHolder ? 60 : 5;
+    const inputDate = moment(dateString);
+    const oneMonthAgo = moment().subtract(1, 'months');
+    const sixMonthsAgo = moment().subtract(6, 'months');
+    const twelveMonthsAgo = moment().subtract(12, 'months');
 
-    let image = `${
-      d.data.showImage
-        ? `<div class="bg-light shadow" style="padding:0px;position:absolute;top:-61px;margin-left:${
-            d.width / 2 - 75
-          }px;border-radius:100px;width:154px;height:154px;border:2px solid ${
-            d.data.hire_date_color
-          }"" >
-  
-      <img class="object-fit-cover border border-1" 
-      src=" ${
-        d.data.imageUrl
-      }" style="border-radius:100px;width:150px;height:150px;border:2px solid ${
-            d.data.hire_date_color
-          }" />
-      </div>`
-        : ""
-    }`;
+    if (inputDate.isBefore(oneMonthAgo)) {
+      //after 1 months
+      return 'orange';
+    } else if (inputDate.isBefore(sixMonthsAgo)) {
+      //after 6 months
+      return "rgb(0, 195, 255)";
+    } else if (inputDate.isBefore(twelveMonthsAgo)) {
+      //after 11 months
+      return "#4B0082";
+    } else if (inputDate.isSameOrAfter(twelveMonthsAgo)) {
+      //after 
+      return "#002D62";
+    }
 
-    return `
-      <div class="card bg-light" style="height:${height}px;position:relative;overflow:visible">
-        ${image}
-        ${
-          !d.data.orgChartPlaceHolder
-            ? `<div class="card-header  border-0 shadow rounded-top text-end" style="background-color:${d.data.hire_date_color}">
-        </div>`
-            : `<div class="card-header bg-light  border-0 border border-light"></div>`
-        }
-        
-    
-        <div class="card-body text-center" style="padding-top:${textTop}px;">
-          <div style="font-size:17px;font-weight:bold;margin-top:10px"> 
-            ${
-              d.data.orgChartPlaceHolder
-                ? d.data.first
-                : d.data.first + " " + d.data.last
-            } 
-          </div>
-          <div style="font-size:15px;margin-top:4px" class="fst-italic"> 
-            ${d.data.title || "<br/>"}
-          </div>
-
-        </div>
-        <div class="card-footer bg-light py-2 d-flex justify-content-between">
-          <div> Manages: 
-            ${d.data._directSubordinates} 
-            <span class="mdi mdi-account" style="color:${
-              d.data.hire_date_color
-            }"></span>
-          </div>
-          <div> Oversees: 
-          ${d.data._totalSubordinates} 
-          <span class="mdi mdi-account" style="color:${
-            d.data.hire_date_color
-          }"></span>
-        </div>
-      </div>
-    `;
-  };
-
+    return "#3AB6E3";
+  }
   currentView;
   onNodeClick = (d) => {
     this.router.navigate([`.`], {
@@ -263,20 +224,21 @@ export class OrgChartViewComponent implements OnInit {
           ...data,
           name:
             data.first + " " + !data.last ||
-            data.last == undefined ||
-            data.last == "null"
+              data.last == undefined ||
+              data.last == "null"
               ? ""
               : data.last,
           imageUrl: data.image || "assets/images/default-user.png",
           bgColor: this.bgColor(data),
+          hire_date_color: this.bgColor(data)
         };
-
+        //7/1/2018
         let dd = attrs.data.map((e) => {
           return d.data.id == e.id
             ? {
-                ...e.data,
-                ...d.data,
-              }
+              ...e.data,
+              ...d.data,
+            }
             : e;
         });
 
@@ -286,17 +248,23 @@ export class OrgChartViewComponent implements OnInit {
           this.chart.data(dd).render();
         }
 
+        if (data.access == 100 || data.active == 0)
+          this.chart.removeNode(d.data.id).render();
+
         //this.getData(d.data.id);
       },
-      () => {}
+      () => { }
     );
   };
   bgColor(data) {
-    for (let ii = 0; ii < accessRight.length; ii++) {
-      if (accessRight[ii].value == data.employeeType) {
-        return accessRight[ii].bgColor;
-      }
-    }
+    console.log(this.isMoreThan6MonthsAgo(data.hire_date), 'ffff')
+
+    return this.isMoreThan6MonthsAgo(data.hire_date)
+    // for (let ii = 0; ii < accessRight.length; ii++) {
+    //   if (accessRight[ii].value == data.employeeType) {
+    //     return accessRight[ii].bgColor;
+    //   }
+    // }
 
     return "#3AB6E3";
   }
@@ -381,28 +349,33 @@ export class OrgChartViewComponent implements OnInit {
   }
 
   shouldShowItem = (item: any, value = true): any => {
-    if (value) {
-      item.forEach((d) => {
-        d?._children?.forEach((e) => {
-          e.data._expanded = true;
-          this.chart.setExpanded(e.data.id, true).render();
+    // if (value) {
+    //   item?.forEach((d) => {
+    //     d?._children?.forEach((e) => {
+    //       e.data._expanded = true;
+    //       this.chart.setExpanded(e.data.id, true).render();
 
-          if (e._children) {
-            this.shouldShowItem(e._children, false);
-          }
-        });
-      });
-    } else {
-      // item.forEach((d) => {
-      //   d.data._expanded = true;
-      //   this.chart.setExpanded(d.data.id, true).render();
-      //   if (d._children) {
-      //     this.shouldShowItem(d._children, false);
-      //   }
-      // });
-    }
-    // Logic to display the item here based on result
+    //       if (e._children) {
+    //         this.shouldShowItem(e._children, false);
+    //       }
+    //     });
+    //   });
+    // } else {
+    //   // item.forEach((d) => {
+    //   //   d.data._expanded = true;
+    //   //   this.chart.setExpanded(d.data.id, true).render();
+    //   //   if (d._children) {
+    //   //     this.shouldShowItem(d._children, false);
+    //   //   }
+    //   // });
+    // }
+    // // Logic to display the item here based on result
   };
+
+  async hasSubordinates(id?) {
+    return await this.userService.hasSubordinates(id);
+  }
+
 
   originalData;
   async getData(id?) {
@@ -427,8 +400,8 @@ export class OrgChartViewComponent implements OnInit {
         bgColor: data[i].bgColor,
         name:
           data[i].first + " " + !data[i].last ||
-          data[i].last == undefined ||
-          data[i].last == "null"
+            data[i].last == undefined ||
+            data[i].last == "null"
             ? ""
             : data[i].last,
         first: data[i].first,
@@ -455,7 +428,59 @@ export class OrgChartViewComponent implements OnInit {
         .container(this.chartContainer?.nativeElement)
         .data(e)
         .onNodeClick(this.onNodeClick)
-        .nodeContent(this.nodeContentfunction)
+        .nodeContent(function (d, i, arr, state) {
+          let height = !d.data.orgChartPlaceHolder ? d.height : 130;
+          let textTop = !d.data.orgChartPlaceHolder ? 60 : 5;
+
+          let image = `${d.data.showImage
+            ? `<div class="bg-light shadow" style="padding:0px;position:absolute;top:-61px;margin-left:${d.width / 2 - 75
+            }px;border-radius:100px;width:154px;height:154px;border:2px solid ${d.data.hire_date_color
+            }"" >
+          
+              <img class="object-fit-cover border border-1" 
+              src=" ${d.data.imageUrl
+            }" style="border-radius:100px;width:150px;height:150px;border:2px solid ${d.data.hire_date_color
+            }" />
+              </div>`
+            : ""
+            }`;
+
+          return `
+              <div class="card bg-light" style="height:${height}px;position:relative;overflow:visible">
+                ${image}
+                ${!d.data.orgChartPlaceHolder
+              ? `<div class="card-header  border-0 shadow rounded-top text-end" style="background-color:${d.data.hire_date_color}">
+                </div>`
+              : `<div class="card-header bg-light  border-0 border border-light"></div>`
+            }
+                
+            
+                <div class="card-body text-center" style="padding-top:${textTop}px;">
+                  <div style="font-size:17px;font-weight:bold;margin-top:10px"> 
+                    ${d.data.orgChartPlaceHolder
+              ? d.data.first
+              : d.data.first + " " + d.data.last
+            } 
+                  </div>
+                  <div style="font-size:15px;margin-top:4px" class="fst-italic"> 
+                    ${d.data.title || "<br/>"}
+                  </div>
+        
+                </div>
+                <div class="card-footer bg-light py-2 d-flex justify-content-between">
+                  <div> Manages: 
+                    ${d.data._directSubordinates} 
+                    <span class="mdi mdi-account" style="color:${d.data.hire_date_color
+            }"></span>
+                  </div>
+                  <div> Oversees: 
+                  ${d.data._totalSubordinates} 
+                  <span class="mdi mdi-account" style="color:${d.data.hire_date_color
+            }"></span>
+                </div>
+              </div>
+            `;
+        })
         .nodeWidth((d) => 300)
         .childrenMargin((d) => {
           if (d.data.orgChartPlaceHolder) return 190;
@@ -478,13 +503,11 @@ export class OrgChartViewComponent implements OnInit {
           // });
         })
         .buttonContent(({ node, state }) => {
-          return `<div style="px;color:#fff;border-radius:5px;padding:4px;font-size:15px;margin:auto auto;background-color:${
-            node.data.hire_date_color
-          };border: 1px solid #E4E2E9;white-space:nowrap"> <span style="font-size:15px">${
-            node.children
+          return `<div style="px;color:#fff;border-radius:5px;padding:4px;font-size:15px;margin:auto auto;background-color:${node.data.hire_date_color
+            };border: 1px solid #E4E2E9;white-space:nowrap"> <span style="font-size:15px">${node.children
               ? `<i class="mdi mdi-chevron-up"></i>`
               : `<i class="mdi mdi-chevron-down"></i>`
-          }</span> ${node.data._directSubordinates}  </div>`;
+            }</span> ${node.data._directSubordinates}  </div>`;
         })
 
         .linkUpdate(function (d, i, arr) {
@@ -530,14 +553,17 @@ export class OrgChartViewComponent implements OnInit {
       this.filterChart(this.userId);
     }
 
-    if (this.user_edit) {
-      this.currentView = this.user_edit;
-      this.chart
-        .data(e)
-        .setHighlighted(this.user_edit)
-        .setCentered(this.user_edit)
-        .render();
-    }
+    // if (this.user_edit) {
+    //   this.currentView = this.user_edit;
+    //   this.chart
+    //     .data(e)
+    //     .setHighlighted(this.user_edit)
+    //     .setCentered(this.user_edit)
+    //     .render();
+    // }
+
+    this.compact()
+
   }
 
   horizontal() {
@@ -551,6 +577,7 @@ export class OrgChartViewComponent implements OnInit {
         return 190;
       })
       .compact(false)
+      .setCentered()
       .render()
       .fit();
   }
@@ -570,7 +597,6 @@ export class OrgChartViewComponent implements OnInit {
       .compactMarginPair((d) => 80)
       .compact(true)
       .render()
-      .fit();
   }
 
   ngOnInit() {

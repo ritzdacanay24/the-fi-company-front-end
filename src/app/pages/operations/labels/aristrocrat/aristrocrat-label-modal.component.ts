@@ -5,7 +5,6 @@ import { SharedModule } from "@app/shared/shared.module";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { FormGroup } from "@angular/forms";
-import { QadPartSearchComponent } from "@app/shared/components/qad-part-search/qad-part-search.component";
 
 @Injectable({
   providedIn: "root",
@@ -24,7 +23,7 @@ export class AristrocratLabelModalService {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, QadPartSearchComponent],
+  imports: [SharedModule],
   selector: "app-aristrocrat-label-modal",
   templateUrl: "./aristrocrat-label-modal.component.html",
   styleUrls: [],

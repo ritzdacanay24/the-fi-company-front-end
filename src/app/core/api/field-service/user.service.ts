@@ -54,6 +54,11 @@ export class UserService extends DataService<any> {
     const result = queryString(params);
     return await firstValueFrom(this.http.get(`${url}/orgchart.php${result}`));
   }
+  public async hasSubordinates(id) {
+    return await firstValueFrom(this.http.get(`${url}/hasSubordinates.php?id=${id}`));
+  }
+
+
 }
 
 function formatData(data) {

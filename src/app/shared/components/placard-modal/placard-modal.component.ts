@@ -14,7 +14,7 @@ import { ToastrService } from "ngx-toastr";
   providedIn: "root",
 })
 export class PlacardModalService {
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(soNumber, lineNumber, partNumber) {
     let modalRef = this.modalService.open(PlacardModalComponent, {
@@ -41,7 +41,7 @@ export class PlacardModalComponent {
     private api: PlacardService,
     private toastrService: ToastrService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   @Input({ required: true }) public soNumber: string = "";
   @Input({ required: true }) public lineNumber: string = "";
@@ -58,6 +58,8 @@ export class PlacardModalComponent {
     this.cdr.detectChanges();
   }
 
+  totalPrints = []
+
   setFormEmitter($event) {
     this.form = $event;
     this.form.patchValue(
@@ -70,6 +72,18 @@ export class PlacardModalComponent {
 
     this.form.valueChanges.subscribe((val) => {
       this.cdr.detectChanges();
+    });
+
+
+    this.form.valueChanges.subscribe(value => {
+      this.totalPrints = []
+      for (let i = 0; i < this.form.value.total_label_count; i++) {
+        let count = i + 1;
+        this.totalPrints.push({
+          ...this.form.value,
+          label_count: count
+        })
+      }
     });
   }
 
@@ -127,6 +141,16 @@ export class PlacardModalComponent {
             this.form.get("customer_co_por_so").enable();
           }
         });
+
+
+        this.totalPrints = []
+        for (let i = 0; i < this.data.total_label_count; i++) {
+          let count = i + 1;
+          this.totalPrints.push({
+            ...this.data,
+            label_count: count
+          })
+        }
       }
 
       this.isLoading = false;
@@ -175,22 +199,25 @@ export class PlacardModalComponent {
   }
 
   onPrint() {
-    var printContents = document.getElementById("pickSheet").innerHTML;
-    var popupWin = window.open("", "_blank", "width=1000,height=600");
-    popupWin.document.open();
-    var pathCss =
-      "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
-    popupWin.document.write(
-      '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
+    setTimeout(() => {
+      var printContents = document.getElementById("pickSheet").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
+      popupWin.document.open();
+      var pathCss =
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
+      popupWin.document.write(
+        '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
         pathCss +
         '" /></head><body onload="window.print()">' +
         printContents +
         "</body></html>"
-    );
-    popupWin.document.close();
-    popupWin.onload = function () {
-      popupWin.print();
-      popupWin.close();
-    };
+      );
+      popupWin.document.close();
+      popupWin.onload = function () {
+        popupWin.print();
+        popupWin.close();
+      };
+
+    }, 500);
   }
 }

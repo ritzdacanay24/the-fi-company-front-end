@@ -21,7 +21,7 @@ export class PlacardEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: PlacardService,
     private toastrService: ToastrService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -29,6 +29,23 @@ export class PlacardEditComponent {
     });
 
     if (this.id) this.getData();
+  }
+
+  setFormEmitter($event) {
+    this.form = $event;
+
+
+    this.form.valueChanges.subscribe(value => {
+      this.totalPrints = []
+      for (let i = 0; i < this.form.value.total_label_count; i++) {
+        let count = i + 1;
+        this.totalPrints.push({
+          ...this.form.value,
+          label_count: count
+        })
+      }
+    });
+
   }
 
   title = "Edit";
@@ -53,6 +70,17 @@ export class PlacardEditComponent {
     try {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
+
+
+      this.totalPrints = []
+      for (let i = 0; i < this.data.total_label_count; i++) {
+        let count = i + 1;
+        this.totalPrints.push({
+          ...this.data,
+          label_count: count
+        })
+      }
+
       this.form.patchValue(this.data);
       this.isLoading = false;
     } catch (err) {
@@ -72,8 +100,8 @@ export class PlacardEditComponent {
       this.isLoading = true;
       await this.api.update(this.id, this.form.value);
       this.isLoading = false;
+      this.form.markAsPristine()
       this.toastrService.success("Successfully Updated");
-      this.goBack();
     } catch (err) {
       this.isLoading = false;
     }
@@ -83,23 +111,37 @@ export class PlacardEditComponent {
     this.goBack();
   }
 
+  totalPrints = [];
   onPrint() {
-    var printContents = document.getElementById("pickSheet").innerHTML;
-    var popupWin = window.open("", "_blank", "width=1000,height=600");
-    popupWin.document.open();
-    var pathCss =
-      "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
-    popupWin.document.write(
-      '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
+
+    if (this.form.dirty) {
+      alert('You have unsaved data. Please save before printing')
+      return
+    }
+
+
+    setTimeout(() => {
+
+      var printContents = document.getElementById("pickSheet").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
+      popupWin.document.open();
+      var pathCss =
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
+      popupWin.document.write(
+        '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
         pathCss +
         '" /></head><body onload="window.print()">' +
         printContents +
         "</body></html>"
-    );
-    popupWin.document.close();
-    popupWin.onload = function () {
-      popupWin.print();
-      popupWin.close();
-    };
+      );
+      popupWin.document.close();
+      popupWin.onload = () => {
+        popupWin.print();
+        popupWin.close();
+        this.form.markAsPristine()
+      };
+
+    }, 500);
+
   }
 }

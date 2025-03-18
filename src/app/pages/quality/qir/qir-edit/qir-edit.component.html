@@ -45,12 +45,6 @@
           <input #fileInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
         </div>
 
-        <div class="mb-3">
-          <button (click)="this.onUploadAttachments()" type="button" class="btn btn-primary"
-            [disabled]="myFiles?.length == 0">
-            <i class="feather icon-upload"></i> Upload Documents</button>
-        </div>
-
       </div>
       <div class="card-footer d-flex d-flex">
         <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>

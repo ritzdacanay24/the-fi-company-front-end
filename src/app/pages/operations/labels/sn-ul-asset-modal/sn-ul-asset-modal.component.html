@@ -1,0 +1,40 @@
+<div class="modal-header mb-0 pb-0">
+    <h4 class="modal-title" id="modal-basic-title">{{data?.labelName}} - {{data?.labelSize}}</h4>
+</div>
+
+<div class="modal-body">
+
+    <div class="mb-5 text-center">
+        <img [src]="data?.labelImage" style="width:200px" class="img-fluid img-thumbnail">
+    </div>
+
+    <form [formGroup]="form" autocomplete="off">
+
+        <div class="mb-3">
+            <label class="form-label">Serial Number</label>
+            <input formControlName="serial_number" type="text" class="form-control" placeholder="Enter Part Number">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">UL Number</label>
+            <input formControlName="ul_number" type="text" class="form-control" placeholder="Enter Serial Number">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Asset Number</label>
+            <input formControlName="asset_number" type="text" class="form-control" placeholder="Enter Serial Number">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Total Labels</label>
+            <input formControlName="totalLabels" type="text" class="form-control" placeholder="Enter Total Labels">
+        </div>
+
+    </form>
+
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
+    <button (click)="onPrint()" type="button" class="btn btn-primary">Print</button>
+</div>
