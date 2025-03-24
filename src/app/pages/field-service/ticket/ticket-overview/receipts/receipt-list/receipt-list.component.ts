@@ -148,7 +148,6 @@ export class UploadedReceiptComponent implements OnInit {
 
     this.printedReceipts = selectedData;
 
-    console.log(this.printedReceipts)
     let print = [];
     selectedData.forEach((element) => {
       if (this.isPdf(element.fileName))
@@ -336,8 +335,6 @@ export class UploadedReceiptComponent implements OnInit {
         };
         this.images.push(item);
       }
-
-      console.log(this.images)
 
       this.getTripExenses(this.data);
       this.setColumDef1();

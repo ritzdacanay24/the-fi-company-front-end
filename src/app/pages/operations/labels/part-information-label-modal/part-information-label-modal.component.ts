@@ -13,7 +13,7 @@ import moment from "moment";
   providedIn: "root",
 })
 export class PartInformationLabelModalService {
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(data) {
     let modalRef = this.modalService.open(PartInformationLabelModalComponent, {
@@ -37,7 +37,17 @@ export class PartInformationLabelModalComponent implements OnInit {
     public router: Router,
     private ngbActiveModal: NgbActiveModal,
     private labelService: LabelService
-  ) {}
+  ) { }
+
+  postFix = [{
+    name: "Refurb", value: "-R"
+  }, {
+    name: "New", value: "-N"
+  }, {
+    name: "Used", value: "-U"
+  }, {
+    name: "NA", value: ""
+  }]
 
   form = new FormGroup<any>({
     partNumber: new FormControl(""),
@@ -49,11 +59,12 @@ export class PartInformationLabelModalComponent implements OnInit {
     mfgDate: new FormControl(moment().format("YYYY-MM-DD")),
     mfgName: new FormControl("The-Fi-Company"),
     includeMfg: new FormControl(false),
+    postFix: new FormControl(null),
   });
 
   @Input() data: any;
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   dismiss() {
     this.ngbActiveModal.dismiss();
@@ -72,6 +83,7 @@ export class PartInformationLabelModalComponent implements OnInit {
       customerPartNumber: data.cp_cust_part,
       description: data.pt_desc1,
       description2: data.pt_desc2,
+
     });
   }
 
@@ -86,17 +98,16 @@ export class PartInformationLabelModalComponent implements OnInit {
     var cmds = `
             ^XA^SZ2^MCY~TA0~JSN^MD0^LT0^MFN,C^JZY^PR4,4^PMN^JMA^LH0,0^LRN^XZ
             ^XA
-            ^FO30,30^A0N,120,55^FD${String(row.partNumber)?.toUpperCase()}^FS
-            ^FO690,35^BXN,4,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}^FS
+            ^FO30,30^A0N,120,55^FD${String(row.partNumber)?.toUpperCase()}${row.postFix}^FS
+            ^FO690,35^BXN,4,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}${row.postFix}^FS
             ^FO30,140^A0N,60,30^FD${row.description || ""}^FS
             ^FO30,210^A0N,60,30^FD${row.description2 || ""}^FS
             ^FO30,280^A0N,60,30^FDQTY: ${row.qty}^FS
             ^FO30,350^A0N,60,30^FDDate: ${moment().format("MM/DD/YYYY")}^FS
-            ${
-              row.includeMfg
-                ? `^FO400,280^A0N,60,30^FDMFG: ${row.mfgDate}^FS`
-                : ``
-            }
+            ${row.includeMfg
+        ? `^FO400,280^A0N,60,30^FDMFG: ${row.mfgDate}^FS`
+        : ``
+      }
             ${row.includeMfg ? `^FO400,350^A0N,60,30^FD${row.mfgName}^FS` : ``}
             ^PQ${row.totalLabels}^FS
             ^XZ

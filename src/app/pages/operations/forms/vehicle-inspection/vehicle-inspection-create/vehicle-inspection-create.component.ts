@@ -79,7 +79,6 @@ export class VehicleInspectionCreateComponent {
   }
 
   setFormErrorsEmitter($event) {
-    console.log($event, '----')
   }
 
   myFiles: string[] | any = [];

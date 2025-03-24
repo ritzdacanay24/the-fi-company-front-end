@@ -85,7 +85,6 @@ export class VehicleInspectionResolveModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log(this.data)
     if (this.data?.id) {
       this.getDetaliById();
     }}

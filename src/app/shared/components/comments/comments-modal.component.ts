@@ -125,7 +125,6 @@ export class DateAgoPipe implements PipeTransform {
 export class CommentsModalComponent implements OnInit {
 
   onResizeEnd(event: ResizeEvent): void {
-    console.log('Element was resized', event);
   }
 
   constructor(

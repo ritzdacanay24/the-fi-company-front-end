@@ -132,13 +132,10 @@ export class VehicleInspectionFormComponent implements OnInit {
         }
       }
     }
-    console.log(this.formValues)
-
   }
 
   @Input() getData: any;
   async resolveIssue(data) {
-    console.log(data);
     this.vehicleInspectionResolveModalService.open(data).result.then((res) => {
       this.getData();
     });

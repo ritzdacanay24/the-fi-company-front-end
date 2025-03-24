@@ -257,7 +257,6 @@ export class OrgChartViewComponent implements OnInit {
     );
   };
   bgColor(data) {
-    console.log(this.isMoreThan6MonthsAgo(data.hire_date), 'ffff')
 
     return this.isMoreThan6MonthsAgo(data.hire_date)
     // for (let ii = 0; ii < accessRight.length; ii++) {

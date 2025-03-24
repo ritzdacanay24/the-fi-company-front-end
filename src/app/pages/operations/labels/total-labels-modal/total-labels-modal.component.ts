@@ -62,12 +62,15 @@ export class TotalLabelsModalComponent implements OnInit {
 
     let cmds = '';
     for (let i = 0; i < row.total_labels; i++) {
-      row.start_number = row.start_number;
+      row.start_number = Number(row.start_number);
+
       cmds += `
         ^XA
         ^FWR
-        ^FO340,50^A0,400, 180^FD ${row.start_number} of ${row.total_labels} ^FS
-        ^FO0,50^A0,400, 180^FD ${row.uom} ^FS
+        ^FO340,180^A0,400, 170^FD ${row.start_number < 10 ? `0${row.start_number}` : row.start_number} ^FS
+        ^FO340,470^A0,400, 180^FD of ^FS
+        ^FO340,710^A0,400, 180^FD ${row.total_labels < 10 ? `0${row.total_labels}` : row.total_labels} ^FS
+        ${row.uom == 'Pallets' ? '^FO0,300^A0,400, 180^FD Pallets ^FS' : '^FO0,320^A0,400, 180^FD Boxes ^FS'}
         ^XZ
     `;
       row.start_number++

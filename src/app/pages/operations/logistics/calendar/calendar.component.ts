@@ -97,11 +97,12 @@ export class CalendarComponent implements OnInit {
         start: value.start,
         end: end,
         allDay: value.allDay,
-        title: value.title,
-        color: value.backgroundColor,
+        // title: value.title,
+        text: `<span style="color:${value.text_color}">${value.title}</span>`,
+        color: value.background_color,
         id: value.id,
         type_of_event: value.type_of,
-        textColor: value.textColor,
+        textColor: value.text_color,
         cssClass: value.status == "Completed" ? "strike-class" : null,
       });
     }

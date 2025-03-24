@@ -32,8 +32,11 @@
     </div>
 </div>
 
-<div class="modal-footer">
-    <button class="btn btn-light" (click)="dismiss()">Cancel</button>
+<div class="modal-footer d-flex ">
+    <button class="btn btn-light me-auto" (click)="dismiss()">Cancel</button>
+    
+    <button *ngIf="id" class="btn btn-primary" (click)="onSubmit()"><i class="feather icon-save mr-2 text-success"></i>
+        Update</button>
     <button type="button" class="btn btn-primary" (click)="onSubmit()" *ngIf="!id">Save</button>
     <div class="btn-group" *ngIf="id">
         <div ngbDropdown container="body">

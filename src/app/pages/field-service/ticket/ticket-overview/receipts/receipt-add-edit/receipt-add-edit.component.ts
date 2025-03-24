@@ -72,8 +72,6 @@ export class ReceiptAddEditComponent implements OnInit {
   onMaterialGroupChange(event) {
     this.jobsToView = event;
 
-    console.log(event)
-
   }
 
 

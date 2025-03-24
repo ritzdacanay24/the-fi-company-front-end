@@ -43,7 +43,7 @@ export class GraphicsDemandComponent implements OnInit {
     private itemInfoModalService: ItemInfoModalService,
     private graphicsBomModalService: GraphicsBomModalService,
     private authenticationService: AuthenticationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -73,7 +73,7 @@ export class GraphicsDemandComponent implements OnInit {
       (result: any) => {
         this.getData();
       },
-      () => {}
+      () => { }
     );
   }
 
@@ -227,7 +227,7 @@ export class GraphicsDemandComponent implements OnInit {
     },
     onFilterChanged: (params) => this.updateUrl(params),
     onSortChanged: (params) => this.updateUrl(params),
-    onCellEditingStarted: (event) => {},
+    onCellEditingStarted: (event) => { },
     onCellEditingStopped: (event) => {
       if (event.oldValue === event.newValue || event.value === undefined)
         return;
@@ -295,7 +295,16 @@ export class GraphicsDemandComponent implements OnInit {
     try {
       this.gridApi?.showLoadingOverlay();
       let data = await this.api.getGraphicsDemand();
-      this.data = data;
+
+      let newData = [];
+
+      data.forEach(function (element) {
+        if (!element.parent_ps_end) {
+          newData.push(element)
+        }
+      });
+
+      this.data = newData;
       this.gridApi?.hideOverlay();
     } catch (err) {
       this.gridApi?.hideOverlay();

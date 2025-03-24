@@ -13,7 +13,7 @@ import moment from "moment";
   providedIn: "root",
 })
 export class PartInformationLabelLgModalService {
-  constructor(public modalService: NgbModal) {}
+  constructor(public modalService: NgbModal) { }
 
   open(data) {
     let modalRef = this.modalService.open(
@@ -38,7 +38,18 @@ export class PartInformationLabelLgModalComponent implements OnInit {
     public router: Router,
     private ngbActiveModal: NgbActiveModal,
     private labelService: LabelService
-  ) {}
+  ) { }
+
+
+  postFix = [{
+    name: "Refurb", value: "-R"
+  }, {
+    name: "New", value: "-N"
+  }, {
+    name: "Used", value: "-U"
+  }, {
+    name: "NA", value: ""
+  }]
 
   form = new FormGroup<any>({
     partNumber: new FormControl(""),
@@ -47,11 +58,12 @@ export class PartInformationLabelLgModalComponent implements OnInit {
     description2: new FormControl(""),
     qty: new FormControl(""),
     totalLabels: new FormControl(""),
+    postFix: new FormControl(null),
   });
 
   @Input() data: any;
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   dismiss() {
     this.ngbActiveModal.dismiss();
@@ -85,8 +97,8 @@ export class PartInformationLabelLgModalComponent implements OnInit {
             ^XA
             ^FWR
             ^BY5,2,270
-            ^FO580,990^BXN,8,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}^FS
-            ^FO605,50^A0,80,80^FD${String(row.partNumber)?.toUpperCase()}^FS
+            ^FO580,990^BXN,8,200,,,,,^FD${String(row.partNumber)?.toUpperCase()}${row.postFix}^FS
+            ^FO605,50^A0,80,80^FD${String(row.partNumber)?.toUpperCase()}${row.postFix}^FS
             ^FO505,50^A0,70,70^FD${row.description || ""}^FS
             ^FO405,50^A0,70,70^FD${row.description2 || ""}^FS
             ^FO305,50^A0,70,70^FDQty: ${row.qty}^FS

@@ -42,7 +42,6 @@ export class ContinuityModalComponent implements OnInit {
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService
   ) {
-    console.log(this.authenticationService)
   }
 
   form = new FormGroup<any>({

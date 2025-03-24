@@ -11,10 +11,47 @@
     <div class="row mb-3">
         <label class="col-sm-3 col-form-label required">Type</label>
         <div class="col-sm-9">
-            <select class="form-control" formControlName="inbound_or_pickup"
+
+            <input id="typeahead-focus" type="text" class="form-control" formControlName="inbound_or_pickup"
+                [ngbTypeahead]="search" (focus)="focus$.next($any($event).target.value)"
+                (click)="click$.next($any($event).target.value)" (ngModelChange)="setColor()" #instance="ngbTypeahead"
+                placeholder="Enter event type" [editable]="true" />
+
+            <!-- 
+                <select class="form-control" formControlName="inbound_or_pickup" (change)="setColor()"
                 [ngClass]="{ 'is-invalid': submitted && f['inbound_or_pickup'].errors }">
-                <option *ngFor="let row of ['Inbound', 'Outbound', 'Pick Up', 'PTO']">{{row}}</option>
-            </select>
+                    <option *ngFor="let row of option_types" [value]="row.name">{{row.name}}</option>
+                </select> 
+            -->
+
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-sm-12 col-md-6 mb-3">
+            <label class="form-label required">Background Color</label>
+            <div class="input-group">
+                <input class="form-control" [cpOutputFormat]="'hex'" [cpDisableInput]="true" [cpPosition]="'bottom'"
+                    [cpPresetColors]="cpPresetColors" [(colorPicker)]="form.value.background_color"
+                    formControlName="background_color" placeholder="Select background color"
+                    (colorPickerChange)="setValue('background_color', $event)" />
+            </div>
+        </div>
+        <div class="col-sm-12 col-md-6 mb-3">
+            <label class="form-label required">Text Color</label>
+            <div class="input-group">
+                <input class="form-control" [cpOutputFormat]="'hex'" [cpDisableInput]="true" [cpPosition]="'bottom'"
+                    [cpPresetColors]="cpPresetColorsText" [(colorPicker)]="form.value.text_color"
+                    formControlName="text_color" placeholder="Select text color"
+                    (colorPickerChange)="setValue('text_color', $event)" />
+            </div>
+        </div>
+
+        <div class="col-md-12 col-md-3 mb-3">
+            <label class="form-label">Color scheme</label>
+            <span class="input-group-text" id="basic-addon1" [style.background]="form.value.background_color"
+                [style.color]="form.value.text_color">Color scheme</span>
         </div>
     </div>
 
@@ -58,5 +95,7 @@
                 placeholder="Enter any comments"></textarea>
         </div>
     </div>
+
+
 
 </form>

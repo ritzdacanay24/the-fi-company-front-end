@@ -65,8 +65,6 @@ export class LocationLabelModalComponent implements OnInit {
         this.form.value.end_location
       );
 
-      console.log(res)
-
       //up
       let e = `
         ^XA

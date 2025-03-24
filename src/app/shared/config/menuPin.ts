@@ -14,7 +14,6 @@ export class MenuPin implements IMenuItemComp {
   eventListener!: () => void;
 
   init(params: any): void {
-    console.log(params, 'ddd')
     this.eGui = document.createElement("div");
 
     this.eGui.innerHTML = ` 

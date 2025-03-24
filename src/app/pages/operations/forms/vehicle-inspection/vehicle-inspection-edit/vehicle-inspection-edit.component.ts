@@ -70,7 +70,6 @@ export class VehicleInspectionEditComponent {
   viewImage(row) {}
 
   setFormErrorsEmitter($event){
-    console.log($event, '----')
   }
 
   compare(a, b) {
