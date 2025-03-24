@@ -25,7 +25,7 @@ export class IgtTransferEditComponent {
     private toastrService: ToastrService,
     private fb: FormBuilder,
     private authenticationService: AuthenticationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -55,15 +55,51 @@ export class IgtTransferEditComponent {
 
   details: FormArray;
 
+  onPrint() {
+
+    setTimeout(() => {
+      var printContents = document.getElementById("print").innerHTML;
+      var popupWin = window.open("", "_blank", "width=1000,height=600");
+      popupWin.document.open();
+
+      popupWin.document.write(`
+        <html>
+          <head>
+            <title>IGT Transfer</title>
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+            <style>
+            @page {
+              size: landscape;
+              padding: 5 !important;
+            }
+            </style>
+          </head>
+          <body onload="window.print();window.close()">${printContents}</body>
+        </html>`);
+
+      popupWin.document.close();
+
+      popupWin.onfocus = function () {
+        setTimeout(function () {
+          popupWin.focus();
+          popupWin.document.close();
+        }, 300);
+      };
+    }, 200);
+
+  }
+
+  header!: any
   async getData() {
     try {
       this.details?.clear();
       this.form?.reset();
 
       this.isLoading = true;
-      let data: any = await this.api.getHeader(this.id);
+      let data: any = this.header = await this.api.getHeader(this.id);
       this.data = await this.api.find({ igt_transfer_ID: data.id });
 
+      console.log(this.data, 'ffff')
       if (this.data) {
         this.details = this.form.get("details") as FormArray;
         for (let i = 0; i < this.data.length; i++) {
