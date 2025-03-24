@@ -37,16 +37,18 @@
 
 <div class="print  d-none d-print-block" id="print">
   <div class="row">
-    <div class="col-lg-6 col-sm mb-3">
-      <p class="mb-1">Sales Order: <b>{{header.so_number}}</b></p>
-      <p class="mb-1">Transfer Reference: <b>{{header.transfer_reference}}</b></p>
-      <p class="mb-1">Transfer Description: <b>{{header.transfer_reference_description}}</b></p>
-      <p class="mb-1">Date: <b>{{header.date}}</b></p>
-      <p class="mb-1">IGT Internal transaction: <b>311 to {{header.to_location}} </b></p>
-      <p>Email sent on: <b>{{header.email_sent_datetime}} </b></p>
+    <div class="col-lg-6 col-sm mb-3 text-start d-none d-lg-block d-print-block">
+      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:138px;position:absolute;left:50px"
+        class="img-fluid">
+      <div style="margin-left:40px;margin-top:50px;">
+        <p class="mb-0">Transfer Reference: <b>{{header.transfer_reference}}</b></p>
+        <p class="mb-0">Transfer Description: <b>{{header.transfer_reference_description}}</b></p>
+      </div>
     </div>
-    <div class="col-lg-6 col-sm mb-3 text-end d-none d-lg-block d-print-block">
-      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:138px;position:absolute;right:30px" class="img-fluid">
+    <div class="col-lg-6 col-sm mb-3 text-center">
+      <h3 class="mb-1"><b>PRODUCT TRANSFER FORM</b></h3>
+      <p class="mb-1">IGT Internal Transaction:<b> 311 to {{header.to_location}} </b></p>
+      <p>Date: <b>{{header.email_sent_datetime | date}} </b></p>
     </div>
   </div>
 
@@ -54,7 +56,6 @@
   <table class="table table-sm align-middle table-bordered">
     <thead>
       <tr>
-        <td>SO Line #</td>
         <td>Part #</td>
         <td>Description</td>
         <td>Qty</td>
@@ -66,7 +67,6 @@
     </thead>
     <tbody>
       <tr class="p-0 m-0 align-middle" *ngFor="let row of data; let i=index">
-        <td> {{row.so_line}} </td>
         <td> {{row.part_number}} </td>
         <td> {{row.description}} </td>
         <td> {{row.qty}} </td>
@@ -77,4 +77,14 @@
       </tr>
     </tbody>
   </table>
+
+  <div class="row">
+    <div class="col-lg-6 col-sm mb-3 text-start d-none d-lg-block d-print-block" style="margin-left:40px">
+      <p class="mb-0" style="margin-top:30px;">Eyefi Signature: <b
+          style="font-family:cursive"><em>{{header.email_sent_created_by_name}}</em></b></p>
+      <p class="mb-0">Print Name: <b>{{header.email_sent_created_by_name}}</b></p>
+      <p class="mb-0">Date: <b>{{header.email_sent_datetime | date}}</b></p>
+    </div>
+  </div>
+
 </div>
