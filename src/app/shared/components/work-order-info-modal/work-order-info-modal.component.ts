@@ -68,6 +68,7 @@ export class WorkOrderInfoModalComponent {
 
   columnDefs: ColDef[] = [
     { field: "wod_part", headerName: "Part #", filter: "agMultiColumnFilter" },
+    { field: "pt_rev", headerName: "Rev", filter: "agMultiColumnFilter" },
     {
       field: "WOD_QTY_ISS",
       headerName: "Qty Issued",

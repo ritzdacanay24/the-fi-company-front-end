@@ -45,7 +45,7 @@ export class RmaListComponent implements OnInit {
       this.id = params["id"];
       this.isAll = params["isAll"]
         ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
+        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -183,7 +183,7 @@ export class RmaListComponent implements OnInit {
 
   id = null;
 
-  isAll = false;
+  isAll = true;
 
   changeIsAll() {}
 

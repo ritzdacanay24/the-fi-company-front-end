@@ -9,7 +9,7 @@ export class QueryService {
   constructor(private http: HttpClient) { }
 
   getData(query: string): Observable<any> {
-    return this.http.get<any>(`/qad_tables/qad_tables?query=${query}`);
+    return this.http.post<any>(`/qad_tables/qad_tables`, {query: query});
   }
   getQuery(): Observable<any> {
     return this.http.get<any>(`/qad_tables/qad_tables?test1=1`);

@@ -1,6 +1,8 @@
 <!--The content below is only a placeholder and can be replaced.-->
+<!-- <button class="btn btn-primary" (click)="download()">Download</button> -->
+
 <div id="chart" style="margin:0 auto" *ngIf="data?.label?.length">
-  <apx-chart [series]="chartOptions.series" [chart]="chartOptions.chart" [colors]="chartOptions.colors"
+  <apx-chart #chart  [series]="chartOptions.series" [chart]="chartOptions.chart" [colors]="chartOptions.colors"
     [labels]="chartOptions.labels" [responsive]="chartOptions.responsive" [legend]="chartOptions.legend"
     [dataLabels]="chartOptions.dataLabels" [grid]="chartOptions.grid" [title]="chartOptions.title"
     [stroke]="chartOptions.stroke"></apx-chart>

@@ -8,6 +8,8 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { IgtTransferFormComponent } from "../igt-transfer-form/igt-transfer-form.component";
 import { IgtTransferService } from "@app/core/api/operations/igt-transfer/igt-transfer.service";
+declare var dymo: any; // Declare the dymo object
+dymo.label.framework.init() //Initialize DYMO Label Framework
 
 @Component({
   standalone: true,
@@ -21,9 +23,15 @@ export class IgtTransferCreateComponent {
     private api: IgtTransferService,
     private toastrService: ToastrService,
     private authenticationService: AuthenticationService
-  ) {}
+  ) { }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+
+    if (typeof dymo === 'undefined' || typeof dymo.label === 'undefined' || typeof dymo.label.framework === 'undefined') {
+      console.error('DYMO framework is not loaded or initialized.');
+      return;
+    }
+  }
 
   title = "Create IGT Transfer";
 

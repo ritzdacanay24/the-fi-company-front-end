@@ -16,6 +16,7 @@ import {
     ApexStroke
 } from "ng-apexcharts";
 import { NgChartsModule } from "ng2-charts";
+import { jsPDF } from "jspdf";
 
 export type ChartOptions = {
     series: ApexAxisChartSeries;
@@ -74,18 +75,6 @@ export class OtdChartComponent {
                     position: 'top',
                     hideOverflowingLabels: true,
                 }
-            }
-        },
-
-        fill: {
-            opacity: [0.85, 0.25, 1],
-            gradient: {
-                inverseColors: false,
-                shade: 'light',
-                type: "vertical",
-                opacityFrom: 0.85,
-                opacityTo: 0.55,
-                stops: [0, 100, 100, 100]
             }
         },
         dataLabels: {
@@ -179,6 +168,25 @@ export class OtdChartComponent {
 
     constructor() {
 
+    }
+
+    testImage
+
+    download() {
+
+
+        this.chart.dataURI().then((data) => { //Here shows error
+            console.log(data)
+
+            var pdf: any = new jsPDF("l", "mm", "a4");
+            
+            var width = pdf.internal.pageSize.getWidth();
+            var height = pdf.internal.pageSize.getHeight();
+
+            pdf.addImage(data.imgURI, 'PNG', 0, 0, width, height);
+
+            pdf.save("download.pdf");
+        })
     }
 
 

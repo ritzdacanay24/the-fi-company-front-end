@@ -54,7 +54,7 @@ export class JobListComponent implements OnInit {
       this.id = params["id"];
       this.isAll = params["isAll"]
         ? params["isAll"].toLocaleLowerCase() === "true"
-        : false;
+        : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
     });
@@ -62,7 +62,7 @@ export class JobListComponent implements OnInit {
     this.getData();
   }
 
-  isAll = false;
+  isAll = true;
 
   previous_fsid;
 

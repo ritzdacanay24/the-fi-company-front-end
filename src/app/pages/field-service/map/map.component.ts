@@ -436,7 +436,6 @@ export class MapComponent implements OnInit {
             }
           },
           (error) => {
-            console.log(error);
           },
           { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
         );

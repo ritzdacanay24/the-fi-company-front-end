@@ -66,6 +66,7 @@
                 <thead>
                     <tr>
                         <th>Part #</th>
+                        <th>Rev</th>
                         <th>Qty Per</th>
                         <th>Qty Allocated</th>
                         <th>Qty Issued</th>
@@ -78,6 +79,7 @@
                 <tbody>
                     <tr *ngFor="let row of details">
                         <td>{{row.wod_part}}</td>
+                        <td>{{row.pt_rev}}</td>
                         <td>{{row.WOD_BOM_QTY}}</td>
                         <td>{{row.WOD_QTY_ALL}}</td>
                         <td>{{row.WOD_QTY_ISS}}</td>

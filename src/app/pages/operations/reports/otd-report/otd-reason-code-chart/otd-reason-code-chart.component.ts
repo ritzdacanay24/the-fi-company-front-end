@@ -1,5 +1,6 @@
 import { Component, Input, SimpleChanges, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
+import jsPDF from "jspdf";
 import moment from "moment";
 import {
   ApexAxisChartSeries,
@@ -53,6 +54,28 @@ export class OtdReasonCodeChartComponent {
   }
 
   @Input() data;
+
+  
+      download() {
+  
+        
+  
+          this.chart.dataURI().then((data) => { //Here shows error
+              console.log(data)
+  
+              var pdf: any = new jsPDF("l", "px", "a4");
+              
+  
+              var width = pdf.internal.pageSize.getWidth();
+              var height = pdf.internal.pageSize.getHeight();
+  
+              pdf.addImage(data.imgURI, 'PNG', 0, 0, width, height);
+              pdf.save("download.pdf");
+          })
+
+          
+      }
+  
 
   ngOnChanges(data: SimpleChanges) {
     if (!this.data) return;

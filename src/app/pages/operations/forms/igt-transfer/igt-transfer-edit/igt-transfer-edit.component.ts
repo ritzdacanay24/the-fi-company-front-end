@@ -99,7 +99,6 @@ export class IgtTransferEditComponent {
       let data: any = this.header = await this.api.getHeader(this.id);
       this.data = await this.api.find({ igt_transfer_ID: data.id });
 
-      console.log(this.data, 'ffff')
       if (this.data) {
         this.details = this.form.get("details") as FormArray;
         for (let i = 0; i < this.data.length; i++) {

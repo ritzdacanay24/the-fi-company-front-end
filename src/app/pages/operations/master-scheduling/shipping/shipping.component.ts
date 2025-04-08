@@ -48,6 +48,7 @@ import { StatusDateRenderer } from "@app/shared/ag-grid/cell-renderers/status-da
 import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
+import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 
 const WS_SHIPPING = "WS_SHIPPING";
 
@@ -123,7 +124,9 @@ export class ShippingComponent implements OnInit {
     private tableSettingsService: TableSettingsService,
     private websocketService: WebsocketService,
     private authenticationService: AuthenticationService,
-    private partsOrderModalService: PartsOrderModalService
+    private partsOrderModalService: PartsOrderModalService,
+    private workOrderInfoModalService: WorkOrderInfoModalService
+
   ) {
     this.websocketService = websocketService;
 
@@ -243,7 +246,7 @@ export class ShippingComponent implements OnInit {
   viewComment = (salesOrderLineNumber: any, id: string, so?) => {
 
     if (this.isModalOpen) return;
-    
+
     this.isModalOpen = true;
 
     let modalRef = this.commentsModalService.open(
@@ -430,6 +433,11 @@ export class ShippingComponent implements OnInit {
       filter: "agMultiColumnFilter",
     },
     {
+      field: "PT_REV",
+      headerName: "Part Revision",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "SOD_NBR",
       headerName: "SO #",
       filter: "agMultiColumnFilter",
@@ -500,6 +508,30 @@ export class ShippingComponent implements OnInit {
             return "No qty on hand";
           } else {
             return "On hand qty available";
+          }
+        },
+      },
+    },
+    {
+      field: "Drop in today",
+      headerName: "Dropped in today",
+      filter: "agSetColumnFilter",
+      cellClass: (e) => {
+        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
+          return ["border-start border-danger"];
+        return null;
+      },
+      valueGetter: (e) => {
+        if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE)
+          return "Dropped in today"
+        return null;
+      },
+      filterParams: {
+        valueGetter: (e) => {
+          if (e.data && e.data.SOD_DUE_DATE == e.data.SO_ORD_DATE) {
+            return "Dropped in today";
+          } else {
+            return null;
           }
         },
       },
@@ -998,6 +1030,15 @@ export class ShippingComponent implements OnInit {
         iconName: "mdi mdi-ballot-outline",
       },
     },
+    {
+      field: "WO_NBR", headerName: "SO/Job", filter: "agMultiColumnFilter",
+      cellRenderer: LinkRendererV2Component,
+      cellRendererParams: {
+        onClick: ({ rowData }) =>
+          this.workOrderInfoModalService.open(rowData.WO_NBR),
+        isLink: true,
+      },
+    },
   ];
 
   pageId = "/master-scheduling/shipping";
@@ -1089,12 +1130,16 @@ export class ShippingComponent implements OnInit {
       this.update(event.data);
     },
     getRowClass: (params: any) => {
-      if (params.data?.SALES_ORDER_LINE_NUMBER === this.comment) {
-        return ["bg-primary-subtle"];
+
+      let classes = [];
+      if (params.data && params.data.SOD_DUE_DATE == params.data.SO_ORD_DATE) {
+        classes.push("border-2 border border-danger border-start")
+      } else if (params.data?.SALES_ORDER_LINE_NUMBER === this.comment) {
+        classes.push("bg-primary-subtle")
       } else if (params.data.misc?.hot_order) {
-        return ["border border-danger bg-opacity-10 bg-danger"];
+        classes.push("border border-danger bg-opacity-10 bg-danger")
       }
-      return null;
+      return classes;
     },
     context: {
       pageId: this.pageId,
