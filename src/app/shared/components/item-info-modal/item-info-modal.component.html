@@ -1,4 +1,5 @@
-<div class="modal-header d-flex justify-content-between">
+<div class="modal-header d-flex justify-content-between" style="cursor: grab;" class="modal-header bg-light " cdkDrag cdkDragRootElement=".modal-content"
+    cdkDragBoundary=".modal" cdkDragHandle>
     <div style="width:400px">
         <input style="display: none;">
         <app-qad-part-search (notifyParent)="notifyParent($event)" [value]="partNumber"

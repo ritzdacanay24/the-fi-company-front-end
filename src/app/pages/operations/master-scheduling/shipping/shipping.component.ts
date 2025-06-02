@@ -832,7 +832,8 @@ export class ShippingComponent implements OnInit {
     },
     {
       field: "misc.tj_po_number",
-      headerName: "TJ PO #",
+      // headerName: "TJ PO #",
+      headerName: "Work Order #",
       filter: "agSetColumnFilter",
       editable: true,
       cellRenderer: EditIconV2Component,
@@ -842,7 +843,8 @@ export class ShippingComponent implements OnInit {
     },
     {
       field: "misc.tj_due_date",
-      headerName: "TJ Due Date",
+      // headerName: "TJ Due Date",
+      headerName: "Planned to Pick",
       filter: "agSetColumnFilter",
       editable: true,
       cellRenderer: EditIconV2Component,

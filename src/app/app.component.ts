@@ -97,7 +97,7 @@ export class AppComponent {
 
         this.hasUpdate = true;
 
-        await this.showNewVersionMessage();
+        // await this.showNewVersionMessage();
       }
 
       if (event.type === "VERSION_READY") {

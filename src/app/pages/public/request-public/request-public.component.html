@@ -95,7 +95,11 @@
                   placeholder="{{request_change ? 'Please specify the changes' : 'Enter comments'}}"
                   [(ngModel)]="comment"></textarea>
               </div>
-              <button class="btn btn-primary" (click)="onSubmitComment()">{{request_change ? 'Submit Request Change' : 'Submit Comment'}} </button>
+              @if(request_id){
+              <button class="btn btn-primary me-3" (click)="onDuplicate()">Duplicate Request</button>
+              }
+              <button class="btn btn-primary float-end" (click)="onSubmitComment()">{{request_change ? 'Submit Request Change' :
+                'Submit Comment'}} </button>
             </div>
           </div>
         </div>

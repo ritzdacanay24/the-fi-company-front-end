@@ -1,30 +1,32 @@
 import { KeyValue } from "@angular/common";
 import { Component, OnInit } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { RevenueService } from "@app/core/api/operations/report/revenue.service";
 import { SharedModule } from "@app/shared/shared.module";
 import moment from "moment";
 
 @Component({
   standalone: true,
-  imports: [SharedModule],
+  imports: [SharedModule, FormsModule],
   selector: "app-revenue-by-customer",
   templateUrl: "./revenue-by-customer.component.html",
   styleUrls: [],
 })
 export class RevenueByCustomerComponent implements OnInit {
-  constructor(private revenueService: RevenueService) {}
+  constructor(private revenueService: RevenueService) { }
 
   ngOnInit() {
     this.getData();
   }
 
-   currentWeek = moment().isoWeek()
-        currentYear =  moment().isoWeekYear()
+  currentWeek = moment().isoWeek()
+  currentYear = moment().isoWeekYear()
 
   async getData() {
     try {
       this.isLoading = true;
-      this.data = await this.revenueService.getFutureRevenueByCustomer();
+      this.data = await this.revenueService.getFutureRevenueByCustomer(
+        this.excludeTariffFees);
       this.data.sort((a, b) => {
         if (a.Customer < b.Customer) {
           return -1;
@@ -123,6 +125,16 @@ export class RevenueByCustomerComponent implements OnInit {
     }, 0);
   }
 
+
+  // Add method to handle filter changes
+  onFilterChange() {
+    this.getData();
+  }
+
+
+  // Add new property for tariff fee exclusion
+  excludeTariffFees = false;
+
   async getData1(d) {
     const explodedArray = d.split("-");
 
@@ -161,7 +173,8 @@ export class RevenueByCustomerComponent implements OnInit {
         start,
         end,
         weekStart,
-        weekEnd
+        weekEnd,
+        this.excludeTariffFees
       );
 
       const uniqueNames: any = [

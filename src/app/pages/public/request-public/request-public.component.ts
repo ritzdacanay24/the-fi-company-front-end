@@ -35,7 +35,7 @@ export class RequestPublicComponent implements OnInit {
     private cdref: ChangeDetectorRef,
     private attachmentsService: AttachmentsService,
     private requestChangeModalService: RequestChangeModalService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -82,7 +82,7 @@ export class RequestPublicComponent implements OnInit {
         async (result) => {
           await this.getComments();
         },
-        (reason) => {}
+        (reason) => { }
       );
   }
 
@@ -124,7 +124,7 @@ export class RequestPublicComponent implements OnInit {
           formData.append("folderName", FIELD_SERVICE.UPLOAD_FOLDER_NAME);
           try {
             await this.attachmentsService.uploadfilePublic(formData);
-          } catch (err) {}
+          } catch (err) { }
         }
       }
 
@@ -150,6 +150,8 @@ export class RequestPublicComponent implements OnInit {
 
   data;
 
+  inititalData: any;
+
   async getData() {
     try {
       this.isLoading = true;
@@ -172,6 +174,8 @@ export class RequestPublicComponent implements OnInit {
 
       this.form.patchValue(data);
 
+      this.inititalData = this.form.getRawValue();
+
       this.form.disable();
 
       this.disabled = true;
@@ -186,6 +190,29 @@ export class RequestPublicComponent implements OnInit {
     } catch (err) {
       this.isLoading = false;
     }
+  }
+
+  onDuplicate() {
+
+    this.disabled = false;
+    this.submitted = false;
+    this.attachments = []
+    this.comments = [];
+    this.request_id = null;
+    this.token = null;
+    this.viewComment = false;
+
+    delete this.inititalData.token;
+
+    console.log(this.inititalData);
+    this.form.reset(this.inititalData);
+    this.form.enable();
+    this.form.get("active").disable();
+    this.router.navigate([`request`], {
+      queryParams: { token: null, duplicate: true, viewComment: false },
+      replaceUrl: true,
+    });
+
   }
 
   onCreateNew(navigate = true) {
@@ -262,7 +289,7 @@ export class RequestPublicComponent implements OnInit {
         try {
           await this.attachmentsService.uploadfile(formData);
           totalAttachments++;
-        } catch (err) {}
+        } catch (err) { }
       }
       this.isLoading = false;
       await this.getAttachments();

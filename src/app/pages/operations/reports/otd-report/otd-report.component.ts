@@ -473,9 +473,9 @@ export class OtdReportComponent implements OnInit {
   }
 
   async getChartData() {
-    // this.isLoading = true;
-    // let data = await this.reportService.getShippedOrdersChart(this.dateFrom1, this.dateTo1, this.typeOfView, this.showCustomers);
-    // this.dataChart = data;
-    // this.isLoading = false
+    this.isLoading = true;
+    let data = await this.reportService.getShippedOrdersChart(this.dateFrom1, this.dateTo1, this.typeOfView, this.showCustomers);
+    this.dataChart = data;
+    this.isLoading = false
   }
 }

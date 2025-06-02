@@ -198,6 +198,11 @@ export class OrgChartViewComponent implements OnInit {
   }
   currentView;
   onNodeClick = (d) => {
+    // Prevent clicking on virtual root node
+    if (d.data.id === -1) {
+      return;
+    }
+
     this.router.navigate([`.`], {
       relativeTo: this.activatedRoute,
       queryParamsHandling: "merge",
@@ -375,6 +380,61 @@ export class OrgChartViewComponent implements OnInit {
     return await this.userService.hasSubordinates(id);
   }
 
+  handleMultipleRoots(data: any[]): any[] {
+    // Find all root nodes (nodes without parents)
+    const rootNodes = data.filter(node => 
+      node.parentId === null || 
+      node.parentId === undefined || 
+      node.parentId === 0
+    );
+
+    // If there's only one root, return data as is
+    if (rootNodes.length <= 1) {
+      return data;
+    }
+
+    // Create a virtual root node
+    const virtualRoot = {
+      id: -1,
+      name: "Organization",
+      title: "Root",
+      parentId: null,
+      bgColor: "#f8f9fa",
+      imageUrl: "assets/images/organization-icon.png",
+      orgChartPlaceHolder: true,
+      showImage: false,
+      openPosition: false,
+      hire_date_color: "#6c757d",
+      org_chart_expand: 1,
+      first: "Organization",
+      last: "",
+      access: null
+    };
+
+    // Update all root nodes to point to the virtual root
+    const updatedData = data.map(node => {
+      if (rootNodes.some(root => root.id === node.id)) {
+        return { ...node, parentId: -1 };
+      }
+      return node;
+    });
+
+    // Add the virtual root to the beginning of the array
+    return [virtualRoot, ...updatedData];
+  }
+
+  findAndFixOrphanNodes(data: any[]): any[] {
+    const nodeIds = new Set(data.map(node => node.id));
+    
+    return data.map(node => {
+      // If parentId exists but parent node doesn't exist in data, make it a root
+      if (node.parentId && !nodeIds.has(node.parentId)) {
+        console.warn(`Orphan node detected: ${node.name} (ID: ${node.id}) has invalid parentId: ${node.parentId}`);
+        return { ...node, parentId: null };
+      }
+      return node;
+    });
+  }
 
   originalData;
   async getData(id?) {
@@ -383,6 +443,9 @@ export class OrgChartViewComponent implements OnInit {
       isEmployee: 1,
     });
 
+    // Fix multiple roots and orphan nodes immediately after API call
+    data = this.fixDataStructure(data);
+
     data.sort((a, b) => {
       let username = a.first + " " + a.last;
       let username1 = b.first + " " + b.last;
@@ -390,7 +453,7 @@ export class OrgChartViewComponent implements OnInit {
     });
 
     let e = [];
-    //#85144b
+    
     for (let i = 0; i < data.length; i++) {
       data[i].bgColor = this.bgColor(data[i]);
 
@@ -422,12 +485,30 @@ export class OrgChartViewComponent implements OnInit {
       });
     }
 
+    // Remove the previous fixes since we handled it at API level
+    // e = this.findAndFixOrphanNodes(e);
+    // e = this.handleMultipleRoots(e);
+
     if (!id) {
       this.chart
         .container(this.chartContainer?.nativeElement)
         .data(e)
         .onNodeClick(this.onNodeClick)
         .nodeContent(function (d, i, arr, state) {
+          // Handle virtual root node differently
+          if (d.data.id === -1) {
+            return `
+              <div class="card bg-secondary text-white" style="height:100px;position:relative;cursor:default;">
+                <div class="card-body text-center d-flex align-items-center justify-content-center">
+                  <div>
+                    <div style="font-size:18px;font-weight:bold">${d.data.name || d.data.first}</div>
+                    <div style="font-size:14px" class="fst-italic">Organization Structure</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
           let height = !d.data.orgChartPlaceHolder ? d.height : 130;
           let textTop = !d.data.orgChartPlaceHolder ? 60 : 5;
 
@@ -480,12 +561,9 @@ export class OrgChartViewComponent implements OnInit {
               </div>
             `;
         })
-        .nodeWidth((d) => 300)
-        .childrenMargin((d) => {
-          if (d.data.orgChartPlaceHolder) return 190;
-          return 190;
-        })
+        .nodeWidth((d) => d.data.id === -1 ? 250 : 300)
         .nodeHeight((d) => {
+          if (d.data.id === -1) return 100;
           if (d.data.orgChartPlaceHolder) return 135;
           return 190;
         })
@@ -502,6 +580,11 @@ export class OrgChartViewComponent implements OnInit {
           // });
         })
         .buttonContent(({ node, state }) => {
+          // Don't show expand/collapse button for virtual root
+          if (node.data.id === -1) {
+            return '';
+          }
+          
           return `<div style="px;color:#fff;border-radius:5px;padding:4px;font-size:15px;margin:auto auto;background-color:${node.data.hire_date_color
             };border: 1px solid #E4E2E9;white-space:nowrap"> <span style="font-size:15px">${node.children
               ? `<i class="mdi mdi-chevron-up"></i>`
@@ -600,5 +683,75 @@ export class OrgChartViewComponent implements OnInit {
 
   ngOnInit() {
     this.getData();
+  }
+
+  fixDataStructure(data: any[]): any[] {
+    console.log('Original data length:', data.length);
+    console.log('Sample data:', data.slice(0, 3));
+
+    // Step 1: Fix orphan nodes (nodes with invalid parentId)
+    const nodeIds = new Set(data.map(node => node.id));
+    console.log('All node IDs:', Array.from(nodeIds));
+    
+    data = data.map(node => {
+      if (node.parentId && !nodeIds.has(node.parentId)) {
+        console.warn(`Orphan node detected: ${node.first} ${node.last} (ID: ${node.id}) has invalid parentId: ${node.parentId}`);
+        return { ...node, parentId: null };
+      }
+      return node;
+    });
+
+    // Step 2: Handle multiple roots
+    const rootNodes = data.filter(node => 
+      node.parentId === null || 
+      node.parentId === undefined || 
+      node.parentId === 0 ||
+      node.parentId === ""
+    );
+
+    console.log(`Found ${rootNodes.length} root nodes:`, rootNodes.map(n => `${n.first} ${n.last} (ID: ${n.id})`));
+
+    if (rootNodes.length > 1) {
+      console.log('Multiple roots detected, creating virtual root...');
+      
+      // Create a virtual root node
+      const virtualRoot = {
+        id: -1,
+        first: "Organization",
+        last: "",
+        name: "Organization",
+        title: "Root",
+        parentId: null,
+        image: "assets/images/organization-icon.png",
+        orgChartPlaceHolder: true,
+        showImage: false,
+        openPosition: false,
+        org_chart_expand: 1,
+        access: null,
+        active: 1,
+        isEmployee: 1,
+        hire_date: null,
+        bgColor: "#f8f9fa"
+      };
+
+      // Update all root nodes to point to the virtual root
+      data = data.map(node => {
+        if (rootNodes.some(root => root.id === node.id)) {
+          console.log(`Connecting root node ${node.first} ${node.last} (ID: ${node.id}) to virtual root`);
+          return { ...node, parentId: -1 };
+        }
+        return node;
+      });
+
+      // Add the virtual root to the beginning of the array
+      data = [virtualRoot, ...data];
+      console.log('Virtual root added. New data length:', data.length);
+    } else if (rootNodes.length === 0) {
+      console.error('No root nodes found! This will cause issues.');
+    } else {
+      console.log('Single root node found:', rootNodes[0].first, rootNodes[0].last);
+    }
+
+    return data;
   }
 }
