@@ -19,8 +19,13 @@ import { DashboardComponent } from "./pages/dashboard/dashboard.component";
 import { AccessDeniedComponent } from "./pages/access-denied/access-denied.component";
 import { AccessGuard } from "./core/guards/access.guard";
 import { InActiveComponent } from "./pages/in-active/in-active.component";
+import { BomViewComponent } from "@app/pages/operations/bom/bom-view/bom-view.component";
 
 const routes: Routes = [
+  {
+    path: "product-structure-inquiry",
+    component: BomViewComponent,
+  },
   { path: "menu", component: MenuComponent },
   { path: "request", component: RequestPublicComponent },
   { path: "quality-incident-request", component: QirCreatePublicComponent },
@@ -53,8 +58,6 @@ const routes: Routes = [
           import("./pages/quality/quality-routing.module").then(
             (m) => m.QualityRoutingModule
           ),
-        canActivate: [AccessGuard],
-        runGuardsAndResolvers: "always",
       },
       {
         title: "Operations",
@@ -72,6 +75,14 @@ const routes: Routes = [
             (m) => m.MaintenanceRoutingModule
           ),
         runGuardsAndResolvers: "always",
+      },
+      {
+        title: "UL Management",
+        path: "ul-management",
+        loadChildren: () =>
+          import("./features/ul-management/ul-management.module").then(
+            (m) => m.ULManagementModule
+          ),
       },
       {
         title: "Admin",

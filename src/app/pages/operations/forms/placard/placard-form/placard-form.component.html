@@ -1,119 +1,213 @@
 <form [formGroup]="form" autocomplete="off">
 
-  <div class="mb-3">
-    <app-so-search (notifyParent)="notifyParent($event)" [value]="f.eyefi_so_number?.value"></app-so-search>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('eyefi_part_number')">Eyefi Part Number</label>
-      <input type="text" class="form-control" name="eyefi_part_number" formControlName="eyefi_part_number"
-        placeholder="Enter eyefi part number" [ngClass]="{ 'is-invalid': submitted && f.eyefi_part_number.errors }" />
+  <!-- Sales Order Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-clipboard-text me-2"></i>Sales Order Information
+      </h5>
+      <small class="text-body-secondary">Link to existing sales order</small>
     </div>
-    <div class="col-sm-3 mb-3">
-      <label class="form-label" [ngClass]="formValidator('line_number')">Line Number</label>
-      <input type="text" class="form-control" name="line_number" formControlName="line_number"
-        placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.line_number.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('description')">Eyefi Part Description</label>
-      <input type="text" class="form-control" name="description" formControlName="description"
-        placeholder="Enter part number description" [ngClass]="{ 'is-invalid': submitted && f.description.errors }" />
+    <div class="card-body">
+      <app-so-search (notifyParent)="notifyParent($event)" [value]="f.eyefi_so_number?.value"></app-so-search>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.eyefi_wo_number.errors }" [value]="f.eyefi_wo_number.value"
-        form_label="Eyefi WO Number"></app-qad-wo-search>
+  <!-- Part Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-package-variant me-2"></i>Part Information
+      </h5>
+      <small class="text-body-secondary">Eyefi part details and specifications</small>
     </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('po_number')">PO Number</label>
-      <input type="text" class="form-control" name="po_number" formControlName="po_number" placeholder="Enter PO Number"
-        [ngClass]="{ 'is-invalid': submitted && f.po_number.errors }" />
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
-      <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty"
-        [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('location')">Location</label>
-      <input type="text" class="form-control" name="location" formControlName="location" placeholder="Enter location"
-        [ngClass]="{ 'is-invalid': submitted && f.location.errors }" />
-    </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('customer_name')">Customer Name</label>
-    <input type="text" class="form-control" name="customer_name" formControlName="customer_name"
-      placeholder="Enter customer name" [ngClass]="{ 'is-invalid': submitted && f.customer_name.errors }" />
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('customer_co_por_so')">Customer CO/POR/SO</label>
-      <input type="text" class="form-control" name="customer_co_por_so" formControlName="customer_co_por_so"
-        placeholder="Enter customer CO/POR/SO" [ngClass]="{ 'is-invalid': submitted && f.customer_co_por_so.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <app-qad-customer-part-search [form_label]="'Customer Part Number'" (notifyParent)="getCustomerPartNumber($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.customer_part_number.errors }"
-        [value]="f.customer_part_number.value"></app-qad-customer-part-search>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('customer_serial_tag')">Customer Serial Tag</label>
-      <div class="input-group">
-        <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
-        <input type="text" class="form-control" name="customer_serial_tag" formControlName="customer_serial_tag"
-          placeholder="Enter customer serial tag "
-          [ngClass]="{ 'is-invalid': submitted && f.customer_serial_tag.errors }" />
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('eyefi_part_number')">Eyefi Part Number</label>
+          <input type="text" class="form-control" name="eyefi_part_number" formControlName="eyefi_part_number"
+            placeholder="Enter eyefi part number" [ngClass]="{ 'is-invalid': submitted && f.eyefi_part_number.errors }" />
+        </div>
+        <div class="col-sm-3 mb-3">
+          <label class="form-label" [ngClass]="formValidator('line_number')">Line Number</label>
+          <input type="text" class="form-control" name="line_number" formControlName="line_number"
+            placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.line_number.errors }" />
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('description')">Eyefi Part Description</label>
+          <input type="text" class="form-control" name="description" formControlName="description"
+            placeholder="Enter part number description" [ngClass]="{ 'is-invalid': submitted && f.description.errors }" />
+        </div>
       </div>
     </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('eyefi_serial_tag')">Eyefi Serial Tag</label>
-      <input type="text" class="form-control" name="eyefi_serial_tag" formControlName="eyefi_serial_tag"
-        placeholder="Enter eyefi serial tag" [ngClass]="{ 'is-invalid': submitted && f.eyefi_serial_tag.errors }" />
+  </div>
+
+  <!-- Work Order & Purchase Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-file-document me-2"></i>Work Order & Purchase Information
+      </h5>
+      <small class="text-body-secondary">Associated work order and purchase details</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm mb-3">
+          <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.eyefi_wo_number.errors }" [value]="f.eyefi_wo_number.value"
+            form_label="Eyefi WO Number"></app-qad-wo-search>
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('po_number')">PO Number</label>
+          <input type="text" class="form-control" name="po_number" formControlName="po_number" placeholder="Enter PO Number"
+            [ngClass]="{ 'is-invalid': submitted && f.po_number.errors }" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('qty')">Qty</label>
+          <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty"
+            [ngClass]="{ 'is-invalid': submitted && f.qty.errors }" />
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('location')">Location</label>
+          <input type="text" class="form-control" name="location" formControlName="location" placeholder="Enter location"
+            [ngClass]="{ 'is-invalid': submitted && f.location.errors }" />
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-      <label class="form-check-label" for="active">Active</label>
+  <!-- Customer Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-account-box me-2"></i>Customer Information
+      </h5>
+      <small class="text-body-secondary">Customer details and order references</small>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label" [ngClass]="formValidator('customer_name')">Customer Name</label>
+        <input type="text" class="form-control" name="customer_name" formControlName="customer_name"
+          placeholder="Enter customer name" [ngClass]="{ 'is-invalid': submitted && f.customer_name.errors }" />
+      </div>
+      <div class="row">
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('customer_co_por_so')">Customer CO/POR/SO</label>
+          <input type="text" class="form-control" name="customer_co_por_so" formControlName="customer_co_por_so"
+            placeholder="Enter customer CO/POR/SO" [ngClass]="{ 'is-invalid': submitted && f.customer_co_por_so.errors }" />
+        </div>
+        <div class="col-sm mb-3">
+          <app-qad-customer-part-search [form_label]="'Customer Part Number'" (notifyParent)="getCustomerPartNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.customer_part_number.errors }"
+            [value]="f.customer_part_number.value"></app-qad-customer-part-search>
+        </div>
+      </div>
     </div>
   </div>
 
-  <hr />
-
-  <div class="row">
-    <div class="col-sm">
-      <label class="form-label" [ngClass]="formValidator('label_count')">Labels</label>
-      <input type="number" class="form-control" name="label_count" formControlName="label_count"
-        placeholder="Current Print #" [ngClass]="{ 'is-invalid': submitted && f.label_count.errors }" />
+  <!-- Serial Tag Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-barcode me-2"></i>Serial Tag Information
+      </h5>
+      <small class="text-body-secondary">Customer and Eyefi serial tag details</small>
     </div>
-    <div class="col-sm-2">
-      <label class="form-label">_</label>
-      <input type="text" class="form-control mt-2 text-center border-0" value="OF" readonly disabled />
-    </div>
-    <div class="col-sm">
-      <label class="form-label">Total Papers</label>
-      <input type="number" class="form-control mt-2" name="total_label_count" formControlName="total_label_count"
-        placeholder="Total Print #" [ngClass]="{ 'is-invalid': submitted && f.total_label_count.errors }" />
-    </div>
-    <div class="col-sm">
-      <label class="form-label">UOM</label>
-      <select class="form-select"  formControlName="uom">
-        <option selected disabled value="null">--SELECT--</option>
-        <option *ngFor="let row of ['PALLETS', 'BOXES', 'EA']" [value]="row">{{row}}</option>
-      </select>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('customer_serial_tag')">Customer Serial Tag</label>
+          <div class="input-group">
+            <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
+            <input type="text" class="form-control" name="customer_serial_tag" formControlName="customer_serial_tag"
+              placeholder="Enter customer serial tag "
+              [ngClass]="{ 'is-invalid': submitted && f.customer_serial_tag.errors }" />
+          </div>
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('eyefi_serial_tag')">Eyefi Serial Tag</label>
+          <input type="text" class="form-control" name="eyefi_serial_tag" formControlName="eyefi_serial_tag"
+            placeholder="Enter eyefi serial tag" [ngClass]="{ 'is-invalid': submitted && f.eyefi_serial_tag.errors }" />
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Status Configuration Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-toggle-switch me-2"></i>Status Configuration
+      </h5>
+      <small class="text-body-secondary">Control placard availability and usage</small>
+    </div>
+    <div class="card-body">
+      <div class="form-check form-switch form-switch-md">
+        <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+        <label class="form-check-label" for="active">
+          <strong>Active</strong>
+        </label>
+      </div>
+      <small class="text-body-secondary">Enable this placard for printing and production use</small>
+    </div>
+  </div>
+
+  <!-- Label Configuration Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-printer me-2"></i>Label Configuration
+      </h5>
+      <small class="text-body-secondary">Configure label printing specifications and quantities</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('label_count')">Starting Label Number</label>
+          <input type="number" class="form-control" name="label_count" formControlName="label_count"
+            placeholder="e.g., 1" [ngClass]="{ 'is-invalid': submitted && f.label_count.errors }" />
+          <small class="text-body-secondary">First label number in the sequence</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Ending Label Number</label>
+          <input type="number" class="form-control" name="total_label_count" formControlName="total_label_count"
+            placeholder="e.g., 10" [ngClass]="{ 'is-invalid': submitted && f.total_label_count.errors }" />
+          <small class="text-body-secondary">Last label number in the sequence</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Unit of Measure</label>
+          <select class="form-select" formControlName="uom">
+            <option selected disabled value="null">Select UOM</option>
+            <option *ngFor="let row of ['PALLETS', 'BOXES', 'EA']" [value]="row">{{row}}</option>
+          </select>
+          <small class="text-body-secondary">Unit type for quantity measurement</small>
+        </div>
+      </div>
+      
+      <!-- Label Preview -->
+      <div class="mt-3 p-3 bg-body-tertiary rounded border" *ngIf="f.label_count?.value && f.total_label_count?.value">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="d-flex align-items-center mb-2">
+              <i class="mdi mdi-information-outline text-primary me-2"></i>
+              <strong class="text-body">Label Range Preview</strong>
+            </div>
+            <div class="text-body-secondary">
+              Labels: <strong>{{f.label_count?.value}}</strong> to <strong>{{f.total_label_count?.value}}</strong>
+              <span *ngIf="f.uom?.value && f.uom?.value !== 'null'"> ({{f.uom?.value}})</span>
+            </div>
+          </div>
+          <div class="col-md-6" *ngIf="f.label_count?.value && f.total_label_count?.value">
+            <div class="text-body-secondary">
+              <strong>Total Labels:</strong> 
+              {{(f.total_label_count?.value - f.label_count?.value + 1) > 0 ? (f.total_label_count?.value - f.label_count?.value + 1) : 0}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </form>

@@ -1,14 +1,26 @@
 <div class="p-3 text-center" *ngIf="!data && !id">
   <div class="row d-flex justify-content-center">
     <div class="col-6">
-      <div class="card">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary bg-opacity-10 border-bottom position-relative">
+          <h5 class="card-title mb-0 text-dark">
+            <i class="mdi mdi-magnify me-2"></i>
+            Job Search
+          </h5>
+          <small class="text-muted mt-1 d-block">
+            Please select a job to view and edit.
+          </small>
+        </div>
         <div class="card-body" style="min-height:110px">
-          <p class="mb-3">Please select job to view.</p>
           <div class="alert alert-danger" role="alert" *ngIf="!this.data && id">
+            <i class="mdi mdi-alert-circle-outline me-2"></i>
             Unable to find FSID {{id}}. Please ensure you have the correct FSID number.
           </div>
           <app-job-search (notifyParent)="notifyParent($event)" [appendTo]="'body'" [value]="id" [showLabel]="false"
             [autoFocus]="true"></app-job-search>
+          <small class="text-muted d-block mt-2">
+            Start typing a job ID or customer name to search for existing jobs.
+          </small>
         </div>
       </div>
     </div>
@@ -17,27 +29,78 @@
 
 <div class="row" *ngIf="data && id">
   <div class="content-grid col-xxl-9">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2" *ngIf="onGoBack"
-          (click)="onGoBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <p class="ms-3">FSID: {{data?.id}}</p>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-info bg-opacity-10 border-bottom position-relative d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-3" *ngIf="onGoBack"
+            (click)="onGoBack()">
+            <i class="mdi mdi-arrow-left pointer text-muted"></i> Back
+          </button>
+          <div>
+            <h5 class="card-title mb-0 text-dark">
+              <i class="mdi mdi-briefcase-edit me-2"></i>
+              {{title}}
+            </h5>
+            <small class="text-muted">FSID: {{data?.id}} | Status: {{data?.status || 'Pending'}}</small>
+          </div>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-primary">Job ID: {{data?.id}}</span>
+        </div>
       </div>
       <div class="card-body">
-        <!-- <div class="border border-3 p-3 mb-3" *ngIf="data">
-          <p class="mb-0">FSID: {{data?.id}}</p>
-          <p class="mb-0">Ticket: <span (click)="viewTicket()">{{this.ticketInfo?.id}}</span></p>
-          <p class="mb-0">Created by: {{data?.created_by}}</p>
-          <p class="mb-0">Created date: {{data?.created_date}}</p>
-          <p class="mb-0" *ngIf="data?.customer_cancelled">Cancellation: {{data?.cancellation_comments}}</p>
-        </div> -->
+        <!-- Job Summary Info -->
+        <div class="card border-0 shadow-none mb-3 bg-light">
+          <div class="card-body py-2 px-3">
+            <div class="row">
+              <div class="col-md-3">
+                <small class="text-muted">Customer:</small>
+                <div class="fw-semibold">{{data?.customer || 'Not specified'}}</div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Service Type:</small>
+                <div class="fw-semibold">{{data?.service_type || 'Not specified'}}</div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Scheduled Date:</small>
+                <div class="fw-semibold">{{data?.request_date || 'Not scheduled'}}</div>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted">Created By:</small>
+                <div class="fw-semibold">{{data?.created_by || 'Unknown'}}</div>
+              </div>
+            </div>
+            <div class="row mt-2" *ngIf="data?.customer_cancelled">
+              <div class="col-12">
+                <div class="alert alert-warning py-2 mb-0">
+                  <i class="mdi mdi-alert-triangle me-2"></i>
+                  <strong>Cancelled:</strong> {{data?.cancellation_comments}}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <app-job-form [ngStyle]="ngStyle" (setFormElements)="form = $event" [removeTech]="removeTech"
           [submitted]="submitted" [id]="id"></app-job-form>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onGoBack()">Cancel</button>
-        <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">Submit</button>
+      <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <small class="text-muted me-3">
+            <i class="mdi mdi-clock-outline me-1"></i>
+            Last modified: {{data?.updated_at || data?.created_date | date:'medium'}}
+          </small>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" [disabled]="isLoading" (click)="onGoBack()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">
+            <i class="mdi mdi-content-save me-1" *ngIf="!isLoading"></i>
+            <i class="mdi mdi-loading mdi-spin me-1" *ngIf="isLoading"></i>
+            {{isLoading ? 'Saving...' : 'Save Changes'}}
+          </button>
+        </div>
       </div>
     </div>
   </div>

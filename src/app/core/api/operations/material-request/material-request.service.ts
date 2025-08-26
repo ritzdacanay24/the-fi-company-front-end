@@ -49,6 +49,20 @@ export class MaterialRequestService extends DataService<any> {
     return firstValueFrom(this.http.post(`${url}/clearPrint`, params))
   }
 
+  // Kanban board specific methods
+  getAllWithStatus = () => {
+    return this.http.get<any[]>(`${url}/getAllWithStatus`);
+  }
+
+  updateStatus = (id: number, status: string) => {
+    return this.http.put(`${url}/updateStatus.php?id=${id}`, { status });
+  }
+
+  getBulkRequestReviews = (requestIds: number[]) => {
+    const idsParam = requestIds.join(',');
+    return this.http.get<any>(`${url}/getBulkRequestReviews?request_ids=${idsParam}`);
+  }
+
   completePicking = async (params) => {
     return firstValueFrom(this.http.post(`${url}/completePicking`, params))
   }

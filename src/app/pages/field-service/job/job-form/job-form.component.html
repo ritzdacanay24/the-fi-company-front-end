@@ -1,63 +1,56 @@
-<div class="row g-lg-0">
-  <div class="col-xxl-3 col-lg-3 col-md-3 mb-3 d-none d-lg-block">
+<form class="forms-sample" [formGroup]="form" autocomplete="off">
 
-    <div class="list-group  d-flex justify-content-between align-items-center">
-      <button type="button" class="list-group-item list-group-item-action pointer" *ngFor="let row of listOptions"
-        [ngbScrollSpyItem]="[spy, row.ngbScrollSpyItem]" [disabled]="!row.active">
-        <i class="mdi  align-middle lh-1 me-2" [ngClass]="row.icon"></i>
-        {{row.name}}
-      </button>
+
+  <!-- Section 1: Job Scheduling -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-info bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-calendar-clock me-2"></i>
+        Schedule & Team Assignment
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Schedule your job and assign the right technicians to ensure successful completion.
+      </small>
     </div>
-
-  </div>
-  <!-- end col -->
-
-
-  <div class="col p-3" ngbScrollSpy #spy="ngbScrollSpy" rootMargin="10px" [ngStyle]="ngStyle">
-    <form [formGroup]="form" autofocus="false" autocomplete="off">
-
-      <ng-container formGroupName="job">
-        <div class="row" ngbScrollSpyFragment="items-1">
+    <div class="card-body">
+      <div formGroupName="job">
+        <div class="row">
           <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidator('request_date')">Start Date</label>
-            <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
+            <label class="form-label" [ngClass]="formValidator('request_date')">Scheduled Start Date</label>
+            <input type="text" placeholder="Select a date..." [mbscOptions]="myDatepickerOptions" class="form-control"
               mbsc-datepicker formControlName="request_date" [ngClass]="formClass('request_date')" readonly />
-            <!-- <app-date-picker [mbscOptions]="myDatepickerOptions" [value]="this.form.value.job.request_date"
-          [ngClass]="formClass('request_date')"></app-date-picker> -->
+            <small class="text-muted">Choose when this job should begin.</small>
           </div>
-
           <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidator('start_time')">Start Time</label>
-            <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptionsTime"
+            <label class="form-label" [ngClass]="formValidator('start_time')">Scheduled Start Time</label>
+            <input type="text" placeholder="Select a time..." [mbscOptions]="myDatepickerOptionsTime"
               class="form-control" mbsc-datepicker formControlName="start_time" [ngClass]="formClass('start_time')"
               readonly />
+            <small class="text-muted">Specify the preferred start time for maximum efficiency.</small>
           </div>
         </div>
+      </div>
 
-      </ng-container>
-
-      <ng-container formGroupName="resource">
-
-        <h4 ngbScrollSpyFragment="items-2" #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center">
-          <i class="mdi mdi-account-plus-outline me-2"></i>
-          Tech Information
-        </h4>
-
-        <div class="table-responsive-" *ngIf="getTeams.length">
-          <table class="table table text-nowrap">
+      <!-- Technician Assignment -->
+      <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+        <i class="mdi mdi-account-group me-2"></i>Technician Assignment
+      </h6>
+      <div formArrayName="resource">
+        <div class="table-responsive" *ngIf="getTeams.length">
+          <table class="table table text-nowrap mb-0">
             <thead>
               <tr>
                 <td>#</td>
-                <td>Lead Tech</td>
-                <td>Tech Name</td>
+                <td>Lead</td>
+                <td>Technician</td>
                 <td></td>
               </tr>
             </thead>
             <tbody *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
               <tr class="p-0 m-0">
-                <td width="100" class="align-middle">Tech# {{i+1}}</td>
-                <td width="100" class="align-middle text-center">
-                  <div class="form-check form-check-flat form-check-primary" tite="Lead Tech?">
+                <td width="80" class="align-middle">#{{i+1}}</td>
+                <td width="80" class="align-middle text-center">
+                  <div class="form-check form-check-flat form-check-primary" title="Lead Tech?">
                     <label class="form-check-label" title="Lead Tech?">
                       <input type="checkbox" class="form-check-input" formControlName="lead_tech">
                       <i class="input-frame"></i>
@@ -67,18 +60,16 @@
                 <td>
                   <div style="min-width:200px">
                     <ng-select [items]="users$" [searchable]="true" formControlName="user" bindLabel="user"
-                      bindValue="user" placeholder="Select installer" (change)="onTechChange($event, i)">
-
+                      bindValue="user" placeholder="Select technician" (change)="onTechChange($event, i)">
                     </ng-select>
                   </div>
                   <div *ngIf="row.value.title == 'Vendor'" class="mt-2">
                     <ng-select [items]="resource_code_options" [selectOnTab]="true" formControlName="contractor_code"
-                      bindLabel="name" placeholder="--Select--" bindValue="value"
-                      placeholder="--Select resource code--">
+                      bindLabel="name" placeholder="--Select resource code--" bindValue="value">
                     </ng-select>
                   </div>
                 </td>
-                <td width="100" class="text-end align-middle">
+                <td width="80" class="text-end align-middle">
                   <button type="button" class="btn btn-soft-danger btn-icon shadow-none"
                     (click)="removeTech(i, row.value)">
                     <i class="mdi mdi-trash-can-outline btn-sm"></i>
@@ -88,542 +79,797 @@
             </tbody>
           </table>
         </div>
-
         <button class="btn btn-primary mt-3 mb-2" (click)="addMoreTechs(1)" type="button">
-          Add More Techs
+          Add More Technicians
         </button>
+      </div>
+      <small class="text-muted d-block">At least one technician is required. Designate a lead tech for team
+        coordination.</small>
+    </div>
+  </div>
 
-      </ng-container>
-
-      <ng-container formGroupName="job">
-        <h4 ngbScrollSpyFragment="items-3" #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center">
-          <i class="mdi mdi-folder-information-outline me-2"></i>
-          Job Information
-        </h4>
-
-        <div class="mb-3">
-          <label class="form-label" [ngClass]="formValidatorJob('status')">Status</label>
+  <!-- Section 2: Job Details -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-success bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-folder-information-outline me-2"></i>
+        Job Details & Configuration
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Define the job scope, customer details, and billing arrangements.
+      </small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('service_type')">Service Type</label>
+          <ng-select [items]="serviceTypes$" bindLabel="name" bindValue="name" formControlName="service_type"
+            placeholder="Choose service type..." [ngClass]="formClassJob('service_type')" (open)="getServiceTypes()"
+            [selectOnTab]="true">
+          </ng-select>
+          <small class="text-muted">Select the primary service being performed.</small>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('status')">Current Status</label>
           <ng-select [items]="statusType$" [selectOnTab]="true" formControlName="status" bindLabel="name"
-            placeholder="--Select--" bindValue="name" (open)="getStatusType()" [ngClass]="formClassJob('status')">
+            placeholder="Set job status..." bindValue="name" (open)="getStatusType()"
+            [ngClass]="formClassJob('status')">
+          </ng-select>
+          <small class="text-muted">Track the current progress of this job.</small>
+        </div>
+      </div>
+      <div *ngIf="this.form?.value?.job?.status?.includes('Cancelled')" class="border border-danger p-2 mb-3">
+        <div class="mb-3">
+          <label class="form-label required" [ngClass]="formValidator('customer_cancelled')">
+            Cancellation Reason
+          </label>
+          <select class="form-select" formControlName="customer_cancelled">
+            <option *ngFor="let row of ['Customer', 'Eye-Fi']">{{row}}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label required" [ngClass]="formValidator('cancellation_comments')">
+            Cancellation Comments
+          </label>
+          <textarea type="text" class="form-control" formControlName="cancellation_comments"
+            [ngClass]="formClass('cancellation_comments')" autosize [minRows]="1"></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('requested_by')">Requested By</label>
+          <input type="text" class="form-control" formControlName="requested_by" placeholder="Enter requestor's name"
+            [ngClass]="formClassJob('requested_by')">
+          <small class="text-muted">Name of the person who initiated this job request.</small>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('customer')">Customer / Company</label>
+          <ng-select [items]="company$" [selectOnTab]="true" bindLabel="name" bindValue="name"
+            placeholder="Select customer..." formControlName="customer" [ngClass]="formClassJob('customer')"
+            (open)="getCompany()">
+          </ng-select>
+          <small class="text-muted">Choose the company or client for this job.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('billable')">Billing Status</label>
+          <select class="form-select" formControlName="billable" [ngClass]="formClassJob('billable')">
+            <option disabled value="null">Choose billing type...</option>
+            <option value="Yes">Billable to Client</option>
+            <option value="No">Non-Billable</option>
+          </select>
+          <small class="text-muted">Determine if this work should be invoiced to the client.</small>
+        </div>
+        <div class="col-md-6 mb-3" *ngIf="getJob.billable.value == 'No'">
+          <label class="form-label required" [ngClass]="formValidatorJob('non_billable_code')">Non-Billable Code</label>
+          <ng-select [items]="non_billable_code_options" bindValue="code" bindLabel="name"
+            formControlName="non_billable_code" [ngClass]="formClassJob('non_billable_code')" placeholder="--Select--">
+            <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+              <h6>{{item.name}}</h6>
+              <small>- {{item.description}}</small>
+            </ng-template>
           </ng-select>
         </div>
-
-        <div *ngIf="this.form?.value?.job?.status?.includes('Cancelled')" class="border border-danger p-2 mb-3">
-          <div class="mb-3">
-            <label class="form-label required" [ngClass]="formValidator('customer_cancelled')">
-              Cancellation Code
-            </label>
-            <select class="form-select" formControlName="customer_cancelled">
-              <option *ngFor="let row of ['Customer', 'Eye-Fi']">{{row}}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="form-label required" [ngClass]="formValidator('cancellation_comments')">
-              Cancellation Comment
-            </label>
-            <textarea type="text" class="form-control" formControlName="cancellation_comments"
-              [ngClass]="formClass('cancellation_comments')" autosize [minRows]="1"></textarea>
-          </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('sign_responsibility')">Sign-Off Authority</label>
+          <select class="form-select" formControlName="sign_responsibility"
+            [ngClass]="formClassJob('sign_responsibility')">
+            <option disabled value="null">Select approval authority...</option>
+            <option value="EyeFi">EyeFi Internal</option>
+            <option value="Customer">Customer Approval</option>
+            <option value="N/A">No Approval Required</option>
+          </select>
+          <small class="text-muted">Specify who has authority to approve job completion.</small>
         </div>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('service_type')">Service Type</label>
-            <ng-select [items]="serviceTypes$" bindLabel="name" bindValue="name" formControlName="service_type"
-              placeholder="--Select--" [ngClass]="formClassJob('service_type')" (open)="getServiceTypes()"
-              [selectOnTab]="true">
-            </ng-select>
-          </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('turnover_fsid')">Related Turnover Job</label>
+          <app-job-search [showLabel]="false" [value]="form?.value?.job?.turnover_fsid"
+            (notifyParent)="getTurnover($event)" [ngClass]="formClassJob('turnover_fsid')"></app-job-search>
+          <small class="text-muted">Link to a related turnover job if applicable.</small>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('requested_by')">Request By</label>
-            <input type="text" class="form-control" formControlName="requested_by" placeholder="Enter requested by name"
-              [ngClass]="formClassJob('requested_by')">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('customer')">Company</label>
-            <ng-select [items]="company$" [selectOnTab]="true" bindLabel="name" bindValue="name"
-              placeholder="--Select--" formControlName="customer" [ngClass]="formClassJob('customer')"
-              (open)="getCompany()">
-            </ng-select>
-          </div>
+  <!-- Section 3: Location & Contact -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-warning bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-map-marker-multiple-outline me-2"></i>
+        Site Location & Contact Information
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Provide accurate location details and onsite contact information for seamless job execution.
+      </small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <app-property-search (notifyParent)="notifyParent($event)" [value]="this.form.value.job.property"
+            [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': submitted && getJob.property.errors }"
+            [required]="true"></app-property-search>
         </div>
+      </div>
+      <div *ngIf="selectedProperty" class="border border-warning p-2 mb-3 border-2">
+        <p>License Required: {{selectedProperty.license_required || '-'}}</p>
+        <p>License Notes: {{selectedProperty.license_notes || '-'}}</p>
+      </div>
 
-        <div class="row">
-          <div class="col-md-12 mb-4">
-            <label class="form-label" [ngClass]="formValidatorJob('turnover_fsid')">Tunover ID</label>
-            <app-job-search [showLabel]="false" [value]="form?.value?.job?.turnover_fsid"
-              (notifyParent)="getTurnover($event)" [ngClass]="formClassJob('turnover_fsid')"></app-job-search>
-          </div>
+      <!-- Contact Information -->
+      <h6 class="text-muted mb-3 border-bottom pb-2">
+        <i class="mdi mdi-account-tie me-2"></i>Onsite Contact Information
+      </h6>
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label">Onsite Contact Person</label>
+          <input type="text" class="form-control" placeholder="Primary contact name"
+            formControlName="onsite_customer_name" [ngClass]="formClassJob('onsite_customer_name')">
+          <small class="text-muted">Name of the person available at the job site.</small>
         </div>
+        <div class="col-sm-6 mb-3">
+          <label class="form-label">Contact Phone Number</label>
+          <input type="text" class="form-control" placeholder="(555) 123-4567"
+            formControlName="onsite_customer_phone_number" [ngClass]="formClassJob('onsite_customer_phone_number')"
+            prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true">
+          <small class="text-muted">Direct phone number for coordination and access.</small>
+        </div>
+      </div>
 
+      <!-- Site Address -->
+      <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+        <i class="mdi mdi-map-marker-outline me-2"></i>Site Address
+      </h6>
+      <div class="row">
+        <div class="col-md-8 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('address1')">Street Address</label>
+          <input type="text" class="form-control" formControlName="address1" placeholder="123 Main Street"
+            autocomplete="new-address1" [ngClass]="formClassJob('address1')">
+          <small class="text-muted">Complete street address where work will be performed.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('address2')">Suite/Unit/Floor</label>
+          <input type="text" class="form-control" formControlName="address2" placeholder="Suite 100"
+            autocomplete="new-address2" [ngClass]="formClassJob('address2')">
+          <small class="text-muted">Additional location details (optional).</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('city')">City</label>
+          <input type="text" class="form-control" formControlName="city" placeholder="Enter City" autocomplete="off"
+            [ngClass]="formClassJob('city')">
+          <small class="text-muted">City where the job is located.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('state')">State</label>
+          <select class="form-select" formControlName="state" [ngClass]="formClassJob('state')" autocomplete="off">
+            <option disabled value="null">--Select state--</option>
+            <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
+          </select>
+          <small class="text-muted">Select the state for the job location.</small>
+        </div>
+        <div class="col-md-2 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('zip_code')">ZIP Code</label>
+          <input type="text" class="form-control" formControlName="zip_code" placeholder="Enter ZIP code"
+            autocomplete="off" [ngClass]="formClassJob('zip_code')">
+          <small class="text-muted">5-digit ZIP code.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3" [ngClass]="formClassJob('out_of_state')">
+          <label class="form-label" [ngClass]="formValidatorJob('out_of_state')">Out-of-State Job?</label>
+          <select class="form-select" formControlName="out_of_state" [ngClass]="formClassJob('out_of_state')">
+            <option disabled value="null">Select location type...</option>
+            <option value="Yes">Yes - Out of State</option>
+            <option value="No">No - In State</option>
+          </select>
+          <small class="text-muted">Indicates if special travel arrangements are needed.</small>
+        </div>
+      </div>
+
+      <!-- GPS Coordinates -->
+      <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+        <i class="mdi mdi-crosshairs-gps me-2"></i>GPS Coordinates
+      </h6>
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('fs_lat')">GPS Latitude</label>
+          <input type="text" class="form-control" formControlName="fs_lat" placeholder="e.g., 40.7128"
+            [ngClass]="formClassJob('fs_lat')">
+          <small class="text-muted">GPS coordinates for precise location tracking.</small>
+        </div>
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('fs_lon')">GPS Longitude</label>
+          <input type="text" class="form-control" formControlName="fs_lon" placeholder="e.g., -74.0060"
+            [ngClass]="formClassJob('fs_lon')">
+          <small class="text-muted">GPS coordinates for precise location tracking.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3.5: Job Connections -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-info bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-link-variant me-2"></i>
+        Connected Jobs & Dependencies
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Link related jobs together for better project coordination and visibility.
+      </small>
+    </div>
+    <div class="card-body">
+      <!-- Connected Jobs Display -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-muted mb-0">
+          <i class="mdi mdi-network me-2"></i>Connected Jobs
+        </h6>
+        <div>
+          <button type="button" class="btn btn-primary btn-sm" (click)="openJobConnectionModal()">
+            <i class="mdi mdi-plus me-1"></i>Connect Job
+          </button>
+        </div>
+      </div>
+
+      <!-- Connected Jobs List -->
+      <div *ngIf="connectedJobs && connectedJobs.length > 0; else noConnectedJobs">
         <div class="row">
-          <div class="col-md mb-3" [ngClass]="formClassJob('billable')">
-            <label class="form-label me-3" [ngClass]="formValidatorJob('billable')">Billable</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
-              <label class="form-check-label">
-                <input type="radio" class="form-check-input" name="billable" id="billable{{i}}" [value]="row"
-                  formControlName="billable" [ngClass]="formClassJob('billable')">
-                <i class="input-frame"></i>
-                {{row}}
-              </label>
+          <div class="col-md-6 mb-3" *ngFor="let connectedJob of connectedJobs; let i = index">
+            <div class="card border h-100">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="badge bg-primary-subtle text-primary mb-1">
+                    {{connectedJob.relationship_type || 'Related'}}
+                  </span>
+                  <button type="button" class="btn btn-soft-danger btn-sm btn-icon" 
+                          (click)="disconnectJob(connectedJob.id)" title="Disconnect Job">
+                    <i class="mdi mdi-close"></i>
+                  </button>
+                </div>
+                <h6 class="card-title mb-1">
+                  <a [routerLink]="['/field-service/job/view', connectedJob.fs_id]" 
+                     class="text-decoration-none" target="_blank">
+                    #{{connectedJob.fs_id}}
+                  </a>
+                </h6>
+                <p class="text-muted small mb-2">{{connectedJob.customer}} • {{connectedJob.service_type}}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="badge" [ngClass]="{
+                    'bg-success': connectedJob.status === 'Completed',
+                    'bg-warning': connectedJob.status === 'In Progress',
+                    'bg-info': connectedJob.status === 'Scheduled',
+                    'bg-secondary': connectedJob.status === 'Draft'
+                  }">
+                    {{connectedJob.status}}
+                  </span>
+                  <small class="text-muted">{{connectedJob.request_date | date:'MMM d, y'}}</small>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="row" *ngIf="getJob.billable.value == 'No'">
-          <div class="col-md mb-3">
-            <label class="form-label required" [ngClass]="formValidatorJob('non_billable_code')">Non-Billable
-              Code</label>
-            <ng-select [items]="non_billable_code_options" bindValue="code" bindLabel="name"
-              formControlName="non_billable_code" [ngClass]="formClassJob('non_billable_code')"
-              placeholder="--Select--">
-              <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-                <h6>{{item.name}}</h6>
-                <small>- {{item.description}}</small>
-              </ng-template>
-            </ng-select>
-          </div>
+      <ng-template #noConnectedJobs>
+        <div class="text-center py-4">
+          <i class="mdi mdi-link-off text-muted" style="font-size: 48px;"></i>
+          <p class="text-muted mt-2">No connected jobs yet</p>
+          <small class="text-muted">
+            Connect related jobs to track dependencies and coordinate work across multiple projects.
+          </small>
         </div>
-
-        <div class="row">
-          <div class="col-md mb-3" [ngClass]="formClassJob('sign_responsibility')">
-            <label class="form-label me-3" [ngClass]="formValidatorJob('sign_responsibility')">Sign
-              Responsibility</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['EyeFi', 'Customer', 'N/A']; let i = index">
-              <label class="form-check-label">
-                <input type="radio" class="form-check-input" name="sign_responsibility" id="sign_responsibility{{i}}"
-                  [value]="row" formControlName="sign_responsibility" [ngClass]="formClassJob('sign_responsibility')">
-                <i class="input-frame"></i>
-                {{row}}
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-4">
-          <i class="mdi mdi-map-marker-multiple-outline me-2"></i>
-          Address
-        </h4>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <app-property-search (notifyParent)="notifyParent($event)" [value]="this.form.value.job.property"
-              [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': submitted && getJob.property.errors }"
-              [required]="true"></app-property-search>
-          </div>
-        </div>
-
-        <div *ngIf="selectedProperty" class="border border-warning p-2 mb-3 border-2">
-          <p>License Required: {{selectedProperty.license_required || '-'}}</p>
-          <p>License Notes: {{selectedProperty.license_notes || '-'}}</p>
-        </div>
-
-        <div class="row">
-          <div class="col-sm mb-3">
-            <label class="form-label">Onsite Customer Name:</label>
-            <input type="text" class="form-control" placeholder="Enter onsite customer name"
-              formControlName="onsite_customer_name" [ngClass]="formClassJob('onsite_customer_name')">
-          </div>
-          <div class="col-sm mb-3">
-            <label class="form-label">Onsite Customer Phone #:</label>
-            <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
-              formControlName="onsite_customer_phone_number" [ngClass]="formClassJob('onsite_customer_phone_number')"
-              prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-8 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('address1')">Address</label>
-            <input type="text" class="form-control" formControlName="address1" placeholder="Enter address"
-              autocomplete="new-address1" [ngClass]="formClassJob('address1')">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('address2')">Suite</label>
-            <input type="text" class="form-control" formControlName="address2" placeholder="Enter Suite"
-              autocomplete="new-address2" [ngClass]="formClassJob('address2')">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('city')">City</label>
-            <input type="text" class="form-control" formControlName="city" placeholder="Enter City" autocomplete="off"
-              [ngClass]="formClassJob('city')">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('state')">State</label>
-            <select class="form-select" formControlName="state" [ngClass]="formClassJob('state')" autocomplete="off">
-              <option disabled selected value="">--Select state--</option>
-              <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
-            </select>
-          </div>
-          <div class="col-md-2 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('zip_code')">Zip Code</label>
-            <input type="text" class="form-control" formControlName="zip_code" placeholder="Enter zip code"
-              autocomplete="off" [ngClass]="formClassJob('zip_code')">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-sm mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('fs_lat')">Latitude</label>
-            <input type="text" class="form-control" formControlName="fs_lat" placeholder="Enter Latitude"
-              [ngClass]="formClassJob('fs_lat')">
-          </div>
-          <div class="col-sm mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('fs_lon')">Longitude</label>
-            <input type="text" class="form-control" formControlName="fs_lon" placeholder="Enter Longitude"
-              [ngClass]="formClassJob('fs_lon')">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md mb-3" [ngClass]="formClassJob('out_of_state')">
-            <label class="form-label me-3" [ngClass]="formValidatorJob('out_of_state')">Out Of State</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']; let i = index">
-              <label class="form-check-label">
-                <input type="radio" class="form-check-input" name="out_of_state" id="out_of_state{{i}}" [value]="row"
-                  formControlName="out_of_state" [ngClass]="formClassJob('out_of_state')">
-                <i class="input-frame"></i>
-                {{row}}
-              </label>
-            </div>
-          </div>
-        </div>
-
-      </ng-container>
-
-      <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-5">
-        <i class="mdi mdi-layers-outline me-2"></i>
-        Additional Information
-      </h4>
-
-      <ng-container formGroupName="job">
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('sales_order_number')">Sales Order Number</label>
-            <input type="text" class="form-control" placeholder="Enter sales order number"
-              formControlName="sales_order_number" [ngClass]="formClassJob('sales_order_number')">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('co_number')">Customer CO #</label>
-            <input type="text" class="form-control" placeholder="Enter customer CO #" formControlName="co_number"
-              [ngClass]="formClassJob('co_number')">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('platform')">Platform</label>
-            <textarea autosize [minRows]="1" class="form-control" formControlName="platform"
-              placeholder="Enter Platform" [ngClass]="formClassJob('platform')"></textarea>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('sign_type')">Configuration</label>
-            <textarea autosize [minRows]="1" class="form-control" formControlName="sign_type"
-              placeholder="Enter Configuration" [ngClass]="formClassJob('sign_type')"></textarea>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('sign_theme')">Sign/Theme</label>
-            <textarea autosize [minRows]="1" type="text" class="form-control" placeholder="Enter Sign/Theme"
-              formControlName="sign_theme" [ngClass]="formClassJob('sign_theme')"></textarea>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('licensing_required')"
-              formControlName="licensing_required">
-            <label class="form-check-label">
-              Licensing Required
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('bolt_to_floor')"
-              formControlName="bolt_to_floor">
-            <label class="form-check-label">
-              Bolt to Floor
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" [ngClass]="formClassJob('sign_jacks')"
-              formControlName="sign_jacks">
-            <label class="form-check-label">
-              Sign Jacks
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" formControlName="site_survey_requested">
-            <label class="form-check-label">
-              Site Survey Requested
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label">Ceiling Height:</label>
-          <input type="text" class="form-control" placeholder="Enter ceiling height" formControlName="ceiling_height"
-            [ngClass]="formClassJob('ceiling_height')">
-        </div>
-
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('notes')">Notes: These notes can be seen by the
-              techs</label>
-            <textarea autosize [minRows]="1" [value]="getJob.notes.value" [placeholder]="'Enter Notes'"
-              class="form-control" formControlName="notes"></textarea>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('comments')">Comments</label>
-            <textarea autosize [minRows]="1" [value]="getJob.comments.value" [placeholder]="'Enter Comments'"
-              class="form-control" formControlName="comments"></textarea>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('compliance_license_notes')">Compliance/Licensing
-              Notes</label>
-            <textarea autosize [minRows]="1" [value]="getJob.compliance_license_notes.value"
-              [placeholder]="'Enter Info'" class="form-control" formControlName="compliance_license_notes"></textarea>
-          </div>
-        </div>
-
-        <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-6">
-          <i class="mdi mdi-account-cash-outline me-2"></i>
-          Rates
-        </h4>
-
-        <h6 class="bolder"><u>Billing Rate</u></h6>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('mark_up_percent')">Mark Up %</label>
-            <input type="text" class="form-control" placeholder="Enter Mark Up %" formControlName="mark_up_percent"
-              [ngClass]="formClassJob('mark_up_percent')">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('ef_hourly_rate')">Hourly Rate</label>
-            <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="ef_hourly_rate"
-              [ngClass]="formClassJob('ef_hourly_rate')">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('ef_overtime_hourly_rate')">OT Hourly Rate</label>
-            <input type="text" class="form-control" placeholder="Enter OT hourly rate"
-              formControlName="ef_overtime_hourly_rate" [ngClass]="formClassJob('ef_overtime_hourly_rate')">
-          </div>
-        </div>
-
-        <h6 class="bolder"><u>Standard Tech Rate</u></h6>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate')">Hourly Rate</label>
-            <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="per_tech_rate"
-              [ngClass]="formClassJob('per_tech_rate')">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate_ot')">OT Hourly Rate</label>
-            <input type="text" class="form-control" placeholder="Enter OT hourly rate"
-              formControlName="per_tech_rate_ot" [ngClass]="formClassJob('per_tech_rate_ot')">
-          </div>
-        </div>
-
-        <ng-template [ngIf]="id">
-          <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center"
-            ngbScrollSpyFragment="items-7">
-            <i class="mdi mdi-clipboard-text-play-outline me-2"></i>
-            Invoice
-          </h4>
-
-          <div class="mb-3">
-            <label class="form-label">Paperwork Location</label>
-            <select class="form-select" formControlName="paper_work_location">
-              <option selected disabled value="">--SELECT--</option>
-              <option *ngFor="let row of ['Field Service', 'Accounting', '3rd Party Contractors']">{{row}}</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Vendor Cost</label>
-              <input type="text" class="form-control" placeholder="Vendor Cost" formControlName="vendor_cost">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Vendor Invoice Number</label>
-              <input type="text" class="form-control" placeholder="Vendor Invoice Number"
-                formControlName="vendor_inv_number">
-            </div>
-          </div>
-
-
-          <!-- 
-            
-              Need to hide this section from the dashboard. Set permissions only OR this section can be moved to another
-              component. Creating a component is better. It will be easy to maintain. Just need to have the form use typescript
-              so that we can use the same form. Using the same form prevent any errors in other components. This should be applied
-              to all other forms within this application. Adding typescript 
-          
-          -->
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Invoice Amount</label>
-              <input type="text" class="form-control" placeholder="Invoice Amount" formControlName="invoice">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Invoice number</label>
-              <input type="text" class="form-control" placeholder="Invoice number" formControlName="invoice_number">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Invoice Date</label>
-              <input type="text" placeholder="Enter request date" class="form-control" bsDatepicker
-                formControlName="invoice_date">
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Account Status</label>
-            <select class="form-select" formControlName="acc_status">
-              <option selected disabled value="">--SELECT--</option>
-              <option *ngFor="let row of ['INVOICED']">{{row}}</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label me-4">Billable Flat Rate / PO</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
-              <input class="form-check-input" type="radio" name="billable_flat_rate_or_po"
-                formControlName="billable_flat_rate_or_po" [value]="row">
-              <label class="form-check-label">{{row}}</label>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label me-4">Contractor Inv Sent To AP</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
-              <input class="form-check-input" type="radio" name="contractor_inv_sent_to_ap"
-                formControlName="contractor_inv_sent_to_ap" [value]="row">
-              <label class="form-check-label">{{row}}</label>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label me-4">Period</label>
-            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
-              <input class="form-check-input" type="radio" name="period" formControlName="period" [value]="row">
-              <label class="form-check-label">{{row}}</label>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Invoice Notes</label>
-            <textarea type="text" class="form-control" placeholder="Invoice Notes" formControlName="invoice_notes"
-              autosize [minRows]="1"></textarea>
-          </div>
-        </ng-template>
-
-        <!-- Secondary Alert -->
-        <div *ngIf="!id"
-          class="alert alert-primary alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-          role="alert">
-          <i class="ri-information-line label-icon"></i><strong>Heads up</strong> - You will be able to attach documents
-          after you create the job.
-          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
-        </div>
-
-        <ng-template [ngIf]="id">
-          <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-8">
-            <i class="mdi mdi-paperclip me-2"></i>
-            Attachments
-          </h4>
-
-          <div class="mb-3">
-            <div class="input-group">
-              <input #myInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple
-                name="file">
-            </div>
-          </div>
-
-          <ul class="list-group align-middle">
-            <li class="list-group-item d-flex justify-content-between align-middle"
-              *ngFor="let row of attachments; let i = index" (click)="viewAttachment(row.link)">
-              {{row.fileName}}
-              <i class="h6 pointer mdi mdi-trash-can text-end text-danger"
-                (click)="$event.stopPropagation();onDeleteAttachment(row.id, i, attachments)"></i>
-            </li>
-          </ul>
-
-          <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-9">
-            <i class="mdi mdi-receipt me-2"></i>
-            Receipts
-          </h4>
-
-          <div class="mb-3">
-            <div class="input-group">
-              <input #myInput (change)="this.onReceiptchange($event)" class="form-control" type="file" id="file"
-                multiple name="file">
-            </div>
-          </div>
-
-          <ul class="list-group align-middle">
-            <li class="list-group-item d-flex justify-content-between align-middle"
-              *ngFor="let row of receipts;let i = index" (click)="viewAttachment(row.link)">
-              {{row.fileName}}
-              <i class="h6 pointer mdi mdi-trash-can text-end text-danger"
-                (click)="$event.stopPropagation();onDeleteAttachment(row.id,i, receipts)"></i>
-            </li>
-          </ul>
-        </ng-template>
-        <div ngbScrollSpyFragment="items-10">
-          <div class="mb-3 ms-1">
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-              <label class="form-check-label" for="active">Active</label>
-            </div>
-          </div>
-          <div class="mb-3 ms-1">
-            <div class="form-check form-switch form-switch-md">
-              <input class="form-check-input" type="checkbox" id="published" formControlName="published">
-              <label class="form-check-label" for="published">Publish</label>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-
-      <ng-template [ngIf]="id">
-        <h4 class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase text-center" ngbScrollSpyFragment="items-trip-details">
-          <i class="mdi mdi-file-document-outline me-2"></i>
-          Trip Details
-        </h4>
-
-        <app-trip-details-summary [fsId]="id" [viewTripDetailById]="viewTripDetailById" (setDatData)="setDatData = $event" [disableAddEdit]="true" [useTravelId]="false"></app-trip-details-summary>
-
-        <!-- <button class="btn btn-primary mt-0" (click)="addTripDetails()">Add Trip Details</button>
-        <button class="btn btn-primary mt-0 ms-3" (click)="emailTripDetails()" *ngIf="tripDetailInfo?.length">Email Trip
-          Details</button> -->
       </ng-template>
 
-    </form>
+      <!-- Job Connection Benefits Info -->
+      <div class="alert alert-info mt-3">
+        <h6 class="alert-heading mb-2">
+          <i class="mdi mdi-information-outline me-1"></i>Job Connection Benefits
+        </h6>
+        <ul class="mb-0 small">
+          <li>Track project dependencies and prerequisites</li>
+          <li>Coordinate scheduling across related jobs</li>
+          <li>Share resources and technician assignments</li>
+          <li>View consolidated project timeline and progress</li>
+        </ul>
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- Section 4: Additional Job Info -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-secondary bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-layers-outline me-2"></i>
+        Technical Specifications & Requirements
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Document equipment details, special requirements, and important notes for the technical team.
+      </small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('sales_order_number')">Sales Order Number</label>
+          <input type="text" class="form-control" placeholder="Enter sales order number"
+            formControlName="sales_order_number" [ngClass]="formClassJob('sales_order_number')">
+          <small class="text-muted">Reference number from the sales system.</small>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('co_number')">Customer Change Order Number</label>
+          <input type="text" class="form-control" placeholder="Enter customer change order #"
+            formControlName="co_number" [ngClass]="formClassJob('co_number')">
+          <small class="text-muted">Customer's change order or work authorization number.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('platform')">Equipment & Platform Details</label>
+          <textarea autosize [minRows]="1" class="form-control" formControlName="platform"
+            placeholder="Describe the equipment, platform, or system being worked on..."
+            [ngClass]="formClassJob('platform')"></textarea>
+          <small class="text-muted">Specify the equipment or platform involved in this job.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('sign_type')">Installation Configuration</label>
+          <textarea autosize [minRows]="1" class="form-control" formControlName="sign_type"
+            placeholder="Detail the setup, configuration, or installation requirements..."
+            [ngClass]="formClassJob('sign_type')"></textarea>
+          <small class="text-muted">Describe the specific configuration or setup needed.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('sign_theme')">Sign/Theme</label>
+          <textarea autosize [minRows]="1" type="text" class="form-control" placeholder="Enter sign or theme"
+            formControlName="sign_theme" [ngClass]="formClassJob('sign_theme')"></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Requires Special Licensing?</label>
+          <select class="form-select" formControlName="licensing_required"
+            [ngClass]="formClassJob('licensing_required')">
+            <option disabled value="null">Choose requirement...</option>
+            <option [value]="true">Yes - Licensing Required</option>
+            <option [value]="false">No - Standard Work</option>
+          </select>
+          <small class="text-muted">Check local licensing requirements.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Bolt to Floor?</label>
+          <select class="form-select" formControlName="bolt_to_floor" [ngClass]="formClassJob('bolt_to_floor')">
+            <option disabled value="null">Select anchoring requirement...</option>
+            <option [value]="true">Yes - Anchoring Required</option>
+            <option [value]="false">No - No Anchoring</option>
+          </select>
+          <small class="text-muted">Specify if equipment needs to be bolted or anchored.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Sign Jacks Required</label>
+          <select class="form-select" formControlName="sign_jacks" [ngClass]="formClassJob('sign_jacks')">
+            <option disabled value="null">Select requirement...</option>
+            <option [value]="true">Yes - Sign Jacks Needed</option>
+            <option [value]="false">No - Not Required</option>
+          </select>
+          <small class="text-muted">Indicate if sign jacks are needed for installation.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Site Survey Required</label>
+          <select class="form-select" formControlName="site_survey_requested">
+            <option disabled value="null">Select survey requirement...</option>
+            <option [value]="true">Yes - Survey Required</option>
+            <option [value]="false">No - Survey Not Needed</option>
+          </select>
+          <small class="text-muted">Determine if a preliminary site survey is required.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Ceiling Height (feet)</label>
+          <input type="text" class="form-control" placeholder="e.g., 12 feet" formControlName="ceiling_height"
+            [ngClass]="formClassJob('ceiling_height')">
+          <small class="text-muted">Specify ceiling height if relevant for equipment access.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('notes')">Field Team Instructions</label>
+          <textarea autosize [minRows]="1" [value]="getJob.notes.value"
+            [placeholder]="'Provide clear instructions, safety notes, or special considerations for the field team...'"
+            class="form-control" formControlName="notes"></textarea>
+          <small class="text-muted">These notes will be visible to technicians performing the work.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('comments')">Internal Project Notes</label>
+          <textarea autosize [minRows]="1" [value]="getJob.comments.value"
+            [placeholder]="'Internal comments for project management and coordination...'" class="form-control"
+            formControlName="comments"></textarea>
+          <small class="text-muted">Internal notes for project tracking and management purposes.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('compliance_license_notes')">Compliance & Regulatory
+            Notes</label>
+          <textarea autosize [minRows]="1" [value]="getJob.compliance_license_notes.value"
+            [placeholder]="'Document any compliance requirements, permits, or regulatory considerations...'"
+            class="form-control" formControlName="compliance_license_notes"></textarea>
+          <small class="text-muted">Record compliance requirements and regulatory considerations.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Rates -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-dark bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-account-cash-outline me-2"></i>
+        Rates
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Billing and technician rates
+      </small>
+      <!-- Removed index number badge -->
+    </div>
+    <div class="card-body">
+      <h6 class="fw-bold text-primary mb-3">
+        <i class="mdi mdi-currency-usd me-2"></i>Client Billing Rates
+      </h6>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('mark_up_percent')">Markup Percentage (%)</label>
+          <input type="text" class="form-control" placeholder="Enter markup percentage"
+            formControlName="mark_up_percent" [ngClass]="formClassJob('mark_up_percent')">
+          <small class="text-muted">Percentage markup applied to base rates.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('ef_hourly_rate')">Standard Hourly Rate ($)</label>
+          <input type="text" class="form-control" placeholder="Enter hourly rate" formControlName="ef_hourly_rate"
+            [ngClass]="formClassJob('ef_hourly_rate')">
+          <small class="text-muted">Regular hourly billing rate.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('ef_overtime_hourly_rate')">Overtime Hourly Rate
+            ($)</label>
+          <input type="text" class="form-control" placeholder="Enter overtime rate"
+            formControlName="ef_overtime_hourly_rate" [ngClass]="formClassJob('ef_overtime_hourly_rate')">
+          <small class="text-muted">Overtime hourly billing rate.</small>
+        </div>
+      </div>
+
+      <h6 class="fw-bold text-success mb-3 mt-4">
+        <i class="mdi mdi-account-hard-hat me-2"></i>Technician Pay Rates
+      </h6>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate')">Standard Pay Rate ($)</label>
+          <input type="text" class="form-control" placeholder="Enter technician hourly rate"
+            formControlName="per_tech_rate" [ngClass]="formClassJob('per_tech_rate')">
+          <small class="text-muted">Regular hourly pay for technicians.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label" [ngClass]="formValidatorJob('per_tech_rate_ot')">Overtime Pay Rate ($)</label>
+          <input type="text" class="form-control" placeholder="Enter overtime pay rate"
+            formControlName="per_tech_rate_ot" [ngClass]="formClassJob('per_tech_rate_ot')">
+          <small class="text-muted">Overtime hourly pay for technicians.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 7: Invoice (only if id exists) -->
+  <ng-template [ngIf]="id">
+    <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+      <div class="card-header bg-info bg-opacity-10 border-bottom position-relative">
+        <h5 class="card-title mb-0 text-light">
+          <i class="mdi mdi-clipboard-text-play-outline me-2"></i>
+          Billing & Invoice Management
+        </h5>
+        <small class="text-muted mt-1 d-block">
+          Track invoicing details, vendor costs, and payment processing information.
+        </small>
+      </div>
+      <div class="card-body">
+
+        <!-- Vendor Information -->
+        <h6 class="text-muted mb-3 border-bottom pb-2">
+          <i class="mdi mdi-truck-delivery me-2"></i>Vendor Information
+        </h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Vendor Total Cost</label>
+            <input type="text" class="form-control" placeholder="Enter total vendor cost" formControlName="vendor_cost">
+            <small class="text-muted">Total amount charged by external vendors.</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Vendor Invoice Reference</label>
+            <input type="text" class="form-control" placeholder="Enter vendor invoice number"
+              formControlName="vendor_inv_number">
+            <small class="text-muted">Reference number from vendor's invoice.</small>
+          </div>
+        </div>
+
+        <!-- Client Invoice Details -->
+        <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+          <i class="mdi mdi-receipt me-2"></i>Client Invoice Details
+        </h6>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Invoice Total Amount</label>
+            <input type="text" class="form-control" placeholder="Enter invoice amount" formControlName="invoice">
+            <small class="text-muted">Total amount to be invoiced to client.</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Invoice Reference Number</label>
+            <input type="text" class="form-control" placeholder="Enter invoice number" formControlName="invoice_number">
+            <small class="text-muted">Unique invoice identifier for tracking.</small>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Invoice Date</label>
+            <input type="text" placeholder="Select invoice date" class="form-control" bsDatepicker
+              formControlName="invoice_date">
+            <small class="text-muted">Date the invoice was generated.</small>
+          </div>
+        </div>
+
+        <!-- Billing Configuration -->
+        <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+          <i class="mdi mdi-cogs me-2"></i>Billing Configuration
+        </h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Flat Rate / Purchase Order Billing</label>
+            <select class="form-select" formControlName="billable_flat_rate_or_po">
+              <option disabled value="null">Select billing method...</option>
+              <option value="Yes">Yes - Flat Rate/PO</option>
+              <option value="No">No - Time & Materials</option>
+            </select>
+            <small class="text-muted">Specify the billing arrangement with the client.</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Account Processing Status</label>
+            <select class="form-select" formControlName="acc_status">
+              <option selected disabled value="null">Select processing status...</option>
+              <option value="INVOICED">Invoiced - Processing Complete</option>
+            </select>
+            <small class="text-muted">Current status of account processing.</small>
+          </div>
+        </div>
+
+        <!-- Processing Status -->
+        <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+          <i class="mdi mdi-check-circle me-2"></i>Processing Status
+        </h6>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Contractor Invoice Submitted to Accounts Payable</label>
+            <select class="form-select" formControlName="contractor_inv_sent_to_ap">
+              <option disabled value="null">Select submission status...</option>
+              <option value="Yes">Yes - Submitted to AP</option>
+              <option value="No">No - Pending Submission</option>
+            </select>
+            <small class="text-muted">Track if contractor invoices have been forwarded to Accounts Payable.</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Billing Period Status</label>
+            <select class="form-select" formControlName="period">
+              <option disabled value="null">Select period status...</option>
+              <option value="Yes">Yes - Period Closed</option>
+              <option value="No">No - Period Open</option>
+            </select>
+            <small class="text-muted">Indicates if the billing period has been finalized.</small>
+          </div>
+        </div>
+
+        <!-- Document Management -->
+        <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+          <i class="mdi mdi-folder-outline me-2"></i>Document Management
+        </h6>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label">Document Storage Location</label>
+            <select class="form-select" formControlName="paper_work_location">
+              <option selected disabled value="null">Select storage location...</option>
+              <option value="Field Service">Field Service Department</option>
+              <option value="Accounting">Accounting Department</option>
+              <option value="3rd Party Contractors">Third-Party Contractors</option>
+            </select>
+            <small class="text-muted">Specify where physical documents are stored.</small>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <label class="form-label">Invoice Processing Notes</label>
+            <textarea type="text" class="form-control"
+              placeholder="Add notes about invoice processing, payment terms, or special billing instructions..."
+              formControlName="invoice_notes" autosize [minRows]="1"></textarea>
+            <small class="text-muted">Document any special billing instructions or payment details.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Alert for new jobs -->
+  <div *ngIf="!id" class="alert alert-info alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+    role="alert">
+    <i class="mdi mdi-information-outline label-icon"></i>
+    <strong>Getting Started:</strong> Additional features like document attachments, receipts, and trip details will
+    become available after you save this job.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Section 10: Publish Settings -->
+  <div class="card border-0 shadow-sm mb-4" formGroupName="job">
+    <div class="card-header bg-warning bg-opacity-10 border-bottom position-relative">
+      <h5 class="card-title mb-0 text-light">
+        <i class="mdi mdi-toggle-switch-outline me-2"></i>
+        Job Visibility & Status Controls
+      </h5>
+      <small class="text-muted mt-1 d-block">
+        Control how this job appears in the system and who can access it.
+      </small>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">Job Status</label>
+        <select class="form-select" formControlName="active">
+          <option disabled value="null">Choose job status...</option>
+          <option [value]="1">Active - Job is Current</option>
+          <option [value]="0">Inactive - Job is Archived</option>
+        </select>
+        <small class="text-muted">Active jobs appear in current work lists and can be scheduled.</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Visibility Setting</label>
+        <select class="form-select" formControlName="published">
+          <option disabled value="null">Choose visibility...</option>
+          <option [value]="1">Published - Visible to All Users</option>
+          <option [value]="0">Draft - Limited Visibility</option>
+        </select>
+        <small class="text-muted">Published jobs are visible to all authorized users and can be assigned.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 11: Trip Details (only if id exists) -->
+  <ng-template [ngIf]="id">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-secondary bg-opacity-10 border-bottom position-relative">
+        <h5 class="card-title mb-0 text-light">
+          <i class="mdi mdi-file-document-outline me-2"></i>
+          Trip Details
+        </h5>
+        <small class="text-muted mt-1 d-block">
+          Travel information and expenses
+        </small>
+        <!-- Removed index number badge -->
+      </div>
+      <div class="card-body">
+        <app-trip-details-summary [fsId]="id" [viewTripDetailById]="viewTripDetailById"
+          (setDatData)="setDatData = $event" [disableAddEdit]="true" [useTravelId]="false"></app-trip-details-summary>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Job Connection Modal -->
+  <div class="modal fade" id="jobConnectionModal" tabindex="-1" aria-labelledby="jobConnectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="jobConnectionModalLabel">
+            <i class="mdi mdi-link-variant me-2"></i>Connect Related Jobs
+          </h5>
+          <button type="button" class="btn-close" (click)="closeJobConnectionModal()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Connection Type Selection -->
+          <div class="mb-4">
+            <label class="form-label">Relationship Type</label>
+            <select class="form-select" [(ngModel)]="selectedRelationshipType" [ngModelOptions]="{standalone: true}">
+              <option value="Related">Related Job</option>
+              <option value="Dependent">Dependent Job (requires this job)</option>
+              <option value="Prerequisite">Prerequisite (this job requires it)</option>
+              <option value="Parent">Parent Project</option>
+              <option value="Child">Sub-Project</option>
+              <option value="Phase">Project Phase</option>
+            </select>
+            <small class="text-muted">Define how this job relates to the one you're connecting.</small>
+          </div>
+
+          <!-- Job Search -->
+          <div class="mb-4">
+            <label class="form-label">Search and Select Jobs</label>
+            <app-job-search 
+              (notifyParent)="onJobSelected($event)" 
+              [value]="selectedJobForConnection" 
+              [showLabel]="false"
+              [autoFocus]="true">
+            </app-job-search>
+            <small class="text-muted">Search by job ID, customer name, or service type to find jobs to connect.</small>
+          </div>
+
+          <!-- Add Job Button -->
+          <div *ngIf="selectedJobForConnection" class="mb-4">
+            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+              <div>
+                <strong>Selected Job: #{{selectedJobForConnection}}</strong>
+                <br>
+                <small class="text-muted">Click "Add to Connection List" to include this job</small>
+              </div>
+              <button type="button" 
+                      class="btn btn-primary btn-sm" 
+                      (click)="addJobToConnectionList()">
+                <i class="mdi mdi-plus me-1"></i>Add to List
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected Jobs Preview -->
+          <div *ngIf="selectedJobs.length > 0" class="mt-4">
+            <h6 class="text-muted mb-3">Jobs to Connect ({{selectedJobs.length}})</h6>
+            <div class="d-flex flex-wrap gap-2">
+              <span *ngFor="let jobId of selectedJobs" 
+                    class="badge bg-primary-subtle text-primary fs-6 p-2">
+                #{{jobId}}
+                <button type="button" 
+                        class="btn-close btn-close-white ms-2" 
+                        (click)="removeFromSelection(jobId)"
+                        style="font-size: 0.7em;"></button>
+              </span>
+            </div>
+          </div>
+
+          <!-- Connection Preview -->
+          <div *ngIf="selectedJobs.length > 0" class="mt-4 p-3 bg-light rounded">
+            <h6 class="text-muted mb-2">Connection Preview</h6>
+            <p class="mb-0">
+              <strong>{{selectedJobs.length}}</strong> job(s) will be connected as 
+              <span class="badge bg-info">{{selectedRelationshipType}}</span> 
+              to this job.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeJobConnectionModal()">Cancel</button>
+          <button type="button" 
+                  class="btn btn-primary" 
+                  [disabled]="selectedJobs.length === 0"
+                  (click)="connectSelectedJobs()">
+            <i class="mdi mdi-link-variant me-1"></i>
+            Connect {{selectedJobs.length}} Job(s)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

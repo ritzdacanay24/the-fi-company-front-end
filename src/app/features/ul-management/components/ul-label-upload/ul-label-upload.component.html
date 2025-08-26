@@ -1,0 +1,425 @@
+<div class="ul-label-upload">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0">
+              <i class="mdi mdi-upload me-2"></i>Upload UL Labels
+            </h4>
+            <div class="btn-group">
+              <button type="button" 
+                      class="btn btn-sm"
+                      [class.btn-primary]="uploadMode === 'single'"
+                      [class.btn-outline-primary]="uploadMode !== 'single'"
+                      (click)="uploadMode = 'single'">
+                <i class="mdi mdi-plus me-1"></i>Single Upload
+              </button>
+              <button type="button" 
+                      class="btn btn-sm"
+                      [class.btn-primary]="uploadMode === 'range'"
+                      [class.btn-outline-primary]="uploadMode !== 'range'"
+                      (click)="uploadMode = 'range'">
+                <i class="mdi mdi-numeric me-1"></i>Range Upload
+              </button>
+              <button type="button" 
+                      class="btn btn-sm"
+                      [class.btn-primary]="uploadMode === 'bulk'"
+                      [class.btn-outline-primary]="uploadMode !== 'bulk'"
+                      (click)="uploadMode = 'bulk'">
+                <i class="mdi mdi-file-multiple me-1"></i>Bulk Upload
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Single Upload Form -->
+          <div *ngIf="uploadMode === 'single'">
+            <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">UL Number <span class="text-danger">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           formControlName="ul_number"
+                           [class.is-invalid]="isFieldInvalid('ul_number')"
+                           placeholder="e.g., E123456">
+                    <div class="invalid-feedback" *ngIf="isFieldInvalid('ul_number')">
+                      {{ getFieldError('ul_number') }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                    <select class="form-select" 
+                            formControlName="category"
+                            [class.is-invalid]="isFieldInvalid('category')">
+                      <option value="">Select Category</option>
+                      <option value="Electronics">Electronics</option>
+                      <option value="Appliances">Appliances</option>
+                      <option value="Industrial">Industrial</option>
+                      <option value="Automotive">Automotive</option>
+                      <option value="Medical">Medical</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <div class="invalid-feedback" *ngIf="isFieldInvalid('category')">
+                      {{ getFieldError('category') }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="mb-3">
+                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                    <textarea class="form-control" 
+                              formControlName="description"
+                              [class.is-invalid]="isFieldInvalid('description')"
+                              rows="3"
+                              placeholder="Detailed description of the UL labeled product"></textarea>
+                    <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+                      {{ getFieldError('description') }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Manufacturer</label>
+                    <input type="text" 
+                           class="form-control" 
+                           formControlName="manufacturer"
+                           placeholder="Manufacturer name">
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Part Number</label>
+                    <input type="text" 
+                           class="form-control" 
+                           formControlName="part_number"
+                           placeholder="Part or model number">
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="form-label">Certification Date</label>
+                    <input type="date" 
+                           class="form-control" 
+                           formControlName="certification_date">
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="form-label">Expiry Date</label>
+                    <input type="date" 
+                           class="form-control" 
+                           formControlName="expiry_date">
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                    <select class="form-select" formControlName="status">
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="expired">Expired</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" 
+                        class="btn btn-secondary" 
+                        (click)="uploadForm.reset(); uploadForm.patchValue({status: 'active'})">
+                  <i class="mdi mdi-refresh me-1"></i>Reset
+                </button>
+                <button type="submit" 
+                        class="btn btn-primary" 
+                        [disabled]="isLoading || uploadForm.invalid">
+                  <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
+                  <i class="mdi mdi-upload me-1" *ngIf="!isLoading"></i>
+                  {{ isLoading ? 'Uploading...' : 'Upload UL Label' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Range Upload Form -->
+          <div *ngIf="uploadMode === 'range'">
+            <div class="alert alert-info mb-4">
+              <h6 class="alert-heading">
+                <i class="mdi mdi-information me-2"></i>UL Number Range Upload
+              </h6>
+              <p class="mb-0">Upload consecutive UL numbers from manufacturers. Example: 73908498 to 73908517 creates 20 UL labels.</p>
+            </div>
+
+            <form [formGroup]="rangeForm" (ngSubmit)="onRangeUpload()">
+              <div class="row">
+                <!-- Range Configuration -->
+                <div class="col-md-6">
+                  <div class="card bg-light">
+                    <div class="card-header">
+                      <h6 class="mb-0"><i class="mdi mdi-numeric me-1"></i>Number Range</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">Start Number <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="start_number"
+                                   [class.is-invalid]="isFieldInvalid('start_number', rangeForm)"
+                                   placeholder="73908498">
+                            <div class="invalid-feedback" *ngIf="isFieldInvalid('start_number', rangeForm)">
+                              {{ getFieldError('start_number', rangeForm) }}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">End Number <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="end_number"
+                                   [class.is-invalid]="isFieldInvalid('end_number', rangeForm)"
+                                   placeholder="73908517">
+                            <div class="invalid-feedback" *ngIf="isFieldInvalid('end_number', rangeForm)">
+                              {{ getFieldError('end_number', rangeForm) }}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">Prefix (Optional)</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="prefix"
+                                   placeholder="E">
+                            <div class="form-text">Letters before the number</div>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">Suffix (Optional)</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="suffix"
+                                   placeholder="-UL">
+                            <div class="form-text">Text after the number</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Preview -->
+                      <div class="mt-3" *ngIf="generatePreview().length > 0">
+                        <label class="form-label">Preview ({{ getRangeCount() }} labels)</label>
+                        <div class="bg-white p-2 border rounded">
+                          <small class="text-muted d-block">
+                            <span *ngFor="let preview of generatePreview(); let last = last" 
+                                  class="badge bg-secondary me-1 mb-1">{{ preview }}</span>
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Common Label Information -->
+                <div class="col-md-6">
+                  <div class="card">
+                    <div class="card-header">
+                      <h6 class="mb-0"><i class="mdi mdi-tag me-1"></i>Common Label Information</h6>
+                    </div>
+                    <div class="card-body">
+                      <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" 
+                                  formControlName="description"
+                                  [class.is-invalid]="isFieldInvalid('description', rangeForm)"
+                                  rows="3"
+                                  placeholder="Applies to all UL numbers in this range"></textarea>
+                        <div class="invalid-feedback" *ngIf="isFieldInvalid('description', rangeForm)">
+                          {{ getFieldError('description', rangeForm) }}
+                        </div>
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" 
+                                formControlName="category"
+                                [class.is-invalid]="isFieldInvalid('category', rangeForm)">
+                          <option value="">Select Category</option>
+                          <option value="Electronics">Electronics</option>
+                          <option value="Appliances">Appliances</option>
+                          <option value="Industrial">Industrial</option>
+                          <option value="Automotive">Automotive</option>
+                          <option value="Medical">Medical</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <div class="invalid-feedback" *ngIf="isFieldInvalid('category', rangeForm)">
+                          {{ getFieldError('category', rangeForm) }}
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">Manufacturer</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="manufacturer"
+                                   placeholder="Manufacturer name">
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="mb-3">
+                            <label class="form-label">Part Number</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   formControlName="part_number"
+                                   placeholder="Part number">
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="row">
+                        <div class="col-4">
+                          <div class="mb-3">
+                            <label class="form-label">Certification Date</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   formControlName="certification_date">
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <div class="mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   formControlName="expiry_date">
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" formControlName="status">
+                              <option value="active">Active</option>
+                              <option value="inactive">Inactive</option>
+                              <option value="expired">Expired</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" 
+                        class="btn btn-secondary" 
+                        (click)="rangeForm.reset(); rangeForm.patchValue({status: 'active', description: 'UL certified product'})">
+                  <i class="mdi mdi-refresh me-1"></i>Reset
+                </button>
+                <button type="submit" 
+                        class="btn btn-primary" 
+                        [disabled]="isLoading || rangeForm.invalid || getRangeCount() === 0">
+                  <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
+                  <i class="mdi mdi-upload me-1" *ngIf="!isLoading"></i>
+                  {{ isLoading ? 'Uploading...' : 'Upload ' + getRangeCount() + ' UL Labels' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bulk Upload Section -->
+          <div *ngIf="uploadMode === 'bulk'">
+            <div class="row">
+              <div class="col-md-8">
+                <div class="mb-3">
+                  <label class="form-label">Select CSV/Excel File</label>
+                  <input type="file" 
+                         class="form-control" 
+                         id="bulkFile"
+                         accept=".csv,.xlsx,.xls"
+                         (change)="onFileSelected($event)">
+                  <div class="form-text">
+                    Upload a CSV or Excel file with UL label data. Maximum file size: 10MB
+                  </div>
+                </div>
+                
+                <div class="alert alert-info">
+                  <h6 class="alert-heading">
+                    <i class="mdi mdi-information me-2"></i>File Format Requirements
+                  </h6>
+                  <p class="mb-2">Your file should contain the following columns:</p>
+                  <ul class="mb-3">
+                    <li><strong>ul_number:</strong> Unique UL identifier (required)</li>
+                    <li><strong>description:</strong> Product description (required)</li>
+                    <li><strong>category:</strong> Product category (required)</li>
+                    <li><strong>manufacturer:</strong> Manufacturer name (optional)</li>
+                    <li><strong>part_number:</strong> Part/model number (optional)</li>
+                    <li><strong>certification_date:</strong> YYYY-MM-DD format (optional)</li>
+                    <li><strong>expiry_date:</strong> YYYY-MM-DD format (optional)</li>
+                    <li><strong>status:</strong> active, inactive, or expired (optional, defaults to active)</li>
+                  </ul>
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-info" 
+                          (click)="downloadTemplate()">
+                    <i class="mdi mdi-download me-1"></i>Download Template
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="card bg-light">
+                  <div class="card-body text-center">
+                    <i class="mdi mdi-file-upload text-primary" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3">Ready to Upload</h6>
+                    <p class="text-muted small mb-3">
+                      {{ selectedFile ? selectedFile.name : 'No file selected' }}
+                    </p>
+                    
+                    <div class="d-grid">
+                      <button type="button" 
+                              class="btn btn-primary" 
+                              (click)="onBulkUpload()"
+                              [disabled]="!selectedFile || isLoading">
+                        <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
+                        <i class="mdi mdi-upload me-1" *ngIf="!isLoading"></i>
+                        {{ isLoading ? 'Uploading...' : 'Start Bulk Upload' }}
+                      </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mt-3" *ngIf="isLoading && uploadProgress > 0">
+                      <div class="progress">
+                        <div class="progress-bar" 
+                             [style.width.%]="uploadProgress"
+                             [attr.aria-valuenow]="uploadProgress"
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                          {{ uploadProgress }}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

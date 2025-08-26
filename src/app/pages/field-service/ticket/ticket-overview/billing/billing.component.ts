@@ -97,16 +97,32 @@ export class BillingComponent implements OnInit {
   }
 
   viewLink() {
-    // if (!this.data.review_link) {
-    //   alert("Please add link");
-    //   return;
-    // }
+    if (!this.data.review_link) {
+      this.toastrService.warning("Please add a SharePoint link first");
+      return;
+    }
     
-    let e = this.data.review_link;
-    window.open(e, e, "height=800,width=800");
+    // Open the billing modal service with the SharePoint content
+    this.billingService.open(this.data.review_link);
+  }
 
-    //this.billingService.open(this.data.review_link)
-    //window.open(this.data.review_link, "_blank").focus();
+  openInNewTab() {
+    if (!this.data.review_link) {
+      this.toastrService.warning("Please add a SharePoint link first");
+      return;
+    }
+
+    let url = this.data.review_link;
+    
+    // If it's an iframe embed code, extract the URL
+    if (url.includes('<iframe')) {
+      const urlMatch = url.match(/src=['"](.*?)['"]/);
+      if (urlMatch && urlMatch[1]) {
+        url = urlMatch[1];
+      }
+    }
+    
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   async submit() {

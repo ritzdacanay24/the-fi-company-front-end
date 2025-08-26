@@ -1,0 +1,54 @@
+<ng-template #revisionsModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      Revision History - {{ selectedDocument?.document_number }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Revision</th>
+            <th>Description</th>
+            <th>Created By</th>
+            <th>Created Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let revision of documentRevisions">
+            <td>
+              <span class="badge bg-primary">Rev {{ revision.revision_number }}</span>
+              <span class="badge bg-success ms-1" *ngIf="revision.is_current">Current</span>
+            </td>
+            <td>{{ revision.description || 'No description' }}</td>
+            <td>{{ revision.created_by }}</td>
+            <td>{{ revision.created_at | date:'medium' }}</td>
+            <td>
+              <span class="badge bg-info">{{ revision.status | titlecase }}</span>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary" 
+                        title="Download Revision"
+                        (click)="downloadRevision(revision)">
+                  <i class="mdi mdi-download"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+    <button type="button" class="btn btn-primary" 
+            (click)="modal.dismiss(); openCreateRevisionModal()">
+      <i class="mdi mdi-plus me-2"></i>Create New Revision
+    </button>
+  </div>
+</ng-template>

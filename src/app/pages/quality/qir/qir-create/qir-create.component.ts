@@ -133,11 +133,87 @@ export class QirCreateComponent {
   file: File = null;
 
   myFiles: string[] = [];
+  selectedFiles: File[] = [];
 
   onFilechange(event: any) {
     this.myFiles = [];
+    this.selectedFiles = [];
     for (var i = 0; i < event.target.files.length; i++) {
       this.myFiles.push(event.target.files[i]);
+      this.selectedFiles.push(event.target.files[i]);
+    }
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    this.myFiles.splice(index, 1);
+  }
+
+  getTotalFileSize(): string {
+    if (!this.selectedFiles || this.selectedFiles.length === 0) {
+      return "0";
+    }
+    const totalBytes = this.selectedFiles.reduce(
+      (total, file) => total + file.size,
+      0
+    );
+    return (totalBytes / 1024 / 1024).toFixed(2);
+  }
+
+  getFormProgress(): number {
+    if (!this.form) return 0;
+
+    // Get all form controls that have required validators
+    const requiredFields = Object.keys(this.form.controls).filter((fieldName) => {
+      const control = this.form.get(fieldName);
+      if (!control || !control.validator) return false;
+      
+      // Test the validator with a null value to see if it has required validation
+      const validationResult = control.validator({ value: null } as any);
+      return validationResult && validationResult['required'];
+    });
+
+    if (requiredFields.length === 0) {
+      // If no required fields found, form is essentially complete
+      return 100;
+    }
+
+    const completedRequiredFields = requiredFields.filter((field) => {
+      const control = this.form.get(field);
+      return (
+        control &&
+        control.valid &&
+        control.value &&
+        control.value.toString().trim() !== ""
+      );
+    });
+
+    // Progress is purely based on required fields (0-100%)
+    return Math.round((completedRequiredFields.length / requiredFields.length) * 100);
+  }
+
+  getRequiredFieldsStatus(): string {
+    if (!this.form) return "Loading form...";
+
+    const progress = this.getFormProgress();
+    const remainingRequired = Object.keys(this.form.controls).filter((fieldName) => {
+      const control = this.form.get(fieldName);
+      if (!control || !control.validator) return false;
+      
+      const validationResult = control.validator({ value: null } as any);
+      const hasRequiredValidator = validationResult && validationResult['required'];
+      
+      return hasRequiredValidator && control.invalid;
+    }).length;
+
+    if (progress === 100) {
+      return "All required fields completed! Ready to submit.";
+    } else if (progress >= 75) {
+      return `Almost there! ${remainingRequired} required field(s) remaining.`;
+    } else if (progress >= 50) {
+      return `Good progress! ${remainingRequired} required field(s) remaining.`;
+    } else {
+      return `${remainingRequired} required field(s) need to be completed.`;
     }
   }
 }

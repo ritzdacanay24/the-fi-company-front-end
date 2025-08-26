@@ -1,0 +1,157 @@
+.ul-management-dashboard {
+  .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+  &.bg-primary,
+  &.bg-info,
+  &.bg-success,
+  &.bg-warning,
+  &.bg-dark {
+      .btn-link {
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+      }
+    }
+  }
+
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+
+    &.bg-light {
+      background-color: $color-surface !important;
+    }
+
+    &.bg-info {
+      background-color: $color-info !important;
+    }
+  }
+
+  .btn {
+    transition: all 0.15s ease-in-out;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .list-unstyled {
+    li {
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+
+      i {
+        width: 1rem;
+      }
+    }
+  }
+
+  .text-success {
+    color: $color-success !important;
+  }
+
+  .text-muted {
+    color: $color-muted !important;
+  }
+
+  .text-white-50 {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .h-100 {
+    height: 100% !important;
+  }
+
+  // Statistics cards styling
+  .card.bg-info,
+  .card.bg-success,
+  .card.bg-warning,
+  .card.bg-dark {
+    border: none;
+
+    .card-body {
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 100%);
+        pointer-events: none;
+      }
+    }
+  }
+
+  // Action cards
+  .card .card-body {
+    .d-grid {
+      gap: 0.5rem;
+    }
+
+    hr {
+      margin: 1rem 0;
+      opacity: 0.25;
+    }
+
+    h6.text-muted {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Quick access section
+  .card.border-info {
+    border-color: #17a2b8 !important;
+
+    .card-header.bg-info {
+      background-color: #17a2b8 !important;
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .card .card-body {
+      .d-flex {
+        flex-direction: column;
+        text-align: center;
+
+        .align-self-center {
+          margin-top: 1rem;
+        }
+      }
+    }
+  }
+
+  // Primary header card
+  .card.bg-primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+    border: none;
+    .card-body {
+      padding: 2rem;
+  }
+}

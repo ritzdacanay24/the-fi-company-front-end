@@ -1,0 +1,56 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-12 col-xxl-12">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0" *ngIf="goBack" (click)="goBack()"><i
+            class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+            <!-- <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4> -->
+            <h4 class="card-title mb-0 flex-grow-1 text-end"> MRF ID# {{id}} </h4>
+      </div>
+      <div class="card-body" style="min-height:300px">
+
+        <!-- Success Alert -->
+        <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
+          <i class="ri-user-smile-line label-icon"></i><strong>Completed</strong> - This request was completed on
+          {{currentInfo?.pickedCompletedDate}}
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Success Alert -->
+        <div class="alert alert-primary alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="!currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
+          <i class="ri-user-smile-line label-icon"></i><strong>In Process</strong> - This request in process
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Success Alert -->
+        <div class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="currentInfo?.active == 0">
+          <i class="ri-user-smile-line label-icon"></i><strong>Deleted</strong> - This material request is no longer active
+          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        </div>
+        <app-material-request-form [enableEdit]="enableEdit" (setFormEmitter)="form = $event" [submitted]="submitted"
+          [onDeleteItem]="onDeleteItem" [onActiveChange]="onActiveChange" [id]="id"></app-material-request-form>
+      </div>
+      <div class="card-footer d-flex " *ngIf="data && id">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
+        <button class="btn btn-primary ms-auto me-2" [disabled]="isLoading" (click)="onSubmit()"
+          [disabled]="form.disabled"> Update </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,344 @@
+<div *ngIf="isLoading" class="text-center m-5">
+  <div class="spinner-grow text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <p>Loading data. Please wait..</p>
+</div>
+
+
+<div *ngIf="!isLoading && !data?.length" class="p-5 text-center text-success">
+  <p class="mb-5">All caught up. No picks found.</p>
+  <button class="btn btn-primary" (click)="getData()">Refresh</button>
+</div>
+
+
+<div class="row" *ngIf="!isLoading">
+  <div class="col-lg-12">
+    <!-- Keyboard shortcuts info -->
+    <div class="alert alert-light alert-dismissible fade show" role="alert">
+      <small>
+        <strong>Keyboard Shortcuts:</strong> 
+        <kbd>F5</kbd> Refresh • 
+        <kbd>Ctrl+P</kbd> Print Active • 
+        <kbd>Ctrl+Enter</kbd> Complete Active
+      </small>
+      <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    
+    <button class="btn btn-primary mb-2" 
+            (click)="getData()" 
+            *ngIf="data?.length > 0"
+            accesskey="r"
+            title="Refresh data (F5)">
+      <i class="ri-refresh-line me-1"></i>Refresh
+    </button>
+    <div class="card mb-3" *ngFor="let row of data">
+      <div class="card-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4"
+           style="border-radius: 16px 16px 0 0;">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="ri-shopping-cart-2-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+        </div>
+        
+        <div class="d-flex align-items-center justify-content-between position-relative">
+          <div class="d-flex align-items-center">
+            <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                  style="width: 3rem; height: 3rem;">
+              <i class="ri-shopping-cart-2-line fs-4 text-white"></i>
+            </span>
+            <div>
+              <h4 class="mb-1 fw-bold text-white">
+                Material Request #{{row.id}}
+              </h4>
+              <div class="d-flex align-items-center gap-3 text-white-50">
+                <span><i class="ri-user-line me-1"></i>{{row.requestor}}</span>
+                <span><i class="ri-map-pin-line me-1"></i>{{row.lineNumber}}</span>
+                <span *ngIf="row.printedDate" class="badge bg-success bg-opacity-75">
+                  <i class="ri-printer-line me-1"></i>Printed
+                </span>
+                <span *ngIf="!row.printedDate" class="badge bg-warning bg-opacity-75">
+                  <i class="ri-time-line me-1"></i>Ready to Print
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="position-relative d-flex gap-2" style="z-index: 2;">
+            <!-- Quick Action Buttons -->
+            <button class="btn btn-light btn-sm" 
+                    (click)="onPrint(row)" 
+                    [disabled]="row.disabled || row.isLoading"
+                    *ngIf="!row.printedDate"
+                    title="Quick Print">
+              <i class="ri-printer-line"></i>
+            </button>
+            <button class="btn btn-success btn-sm" 
+                    (click)="onComplete(row)"
+                    [disabled]="!row.printedDate || row.disabled"
+                    *ngIf="row.printedDate && !row.pickedCompletedDate"
+                    title="Quick Complete">
+              <i class="ri-check-double-line"></i>
+            </button>
+            
+            <!-- Menu Dropdown -->
+            <div ngbDropdown container="body">
+              <button type="button" 
+                      class="btn btn-light btn-sm dropdown-toggle" 
+                      ngbDropdownToggle
+                      [disabled]="row.disabled">
+                <i class="ri-more-2-line"></i>
+              </button>
+              <div ngbDropdownMenu>
+                <h6 class="dropdown-header">Actions</h6>
+                <button ngbDropdownItem (click)="sendBackToValidation(row)">
+                  <i class="ri-arrow-left-line me-2 text-warning"></i>Send Back To Validation
+                </button>
+                <button ngbDropdownItem (click)="onClearPrint(row)" [disabled]="!row.printedDate">
+                  <i class="ri-refresh-line me-2 text-info"></i>Clear Print Status
+                </button>
+                <div class="dropdown-divider"></div>
+                <button ngbDropdownItem (click)="onPrint(row)" [disabled]="row.disabled || row.isLoading">
+                  <i class="ri-printer-line me-2 text-primary"></i>Print Pick Sheet
+                </button>
+                <button ngbDropdownItem (click)="onComplete(row)" [disabled]="!row.printedDate || row.disabled">
+                  <i class="ri-check-double-line me-2 text-success"></i>Complete Picking
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Timeline -->
+        <div class="mt-3 position-relative" style="z-index: 1;">
+          <div class="d-flex align-items-center text-white-50 small">
+            <div class="d-flex align-items-center me-4">
+              <span class="badge bg-success me-2">1</span>
+              <span>Validated</span>
+            </div>
+            <div class="flex-grow-1 mx-3">
+              <div class="progress" style="height: 2px;">
+                <div class="progress-bar bg-white" 
+                     role="progressbar" 
+                     [style.width]="row.printedDate ? '100%' : '50%'"></div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center me-4">
+              <span class="badge me-2" 
+                    [ngClass]="row.printedDate ? 'bg-success' : 'bg-secondary'">2</span>
+              <span>Printed</span>
+            </div>
+            <div class="flex-grow-1 mx-3">
+              <div class="progress" style="height: 2px;">
+                <div class="progress-bar bg-white" 
+                     role="progressbar" 
+                     [style.width]="row.pickedCompletedDate ? '100%' : '0%'"></div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center">
+              <span class="badge me-2" 
+                    [ngClass]="row.pickedCompletedDate ? 'bg-success' : 'bg-secondary'">3</span>
+              <span>Completed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+
+
+        <div class="alert alert-warning" role="alert" *ngIf="!row.active || !row.validated">
+          <h4 class="alert-heading">Warning!</h4>
+          <p>It appears this work order was removed.</p>
+          <hr>
+          <p class="mb-0">This work order will be removed once this page is refreshed.</p>
+        </div>
+
+        <!-- Info about filtered items -->
+        <div class="alert alert-info" role="alert" *ngIf="row.originalItemCount && row.originalItemCount > row.details.length">
+          <h6 class="alert-heading">
+            <i class="ri-filter-line me-2"></i>Items Filtered
+          </h6>
+          <p class="mb-0">
+            <strong>{{row.originalItemCount - row.details.length}}</strong> rejected or inactive items were filtered out from this request.
+            Only <strong>{{row.details.length}}</strong> approved items are shown for picking.
+          </p>
+        </div>
+
+        <p style="font-size:14px;color:red" *ngIf="row.printedDate && !row.pickCompletedDate">
+          Elapsed picking time: {{row.timeDiff}}
+        </p>
+        <p>Requestor: <b>{{row.requestor}}</b></p>
+        <p>Production Line: <b>{{row.lineNumber}}</b></p>
+        <p>Pick List #: <b>{{row.pickList}}</b></p>
+        <p>Created Date: <b>{{row.createdDate}}</b></p>
+        <p>Due Date: <b>{{row.dueDate}}</b></p>
+        <p>Last Printed:
+          <b *ngIf="!row.printedDate">{{row.printedDate || 'Not Printed'}}</b>
+          <b *ngIf="row.printedDate">{{row.printedBy}} &#64; {{row.printedDate}}</b>
+        </p>
+        <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table align-middle table-bordered text-nowrap">
+            <thead>
+              <tr>
+                <th>Line #</th>
+                <th>Part Number</th>
+                <th>Description</th>
+                <th>Locations/OH Qty</th>
+                <th>Qty Required</th>
+                <th>Qty Picked</th>
+                <th>Transaction</th>
+                <th>Account Code</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of row.details" 
+                  [class]="getItemRowClass(item)">
+                <td>{{item.id}}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="me-2">{{item.partNumber}}</span>
+                    <span class="badge badge-sm" 
+                          [ngClass]="getValidationStatusBadgeClass(item)"
+                          [title]="getValidationStatusTooltip(item)">
+                      {{getValidationStatusText(item)}}
+                    </span>
+                  </div>
+                </td>
+                <td>{{item.itemDescription}}</td>
+                <td>
+                  <p *ngIf="!item.locations">No Locations Found</p>
+                  <table class="table table-sm table-bordered mb-0 pb-0" *ngIf="item.locations">
+                    <thead>
+                      <tr>
+                        <th>Location</th>
+                        <th>OH/Qty</th>
+                        <th>Lot</th>
+                        <th>Ref</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
+                        <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
+                        <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                        <td class="p-0 px-2">{{location.ld_lot}}</td>
+                        <td class="p-0 px-2">{{location.ld_ref}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+                <td>{{item.qty}}</td>
+                <td>
+
+                  <input (click)="$any($event.target).select()" type="number" name="qtyPicked" class="form-control"
+                    placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked"
+                    [disabled]="row.disabled" style="min-width:100px">
+
+                </td>
+                <td>{{item.trType}}</td>
+                <td>{{item.ac_code}}</td>
+                <td>{{item.notes}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!--Print-->
+      <div class="d-none d-print-block" id="pickSheet-{{row.id}}">
+
+        <div class="mb-3">
+          <h4>Material Request #: <b>{{row.id}}</b></h4>
+          <p>Requestor: <b>{{row.requestor}}</b></p>
+          <p>Production Line: <b>{{row.lineNumber}}</b></p>
+          <p>Pick List #: <b>{{row.pickList}}</b></p>
+          <p>Created Date: <b>{{row.createdDate}}</b></p>
+          <p>Due Date: <b>{{row.dueDate}}</b></p>
+          <p>Last Printed:
+            <b *ngIf="!row.printedDate">{{row.printedDate || 'Not Printed'}}</b>
+            <b *ngIf="row.printedDate">{{row.printedBy}} &#64; {{row.printedDate}}</b>
+          </p>
+          <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
+        </div>
+
+        <table class="table align-middle table-sm table-bordered">
+          <thead>
+            <tr class="text-center">
+              <th>Line #</th>
+              <th>Part Number</th>
+              <th>Description</th>
+              <th>Locations/OH Qty</th>
+              <th>Qty Required</th>
+              <th>Qty Picked</th>
+              <th>Transaction</th>
+              <th>Account Code</th>
+              <th>Comments</th>
+            </tr>
+          </thead>
+          <tbody class="text-center">
+            <tr *ngFor="let item of row.details">
+              <td>{{item.id}}</td>
+              <td>
+                <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="true"
+                  [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"></ngx-barcode6>
+              </td>
+              <td>{{item.itemDescription}}</td>
+              <td>
+                <p *ngIf="!item.locations">No Locations Found</p>
+                <table class="table table-sm table-bordered m-0 p-0 text-left"
+                  *ngIf="item.locations">
+                  <thead>
+                    <tr>
+                      <th>Location</th>
+                      <th>OH/Qty</th>
+                      <th>Lot</th>
+                      <th>Ref</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
+                      <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
+                      <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                      <td class="p-0 px-2">{{location.ld_lot}}</td>
+                      <td class="p-0 px-2">{{location.ld_ref}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+              <td>{{item.qty}}</td>
+              <td></td>
+              <td>{{item.trType}}</td>
+              <td>{{item.ac_code}}</td>
+              <td>{{item.notes}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-footer border-top-0">
+        <button class="btn btn-warning me-2" 
+                (click)="onPrint(row)" 
+                [disabled]="row.disabled || row.isLoading"
+                accesskey="p"
+                title="Print pick sheet (Ctrl+P)">
+          <span *ngIf="!row.isLoading">
+            <i class="ri-printer-line me-1"></i>Print
+          </span>
+          <span *ngIf="row.isLoading">
+            <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+            Printing...
+          </span>
+        </button>
+        <button class="btn btn-primary" 
+                (click)="onComplete(row)"
+                [disabled]="!row.printedDate || row.disabled"
+                accesskey="c"
+                title="Complete picking (Ctrl+Enter)">
+          <i class="ri-check-double-line me-1"></i>Complete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

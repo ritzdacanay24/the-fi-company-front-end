@@ -1,0 +1,42 @@
+/* Photo Section Component Styles */
+.ratio img {
+  transition: transform 0.2s ease-in-out;
+}
+
+.ratio:hover img {
+  transform: scale(1.02);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+  border: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-danger {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-danger:hover {
+  transform: scale(1.1);
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+@media (max-width: 768px) {
+  .col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}

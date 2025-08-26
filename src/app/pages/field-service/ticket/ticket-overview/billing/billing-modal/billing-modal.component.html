@@ -1,11 +1,163 @@
-<div class="modal-header">
-  <h4 class="modal-title" id="modal-basic-title">Billing Review</h4>
+<div class="modal-header bg-warning bg-gradient text-white position-relative overflow-hidden p-4"
+     style="border-radius: 16px 16px 0 0;">
+  <!-- Background Pattern -->
+  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+    <i class="mdi mdi-microsoft-sharepoint" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  </div>
+  
+  <div class="d-flex align-items-center justify-content-between position-relative w-100">
+    <div class="d-flex align-items-center">
+      <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+        <i class="mdi mdi-microsoft-sharepoint fs-4 text-white"></i>
+      </span>
+      <div>
+        <h4 class="mb-1 fw-bold text-white">
+          SharePoint Billing Review
+        </h4>
+        <p class="text-white-50 mb-0">Integrated billing documentation viewer</p>
+      </div>
+    </div>
+    
+    <!-- Action buttons -->
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-light btn-sm" (click)="openInNewTab()" title="Open in new tab">
+        <i class="mdi mdi-open-in-new me-1"></i>New Tab
+      </button>
+      <button class="btn btn-light btn-sm" (click)="refreshFrame()" title="Refresh content">
+        <i class="mdi mdi-refresh me-1"></i>Refresh
+      </button>
+    </div>
+  </div>
+  <button type="button" class="btn-close position-absolute" 
+          style="right: 1rem; top: 1rem; z-index: 3;" 
+          (click)="dismiss()"></button>
 </div>
-<div class="modal-body p-0">
-  <!-- <div [innerHTML]="this.data | safe" style="width:100%;"></div> -->
-  <iframe [src]="this.url | safe" style="width:100%;height: calc(100vh - 156px);"></iframe>
 
+<div class="modal-body p-0">
+  <!-- Loading state -->
+  <div *ngIf="isLoading && showIframe" class="d-flex align-items-center justify-content-center" 
+       style="height: calc(100vh - 200px);">
+    <div class="text-center">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="text-muted">Attempting to load SharePoint content...</p>
+      <p class="small text-muted">Most SharePoint sites block iframe embedding for security.</p>
+      <button class="btn btn-outline-secondary btn-sm" (click)="openInNewTab()">
+        <i class="mdi mdi-open-in-new me-1"></i>Open in New Tab Instead
+      </button>
+    </div>
+  </div>
+
+  <!-- Error state with comprehensive options -->
+  <div *ngIf="hasError || !showIframe" class="d-flex align-items-center justify-content-center" 
+       style="height: calc(100vh - 200px);">
+    <div class="text-center" style="max-width: 600px;">
+      <i class="mdi mdi-shield-alert text-warning mb-3" style="font-size: 4rem;"></i>
+      <h4 class="text-muted mb-3">SharePoint Embedding Blocked</h4>
+      <p class="text-muted mb-4">{{errorMessage}}</p>
+      
+      <!-- Explanation -->
+      <div class="alert alert-info text-start mb-4">
+        <h6 class="alert-heading">
+          <i class="mdi mdi-information me-1"></i>Why is this happening?
+        </h6>
+        <ul class="mb-2 small">
+          <li><strong>X-Frame-Options:</strong> SharePoint sets headers that prevent embedding</li>
+          <li><strong>Content Security Policy (CSP):</strong> Blocks iframe loading for security</li>
+          <li><strong>Authentication:</strong> SharePoint may require login that can't work in iframes</li>
+          <li><strong>Tenant Settings:</strong> Organization policies may block external embedding</li>
+        </ul>
+        <p class="mb-0 small">
+          <strong>Solution:</strong> Use "Open in New Tab" for the best experience with SharePoint content.
+        </p>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
+        <button class="btn btn-primary" (click)="openInNewTab()">
+          <i class="mdi mdi-open-in-new me-1"></i>Open in New Tab
+        </button>
+        <button class="btn btn-outline-secondary" (click)="openInPopup()">
+          <i class="mdi mdi-window-restore me-1"></i>Try Popup Window
+        </button>
+        <button class="btn btn-outline-info btn-sm" (click)="retryIframe()" *ngIf="!showIframe">
+          <i class="mdi mdi-refresh me-1"></i>Test & Retry Iframe
+        </button>
+      </div>
+
+      <!-- Direct link section -->
+      <div class="border rounded p-3 bg-light">
+        <h6 class="mb-2">Direct Link Access:</h6>
+        <div class="input-group input-group-sm mb-2">
+          <input type="text" class="form-control font-monospace small" [value]="url" readonly>
+          <button class="btn btn-outline-secondary" type="button" 
+                  (click)="copyToClipboard(url)" title="Copy URL">
+            <i class="mdi mdi-content-copy"></i>
+          </button>
+        </div>
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-outline-primary btn-sm" (click)="openInNewTab()">
+            <i class="mdi mdi-open-in-new me-1"></i>Open Link
+          </button>
+          <button class="btn btn-outline-info btn-sm" (click)="showDebugInfo()">
+            <i class="mdi mdi-bug me-1"></i>Debug Info
+          </button>
+        </div>
+      </div>
+
+      <!-- Alternative suggestion -->
+      <div class="mt-4 p-3 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25">
+        <h6 class="text-warning mb-2">
+          <i class="mdi mdi-lightbulb me-1"></i>Alternative Approach
+        </h6>
+        <p class="small mb-2">
+          For better SharePoint integration, consider asking your IT team to:
+        </p>
+        <ul class="small text-start mb-0">
+          <li>Configure SharePoint to allow iframe embedding</li>
+          <li>Set up a dedicated sharing link with embed permissions</li>
+          <li>Use SharePoint's built-in embed codes instead of direct URLs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SharePoint iframe with extensive error handling -->
+  <iframe *ngIf="showIframe && !hasError"
+          [src]="safeUrl" 
+          style="width:100%; height: calc(100vh - 200px); border:none;"
+          class="bg-white"
+          (load)="onFrameLoad()"
+          (error)="onFrameError($event)"
+          #sharepointFrame
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-downloads"
+          loading="lazy">
+    <p>Your browser does not support iframes. 
+       <a [href]="url" target="_blank" rel="noopener noreferrer">
+         Click here to open SharePoint in a new window
+       </a>.
+    </p>
+  </iframe>
 </div>
-<div class="modal-footer d-flex">
-  <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
+
+<div class="modal-footer bg-light border-top">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <small class="text-muted">
+      <i class="mdi mdi-shield-check me-1"></i>
+      <span *ngIf="!hasError">Attempting secure SharePoint integration</span>
+      <span *ngIf="hasError">SharePoint security policies prevent embedding - use external viewing</span>
+    </small>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary btn-sm" (click)="openInNewTab()" 
+              [class.btn-primary]="hasError" [class.btn-outline-primary]="!hasError">
+        <i class="mdi mdi-open-in-new me-1"></i>
+        {{hasError ? 'Open SharePoint' : 'Open Externally'}}
+      </button>
+      <button class="btn btn-outline-secondary" (click)="dismiss()">
+        <i class="mdi mdi-close me-1"></i>Close
+      </button>
+    </div>
+  </div>
 </div>

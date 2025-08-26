@@ -904,6 +904,23 @@ export const MENU: MenuItem[] = [
         ],
       },
       {
+        label: "Serial Numbers",
+        icon: "las la-barcode",
+        isCollapsed: true,
+        subItems: [
+          {
+            label: "Generate Serial Numbers",
+            link: "/dashboard/operations/serial-number-generator",
+            description: "Generate and print serial numbers with barcodes",
+          },
+          {
+            label: "Serial Number Report",
+            link: "/dashboard/operations/serial-number-report",
+            description: "View and manage generated serial numbers",
+          },
+        ],
+      },
+      {
         label: "Physical Inventory",
         link: "/dashboard/operations/physical-inventory/tags",
         accessRequired: false,
@@ -990,6 +1007,23 @@ export const MENU: MenuItem[] = [
             label: "Edit AGS Serial",
             link: "/dashboard/quality/ags-serial/edit",
             description: "AGS serial edit",
+          },
+        ],
+      },
+      {
+        label: "Serial Numbers",
+        icon: "las la-barcode",
+        isCollapsed: true,
+        subItems: [
+          {
+            label: "Generate Serial Numbers",
+            link: "/dashboard/quality/serial-number-generator",
+            description: "Generate and print serial numbers with barcodes",
+          },
+          {
+            label: "Serial Number Report",
+            link: "/dashboard/quality/serial-number-report",
+            description: "View and manage generated serial numbers",
           },
         ],
       },

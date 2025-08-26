@@ -1,0 +1,154 @@
+<div class="document-stats">
+  <!-- Main Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h3>{{ totalDocumentsCount }}</h3>
+              <p class="mb-0">Total Documents</p>
+            </div>
+            <i class="mdi mdi-file-document fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h3>{{ activeDocumentsCount }}</h3>
+              <p class="mb-0">Active Documents</p>
+            </div>
+            <i class="mdi mdi-check-circle fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h3>{{ totalRevisionsCount }}</h3>
+              <p class="mb-0">Total Revisions</p>
+            </div>
+            <i class="mdi mdi-history fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h3>{{ pendingApprovalsCount }}</h3>
+              <p class="mb-0">Pending Approvals</p>
+            </div>
+            <i class="mdi mdi-clock-outline fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Analytics -->
+  <div class="row">
+    <!-- Document Status Distribution -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="mdi mdi-chart-pie me-2"></i>
+            Document Status Distribution
+          </h5>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let item of getDocumentsByStatus()" class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex align-items-center">
+              <span class="badge me-2" [class]="getStatusBadgeClass(item.status)">
+                {{ item.status.replace('_', ' ') | titlecase }}
+              </span>
+              <span>{{ item.count }} documents</span>
+            </div>
+            <div class="text-end">
+              <span class="text-muted">{{ item.percentage }}%</span>
+              <div class="progress mt-1" style="width: 100px; height: 4px;">
+                <div class="progress-bar" [style.width.%]="item.percentage" [class]="getStatusBadgeClass(item.status)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Type Distribution -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="mdi mdi-chart-donut me-2"></i>
+            Document Type Distribution
+          </h5>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let item of getDocumentsByType()" class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex align-items-center">
+              <span class="badge me-2" [class]="getTypeBadgeClass(item.type)">
+                {{ item.type }}
+              </span>
+              <span>{{ item.count }} documents</span>
+            </div>
+            <div class="text-end">
+              <span class="text-muted">{{ item.percentage }}%</span>
+              <div class="progress mt-1" style="width: 100px; height: 4px;">
+                <div class="progress-bar" [style.width.%]="item.percentage" [class]="getTypeBadgeClass(item.type)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="mdi mdi-timeline me-2"></i>
+            Recent Activity
+          </h5>
+        </div>
+        <div class="card-body">
+          <div *ngIf="getRecentActivity().length === 0" class="text-center text-muted py-3">
+            <i class="mdi mdi-information-outline fa-2x mb-2"></i>
+            <p class="mb-0">No recent activity to display</p>
+          </div>
+          
+          <div *ngFor="let activity of getRecentActivity()" class="d-flex align-items-center mb-3">
+            <div class="activity-icon me-3">
+              <i class="mdi mdi-pencil text-primary"></i>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ activity.action }}</strong> 
+                  <span class="text-muted">{{ activity.document }}</span>
+                </div>
+                <small class="text-muted">{{ activity.date | date:'short' }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,413 @@
+<!-- Minimal Header for Modal -->
+<div class="d-flex justify-content-between align-items-center mb-3" *ngIf="!id">
+  <h5 class="mb-0">Material Request Picking</h5>
+  <button class="btn btn-outline-primary btn-sm" (click)="refresh()">
+    <i class="ri-refresh-line"></i> Refresh
+  </button>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading" class="text-center my-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <p>Loading data. Please wait..</p>
+</div>
+
+<!-- Not Found State -->
+<div *ngIf="!isLoading && id && !selectedRequest" class="text-center py-5">
+  <i class="ri-alert-line text-warning" style="font-size: 3rem;"></i>
+  <p class="mb-3 mt-3">Material request not found.</p>
+  <button class="btn btn-primary" (click)="refresh()">Refresh</button>
+</div>
+
+<!-- Empty State -->
+<div *ngIf="!isLoading && !id && pickingRequests.length === 0" class="text-center py-5">
+  <p class="mb-5">All caught up. No picks found.</p>
+  <button class="btn btn-primary" (click)="refresh()">Refresh</button>
+</div>
+
+<!-- Content -->
+<div *ngIf="!isLoading">
+  <!-- Single Request View (when ID is provided) -->
+  <div *ngIf="id && selectedRequest">
+    <ng-container *ngTemplateOutlet="requestTemplate; context: { request: selectedRequest }"></ng-container>
+  </div>
+
+  <!-- Multiple Requests View (when no ID is provided) -->
+  <ng-container *ngIf="!id">
+    <div class="mb-3" *ngFor="let request of pickingRequests">
+      <ng-container *ngTemplateOutlet="requestTemplate; context: { request: request }"></ng-container>
+    </div>
+  </ng-container>
+</div>
+
+<!-- Request Template -->
+<ng-template #requestTemplate let-request="request">
+  <!-- Condensed Modal View -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light">
+      <div class="row align-items-center">
+        <div class="col">
+          <h6 class="mb-0">
+            <i class="mdi mdi-package-variant me-2"></i>
+            Material Request #{{request.id}}
+          </h6>
+        </div>
+        <div class="col-auto">
+          <span class="badge bg-primary">{{request.details?.length || 0}} items</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Basic Info in detailed layout -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <small class="text-muted">Requestor</small>
+          <div class="fw-semibold">{{request.requestor}}</div>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted">Production Line</small>
+          <div class="fw-semibold">{{request.lineNumber}}</div>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted">Due Date</small>
+          <div class="fw-semibold">{{request.dueDate}}</div>
+        </div>
+        <div class="col-md-3">
+          <small class="text-muted">Created Date</small>
+          <div class="fw-semibold">{{request.createdDate}}</div>
+        </div>
+      </div>
+
+      <!-- Additional Info Row -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <small class="text-muted">Pick List #</small>
+          <div class="fw-semibold">{{request.pickList || 'Not Assigned'}}</div>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted">Last Printed</small>
+            <div class="fw-semibold"></div>
+            <span *ngIf="!request.printedDate">Not Printed</span>
+            <span *ngIf="request.printedDate">{{request.printedBy}} &#64; {{request.printedDate}}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted">Total Items</small>
+          <div class="fw-semibold">{{request.details?.length || 0}} items</div>
+        </div>
+      </div>
+
+      <!-- Special Instructions -->
+      <div class="mb-3" *ngIf="request.specialInstructions">
+        <small class="text-muted">Special Instructions</small>
+        <div class="fw-semibold text-warning">{{request.specialInstructions}}</div>
+      </div>
+
+      <!-- Picking Progress (only show in quantity entry mode) -->
+      <div class="mb-3" *ngIf="focusOnQuantities">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <small class="text-muted">Picking Progress</small>
+          <small class="text-muted">
+            {{ getPickedItemsCount(request) }} of {{ request.details?.length || 0 }} items 
+            ({{ getPickingPercentage(request) }}%)
+          </small>
+        </div>
+        <div class="progress" style="height: 8px;">
+          <div class="progress-bar" 
+               [class]="getProgressBarClass(request)"
+               role="progressbar" 
+               [style.width.%]="getPickingPercentage(request)"
+               [attr.aria-valuenow]="getPickingPercentage(request)" 
+               aria-valuemin="0" 
+               aria-valuemax="100">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <small class="text-success">Complete: {{ getCompleteItemsCount(request) }}</small>
+          <small class="text-warning">Partial: {{ getPartialItemsCount(request) }}</small>
+          <small class="text-danger">Shortages: {{ getShortageItemsCount(request) }}</small>
+          <small class="text-muted">Not picked: {{ getNotPickedItemsCount(request) }}</small>
+        </div>
+      </div>
+
+      <!-- Detailed Items List -->
+      <div class="border rounded p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">Items Details</h6>
+          
+          <!-- Bulk Actions for Quantity Entry Mode -->
+          <div class="d-flex gap-2" *ngIf="focusOnQuantities && !viewMode">
+            <button class="btn btn-success btn-sm" 
+                    (click)="pickAllComplete(request)"
+                    [disabled]="request.disabled"
+                    title="Pick all items complete (fill all required quantities)">
+              <i class="ri-check-double-line me-1"></i>Pick All Complete
+            </button>
+            <button class="btn btn-outline-danger btn-sm" 
+                    (click)="clearAllPicked(request)"
+                    [disabled]="request.disabled"
+                    title="Clear all picked quantities">
+              <i class="ri-refresh-line me-1"></i>Clear All
+            </button>
+          </div>
+          
+          <!-- Progress indicator -->
+          <div *ngIf="!focusOnQuantities">
+            <small class="text-muted">
+              {{ getPickedItemsCount(request) }} of {{ request.details?.length || 0 }} items picked
+            </small>
+          </div>
+        </div>
+        
+        <!-- Keyboard shortcuts hint -->
+        <div class="alert alert-info alert-sm py-2 mb-3" *ngIf="focusOnQuantities">
+          <small>
+            <strong>Quick shortcuts:</strong> 
+            <kbd>Enter</kbd> Next item • 
+            <kbd>Tab</kbd> Pick complete • 
+            <kbd>Esc</kbd> Mark shortage (0) • 
+            <kbd>Ctrl+A</kbd> Pick all complete • 
+            <kbd>Ctrl+S</kbd> Save quantities • 
+            <kbd>Ctrl+P</kbd> Print pick sheet
+          </small>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Line #</th>
+                <th>Part Number</th>
+                <th>Description</th>
+                <th>Locations</th>
+                <th>Qty Required</th>
+                <th>Qty Picked</th>
+                <th>Status</th>
+                <th>Account Code</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of $any(request.details); let i = index">
+                <td>{{item.id}}</td>
+                <td>
+                  <div class="fw-semibold">{{item.partNumber}}</div>
+                  <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="false"
+                    [bc-height]="15" [bc-width]="1" [bc-font-size]="10" [bc-margin-left]="-10"></ngx-barcode6>
+                </td>
+                <td>
+                  <div class="text-wrap" style="max-width: 200px;">{{item.itemDescription}}</div>
+                </td>
+                <td>
+                  <div *ngIf="!item.locations" class="text-muted">No Locations Found</div>
+                  <div *ngIf="item.locations" class="small">
+                    <div *ngFor="let location of $any(item.locations) | slice:0:3" class="mb-1">
+                      <strong>{{$any(location).LD_LOC}}</strong>: {{$any(location).LD_QTY_OH}} 
+                      <span *ngIf="$any(location).ld_lot" class="text-muted">({{$any(location).ld_lot}})</span>
+                    </div>
+                    <div *ngIf="item.locations.length > 3" class="text-muted">
+                      +{{item.locations.length - 3}} more locations
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-primary">{{item.qty}}</span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="input-group" style="min-width: 160px; max-width: 200px;">
+                      <input (click)="$any($event.target).select()" 
+                             (keydown)="onQuantityKeyDown($event, request, item)"
+                             type="number" 
+                             name="qtyPicked_{{item.id}}" 
+                             class="form-control form-control-sm"
+                             placeholder="0" 
+                             min="0" 
+                             [max]="item.qty" 
+                             required 
+                             [(ngModel)]="item.qtyPicked"
+                             [disabled]="request.disabled || viewMode"
+                             [class.border-warning]="focusOnQuantities"
+                             style="min-width: 80px;">
+                      
+                      <!-- Quick Pick Complete Button -->
+                      <button class="btn btn-outline-success btn-sm" 
+                              type="button"
+                              (click)="pickComplete(item)"
+                              [disabled]="request.disabled || viewMode"
+                              [class.btn-success]="item.qtyPicked == item.qty"
+                              title="Pick Complete (Fill required qty)">
+                        <i class="ri-check-line" *ngIf="item.qtyPicked != item.qty"></i>
+                        <i class="ri-check-double-line" *ngIf="item.qtyPicked == item.qty"></i>
+                      </button>
+                      
+                      <!-- Quick Zero Button -->
+                      <button class="btn btn-outline-danger btn-sm" 
+                              type="button"
+                              (click)="pickZero(item)"
+                              [disabled]="request.disabled || viewMode"
+                              title="Mark as shortage (0 qty)">
+                        <i class="ri-close-line"></i>
+                      </button>
+                    </div>
+                    
+                    <!-- Status indicators -->
+                    <div class="flex-shrink-0">
+                      <div class="text-muted small" *ngIf="item.qtyPicked && item.qtyPicked !== item.qty">
+                        <span class="badge bg-warning text-dark" *ngIf="item.qtyPicked < item.qty">
+                          Short: {{item.qty - item.qtyPicked}}
+                        </span>
+                        <span class="badge bg-danger" *ngIf="item.qtyPicked > item.qty">Over</span>
+                      </div>
+                      <div class="text-success small" *ngIf="item.qtyPicked && item.qtyPicked === item.qty">
+                        <i class="ri-check-line me-1"></i>Complete
+                      </div>
+                      <div class="text-muted small" *ngIf="!item.qtyPicked || item.qtyPicked === 0">
+                        <span class="badge bg-secondary">Not picked</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" 
+                        [ngClass]="getValidationStatusBadgeClass(item)"
+                        [title]="getValidationStatusTooltip(item)">
+                    {{getValidationStatusText(item)}}
+                  </span>
+                </td>
+                <td>{{item.ac_code}}</td>
+                <td>
+                  <div class="text-wrap" style="max-width: 150px;">{{item.notes}}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex gap-2 mt-3" *ngIf="!id">
+        <button class="btn btn-outline-warning btn-sm" 
+                (click)="onPrint(request)" 
+                [disabled]="request.isLoading">
+          <i class="ri-printer-line me-1"></i>Print
+        </button>
+        <button class="btn btn-outline-success btn-sm" 
+                (click)="onComplete(request)"
+                [disabled]="request.isLoading">
+          <i class="ri-check-line me-1"></i>Complete
+        </button>
+      </div>
+
+      <!-- Modal-specific Action Buttons -->
+      <div class="d-flex gap-2 mt-3" *ngIf="id">
+        <!-- Quantity Entry Mode Buttons -->
+        <div *ngIf="focusOnQuantities" class="d-flex gap-2 w-100">
+          <button class="btn btn-success" 
+                  (click)="onSaveQuantities(request)">
+            <i class="ri-save-line me-1"></i>Save Picked Quantities
+          </button>
+          <button class="btn btn-outline-warning" 
+                  (click)="onPrint(request)"
+                  [disabled]="request.isLoading">
+            <i class="ri-printer-line me-1"></i>Print Pick Sheet
+          </button>
+        </div>
+
+        <!-- View Mode Buttons -->
+        <div *ngIf="viewMode && !focusOnQuantities" class="d-flex gap-2">
+          <button class="btn btn-outline-info" 
+                  (click)="onPrint(request)"
+                  [disabled]="request.isLoading">
+            <i class="ri-printer-line me-1"></i>Print Pick Sheet
+          </button>
+        </div>
+
+        <!-- Edit Mode Buttons -->
+        <div *ngIf="editMode && !viewMode && !focusOnQuantities" class="d-flex gap-2">
+          <button class="btn btn-outline-warning" 
+                  (click)="onPrint(request)" 
+                  [disabled]="request.isLoading">
+            <i class="ri-printer-line me-1"></i>Print
+          </button>
+          <button class="btn btn-outline-success" 
+                  (click)="onComplete(request)"
+                  [disabled]="request.isLoading">
+            <i class="ri-check-line me-1"></i>Complete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--Print Section-->
+  <div class="d-none d-print-block" id="pickSheet-{{request.id}}">
+    <div class="mb-3">
+      <h4>Material Request #: <b>{{request.id}}</b></h4>
+      <p>Requestor: <b>{{request.requestor}}</b></p>
+      <p>Production Line: <b>{{request.lineNumber}}</b></p>
+      <p>Pick List #: <b>{{request.pickList || 'Not Assigned'}}</b></p>
+      <p>Created Date: <b>{{request.createdDate}}</b></p>
+      <p>Due Date: <b>{{request.dueDate}}</b></p>
+      <p>Last Printed:
+        <b *ngIf="!request.printedDate">{{request.printedDate || 'Not Printed'}}</b>
+        <b *ngIf="request.printedDate">{{request.printedBy}} &#64; {{request.printedDate}}</b>
+      </p>
+      <p>Special Instructions: <b>{{request.specialInstructions}}</b></p>
+    </div>
+
+    <table class="table align-middle table-sm table-bordered">
+      <thead>
+        <tr class="text-center">
+          <th>Line #</th>
+          <th>Part Number</th>
+          <th>Description</th>
+          <th>Locations/OH Qty</th>
+          <th>Qty Required</th>
+          <th>Qty Picked</th>
+          <th>Transaction</th>
+          <th>Account Code</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody class="text-center">
+        <tr *ngFor="let item of request.details">
+          <td>{{item.id}}</td>
+          <td>
+            <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="true"
+              [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"></ngx-barcode6>
+          </td>
+          <td>{{item.itemDescription}}</td>
+          <td>
+            <p *ngIf="!item.locations">No Locations Found</p>
+            <table class="table table-sm table-bordered m-0 p-0 text-left"
+              *ngIf="item.locations">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>OH/Qty</th>
+                  <th>Lot</th>
+                  <th>Ref</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
+                  <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
+                  <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                  <td class="p-0 px-2">{{location.ld_lot}}</td>
+                  <td class="p-0 px-2">{{location.ld_ref}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+          <td>{{item.qty}}</td>
+          <td></td>
+          <td>{{item.trType}}</td>
+          <td>{{item.ac_code}}</td>
+          <td>{{item.notes}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</ng-template>

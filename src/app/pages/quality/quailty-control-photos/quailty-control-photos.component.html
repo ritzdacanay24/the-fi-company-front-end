@@ -1,0 +1,261 @@
+<!-- Enhanced Form Section -->
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <!-- Form Header -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-clipboard-check-outline me-2"></i>
+            <h5 class="card-title mb-0">Quality Control Photo Checklist</h5>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <form class="needs-validation" novalidate>
+            <div class="row g-3">
+              <!-- Work Order Input -->
+              <div class="col-lg-4 col-md-6">
+                <div class="form-floating">
+                  <input type="text" 
+                         class="form-control" 
+                         id="woNumber" 
+                         placeholder="Enter Work Order #"
+                         [(ngModel)]="woNumber"
+                         name="woNumber"
+                         required>
+                  <label for="woNumber">
+                    <i class="mdi mdi-file-document-outline me-2"></i>
+                    Work Order #
+                  </label>
+                </div>
+                <div class="form-text">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Enter the work order number to start checklist
+                </div>
+              </div>
+
+              <!-- Serial Number Input -->
+              <div class="col-lg-4 col-md-6">
+                <div class="form-floating">
+                  <input type="text" 
+                         class="form-control" 
+                         id="serialNumber" 
+                         placeholder="Enter Serial Number"
+                         [(ngModel)]="serialNumber"
+                         name="serialNumber"
+                         required>
+                  <label for="serialNumber">
+                    <i class="mdi mdi-barcode me-2"></i>
+                    Serial Number
+                  </label>
+                </div>
+                <div class="form-text">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Enter the serial number for the component
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <div class="col-lg-4 col-md-12 d-flex align-items-end">
+                <button class="btn btn-primary btn-lg w-100" 
+                        type="button" 
+                        (click)="searchWorkOrder()" 
+                        [disabled]="loading || !woNumber">
+                  <span *ngIf="!loading" class="d-flex align-items-center justify-content-center">
+                    <i class="mdi mdi-search me-2"></i>
+                    Search Work Order
+                  </span>
+                  <span *ngIf="loading" class="d-flex align-items-center justify-content-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Loading...
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-3">
+              <div class="col-12">
+                <div class="alert alert-light border d-flex align-items-center">
+                  <i class="mdi mdi-lightbulb-outline text-primary me-2"></i>
+                  <div class="flex-grow-1">
+                    <strong>Quick Start:</strong> 
+                    Enter Work Order # and click "Search Work Order" to load available checklists.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Available Templates Section -->
+<div class="row" *ngIf="checklistTemplates && checklistTemplates.length > 0">
+  <div class="col-12">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-success text-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-clipboard-plus text-white me-2"></i>
+            <h5 class="card-title mb-0">Available Checklist Templates</h5>
+          </div>
+          <span class="badge bg-light text-success">{{checklistTemplates.length}} Available</span>
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3" *ngFor="let template of checklistTemplates">
+            <div class="card border-success">
+              <div class="card-body">
+                <h6 class="card-title text-success">
+                  <i class="mdi mdi-clipboard-check me-2"></i>
+                  {{template.name}}
+                </h6>
+                <p class="card-text text-muted small mb-2" *ngIf="template.description">
+                  {{template.description}}
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="text-muted small">
+                    <i class="mdi mdi-format-list-checks me-1"></i>
+                    {{template.items?.length || 0}} items
+                  </div>
+                  <button class="btn btn-success btn-sm" 
+                          (click)="createChecklistInstance(template.id)"
+                          [disabled]="loading">
+                    <i class="mdi mdi-play me-1" *ngIf="!loading"></i>
+                    <div class="spinner-border spinner-border-sm me-1" *ngIf="loading"></div>
+                    Start Checklist
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Open Checklists Section -->
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-format-list-checks text-primary me-2"></i>
+            <h5 class="card-title mb-0">Open Checklists</h5>
+          </div>
+          <span class="badge bg-primary">{{openChecklists?.length || 0}} Active</span>
+        </div>
+      </div>
+      
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-file-document me-1"></i>
+                  Work Order #
+                </th>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-barcode me-1"></i>
+                  Serial Number
+                </th>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-package-variant me-1"></i>
+                  Part Number
+                </th>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-clipboard-text me-1"></i>
+                  Template
+                </th>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-flag me-1"></i>
+                  Status
+                </th>
+                <th class="px-3 py-3">
+                  <i class="mdi mdi-calendar me-1"></i>
+                  Created Date
+                </th>
+                <th class="px-3 py-3 text-center">
+                  <i class="mdi mdi-cog me-1"></i>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of openChecklists; let i = index" 
+                  class="align-middle">
+                <td class="px-3 py-3">
+                  <a href="javascript:void(0)" 
+                     class="text-decoration-none fw-medium text-primary"
+                     (click)="openChecklistInstance(row.id)">
+                    <i class="mdi mdi-open-in-new me-1"></i>
+                    {{row.work_order_number}}
+                  </a>
+                </td>
+                <td class="px-3 py-3">
+                  <code class="bg-light px-2 py-1 rounded">{{row.serial_number || 'N/A'}}</code>
+                </td>
+                <td class="px-3 py-3">
+                  <span class="badge bg-light text-dark">{{row.part_number}}</span>
+                </td>
+                <td class="px-3 py-3">
+                  <span class="text-muted">{{row.template_name || 'Unknown Template'}}</span>
+                </td>
+                <td class="px-3 py-3">
+                  <span class="badge" 
+                        [class]="row.status === 'completed' ? 'bg-success' : 
+                                row.status === 'in_progress' ? 'bg-warning' : 
+                                row.status === 'submitted' ? 'bg-info' : 'bg-secondary'">
+                    {{row.status | titlecase}}
+                  </span>
+                </td>
+                <td class="px-3 py-3">
+                  <div class="d-flex align-items-center">
+                    <i class="mdi mdi-clock-outline text-muted me-1"></i>
+                    <span class="text-muted">{{row.created_at | date:'short'}}</span>
+                  </div>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" 
+                            class="btn btn-outline-primary btn-sm"
+                            (click)="openChecklistInstance(row.id)"
+                            title="Open Checklist">
+                      <i class="mdi mdi-eye"></i>
+                    </button>
+                    <button type="button" 
+                            class="btn btn-outline-secondary btn-sm"
+                            title="View Details"
+                            [disabled]="row.status === 'completed' || row.status === 'submitted'">
+                      <i class="mdi mdi-information-outline"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- Empty State -->
+              <tr *ngIf="!openChecklists || openChecklists.length === 0">
+                <td colspan="7" class="text-center py-5">
+                  <div class="text-muted">
+                    <i class="mdi mdi-clipboard-text-outline mb-2" style="font-size: 3rem;"></i>
+                    <p class="mb-0">No open checklists found</p>
+                    <small>Start a new checklist using the form above</small>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

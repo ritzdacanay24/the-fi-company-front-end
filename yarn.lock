@@ -1670,6 +1670,11 @@
   resolved "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.3.tgz"
   integrity sha512-xRxC0jaJWDLYvcUvjQmHCJSfMrgmUuvsoXgDeU/wTorQ1ngDdUBuFtgY3W1Pc5sprGAvZBtWdJX7RPg/iZZUqA==
 
+"@faker-js/faker@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.npmjs.org/@faker-js/faker/-/faker-10.0.0.tgz"
+  integrity sha512-UollFEUkVXutsaP+Vndjxar40Gs5JL2HeLcl8xO1QAjJgOdhc3OmBFWyEylS+RddWaaBiAzH+5/17PLQJwDiLw==
+
 "@fastify/busboy@^2.0.0":
   version "2.1.1"
   resolved "https://registry.npmjs.org/@fastify/busboy/-/busboy-2.1.1.tgz"
@@ -7740,10 +7745,10 @@ ng-recaptcha@^13.2.1:
     "@types/grecaptcha" "^3.0.7"
     tslib "^2.2.0"
 
-ng2-charts@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.npmjs.org/ng2-charts/-/ng2-charts-5.0.3.tgz"
-  integrity sha512-/lTY64tiCN/pJPx+oIWRWOhtCk+ZbAU9yAUDNnRJwhe+a8ajcO5yS0tVOm5k7pj3doVp9+UdBRahyt6woJ95Rw==
+ng2-charts@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.npmjs.org/ng2-charts/-/ng2-charts-5.0.4.tgz"
+  integrity sha512-AnOZ2KSRw7QjiMMNtXz9tdnO+XrIKP/2MX1TfqEEo2fwFU5c8LFJIYqmkMPkIzAEm/U9y/1psA5TDNmxxjEdgA==
   dependencies:
     lodash-es "^4.17.15"
     tslib "^2.3.0"
@@ -7752,6 +7757,13 @@ ng2-dragula@^5.1.0:
   version "5.1.0"
   resolved "https://registry.npmjs.org/ng2-dragula/-/ng2-dragula-5.1.0.tgz"
   integrity sha512-5P185NWZXIAA/lmZ8Bb6alMxfxYcMRu4Mw+JGJVj4ACplsUUq77Odfhpwk1a5R1pyI+3CC4sOwYrJg+nTi0e6Q==
+  dependencies:
+    tslib "^2.3.0"
+
+ng2-file-upload@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.npmjs.org/ng2-file-upload/-/ng2-file-upload-8.0.0.tgz"
+  integrity sha512-uforjhx9zHxVJvstOwILWnn7qIpFD+V7x9xtsBIczVxI4KYwGtek2GyEohgZTemv979nZtcQBZrFGqH981OroA==
   dependencies:
     tslib "^2.3.0"
 

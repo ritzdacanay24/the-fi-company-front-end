@@ -1,0 +1,161 @@
+<div class="container-fluid pb-3" style="max-width: 1600px;">
+  <div class="card border-0 mb-0">
+
+    <!-- Header -->
+    <div class="card-header bg-primary bg-gradient text-white p-4 position-relative overflow-hidden">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
+        <i class="mdi mdi-gamepad-variant" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+            <i class="mdi mdi-gamepad-variant fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">
+              IGT Serial Number Records
+            </h4>
+            <p class="mb-0 text-white-50">
+              Track IGT serial numbers for gaming assets, parts, and work orders.
+            </p>
+          </div>
+        </div>
+        <div class="badge bg-light text-primary fs-6 px-3 py-2">
+          <i class="mdi mdi-quality-high me-1"></i>
+          Quality Portal
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="card-header bg-light border-0 p-4">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="d-flex align-items-center p-3 bg-info-subtle rounded shadow-sm border border-info-subtle position-relative overflow-hidden">
+            <div class="me-3 d-flex align-items-center justify-content-center rounded-circle bg-white" style="width: 48px; height: 48px;">
+              <i class="mdi mdi-database text-info" style="font-size: 2rem;"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold fs-4 text-info">{{ totalSerialCount }}</h6>
+              <small class="text-muted">Total Serial Numbers</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="d-flex align-items-center p-3 bg-success-subtle rounded shadow-sm border border-success-subtle position-relative overflow-hidden">
+            <div class="me-3 d-flex align-items-center justify-content-center rounded-circle bg-white" style="width: 48px; height: 48px;">
+              <i class="mdi mdi-checkbox-marked-circle-outline text-success" style="font-size: 2rem;"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold fs-4 text-success">{{ availableSerialCount }}</h6>
+              <small class="text-muted">Available</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="d-flex align-items-center p-3 bg-primary-subtle rounded shadow-sm border border-primary-subtle position-relative overflow-hidden">
+            <div class="me-3 d-flex align-items-center justify-content-center rounded-circle bg-white" style="width: 48px; height: 48px;">
+              <i class="mdi mdi-check-circle-outline text-primary" style="font-size: 2rem;"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold fs-4 text-primary">{{ usedSerialCount }}</h6>
+              <small class="text-muted">Used</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AG Grid Quick Filter & Custom Filters -->
+    <div class="card-header border-0 p-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Quick Search</label>
+          <input
+            type="search"
+            class="form-control"
+            placeholder="Search serial, asset, part, site, inspector..."
+            [(ngModel)]="quickFilter"
+            (ngModelChange)="onQuickFilterChange($event)"
+          >
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Status</label>
+          <select class="form-select" [ngModel]="statusFilter" (ngModelChange)="onStatusFilter($event)">
+            <option value="">All</option>
+            <option value="available">Available</option>
+            <option value="used">Used</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Inspector</label>
+          <select class="form-select" [ngModel]="inspectorFilter" (ngModelChange)="onInspectorFilter($event)">
+            <option value="">All</option>
+            <option *ngFor="let inspector of uniqueInspectors" [value]="inspector">{{ inspector }}</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end justify-content-end">
+          <a [routerLink]="['/dashboard/quality/igt/create']" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+            <i class="mdi mdi-plus me-1"></i>
+            New IGT Record
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="card-body p-0">
+      <ng-container *ngIf="data?.length; else noRecords">
+        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+          style="height: calc(100vh - 472px);"
+          [rowData]="data" [columnDefs]="columnDefs">
+        </ag-grid-angular>
+      </ng-container>
+      <ng-template #noRecords>
+        <div class="d-flex flex-column align-items-center justify-content-center p-5">
+          <div class="text-center" style="max-width: 500px;">
+            <div class="mb-4">
+              <div class="avatar-xl bg-info-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto">
+                <i class="mdi mdi-database-search text-info" style="font-size: 3rem;"></i>
+              </div>
+            </div>
+            <h4 class="text-body-emphasis mb-3">No IGT Serial Number Records Found</h4>
+            <p class="text-muted mb-4">
+              No records match your current filters. Try adjusting your search criteria or add a new IGT record.
+            </p>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer bg-light py-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          <i class="mdi mdi-database me-1"></i>
+          Total Records: <strong>{{data?.length || 0}}</strong>
+          <span class="mx-2">|</span>
+          <i class="mdi mdi-checkbox-marked-circle-outline text-success me-1"></i>
+          Available: <strong>{{availableSerialCount}}</strong>
+          <span class="mx-2">|</span>
+          <i class="mdi mdi-check-circle-outline text-primary me-1"></i>
+          Used: <strong>{{usedSerialCount}}</strong>
+          <span class="mx-2">|</span>
+          <i class="mdi mdi-counter me-1"></i>
+          Total Serials: <strong>{{totalSerialCount}}</strong>
+        </small>
+        <div class="d-flex align-items-center gap-3">
+          <small class="text-muted">
+            <i class="mdi mdi-eye me-1"></i>
+            Click "SELECT" to view/edit records
+          </small>
+          <small class="text-muted">
+            <i class="mdi mdi-gamepad-variant me-1"></i>
+            Gaming compliance tracking enabled
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,9 +1,10 @@
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, ViewChild, TemplateRef } from '@angular/core';
 import { CrashKitService } from '@app/core/api/field-service/crash-kit.service';
-import { NgbDatepickerModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDatepickerModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
+import * as moment from 'moment';
 
 let list: any = [
   {
@@ -159,6 +160,8 @@ export class CrashKitComponent implements OnInit {
     description: ""
   }
 
+  @ViewChild('crashKitModal', { static: false }) crashKitModal: TemplateRef<any>;
+
   closeSelect(select: NgSelectComponent) { select.close(); }
 
   search = (e) => {
@@ -181,7 +184,7 @@ export class CrashKitComponent implements OnInit {
   }
 
   constructor(
-    public offcanvasService: NgbOffcanvas,
+    private modalService: NgbModal,
     public api: CrashKitService,
   ) {
   }
@@ -239,9 +242,9 @@ export class CrashKitComponent implements OnInit {
     if (!this.partSearch) return;
     try {
       SweetAlert.loading()
-      await this.api.create(this.editInfo);
+      await this.api.create({...this.editInfo, work_order_id: this.workOrderId});
       if (!value) {
-        this.offcanvasService.dismiss('Save click');
+        this.modalService.dismissAll('Save click');
       } else {
         this.clear()
       }
@@ -263,7 +266,7 @@ export class CrashKitComponent implements OnInit {
     try {
       SweetAlert.loading('Deleting..')
       await this.api.deleteById(this.editInfo.id);
-      this.offcanvasService.dismiss('Save click');
+      this.modalService.dismissAll('Save click');
       this.getData();
       SweetAlert.close(500)
     } catch (err) {
@@ -278,7 +281,7 @@ export class CrashKitComponent implements OnInit {
       let id = this.editInfo.id;
       delete this.editInfo.id;
       await this.api.updateById(id, this.editInfo);
-      this.offcanvasService.dismiss('Save click');
+      this.modalService.dismissAll('Save click');
       this.getData()
       SweetAlert.close(500)
     } catch (err) {
@@ -306,17 +309,64 @@ export class CrashKitComponent implements OnInit {
     this.partSearch = ""
   }
 
-  open(content, row?) {
-    this.editInfo = { ...row, work_order_id: this.workOrderId };
+  openModal(row = null) {
+    this.editInfo = row ? { ...row } : { part_number: '', qty: 1 };
+    this.partSearch = null;
+    
+    this.modalService.open(this.crashKitModal, { 
+      size: 'lg',
+      centered: true
+    });
+  }
 
-    this.offcanvasService.open(content, { ariaLabelledBy: 'offcanvas-basic-title', position: 'end', panelClass: 'crash-canvas-height', backdropClass: 'backdrop-crashserial-canvas-height-canvas' }).result.then(
-      (result) => {
-        this.closeResult = `Closed with: ${result}`;
-        this.clear();
-      },
-      (reason) => {
-        this.clear();
-      },
-    );
+  // Helper methods for sidebar functionality
+  getTotalQuantity(): number {
+    return this.data?.reduce((total, item) => total + (item.qty || 0), 0) || 0;
+  }
+
+  getTotalAmount(): number {
+    return this.data?.reduce((total, item) => {
+      const price = item.PT_PRICE || item.price || 0;
+      const qty = item.qty || 0;
+      return total + (price * qty);
+    }, 0) || 0;
+  }
+
+  getRecentItems(): any[] {
+    return this.data?.slice(-5).reverse() || [];
+  }
+
+
+  exportKit(): void {
+    const csvContent = this.generateCSVContent();
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `crash_kit_${this.workOrderId}_${moment().format('YYYY-MM-DD')}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  generateCSVContent(): string {
+    const headers = ['Part Number', 'Description', 'Quantity'];
+    const rows = this.data?.map(item => [
+      item.part_number || '',
+      item.description || '',
+      item.qty || 0
+    ]) || [];
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  }
+
+  generateReport(): void {
+    const reportData = {
+      totalItems: this.data?.length || 0,
+      totalQuantity: this.getTotalQuantity(),
+      items: this.data || []
+    };
+    
+    console.log('Crash Kit Report:', reportData);
+    // Could open a modal or generate a PDF report
   }
 }

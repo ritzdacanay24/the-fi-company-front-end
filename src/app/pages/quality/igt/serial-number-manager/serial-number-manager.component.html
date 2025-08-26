@@ -1,0 +1,1236 @@
+<div class="container-fluid pb-3" style="max-width: 1200px;">
+  <div class="card border-0 mb-0">
+    <!-- Header -->
+    <div class="card-header bg-warning bg-gradient text-white p-4 position-relative overflow-hidden">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
+        <i class="mdi mdi-barcode-scan" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+            <i class="mdi mdi-barcode-scan fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">Serial Number Manager</h4>
+            <p class="mb-0 text-white-50">Preload and manage serial numbers for tag generation</p>
+          </div>
+        </div>
+        <div class="badge bg-light text-warning fs-6 px-3 py-2">
+          <i class="mdi mdi-shield-account me-1"></i>
+          Admin Portal
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="card-header border-0 p-4">
+      <div class="alert alert-warning border-0 rounded-3 shadow-sm py-3 px-4" role="alert">
+        <div class="d-flex align-items-start">
+          <i class="mdi mdi-information-outline me-3 fs-5 text-warning"></i>
+          <div class="flex-grow-1">
+            <h6 class="fw-semibold mb-2 text-warning">Serial Number Management</h6>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-upload text-primary me-2"></i>
+                  <small><strong>Bulk Upload:</strong> Import serial numbers via CSV or manual entry</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-check-circle text-success me-2"></i>
+                  <small><strong>Validation:</strong> Automatic duplicate detection and format checking</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-tag text-info me-2"></i>
+                  <small><strong>Tag Generation:</strong> Available serials for asset tag creation</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-history text-secondary me-2"></i>
+                  <small><strong>Usage Tracking:</strong> Monitor serial number allocation status</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Statistics Summary -->
+    <div class="card-header border-0 p-4 pt-0">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="card border-0 bg-success-subtle h-100">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-check-circle fs-3 text-success mb-2 d-block"></i>
+              <h3 class="text-success mb-1 fw-bold">{{statistics?.available || 0}}</h3>
+              <small class="text-success-emphasis fw-semibold">Available for Use</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-primary-subtle h-100">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-database fs-3 text-primary mb-2 d-block"></i>
+              <h3 class="text-primary mb-1 fw-bold">{{statistics?.total || 0}}</h3>
+              <small class="text-primary-emphasis fw-semibold">Total Inventory</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-warning-subtle h-100">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-clock fs-3 text-warning mb-2 d-block"></i>
+              <h3 class="text-warning mb-1 fw-bold">{{statistics?.reserved || 0}}</h3>
+              <small class="text-warning-emphasis fw-semibold">Reserved</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-info-subtle h-100">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-tag fs-3 text-info mb-2 d-block"></i>
+              <h3 class="text-info mb-1 fw-bold">{{statistics?.used || 0}}</h3>
+              <small class="text-info-emphasis fw-semibold">Used in Tags</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 class="mb-1">Serial Number Management</h4>
+          <p class="text-muted mb-0">Upload, manage, and track IGT serial numbers</p>
+        </div>
+        <button class="btn btn-outline-info" (click)="openHelp()" title="Open Help Documentation">
+          <i class="mdi mdi-help-circle me-1"></i>
+          Help & Documentation
+        </button>
+      </div>
+
+      <ul ngbNav #nav="ngbNav" [(activeId)]="activeTab" (activeIdChange)="onTabChange($event)" class="nav-tabs mb-4">
+        <li [ngbNavItem]="1">
+          <button ngbNavLink>
+            <i class="mdi mdi-upload me-2"></i>
+            Upload Serial Numbers
+          </button>
+          <ng-template ngbNavContent>
+            <!-- Access Control Warning -->
+            <div class="alert alert-danger border-0 mb-4" *ngIf="!canCreateSerialNumbers">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-shield-alert text-danger me-3 mt-1" style="font-size: 1.5rem;"></i>
+                <div>
+                  <h6 class="alert-heading fw-bold mb-2 text-danger">Access Restricted</h6>
+                  <p class="mb-2">You do not have permission to create or upload serial numbers.</p>
+                  <p class="mb-0 small text-muted">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Contact your administrator to request access to serial number management.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Method Toggle -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-center">
+                <div class="btn-group" role="group" aria-label="Upload Methods">
+                  <input type="radio" class="btn-check" name="uploadMethod" id="rangeMethod" value="range" 
+                         [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off" checked>
+                  <label class="btn btn-outline-info" for="rangeMethod">
+                    <i class="mdi mdi-auto-fix me-2"></i>Range Generator
+                  </label>
+
+                  <input type="radio" class="btn-check" name="uploadMethod" id="manualMethod" value="manual" 
+                         [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off">
+                  <label class="btn btn-outline-success" for="manualMethod">
+                    <i class="mdi mdi-pencil-plus me-2"></i>Manual Entry
+                  </label>
+
+                  <input type="radio" class="btn-check" name="uploadMethod" id="csvMethod" value="csv" 
+                         [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off">
+                  <label class="btn btn-outline-primary" for="csvMethod">
+                    <i class="mdi mdi-file-upload me-2"></i>CSV Upload
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Range Generator (Default) -->
+            <div *ngIf="selectedUploadMethod === 'range'" class="upload-method-content">
+              <div class="card border-info">
+                <div class="card-header bg-info-subtle border-info p-3">
+                  <h6 class="mb-0 fw-bold text-info-emphasis">
+                    <i class="mdi mdi-auto-fix me-2"></i>
+                    Serial Number Range Generator
+                    <button class="btn btn-link btn-sm p-0 ms-2"
+                      (click)="openHelpTopic('upload-methods', 'range-generator')" title="Help with Range Generator">
+                      <i class="mdi mdi-help-circle text-info"></i>
+                    </button>
+                  </h6>
+                </div>
+                <div class="card-body p-4">
+                  <form [formGroup]="rangeForm">
+                    <div class="row g-3">
+                      <div class="col-md-3">
+                        <label class="form-label fw-bold required">Prefix</label>
+                        <input type="text" class="form-control" formControlName="prefix" placeholder="SN"
+                          maxlength="10" (input)="onRangeFormChange()" (blur)="onRangeFormChange()"
+                          [class.is-invalid]="rangeForm.get('prefix')?.invalid && rangeForm.get('prefix')?.touched">
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Optional prefix (default: Z)
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label fw-bold required">Start Number</label>
+                        <input type="number" class="form-control" formControlName="startNumber" placeholder="1"
+                          min="0" max="999999" (input)="onRangeFormChange()" (blur)="onRangeFormChange()"
+                          [class.is-invalid]="rangeForm.get('startNumber')?.invalid && rangeForm.get('startNumber')?.touched">
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Starting number (e.g., 1, 001)
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label fw-bold required">End Number</label>
+                        <input type="number" class="form-control" formControlName="endNumber" placeholder="100"
+                          min="0" max="999999" (input)="onRangeFormChange()" (blur)="onRangeFormChange()"
+                          [class.is-invalid]="rangeForm.get('endNumber')?.invalid && rangeForm.get('endNumber')?.touched">
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Ending number (e.g., 100, 200)
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label fw-bold">Padding</label>
+                        <select class="form-select" formControlName="padding" (change)="onRangeFormChange()">
+                          <option value="0">No padding</option>
+                          <option value="2">2 digits (01, 02...)</option>
+                          <option value="3">3 digits (001, 002...)</option>
+                          <option value="4">4 digits (0001, 0002...)</option>
+                          <option value="5">5 digits (00001, 00002...)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Duplicate Strategy Row -->
+                    <div class="row g-3 mt-2">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Duplicate Strategy</label>
+                        <select class="form-select" formControlName="duplicateStrategy" (change)="onRangeFormChange()">
+                          <option value="skip">Skip Duplicates (Recommended)</option>
+                          <option value="replace">Replace Existing</option>
+                          <option value="error">Fail on Duplicates</option>
+                        </select>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          How to handle existing serial numbers in the range
+                          <br>
+                          <i class="mdi mdi-alert-circle-outline me-1 text-warning"></i>
+                          <small class="text-warning">Note: Serial numbers are unique across ALL categories</small>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Category</label>
+                        <select class="form-select" formControlName="category" (change)="onRangeFormChange()">
+                          <option value="gaming">Gaming Equipment</option>
+                          <option value="peripheral">Peripheral Devices</option>
+                          <option value="system">System Components</option>
+                          <option value="other">Other Hardware</option>
+                        </select>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Category for new serial numbers
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="mt-3" *ngIf="getPreviewRange().length > 0">
+                      <div class="alert alert-light border p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6 class="fw-bold text-secondary mb-0">
+                            <i class="mdi mdi-eye me-1"></i>
+                            Preview ({{getPreviewRange().length}} serial numbers)
+                          </h6>
+                          <button *ngIf="getPreviewRange().length > 10" type="button"
+                            class="btn btn-sm btn-outline-secondary" (click)="togglePreviewDisplay()">
+                            <i class="mdi" [ngClass]="showAllPreview ? 'mdi-chevron-up' : 'mdi-chevron-down'"></i>
+                            {{ showAllPreview ? 'Show Less' : 'Show All (' + getPreviewRange().length + ')' }}
+                          </button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <span *ngFor="let item of getDisplayPreviewRangeWithStatus()"
+                            [ngClass]="'badge ' + getSerialDuplicateStatus(item.serial).color"
+                            [title]="getSerialStatusDescription(item.serial)">
+                            <i [ngClass]="getSerialDuplicateStatus(item.serial).icon" class="me-1"></i>
+                            {{item.serial}}
+                          </span>
+                          <span *ngIf="!showAllPreview && getRemainingPreviewCount() > 0"
+                            class="badge bg-info-subtle text-dark" style="cursor: pointer;"
+                            (click)="togglePreviewDisplay()" title="Click to show all serial numbers">
+                            ...and {{getRemainingPreviewCount()}} more
+                          </span>
+                        </div>
+
+                        <!-- Summary of new vs duplicate -->
+                        <div *ngIf="rangeValidation" class="mt-2 text-muted small">
+                          <span class="text-success">
+                            <i class="mdi mdi-check-circle me-1"></i>
+                            {{ rangeValidation.newSerials.length }} new
+                          </span>
+                          <span
+                            *ngIf="rangeValidation.activeDuplicates && rangeValidation.activeDuplicates.length > 0"
+                            class="text-danger ms-3">
+                            <i class="mdi mdi-close-circle me-1"></i>
+                            {{ rangeValidation.activeDuplicates.length }} already exist (any category)
+                          </span>
+                          <span
+                            *ngIf="rangeValidation.softDeletedDuplicates && rangeValidation.softDeletedDuplicates.length > 0"
+                            class="text-warning ms-3">
+                            <i class="mdi mdi-alert-circle-outline me-1"></i>
+                            {{ rangeValidation.softDeletedDuplicates.length }} soft-deleted (any category)
+                          </span>
+                        </div>
+
+                        <div class="mt-2 text-muted small">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Range: {{getPreviewRange()[0]}} to {{getPreviewRange()[getPreviewRange().length - 1]}}
+                          <br>
+                          <i class="mdi mdi-alert-circle-outline me-1 text-warning"></i>
+                          <span class="text-warning">Serial numbers must be unique across all categories</span>
+                        </div>
+                      </div>
+
+                      <!-- Range Duplicate Validation -->
+                      <div *ngIf="rangeValidationInProgress" class="mt-2">
+                        <div class="alert alert-info py-2 px-3">
+                          <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            <span>Checking range for duplicates...</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div *ngIf="getRangeValidation() && !rangeValidationInProgress" class="mt-2">
+                        <div class="alert" [ngClass]="{
+                          'alert-success': getRangeValidation()!.duplicates === 0,
+                          'alert-warning': getRangeValidation()!.duplicates > 0 && getRangeValidation()!.duplicates < getRangeValidation()!.total / 2,
+                          'alert-danger': getRangeValidation()!.duplicates >= getRangeValidation()!.total / 2 || 
+                            (rangeForm.value.duplicateStrategy === 'error' && getRangeValidation()!.duplicates > 0)
+                        }" role="alert">
+                          <div class="d-flex align-items-start">
+                            <i class="mdi me-2" [ngClass]="{
+                              'mdi-check-circle text-success': getRangeValidation()!.duplicates === 0,
+                              'mdi-alert-circle text-warning': getRangeValidation()!.duplicates > 0 && getRangeValidation()!.duplicates < getRangeValidation()!.total / 2,
+                              'mdi-close-circle text-danger': getRangeValidation()!.duplicates >= getRangeValidation()!.total / 2
+                            }"></i>
+                            <div class="flex-grow-1">
+                              <h6 class="fw-bold mb-1">Range Validation</h6>
+                              <div class="row g-2">
+                                <div class="col-6">
+                                  <small><strong>{{getRangeValidation()!.total}}</strong> total in range</small>
+                                </div>
+                                <div class="col-6">
+                                  <small><strong>{{getRangeValidation()!.duplicates}}</strong> existing
+                                    duplicates</small>
+                                </div>
+                                <div class="col-6">
+                                  <small><strong>{{getRangeValidation()!.total -
+                                      getRangeValidation()!.duplicates}}</strong> new serials</small>
+                                </div>
+                                <div class="col-6">
+                                  <small><strong>{{((getRangeValidation()!.total - getRangeValidation()!.duplicates) /
+                                      getRangeValidation()!.total * 100).toFixed(1)}}%</strong> unique</small>
+                                </div>
+                              </div>
+
+                              <!-- Range Action Feedback -->
+                              <div *ngIf="getRangeValidation()!.duplicates > 0" class="mt-2">
+                                <div class="bg-light p-2 rounded">
+                                  <small class="text-muted">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    <span *ngIf="rangeForm.value.duplicateStrategy === 'skip'">
+                                      {{getRangeValidation()!.duplicates}} duplicates will be skipped.
+                                      Only {{getRangeValidation()!.total - getRangeValidation()!.duplicates}} new
+                                      serials will be added.
+                                    </span>
+                                    <span *ngIf="rangeForm.value.duplicateStrategy === 'replace'">
+                                      {{getRangeValidation()!.duplicates}} existing serials will be replaced.
+                                    </span>
+                                    <span *ngIf="rangeForm.value.duplicateStrategy === 'error'">
+                                      <strong class="text-danger">Generation will fail due to duplicates. Please
+                                        adjust range or change strategy.</strong>
+                                    </span>
+                                  </small>
+                                </div>
+                              </div>
+
+                              <!-- Show Duplicate Details for Range -->
+                              <div *ngIf="getRangeValidation()!.duplicates > 0" class="mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                  (click)="showRangeDuplicateDetails = !showRangeDuplicateDetails">
+                                  <i class="mdi"
+                                    [ngClass]="showRangeDuplicateDetails ? 'mdi-chevron-up' : 'mdi-chevron-down'"></i>
+                                  {{showRangeDuplicateDetails ? 'Hide' : 'Show'}} Duplicate Details
+                                </button>
+                              </div>
+
+                              <div
+                                *ngIf="showRangeDuplicateDetails && getRangeValidation()!.duplicatesList.length > 0"
+                                class="mt-2">
+                                <div class="bg-light p-2 rounded">
+                                  <small class="text-muted d-block">Existing serial numbers (from any category):</small>
+                                  <div class="mt-1">
+                                    <span *ngFor="let dup of getRangeValidation()!.duplicatesList.slice(0, 10)"
+                                      class="badge bg-warning-subtle text-dark me-1 mb-1"
+                                      [title]="'This serial number already exists in the database'">
+                                      {{dup}}
+                                    </span>
+                                    <span *ngIf="getRangeValidation()!.duplicatesList.length > 10"
+                                      class="badge bg-secondary-subtle text-dark">...and
+                                      {{getRangeValidation()!.duplicatesList.length - 10}} more</span>
+                                  </div>
+                                  <div class="mt-1">
+                                    <small class="text-warning">
+                                      <i class="mdi mdi-alert-triangle me-1"></i>
+                                      These serial numbers cannot be reused, even in different categories
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Preview and Generate Buttons -->
+                    <div class="row g-2 mt-3">
+                      <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-info w-100"
+                          [disabled]="isRangeGenerateDisabled()" [title]="getDisabledReason('range')"
+                          (click)="generateToTextarea()">
+                          <span *ngIf="isGenerating">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Generating...
+                          </span>
+                          <span *ngIf="!isGenerating">
+                            <i class="mdi mdi-arrow-right me-2"></i>
+                            Generate to Manual Entry
+                          </span>
+                        </button>
+                      </div>
+                      <div class="col-md-6">
+                        <button type="button" class="btn btn-info w-100" [disabled]="isRangeGenerateAndAddDisabled()"
+                          [title]="getDisabledReason('rangeAdd')" (click)="generateAndAdd()">
+                          <span *ngIf="isGenerating">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Adding to Database...
+                          </span>
+                          <span *ngIf="!isGenerating">
+                            <i class="mdi mdi-database-plus me-2"></i>
+                            Generate & Save to Database
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Manual Entry -->
+            <div *ngIf="selectedUploadMethod === 'manual'" class="upload-method-content">
+              <div class="card border-success">
+                <div class="card-header bg-success-subtle border-success p-3">
+                  <h6 class="mb-0 fw-bold text-success-emphasis">
+                    <i class="mdi mdi-pencil-plus me-2"></i>
+                    Manual Entry
+                    <button class="btn btn-link btn-sm p-0 ms-2"
+                      (click)="openHelpTopic('upload-methods', 'manual-entry')" title="Help with Manual Entry">
+                      <i class="mdi mdi-help-circle text-info"></i>
+                    </button>
+                  </h6>
+                </div>
+                <div class="card-body p-4">
+                  <form [formGroup]="manualForm" (ngSubmit)="onManualAdd()">
+                    <div class="mb-3">
+                      <label class="form-label fw-bold required">Serial Numbers</label>
+                      <textarea class="form-control" formControlName="serialNumbers" rows="10"
+                        placeholder="Enter serial numbers (one per line)&#10;SN001234567&#10;SN001234568&#10;SN001234569"
+                        [class.is-invalid]="manualForm.get('serialNumbers')?.invalid && manualForm.get('serialNumbers')?.touched"
+                        (input)="onManualInputChange()" (blur)="validateManualSerials()"
+                        (paste)="onManualPaste($event)"></textarea>
+                      
+                      <!-- Format Validation Error Display -->
+                      <div *ngIf="hasManualFormatErrors()" class="alert alert-danger mt-2 py-2">
+                        <div class="d-flex align-items-start">
+                          <i class="mdi mdi-alert-circle me-2 mt-1 text-danger"></i>
+                          <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-1 text-danger">Invalid Serial Number Format</h6>
+                            <p class="mb-2 small">Serial numbers must be 3-50 characters long and contain only letters, numbers, dashes, and underscores.</p>
+                            <div class="mb-0">
+                              <strong>Invalid entries ({{getManualFormatErrors().length}}):</strong>
+                              <div class="mt-1">
+                                <span *ngFor="let invalid of getManualFormatErrors().slice(0, 5)" 
+                                  class="badge bg-danger-subtle text-danger me-1 mb-1">{{invalid}}</span>
+                                <span *ngIf="getManualFormatErrors().length > 5" 
+                                  class="badge bg-secondary-subtle text-dark">...and {{getManualFormatErrors().length - 5}} more</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="form-text">
+                        <i class="mdi mdi-information-outline me-1"></i>
+                        Enter one serial number per line - Duplicates are checked in real-time
+                      </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Category</label>
+                        <select class="form-select" formControlName="category">
+                          <option value="gaming">Gaming Equipment</option>
+                          <option value="peripheral">Peripheral Devices</option>
+                          <option value="system">System Components</option>
+                          <option value="other">Other Hardware</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Duplicate Strategy</label>
+                        <select class="form-select" formControlName="duplicateStrategy">
+                          <option value="skip">Skip Duplicates (Recommended)</option>
+                          <option value="replace">Replace Existing</option>
+                          <option value="error">Fail on Duplicates</option>
+                        </select>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          How to handle existing serial numbers
+                          <br>
+                          <i class="mdi mdi-alert-circle-outline me-1 text-warning"></i>
+                          <small class="text-warning">Note: Serial numbers are unique across ALL categories</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Manual Entry Preview Section -->
+                    <div class="mt-3" *ngIf="getManualPreviewSerials().length > 0">
+                      <div class="alert alert-light border p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6 class="fw-bold text-secondary mb-0">
+                            <i class="mdi mdi-eye me-1"></i>
+                            Preview ({{getManualPreviewSerials().length}} serial numbers)
+                          </h6>
+                          <button *ngIf="getManualPreviewSerials().length > 10" type="button"
+                            class="btn btn-sm btn-outline-secondary" (click)="toggleManualPreviewDisplay()">
+                            <i class="mdi" [ngClass]="showAllManualPreview ? 'mdi-chevron-up' : 'mdi-chevron-down'"></i>
+                            {{ showAllManualPreview ? 'Show Less' : 'Show All (' + getManualPreviewSerials().length + ')' }}
+                          </button>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <span *ngFor="let item of getDisplayManualPreviewWithStatus()"
+                            [ngClass]="'badge ' + getSerialDuplicateStatus(item.serial).color"
+                            [title]="getSerialStatusDescription(item.serial)">
+                            <i [ngClass]="getSerialDuplicateStatus(item.serial).icon" class="me-1"></i>
+                            {{item.serial}}
+                          </span>
+                          <span *ngIf="!showAllManualPreview && getRemainingManualPreviewCount() > 0"
+                            class="badge bg-info-subtle text-dark" style="cursor: pointer;"
+                            (click)="toggleManualPreviewDisplay()" title="Click to show all serial numbers">
+                            ...and {{getRemainingManualPreviewCount()}} more
+                          </span>
+                        </div>
+
+                        <!-- Manual Entry Validation Summary -->
+                        <div *ngIf="manualValidation || getInvalidFormatCount() > 0" class="mt-2 text-muted small">
+                          <span *ngIf="getNewManualsCount() > 0" class="text-success">
+                            <i class="mdi mdi-check-circle me-1"></i>
+                            {{ getNewManualsCount() }} new
+                          </span>
+                          <span *ngIf="manualValidation?.activeDuplicates && manualValidation.activeDuplicates.length > 0"
+                            class="text-danger ms-3">
+                            <i class="mdi mdi-close-circle me-1"></i>
+                            {{ manualValidation.activeDuplicates.length }} already exist (any category)
+                          </span>
+                          <span *ngIf="manualValidation?.softDeletedDuplicates && manualValidation.softDeletedDuplicates.length > 0"
+                            class="text-warning ms-3">
+                            <i class="mdi mdi-alert-circle-outline me-1"></i>
+                            {{ manualValidation.softDeletedDuplicates.length }} soft-deleted (any category)
+                          </span>
+                          <span *ngIf="manualValidation?.internalDuplicates && manualValidation.internalDuplicates > 0"
+                            class="text-info ms-3">
+                            <i class="mdi mdi-content-copy me-1"></i>
+                            {{ manualValidation.internalDuplicates }} internal duplicates
+                          </span>
+                          <span *ngIf="getInvalidFormatCount() > 0"
+                            class="text-danger ms-3">
+                            <i class="mdi mdi-close-octagon me-1"></i>
+                            {{ getInvalidFormatCount() }} invalid format
+                          </span>
+                        </div>
+
+                        <div class="mt-2 text-muted small">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Manual entry validation - duplicates checked in real-time
+                          <br>
+                          <i class="mdi mdi-alert-circle-outline me-1 text-warning"></i>
+                          <span class="text-warning">Serial numbers must be unique across all categories</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100" [disabled]="isManualAddDisabled()"
+                      [title]="getDisabledReason('manual')">
+                      <span *ngIf="isAdding">
+                        <div class="spinner-border spinner-border-sm me-2"></div>
+                        Adding to Database...
+                      </span>
+                      <span *ngIf="!isAdding">
+                        <i class="mdi mdi-database-plus me-2"></i>
+                        Save Serial Numbers to Database
+                      </span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- CSV Upload -->
+            <div *ngIf="selectedUploadMethod === 'csv'" class="upload-method-content">
+              <div class="card border-primary">
+                <div class="card-header bg-primary-subtle border-primary p-3">
+                  <h6 class="mb-0 fw-bold text-primary">
+                    <i class="mdi mdi-file-upload me-2"></i>
+                    Bulk CSV Upload
+                    <button class="btn btn-link btn-sm p-0 ms-2"
+                      (click)="openHelpTopic('upload-methods', 'csv-upload')" title="Help with CSV Upload">
+                      <i class="mdi mdi-help-circle text-info"></i>
+                    </button>
+                  </h6>
+                </div>
+                <div class="card-body p-4">
+                  <form [formGroup]="uploadForm" (ngSubmit)="onBulkUpload()">
+                    <!-- CSV Format Information -->
+                    <div class="alert alert-light border mb-3">
+                      <h6 class="fw-bold text-secondary mb-2">
+                        <i class="mdi mdi-file-table-outline me-1"></i>
+                        CSV Format Requirements
+                      </h6>
+                      <div class="mb-2">
+                        <strong>Required columns:</strong>
+                        <code class="ms-2">serial_number</code>
+                      </div>
+                      <div class="mb-2">
+                        <strong>Optional columns:</strong>
+                        <code class="ms-2">manufacturer, model, notes</code>
+                      </div>
+                      <div class="mb-3">
+                        <strong>Example format:</strong>
+                        <div class="bg-light p-2 rounded mt-2 font-monospace small">
+                          serial_number,manufacturer,model<br>
+                          Z001,Manufacturer1,Model1<br>
+                          Z002,Manufacturer1,Model2<br>
+                          Z003,Manufacturer2,Model3
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="downloadTemplate()">
+                        <i class="mdi mdi-download me-1"></i>
+                        Download Template
+                      </button>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label fw-bold">Select CSV File</label>
+                      <input type="file" class="form-control" (change)="onFileSelected($event)" accept=".csv"
+                        [class.is-invalid]="uploadForm.get('file')?.invalid && uploadForm.get('file')?.touched">
+                      <div class="form-text">
+                        <i class="mdi mdi-information-outline me-1"></i>
+                        Upload a CSV file with serial numbers (max 10MB)
+                      </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Upload Category</label>
+                        <select class="form-select" formControlName="category">
+                          <option value="gaming">Gaming Equipment</option>
+                          <option value="peripheral">Peripheral Devices</option>
+                          <option value="system">System Components</option>
+                          <option value="other">Other Hardware</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-bold">Duplicate Strategy</label>
+                        <select class="form-select" formControlName="duplicateStrategy">
+                          <option value="skip">Skip Duplicates (Recommended)</option>
+                          <option value="replace">Replace Existing</option>
+                          <option value="error">Fail on Duplicates</option>
+                        </select>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          How to handle existing serial numbers
+                          <br>
+                          <i class="mdi mdi-alert-circle-outline me-1 text-warning"></i>
+                          <small class="text-warning">Note: Serial numbers are unique across ALL categories</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary w-100"
+                      [disabled]="!selectedFile || csvValidationInProgress" (click)="loadCsvToManualEntry()">
+                      <span *ngIf="csvValidationInProgress">
+                        <div class="spinner-border spinner-border-sm me-2"></div>
+                        Processing...
+                      </span>
+                      <span *ngIf="!csvValidationInProgress">
+                        <i class="mdi mdi-file-transfer me-2"></i>
+                        Load CSV to Manual Entry
+                      </span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Results with Better Summary -->
+            <div *ngIf="uploadResults" class="mt-4">
+              <div class="card" [ngClass]="{
+                'border-success': uploadResults.successful > 0 && uploadResults.errors === 0,
+                'border-warning': uploadResults.duplicates > 0 || uploadResults.errors > 0,
+                'border-danger': uploadResults.errors > uploadResults.successful
+              }">
+                <div class="card-header p-3" [ngClass]="{
+                  'bg-success-subtle border-success': uploadResults.successful > 0 && uploadResults.errors === 0,
+                  'bg-warning-subtle border-warning': uploadResults.duplicates > 0 || uploadResults.errors > 0,
+                  'bg-danger-subtle border-danger': uploadResults.errors > uploadResults.successful
+                }">
+                  <h6 class="mb-0 fw-bold" [ngClass]="{
+                    'text-success-emphasis': uploadResults.successful > 0 && uploadResults.errors === 0,
+                    'text-warning-emphasis': uploadResults.duplicates > 0 || uploadResults.errors > 0,
+                    'text-danger-emphasis': uploadResults.errors > uploadResults.successful
+                  }">
+                    <i class="mdi me-2" [ngClass]="{
+                      'mdi-check-circle': uploadResults.successful > 0 && uploadResults.errors === 0,
+                      'mdi-alert-circle': uploadResults.duplicates > 0 || uploadResults.errors > 0,
+                      'mdi-close-circle': uploadResults.errors > uploadResults.successful
+                    }"></i>
+                    Upload Results - {{getUploadResultMessage()}}
+                  </h6>
+                </div>
+                <div class="card-body p-3">
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <div class="text-center">
+                        <div class="h4 text-success mb-1">{{uploadResults.successful}}</div>
+                        <small class="text-muted">Successfully Added</small>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="text-center">
+                        <div class="h4 text-warning mb-1">{{uploadResults.duplicates}}</div>
+                        <small class="text-muted">Duplicates {{getDuplicateAction()}}</small>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="text-center">
+                        <div class="h4 text-danger mb-1">{{uploadResults.errors}}</div>
+                        <small class="text-muted">Errors</small>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="text-center">
+                        <div class="h4 text-info mb-1">{{uploadResults.total}}</div>
+                        <small class="text-muted">Total Processed</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Error Details -->
+                  <div *ngIf="uploadResults.errorDetails && uploadResults.errorDetails.length > 0" class="mt-3">
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                      (click)="showErrorDetails = !showErrorDetails">
+                      <i class="mdi" [ngClass]="showErrorDetails ? 'mdi-chevron-up' : 'mdi-chevron-down'"></i>
+                      {{showErrorDetails ? 'Hide' : 'Show'}} Error Details ({{uploadResults.errorDetails.length}})
+                    </button>
+                    <div *ngIf="showErrorDetails" class="mt-2">
+                      <div class="alert alert-danger">
+                        <div class="mb-2"><strong>Errors encountered during upload:</strong></div>
+                        <ul class="mb-0">
+                          <li *ngFor="let error of uploadResults.errorDetails.slice(0, 10)">{{error}}</li>
+                          <li *ngIf="uploadResults.errorDetails.length > 10">...and {{uploadResults.errorDetails.length
+                            - 10}} more errors</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Success Message -->
+                  <div *ngIf="uploadResults.successful > 0" class="mt-3">
+                    <div class="alert alert-success mb-0">
+                      <i class="mdi mdi-check-circle me-2"></i>
+                      <strong>{{uploadResults.successful}}</strong> serial numbers have been successfully added to your
+                      inventory and are now available for tag generation.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </li>
+        <li [ngbNavItem]="2">
+          <button ngbNavLink>
+            <i class="mdi mdi-cog me-2"></i>
+            Manage Existing
+          </button>
+          <ng-template ngbNavContent>
+            <!-- Manage Tab -->
+            <div>
+              <div class="card border-0">
+                <div class="card-header bg-secondary-subtle p-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1 fw-bold text-secondary-emphasis">
+                        <i class="mdi mdi-database me-2"></i>
+                        Serial Number Inventory
+                      </h6>
+                      <div class="d-flex gap-3 align-items-center">
+                        <small class="text-success fw-semibold">
+                          <i class="mdi mdi-check-circle me-1"></i>
+                          {{getAvailableCount()}} Available
+                        </small>
+                        <small class="text-muted">
+                          <i class="mdi mdi-format-list-numbered me-1"></i>
+                          {{serialNumbers?.length || 0}} Total
+                        </small>
+                        <small class="text-info" *ngIf="hasActiveFilters()">
+                          <i class="mdi mdi-filter me-1"></i>
+                          {{getFilteredCount()}} Filtered
+                        </small>
+                      </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="refreshData()">
+                        <i class="mdi mdi-refresh me-1"></i>
+                        Refresh
+                      </button>
+
+                      <!-- Bulk Delete Dropdown -->
+                      <div class="btn-group" ngbDropdown placement="bottom-right" container="body">
+                        <button class="btn btn-outline-danger btn-sm dropdown-toggle" ngbDropdownToggle
+                          [disabled]="!canCreateSerialNumbers || selectedSerials.length === 0"
+                          [title]="!canCreateSerialNumbers ? 'Insufficient permissions to delete serial numbers' : ''">
+                          <i class="mdi mdi-delete me-1"></i>
+                          Delete Selected ({{selectedSerials.length}})
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                          <div class="d-flex justify-content-between align-items-center px-3 py-1">
+                            <h6 class="dropdown-header mb-0 p-0">Delete Options</h6>
+                            <button class="btn btn-link btn-sm p-0"
+                              (click)="openHelpTopic('inventory-management', 'bulk-operations')"
+                              title="Help with Bulk Operations">
+                              <i class="mdi mdi-help-circle text-info"></i>
+                            </button>
+                          </div>
+                          <button class="dropdown-item" (click)="bulkDelete()"
+                            [disabled]="!canCreateSerialNumbers || selectedSerials.length === 0">
+                            <i class="mdi mdi-delete-sweep me-2 text-warning"></i>
+                            Soft Delete (Mark Inactive)
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item text-danger" (click)="bulkHardDelete()"
+                            [disabled]="!canCreateSerialNumbers || selectedSerials.length === 0">
+                            <i class="mdi mdi-delete-forever me-2"></i>
+                            Permanent Delete
+                            <small class="d-block text-muted">⚠️ Cannot be undone!</small>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Separate Filters Section -->
+                <div class="card-header border-top p-3 bg-light">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-muted">
+                      <i class="mdi mdi-filter me-2"></i>
+                      Filter Options
+                    </h6>
+                    <button class="btn btn-link btn-sm p-0"
+                      (click)="openHelpTopic('inventory-management', 'filtering-searching')"
+                      title="Help with Filtering">
+                      <i class="mdi mdi-help-circle text-info"></i>
+                    </button>
+                  </div>
+                  <div class="row g-3 align-items-center">
+                    <div class="col-md-3">
+                      <label class="form-label text-muted fw-medium mb-1 small">
+                        <i class="mdi mdi-tag me-1"></i>
+                        Category
+                      </label>
+                      <select class="form-select form-select-sm" [(ngModel)]="categoryFilter" (ngModelChange)="onFilterChange()">
+                        <option value="">All Categories</option>
+                        <option value="gaming">Gaming Equipment</option>
+                        <option value="peripheral">Peripheral Devices</option>
+                        <option value="system">System Components</option>
+                        <option value="other">Other Hardware</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label text-muted fw-medium mb-1 small">
+                        <i class="mdi mdi-circle-outline me-1"></i>
+                        Status
+                      </label>
+                      <select class="form-select form-select-sm" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+                        <option value="">All Status</option>
+                        <option value="available">Available</option>
+                        <option value="reserved">Reserved</option>
+                        <option value="used">Used</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label text-muted fw-medium mb-1 small">
+                        <i class="mdi mdi-check-circle me-1"></i>
+                        Active Status
+                      </label>
+                      <select class="form-select form-select-sm" [(ngModel)]="isActiveFilter"
+                        (ngModelChange)="onIsActiveFilterChange()">
+                        <option value="">All Records</option>
+                        <option value="1">Active Only</option>
+                        <option value="0">Soft-Deleted Only</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label text-muted fw-medium mb-1 small">
+                        <i class="mdi mdi-magnify me-1"></i>
+                        Search
+                      </label>
+                      <input type="text" class="form-control form-control-sm" placeholder="Search serial numbers..."
+                        [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
+                    </div>
+                    <div class="col-md-2">
+                      <div class="d-flex gap-1 mt-3">
+                        <button class="btn btn-outline-secondary btn-sm flex-fill" (click)="clearFilters()"
+                          title="Clear all filters">
+                          <i class="mdi mdi-filter-remove"></i>
+                        </button>
+                        <button class="btn btn-outline-info btn-sm flex-fill" (click)="exportFiltered()"
+                          title="Export filtered results">
+                          <i class="mdi mdi-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <!-- AG-Grid Serial Numbers Table -->
+                  <ag-grid-angular class="ag-theme-quartz no-border" style="height: calc(100vh - 170px);"
+                    [rowData]="rowData" [columnDefs]="columnDefs" [defaultColDef]="defaultColDef"
+                    [rowSelection]="'multiple'" [suppressRowClickSelection]="true" [pagination]="true"
+                    [paginationPageSize]="50" [animateRows]="true" [enableRangeSelection]="true"
+                    [suppressMenuHide]="true" [suppressColumnVirtualisation]="true" [getRowId]="getRowId"
+                    (gridReady)="onGridReady($event)" (selectionChanged)="onSelectionChanged($event)">
+                  </ag-grid-angular>
+                </div>
+              </div>
+
+              <!-- Deletion Information Panel (only in Manage Existing tab) -->
+              <div class="card mt-3">
+                <div class="card-body p-3">
+                  <div class="alert alert-info border-0 mb-0">
+                    <div class="d-flex align-items-start">
+                      <i class="mdi mdi-information me-3 fs-5 text-info"></i>
+                      <div>
+                        <h6 class="fw-bold text-info mb-2">
+                          <i class="mdi mdi-delete me-1"></i>
+                          Deletion Options Explained
+                        </h6>
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                              <i class="mdi mdi-delete-sweep text-warning me-2 mt-1"></i>
+                              <div>
+                                <strong class="text-warning">Soft Delete (Recommended)</strong>
+                                <p class="mb-0 small text-muted">
+                                  Marks records as inactive (is_active = 0). Records remain in the database for audit
+                                  purposes and can be viewed using the "Active Status" filter.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                              <i class="mdi mdi-delete-forever text-danger me-2 mt-1"></i>
+                              <div>
+                                <strong class="text-danger">Permanent Delete (Use with caution)</strong>
+                                <p class="mb-0 small text-muted">
+                                  Completely removes records from the database. This action cannot be undone. Restricted
+                                  for used/reserved serial numbers.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </li>
+      </ul>
+      <div [ngbNavOutlet]="nav" class="mt-2"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer bg-light p-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-3 align-items-center">
+          <span class="badge bg-info-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-database me-1"></i>
+            <strong>{{serialNumbers?.length || 0}} Serial Numbers</strong>
+          </span>
+          <span class="badge bg-success-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-check me-1"></i>
+            <strong>{{getAvailableCount()}} Available</strong>
+          </span>
+        </div>
+        <div class="text-muted small">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Serial numbers ready for tag generation
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #editSerialModal let-modal>
+  <div class="modal-header bg-primary-subtle border-bottom rounded-top-4">
+    <h4 class="modal-title text-primary fw-bold" id="modal-basic-title">
+      <i class="mdi mdi-pencil me-2"></i>
+      Edit Serial Number
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body rounded-bottom-4">
+    <div class="alert alert-info border-0 mb-3 rounded-3">
+      <i class="mdi mdi-information me-2"></i>
+      <small>Edit the serial number details below and click Save to update.</small>
+    </div>
+    <form #editSerialForm="ngForm" (ngSubmit)="modal.close('save')">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-barcode me-1 text-primary"></i>
+              Serial Number
+            </label>
+            <input type="text" class="form-control border-0 bg-body shadow-sm rounded-3"
+              [class.border-danger]="editSerialValidation?.isDuplicate"
+              [class.border-success]="editSerialValidation && !editSerialValidation.isDuplicate && serialToEdit.serial_number !== ''"
+              [(ngModel)]="serialToEdit.serial_number" name="serial_number" required (input)="validateEditSerial()"
+              style="padding: 0.75rem 1rem;">
+
+            <!-- Real-time validation feedback -->
+            <div class="mt-1" *ngIf="editSerialValidation?.isDuplicate && editSerialValidation.message">
+              <small class="text-danger">
+                <i class="mdi mdi-alert-circle me-1"></i>
+                {{editSerialValidation.message}}
+              </small>
+            </div>
+            <div class="mt-1"
+              *ngIf="editSerialValidation && !editSerialValidation.isDuplicate && serialToEdit.serial_number !== '' && serialToEdit.serial_number !== serialToEdit.id">
+              <small class="text-success">
+                <i class="mdi mdi-check-circle me-1"></i>
+                Serial number is available
+              </small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-tag me-1 text-info"></i>
+              Category
+            </label>
+            <select class="form-control border-0 bg-body shadow-sm rounded-3" [(ngModel)]="serialToEdit.category"
+              name="category" required (change)="validateEditSerial()" style="padding: 0.75rem 1rem;">
+              <option value="gaming">Gaming</option>
+              <option value="industrial">Industrial</option>
+              <option value="medical">Medical</option>
+              <option value="automotive">Automotive</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-circle-outline me-1 text-success"></i>
+              Status
+            </label>
+            <select class="form-control border-0 bg-body shadow-sm rounded-3" [(ngModel)]="serialToEdit.status"
+              name="status" required style="padding: 0.75rem 1rem;">
+              <option value="available">Available</option>
+              <option value="reserved">Reserved</option>
+              <option value="used">Used</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-factory me-1 text-warning"></i>
+              Manufacturer
+            </label>
+            <input type="text" class="form-control border-0 bg-body shadow-sm rounded-3"
+              [(ngModel)]="serialToEdit.manufacturer" name="manufacturer" placeholder="Optional"
+              style="padding: 0.75rem 1rem;">
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-car me-1 text-secondary"></i>
+              Model
+            </label>
+            <input type="text" class="form-control border-0 bg-body shadow-sm rounded-3"
+              [(ngModel)]="serialToEdit.model" name="model" placeholder="Optional" style="padding: 0.75rem 1rem;">
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-medium">
+              <i class="mdi mdi-check-circle me-1 text-success"></i>
+              Active Status
+            </label>
+            <select class="form-control border-0 bg-body shadow-sm rounded-3" [(ngModel)]="serialToEdit.is_active"
+              name="is_active" style="padding: 0.75rem 1rem;">
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage Information (Read-only for used serials) -->
+      <div class="row" *ngIf="serialToEdit.status === 'used'">
+        <div class="col-12">
+          <div class="alert alert-light border mb-3">
+            <h6 class="fw-bold text-secondary mb-2">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Usage Information
+            </h6>
+            <div class="row">
+              <div class="col-md-6">
+                <small class="text-muted">Used At:</small>
+                <div class="fw-medium">{{serialToEdit.used_at | date:'medium'}}</div>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted">Used By:</small>
+                <div class="fw-medium">{{serialToEdit.used_by || 'Not recorded'}}</div>
+              </div>
+              <div class="col-md-6 mt-2">
+                <small class="text-muted">Asset ID:</small>
+                <div class="fw-medium">{{serialToEdit.used_in_asset_id || 'Not recorded'}}</div>
+              </div>
+              <div class="col-md-6 mt-2">
+                <small class="text-muted">Asset Number:</small>
+                <div class="fw-medium">{{serialToEdit.used_in_asset_number || 'Not recorded'}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-medium">
+          <i class="mdi mdi-note-text me-1 text-info"></i>
+          Notes
+        </label>
+        <textarea class="form-control border-0 bg-body shadow-sm rounded-3" [(ngModel)]="serialToEdit.notes"
+          name="notes" rows="3" placeholder="Optional notes about this serial number..."
+          style="padding: 0.75rem 1rem;"></textarea>
+      </div>
+
+      <!-- Audit Information -->
+      <div class="alert alert-light border mb-3">
+        <h6 class="fw-bold text-secondary mb-2">
+          <i class="mdi mdi-history me-1"></i>
+          Audit Information
+        </h6>
+        <div class="row">
+          <div class="col-md-6">
+            <small class="text-muted">Created:</small>
+            <div class="fw-medium">{{serialToEdit.created_at | date:'medium'}}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Last Updated:</small>
+            <div class="fw-medium">{{serialToEdit.updated_at | date:'medium'}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary rounded-pill" (click)="modal.dismiss('Cancel')">
+          <i class="mdi mdi-close me-1"></i>
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary rounded-pill"
+          [disabled]="editSerialForm.invalid || isEditSaveDisabled()">
+          <i class="mdi mdi-content-save me-1"></i>
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<style>
+  .bg-info-subtle {
+    background: #e7f3fa !important;
+  }
+
+  .bg-primary-subtle {
+    background: #e3f2fd !important;
+  }
+
+  .bg-success-subtle {
+    background: #e6f4ea !important;
+  }
+
+  .bg-warning-subtle {
+    background: #fff8e1 !important;
+  }
+
+  .bg-secondary-subtle {
+    background: #f8f9fa !important;
+  }
+
+  .bg-danger-subtle {
+    background: #ffebee !important;
+  }
+
+  .required::after {
+    content: " *";
+    color: #dc3545;
+  }
+</style>

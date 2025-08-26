@@ -160,10 +160,23 @@ export class QirCreatePublicComponent {
 
   myFiles: string[] = [];
 
+  selectedFiles: File[] = [];
+
   onFilechange(event: any) {
-    this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.selectedFiles = Array.from(files);
+    }
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    // Reset the file input if no files remain
+    if (this.selectedFiles.length === 0) {
+      const fileInput = document.getElementById('file') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     }
   }
 

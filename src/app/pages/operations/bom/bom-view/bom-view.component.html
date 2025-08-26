@@ -1,0 +1,152 @@
+<div class="container-fluid">
+  <div class="card border-0 mb-0">
+    <!-- Header -->
+    <div class="card-header bg-primary bg-gradient text-white p-4 position-relative overflow-hidden">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
+        <i class="mdi mdi-sitemap" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <button class="btn btn-light rounded-pill btn-sm me-3" routerLink="../dashboard" title="Back to Dashboard">
+            <i class="mdi mdi-arrow-left"></i>
+            <span class="d-none d-sm-inline-block ms-1">Back</span>
+          </button>
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+            <i class="mdi mdi-sitemap fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">BOM Structure Inquiry</h4>
+            <p class="mb-0 text-white-50">Analyze and explore product bill of materials</p>
+          </div>
+        </div>
+        <div class="badge bg-light text-primary fs-6 px-3 py-2">
+          <i class="mdi mdi-cube-scan me-1"></i>
+          Operations
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card-header border-0 p-4">
+      <form [formGroup]="filterForm" (ngSubmit)="fetchBOM()">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-bold">Part Number</label>
+            <input type="text" class="form-control" formControlName="part" placeholder="Part number">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Max Levels</label>
+            <input type="number" class="form-control" formControlName="maxLevels" min="1" max="20"
+              placeholder="Max Levels">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="mdi mdi-magnify me-1"></i> Search
+            </button>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-secondary w-100" (click)="fetchBOM()" [disabled]="loading">
+              <i class="mdi mdi-refresh me-1"></i> Refresh
+            </button>
+          </div>
+        </div>
+      </form>
+      <div *ngIf="error" class="alert alert-danger border-0 mt-3 rounded-3 shadow-sm py-2 px-3" role="alert">
+        <div class="d-flex align-items-start">
+          <i class="mdi mdi-alert-circle-outline me-2 fs-6 text-danger"></i>
+          <div>
+            <span class="fw-semibold">Search Error:</span> {{ error }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="card-body p-0">
+      <ng-container *ngIf="loading">
+        <div class="d-flex justify-content-center align-items-center p-5">
+          <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <h6 class="text-body-emphasis mb-2">Loading BOM Structure</h6>
+            <p class="text-muted mb-0">Please wait...</p>
+          </div>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="!loading">
+        <ng-container *ngIf="bomData && bomData.length > 0; else noData">
+          <div class="table-responsive">
+            <ag-grid-angular class="ag-theme-quartz ag-theme-custom"
+              style="height: calc(100vh - 397px); width: 100%;"
+              [gridOptions]="gridOptions"
+              [rowData]="bomData"
+              [columnDefs]="columnDefs"
+              (selectionChanged)="onSelectionChanged()">
+            </ag-grid-angular>
+          </div>
+        </ng-container>
+        <ng-template #noData>
+          <div class="d-flex flex-column align-items-center justify-content-center p-5">
+            <div class="text-center" style="max-width: 500px;">
+              <div class="mb-4">
+                <div class="avatar-xl bg-info-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto">
+                  <i class="mdi mdi-database-search text-info" style="font-size: 3rem;"></i>
+                </div>
+              </div>
+              <h4 class="text-body-emphasis mb-3">No BOM Data Found</h4>
+              <p class="text-muted mb-4">
+                No BOM data found for your search. Try a different part number or adjust max levels.
+              </p>
+            </div>
+          </div>
+        </ng-template>
+      </ng-container>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer bg-light p-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-3 align-items-center">
+          <span class="badge bg-info-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-cube-outline me-1"></i>
+            Total Items: <strong>{{ bomData?.length || 0 }}</strong>
+          </span>
+          <span class="badge bg-warning-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-format-list-numbered me-1"></i>
+            Max Levels: <strong>{{ getMaxBomLevel ? getMaxBomLevel() : '-' }}</strong>
+          </span>
+          <span class="badge bg-success-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-check-circle me-1"></i>
+            Active Items: <strong>{{ getActiveBomCount ? getActiveBomCount() : '-' }}</strong>
+          </span>
+        </div>
+        <div class="text-muted small">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Explore and manage your product BOMs
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .ag-theme-custom .ag-header-cell-label {
+    font-weight: 500;
+    font-size: 1rem;
+    color: #333;
+  }
+
+  .bg-info-subtle {
+    background: #e7f3fa !important;
+  }
+
+  .bg-warning-subtle {
+    background: #fff8e1 !important;
+  }
+
+  .bg-success-subtle {
+    background: #e6f4ea !important;
+  }
+</style>

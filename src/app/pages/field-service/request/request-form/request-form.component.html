@@ -1,261 +1,302 @@
 <form [formGroup]="form" autofocus="false">
 
-  <div class="mb-3">
-    <label class="form-label required">Requestor's Email</label>
-    <input type="text" class="form-control" placeholder="Enter requestor's email"
-      [ngClass]="{ 'is-invalid': submitted && f.email.errors }" formControlName="email">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">CC Email (Optional)</label>
-    <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="cc_email"
-      placeholder="Enter email address" [items]="listOfCCemails">
-      <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-        {{item}}
-      </ng-template>
-    </ng-select>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Subject Line</label>
-    <textarea type="text" class="form-control" placeholder="Enter subject line" autosize [minRows]="2"
-      [ngClass]="{ 'is-invalid': submitted && f.subject.errors }" formControlName="subject"></textarea>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label required">Requested By</label>
-      <input type="text" class="form-control" placeholder="Enter your first and last name"
-        [ngClass]="{ 'is-invalid': submitted && f.requested_by.errors }" formControlName="requested_by">
+  <!-- Contact Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-account me-2"></i>Contact Information
+      </h5>
+      <small class="text-muted">Provide contact details for service coordination and notifications</small>
     </div>
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label required">Type of Service</label>
-      <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.type_of_service.errors }"
-        formControlName="type_of_service">
-        <option selected disabled value="">Select service</option>
-        <option *ngFor="let row of typeOfServiceOptions" [value]="row">{{row}}</option>
-      </select>
-    </div>
-  </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label required">Primary Contact Email</label>
+        <input type="text" class="form-control" placeholder="Enter business email address"
+          [ngClass]="{ 'is-invalid': submitted && f.email.errors }" formControlName="email">
+      </div>
 
-  <div class="row">
-    <div class="col-sm-12 col-lg-12 mb-3">
-      <label class="form-label required">Requested Date of Service</label>
-      <input type="text" placeholder="Please Select..." [controls]="['calendar', 'timegrid']" class="form-control"
-        [stepMinute]="5" mbsc-datepicker formControlName="dateAndTime" [labels]="myLabels" [marked]="myInvalid"
-        [mbscOptions]="myDatepickerOptions" [ngClass]="{ 'is-invalid': submitted && f.dateAndTime.errors  }" />
-    </div>
-  </div>
+      <div class="mb-3">
+        <label class="form-label">Additional Recipients (Optional)</label>
+        <ng-select [addTag]="addTag" [hideSelected]="true" [multiple]="true" formControlName="cc_email"
+          placeholder="Add stakeholder email addresses for service notifications" 
+          [items]="listOfCCemails"
+          [clearable]="true"
+          [searchable]="true">
+          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>{{item}}</span>
+              <small class="text-muted">
+                <i class="mdi mdi-history me-1"></i>Recent
+              </small>
+            </div>
+          </ng-template>
+        </ng-select>
+        <small class="text-muted mt-1">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Auto-filled from saved contacts. Type new emails or select from recent. Press Enter to add.
+        </small>
+      </div>
 
-  <div class="row">
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label">SO # (Optional)</label>
-      <input type="text" class="form-control" placeholder="Enter So Number" formControlName="so_number"
-        [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }">
-    </div>
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label">CO/PO # (Optional)</label>
-      <input type="text" class="form-control" placeholder="Enter co number" formControlName="customer_co_number"
-        [ngClass]="{ 'is-invalid': submitted && f.customer_co_number.errors }">
-    </div>
-  </div>
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Service Requestor</label>
+          <input type="text" class="form-control" placeholder="Enter full name of person requesting service"
+            [ngClass]="{ 'is-invalid': submitted && f.requested_by.errors }" formControlName="requested_by">
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">On-Site Contact Person</label>
+          <input type="text" class="form-control" placeholder="Enter name of on-site contact person"
+            formControlName="onsite_customer_name" [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_name.errors }">
+        </div>
+      </div>
 
-  <div class="mb-3">
-    <label class="form-label required">Platform</label>
-    <input type="text" class="form-control" placeholder="Enter platform" formControlName="platform"
-      [ngClass]="{ 'is-invalid': submitted && f.platform.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Configuration</label>
-    <input type="text" class="form-control" placeholder="Enter configuration" formControlName="type_of_sign"
-      [ngClass]="{ 'is-invalid': submitted && f.type_of_sign.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Sign/Theme</label>
-    <input type="text" class="form-control" placeholder="Enter sign theme" formControlName="sign_theme"
-      [ngClass]="{ 'is-invalid': submitted && f.sign_theme.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">EYE-Fi/Customer Sign Part #</label>
-    <input type="text" class="form-control" placeholder="Enter eyefi/customer sign part"
-      formControlName="eyefi_customer_sign_part"
-      [ngClass]="{ 'is-invalid': submitted && f.eyefi_customer_sign_part.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Sign/Manufacture</label>
-    <input type="text" class="form-control" placeholder="Enter Sign Manufacture" formControlName="sign_manufacture"
-      [ngClass]="{ 'is-invalid': submitted && f.sign_manufacture.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Serial Number (Optional)</label>
-    <input type="text" class="form-control" placeholder="Enter serial number" formControlName="serial_number"
-      [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }">
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Company</label>
-    <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.customer.errors }" formControlName="customer"
-      (change)="getCompanyChange()">
-      <option selected disabled value="">Select Company</option>
-      <option *ngFor="let row of customerOptions" [value]="row.name">{{row.name}}</option>
-    </select>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-12 col-lg-12 mb-3">
-      <label class="form-label">Customer Product Number</label>
-      <ng-select [readonly]="form.disabled" bindLabel="cp_cust_part" bindValue="cp_cust_part" [loading]="dataLoading"
-        [addTag]="true" [hideSelected]="true" [multiple]="false" formControlName="customer_product_number"
-        placeholder="Customer Product Number" [items]="data$ | async" [typeahead]="dataInput$" [virtualScroll]="true"
-        [minTermLength]="3" typeToSearchText="Please enter 3 or more characters"
-        notFoundText="Customer item not found.">
-        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
-          <p>{{item.cp_cust_part}}</p>
-          <p>{{item.pt_desc1}} {{item.pt_desc2}}</p>
-        </ng-template>
-      </ng-select>
+      <div class="mb-3">
+        <label class="form-label required">On-Site Contact Phone Number</label>
+        <input type="text" class="form-control" placeholder="Enter direct contact number for service coordination"
+          formControlName="onsite_customer_phone_number" prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true"
+          [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_phone_number.errors }">
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label required">Onsite Customer Name</label>
-      <input type="text" class="form-control" placeholder="Enter onsite customer name"
-        formControlName="onsite_customer_name" [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_name.errors }">
+  <!-- Service Request Details Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-tools me-2"></i>Service Request Details
+      </h5>
+      <small class="text-muted">Describe the service work needed and scheduling preferences</small>
     </div>
-    <div class="col-sm-12 col-lg-6 mb-3">
-      <label class="form-label required">Onsite Customer Phone #</label>
-      <input type="text" class="form-control" placeholder="Enter onsite customer phone number"
-        formControlName="onsite_customer_phone_number" prefix="+1" mask="(000) 000-0000" [showMaskTyped]="true"
-        [ngClass]="{ 'is-invalid': submitted && f.onsite_customer_phone_number.errors }">
-    </div>
-  </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label required">Service Request Summary</label>
+        <textarea type="text" class="form-control" placeholder="Provide a concise summary of the service work required" autosize [minRows]="2"
+          [ngClass]="{ 'is-invalid': submitted && f.subject.errors }" formControlName="subject"></textarea>
+      </div>
 
-  <div class="row">
-    <div class="col-sm-12 col-lg-8 mb-3">
-      <label class="form-label required">Search by address</label>
-      <app-address-search (notifyParent)="notifyParent($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" [editableSearchTerm]="false" [hideSelected]="false"
-        [showLabel]="false" [placeholder]="'Search by casino name or address'" [showCategories]="true" [required]="true"
-        [addTag]="false" [value]="f.address1.value" [addTag]="false" [disabled]="disabled"></app-address-search>
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Service Type</label>
+          <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.type_of_service.errors }"
+            formControlName="type_of_service">
+            <option selected disabled value="">Select type of service needed</option>
+            <option *ngFor="let row of typeOfServiceOptions" [value]="row">{{row}}</option>
+          </select>
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Preferred Service Date & Time</label>
+          <input type="text" placeholder="Select your preferred date and time" [controls]="['calendar', 'timegrid']" class="form-control"
+            [stepMinute]="5" mbsc-datepicker formControlName="dateAndTime" [labels]="myLabels" [marked]="myInvalid"
+            [mbscOptions]="myDatepickerOptions" [ngClass]="{ 'is-invalid': submitted && f.dateAndTime.errors  }" />
+        </div>
+      </div>
 
-      <!-- 
-        <label class="form-label required">Casino Address</label>sd
-        <input type="text" class="form-control" placeholder="Enter casino address" formControlName="address1"
-          [ngClass]="{ 'is-invalid': submitted && f.address1.errors }"> 
-        -->
-    </div>
-    <div class="col-sm-12 col-lg-4 mb-3">
-      <label class="form-label">Ste</label>
-      <input type="text" class="form-control" placeholder="Enter ste" formControlName="address2"
-        [ngClass]="{ 'is-invalid': submitted && f.address2.errors }">
-    </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Casino Name</label>
-    <input type="text" class="form-control" placeholder="Enter casino name" formControlName="property"
-      [ngClass]="{ 'is-invalid': submitted && f.property.errors }" />
-  </div>
-
-  <div class="row">
-    <div class="col-sm-12 col-lg-4 mb-3">
-      <label class="form-label required">State</label>
-      <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.state.errors }" formControlName="state">
-        <option selected disabled value="">Select State</option>
-        <option *ngFor="let row of states" [value]="row.abbreviation">{{row.name}}</option>
-      </select>
-    </div>
-    <div class="col-sm-12 col-lg-5 mb-3">
-      <label class="form-label required">City</label>
-      <input type="text" class="form-control" placeholder="Enter city" formControlName="city"
-        [ngClass]="{ 'is-invalid': submitted && f.city.errors }">
-    </div>
-    <div class="col-sm-12 col-lg-3 mb-3">
-      <label class="form-label required">Zip Code</label>
-      <input type="text" class="form-control" placeholder="Enter zip" formControlName="zip"
-        [ngClass]="{ 'is-invalid': submitted && f.zip.errors }" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000"
-        [showMaskTyped]="true">
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label">Sales Order Number (Optional)</label>
+          <input type="text" class="form-control" placeholder="Enter sales order reference number" formControlName="so_number"
+            [ngClass]="{ 'is-invalid': submitted && f.so_number.errors }">
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label">Purchase Order Number (Optional)</label>
+          <input type="text" class="form-control" placeholder="Enter purchase order reference number" formControlName="customer_co_number"
+            [ngClass]="{ 'is-invalid': submitted && f.customer_co_number.errors }">
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" formControlName="licensing_required"
-        [ngClass]="{ 'is-invalid': submitted && f.licensing_required.errors }">
-      <label class="form-check-label">
-        Licensing Required (Optional)
-      </label>
+  <!-- Product Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-package-variant me-2"></i>Product Information
+      </h5>
+      <small class="text-muted">Specify the EYE-Fi products that require service</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Platform</label>
+          <input type="text" class="form-control" placeholder="Enter platform" formControlName="platform"
+            [ngClass]="{ 'is-invalid': submitted && f.platform.errors }">
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Configuration</label>
+          <input type="text" class="form-control" placeholder="Enter configuration" formControlName="type_of_sign"
+            [ngClass]="{ 'is-invalid': submitted && f.type_of_sign.errors }">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Sign/Theme</label>
+          <input type="text" class="form-control" placeholder="Enter sign theme" formControlName="sign_theme"
+            [ngClass]="{ 'is-invalid': submitted && f.sign_theme.errors }">
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Sign/Manufacture</label>
+          <input type="text" class="form-control" placeholder="Enter Sign Manufacture" formControlName="sign_manufacture"
+            [ngClass]="{ 'is-invalid': submitted && f.sign_manufacture.errors }">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label required">EYE-Fi/Customer Sign Part #</label>
+        <input type="text" class="form-control" placeholder="Enter eyefi/customer sign part"
+          formControlName="eyefi_customer_sign_part"
+          [ngClass]="{ 'is-invalid': submitted && f.eyefi_customer_sign_part.errors }">
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label">Serial Number (Optional)</label>
+          <input type="text" class="form-control" placeholder="Enter serial number" formControlName="serial_number"
+            [ngClass]="{ 'is-invalid': submitted && f.serial_number.errors }">
+        </div>
+        <div class="col-sm-12 col-lg-6 mb-3">
+          <label class="form-label required">Company</label>
+          <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.customer.errors }" formControlName="customer"
+            (change)="getCompanyChange()">
+            <option selected disabled value="">Select Company</option>
+            <option *ngFor="let row of customerOptions" [value]="row.name">{{row.name}}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Customer Product Number</label>
+        <ng-select [readonly]="form.disabled" bindLabel="cp_cust_part" bindValue="cp_cust_part" [loading]="dataLoading"
+          [addTag]="true" [hideSelected]="true" [multiple]="false" formControlName="customer_product_number"
+          placeholder="Customer Product Number" [items]="data$ | async" [typeahead]="dataInput$" [virtualScroll]="true"
+          [minTermLength]="3" typeToSearchText="Please enter 3 or more characters" appendTo="body"
+          notFoundText="Customer item not found.">
+          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+            <p>{{item.cp_cust_part}}</p>
+            <p>{{item.pt_desc1}} {{item.pt_desc2}}</p>
+          </ng-template>
+        </ng-select>
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" formControlName="bolt_to_floor"
-        [ngClass]="{ 'is-invalid': submitted && f.bolt_to_floor.errors }">
-      <label class="form-check-label">
-        Bolt to Floor (Optional)
-      </label>
+  <!-- Location Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-map-marker me-2"></i>Service Location
+      </h5>
+      <small class="text-muted">Enter the address where service will be performed</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-12 col-lg-8 mb-3">
+          <label class="form-label required">Property Address</label>
+          <app-address-search (notifyParent)="notifyParent($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.address1.errors }" [editableSearchTerm]="false" [hideSelected]="false"
+            [showLabel]="false" [placeholder]="'Search by property name or address'" [showCategories]="true" [required]="true" appendToBody="body"
+            [addTag]="false" [value]="f.address1.value" [addTag]="false" [disabled]="disabled" [appendToBody]="'body'"></app-address-search>
+        </div>
+        <div class="col-sm-12 col-lg-4 mb-3">
+          <label class="form-label">Suite/Unit Number</label>
+          <input type="text" class="form-control" placeholder="Enter suite or unit number" formControlName="address2"
+            [ngClass]="{ 'is-invalid': submitted && f.address2.errors }">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label required">Property Name</label>
+        <input type="text" class="form-control" placeholder="Enter property or venue name" formControlName="property"
+          [ngClass]="{ 'is-invalid': submitted && f.property.errors }" />
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 col-lg-4 mb-3">
+          <label class="form-label required">State</label>
+          <select class="form-select" [ngClass]="{ 'is-invalid': submitted && f.state.errors }" formControlName="state">
+            <option selected disabled value="">Select State</option>
+            <option *ngFor="let row of states" [value]="row.abbreviation">{{row.name}}</option>
+          </select>
+        </div>
+        <div class="col-sm-12 col-lg-5 mb-3">
+          <label class="form-label required">City</label>
+          <input type="text" class="form-control" placeholder="Enter city" formControlName="city"
+            [ngClass]="{ 'is-invalid': submitted && f.city.errors }">
+        </div>
+        <div class="col-sm-12 col-lg-3 mb-3">
+          <label class="form-label required">Zip Code</label>
+          <input type="text" class="form-control" placeholder="Enter zip" formControlName="zip"
+            [ngClass]="{ 'is-invalid': submitted && f.zip.errors }" pattern="^[0-9]{5}(?:[0-9]{4})?$" mask="00000"
+            [showMaskTyped]="true">
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" formControlName="sign_jacks"
-        [ngClass]="{ 'is-invalid': submitted && f.sign_jacks.errors }">
-      <label class="form-check-label">
-        Sign Jacks (Optional)
-      </label>
+  <!-- Additional Details Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-file-document-edit me-2"></i>Service Requirements
+      </h5>
+      <small class="text-muted">Specify any special requirements or instructions for the technician</small>
     </div>
-  </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="licensing_required"
+              [ngClass]="{ 'is-invalid': submitted && f.licensing_required.errors }">
+            <label class="form-check-label">
+              Gaming License Required
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="bolt_to_floor"
+              [ngClass]="{ 'is-invalid': submitted && f.bolt_to_floor.errors }">
+            <label class="form-check-label">
+              Floor Mounting Required
+            </label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="sign_jacks"
+              [ngClass]="{ 'is-invalid': submitted && f.sign_jacks.errors }">
+            <label class="form-check-label">
+              Sign Jacks Required
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="site_survey_requested">
+            <label class="form-check-label">
+              Site Survey Requested
+            </label>
+          </div>
+        </div>
+      </div>
 
-  <div class="mb-3">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" formControlName="site_survey_requested">
-      <label class="form-check-label">
-        Site Survey Requested
-      </label>
+      <div class="mb-3">
+        <label class="form-label">Special Instructions</label>
+        <textarea type="text" class="form-control" placeholder="Please provide any special instructions, site access requirements, safety considerations, or additional details that will help our service technician complete the work efficiently" rows="15"
+          autosize [minRows]="5" [ngClass]="{ 'is-invalid': submitted && f.special_instruction.errors }"
+          formControlName="special_instruction"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <div class="form-check form-switch mt-2">
+          <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+          <label class="form-check-label" for="active">Request Active</label>
+        </div>
+      </div>
+
+      <div class="mb-3" *ngIf="!form.get('token').value">
+        <div class="alert alert-info">
+          <i class="mdi mdi-information me-2"></i>
+          <strong>Important Notice:</strong> Please review all information carefully before submission. Service requests cannot be modified once submitted. Any changes must be communicated through the comments section available after form submission.
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Special Instructions (Optional)</label>
-    <textarea type="text" class="form-control" placeholder="Enter special instructions or requirements" rows="15"
-      autosize [minRows]="5" [ngClass]="{ 'is-invalid': submitted && f.special_instruction.errors }"
-      formControlName="special_instruction"></textarea>
-  </div>
-
-  <div class="mb-3">
-    <div class="form-check form-switch mt-2">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-      <label class="form-check-label" for="active">Active</label>
-    </div>
-  </div>
-
-
-  <!-- <div class="mb-3" *ngIf="showCaptcha">
-    <re-captcha #captchaElem class="text-xs-center" (resolved)="resolved($event)"
-      *ngIf="!form.get('token').value"></re-captcha>
-    <p class="mb-2" [ngClass]="{
-      'is-invalid':
-        submitted && form.get('g-recaptcha-response')['errors']
-    }" class="text-danger" *ngIf="submitted && form.get('g-recaptcha-response')['errors']">
-      Required
-    </p>
-  </div> -->
-
-  <div class="mb-3" *ngIf="!form.get('token').value">
-    <p>
-      Please ensure the information is accurate. In any case, this request needs to be modified
-      after submission,
-      you will need to notify the scheduling team by using the comments section below which will be available
-      after you submit this form.
-    </p>
   </div>
 
 </form>

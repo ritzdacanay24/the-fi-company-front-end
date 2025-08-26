@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { TripExpenseService } from '@app/core/api/field-service/trip-expense.service';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -66,6 +66,7 @@ export class ReceiptAddEditComponent implements OnInit {
     fs_scheduler_id: null,
     jobs: null,
     fromId: null,
+    copiedFromTicketId: null, // Add this field to track copied receipts
   })
 
   jobsToView = []
@@ -115,6 +116,22 @@ export class ReceiptAddEditComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.form = this.fb.group({
+      name: [null, Validators.required],
+      cost: [null, Validators.required],
+      workOrderId: null,
+      created_date: null,
+      vendor_name: [null],
+      fileName: null,
+      locale: [null],
+      date: [null, Validators.required],
+      time: [null, Validators.required],
+      created_by: null,
+      fs_scheduler_id: null,
+      jobs: [[]],
+      copiedFromTicketId: [null], // Add this field to track copied receipts
+    });
+
     if (this.id) {
       this.getData();
     } else {

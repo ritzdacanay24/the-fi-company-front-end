@@ -11,7 +11,6 @@ export class JobModalService {
   open(id, request_date?, start_time?, techs?) {
     let modalRef = this.modalService.open(JobModalEditComponent, {
       size: "lg",
-      windowClass: "field-service-modal-xxl",
     });
     modalRef.componentInstance.id = id;
     modalRef.componentInstance.request_date = request_date;

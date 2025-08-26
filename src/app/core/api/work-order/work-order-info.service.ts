@@ -17,4 +17,10 @@ export class WorkOrderInfoService {
     getTransactions(customerCoNumber: string): Observable<any> {
         return this.http.get<any>(`/work_order_search/work_order_search?getTransactions=${customerCoNumber}`);
     }
+        getDataByWorkOrderNumber(workOrderNumber: number): Observable<any> {
+            return this.http.get<any>(`/work_order_view/work_order_view?Details=${workOrderNumber}`);
+        }
+        getWipReport(): Observable<any> {
+            return this.http.get<any>(`/WipReport/index`);
+        }
 }

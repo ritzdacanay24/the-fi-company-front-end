@@ -20,6 +20,25 @@
   font-family: Aptos;
 }
 
+// Design system - restrained, professional palette
+// Use these variables throughout component SCSS to avoid a rainbow of ad-hoc colors
+$color-primary: #255f9e; // muted professional blue
+$color-primary-dark: #1f4f80;
+$color-info: #117a8b; // tealish info
+$color-success: #2e8b57; // softened green
+$color-warning: #b7852f; // muted amber
+$color-danger: #c43d3d; // softened red
+$color-surface: #f6f7f9; // very light neutral surface
+$color-surface-2: #eef3fb; // subtle highlight for primary accents
+$color-border: #d6dbe0; // neutral border
+$color-muted: #596066; // neutral text
+
+// Helper mixins
+@mixin focus-outline($color) {
+  box-shadow: 0 0 0 0.15rem rgba($color, 0.12);
+}
+
+
 // Swiper
 
 .mapboxgl-popup-content {

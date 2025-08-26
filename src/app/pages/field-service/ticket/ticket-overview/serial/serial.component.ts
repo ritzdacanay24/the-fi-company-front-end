@@ -1,8 +1,8 @@
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, TemplateRef } from '@angular/core';
 import { SerialService } from '@app/core/api/field-service/serial.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { SweetAlert } from '@app/shared/sweet-alert/sweet-alert.service';
-import { NgbDatepickerModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDatepickerModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   standalone: true,
@@ -25,7 +25,7 @@ export class SerialComponent implements OnInit {
 
   constructor(
     private api: SerialService,
-    public offcanvasService: NgbOffcanvas,
+    private modalService: NgbModal,
   ) {
   }
 
@@ -50,7 +50,6 @@ export class SerialComponent implements OnInit {
     try {
       SweetAlert.loading()
       await this.api.create(this.editInfo);
-      this.offcanvasService.dismiss('Save click');
       this.getData()
       SweetAlert.close(500)
     } catch (err) {
@@ -60,14 +59,12 @@ export class SerialComponent implements OnInit {
   }
 
   async onDelete() {
-
     const { value: accept } = await SweetAlert.confirm();
     if (!accept) return;
 
     try {
       SweetAlert.loading('Deleting..')
       await this.api.deleteById(this.editInfo.id);
-      this.offcanvasService.dismiss('Save click');
       this.getData();
       SweetAlert.close(500)
     } catch (err) {
@@ -82,7 +79,6 @@ export class SerialComponent implements OnInit {
       let id = this.editInfo.id;
       delete this.editInfo.id;
       await this.api.updateById(id, this.editInfo);
-      this.offcanvasService.dismiss('Save click');
       this.getData()
       SweetAlert.close(500)
     } catch (err) {
@@ -90,25 +86,31 @@ export class SerialComponent implements OnInit {
     }
   }
 
-  onSubmit() {
-    if (this.editInfo.id) {
-      this.update()
-    } else {
-      this.create()
-    }
+  editInfo
+  open(content: TemplateRef<any>, row?: any) {
+    this.editInfo = row ? { ...row } : { type: null, customerAsset: '', eyefiAsset: '' };
+
+    this.modalService.open(content, {
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false
+    });
   }
 
-  editInfo
-  open(content, row?) {
-    this.editInfo = { ...row, workOrderId: this.workOrderId };
-    this.offcanvasService.open(content, { ariaLabelledBy: 'offcanvas-basic-title', position: 'end' }).result.then(
-      (result) => {
-        this.closeResult = `Closed with: ${result}`;
-        this.editInfo = "";
-      },
-      (reason) => {
-        this.editInfo = ""
-      },
-    );
+  async onSubmit() {
+    try {
+      if (this.editInfo.id) {
+        await this.api.updateById(this.editInfo.id, this.editInfo);
+      } else {
+        await this.api.create({
+          ...this.editInfo,
+          workOrderId: this.workOrderId
+        });
+      }
+      await this.getData();
+      // Modal will be closed by the button click handler
+    } catch (error) {
+      console.error('Error saving serial info:', error);
+    }
   }
 }

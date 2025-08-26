@@ -45,10 +45,12 @@ import { EditIconV2Component } from "@app/shared/ag-grid/edit-icon-v2/edit-icon-
 import { IconRendererV2Component } from "@app/shared/ag-grid/icon-renderer-v2/icon-renderer-v2.component";
 import { NotesRendererV2Component } from "@app/shared/ag-grid/notes-renderer-v2/notes-renderer-v2.component";
 import { StatusDateRenderer } from "@app/shared/ag-grid/cell-renderers/status-date-renderer-v2.component";
+import { BomRendererV2Component } from "@app/shared/ag-grid/bom-renderer-v2/bom-renderer-v2.component";
+import { BomViewModalService } from "@app/shared/components/bom-view-modal/bom-view-modal.component";
+import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
-import { WorkOrderInfoModalService } from "@app/shared/components/work-order-info-modal/work-order-info-modal.component";
 
 const WS_SHIPPING = "WS_SHIPPING";
 
@@ -125,7 +127,8 @@ export class ShippingComponent implements OnInit {
     private websocketService: WebsocketService,
     private authenticationService: AuthenticationService,
     private partsOrderModalService: PartsOrderModalService,
-    private workOrderInfoModalService: WorkOrderInfoModalService
+    private workOrderInfoModalService: WorkOrderInfoModalService,
+    private bomViewModalService: BomViewModalService
 
   ) {
     this.websocketService = websocketService;
@@ -300,6 +303,23 @@ export class ShippingComponent implements OnInit {
     );
   };
 
+  viewBom = (data: { partNumber: string, soNumber?: string, rowData: any }) => {
+    if (!data.partNumber) {
+      console.warn('No part number provided for BOM view');
+      return;
+    }
+    
+    let modalRef = this.bomViewModalService.open(data.partNumber, data.soNumber);
+    modalRef.result.then(
+      (result: any) => { 
+        // Handle any result if needed
+      },
+      () => { 
+        // Handle modal dismiss
+      }
+    );
+  };
+
   viewRouting = (partNumber) => {
     let modalRef = this.workOrderRoutingModalService.open(partNumber);
     modalRef.result.then(
@@ -425,6 +445,18 @@ export class ShippingComponent implements OnInit {
         onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
         isLink: true,
       },
+    },
+    {
+      field: "VIEW_BOM",
+      headerName: "BOM",
+      filter: false,
+      sortable: false,
+      cellRenderer: BomRendererV2Component,
+      maxWidth: 70,
+      minWidth: 60,
+      width: 65,
+      suppressHeaderMenuButton: true,
+      cellClass: "text-center",
     },
     { field: "FULLDESC", headerName: "Desc", filter: "agMultiColumnFilter" },
     {
@@ -1145,6 +1177,7 @@ export class ShippingComponent implements OnInit {
     },
     context: {
       pageId: this.pageId,
+      onBomClick: this.viewBom.bind(this),
     },
   };
 

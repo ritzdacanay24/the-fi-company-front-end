@@ -1,138 +1,228 @@
-<div class="modal-header">
-  <h4 class="modal-title  mt-0">{{!id ? 'Add' : 'Edit'}} Work Details </h4>
-  <button type="button" class="btn-close" aria-hidden="true" (click)="ngbActiveModal.dismiss('Cross click')"></button>
+<div class="modal-header bg-primary bg-gradient border-bottom border-none position-relative overflow-hidden">
+  <div class="d-flex align-items-center position-relative w-100">
+    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+      style="width: 2.5rem; height: 2.5rem;">
+      <i class="ri-time-line fs-4 text-white"></i>
+    </span>
+    <div>
+      <h5 class="mb-1 fw-bold text-white">
+        {{!id ? 'Add' : 'Edit'}} Work Details
+      </h5>
+      <p class="text-white-50 mb-0 small">Configure time tracking and event information for this work order</p>
+    </div>
+  </div>
+  <!-- Transparent decorative icon on the right -->
+  <div class="position-absolute" style="top: -30px; right: -30px; opacity: 0.1; z-index: 0;">
+    <i class="ri-time-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  </div>
+  <button type="button" class="btn-close position-relative" style="z-index: 1;" aria-hidden="true" (click)="ngbActiveModal.dismiss('Cross click')"></button>
 </div>
+
 <div class="modal-body">
+  <div class="alert alert-info mb-4 rounded-0 border-0" style="font-size: 0.95rem;">
+    Fill in the work details to track time and activities for this job. All fields marked with * are required.
+  </div>
 
   <form [formGroup]="form">
-    <div class="mb-3">
-      <label class="form-label">Type</label>
-      <input style="display:none" />
-      <ng-select [items]="getEventType" bindLabel="event_name" bindValue="event_name" formControlName="proj_type"
-        [addTag]="true" autoFocus="off" placeholder="Select type" #select (change)="select.blur()" [markFirst]="false">
-      </ng-select>
-    </div>
-
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" id="include_calculation" formControlName="include_calculation"
-        (change)="calculateTime()">
-      <label class="form-check-label" for="include_calculation">
-        Billable?
-      </label>
-    </div>
-
-    <!-- <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" id="include_traveling" formControlName="include_traveling"
-        (change)="calculateTime()">
-      <label class="form-check-label" for="include_traveling">
-        Traveling to site or traveling back home?
-      </label>
-    </div>
-
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" id="include_install" formControlName="include_install"
-        (change)="calculateTime()">
-      <label class="form-check-label" for="include_install">
-        Event occurred during install, relocation, removal etc..
-      </label>
-    </div> -->
-
-    <div *ngIf="getForm.proj_type.value == 'Clock-In' || getForm.proj_type.value == 'Clock-Out'">
-      <div>
-        <label class="form-label">Start Time</label>
-        <div class="input-group mb-1">
-          <input style="display:none" />
-          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-            mbsc-datepicker formControlName="projectStart" [displayTimezone]="getForm.projectStartTz.value"
-            (change)="calculateTime()" readonly />
-          <button type="button" class="btn btn-danger" style="box-shadow:unset" *ngIf="getForm.projectStart.value"
-            (click)="clearBreakByKey('projectStart')">
-            Clear
-          </button>
+    <!-- Event Type Section -->
+    <div class="mb-4">
+      <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+        Event Information
+      </h6>
+      <div class="mb-3">
+        <label class="form-label required">
+          Event Type
+        </label>
+        <input style="display:none" />
+        <ng-select [items]="getEventType" bindLabel="event_name" bindValue="event_name" formControlName="proj_type"
+          [addTag]="true" autoFocus="off" placeholder="Select event type" #select (change)="select.blur()" [markFirst]="false"
+          class="custom-ng-select">
+        </ng-select>
+        <div class="form-text text-muted">
+          Choose the type of work being performed
         </div>
-        <div ngbDropdown class="d-inline-block mb-3">
-          <a class="btn btn-light" ngbDropdownToggle>
-            {{getForm.projectStartTz.value || 'Select TZ' }}
-          </a>
-          <div ngbDropdownMenu>
-            <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
-              (click)="setTimeZone('projectStartTz', row.name)"
-              [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
-          </div>
+      </div>
+
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" id="include_calculation" formControlName="include_calculation"
+          (change)="calculateTime()">
+        <label class="form-check-label fw-semibold" for="include_calculation">
+          Billable Event
+        </label>
+        <div class="form-text text-muted small">
+          Check if this work should be included in billing calculations
         </div>
       </div>
     </div>
 
-    <div *ngIf="getForm.proj_type.value != 'Clock-Out' && getForm.proj_type.value != 'Clock-In'">
-
-      <div>
-        <label class="form-label">Start Time</label>
-        <div class="input-group mb-3">
-          <div ngbDropdown>
-            <a class="btn btn-light me-1" ngbDropdownToggle>
-              {{getForm.projectStartTz.value || 'Select TZ' }}
-            </a>
-            <div ngbDropdownMenu>
-              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
-                (click)="setTimeZone('projectStartTz', row.name)"
-                [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
-            </div>
-          </div>
-
-          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-            mbsc-datepicker formControlName="projectStart" [max]="getForm.projectFinish.value"
-            [displayTimezone]="getForm.projectStartTz.value" (change)="calculateTime()" readonly />
-          <button type="button" class="btn btn-danger" style="box-shadow:unset" *ngIf="getForm.projectStart.value"
-            (click)="clearBreakByKey('projectStart')">
-            Clear
-          </button>
-        </div>
-
-      </div>
-
-      <div class="mb-4">
-        <label class="form-label">End Time</label>
-        <div class="input-group mb-3">
-          <div ngbDropdown class="me-1">
-            <a class="btn btn-light " ngbDropdownToggle>
-              {{getForm.projectFinishTz.value || 'Select TZ' }}
-            </a>
-            <div ngbDropdownMenu>
-              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" [value]="row.name"
-                (click)="setTimeZone('projectFinishTz', row.name)"
-                [ngClass]="getForm.projectFinishTz.value == row.name ? 'active' : '' ">{{row.name}}</button>
-            </div>
-          </div>
-          <input type="text" placeholder="Please Select..." [mbscOptions]="myDatepickerOptions" class="form-control"
-            mbsc-datepicker formControlName="projectFinish" [min]="getForm.projectStart.value"
-            [displayTimezone]="getForm.projectFinishTz.value" (change)="calculateTime()" readonly
-            [defaultSelection]="defaultSelection" />
-          <button type="button" class="btn btn-danger rounded-end" style="box-shadow:unset"
-            *ngIf="getForm.projectFinish.value" (click)="clearBreakByKey('projectFinish')">
-            Clear
-          </button>
-        </div>
-
-      </div>
-
+    <!-- Time Entry for Clock In/Out -->
+    <div *ngIf="getForm.proj_type.value == 'Clock-In' || getForm.proj_type.value == 'Clock-Out'" class="mb-4">
+      <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+        Time Entry
+      </h6>
       <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">Description of work</label>
-          <textarea formControlName="description" autosize [minRows]="3" class="form-control"></textarea>
+        <div class="col-md-8 mb-3">
+          <label class="form-label required">
+            {{getForm.proj_type.value}} Time
+          </label>
+          <div class="input-group">
+            <input type="text" placeholder="Select date and time..." [mbscOptions]="myDatepickerOptions" 
+              class="form-control" mbsc-datepicker formControlName="projectStart" 
+              [displayTimezone]="getForm.projectStartTz.value" (change)="calculateTime()" readonly />
+            <button type="button" class="btn btn-outline-danger" *ngIf="getForm.projectStart.value"
+              (click)="clearBreakByKey('projectStart')">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-label">
+            Timezone
+          </label>
+          <div ngbDropdown class="d-block">
+            <button class="btn btn-outline-secondary w-100 text-start" ngbDropdownToggle>
+              {{getForm.projectStartTz.value || 'Select Timezone'}}
+            </button>
+            <div ngbDropdownMenu class="w-100">
+              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" 
+                (click)="setTimeZone('projectStartTz', row.name)"
+                [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : ''">
+                {{row.name}}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Time Range for Regular Events -->
+    <div *ngIf="getForm.proj_type.value != 'Clock-Out' && getForm.proj_type.value != 'Clock-In'" class="mb-4">
+      <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+        Time Range
+      </h6>
+      
+      <!-- Start Time -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <label class="form-label required">
+            Start Time
+          </label>
+          <div class="input-group">
+            <input type="text" placeholder="Select start time..." [mbscOptions]="myDatepickerOptions" 
+              class="form-control" mbsc-datepicker formControlName="projectStart" 
+              [max]="getForm.projectFinish.value" [displayTimezone]="getForm.projectStartTz.value" 
+              (change)="calculateTime()" readonly />
+            <button type="button" class="btn btn-outline-danger" *ngIf="getForm.projectStart.value"
+              (click)="clearBreakByKey('projectStart')">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">
+            Timezone
+          </label>
+          <div ngbDropdown class="d-block">
+            <button class="btn btn-outline-secondary w-100 text-start" ngbDropdownToggle>
+              {{getForm.projectStartTz.value || 'Select TZ'}}
+            </button>
+            <div ngbDropdownMenu class="w-100">
+              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" 
+                (click)="setTimeZone('projectStartTz', row.name)"
+                [ngClass]="getForm.projectStartTz.value == row.name ? 'active' : ''">
+                {{row.name}}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- End Time -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <label class="form-label required">
+            End Time
+          </label>
+          <div class="input-group">
+            <input type="text" placeholder="Select end time..." [mbscOptions]="myDatepickerOptions" 
+              class="form-control" mbsc-datepicker formControlName="projectFinish" 
+              [min]="getForm.projectStart.value" [displayTimezone]="getForm.projectFinishTz.value" 
+              (change)="calculateTime()" readonly [defaultSelection]="defaultSelection" />
+            <button type="button" class="btn btn-outline-danger" *ngIf="getForm.projectFinish.value"
+              (click)="clearBreakByKey('projectFinish')">
+              <i class="ri-close-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">
+            Timezone
+          </label>
+          <div ngbDropdown class="d-block">
+            <button class="btn btn-outline-secondary w-100 text-start" ngbDropdownToggle>
+              {{getForm.projectFinishTz.value || 'Select TZ'}}
+            </button>
+            <div ngbDropdownMenu class="w-100">
+              <button ngbDropdownItem class="py-2" *ngFor="let row of timeZonesData" 
+                (click)="setTimeZone('projectFinishTz', row.name)"
+                [ngClass]="getForm.projectFinishTz.value == row.name ? 'active' : ''">
+                {{row.name}}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-4">
+        <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+          Work Description
+        </h6>
+        <div class="mb-3">
+          <label class="form-label">
+            Description of Work
+          </label>
+          <textarea formControlName="description" autosize [minRows]="3" class="form-control" 
+            placeholder="Describe the work performed during this time..."></textarea>
+          <div class="form-text text-muted">
+            Provide details about the work performed for better tracking and reporting
+          </div>
+        </div>
+      </div>
+    </div>
   </form>
 </div>
-<div class="modal-footer text-center"
+
+<!-- Total Time Display -->
+<div class="modal-footer bg-light border-top" 
   *ngIf="getForm.proj_type.value != 'Clock-Out' && getForm.proj_type.value != 'Clock-In'">
-  <h3>Total Time: {{tot || 0.00}}</h3>
+  <div class="w-100 text-center">
+    <div class="alert alert-success border-0 mb-0">
+      <div class="d-flex align-items-center justify-content-center">
+        <i class="ri-timer-line me-2 fs-4"></i>
+        <div>
+          <div class="fw-bold">Total Time</div>
+          <div class="fs-4 fw-bold text-success">{{tot || '0.00'}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="modal-footer d-flex">
-  <button (click)="dismiss()" type="button" class="btn btn-light me-auto ">Close</button>
-  <button (click)="deleteWorkDetailsById()" type="button" class="btn btn-danger " *ngIf="data?.id">Delete</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-primary ">Save</button>
+<!-- Action Buttons -->
+<div class="modal-footer bg-light border-top d-flex justify-content-between">
+  <small class="text-muted">
+    Changes will be saved to the work log
+  </small>
+  <div>
+    <button (click)="dismiss()" type="button" class="btn btn-outline-secondary me-2">
+      Close
+    </button>
+    <button (click)="deleteWorkDetailsById()" type="button" class="btn btn-outline-danger me-2" *ngIf="data?.id">
+      Delete
+    </button>
+    <button (click)="onSubmit()" type="button" class="btn btn-primary">
+      Save Work Details
+    </button>
+  </div>
 </div>

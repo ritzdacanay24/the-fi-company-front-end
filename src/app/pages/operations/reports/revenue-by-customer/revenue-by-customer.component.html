@@ -1,62 +1,132 @@
-<div class="row">
-    <div class="col-md-12 mb-3">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0 flex-grow-1">Open Revenue by Customer</h4>
-                    <!-- Add filter controls -->
-                    <div class="d-flex gap-3 align-items-center">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="excludeTariffFees"
-                                [(ngModel)]="excludeTariffFees" (ngModelChange)="onFilterChange()">
-                            <label class="form-check-label" for="excludeTariffFees">
-                                Remove 9% AGS Tariff Charges
-                            </label>
+<div class="enterprise-dashboard">
+    <!-- Header Section -->
+    <div class="dashboard-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="page-title-section">
+                    <h1 class="page-title mb-2 text-body">
+                        <i class="mdi mdi-chart-line me-3 text-primary"></i>
+                        Open Revenue by Customer
+                    </h1>
+                    <p class="page-subtitle text-muted mb-0">
+                        Real-time revenue analysis and customer performance metrics
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-end gap-3 align-items-center">
+                    <button class="btn btn-primary btn-lg enterprise-btn" (click)="getData()" [disabled]="isLoading">
+                        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                        <i *ngIf="!isLoading" class="mdi mdi-refresh me-2"></i>
+                        {{isLoading ? 'Refreshing...' : 'Refresh Data'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Current Period Summary Card - simplified -->
+    <div class="alert alert-primary d-flex align-items-center" *ngIf="d">
+        <i class="mdi mdi-information me-2"></i>
+        <strong>Currently viewing detailed breakdown for: {{convert(d)}}</strong>
+    </div>
+
+    <!-- Main Revenue Table -->
+    <div class="enterprise-card mb-4">
+        <div class="card border-0 shadow-lg rounded-3">
+            <div class="card-header bg-light py-4 border-0">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon me-3">
+                            <i class="mdi mdi-table-large display-6"></i>
                         </div>
-                        <button class="btn btn-primary btn-sm" (click)="getData()" [disabled]="isLoading">
-                            <i class="fas fa-refresh me-1"></i>Refresh
-                        </button>
+                        <div>
+                            <h4 class="mb-1 fw-bold">Revenue Summary Matrix</h4>
+                            <p class="mb-0 opacity-75">Customer revenue breakdown by time periods</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div *ngIf="isLoading" class="p-5 card-body text-center">
-                <h4>
-                    <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
+            <!-- Loading State -->
+            <div *ngIf="isLoading" class="loading-section">
+                <div class="text-center py-5">
+                    <div class="loading-animation mb-4">
+                        <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;"></div>
                     </div>
-                    <p>Loading Data. Please wait...</p>
-                </h4>
+                    <h5 class="text-muted mb-2">Loading Revenue Data</h5>
+                    <p class="text-muted">Analyzing customer performance metrics...</p>
+                </div>
             </div>
 
-            <div class="card-body" *ngIf="data && !isLoading">
+            <!-- Data Table -->
+            <div class="card-body p-0" *ngIf="data && !isLoading">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-primary">
-                            <tr class="text-nowrap">
+                    <table class="table enterprise-table mb-0">
+                        <thead class="table-header">
+                            <tr>
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
-                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">
-                                    {{ convert(item.key) }}</th>
+                                    class="enterprise-th"
+                                    [ngClass]="{'text-end': i != 0, 'highlighted-column': item.key == d}">
+                                    <div class="header-content">
+                                        <span class="header-text">{{ convert(item.key) }}</span>
+                                        <i *ngIf="item.key == d" class="mdi mdi-chevron-down ms-2"></i>
+                                    </div>
+                                </th>
+                            </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let row of data">
+                            <tr *ngFor="let row of data; let rowIndex = index" class="data-row"
+                                [ngClass]="{'total-row': rowIndex === data.length - 1}">
                                 <td *ngFor="let column of row | keyvalue:originalOrder; let i = index"
-                                    [ngClass]="{'text-end pointer': ['Grand Total', 'Customer'].indexOf($any(column.key)) === -1, 'bg-primary text-white': column.key == d}"
-                                    (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
-                                    <span *ngIf="i == 0"> {{ column.value }}</span>
-                                    <span *ngIf="i != 0"
-                                        [ngClass]="{'bg-success-subtle text-end' : $any(column.value) > 0 && column.key != d, 'text-muted' : $any(column.value) == 0 && column.key != d}">
-                                        {{ column.value | currency }}</span>
+                                    class="enterprise-td" [ngClass]="{
+                      'text-end clickable-cell': ['Grand Total', 'Customer'].indexOf($any(column.key)) === -1, 
+                      'customer-cell': i == 0,
+                      'highlighted-column': column.key == d,
+                      'positive-value': $any(column.value) > 0 && i != 0,
+                      'zero-value': $any(column.value) == 0 && i != 0
+                    }" (click)="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1 && getData1(column.key)">
+
+                                    <span *ngIf="i == 0" class="customer-name">
+                                        <i class="mdi mdi-domain me-2 text-muted"></i>
+                                        {{ column.value }}
+                                        <!-- Tariff Multiplier Indicator -->
+                                        <span *ngIf="isTariffMultiplierCustomer(column.value)"
+                                            class="badge bg-warning ms-2" [attr.data-bs-theme]="null"
+                                            title="This customer uses 9.0x tariff multiplier (AMEGAM, ZITRO, ECLIPSE)">
+                                            <i class="mdi mdi-calculator-variant me-1"></i>9.0x
+                                        </span>
+                                        <!-- Tariff Products Only Indicator -->
+                                        <span *ngIf="isTariffProductsOnlyCustomer(column.value)"
+                                            class="badge bg-info ms-2" [attr.data-bs-theme]="null"
+                                            title="This customer has tariff-specific products (INTGAM, BLUBERI, BALTEC)">
+                                            <i class="mdi mdi-tag-outline me-1"></i>TAR
+                                        </span>
+                                    </span>
+
+                                    <span *ngIf="i != 0" class="revenue-value">
+                                        <span class="currency-amount">{{ column.value | currency }}</span>
+                                        <i *ngIf="['Grand Total', 'Customer'].indexOf($any(column.key)) === -1"
+                                            class="mdi mdi-chevron-right ms-2 expand-icon"></i>
+                                    </span>
                                 </td>
                             </tr>
                         </tbody>
 
-                        <tfoot class="table-primary">
-                            <tr>
+                        <tfoot class="table-footer">
+                            <tr class="summary-row">
                                 <th *ngFor="let item of data[0] | keyvalue:originalOrder; let i = index"
-                                    [ngClass]="{'text-end': i != 0, 'bg-primary text-white': item.key == d}">
-                                    <span *ngIf="i == 0">Total</span>
-                                    <span *ngIf="i != 0">{{ getTotal(item.key) | currency}}</span>
+                                    class="enterprise-th"
+                                    [ngClass]="{'text-end': i != 0, 'highlighted-column': item.key == d}">
+                                    <div class="footer-content">
+                                        <span *ngIf="i == 0" class="total-label">
+                                            <i class="mdi mdi-sigma me-2"></i>Total Revenue
+                                        </span>
+                                        <span *ngIf="i != 0" class="total-amount">
+                                            {{ getTotal($any(item.key)) | currency}}
+                                        </span>
+                                    </div>
                                 </th>
                             </tr>
                         </tfoot>
@@ -65,73 +135,198 @@
             </div>
         </div>
     </div>
-</div>
-
-<div *ngIf="isLoadingSubData" class="p-5 card-body text-center">
-    <h4>
-        <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p>Loading Data. Please wait...</p>
-    </h4>
-</div>
-
-<div class="row" *ngIf="data1?.results && !isLoadingSubData">
 
 
-    <!-- <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border" style="height: calc(100vh - 150px);"
-            [rowData]="data1?.results" [columnDefs]="columnDefs">
-        </ag-grid-angular> -->
-
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0 flex-grow-1">Open revenue by customer and week {{d}}</h4>
-            </div>
-            <div class="card-body">
-                <table class="table table-bordered mb-2 table-hover" *ngFor="let item of $any(test) | keyvalue">
-                    <tbody>
-                        <tr>
-                            <th colspan="3">{{item.key}}</th>
-                        </tr>
-                        <tr *ngFor="let r of $any(item?.value)"
-                            [ngClass]="{'text-info fw-bold':r.weekNumber == currentWeek}">
-                            <td>{{r.weekNumber}}-{{r.yearNumber}}</td>
-                            <td>{{r.start}} to {{r.end}}</td>
-                            <td class="text-end">{{r.value | currency}}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-light">
-                            <th colspan="2" class="text-end">Total:</th>
-                            <th class="text-end">{{sumSub(item?.value) | currency}}</th>
-                        </tr>
-                    </tfoot>
-                </table>
+    <!-- Detailed Analysis Section -->
+    <div *ngIf="isLoadingSubData" class="loading-section">
+        <div class="enterprise-card">
+            <div class="card border-0 shadow-lg rounded-3">
+                <div class="card-body text-center py-5">
+                    <div class="loading-animation mb-4">
+                        <div class="spinner-grow text-info" style="width: 3rem; height: 3rem;"></div>
+                    </div>
+                    <h5 class="text-muted mb-2">Loading Detailed Analysis</h5>
+                    <p class="text-muted">Preparing customer breakdown data...</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0 flex-grow-1">Open revenue by week {{d}}</h4>
+
+
+    <div class="row" *ngIf="data1?.results && !isLoadingSubData">
+        <!-- Customer Weekly Breakdown -->
+        <div class="col-lg-6">
+            <div class="enterprise-card">
+                <div class="card border-0 shadow-lg rounded-3 h-100">
+                    <div class="card-header bg-gradient-info text-white py-4 border-0">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon me-3">
+                                <i class="mdi mdi-calendar-week display-6"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Customer Weekly Analysis</h5>
+                                <p class="mb-0 opacity-75">Period: {{d}}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="customer-breakdown">
+                            <div class="customer-section mb-4" *ngFor="let item of $any(test) | keyvalue">
+                                <div class="customer-header mb-3">
+                                    <h6 class="customer-title">
+                                        <i class="mdi mdi-domain me-2 text-primary"></i>
+                                        {{item.key}}
+                                        <!-- Tariff Indicators in Detail View -->
+                                        <span *ngIf="isTariffMultiplierCustomer($any(item.key))"
+                                            class="badge bg-warning ms-2" [attr.data-bs-theme]="null"
+                                            title="9.0x tariff multiplier applied">
+                                            <i class="mdi mdi-calculator-variant me-1"></i>9.0x
+                                        </span>
+                                        <span *ngIf="isTariffProductsOnlyCustomer($any(item.key))"
+                                            class="badge bg-info ms-2" [attr.data-bs-theme]="null"
+                                            title="Tariff products only">
+                                            <i class="mdi mdi-tag-outline me-1"></i>TAR
+                                        </span>
+                                    </h6>
+                                    
+                                    <!-- Custom Logic Explanation -->
+                                    <div class="alert alert-light py-2 px-3 mt-2 border-0" style="background-color: rgba(var(--vz-info-rgb), 0.05);">
+                                        <small class="text-muted">
+                                            <i class="mdi mdi-information-outline me-1"></i>
+                                            <strong>Calculation Logic:</strong>
+                                            <span *ngIf="isTariffMultiplierCustomer($any(item.key))">
+                                                This customer uses a 9.0x tariff multiplier. Revenue is calculated with an additional 9% tariff deduction applied to the base amount.
+                                            </span>
+                                            <span *ngIf="isTariffProductsOnlyCustomer($any(item.key))">
+                                                This customer has tariff-specific products. Only TARIFF category products are included in the revenue calculations.
+                                            </span>
+                                            <span *ngIf="!isTariffMultiplierCustomer($any(item.key)) && !isTariffProductsOnlyCustomer($any(item.key))">
+                                                Standard revenue calculation applied. All product categories included with standard tariff handling.
+                                            </span>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm enterprise-detail-table">
+                                        <thead>
+                                            <tr class="detail-header">
+                                                <th>Week</th>
+                                                <th>Period</th>
+                                                <th class="text-end">Total Revenue</th>
+                                                <th class="text-end">Tariff Amount</th>
+                                                <th class="text-end">Net Revenue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let r of $any(item?.value)"
+                                                [ngClass]="{'current-week-row': r.weekNumber == currentWeek}">
+                                                <td class="week-cell">
+                                                    <span class="week-badge">{{r.weekNumber}}-{{r.yearNumber}}</span>
+                                                </td>
+                                                <td class="period-cell">
+                                                    <small class="text-muted">{{r.start}} to {{r.end}}</small>
+                                                </td>
+                                                <td class="text-end total-cell">
+                                                    <span class="amount">{{r.total | currency}}</span>
+                                                </td>
+                                                <td class="text-end tariff-amount-cell">
+                                                    <span class="amount">-{{r.tariff_amount | currency}}</span>
+                                                </td>
+                                                <td class="text-end net-revenue-cell">
+                                                    <span class="amount">{{r.net_revenue | currency}}</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="detail-total">
+                                                <th colspan="2" class="text-end">Subtotal:</th>
+                                                <th class="text-end">{{sumSubTotal(item?.value) | currency}}</th>
+                                                <th class="text-end">-{{sumSubTariffAmount(item?.value) | currency}}</th>
+                                                <th class="text-end">{{sumSubNetRevenue(item?.value) | currency}}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <table class="table table-bordered table-hover">
-                    <tbody>
-                        <tr *ngFor="let r of chart2" [ngClass]="{'text-info fw-bold':r.weekNumber == currentWeek}">
-                            <td>{{r.weekNumber}}-{{r.yearNumber}}</td>
-                            <td>{{r.start}} to {{r.end}}</td>
-                            <td class="text-end">{{r.value | currency}}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-light">
-                            <th colspan="2" class="text-end">Total:</th>
-                            <th class="text-end">{{sumSub(chart2) | currency}}</th>
-                        </tr>
-                    </tfoot>
-                </table>
+        </div>
+
+        <!-- Weekly Summary -->
+        <div class="col-lg-6">
+            <div class="enterprise-card">
+                <div class="card border-0 shadow-lg rounded-3 h-100">
+                    <div class="card-header bg-gradient-success text-white py-4 border-0">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon me-3">
+                                <i class="mdi mdi-chart-timeline-variant display-6"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-bold">Weekly Revenue Summary</h5>
+                                <p class="mb-0 opacity-75 text-light">Period: {{d}}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="table-responsive">
+                            <table class="table enterprise-summary-table">
+                                <thead>
+                                    <tr class="summary-header">
+                                        <th>Week</th>
+                                        <th>Date Range</th>
+                                        <th class="text-end">Total Revenue</th>
+                                        <th class="text-end">Tariff Amount</th>
+                                        <th class="text-end">Net Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let r of chart2"
+                                        [ngClass]="{'current-week-highlight': r.weekNumber == currentWeek}">
+                                        <td class="week-identifier">
+                                            <div class="week-badge-large">
+                                                <span class="week-number">{{r.weekNumber}}</span>
+                                                <small class="year-number">{{r.yearNumber}}</small>
+                                            </div>
+                                        </td>
+                                        <td class="date-range">
+                                            <div class="date-info">
+                                                <span class="date-text">{{r.start}} to {{r.end}}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end total-revenue">
+                                            <span class="revenue-amount">{{r.total | currency}}</span>
+                                        </td>
+                                        <td class="text-end tariff-revenue">
+                                            <span class="revenue-amount">-{{r.tariff_amount | currency}}</span>
+                                        </td>
+                                        <td class="text-end net-revenue">
+                                            <span class="revenue-amount">{{r.net_revenue | currency}}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="grand-total-row">
+                                        <th colspan="2" class="text-end total-label">
+                                            <i class="mdi mdi-sigma me-2"></i>Grand Total:
+                                        </th>
+                                        <th class="text-end grand-total-amount">
+                                            {{sumSubTotal(chart2) | currency}}
+                                        </th>
+                                        <th class="text-end grand-total-amount">
+                                            -{{sumSubTariffAmount(chart2) | currency}}
+                                        </th>
+                                        <th class="text-end grand-total-amount">
+                                            {{sumSubNetRevenue(chart2) | currency}}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

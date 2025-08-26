@@ -1,136 +1,296 @@
-<div class="row">
-  <div class="col-lg-12">
-    <div class="card card-body" style="overflow:auto">
-      <div class="d-flex align-items-center">
-        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="isLoading"
-          [displayOptions]="true"></app-date-range>
+<div class="container-fluid pb-5">
+  <div class="card border-0 mb-0">
+    <!-- Header -->
+    <div class="card-header bg-primary bg-gradient text-white p-4 position-relative overflow-hidden">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
+        <i class="mdi mdi-chart-timeline-variant" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <button class="btn btn-light rounded-pill btn-sm me-3" routerLink="../dashboard" title="Back to Dashboard">
+            <i class="mdi mdi-arrow-left"></i>
+            <span class="d-none d-sm-inline-block ms-1">Back</span>
+          </button>
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+            <i class="mdi mdi-chart-timeline-variant fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">On-Time Delivery Performance</h4>
+            <p class="mb-0 text-white-50">Real-time operational performance metrics and delivery analytics</p>
+          </div>
+        </div>
+        <div class="badge bg-light text-primary fs-6 px-3 py-2">
+          <i class="mdi mdi-chart-line me-1"></i>
+          Reports
+        </div>
+      </div>
+    </div>
 
-        <div class="ms-3">
-          <select class="form-select" [(ngModel)]="typeOfView" (change)="getData()" [disabled]="isLoading"
-            style="min-width:150px">
+    <!-- Performance Controls -->
+    <div class="card-header border-0 p-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Reporting Period</label>
+          <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="isLoading"
+            [displayOptions]="true"></app-date-range>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">View Type</label>
+          <select class="form-select" [(ngModel)]="typeOfView" (change)="getData()" [disabled]="isLoading">
             <option *ngFor="let row of ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually']" [value]="row">
-              {{row}}</option>
+              {{row}}
+            </option>
           </select>
         </div>
-
-        <div class="form-check ms-3 me-3" style="white-space: nowrap;">
-          <input class="form-check-input" type="checkbox" [disabled]="isLoading"
-            [disabled]="this.displayCustomers == 'Show All' && this.showAll" [(ngModel)]="showAll" id="displayCustomers"
-            (ngModelChange)="onChange()">
-          <label class="form-check-label" for="displayCustomers">
-            Show All
-          </label>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Display Mode</label>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" 
+              [disabled]="isLoading || (displayCustomers == 'Show All' && showAll)" 
+              [(ngModel)]="showAll" id="showAllToggle" (ngModelChange)="onChange()">
+            <label class="form-check-label" for="showAllToggle">Show All</label>
+          </div>
         </div>
+        <div class="col-md-3">
+          <div class="d-flex gap-2 align-items-center">
+            <div class="badge bg-info-subtle text-dark px-3 py-2">
+              <i class="mdi mdi-target me-1"></i>
+              Target: <strong>{{goal}}%</strong>
+            </div>
+            <div class="badge bg-warning-subtle text-dark px-3 py-2">
+              <i class="mdi mdi-chart-line me-1"></i>
+              Average: <strong>{{average | number:'1.1-1'}}%</strong>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" (click)="getData()" [disabled]="isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!isLoading" class="mdi mdi-refresh me-1"></i>
+            {{isLoading ? 'Loading...' : 'Refresh'}}
+          </button>
+        </div>
+      </div>
 
-        <h4 class="card-title mb-0 ms-auto d-none d-lg-block">OTD Based On Performance Date <br />
-          <small style="font-size:12px">OTD is recorded daily at 5pm or you can refresh by clicking <a
-              class="link-primary link-underline pointer" (click)="!isLoading && refreshData()"><u>here</u></a></small>
-        </h4>
+      <!-- Current Period Summary -->
+      <div class="alert alert-primary border-0 mt-3 rounded-3 shadow-sm py-2 px-3" *ngIf="allInfo?.todayInfo?.value">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-information me-2"></i>
+            <strong>Today's OTD Performance: {{allInfo?.todayInfo?.value | number : '1.1-1'}}%</strong>
+          </div>
+          <span class="badge rounded-pill" [ngClass]="getValue > 0 ? 'bg-success' : 'bg-danger'">
+            <i class="mdi" [ngClass]="getValue > 0 ? 'mdi-trending-up' : 'mdi-trending-down'"></i>
+            {{getValue | number : '1.1-1'}}%
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="row">
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-body" style="max-height:470px;min-height:470px;overflow:auto">
-        <div *ngIf="isLoading" class="p-5 card-body text-center">
-          <h4>
-            <div class="spinner-grow text-primary spinner-grow-md mb-3" role="status">
+    <!-- Content -->
+    <div class="card-body p-0">
+      <ng-container *ngIf="isLoading">
+        <div class="d-flex justify-content-center align-items-center p-5">
+          <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
               <span class="visually-hidden">Loading...</span>
             </div>
-            <p>Loading Data. Please wait...</p>
-          </h4>
-        </div>
-        <div [hidden]="isLoading">
-          <app-otd-chart [data]="dataChart?.chartnew" [labels]="dataChart?.obj?.label" [title]="displayCustomers"
-            [average]="average" [stacked]="true" [typeOfView]="typeOfView" [goal]="goal">
-          </app-otd-chart>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4">
-    <ul ngbNav #nav="ngbNav"  [destroyOnHide]="false" [(activeId)]="active" class="nav nav-tabs-custom border-bottom-0">
-      <li [ngbNavItem]="1" class="nav-item">
-        <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-          <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Reason Codes
-        </a>
-        <ng-template ngbNavContent *ngIf="active == 1">
-          <div class="card">
-            <div class="card-body p-0" style="max-height:413px;min-height:413px;overflow:hidden;margin:0 auto;margin-top:20px">
-              <app-otd-reason-code-chart [data]="reasonChart">
-              </app-otd-reason-code-chart>
-            </div>
+            <h6 class="text-body-emphasis mb-2">Loading Performance Data</h6>
+            <p class="text-muted mb-0">Analyzing delivery metrics...</p>
           </div>
-        </ng-template>
-      </li>
-      <li [ngbNavItem]="2" class="nav-item">
-        <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-          <i class="ri-dashboard-line text-muted align-bottom me-1"></i> By Customers
-        </a>
-        <ng-template ngbNavContent *ngIf="active == 2">
-          <div class="card">
-            <div class="card-header d-flex align-items-center text-nowrap">
-              <h4 class="card-title mb-0 flex-grow-1"> OTD Summary </h4>
-              <div class="f-flex-column">
-                <h6 class="fs- mb-0">
-                  {{allInfo?.todayInfo?.value || 0 | number : '1.2-2' }}% Today OTD</h6>
-                <p class="mb-0 text-muted">
-                  <span class="badge bg-success-subtle text-success mb-0"
-                    [ngClass]="{'bg-danger-subtle text-danger':getValue <= 0}">
-                    <i class="align-middle"
-                      [ngClass]="{'ri-arrow-down-line':getValue <= 0,'ri-arrow-up-line':getValue > 0}"></i>
-                    {{getValue | number : '1.2-2' }}%
-                  </span> vs. previous day
-                </p>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="!isLoading">
+        <!-- Analytics Dashboard -->
+        <div class="row g-4 p-4">
+          <!-- Performance Chart -->
+          <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-light py-3 border-0">
+                <div class="d-flex align-items-center">
+                  <div class="me-3 d-flex align-items-center justify-content-center rounded-2" 
+                    style="width: 2.5rem; height: 2.5rem; background: rgba(59, 130, 246, 0.1);">
+                    <i class="mdi mdi-chart-line-variant text-primary"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-semibold">Performance Trend Analysis</h6>
+                    <p class="mb-0 small text-muted">{{displayCustomers}} • {{typeOfView}} Performance Metrics</p>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <app-otd-chart [data]="dataChart?.chartnew" [labels]="dataChart?.obj?.label" [title]="displayCustomers"
+                  [average]="average" [stacked]="true" [typeOfView]="typeOfView" [goal]="goal">
+                </app-otd-chart>
               </div>
             </div>
+          </div>
 
-            <div class="card-body p-0" style="max-height:359px;min-height:359px;overflow:auto">
-              <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="summary" [columnDefs]="columnDefs1"
-                [gridOptions]="gridOptions1" style="width: 100%;height: calc(100vh - 586px);">
-              </ag-grid-angular>
+          <!-- Insights Panel -->
+          <div class="col-lg-4">
+            <ul ngbNav #nav="ngbNav" [destroyOnHide]="false" [(activeId)]="active" class="nav nav-tabs nav-justified mb-3">
+              <li [ngbNavItem]="1" class="nav-item">
+                <a ngbNavLink class="nav-link px-3 py-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="mdi mdi-chart-donut"></i>
+                    <span>Root Cause</span>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 border-0">
+                      <div class="d-flex align-items-center">
+                        <div class="me-3 d-flex align-items-center justify-content-center rounded-2" 
+                          style="width: 2rem; height: 2rem; background: rgba(245, 158, 11, 0.1);">
+                          <i class="mdi mdi-alert-decagram text-warning"></i>
+                        </div>
+                        <div>
+                          <h6 class="mb-1 fw-semibold">Delay Analysis</h6>
+                          <p class="mb-0 small text-muted">Root cause distribution</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body p-3">
+                      <app-otd-reason-code-chart [data]="reasonChart"></app-otd-reason-code-chart>
+                    </div>
+                  </div>
+                </ng-template>
+              </li>
+              <li [ngbNavItem]="2" class="nav-item">
+                <a ngbNavLink class="nav-link px-3 py-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="mdi mdi-domain"></i>
+                    <span>Customer</span>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light py-3 border-0">
+                      <div class="d-flex align-items-center">
+                        <div class="me-3 d-flex align-items-center justify-content-center rounded-2" 
+                          style="width: 2rem; height: 2rem; background: rgba(16, 185, 129, 0.1);">
+                          <i class="mdi mdi-account-group text-success"></i>
+                        </div>
+                        <div>
+                          <h6 class="mb-1 fw-semibold">Customer Performance</h6>
+                          <p class="mb-0 small text-muted">Individual customer metrics</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body p-0">
+                      <ag-grid-angular class="ag-theme-quartz" [rowData]="summary" [columnDefs]="columnDefs1"
+                        [gridOptions]="gridOptions1" style="height: 320px;">
+                      </ag-grid-angular>
+                    </div>
+                  </div>
+                </ng-template>
+              </li>
+            </ul>
+            <div [ngbNavOutlet]="nav"></div>
+          </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="card border-0 shadow-sm m-4">
+          <div class="card-header bg-light border-0 py-3">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                  <div class="me-3 d-flex align-items-center justify-content-center rounded-2" 
+                    style="width: 2.5rem; height: 2.5rem; background: rgba(99, 102, 241, 0.1);">
+                    <i class="mdi mdi-table-large text-indigo"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-semibold">Detailed Performance Data</h6>
+                    <p class="mb-0 small text-muted">Comprehensive delivery performance breakdown</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="position-relative flex-grow-1">
+                    <input type="search" class="form-control" 
+                      (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
+                      placeholder="Search performance records...">
+                    <i class="mdi mdi-magnify position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <app-grid-settings [gridApi]="gridApi" [pageId]="pageId">
+                      <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="mdi mdi-cog me-1"></i>Settings
+                      </button>
+                    </app-grid-settings>
+                    <app-grid-filters [gridApi]="gridApi" [pageId]="pageId">
+                      <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="mdi mdi-filter-variant me-1"></i>Filters
+                      </button>
+                    </app-grid-filters>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </ng-template>
-      </li>
-    </ul>
-
-    <div [ngbNavOutlet]="nav"></div>
-  </div>
-</div>
-
-<div class="col-lg-12">
-  <div class="card">
-    <div class="card-header">
-      <div class="d-flex align-items-center">
-        <div class="form-icon">
-          <input type="search" class="form-control form-control-icon" style="width:250px"
-            (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName" [(ngModel)]="searchName"
-            placeholder="Search">
-          <i class="ri-search-2-line"></i>
+          <div class="card-body p-0">
+            <ag-grid-angular class="ag-theme-quartz ag-theme-custom" [rowData]="data" [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions" style="height: calc(100vh - 600px);">
+            </ag-grid-angular>
+          </div>
         </div>
+      </ng-container>
+    </div>
 
-        <div class="ms-3">
-          <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+    <!-- Footer -->
+    <div class="card-footer bg-light p-4" *ngIf="!isLoading && data?.length > 0">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-3 align-items-center">
+          <span class="badge bg-info-subtle text-dark px-3 py-2">
+            <i class="mdi mdi-chart-line me-1"></i>
+            Total Records: <strong>{{ data?.length || 0 }}</strong>
+          </span>
+          <span class="badge bg-success-subtle text-dark px-3 py-2" *ngIf="summaryObject?.otd">
+            <i class="mdi mdi-check-circle me-1"></i>
+            Overall OTD: <strong>{{ summaryObject?.otd }}%</strong>
+          </span>
+          <span class="badge bg-warning-subtle text-dark px-3 py-2" *ngIf="summaryObject?.shippedOnTime">
+            <i class="mdi mdi-clock-check me-1"></i>
+            On Time: <strong>{{ summaryObject?.shippedOnTime }}/{{ summaryObject?.total_lines }}</strong>
+          </span>
         </div>
-
-
-        <div class="ms-3 me-3">
-          <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-        </div>
-
-        <div class="ms-auto">
-          <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+        <div class="text-muted small">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Real-time delivery performance analytics
         </div>
       </div>
     </div>
-    <div class="card-body p-0">
-      <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-        [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 170px);">
-      </ag-grid-angular>
-    </div>
   </div>
 </div>
+
+<style>
+  .ag-theme-custom .ag-header-cell-label {
+    font-weight: 500;
+    font-size: 1rem;
+    color: #333;
+  }
+
+  .bg-info-subtle {
+    background: #e7f3fa !important;
+  }
+
+  .bg-warning-subtle {
+    background: #fff8e1 !important;
+  }
+
+  .bg-success-subtle {
+    background: #e6f4ea !important;
+  }
+
+  .text-indigo {
+    color: #6366f1 !important;
+  }
+
+  .position-relative .mdi-magnify {
+    pointer-events: none;
+  }
+</style>

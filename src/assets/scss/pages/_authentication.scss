@@ -31,13 +31,19 @@
 }
 
 .auth-one-bg{
-    background-image: url("../../images/auth-one-bg.jpg");
+    background-image: url("/assets/images/landing/bg-pattern.png");
     background-position: center;
     background-size: cover;
 
     .bg-overlay{
-        background: linear-gradient(to right, darken($primary, 6%), $primary);
-        opacity: 0.9;
+        background: linear-gradient(135deg, 
+            rgba(darken($primary, 15%), 0.9) 0%, 
+            rgba(darken($primary, 8%), 0.8) 25%, 
+            rgba($primary, 0.7) 50%, 
+            rgba(lighten($primary, 5%), 0.6) 75%, 
+            rgba(lighten($primary, 10%), 0.5) 100%
+        );
+        opacity: 0.4;
     }
 }
 
@@ -46,7 +52,7 @@
     bottom: 0;
     right: 0;
     left: 0;
-    z-index: 1;
+    z-index: 0;
     pointer-events: none;
     >svg {
         width: 100%;
@@ -99,7 +105,7 @@
     background: $auth-bg-cover;
 
     > .bg-overlay{
-        background-image: url("../../images/cover-pattern.png");
+        background-image: url("https://the-fi-company.com/wp-content/webp-express/webp-images/uploads/2025/01/Custome-LEDs.png.webp");
         background-position: center;
         background-size: cover;
         opacity: 1;

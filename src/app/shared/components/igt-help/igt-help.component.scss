@@ -1,0 +1,278 @@
+// Help component specific styles
+.container-fluid {
+  // Modal specific styles
+  &.p-0 {
+    .col-md-9 {
+      &.h-100.overflow-auto {
+        height: 100% !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+    }
+    
+    .col-md-3 {
+      &.h-100 {
+        height: 100% !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+    }
+  }
+}
+
+.help-content-body {
+  line-height: 1.6;
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: #2c3e50;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  h1, h2, h3 {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+  }
+  
+  p {
+    margin-bottom: 1rem;
+    text-align: justify;
+  }
+  
+  ul, ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    
+    li {
+      margin-bottom: 0.5rem;
+    }
+  }
+  
+  code {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.875em;
+  }
+  
+  .table {
+    margin-bottom: 1.5rem;
+    
+    th {
+      background-color: #f8f9fa;
+      border-top: none;
+      font-weight: 600;
+    }
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+    
+    .card-header {
+      font-weight: 600;
+    }
+  }
+  
+  .alert {
+    margin: 1.5rem 0;
+    
+    .mdi {
+      font-size: 1.1em;
+    }
+  }
+  
+  .badge {
+    font-size: 0.75em;
+    margin: 0.125rem;
+  }
+  
+  .accordion {
+    .accordion-button {
+      font-weight: 500;
+      
+      .mdi {
+        font-size: 1.1em;
+      }
+      
+      &:not(.collapsed) {
+        background-color: #e7f3ff;
+        border-color: #b6d7ff;
+      }
+    }
+    
+    .accordion-body {
+      font-size: 0.9em;
+      
+      strong {
+        color: #495057;
+        display: block;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        
+        &:first-child {
+          margin-top: 0;
+        }
+      }
+    }
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+.nav-link {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: #f8f9fa;
+    transform: translateX(2px);
+  }
+  
+  &.active {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+}
+
+// Section content animations
+.section-content {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Print styles
+@media print {
+  .btn, .input-group, .breadcrumb, .position-fixed {
+    display: none !important;
+  }
+  
+  .col-md-3 {
+    display: none !important;
+  }
+  
+  .col-md-9 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .help-content-body {
+    font-size: 12pt;
+    line-height: 1.4;
+    
+    h1, h2, h3, h4, h5, h6 {
+      page-break-after: avoid;
+    }
+    
+    .card {
+      border: 1px solid #ccc !important;
+      break-inside: avoid;
+    }
+    
+    .alert {
+      border: 1px solid #ccc !important;
+      break-inside: avoid;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .row.g-0 > .col-md-3 {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 80%;
+    height: 100vh;
+    z-index: 1050;
+    transition: left 0.3s ease;
+    
+    &.show {
+      left: 0;
+    }
+  }
+  
+  .row.g-0 > .col-md-9 {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .position-fixed.bottom-0.end-0 {
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
+// Custom scrollbar for sidebar
+.col-md-3 {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+}
+
+// Status type indicators
+.bg-info-subtle { background-color: #e7f3ff !important; }
+.bg-success-subtle { background-color: #e8f5e8 !important; }
+.bg-warning-subtle { background-color: #fff8e1 !important; }
+.bg-danger-subtle { background-color: #ffeaea !important; }
+
+// Modal specific improvements
+:host {
+  .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s ease;
+    
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+  
+  // Smooth scrolling
+  * {
+    scroll-behavior: smooth;
+  }
+  
+  // Better focus styles for accessibility
+  .nav-link:focus,
+  .btn:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+  }
+}
+
+.text-info { color: #0066cc !important; }
+.text-success { color: #28a745 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-danger { color: #dc3545 !important; }

@@ -156,12 +156,15 @@ export class RequestEditComponent {
 
   file: File = null;
 
-  myFiles: string[] = [];
+  myFiles: File[] = [];
 
-  onFilechange(event: any) {
+  handleFileChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
     this.myFiles = [];
-    for (var i = 0; i < event.target.files.length; i++) {
-      this.myFiles.push(event.target.files[i]);
+    if (target.files) {
+      for (let i = 0; i < target.files.length; i++) {
+        this.myFiles.push(target.files[i]);
+      }
     }
   }
 

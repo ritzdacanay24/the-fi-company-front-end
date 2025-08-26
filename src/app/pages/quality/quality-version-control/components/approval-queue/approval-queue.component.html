@@ -1,0 +1,133 @@
+<div class="approval-queue">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1">Pending Approvals</h4>
+      <p class="text-muted mb-0">Documents requiring your review and approval</p>
+    </div>
+    <div class="badge bg-warning fs-6">
+      {{ getPendingApprovalsCount() }} pending
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="getPendingApprovalsCount() === 0" class="text-center py-5">
+    <div class="mb-3">
+      <i class="mdi mdi-check-circle-outline text-success" style="font-size: 4rem;"></i>
+    </div>
+    <h5 class="text-muted">All caught up!</h5>
+    <p class="text-muted">No documents are currently pending approval.</p>
+  </div>
+
+  <!-- Approval List -->
+  <div *ngFor="let approval of getPendingApprovals(); trackBy: trackByRevisionId" class="approval-item">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <!-- Document Info -->
+          <div class="col-md-5">
+            <div class="d-flex align-items-start">
+              <div class="approval-icon me-3">
+                <i class="mdi mdi-file-document-outline"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">{{ approval.document.document_number }}</h6>
+                <p class="text-muted mb-1">{{ approval.revision.title }}</p>
+                <small class="text-muted">
+                  Revision {{ approval.revision.revision_number }} • 
+                  {{ approval.revision.change_description }}
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <div class="col-md-3">
+            <div class="mb-2">
+              <small class="text-muted d-block">Submitted by</small>
+              <span>{{ approval.revision.created_by_name || 'Unknown' }}</span>
+            </div>
+            <div class="mb-2">
+              <small class="text-muted d-block">Submitted</small>
+              <span>{{ getDaysOldText(approval.revision.created_at) }}</span>
+            </div>
+            <div>
+              <span 
+                class="badge" 
+                [class]="getUrgencyBadgeClass(getUrgencyLevel(approval.revision))">
+                {{ getUrgencyText(getUrgencyLevel(approval.revision)) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Department & Type -->
+          <div class="col-md-2">
+            <div class="mb-2">
+              <small class="text-muted d-block">Department</small>
+              <span class="badge bg-info">{{ approval.document.department }}</span>
+            </div>
+            <div>
+              <small class="text-muted d-block">Type</small>
+              <span class="badge bg-secondary">{{ approval.document.prefix?.split('-').pop() || 'DOC' }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="col-md-2 text-end">
+            <div class="btn-group-vertical w-100" role="group">
+              <button 
+                type="button" 
+                class="btn btn-success btn-sm mb-1"
+                (click)="onApproveRevision(approval.revision)"
+                title="Approve this revision">
+                <i class="mdi mdi-check me-1"></i>
+                Approve
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-danger btn-sm mb-1"
+                (click)="onRejectRevision(approval.revision)"
+                title="Reject this revision">
+                <i class="mdi mdi-close me-1"></i>
+                Reject
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                (click)="onViewDetails(approval.document, approval.revision)"
+                title="View revision details">
+                <i class="mdi mdi-eye me-1"></i>
+                Details
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Effective Date (if specified) -->
+        <div *ngIf="approval.revision.effective_date" class="row mt-2">
+          <div class="col-12">
+            <div class="alert alert-info py-2 mb-0">
+              <small>
+                <i class="mdi mdi-calendar me-1"></i>
+                <strong>Effective Date:</strong> {{ approval.revision.effective_date | date:'fullDate' }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Actions (if multiple items) -->
+  <div *ngIf="getPendingApprovalsCount() > 1" class="mt-4 pt-3 border-top">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="text-muted">{{ getPendingApprovalsCount() }} items pending approval</span>
+      <div>
+        <button type="button" class="btn btn-outline-secondary btn-sm me-2" disabled>
+          <i class="mdi mdi-select-all me-1"></i>
+          Bulk Actions (Coming Soon)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -333,6 +333,12 @@ export class SidebarComponent implements OnInit {
         return menuItem;
       }
 
+      // Special handling for template-editor routes to match both /template-editor and /template-editor/:id
+      if (menuItem.link === "/dashboard/quality/template-editor" && 
+          pathname.startsWith("/dashboard/quality/template-editor")) {
+        return menuItem;
+      }
+
       if (menuItem.subItems) {
         const foundItem = this.findMenuItem(pathname, menuItem.subItems);
         if (foundItem) {

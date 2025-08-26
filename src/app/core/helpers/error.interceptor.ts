@@ -55,10 +55,21 @@ export class ErrorInterceptor implements HttpInterceptor {
           typeof error?.error === "object" && error?.error !== null
             ? error?.error?.message
             : error?.statusText;
-        this.toastService.error(errorMessage, error?.statusText, {
-          timeOut: 100000000,
-          newestOnTop: true,
-        });
+
+        // Check for suppress flags from our serial number component
+        const suppressGlobalError = error?._suppressGlobalError || error?._handledLocally;
+
+        // Only show toast if backend did not set showPopup === false AND we haven't suppressed it
+        if (
+          !suppressGlobalError &&
+          (typeof error?.error !== "object" ||
+          error?.error?.showPopup !== false)
+        ) {
+          this.toastService.error(errorMessage, error?.statusText, {
+            timeOut: 100000000,
+            newestOnTop: true,
+          });
+        }
         return throwError(error);
       })
     );

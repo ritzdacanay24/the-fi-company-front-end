@@ -1,28 +1,268 @@
-<div class="modal-header">
-  <h4 class="modal-title" id="modal-basic-title">Summary</h4>
-</div>
-<div class="modal-body">
-  <div class="modal-content modal-content-fixed">
-    <div class="alert alert-danger" role="alert">
-      Please ensure everything is 100% correct. Once submitted, changes cannot be made.
+<div class="modal-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4"
+     style="border-radius: 16px 16px 0 0;">
+  <!-- Background Pattern -->
+  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+    <i class="ri-file-list-3-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  </div>
+  
+  <div class="d-flex align-items-center position-relative">
+    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+          style="width: 2.5rem; height: 2.5rem;">
+      <i class="ri-file-list-3-line fs-4 text-white"></i>
+    </span>
+    <div>
+      <h4 class="mb-1 fw-bold text-white">Work Order Summary</h4>
+      <p class="text-white-50 mb-0">Review and submit your completed work order</p>
     </div>
-    <ul class="list-group">
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        Total Hours
-        <span>{{timeConvert(_travelAndWorkTotalHrs)}}</span>
-      </li>
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        Total Expenses
-        <span>{{tripExpenseTotal | currency}}</span>
-      </li>
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        Credit Card Receipts
-        <span>{{assignedTotalBankTransactions}} of {{totalBankTransactins}}</span>
-      </li>
-    </ul>
   </div>
 </div>
-<div class="modal-footer">
-  <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
-  <button (click)="onSubmit()" type="button" class="btn btn-primary" >Submit</button>
+
+<div class="modal-body p-0">
+  <!-- Critical Warning Alert -->
+  <div class="alert alert-danger border-0 m-4 mb-0">
+    <div class="d-flex align-items-start">
+      <i class="ri-error-warning-line fs-4 me-3 mt-1 text-danger"></i>
+      <div>
+        <h6 class="alert-heading fw-bold mb-2">
+          <i class="ri-lock-line me-1"></i>Final Submission Warning
+        </h6>
+        <p class="mb-0">Please ensure everything is 100% correct. <strong>Once submitted, changes cannot be made.</strong> 
+        Review all details carefully before proceeding.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards Grid -->
+  <div class="p-4">
+    <div class="row g-3">
+      <!-- Time Summary Card -->
+      <div class="col-md-6">
+        <div class="card border-0 h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="card-body text-white position-relative">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+              <i class="ri-time-line" style="font-size: 3rem;"></i>
+            </div>
+            <div class="position-relative">
+              <h6 class="text-white-50 mb-2 fw-semibold">
+                <i class="ri-clock-line me-2"></i>Total Work Hours
+              </h6>
+              <h2 class="text-white fw-bold mb-1">{{timeConvert(_travelAndWorkTotalHrs)}}</h2>
+              <div class="d-flex align-items-center">
+                <span class="badge bg-white bg-opacity-20 text-white">
+                  {{(_travelAndWorkTotalHrs/60) | number:'1.2-2'}} QTR Hours
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Summary Card -->
+      <div class="col-md-6">
+        <div class="card border-0 h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <div class="card-body text-white position-relative">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+              <i class="ri-money-dollar-circle-line" style="font-size: 3rem;"></i>
+            </div>
+            <div class="position-relative">
+              <h6 class="text-white-50 mb-2 fw-semibold">
+                <i class="ri-receipt-line me-2"></i>Total Expenses
+              </h6>
+              <h2 class="text-white fw-bold mb-1">{{tripExpenseTotal | currency}}</h2>
+              <div class="d-flex align-items-center">
+                <span class="badge bg-white bg-opacity-20 text-white">
+                  <i class="ri-check-line me-1"></i>Verified
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credit Card Transactions Status -->
+    <div class="card border-0 mt-4" [class.border-success]="!disableButton" [class.border-danger]="disableButton">
+      <div class="card-header" [class.bg-success]="!disableButton" [class.bg-danger]="disableButton"
+           [class.text-white]="disableButton || !disableButton">
+        <div class="d-flex align-items-center">
+          <i class="ri-credit-card-line fs-5 me-2"></i>
+          <div class="flex-grow-1">
+            <h6 class="mb-1 fw-bold">Credit Card Receipt Status</h6>
+            <small class="opacity-75">Transaction verification and receipt assignment</small>
+          </div>
+          <div class="text-end">
+            <span class="badge" [class.bg-white]="disableButton || !disableButton" 
+                  [class.text-success]="!disableButton" [class.text-danger]="disableButton">
+              {{assignedTotalBankTransactions}} of {{totalBankTransactins}}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center mb-2">
+              <div class="flex-grow-1">
+                <div class="progress" style="height: 8px;">
+                  <div class="progress-bar" 
+                       [class.bg-success]="!disableButton" 
+                       [class.bg-danger]="disableButton"
+                       [style.width.%]="totalBankTransactins > 0 ? (assignedTotalBankTransactions / totalBankTransactins) * 100 : 0">
+                  </div>
+                </div>
+              </div>
+              <span class="ms-3 fw-bold" [class.text-success]="!disableButton" [class.text-danger]="disableButton">
+                {{totalBankTransactins > 0 ? ((assignedTotalBankTransactions / totalBankTransactins) * 100 | number:'1.0-0') : 0}}%
+              </span>
+            </div>
+            <div class="small text-muted">
+              <i class="ri-information-line me-1"></i>
+              <span *ngIf="!disableButton" class="text-success">All transactions have assigned receipts</span>
+              <span *ngIf="disableButton" class="text-danger">
+                {{totalBankTransactins - assignedTotalBankTransactions}} transaction(s) missing receipts
+              </span>
+            </div>
+          </div>
+          <div class="col-md-4 text-end">
+            <div *ngIf="!disableButton" class="text-success">
+              <i class="ri-check-circle-fill fs-3"></i>
+              <div class="small fw-semibold">Ready to Submit</div>
+            </div>
+            <div *ngIf="disableButton" class="text-danger">
+              <i class="ri-error-warning-fill fs-3"></i>
+              <div class="small fw-semibold">Action Required</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="card border-0 bg-light mt-4" *ngIf="disableButton">
+      <div class="card-body">
+        <h6 class="text-warning mb-3">
+          <i class="ri-tools-line me-2"></i>Quick Actions Needed
+        </h6>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <button class="btn btn-outline-primary btn-sm w-100">
+              <i class="ri-upload-line me-1"></i>Upload Missing Receipts
+            </button>
+          </div>
+          <div class="col-md-6">
+            <button class="btn btn-outline-secondary btn-sm w-100">
+              <i class="ri-eye-line me-1"></i>Review Transactions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pre-submission Checklist -->
+    <div class="card border-0 mt-4">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="ri-task-line me-2"></i>Pre-Submission Checklist
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="d-flex align-items-center">
+              <i class="ri-check-circle-fill text-success me-2"></i>
+              <span class="small">Work hours documented</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex align-items-center">
+              <i class="ri-check-circle-fill text-success me-2"></i>
+              <span class="small">Expenses recorded</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex align-items-center">
+              <i class="ri-check-circle-fill text-success me-2" *ngIf="!disableButton"></i>
+              <i class="ri-close-circle-fill text-danger me-2" *ngIf="disableButton"></i>
+              <span class="small" [class.text-danger]="disableButton">Credit card receipts</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex align-items-center">
+              <i class="ri-check-circle-fill text-success me-2"></i>
+              <span class="small">Job completion verified</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<div class="modal-footer bg-light border-top p-4">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <div class="d-flex align-items-center">
+      <i class="ri-shield-check-line text-success me-2"></i>
+      <small class="text-muted">
+        <span *ngIf="!disableButton">All requirements met - ready for submission</span>
+        <span *ngIf="disableButton">Please complete missing requirements before submitting</span>
+      </small>
+    </div>
+    <div class="d-flex gap-2">
+      <button (click)="dismiss()" type="button" class="btn btn-outline-secondary">
+        <i class="ri-close-line me-2"></i>Cancel
+      </button>
+      <button (click)="onSubmit()" type="button" class="btn btn-primary btn-lg px-4" 
+              [disabled]="disableButton"
+              [class.btn-warning]="disableButton">
+        <span *ngIf="!disableButton">
+          <i class="ri-send-plane-fill me-2"></i>Submit Work Order
+        </span>
+        <span *ngIf="disableButton">
+          <i class="ri-error-warning-line me-2"></i>Cannot Submit Yet
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.card {
+  transition: all 0.3s ease;
+  border-radius: 12px !important;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.progress {
+  border-radius: 10px;
+  background-color: rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.badge {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 1.1rem;
+}
+</style>

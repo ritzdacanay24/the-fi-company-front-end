@@ -1,0 +1,57 @@
+<div class="ul-v2">
+  <div class="header">
+    <h2>UL Management — Simplified (v2)</h2>
+    <p class="muted">Quick, friendly interface for generating and assigning UL labels. State is in-memory using Faker.</p>
+  </div>
+
+  <section class="controls">
+    <div class="left">
+      <button (click)="bulkGenerate(5)" class="btn btn-outline-primary">Generate 5 labels</button>
+      <button (click)="bulkGenerate(20)" class="btn btn-outline-secondary">Generate 20 labels</button>
+      <span class="badge available">Available: {{ availableCount() }}</span>
+    </div>
+
+    <div class="right">
+      <form [formGroup]="form" (ngSubmit)="addManual()" class="manual-form">
+        <input formControlName="ul_number" placeholder="UL Number" class="form-control" />
+        <input formControlName="description" placeholder="Description (optional)" class="form-control" />
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="list">
+    <ul>
+      <li *ngFor="let l of labels">
+        <div class="label-row">
+          <div class="meta">
+            <strong>{{ l.ul_number }}</strong>
+            <div class="desc">{{ l.description }}</div>
+          </div>
+          <div class="actions">
+            <span class="status" [class.used]="l.status === 'used'">{{ l.status }}</span>
+            <button *ngIf="l.status === 'active'" class="btn btn-sm btn-success" (click)="markUsed(l)">Use</button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="import">
+    <h4>Import Range</h4>
+    <input #start placeholder="start number" class="form-control" />
+    <input #end placeholder="end number" class="form-control" />
+    <button class="btn btn-outline-primary" (click)="importRange(start.value, end.value)">Import</button>
+    <small class="muted">We save the range as a single record (no expansion) to keep the UI fast.</small>
+
+    <div class="saved-ranges" *ngIf="ranges.length">
+      <h5>Saved Ranges</h5>
+      <ul>
+        <li *ngFor="let r of ranges">
+          <strong>{{ r.start }} — {{ r.end }}</strong>
+          <div class="note">{{ r.note }}</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>

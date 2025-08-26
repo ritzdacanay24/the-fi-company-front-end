@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/*.log": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules": true
+  },
+  "disable-hardware-acceleration": true,
+  "files.maxFileSize": 5000000,
+  "workbench.editor.enablePreview": true
+}

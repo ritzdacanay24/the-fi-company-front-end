@@ -1,0 +1,106 @@
+<!-- Navigation Footer -->
+<div class="card shadow-lg mt-4 border-0">
+  <div class="card-body p-4">
+    
+    <!-- Step Navigation (only in non-review mode) -->
+    <div class="mb-4" *ngIf="!isReviewMode">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="text-muted mb-0 fw-bold">
+          <i class="mdi mdi-step-forward me-2"></i>
+          Step {{currentItemIndex}} of {{totalItemsCount}}
+        </h6>
+        <small class="text-muted">
+          {{getCompletionPercentage() | number:'1.0-0'}}% Complete
+        </small>
+      </div>
+      
+      <div class="row g-3 align-items-center">
+        <!-- Previous Button -->
+        <div class="col-auto">
+          <button type="button" 
+                  class="btn btn-outline-primary rounded-pill px-4" 
+                  (click)="onPreviousItem()"
+                  [disabled]="isFirstItem"
+                  style="min-height: 48px;">
+            <i class="mdi mdi-chevron-left me-2"></i>
+            <span class="d-none d-sm-inline">Previous</span>
+          </button>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="col">
+          <div class="progress" style="height: 12px;">
+            <div class="progress-bar bg-primary" 
+                 [style.width.%]="getCompletionPercentage()"
+                 role="progressbar">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Next Button -->
+        <div class="col-auto">
+          <button type="button" 
+                  class="btn btn-outline-primary rounded-pill px-4" 
+                  (click)="onNextItem()"
+                  [disabled]="isLastItem"
+                  style="min-height: 48px;">
+            <span class="d-none d-sm-inline me-2">Next</span>
+            <i class="mdi mdi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="d-flex flex-wrap gap-2 justify-content-center">
+      <!-- Close Button -->
+      <button (click)="onGoBack()" 
+              type="button" 
+              class="btn btn-outline-secondary rounded-pill px-4"
+              style="min-height: 48px;">
+        <i class="mdi mdi-close me-2"></i>Close
+      </button>
+      
+      <!-- Review Toggle -->
+      <button (click)="onToggleReviewMode()" 
+              type="button" 
+              class="btn rounded-pill px-4" 
+              [class]="isReviewMode ? 'btn-warning' : 'btn-info'"
+              style="min-height: 48px;">
+        <i class="mdi" [class]="isReviewMode ? 'mdi-pencil' : 'mdi-eye'"></i>
+        <span class="ms-2 d-none d-sm-inline">{{isReviewMode ? 'Edit Mode' : 'Review All'}}</span>
+        <span class="badge bg-light ms-2 rounded-pill" 
+              [class]="isReviewMode ? 'text-warning' : 'text-info'">
+          {{completedItemsCount}}/{{totalItemsCount}}
+        </span>
+      </button>
+      
+      <!-- Save Progress -->
+      <button (click)="onSaveProgress()" 
+              type="button" 
+              class="btn btn-success rounded-pill px-4" 
+              [disabled]="saving"
+              style="min-height: 48px;">
+        <i class="mdi mdi-content-save me-2" *ngIf="!saving"></i>
+        <div class="spinner-border spinner-border-sm me-2" *ngIf="saving"></div>
+        <span class="d-none d-sm-inline">Save Progress</span>
+        <span class="d-sm-none">Save</span>
+      </button>
+      
+      <!-- Submit -->
+      <button (click)="onSubmitChecklist()" 
+              type="button" 
+              class="btn btn-primary rounded-pill px-4 fw-bold" 
+              *ngIf="!isCompleted()" 
+              [disabled]="saving || !isSubmitReady()"
+              style="min-height: 48px;">
+        <i class="mdi mdi-send me-2"></i>
+        <span class="d-none d-sm-inline">Submit</span>
+        <span class="d-sm-none">Submit</span>
+        <span class="badge bg-light text-primary ms-2" *ngIf="isSubmitReady()">
+          Ready!
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

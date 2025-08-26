@@ -1,134 +1,634 @@
 <div *ngIf="this.ticketInfo?.fs_scheduler_id && this.ticketInfo?.id && !isLoading">
+  <!-- Header Section -->
   <div class="row">
     <div class="col-lg-12">
-      <div class="card mt-n4 mx-n4 rounded-0">
-        <div class="bg-dark-subtle">
-          <div class="card-body pb-0 px-4">
-            <div class="row mb-3">
-              <div class="col-md">
-                <div class="row align-items-center g-3">
-                  <div class="col-md-auto d-none d-lg-block">
-                    <div class="avatar-md">
-                      <div class="avatar-title bg-white rounded-circle">
-                        <img src="assets/images/companies/img-4.png" alt="" class="avatar-xs">
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md">
-                    <div>
-                      <div class="d-flex mb-2 align-middle">
-                        <button class="btn btn-light btn-sm me-2" (click)="goBack()">Go Back</button>
-                        <h4 class="fw-bold mb-0 pb-0">{{title}}</h4>
-                      </div>
-                      <div class="hstack gap-3 flex-wrap">
-                        <div><i class="ri-building-line align-bottom me-1"></i> {{schedulerInfo?.property}}</div>
-                        <div class="vr"></div>
-                        <div>FSID : <a (click)="viewJobInfo()" class="pointer"><u><span class="fw-medium">{{schedulerInfo?.fs_scheduler_id}}</span></u></a></div>
-                        <div class="vr"></div>
-                        <div>Service Type : <span class="fw-medium">{{schedulerInfo?.service_type}}</span></div>
-                        <div class="vr"></div>
-                        <div>Ticket ID : {{this.ticketInfo?.id}}</div>
+      <div class="card mt-n4 mx-n4 mb-n5 rounded-0 shadow-none" style="margin-bottom: -9rem;height:236px">
+        <div class="bg-light-subtle bg-gradient position-relative">
+          <!-- Background Pattern -->
+          <div class="position-absolute" style="top: -88px; right: -11px; opacity: 0.03;">
+            <i class="mdi mdi-tools" style="font-size: 18rem; transform: rotate(15deg);"></i>
+          </div>
 
-                        <div class="avatar-group" *ngIf="connectingJobs">
-                          <a href="javascript: void(0);" class="avatar-group-item material-shadow"
-                            *ngFor="let row of connectingJobs" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="{{row}}">
-                            <div class="avatar-xxs">
-                              <div class="avatar-title rounded-circle bg-light text-primary">
-                                {{row | slice:0:1}}
-                              </div>
-                            </div>
-                          </a>
+          <div class="client-header"></div>
+          <div class="card-body bg-light-subtle pb-4 mb-5 position-relative" style="margin-bottom: -9rem;">
+            <div class="row align-items-center">
+              <!-- Avatar -->
+              <div class="col-auto ms-3">
+                <div class="position-relative">
+                  <div class="avatar-lg mb-md-0 mb-4 position-relative">
+                    <div
+                      class="avatar-title bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-2 shadow-lg border border-white border-1 position-relative overflow-hidden"
+                      style="width: 4.5rem; height: 4.5rem; font-family: 'Inter', 'Segoe UI', sans-serif;">
+                      <!-- Subtle background pattern -->
+                      <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25">
+                        <div class="d-flex align-items-center justify-content-center h-100 opacity-50">
+                          <i class="mdi mdi-wrench" style="font-size: 4rem;"></i>
                         </div>
-
                       </div>
+                      <!-- Ticket initials -->
+                      <span class="position-relative z-1" style="letter-spacing: 0.05em;">
+                        {{ (schedulerInfo?.service_type | slice:0:2) }}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="col-md-auto">
-                Ticket Submitted:
-                <p><b>{{ticketInfo?.dateSubmitted || 'Not Completed'}}</b></p>
+
+              <!-- Main Content -->
+              <div class="col">
+                <div class="d-flex align-items-center mb-1">
+                  <button class="btn btn-light btn-sm me-3" (click)="goBack()">
+                    <i class="mdi mdi-arrow-left me-1"></i>Go Back
+                  </button>
+                  <h3 class="fw-bold mb-0 me-2 text-light" id="ticket-title" style="font-family: 'Inter', 'Segoe UI', sans-serif; 
+                             letter-spacing: -0.025em; 
+                             font-weight: 700; 
+                             text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                             font-size: 1.25rem;">
+                    {{title}}
+                  </h3>
+                  <div class="d-flex align-items-center">
+                    <div class="badge bg-success px-3 py-1 position-relative" style="
+                              font-weight: 600; 
+                              letter-spacing: 0.05em; 
+                              font-size: 0.7rem;
+                              text-transform: uppercase;
+                              border-radius: 16px;
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                      <span class="position-absolute top-0 start-0 w-100 h-100 opacity-10 rounded-pill"></span>
+                      <span class="position-relative">ACTIVE</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Professional subtitle with ticket info -->
+                <div class="mb-2" style="font-family: 'Inter', 'Segoe UI', sans-serif;">
+                  <span class="text-muted" style="font-size: 0.85rem; font-weight: 500;">
+                    Ticket ID:
+                    <span class="text-dark fw-semibold">{{this.ticketInfo?.id}}</span>
+                    <span class="mx-2 text-muted">•</span>
+                    <span class="text-muted">FSID:
+                      <a (click)="viewJobInfo()" class="pointer text-primary text-decoration-underline">
+                        <span class="fw-medium">{{schedulerInfo?.fs_scheduler_id}}</span>
+                      </a>
+                    </span>
+                  </span>
+                </div>
+
+                <div class="hstack gap-2 flex-wrap mb-2" style="font-family: 'Inter', 'Segoe UI', sans-serif;">
+                  <div style="font-weight: 400;">
+                    <i class="mdi mdi-office-building me-1 text-primary"></i>
+                    <span class="fw-semibold">Property: </span>
+                    <span class="fw-normal">{{schedulerInfo?.property}}</span>
+                  </div>
+                  <div class="vr"></div>
+                  <div style="font-weight: 400;">
+                    <i class="mdi mdi-tools me-1 text-success"></i>
+                    <span class="fw-semibold">Service: </span>
+                    <span class="fw-normal">{{schedulerInfo?.service_type}}</span>
+                  </div>
+                  <div class="vr"></div>
+                  <div style="font-weight: 400;">
+                    <i class="mdi mdi-calendar-outline me-1 text-info"></i>
+                    <span class="fw-semibold">Submitted: </span>
+                    <span class="fw-normal">{{ticketInfo?.dateSubmitted || 'Not Completed'}}</span>
+                  </div>
+                </div>
+
+                <!-- Connected Jobs (Header Icon & Dropdown) -->
+                <!-- Connected Jobs (Header Icon & Dropdown) - Moved to main header area -->
               </div>
-            </div>
+              <!-- End Main Content -->
 
-            <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
-              class="nav nav-tabs-custom border-bottom-0" role="tablist" style="overflow:auto;flex-wrap:nowrap;white-space: nowrap;">
-              <li [ngbNavItem]="1" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-dashboard-line text-muted align-bottom me-1"></i> Events
-                </a>
-                <ng-template ngbNavContent>
-                  <app-event [workOrderId]="this.ticketInfo?.id"></app-event>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="2" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-file-list-2-line text-muted align-bottom me-1"></i> Receipts
-                </a>
-                <ng-template ngbNavContent>
-                  <app-receipt [workOrderId]="this.ticketInfo?.id"></app-receipt>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="3" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class=" ri-file-shield-line text-muted align-bottom me-1"></i> Serial Info
-                </a>
-                <ng-template ngbNavContent>
-                  <app-serial [workOrderId]="this.ticketInfo?.id"></app-serial>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="4" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-pages-line text-muted align-bottom me-1"></i> Attachments
-                </a>
-                <ng-template ngbNavContent>
-                  <app-attachment [workOrderId]="this.ticketInfo?.id"></app-attachment>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="5" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-clipboard-line text-muted align-bottom me-1"></i> Crash Kit
-                </a>
-                <ng-template ngbNavContent>
-                  <app-crash-kit [workOrderId]="this.ticketInfo?.id"></app-crash-kit>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="6" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-logout-box-r-line text-muted align-bottom me-1"></i> Submit
-                </a>
-                <ng-template ngbNavContent>
-                  <app-work-order [workOrderId]="this.ticketInfo?.id"></app-work-order>
-                </ng-template>
-              </li>
-              <li [ngbNavItem]="7" class="nav-item">
-                <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab">
-                  <i class="ri-logout-box-r-line text-muted align-bottom me-1"></i> Billing
-                </a>
-                <ng-template ngbNavContent>
-                  <app-billing [workOrderId]="this.ticketInfo?.id" [fsId]="this.ticketInfo?.fs_scheduler_id"></app-billing>
-                </ng-template>
-              </li>
-
-            </ul>
-
-          </div>
-          <!-- end card body -->
+              <!-- Connected Jobs Indicator - Move to right panel, above Ticket Status -->
+              <!-- Moved to right panel for better layout, avoids pushing status down -->
+              <!-- Place above Ticket Status, always visible if connections exist -->
+              <div class="col-auto" style="min-width: 250px; font-family: 'Inter', 'Segoe UI', sans-serif;">
+                <div *ngIf="connectingJobs?.length" class="mb-2">
+                  <span class="fw-semibold">
+                    <i class="mdi mdi-link-variant me-1 text-info"></i>
+                    <span class="text-info">Connected</span>
+                  </span>
+                  <div ngbDropdown class="d-inline-block ms-2">
+                    <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle px-2 py-1"
+                      id="connectedJobsDropdown" ngbDropdownToggle>
+                      View ({{connectingJobs.length}})
+                    </button>
+                    <div ngbDropdownMenu aria-labelledby="connectedJobsDropdown" style="min-width: 220px;">
+                      <a *ngFor="let job of connectingJobs" ngbDropdownItem
+                        [routerLink]="['/dashboard/field-service/ticket/overview']" [queryParams]="{id: job.fs_id}"
+                        class="dropdown-item d-flex align-items-center gap-2" target="_blank">
+                        <span class="badge bg-primary-subtle text-primary">#{{job.fs_id || job}}</span>
+                        <span class="fw-semibold">{{job.customer || job.service_type || job}}</span>
+                      </a>
+                      <div *ngIf="!connectingJobs.length" class="dropdown-item text-muted">No connected jobs</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Ticket Status -->
+                <div>
+                  <h6 class="fw-bold mb-2" style="letter-spacing: -0.01em;">
+                    <i class="mdi mdi-file-document-multiple-outline me-1"></i>
+                    Ticket Status
+                  </h6>
+                  <div class="fw-semibold">
+                    Current Status: <span class="text-success">In Progress</span>
+                  </div>
+                  <div class="text-muted small fw-normal">
+                    Last Updated: {{ ticketInfo?.lastUpdated ? (ticketInfo.lastUpdated | date:'medium') : 'Recently' }}
+                  </div>
+                </div>
         </div>
       </div>
-      <!-- end card -->
     </div>
-    <!-- end col -->
   </div>
-  <!-- end row -->
-  <div class="row">
-    <div class="col-lg-12">
-      <div class="tab-content text-muted">
-        <div [ngbNavOutlet]="customNav"></div>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card rounded-0 shadow-none border-top-0 mb-0 mt-n7 mx-n4 " style="margin-top: -4rem;">
+      <div class="card-body p-0">
+        <div class="nav-container position-relative">
+          <!-- Left scroll button -->
+          <button class="nav-scroll-btn nav-scroll-left btn btn-sm btn-outline-primary position-absolute"
+            (click)="scrollNavLeft()" [style.display]="canScrollLeft ? 'block' : 'none'"
+            style="left: 5px; top: 50%; transform: translateY(-50%); z-index: 10;">
+            <i class="mdi mdi-chevron-left"></i>
+          </button>
+
+          <!-- Right scroll button -->
+          <button class="nav-scroll-btn nav-scroll-right btn btn-sm btn-outline-primary position-absolute"
+            (click)="scrollNavRight()" [style.display]="canScrollRight ? 'block' : 'none'"
+            style="right: 5px; top: 50%; transform: translateY(-50%); z-index: 10;">
+            <i class="mdi mdi-chevron-right"></i>
+          </button>
+
+          <!-- Navigation tabs with horizontal scroll -->
+          <div class="nav-scroll-container" #navScrollContainer (scroll)="onNavScroll($event)">
+            <ul (navChange)="onNavChange($event)" ngbNav #customNav="ngbNav" [activeId]="active"
+              class="nav nav-tabs nav-tabs-custom border-bottom-0 bg-light d-flex flex-nowrap" role="tablist"
+              style="min-width: max-content;">
+
+              <li [ngbNavItem]="1.1" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-clipboard-text-outline text-primary" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Job Form</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Job Details &
+                        Edit</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-job-edit [id]="this.id"></app-job-edit>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="1" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="ri-calendar-event-line text-primary" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Events</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Timeline &
+                        Activities</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-event [workOrderId]="this.ticketInfo?.id"></app-event>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="2" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-receipt text-success" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Receipts</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Expense
+                        Documentation</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-receipt [workOrderId]="this.ticketInfo?.id"></app-receipt>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="3" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-qrcode text-warning" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Serial Info</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Asset Tracking</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-serial [workOrderId]="this.ticketInfo?.id"></app-serial>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="4" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-paperclip text-secondary" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Attachments</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">File
+                        Management</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-attachment [workOrderId]="this.ticketInfo?.id"></app-attachment>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="5" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-medical-bag text-danger" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Crash Kit</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Emergency
+                        Equipment</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-crash-kit [workOrderId]="this.ticketInfo?.id"></app-crash-kit>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="6" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-send text-info" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Submit</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Complete Work
+                        Order</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-work-order [workOrderId]="this.ticketInfo?.id"></app-work-order>
+                  </div>
+                </ng-template>
+              </li>
+
+              <li [ngbNavItem]="7" class="nav-item py-0">
+                <a ngbNavLink class="nav-link d-flex align-items-center px-1 py-0" data-bs-toggle="tab" role="tab">
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                      style="width: 1.5rem; height: 1.5rem;">
+                      <i class="mdi mdi-currency-usd text-dark" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <div>
+                      <div class="fw-semibold text-nowrap" style="font-size: 0.85rem;">Billing</div>
+                      <small class="text-muted d-block text-nowrap" style="font-size: 0.65rem;">Review &
+                        Approval</small>
+                    </div>
+                  </div>
+                </a>
+                <ng-template ngbNavContent>
+                  <div class="p-3 py-0">
+                    <app-billing [workOrderId]="this.ticketInfo?.id"
+                      [fsId]="this.ticketInfo?.fs_scheduler_id"></app-billing>
+                  </div>
+                </ng-template>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
-    <!-- end col -->
   </div>
-  <!-- end row -->
 </div>
+
+<!-- Tab Content -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="tab-content text-muted">
+      <div [ngbNavOutlet]="customNav"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .nav-pills .nav-link {
+    border-radius: 0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    transition: all 0.2s ease;
+  }
+
+  .nav-pills .nav-link:hover {
+    background-color: var(--bs-primary-bg-subtle);
+    transform: translateX(4px);
+  }
+
+  .nav-pills .nav-link.active {
+    background-color: var(--bs-primary);
+    border-left: 4px solid var(--bs-primary);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px var(--bs-primary-border-subtle);
+  }
+
+  .nav-pills .nav-link.active .bg-primary,
+  .nav-pills .nav-link.active .bg-success,
+  .nav-pills .nav-link.active .bg-warning,
+  .nav-pills .nav-link.active .bg-secondary,
+  .nav-pills .nav-link.active .bg-danger,
+  .nav-pills .nav-link.active .bg-info,
+  .nav-pills .nav-link.active .bg-dark {
+    background-color: var(--bs-body-bg) !important;
+    opacity: 0.2;
+  }
+
+  .nav-pills .nav-link.active small {
+    color: var(--bs-body-bg) !important;
+    opacity: 0.8;
+  }
+
+  /* Modern Tab Styling - Full Width with Icons on Left */
+  .nav-tabs-custom {
+    display: flex !important;
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  .nav-tabs-custom .nav-item {
+    flex: 1 1 auto;
+  }
+
+  .nav-tabs-custom .nav-link {
+    border: none;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    width: 100%;
+    min-height: 45px;
+    padding: 0.25rem !important;
+  }
+
+  .nav-tabs-custom .nav-link:hover {
+    border-color: transparent;
+    background-color: var(--bs-primary-bg-subtle);
+    border-bottom-color: var(--bs-primary-border-subtle);
+  }
+
+  .nav-tabs-custom .nav-link.active {
+    background-color: var(--bs-body-bg);
+    border-color: transparent;
+    border-bottom-color: var(--bs-primary);
+    color: var(--bs-primary);
+    font-weight: 600;
+  }
+
+  .nav-tabs-custom .nav-link.active .bg-primary,
+  .nav-tabs-custom .nav-link.active .bg-success,
+  .nav-tabs-custom .nav-link.active .bg-warning,
+  .nav-tabs-custom .nav-link.active .bg-secondary,
+  .nav-tabs-custom .nav-link.active .bg-danger,
+  .nav-tabs-custom .nav-link.active .bg-info,
+  .nav-tabs-custom .nav-link.active .bg-dark {
+    background-color: var(--bs-primary) !important;
+    background-opacity: 0.1 !important;
+  }
+
+  .nav-tabs-custom .nav-link.active i {
+    color: var(--bs-primary) !important;
+  }
+
+  /* Navigation Container Styles */
+  .nav-container {
+    position: relative;
+    background: var(--bs-secondary-bg);
+  }
+
+  .nav-scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 40px;
+  }
+
+  .nav-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-scroll-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px var(--bs-box-shadow);
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+  }
+
+  .nav-scroll-btn:hover {
+    background: var(--bs-primary);
+    color: var(--bs-body-bg);
+    border-color: var(--bs-primary);
+  }
+
+  /* Responsive tabs */
+  @media (max-width: 991.98px) {
+    .nav-tabs-custom .nav-link {
+      min-width: 150px;
+      padding: 0.25rem 0.5rem !important;
+    }
+
+    .nav-tabs-custom .nav-link small {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .nav-tabs-custom .nav-link {
+      min-height: 40px;
+      padding: 0.2rem !important;
+    }
+
+    .nav-tabs-custom .nav-link .rounded-circle {
+      width: 1.5rem !important;
+      height: 1.5rem !important;
+    }
+
+    .nav-tabs-custom .nav-link i {
+      font-size: 0.8rem !important;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .nav-tabs-custom .nav-link {
+      min-height: 35px;
+      padding: 0.15rem !important;
+    }
+
+    .nav-tabs-custom .nav-link small {
+      display: none;
+    }
+
+    .nav-tabs-custom .nav-link .fw-semibold {
+      font-size: 0.8rem !important;
+    }
+
+    .nav-tabs-custom .nav-link .rounded-circle {
+      width: 1.25rem !important;
+      height: 1.25rem !important;
+    }
+
+    .nav-tabs-custom .nav-link i {
+      font-size: 0.75rem !important;
+    }
+  }
+
+  .nav-tabs-custom {
+    overflow: visible !important;
+  }
+
+  .nav-tabs-custom::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .nav-tabs-custom::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+  }
+
+  .nav-tabs-custom::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
+    border-radius: 3px;
+  }
+
+  .nav-tabs-custom::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-border-color-translucent);
+  }
+
+  /* Bootstrap 5 Friendly Navigation Styles */
+  .list-group-item.active {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--bs-body-bg) !important;
+  }
+
+  .list-group-item.active .text-dark {
+    color: var(--bs-body-bg) !important;
+  }
+
+  .list-group-item.active .text-muted {
+    color: var(--bs-body-bg) !important;
+    opacity: 0.8;
+  }
+
+  .list-group-item.active .bg-primary,
+  .list-group-item.active .bg-success,
+  .list-group-item.active .bg-warning,
+  .list-group-item.active .bg-secondary,
+  .list-group-item.active .bg-danger,
+  .list-group-item.active .bg-info,
+  .list-group-item.active .bg-dark {
+    background-color: var(--bs-body-bg) !important;
+    opacity: 0.15;
+    border-color: var(--bs-body-bg) !important;
+    opacity: 0.2;
+  }
+
+  .list-group-item.active i {
+    color: var(--bs-body-bg) !important;
+  }
+
+  .list-group-item:hover {
+    background-color: var(--bs-secondary-bg);
+    transform: translateX(4px);
+    transition: all 0.2s ease;
+  }
+
+  .list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .list-group-item.active {
+    border-left: 4px solid var(--bs-primary);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px var(--bs-primary-border-subtle);
+  }
+
+  @media (max-width: 991.98px) {
+    .vh-100 {
+      height: auto !important;
+    }
+  }
+
+  .list-group-item-action {
+    transition: all 0.15s ease-in-out;
+  }
+
+  .rounded-3 {
+    transition: all 0.2s ease;
+  }
+
+  .list-group-item:hover .rounded-3 {
+    transform: scale(1.05);
+  }
+
+  .sticky-top {
+    position: sticky;
+    top: 1rem;
+    z-index: 1020;
+  }
+</style>

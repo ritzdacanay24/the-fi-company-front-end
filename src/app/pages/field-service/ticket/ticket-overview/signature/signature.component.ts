@@ -16,7 +16,7 @@ export class SignatureService {
   ) { }
 
   open(data: any, title: string, key: string) {
-    const modalRef = this.modalService.open(SignatureComponent, { size: 'md', fullscreen: false, centered: false });
+    const modalRef = this.modalService.open(SignatureComponent, { size: 'lg', fullscreen: false, centered: false });
     modalRef.componentInstance.data = data;
     modalRef.componentInstance.title = title;
     modalRef.componentInstance.key = key;

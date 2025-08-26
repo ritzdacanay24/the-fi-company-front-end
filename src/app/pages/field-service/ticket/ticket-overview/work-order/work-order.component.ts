@@ -10,6 +10,9 @@ import { SharedModule } from '@app/shared/shared.module';
 import { TeamsService } from '@app/core/api/field-service/teams.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import moment from 'moment';
+import { TripExpenseService } from '@app/core/api/field-service/trip-expense.service';
+import { TripExpenseTransactionsService } from '@app/core/api/field-service/trip-expense-transactions';
+import { timeConvert, calculateSummaryLabor } from '@app/pages/field-service/shared/field-service-helpers.service';
 
 @Component({
   standalone: true,
@@ -49,12 +52,10 @@ export class WorkOrderComponent implements OnInit {
     private workOrderSummaryService: WorkOrderSummaryService,
     private teamsService: TeamsService,
     public authenticationService: AuthenticationService,
+    private tripExpenseService: TripExpenseService,
+    private tripExpenseTransactionsService: TripExpenseTransactionsService
   ) {
   }
-
-  ngOnInit(): void {
-  }
-
 
   teamsData: any = []
   async getTeams(id) {
@@ -90,9 +91,9 @@ export class WorkOrderComponent implements OnInit {
     return !value || value == ''
   }
 
-  async getEventDetails() {
-    return await this.fieldServiceMobileService.getEventByWorkOrderId(this.workOrderId);
-  }
+  // async getEventDetails() {
+  //   return await this.fieldServiceMobileService.getEventByWorkOrderId(this.workOrderId);
+  // }
 
   async validateValues() {
     let errors = [];
@@ -178,76 +179,180 @@ export class WorkOrderComponent implements OnInit {
 
   }
 
-  async submit() {
+  // Summary properties from work-order-summary
+  _travelAndWorkTotalHrs = 0;
+  tripExpenseTotal = 0;
+  totalBankTransactins = 0;
+  assignedTotalBankTransactions = 0;
+  timeConvert = timeConvert;
 
-    if (this.data.dateSubmitted) {
-      alert(`This ticket was already submitted on ${this.data.dateSubmitted}.`);
-      return
+  async ngOnInit() {
+    await this.getSummaryData();
+  }
+
+  async getSummaryData() {
+    await Promise.all([
+      this.getEventDetails(),
+      this.getTripExpense(),
+      this.getAllTransactionAssignedToFsId()
+    ]);
+  }
+
+  async getEventDetails() {
+    try {
+      const eventInfo = await this.fieldServiceMobileService.getEventByWorkOrderId(this.workOrderId);
+      this._travelAndWorkTotalHrs = calculateSummaryLabor(eventInfo);
+    } catch (error) {
+      console.error('Error loading event details:', error);
     }
+  }
 
-    let errors: any = await this.validateValues();
-
-    if (errors.length > 0) {
-      var info = errors;
-      var list = '<ol style="text-align:left">'
-      for (var i = 0; i < info.length; i++) {
-        list += '<li style="font-size:14px">' + info[i].error + '</li>';
+  async getTripExpense() {
+    try {
+      const data: any = await this.tripExpenseService.getByWorkOrderId(this.workOrderId);
+      this.tripExpenseTotal = 0;
+      for (let i = 0; i < data?.length; i++) {
+        this.tripExpenseTotal += data[i].cost;
       }
-      list += '</ol>';
-
-      SweetAlert.fire({
-        title: '<strong><p class="text-danger">Please fix below errors</p></strong>',
-        html: list,
-        focusConfirm: false,
-        confirmButtonText: `Ok`,
-        confirmButtonColor: '#3085d6',
-      })
-      return;
+    } catch (error) {
+      console.error('Error loading trip expenses:', error);
     }
+  }
 
-    await this.getTeams(this.data?.fs_scheduler_id)
+  async getAllTransactionAssignedToFsId() {
+    try {
+      this.totalBankTransactins = 0;
+      this.assignedTotalBankTransactions = 0;
 
-    let isAllVerified = false;
-    if (this.teamsData?.length) {
-      for (let i = 0; i < this.teamsData.length; i++) {
-        if (this.teamsData[i].ticket_verified == '' || this.teamsData[i].ticket_verified == null) {
-          isAllVerified = true;
-          break;
+      const workOrderInfo: any = await this.api.getById(this.workOrderId);
+      const transactions: any = await this.tripExpenseTransactionsService.getByFsId(
+        workOrderInfo.fs_scheduler_id, 
+        this.workOrderId
+      );
+
+      for (let i = 0; i < transactions.length; i++) {
+        this.totalBankTransactins++;
+        if (transactions[i].work_order_transaction_id !== null) {
+          this.assignedTotalBankTransactions++;
         }
       }
+    } catch (error) {
+      console.error('Error loading bank transactions:', error);
+    }
+  }
+
+  get disableButton() {
+    return this.totalBankTransactins != this.assignedTotalBankTransactions;
+  }
+
+  async submit() {
+    if (this.disableButton) {
+      const remaining = this.totalBankTransactins - this.assignedTotalBankTransactions;
+      const { value: accept } = await SweetAlert.confirm({
+        allowOutsideClick: false,
+        title: 'Warning',
+        text: `You have ${remaining} credit card transaction(s) not assigned. Do you wish to continue?`,
+        showCloseButton: false,
+        showCancelButton: true,
+        focusConfirm: false,
+        confirmButtonText: 'Proceed',
+        confirmButtonColor: 'green',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+      });
+      if (!accept) return;
     }
 
-    if (isAllVerified) {
-      alert(`All techs must verify the accuracy of this ticket before submission.`);
-      return
+    try {
+      SweetAlert.loading('Submitting job. Please wait.');
+      await this.api.updateById(this.workOrderId, { 
+        dateSubmitted: moment().format('YYYY-MM-DD HH:mm:ss') 
+      });
+
+      await SweetAlert.fire({
+        title: 'Success',
+        text: 'Job submitted successfully.',
+        allowOutsideClick: false,
+        showCloseButton: false,
+        showCancelButton: false,
+        focusConfirm: false,
+        confirmButtonText: 'Close',
+        confirmButtonColor: 'green',
+        reverseButtons: true
+      });
+
+      window.location.reload();
+
+    } catch (err) {
+      SweetAlert.close(0);
+      console.error('Error submitting job:', err);
+    }
+  }
+
+  // Enhanced validation that includes credit card transactions
+  getValidationStatus() {
+    const missingFields = [];
+    let isValid = true;
+
+    // Check work completion
+    if (!this.data?.workCompleted) {
+      missingFields.push('Work Completion Status');
+      isValid = false;
     }
 
+    // If work not completed, require explanation
+    if (this.data?.workCompleted === 'No' && !this.data?.workCompletedComment?.trim()) {
+      missingFields.push('Work Completion Explanation');
+      isValid = false;
+    }
 
-    const modalRef = this.workOrderSummaryService.open(this.workOrderId);
+    // Check customer information
+    if (!this.data?.customerName1?.trim()) {
+      missingFields.push('Customer Name');
+      isValid = false;
+    }
 
-    modalRef.result.then(async (result: any) => {
+    if (!String(this.data?.phone || '').trim()) {
+      missingFields.push('Customer Phone');
+      isValid = false;
+    }
 
-      this.data.submitted = 1;
+    // Check signatures
+    if (!this.data?.customerSignatureImage) {
+      missingFields.push('Customer Signature');
+      isValid = false;
+    }
 
-      try {
-        SweetAlert.loading()
-        await this.api.updateById(this.workOrderId, this.data)
+    if (!this.data?.technicianSignatureImage) {
+      missingFields.push('Technician Signature');
+      isValid = false;
+    }
 
-        SweetAlert.fire({
-          title: 'Ticket successfully submitted. Thank you ',
-          icon: 'success',
-          focusConfirm: false,
-          confirmButtonText: `Ok`,
-          confirmButtonColor: '#3085d6',
-        })
-        this.getData();
-        SweetAlert.close(500)
-      } catch (err) {
-        SweetAlert.close(0)
+    // Check parts information if Eye-Fi selected
+    if (this.data?.partLocation === 'Eye-Fi') {
+      if (!this.data?.partReceivedByName?.trim()) {
+        missingFields.push('Receiving Employee Name');
+        isValid = false;
       }
+      if (!this.data?.partReceivedBySignature) {
+        missingFields.push('Employee Signature');
+        isValid = false;
+      }
+    }
 
-    }, () => { });
+    // Check team verification
+    const unverifiedMembers = this.teamsData?.filter(member => !member.ticket_verified) || [];
+    if (unverifiedMembers.length > 0) {
+      missingFields.push(`Team Verification (${unverifiedMembers.length} pending)`);
+      isValid = false;
+    }
 
+    return {
+      isValid,
+      missingFields,
+      completionPercentage: Math.round(((8 - missingFields.length) / 8) * 100),
+      hasUnassignedTransactions: this.disableButton
+    };
   }
 
   openSignature() {

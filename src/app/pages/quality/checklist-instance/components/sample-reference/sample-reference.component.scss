@@ -1,0 +1,51 @@
+/* Sample Reference Component Styles */
+.ratio img {
+  transition: transform 0.2s ease-in-out;
+}
+
+.ratio:hover img {
+  transform: scale(1.02);
+}
+
+.btn-outline-secondary {
+  border-color: #dee2e6;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-outline-secondary:hover:not(:disabled) {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  transform: scale(1.1);
+}
+
+.btn-outline-secondary:disabled {
+  opacity: 0.4;
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+/* Indicator dots */
+.rounded-circle {
+  transition: all 0.2s ease-in-out;
+}
+
+.bg-success {
+  background-color: #198754 !important;
+}
+
+@media (max-width: 768px) {
+  .ratio {
+    margin-bottom: 1rem;
+  }
+  
+  .btn-sm {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}

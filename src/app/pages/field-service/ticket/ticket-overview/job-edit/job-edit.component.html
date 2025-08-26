@@ -1,0 +1,64 @@
+<div class="row justify-content-center">
+  <div class="col-xl-8 col-lg-9">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4"
+           style="border-radius: 16px 16px 0 0;">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="mdi mdi-clipboard-edit-outline" style="font-size: 8rem; transform: rotate(15deg);"></i>
+        </div>
+        
+        <div class="d-flex align-items-center justify-content-between position-relative">
+          <div class="d-flex align-items-center">
+            <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                  style="width: 2.5rem; height: 2.5rem;">
+              <i class="mdi mdi-clipboard-edit-outline fs-4 text-white"></i>
+            </span>
+            <div>
+              <h4 class="mb-1 fw-bold text-white">
+                {{title}}
+              </h4>
+              <p class="text-white-50 mb-0">Field Service Job Management</p>
+            </div>
+          </div>
+          
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-light btn-sm" *ngIf="onGoBack" (click)="onGoBack()" [disabled]="isLoading">
+              <i class="mdi mdi-arrow-left me-1"></i>Back
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="p-4">
+          <app-job-form [ngStyle]="ngStyle" (setFormElements)="form = $event" [removeTech]="removeTech"
+            [submitted]="submitted" [id]="id"></app-job-form>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light border-top">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-information-outline text-primary me-2"></i>
+            <small class="text-muted">
+              Changes will be saved and applied to the job record
+            </small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-light" [disabled]="isLoading" (click)="onGoBack()">
+              <i class="mdi mdi-close me-1"></i>Cancel
+            </button>
+            <button class="btn btn-primary" (click)="onSubmit()" [disabled]="isLoading">
+              <i class="mdi mdi-content-save me-1"></i>
+              <span *ngIf="!isLoading">Submit</span>
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

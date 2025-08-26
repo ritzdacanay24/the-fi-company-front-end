@@ -1,67 +1,190 @@
 <form [formGroup]="form" autocomplete="off">
 
-  <div class="mb-3">
-    <div style="width:350px">
-      <app-so-search (notifyParent)="notifyParent($event)" [value]="f.so_number?.value"
-        [disabled]="disableSearch"></app-so-search>
+  <!-- Header Section -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body bg-primary position-relative overflow-hidden text-white">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+        <i class="mdi mdi-swap-horizontal" style="font-size: 8rem;"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+              <i class="mdi mdi-swap-horizontal text-white" style="font-size: 1.5rem;"></i>
+            </div>
+          </div>
+          <div>
+            <h3 class="mb-1 fw-bold text-white">IGT Transfer Form</h3>
+            <p class="mb-0 text-white opacity-75">Inventory goods transfer between locations</p>
+          </div>
+        </div>
+        <div class="d-none d-lg-block">
+          <div class="bg-white bg-opacity-20 rounded-3 p-2 d-inline-flex border border-white border-opacity-25">
+            <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:100px; filter: brightness(1.1);" class="img-fluid">
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-lg-6 col-sm mb-3">
-      <p>Sales Order: <b>{{f.so_number.value}}</b></p>
-      <p>Transfer Reference: <b>{{f.transfer_reference.value}}</b></p>
-      <p>Transfer Description: <b>{{f.transfer_reference_description.value}}</b></p>
-      <p>Date: <b>{{f.date.value}}</b></p>
-      <p>IGT Internal transaction: <b>311 to {{f.to_location.value}} </b></p>
-      <p>Email sent on: <b>{{f.email_sent_datetime.value}} </b></p>
+  <!-- Sales Order Search Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-body-tertiary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-magnify me-2"></i>Sales Order Selection
+      </h5>
+      <small class="text-body-secondary">Search and select the sales order for transfer</small>
     </div>
-    <div class="col-lg-6 col-sm mb-3 text-end d-none d-lg-block d-print-block">
-      <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:138px" class="img-fluid">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-lg-6">
+          <label class="form-label">Sales Order Number</label>
+          <app-so-search (notifyParent)="notifyParent($event)" [value]="f.so_number?.value"
+            [disabled]="disableSearch" [appendToBody]="'body'" [showLabel]="false"></app-so-search>
+        </div>
+      </div>
     </div>
   </div>
 
-  <ng-container formGroupName="details">
+  <!-- Transfer Information Card -->
+  <div class="card mb-4 shadow-sm" *ngIf="f.so_number.value">
+    <div class="card-header bg-body-tertiary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-information me-2"></i>Transfer Information
+      </h5>
+      <small class="text-body-secondary">Transfer details and reference information</small>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="info-item mb-3">
+            <label class="form-label text-body-secondary small fw-medium">Sales Order</label>
+            <div class="fw-semibold text-body">{{f.so_number.value || 'Not selected'}}</div>
+          </div>
+          <div class="info-item mb-3">
+            <label class="form-label text-body-secondary small fw-medium">Transfer Reference</label>
+            <div class="fw-semibold text-body">{{f.transfer_reference.value || 'Not available'}}</div>
+          </div>
+          <div class="info-item mb-3">
+            <label class="form-label text-body-secondary small fw-medium">Transfer Description</label>
+            <div class="fw-semibold text-body">{{f.transfer_reference_description.value || 'Not available'}}</div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="info-item mb-3">
+            <label class="form-label text-body-secondary small fw-medium">Transfer Date</label>
+            <div class="fw-semibold text-body">{{f.date.value || 'Not set'}}</div>
+          </div>
+          <div class="info-item mb-3">
+            <label class="form-label text-body-secondary small fw-medium">IGT Transaction</label>
+            <div class="fw-semibold text-dark">
+              <span class="badge bg-primary">311 to {{f.to_location.value || 'Location TBD'}}</span>
+            </div>
+          </div>
+          <div class="info-item mb-3" *ngIf="f.email_sent_datetime.value">
+            <label class="form-label text-body-secondary small fw-medium">Email Sent</label>
+            <div class="fw-semibold text-success">
+              <i class="mdi mdi-check-circle me-1"></i>{{f.email_sent_datetime.value}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase"><i class="feather icon-users"></i>
-      Line Details
-    </h4>
-
-    <div class="table-responsive text-nowrap">
-      <table class="table table-sm align-middle table-bordered" *ngIf="getDetails.length">
-        <thead>
-          <tr>
-            <td>SO Line #</td>
-            <td>Part #</td>
-            <td>Description</td>
-            <td>Qty</td>
-            <td>From/Loc</td>
-            <td>To/Loc</td>
-            <td>Pallet #</td>
-            <td>S/N</td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="p-0 m-0 align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
-            <td> {{row.value.so_line}} </td>
-            <td> {{row.value.part_number}} </td>
-            <td> {{row.value.description}} </td>
-            <td> {{row.value.qty}} </td>
-            <td> {{f.from_location?.value}} </td>
-            <td> {{f.to_location?.value}} </td>
-            <td>
+  <!-- Line Details Card -->
+  <div class="card mb-4 shadow-sm" *ngIf="getDetails.length" formGroupName="details">
+    <div class="card-header bg-body-tertiary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-format-list-bulleted me-2"></i>Transfer Line Details
+      </h5>
+      <small class="text-body-secondary">Items and quantities being transferred</small>
+    </div>
+    <div class="card-body p-0">
+      <!-- Mobile-friendly layout -->
+      <div class="d-block d-lg-none">
+        <div *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i" class="border-bottom p-4">
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label text-body-secondary small">SO Line #</label>
+              <div class="fw-semibold text-body">{{row.value.so_line}}</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-body-secondary small">Quantity</label>
+              <div class="fw-semibold text-body">{{row.value.qty}}</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-body-secondary small">Part Number</label>
+              <div class="fw-semibold text-primary">{{row.value.part_number}}</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-body-secondary small">Description</label>
+              <div class="text-body">{{row.value.description}}</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-body-secondary small">From Location</label>
+              <div class="fw-semibold text-body">{{f.from_location?.value}}</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-body-secondary small">To Location</label>
+              <div class="fw-semibold text-body">{{f.to_location?.value}}</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label required">Pallet #</label>
               <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
-                placeholder="Enter pallet count"  style="min-width:150px"/>
-            </td>
-            <td>
+                placeholder="Enter pallet number" />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Serial Numbers</label>
               <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
-                placeholder="Enter serial numbers" style="min-width:150px" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </ng-container>
+                placeholder="Enter S/N" />
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- Desktop layout -->
+      <div class="d-none d-lg-block">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>SO Line #</th>
+                <th>Part Number</th>
+                <th>Description</th>
+                <th class="text-center">Qty</th>
+                <th>From Location</th>
+                <th>To Location</th>
+                <th>Pallet #</th>
+                <th>Serial Numbers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+                <td class="fw-semibold">{{row.value.so_line}}</td>
+                <td class="text-primary fw-semibold">{{row.value.part_number}}</td>
+                <td>{{row.value.description}}</td>
+                <td class="text-center fw-semibold">{{row.value.qty}}</td>
+                <td>
+                  <span class="badge bg-secondary">{{f.from_location?.value}}</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary">{{f.to_location?.value}}</span>
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm" name="pallet_count" formControlName="pallet_count"
+                    placeholder="Enter pallet #" style="min-width:140px"/>
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm" name="serial_numbers" formControlName="serial_numbers"
+                    placeholder="Enter serial numbers" style="min-width:160px" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </form>

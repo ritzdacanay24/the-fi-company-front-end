@@ -1,0 +1,163 @@
+<div class="modal-header bg-primary bg-gradient text-white">
+  <div class="d-flex align-items-center">
+    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+      style="width: 2.5rem; height: 2.5rem;">
+      <i class="mdi mdi-sitemap fs-4 text-white"></i>
+    </span>
+    <div>
+      <h4 class="modal-title mb-1 fw-bold">BOM Structure</h4>
+      <p class="mb-0 text-white-50" *ngIf="partNumber">Part: {{ partNumber }}</p>
+      <p class="mb-0 text-white-50" *ngIf="soNumber">SO: {{ soNumber }}</p>
+    </div>
+  </div>
+  <button type="button" class="btn-close btn-close-white" (click)="closeModal()" aria-label="Close"></button>
+</div>
+
+<div class="modal-body p-0">
+  <!-- Filters -->
+  <div class="card-header border-0 p-4">
+    <form [formGroup]="filterForm" (ngSubmit)="fetchBOM()">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Part Number</label>
+          <input type="text" class="form-control" formControlName="part" placeholder="Part number">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Max Levels</label>
+          <input type="number" class="form-control" formControlName="maxLevels" min="1" max="20">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Days</label>
+          <input type="number" class="form-control" formControlName="days" min="1">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+            <i class="mdi mdi-magnify me-1"></i> 
+            <span *ngIf="!loading">Search</span>
+            <span *ngIf="loading">Loading...</span>
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-outline-secondary w-100" (click)="onRefresh()" [disabled]="loading">
+            <i class="mdi mdi-refresh me-1"></i> Refresh
+          </button>
+        </div>
+      </div>
+      
+      <!-- Advanced Options -->
+      <div class="row g-3 mt-2">
+        <div class="col-auto">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" formControlName="graphicsOnly" id="graphicsOnly">
+            <label class="form-check-label" for="graphicsOnly">Graphics Only</label>
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" formControlName="nested" id="nested">
+            <label class="form-check-label" for="nested">Nested View</label>
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" formControlName="debug" id="debug">
+            <label class="form-check-label" for="debug">Debug Mode</label>
+          </div>
+        </div>
+      </div>
+    </form>
+    
+    <!-- Error Alert -->
+    <div *ngIf="error" class="alert alert-danger border-0 mt-3 rounded-3 shadow-sm py-2 px-3" role="alert">
+      <div class="d-flex align-items-start">
+        <i class="mdi mdi-alert-circle-outline me-2 fs-6 text-danger"></i>
+        <div>
+          <span class="fw-semibold">Error:</span> {{ error }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="px-4 pb-4">
+    <ng-container *ngIf="loading">
+      <div class="d-flex justify-content-center align-items-center p-5">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <h6 class="text-body-emphasis mb-2">Loading BOM Structure</h6>
+          <p class="text-muted mb-0">Please wait...</p>
+        </div>
+      </div>
+    </ng-container>
+    
+    <ng-container *ngIf="!loading">
+      <ng-container *ngIf="bomData && bomData.length > 0; else noData">
+        <!-- Action Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex gap-3 align-items-center">
+            <span class="badge bg-info-subtle text-dark px-3 py-2">
+              <i class="mdi mdi-cube-outline me-1"></i>
+              Total Items: <strong>{{ bomData?.length || 0 }}</strong>
+            </span>
+            <span class="badge bg-warning-subtle text-dark px-3 py-2">
+              <i class="mdi mdi-format-list-numbered me-1"></i>
+              Max Levels: <strong>{{ getMaxBomLevel() }}</strong>
+            </span>
+            <span class="badge bg-success-subtle text-dark px-3 py-2">
+              <i class="mdi mdi-check-circle me-1"></i>
+              Active Items: <strong>{{ getActiveBomCount() }}</strong>
+            </span>
+          </div>
+          <button type="button" class="btn btn-outline-success btn-sm" (click)="onExport()">
+            <i class="mdi mdi-download me-1"></i>
+            Export Excel
+          </button>
+        </div>
+        
+        <!-- BOM Grid -->
+        <div class="table-responsive">
+          <ag-grid-angular 
+            class="ag-theme-quartz ag-theme-custom"
+            style="height: calc(90vh - 300px); width: 100%; min-height: 400px;"
+            [gridOptions]="gridOptions"
+            [rowData]="bomData"
+            [columnDefs]="columnDefs">
+          </ag-grid-angular>
+        </div>
+      </ng-container>
+      
+      <ng-template #noData>
+        <div class="d-flex flex-column align-items-center justify-content-center p-5">
+          <div class="text-center" style="max-width: 500px;">
+            <div class="mb-4">
+              <div class="avatar-xl bg-info-subtle rounded-circle d-flex align-items-center justify-content-center mx-auto">
+                <i class="mdi mdi-database-search text-info" style="font-size: 3rem;"></i>
+              </div>
+            </div>
+            <h4 class="text-body-emphasis mb-3">No BOM Data Found</h4>
+            <p class="text-muted mb-4">
+              No BOM data found for the specified part. Try adjusting the search parameters.
+            </p>
+          </div>
+        </div>
+      </ng-template>
+    </ng-container>
+  </div>
+</div>
+
+<div class="modal-footer bg-light">
+  <div class="d-flex justify-content-between align-items-center w-100">
+    <div class="text-muted small">
+      <i class="mdi mdi-information-outline me-1"></i>
+      BOM structure for manufacturing and planning
+    </div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">
+        <i class="mdi mdi-close me-1"></i>
+        Close
+      </button>
+    </div>
+  </div>
+</div>

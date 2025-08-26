@@ -1,6 +1,6 @@
 export let formValues: any = {
     "checklist": [{
-        "name": "General",
+        "name": "Engine & Safety Systems",
         "status": false,
         "needMaint": false,
         "details": [{
@@ -11,35 +11,35 @@ export let formValues: any = {
             "remarks": ""
         },
         {
-            "name": "Winshield & Mirrors",
+            "name": "Windshield & Mirrors",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Doors & Windows",
+            "name": "Doors & Windows Operation",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Emergency Brake",
+            "name": "Emergency Brake System",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Tires - Wear & Pressure",
+            "name": "Tire Condition & Pressure",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Check ground under vehicle for fluid leaks",
+            "name": "Fluid Leak Inspection",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
@@ -48,60 +48,60 @@ export let formValues: any = {
         ]
     },
     {
-        "name": "Documentation",
+        "name": "Vehicle Operations & Documentation",
         "status": false,
         "needMaint": false,
         "details": [{
-            "name": "Insurance Card",
+            "name": "Insurance Documentation",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Registration",
+            "name": "Vehicle Registration",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Check for cleanliness & Damages [interior and exterior]",
+            "name": "Vehicle Cleanliness & Damage Assessment",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Fuel Level, Gauges, & Dash warning lights",
+            "name": "Fuel Level & Dashboard Indicators",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Winshield Wipers",
+            "name": "Windshield Wipers & Washers",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Horn",
+            "name": "Horn Function Test",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Head Lights, Tail Lights, Turn Signals, Flashers, Warning Lights",
+            "name": "Lighting Systems Check",
             "status": undefined,
             "needMaint": undefined,
             "error": false,
             "remarks": ""
         },
         {
-            "name": "Defrosters, Heaters, & Air Conditioner [when applicable]",
+            "name": "Climate Control Systems",
             "status": undefined,
             "needMaint": undefined,
             "error": false,

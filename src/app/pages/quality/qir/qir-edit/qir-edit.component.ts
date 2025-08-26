@@ -232,6 +232,11 @@ export class QirEditComponent {
               size: portrait;
             }
             @media print {
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              line-height: 1.6;
+            }
               .bg-grey {
                 background-color: lightgrey !important;
               }
@@ -244,6 +249,21 @@ export class QirEditComponent {
               td:empty::after {
                 content: ".";
                 visibility:hidden;
+              }
+
+              
+              .print-pre {
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: inherit;
+                margin: 0;
+                padding: 4px;
+              }
+              .wrap-text {
+                word-wrap: break-word;
+                word-break: break-word;
+                white-space: pre-wrap;
+                max-width: 0;
               }
             }
 

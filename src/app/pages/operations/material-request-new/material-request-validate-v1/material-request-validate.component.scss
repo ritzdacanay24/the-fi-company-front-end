@@ -1,0 +1,12 @@
+/* Ensure SweetAlert appears above NgBootstrap modals */
+::ng-deep .swal-validation-modal {
+  z-index: 9999 !important;
+}
+
+::ng-deep .swal2-container {
+  z-index: 9999 !important;
+}
+
+::ng-deep .swal2-backdrop-show {
+  z-index: 9998 !important;
+}

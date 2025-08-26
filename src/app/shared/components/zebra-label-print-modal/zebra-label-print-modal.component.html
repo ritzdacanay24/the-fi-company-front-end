@@ -1,0 +1,98 @@
+<div class="modal-header">
+  <h6 class="modal-title">{{ title }}</h6>
+  <button type="button" class="btn-close" aria-label="Close" (click)="dismiss()"></button>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="form">
+    <!-- Serial Number Display -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <label class="form-label">Serial Number</label>
+        <div class="input-group">
+          <input type="text" class="form-control" [value]="serialNumber" readonly>
+          <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard(serialNumber)">
+            <i class="mdi mdi-content-copy"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Selection -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <label class="form-label">Label Template</label>
+        <select class="form-select" formControlName="templateId">
+          <option *ngFor="let template of zebraTemplates" [value]="template.id">
+            {{ template.name }} ({{ template.size }}) - {{ template.orientation }}
+          </option>
+        </select>
+        <div class="form-text">
+          <small>{{ getSelectedTemplate()?.description }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Options -->
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Quantity</label>
+        <input type="number" class="form-control" formControlName="quantity" min="1" max="100">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Part Number (Optional)</label>
+        <input type="text" class="form-control" formControlName="partNumber" placeholder="Enter part number">
+      </div>
+    </div>
+
+    <!-- Barcode Preview -->
+    <div class="row mb-3" *ngIf="showBarcode">
+      <div class="col-12">
+        <label class="form-label">Barcode Preview</label>
+        <div class="text-center p-3 border rounded bg-white">
+          <ngx-barcode6 
+            [bc-value]="serialNumber" 
+            [bc-display-value]="true" 
+            [bc-height]="50" 
+            [bc-width]="2"
+            [bc-font-size]="14" 
+            [bc-margin-left]="0" 
+            [bc-text-align]="'center'" 
+            [bc-background]="'white'">
+          </ngx-barcode6>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZPL Preview -->
+    <div class="row mb-3" *ngIf="showZplPreview">
+      <div class="col-12">
+        <label class="form-label">ZPL Preview</label>
+        <pre class="bg-light p-3 rounded small"><code>{{ getZplPreview() }}</code></pre>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal-footer">
+  <div class="btn-group me-auto">
+    <button type="button" class="btn btn-outline-info btn-sm" (click)="toggleBarcode()">
+      <i class="mdi mdi-barcode me-1"></i>{{ showBarcode ? 'Hide' : 'Show' }} Barcode
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="toggleZplPreview()">
+      <i class="mdi mdi-code-tags me-1"></i>{{ showZplPreview ? 'Hide' : 'Show' }} ZPL
+    </button>
+  </div>
+  
+  <div class="btn-group">
+    <button type="button" class="btn btn-outline-secondary" (click)="dismiss()">
+      <i class="mdi mdi-close me-1"></i>Cancel
+    </button>
+    <button type="button" class="btn btn-outline-primary" (click)="downloadZpl()">
+      <i class="mdi mdi-download me-1"></i>Download ZPL
+    </button>
+    <button type="button" class="btn btn-success" (click)="printLabel()">
+      <i class="mdi mdi-printer me-1"></i>Print {{ form.get('quantity')?.value || 1 }} Label(s)
+    </button>
+  </div>
+</div>

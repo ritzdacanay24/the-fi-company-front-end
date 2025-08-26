@@ -42,6 +42,12 @@ export class QirListComponent implements OnInit {
     private activatedRoute: ActivatedRoute
   ) {}
 
+  onCreate(){
+    this.router.navigate([NAVIGATION_ROUTE.CREATE], {
+      queryParamsHandling: "merge"
+    });
+  }
+
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
       this.dateFrom = params["dateFrom"] || this.dateFrom;

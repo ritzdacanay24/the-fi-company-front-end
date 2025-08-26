@@ -3,3 +3,38 @@
     color: #fff !important;
     border: var(--vz-border-width) solid var(--vz-input-border-custom) !important;
 }
+
+.offcanvas-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.offcanvas-footer {
+  margin-top: auto;
+}
+
+.btn-close-white {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.text-truncate {
+  max-width: 150px;
+}
+
+.badge {
+  font-size: 0.875rem;
+}
+
+.list-group-item {
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}

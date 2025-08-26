@@ -1,0 +1,59 @@
+<div class="quality-document-grid">
+  <!-- Quick Search -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <div class="input-group">
+        <span class="input-group-text">
+          <i class="mdi mdi-magnify"></i>
+        </span>
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Quick search in grid..."
+          (input)="onQuickFilterChanged($event)">
+        <button 
+          class="btn btn-outline-secondary" 
+          type="button"
+          (click)="clearFilters()"
+          title="Clear all filters">
+          <i class="mdi mdi-filter-remove"></i>
+        </button>
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <span class="text-muted">
+        Showing {{ documents.length }} documents
+      </span>
+    </div>
+  </div>
+
+  <!-- AG-Grid -->
+  <div class="grid-container" [class.loading]="loading">
+    <ag-grid-angular
+      #agGrid
+      style="width: 100%; height: 600px;"
+      class="ag-theme-alpine"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [rowData]="documents"
+      [rowSelection]="rowSelection"
+      [pagination]="pagination"
+      [paginationPageSize]="paginationPageSize"
+      [paginationPageSizeSelector]="paginationPageSizeSelector"
+      [animateRows]="true"
+      [rowHeight]="50"
+      [headerHeight]="40"
+      (gridReady)="onGridReady($event)"
+      (rowClicked)="onRowClicked($event)"
+      (selectionChanged)="onSelectionChanged($event)">
+    </ag-grid-angular>
+    
+    <!-- Loading Overlay -->
+    <div *ngIf="loading" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading documents...</span>
+      </div>
+      <p class="mt-2 text-muted">Loading documents...</p>
+    </div>
+  </div>
+</div>

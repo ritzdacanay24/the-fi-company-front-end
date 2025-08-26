@@ -1,0 +1,216 @@
+<div class="revision-workflow">
+  <!-- Header -->
+  <div *ngIf="selectedDocument" class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h5 class="mb-1">{{ selectedDocument.document_number }}</h5>
+      <p class="text-muted mb-0">{{ selectedDocument.title }}</p>
+    </div>
+    <button 
+      type="button" 
+      class="btn btn-primary"
+      (click)="toggleCreateForm()"
+      [disabled]="creating">
+      <i class="mdi mdi-plus me-1"></i>
+      New Revision
+    </button>
+  </div>
+
+  <!-- No Document Selected -->
+  <div *ngIf="!selectedDocument" class="text-center py-5">
+    <div class="mb-3">
+      <i class="mdi mdi-file-document-outline text-muted" style="font-size: 3rem;"></i>
+    </div>
+    <h6 class="text-muted">No Document Selected</h6>
+    <p class="text-muted">Select a document from the grid to view its revision history</p>
+  </div>
+
+  <!-- Create Revision Form -->
+  <div *ngIf="showCreateForm && selectedDocument" class="card mb-4">
+    <div class="card-header">
+      <h6 class="mb-0">
+        <i class="mdi mdi-plus-circle me-2"></i>
+        Create New Revision (Rev {{ getNextRevisionNumber() }})
+      </h6>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="createRevisionForm" (ngSubmit)="onCreateRevision()">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="revisionTitle" class="form-label">Revision Title *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="revisionTitle"
+                formControlName="title"
+                [class.is-invalid]="createRevisionForm.get('title')?.invalid && createRevisionForm.get('title')?.touched">
+              <div class="invalid-feedback">
+                Title is required
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="effectiveDate" class="form-label">Effective Date *</label>
+              <input 
+                type="date" 
+                class="form-control" 
+                id="effectiveDate"
+                formControlName="effective_date"
+                [class.is-invalid]="createRevisionForm.get('effective_date')?.invalid && createRevisionForm.get('effective_date')?.touched">
+              <div class="invalid-feedback">
+                Effective date is required
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label for="revisionDescription" class="form-label">Description</label>
+          <textarea 
+            class="form-control" 
+            id="revisionDescription"
+            rows="2"
+            formControlName="description"
+            placeholder="Optional description of this revision"></textarea>
+        </div>
+        
+        <div class="mb-3">
+          <label for="changeDescription" class="form-label">Change Description *</label>
+          <textarea 
+            class="form-control" 
+            id="changeDescription"
+            rows="3"
+            formControlName="change_description"
+            placeholder="Describe what changes were made in this revision"
+            [class.is-invalid]="createRevisionForm.get('change_description')?.invalid && createRevisionForm.get('change_description')?.touched"></textarea>
+          <div class="invalid-feedback">
+            Change description is required
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-end gap-2">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="toggleCreateForm()">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="creating || createRevisionForm.invalid">
+            <span *ngIf="creating" class="spinner-border spinner-border-sm me-1"></span>
+            {{ creating ? 'Creating...' : 'Create Revision' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Revision History -->
+  <div *ngIf="selectedDocument && documentRevisions.length > 0">
+    <h6 class="mb-3">
+      <i class="mdi mdi-history me-2"></i>
+      Revision History ({{ documentRevisions.length }})
+    </h6>
+    
+    <div class="revision-timeline">
+      <div 
+        *ngFor="let revision of documentRevisions; trackBy: trackByRevisionId" 
+        class="revision-item"
+        [class.current-revision]="isCurrentRevision(revision)">
+        
+        <div class="card">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <!-- Revision Info -->
+              <div class="col-lg-6 col-md-5">
+                <div class="d-flex align-items-start">
+                  <div class="revision-badge me-3">
+                    <span class="badge bg-primary">Rev {{ revision.revision_number }}</span>
+                    <div *ngIf="isCurrentRevision(revision)" class="current-indicator">
+                      <i class="mdi mdi-star text-warning" title="Current revision"></i>
+                    </div>
+                  </div>
+                  <div>
+                    <h6 class="mb-1">{{ revision.title }}</h6>
+                    <p class="text-muted mb-1 small">{{ revision.change_description }}</p>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <span class="badge" [class]="getStatusBadgeClass(revision.status)">
+                        {{ getStatusText(revision.status) }}
+                      </span>
+                      <small class="text-muted">
+                        by {{ revision.created_by_name || 'Unknown' }} • 
+                        {{ revision.created_at | date:'short' }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Metadata -->
+              <div class="col-lg-3 col-md-4">
+                <div *ngIf="revision.effective_date" class="mb-1">
+                  <small class="text-muted d-block">Effective Date</small>
+                  <span class="small">{{ revision.effective_date | date:'mediumDate' }}</span>
+                </div>
+                <div *ngIf="revision.approved_by_name && revision.approved_at">
+                  <small class="text-muted d-block">Approved By</small>
+                  <span class="small">{{ revision.approved_by_name }}</span>
+                  <small class="text-muted d-block">{{ revision.approved_at | date:'short' }}</small>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="col-lg-3 col-md-3">
+                <div class="d-flex flex-lg-column flex-md-column flex-row gap-1 justify-content-end" role="group">
+                  <button 
+                    *ngFor="let actionItem of getRevisionActions(revision)"
+                    type="button" 
+                    class="btn btn-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                    [class]="actionItem.class"
+                    [disabled]="!actionItem.enabled"
+                    (click)="actionItem.action === 'download' ? onDownloadRevision(revision) : onRevisionAction(actionItem.action, revision)"
+                    [title]="actionItem.label"
+                    style="min-height: 32px; white-space: nowrap;">
+                    <i class="mdi me-1" [class]="actionItem.icon"></i>
+                    <span class="d-none d-sm-inline">{{ actionItem.label }}</span>
+                    <span class="d-sm-none">{{ actionItem.shortLabel || actionItem.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Additional Details (if any) -->
+            <div *ngIf="revision.description" class="row mt-2">
+              <div class="col-12">
+                <div class="alert alert-light py-2 mb-0">
+                  <small>
+                    <strong>Description:</strong> {{ revision.description }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Revisions -->
+  <div *ngIf="selectedDocument && documentRevisions.length === 0" class="text-center py-4">
+    <div class="mb-3">
+      <i class="mdi mdi-history text-muted" style="font-size: 2.5rem;"></i>
+    </div>
+    <h6 class="text-muted">No Revisions Found</h6>
+    <p class="text-muted">This document doesn't have any revisions yet.</p>
+    <button 
+      type="button" 
+      class="btn btn-primary btn-sm"
+      (click)="toggleCreateForm()">
+      <i class="mdi mdi-plus me-1"></i>
+      Create First Revision
+    </button>
+  </div>
+</div>

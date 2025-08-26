@@ -1,0 +1,228 @@
+.revision-workflow {
+  .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.2s ease;
+    
+    &:hover {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  }
+  
+  .revision-timeline {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--bs-primary), var(--bs-light));
+      z-index: 1;
+    }
+  }
+  
+  .revision-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+    margin-left: 40px;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: -30px;
+      top: 20px;
+      width: 12px;
+      height: 12px;
+      background: var(--bs-light);
+      border: 3px solid var(--bs-primary);
+      border-radius: 50%;
+      z-index: 2;
+    }
+    
+    &.current-revision {
+      .card {
+        border-left: 4px solid var(--bs-success);
+        background: rgba(25, 135, 84, 0.05);
+      }
+      
+      &::before {
+        background: var(--bs-success);
+        border-color: var(--bs-success);
+      }
+    }
+    
+    // Action buttons styling
+    .btn {
+      min-width: 90px;
+      font-size: 0.8rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      .mdi {
+        font-size: 1rem;
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      }
+      
+      // Better button spacing in flex column
+      & + .btn {
+        margin-top: 0.25rem;
+      }
+      
+      // Specific button style improvements
+      &.btn-outline-primary:hover {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+      }
+      
+      &.btn-outline-success:hover {
+        background-color: var(--bs-success);
+        border-color: var(--bs-success);
+        color: white;
+      }
+      
+      &.btn-outline-danger:hover {
+        background-color: var(--bs-danger);
+        border-color: var(--bs-danger);
+        color: white;
+      }
+      
+      &.btn-outline-warning:hover {
+        background-color: var(--bs-warning);
+        border-color: var(--bs-warning);
+        color: var(--bs-dark);
+      }
+    }
+    
+    // Responsive adjustments for action buttons
+    @media (max-width: 768px) {
+      .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        min-width: 70px;
+        
+        .mdi {
+          font-size: 0.9rem;
+        }
+      }
+      
+      // Stack buttons horizontally on mobile
+      .d-flex.flex-lg-column {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        gap: 0.25rem !important;
+        
+        .btn {
+          flex: 1;
+          min-width: unset;
+          
+          & + .btn {
+            margin-top: 0;
+          }
+        }
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        min-width: 60px;
+        
+        .mdi {
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+      
+  .revision-badge {
+    position: relative;
+    
+    .current-indicator {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: white;
+      border-radius: 50%;
+      padding: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  }
+  
+  .form-control, .form-select {
+    font-size: 0.875rem;
+    
+    &.is-invalid {
+      border-color: var(--bs-danger);
+      box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+  }
+  
+  .invalid-feedback {
+    font-size: 0.75rem;
+  }
+  
+  .alert-light {
+    background-color: rgba(248, 249, 250, 0.8);
+    border: 1px solid rgba(222, 226, 230, 0.5);
+  }
+  
+  // Animation for current revision indicator
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(25, 135, 84, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+    }
+  }
+  
+  // Loading state
+  .spinner-border-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+  
+  // Badge improvements
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .revision-timeline {
+      margin-left: -20px;
+      
+      &::before {
+        display: none;
+      }
+    }
+    
+    .revision-item {
+      margin-left: 0;
+      
+      &::before {
+        display: none;
+      }
+    }
+  }
+}

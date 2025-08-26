@@ -2,8 +2,13 @@
 
   <div class="mb-3">
     <label class="form-label">AGS Serial #</label>
-    <input class="form-control" type="text" formControlName="generated_SG_asset"
-      [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter AGS Serial #" />
+    <div class="input-group">
+      <input class="form-control" type="text" formControlName="generated_SG_asset"
+        [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter AGS Serial #" />
+      <button class="btn btn-outline-primary" type="button" (click)="openSerialNumberGenerator()">
+        <i class="mdi mdi-refresh me-1"></i>Generate
+      </button>
+    </div>
     <small>If AGS serial # is blank, the serial # will automatically generate.</small>
   </div>
 
@@ -20,8 +25,13 @@
 
   <div class="mb-3">
     <label class="form-label">Serial number</label>
-    <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
-      [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+    <div class="input-group">
+      <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
+        [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+      <button class="btn btn-outline-primary" type="button" (click)="openSerialNumberGenerator('serialNumber')">
+        <i class="mdi mdi-refresh me-1"></i>Generate
+      </button>
+    </div>
   </div>
 
   <div class="mb-3">

@@ -1,47 +1,158 @@
-<div class="modal-header mb-0 pb-0">
-    <h4 class="modal-title" id="modal-basic-title">Signature</h4>
+<div class="modal-header bg-secondary bg-gradient text-white position-relative overflow-hidden p-4"
+     style="border-radius: 16px 16px 0 0;">
+  <!-- Background Pattern -->
+  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+    <i class="ri-calculator-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  </div>
+  
+  <div class="d-flex align-items-center position-relative">
+    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+          style="width: 2.5rem; height: 2.5rem;">
+      <i class="ri-calculator-line fs-4 text-white"></i>
+    </span>
+    <div>
+      <h4 class="mb-1 fw-bold text-white">
+        Billing Options
+      </h4>
+      <p class="text-white-50 mb-0">Select billing configuration and markup options</p>
+    </div>
+  </div>
 </div>
 
 <div class="modal-body">
-    <div class="mb-3">
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>billToCustomer</th>
-                    <th>markUpPercent</th>
-                    <th>gpmPercent</th>
-                    <th>selected</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let row of options">
-                    <td>{{row.name}}</td>
-                    <td>{{row.billToCustomer}}</td>
-                    <td>{{row.markUpPercent}}</td>
-                    <td>{{row.gpmPercent}}</td>
-                    <td>
-                        <div class="form-check">
-                            <input class="form-check-input"  type="radio"  name="sss" [(ngModel)]="row.selected" id="flexCheckDefault_{{row.name}}">
-                            <label class="form-check-label" for="flexCheckDefault_{{row.name}}">
-                            </label>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-
-        </table>
-
-        
-        <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-          style="height: calc(100vh - 170px);" [rowData]="options">
-        </ag-grid-angular>
-
+  <!-- Instructions Alert -->
+  <div class="alert alert-info border-0 mb-4">
+    <div class="d-flex align-items-start">
+      <i class="ri-information-line fs-5 me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-2">Billing Configuration</h6>
+        <p class="mb-0">Select the appropriate billing option with markup percentage and customer billing amount. Changes will be applied to the current ticket.</p>
+      </div>
     </div>
+  </div>
+
+  <!-- Billing Options Table -->
+  <div class="mb-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+           style="width: 2.5rem; height: 2.5rem;">
+        <i class="ri-settings-3-line text-primary"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 text-primary fw-semibold">Billing Options</h5>
+        <small class="text-muted">Choose the billing configuration that applies to this ticket</small>
+      </div>
+    </div>
+
+    <div class="table-responsive border border-primary border-opacity-25 rounded">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-primary">
+          <tr>
+            <th class="py-3">
+              <i class="ri-settings-line me-1"></i>Option
+            </th>
+            <th class="py-3">
+              <i class="ri-money-dollar-circle-line me-1"></i>Bill to Customer
+            </th>
+            <th class="py-3">
+              <i class="ri-percent-line me-1"></i>Markup %
+            </th>
+            <th class="py-3">
+              <i class="ri-bar-chart-line me-1"></i>GPM %
+            </th>
+            <th class="text-center py-3">
+              <i class="ri-checkbox-circle-line me-1"></i>Select
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of options; let i = index" 
+              [class.table-active]="row.selected"
+              style="cursor: pointer;"
+              (click)="row.selected = 1">
+            <td class="py-3">
+              <div class="d-flex align-items-center">
+                <span class="badge bg-primary me-2">{{i + 1}}</span>
+                <span class="fw-semibold">{{row.name}}</span>
+              </div>
+            </td>
+            <td class="py-3">
+              <span class="fw-bold text-success">{{row.billToCustomer}}</span>
+            </td>
+            <td class="py-3">
+              <span class="badge bg-info bg-opacity-10 text-info">{{row.markUpPercent}}</span>
+            </td>
+            <td class="py-3">
+              <span class="badge bg-warning bg-opacity-10 text-warning">{{row.gpmPercent}}</span>
+            </td>
+            <td class="text-center py-3">
+              <div class="form-check d-flex justify-content-center">
+                <input class="form-check-input" type="radio" name="billingOption" 
+                       [(ngModel)]="row.selected" 
+                       [value]="1"
+                       id="option_{{i}}">
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Advanced Grid View -->
+  <div class="mb-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+           style="width: 2.5rem; height: 2.5rem;">
+        <i class="ri-table-line text-secondary"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 text-secondary fw-semibold">Advanced Configuration</h5>
+        <small class="text-muted">Detailed grid view for advanced billing management</small>
+      </div>
+    </div>
+
+    <div class="border border-secondary border-opacity-25 rounded overflow-hidden">
+      <ag-grid-angular [gridOptions]="gridOptions" 
+                       class="ag-theme-quartz"
+                       style="height: calc(100vh - 400px);" 
+                       [rowData]="options">
+      </ag-grid-angular>
+    </div>
+  </div>
 </div>
 
-<div class="modal-footer">
-    <button (click)="dismiss()" type="button" class="btn btn-light me-3">Close</button>
-    <button (click)="onDelete()" type="button" class="btn btn-danger" *ngIf="id">Delete</button>
-    <button (click)="onSubmit()" type="button" class="btn btn-primary ms-auto">Save</button>
+<div class="modal-footer bg-light border-top">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <small class="text-muted">
+      <i class="ri-shield-check-line me-1"></i>
+      Billing configurations are automatically saved
+    </small>
+    <div class="d-flex gap-2">
+      <button (click)="dismiss()" type="button" class="btn btn-outline-secondary">
+        <i class="ri-close-line me-2"></i>Close
+      </button>
+      <button (click)="onDelete()" type="button" class="btn btn-outline-danger" *ngIf="id">
+        <i class="ri-delete-bin-line me-2"></i>Delete
+      </button>
+      <button (click)="onSubmit()" type="button" class="btn btn-primary">
+        <i class="ri-save-line me-2"></i>Save Configuration
+      </button>
+    </div>
+  </div>
 </div>
+
+<style>
+.table-active {
+  background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.form-check-input:checked {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+tbody tr:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+</style>

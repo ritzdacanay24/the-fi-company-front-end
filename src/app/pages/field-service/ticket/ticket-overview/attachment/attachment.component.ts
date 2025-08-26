@@ -127,4 +127,31 @@ export class AttachmentComponent implements OnInit {
     }
   }
 
+  // Helper methods for sidebar functionality
+  getAvailableFiles(): number {
+    return this.data?.filter(file => file.link).length || 0;
+  }
+
+  getRecentFiles(): any[] {
+    return this.data?.slice(-5).reverse() || [];
+  }
+
+  downloadAll(): void {
+    // Implement download all functionality
+    const availableFiles = this.data?.filter(file => file.link) || [];
+    availableFiles.forEach(file => {
+      if (file.link) {
+        window.open(file.link, '_blank');
+      }
+    });
+  }
+
+  deleteAll(): void {
+    if (!confirm('Are you sure you want to delete all attachments? This action cannot be undone.')) {
+      return;
+    }
+    // Implement delete all functionality
+    // this.api.deleteAllByWorkOrderId(this.workOrderId);
+  }
+
 }

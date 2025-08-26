@@ -1,0 +1,52 @@
+.stats-cards {
+  display: flex;
+  gap: 1rem;
+  
+  .stat-card {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    min-width: 80px;
+    border-left: 4px solid;
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    &.available {
+      border-left-color: #28a745;
+      .stat-number { color: #28a745; }
+    }
+    &.assigned {
+      border-left-color: #ffc107;
+      .stat-number { color: #e69500; }
+    }
+    &.used {
+      border-left-color: #6c757d;
+      .stat-number { color: #6c757d; }
+    }
+    &.total {
+      border-left-color: #007bff;
+      .stat-number { color: #007bff; }
+    }
+  }
+
+  @media (max-width: 768px) {
+    justify-content: space-between;
+    
+    .stat-card {
+      flex: 1;
+      min-width: auto;
+    }
+  }
+}

@@ -1,0 +1,356 @@
+<!-- Edit Mode Form -->
+<form [formGroup]="form" autocomplete="off" *ngIf="enableEdit">
+  <ng-container formGroupName="main">
+    <div class="row">
+      <div class="col mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.requestor')">Requestor</label>
+        <input type="text" class="form-control" name="requestor" formControlName="requestor"
+          placeholder="Enter your name" [ngClass]="{ 'is-invalid': submitted && f.requestor.errors }" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.assemblyNumber')">Assembly Number</label>
+        <input type="text" class="form-control" name="assemblyNumber" formControlName="assemblyNumber"
+          placeholder="Enter assembly number" [ngClass]="{ 'is-invalid': submitted && f.assemblyNumber.errors }" />
+      </div>
+      <div class="col-sm mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.dueDate')">Due Date</label>
+        <input type="date" class="form-control" name="dueDate" formControlName="dueDate" placeholder="Enter due date"
+          [ngClass]="{ 'is-invalid': submitted && f.dueDate.errors }" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.pickList')">Pick List</label>
+        <input type="text" class="form-control" name="pickList" formControlName="pickList"
+          placeholder="Enter pick list number" [ngClass]="{ 'is-invalid': submitted && f.pickList.errors }" />
+      </div>
+      <div class="col-sm mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.lineNumber')">Line Number</label>
+        <input type="text" class="form-control" name="lineNumber" formControlName="lineNumber"
+          placeholder="Enter line number" [ngClass]="{ 'is-invalid': submitted && f.lineNumber.errors }" />
+      </div>
+      <div class="col-sm mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.priority')">Priority</label>
+        <select class="form-select" formControlName="priority"
+          [ngClass]="{ 'is-invalid': submitted && f.priority.errors }">
+          <option *ngFor="let row of materialRequestForm.priorityOptions">{{row}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col mb-3">
+        <label class="form-label" [ngClass]="formValidator('main.specialInstructions')">Special Instructions</label>
+        <textarea type="text" class="form-control" name="specialInstructions" formControlName="specialInstructions"
+          placeholder="Enter any instructions" [ngClass]="{ 'is-invalid': submitted && f.specialInstructions.errors }"
+          rows="5"></textarea>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check form-switch form-switch-md">
+        <input class="form-check-input" type="checkbox" id="active" formControlName="active">
+        <label class="form-check-label" for="active">Active</label>
+      </div>
+    </div>
+  </ng-container>
+
+  <h4 #additional class="p-2 mt-2 mb-2 bg-light w-100 text-uppercase">
+    Line Details
+  </h4>
+
+  <div>
+    <p class="mb-1">
+      One &nbsp;<span class="text-primary"><u>PART NUMBER</u></span> &nbsp; and &nbsp;<span
+        class="text-success"><u>QTY</u></span> &nbsp;
+      per
+      line.
+    </p>
+
+    Example:
+    <ul class="list-unstyled">
+      <li><span class="text-primary"><u>EYE12794</u>&nbsp;&nbsp;</span> <span class="text-success"><u>25</u></span>
+      </li>
+      <li><span class="text-primary"><u>ELE-44581-424</u>&nbsp;&nbsp;</span> <span class="text-success"><u>3</u></span>
+      </li>
+      <li><span class="text-primary"><u>EYE12795</u>&nbsp;&nbsp;</span> <span class="text-success"><u>5</u></span></li>
+    </ul>
+
+    <ng-select [items]="materialRequestForm.reasonCategory" [searchable]="true" [(ngModel)]="reasonCode"
+      [ngModelOptions]="{standalone: true}" bindLabel="value" bindValue="value" placeholder="Select reason code"
+      [clearable]="true" [editableSearchTerm]="true" class="mb-3" [appendTo]="'body'">
+    </ng-select>
+
+    <div class="mb-3" style="overflow:auto">
+      <ace [config]="aceConfig" [mode]="'plain_text'" [theme]="aceTheme" [(value)]="value"
+        (textChanged)="onChange($event)" #editor class="border border-light mb-3" id="editor"></ace>
+    </div>
+    <button class="btn btn-primary" (click)="onValidate()" [disabled]="this.form?.disabled">Validate</button>
+  </div>
+
+  <div class="table-responsive text-nowrap">
+    <table class="table table-bordered" *ngIf="getDetails.length && this.form.value.main.pickedCompletedDate">
+      <thead>
+        <tr class="text-nowrap">
+          <th>Part #</th>
+          <th>Description</th>
+          <th>Reason</th>
+          <th class="text-end">Qty</th>
+          <th class="text-end">Qty Picked</th>
+          <th class="text-end">Shortage ID</th>
+          <th>Transaction</th>
+          <th>Account Code</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of getDetails.controls;">
+          <td>{{row.value.partNumber}}</td>
+          <td>{{row.value.description}}</td>
+          <td>{{row.value.reasonCode}}</td>
+          <td class="text-end">{{row.value.qty}}</td>
+          <td class="text-end">{{row.value.qtyPicked}}</td>
+          <td class="text-end"><a (click)="viewShortageId(row.value.shortage_id)"
+              class=" pointer link-primary">{{row.value.shortage_id}}</a></td>
+          <td>{{row.value.trType}}</td>
+          <td>{{row.value.ac_code}}</td>
+          <td>{{row.value.notes}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-container formGroupName="details" *ngIf="getDetails.length && !this.form.value.main.pickedCompletedDate">
+    <div class="table-responsive">
+      <table class="table align-middle table-bordered">
+        <thead>
+          <tr class="text-nowrap">
+            <th>Status</th>
+            <th>Part # <span class="text-danger">*</span></th>
+            <th>Reason <span class="text-danger">*</span></th>
+            <th>Qty <span class="text-danger">*</span></th>
+            <th>Available Qty</th>
+            <th *ngIf="id">Transaction</th>
+            <th *ngIf="id">Account Code</th>
+            <th>Comments</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
+          <tr class="p-0 m-0 align-middle text-center text-nowrap">
+            <td class="text-center h4">
+              <i *ngIf="!isLoading && !row.value.message && !row.value.isDuplicate"
+                class=" text-success ri-checkbox-circle-line"> </i>
+              <i *ngIf="!isLoading && row.value.message" class="text-danger text-center ri-error-warning-line"
+                title="Part number not found in QAD"></i>
+              <i *ngIf="!isLoading && row.value.isDuplicate" class="text-warning text-center ri-file-copy-line"
+                title="This a duplicate part number."></i>
+              <div class="spinner-border text-primary" role="status" *ngIf="isLoading">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </td>
+            <td style="min-width:200px">
+              <app-qad-part-search appendToBody="body" (notifyParent)="notifyParent($event, i, row)"
+                [value]="row.value.partNumber" [showLabel]="false" [virtualScroll]="false" [editableSearchTerm]="true"
+                [hideSelected]="false" [className]="'custom1'" [disabled]="form.disabled"
+                [ngClass]="{ 'is-invalid': isValidating && row.get('partNumber').errors }"></app-qad-part-search>
+            </td>
+            <td style="min-width:200px">
+              <ng-select [items]="materialRequestForm.reasonCategory" [searchable]="true" formControlName="reasonCode"
+                bindLabel="value" bindValue="value" placeholder="Select reason code" [clearable]="true"
+                [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': isValidating && row.get('reasonCode').errors }">
+              </ng-select>
+            </td>
+            <td style="min-width:100px">
+              <input type="text" class="form-control" name="qty" formControlName="qty" placeholder="Enter qty needed"
+                [ngClass]="{ 'is-invalid': isValidating && row.get('qty').errors }" />
+            </td>
+            <td style="min-width:100px" class="text-nowrap">
+              <input type="text" class="form-control" placeholder="Available Qty" readonly
+                [value]="row.value.availableQty" />
+            </td>
+            <td style="min-width:200px" *ngIf="id">
+              <ng-select [items]="materialRequestForm.transactionType" [searchable]="true" formControlName="trType"
+                bindLabel="TrType" bindValue="TrType" placeholder="Select transaction type" [clearable]="false"
+                [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': isValidating && row.get('trType').errors }">
+                <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                  <div>{{item.TrType}}</div>
+                  <div>{{item.Description}}</div>
+                </ng-template>
+              </ng-select>
+            </td>
+            <td style="min-width:200px" *ngIf="id">
+              <ng-select [items]="materialRequestForm.accountCodes" [searchable]="true" formControlName="ac_code"
+                bindLabel="ac_code" bindValue="ac_code" placeholder="Select account code" [clearable]="false"
+                [editableSearchTerm]="true" [ngClass]="{ 'is-invalid': isValidating && row.get('ac_code').errors }">
+                <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                  <div>{{item.ac_code}}</div>
+                  <div>{{item.ac_desc}}</div>
+                </ng-template>
+              </ng-select>
+            </td>
+            <td style="min-width:200px">
+              <input type="text" class="form-control" name="notes" formControlName="notes"
+                placeholder="Enter any comments" />
+            </td>
+            <td>
+              <button class="btn btn-danger btn-sm" (click)="onDeleteItem(row.value, i)" [disabled]="form.disabled">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="10" class="py-2">
+              <p class="text-start text-truncate mb-0" title="{{row.value.description}}">
+                Description: <u>{{row.value.description || 'No Description Found'}}</u></p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</form>
+
+<!-- View-Only Summary -->
+<div *ngIf="!enableEdit" class="container-fluid">
+  <!-- Request Summary Card -->
+  <div class="card mb-4">
+    <div class="card-header bg-light">
+      <h5 class="card-title mb-0">
+        <i class="mdi mdi-file-document-outline me-2"></i>
+        Material Request Summary
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label text-muted small">Requestor</label>
+            <div class="fw-semibold">{{form.value.main?.requestor || 'Not specified'}}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small">Assembly Number</label>
+            <div class="fw-semibold">{{form.value.main?.assemblyNumber || 'Not specified'}}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small">Pick List</label>
+            <div class="fw-semibold">{{form.value.main?.pickList || 'Not specified'}}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small">Priority</label>
+            <span class="badge" [ngClass]="{
+              'bg-danger': form.value.main?.priority === 'High',
+              'bg-warning': form.value.main?.priority === 'Medium',
+              'bg-success': form.value.main?.priority === 'Low'
+            }">{{form.value.main?.priority || 'Not specified'}}</span>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label text-muted small">Due Date</label>
+            <div class="fw-semibold">{{form.value.main?.dueDate || 'Not specified'}}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small">Line Number</label>
+            <div class="fw-semibold">{{form.value.main?.lineNumber || 'Not specified'}}</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small">Status</label>
+            <span class="badge" [ngClass]="{
+              'bg-success': form.value.main?.active === 1,
+              'bg-secondary': form.value.main?.active !== 1
+            }">{{form.value.main?.active === 1 ? 'Active' : 'Inactive'}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="row" *ngIf="form.value.main?.specialInstructions">
+        <div class="col-12">
+          <div class="mb-3">
+            <label class="form-label text-muted small">Special Instructions</label>
+            <div class="bg-light p-3 rounded">{{form.value.main?.specialInstructions}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Items Summary Card -->
+  <div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        <i class="mdi mdi-format-list-bulleted me-2"></i>
+        Line Items ({{getDetails.length}})
+      </h5>
+      <div class="d-flex gap-2">
+        <span class="badge bg-info">{{getDetails.length}} Items</span>
+        <span class="badge bg-success">{{getTotalQuantity()}} Total Qty</span>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Part Number</th>
+              <th>Description</th>
+              <th>Reason Code</th>
+              <th class="text-end">Quantity</th>
+              <th class="text-end">Available Qty</th>
+              <th *ngIf="id">Transaction Type</th>
+              <th *ngIf="id">Account Code</th>
+              <th>Comments</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of getDetails.controls; let i = index">
+              <td>
+                <div class="fw-semibold text-primary">{{row.value.partNumber || 'Not specified'}}</div>
+              </td>
+              <td>
+                <div class="text-truncate" style="max-width: 250px;" [title]="row.value.description">
+                  {{row.value.description || 'No description available'}}
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{row.value.reasonCode || 'Not specified'}}</span>
+              </td>
+              <td class="text-end">
+                <span class="fw-semibold">{{row.value.qty || 0}}</span>
+              </td>
+              <td class="text-end">
+                <span class="text-muted">{{row.value.availableQty || 0}}</span>
+              </td>
+              <td *ngIf="id">
+                <span class="badge bg-info">{{row.value.trType || 'Not specified'}}</span>
+              </td>
+              <td *ngIf="id">
+                <span class="badge bg-warning">{{row.value.ac_code || 'Not specified'}}</span>
+              </td>
+              <td>
+                <div class="text-truncate" style="max-width: 200px;" [title]="row.value.notes">
+                  {{row.value.notes || 'No comments'}}
+                </div>
+              </td>
+              <td class="text-center">
+                <i *ngIf="!row.value.message && !row.value.isDuplicate" 
+                   class="mdi mdi-check-circle text-success fs-5" 
+                   title="Valid"></i>
+                <i *ngIf="row.value.message" 
+                   class="mdi mdi-alert-circle text-danger fs-5" 
+                   title="Part number not found in QAD"></i>
+                <i *ngIf="row.value.isDuplicate" 
+                   class="mdi mdi-content-duplicate text-warning fs-5" 
+                   title="Duplicate part number"></i>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

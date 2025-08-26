@@ -310,7 +310,6 @@ export class PrintTicketComponent implements OnInit {
               size: portrait;
             }
             @media print {
-
               tr td {
                 word-wrap: break-word;
                 overflow-wrap: break-word;
@@ -346,3 +345,4 @@ export class PrintTicketComponent implements OnInit {
   }
 
 }
+              

@@ -1,0 +1,32 @@
+/* Task Description Component Styles */
+.card {
+  transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.progress-bar {
+  transition: width 0.3s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1.5rem !important;
+  }
+  
+  h5 {
+    font-size: 1.1rem !important;
+  }
+  
+  .progress {
+    width: 150px !important;
+  }
+}

@@ -1,0 +1,21 @@
+/* Component specific styles */
+.modal-dialog {
+  max-width: 90vw;
+  margin: 1.75rem auto;
+}
+
+.modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .modal-dialog {
+    max-width: 95vw;
+    margin: 1rem auto;
+  }
+  
+  .modal-body {
+    max-height: 75vh;
+  }
+}

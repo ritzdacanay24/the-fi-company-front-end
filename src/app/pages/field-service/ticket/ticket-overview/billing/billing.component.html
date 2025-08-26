@@ -1,73 +1,212 @@
-<!-- <label class="btn btn-primary btn-sm mb-0" for="inputGroupFile013">Upload</label>
-<input type="file" class="form-control form-control" id="inputGroupFile013" [disabled]="loading"
-    (change)="onChange($event)" style="display:none">
-
-
-<table class="table table-borderd">
-    <thead>
-        <tr>
-            <td>File</td>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let row of data">
-            <td>{{row.fileName}}</td>
-            <td>
-                <button class="btn btn-light" (click)="view(row.id)">View</button>
-            </td>
-        </tr>
-    </tbody>
-</table> -->
-
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <label for="formGroupExampleInput" class="form-label">Sharepoint Link</label>
-                <div class="input-group mb-3">
-                    <span class="input-group-text pointer" id="basic-addon1" (click)="viewLink()">View Link</span>
-                    <textarea type="text" class="form-control" placeholder="Enter Link" rows="7"
-                        [(ngModel)]="this.data.review_link"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="formGroupExampleInput" class="form-label">Next Queue</label>
-                    <select class="form-select mb-3" [(ngModel)]="this.data.review_status">
-                        <option selected disabled value="null">--SELECT--</option>
-                        <option *ngFor="let row of ['Pending Review', 'Accounting', 'Completed']" [value]="row">
-                            {{row}}
-                        </option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="formGroupExampleInput" class="form-label">Approved/Denied</label>
-                    <select class="form-select mb-3" [(ngModel)]="this.data.review_approved_denied">
-                        <option selected disabled value="null">--SELECT--</option>
-                        <option *ngFor="let row of ['Approved', 'Denied']" [value]="row">
-                            {{row}}
-                        </option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="formGroupExampleInput" class="form-label">Billing Comments</label>
-                    <textarea type="text" class="form-control" placeholder="Enter billing comments" rows="8"
-                        [(ngModel)]="this.data.review_billing_comments"></textarea>
-                </div>
-
-                <div class="mb-3">
-                    <label for="formGroupExampleInput" class="form-label">Comments</label>
-                    <textarea type="text" class="form-control" placeholder="Enter comments" rows="8"
-                        [(ngModel)]="this.data.review_comments"></textarea>
-                </div>
-
-            </div>
-            <div class="card-footer">
-                <button class="btn btn-light" (click)="submit()">Submit</button>
-            </div>
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-8">
+    <div class="card border-0">
+      <div class="card-header bg-info bg-gradient text-white position-relative overflow-hidden p-4"
+           style="border-radius: 16px 16px 0 0;">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="ri-money-dollar-circle-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
         </div>
+        
+        <div class="d-flex align-items-center position-relative">
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                style="width: 2.5rem; height: 2.5rem;">
+            <i class="ri-money-dollar-circle-line fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">
+              Billing Management
+            </h4>
+            <p class="text-white-50 mb-0">Review and manage billing information and documentation</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Loading State -->
+        <div *ngIf="loading" class="text-center p-5">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted">Loading billing information. Please wait...</p>
+        </div>
+
+        <!-- Main Content -->
+        <div *ngIf="!loading">
+          <!-- Instructions Alert -->
+          <div class="alert alert-info border-0 mb-4">
+            <div class="d-flex align-items-start">
+              <i class="ri-information-line fs-5 me-3 mt-1"></i>
+              <div>
+                <h6 class="alert-heading mb-2">Billing Review Process</h6>
+                <p class="mb-0">Complete the billing review by adding SharePoint documentation links, updating queue status, and providing necessary comments for approval workflow.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SharePoint Link Section -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3">
+              <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                   style="width: 2.5rem; height: 2.5rem;">
+                <i class="ri-link text-primary"></i>
+              </div>
+              <div>
+                <h5 class="mb-0 text-primary fw-semibold">SharePoint Documentation</h5>
+                <small class="text-muted">Add links to billing documents and related files</small>
+              </div>
+            </div>
+
+            <div class="border border-primary border-opacity-25 rounded p-3">
+              <label for="sharepoint-link" class="form-label fw-semibold required">
+                <i class="mdi mdi-microsoft-sharepoint me-1"></i>SharePoint Link
+              </label>
+              
+              <div class="alert alert-warning border-0 mb-3 small">
+                <i class="mdi mdi-information me-1"></i>
+                <strong>Note:</strong> SharePoint typically blocks iframe embedding. The "View in Modal" may not work due to security policies. 
+                Use "Open in New Tab" for reliable access to SharePoint content.
+              </div>
+              
+              <div class="input-group mb-3">
+                <button class="btn btn-outline-primary" type="button" (click)="viewLink()" 
+                        [disabled]="!data?.review_link?.trim()"
+                        title="May not work due to SharePoint security policies">
+                  <i class="mdi mdi-eye me-1"></i>Try Modal View
+                </button>
+                <button class="btn btn-primary" type="button" (click)="openInNewTab()" 
+                        [disabled]="!data?.review_link?.trim()"
+                        title="Recommended - Opens in new tab">
+                  <i class="mdi mdi-open-in-new me-1"></i>Open in New Tab
+                </button>
+                <textarea class="form-control" 
+                          placeholder="Enter SharePoint link or embed code for billing documentation..." 
+                          rows="3"
+                          [(ngModel)]="data.review_link"
+                          id="sharepoint-link"></textarea>
+              </div>
+              <div class="form-text">
+                <i class="mdi mdi-lightbulb me-1"></i>
+                Paste the SharePoint link or iframe embed code. <strong>Recommendation:</strong> Use "Open in New Tab" as SharePoint 
+                usually blocks modal embedding for security reasons.
+              </div>
+            </div>
+          </div>
+
+          <!-- Status and Approval Section -->
+          <div class="row g-4">
+            <!-- Queue Status -->
+            <div class="col-md-6">
+              <div class="border border-success border-opacity-25 rounded p-3 h-100">
+                <label class="form-label fw-semibold required d-flex align-items-center">
+                  <i class="ri-route-line me-2 text-success"></i>Next Queue Status
+                </label>
+                <select class="form-select" [(ngModel)]="data.review_status">
+                  <option value="null" disabled>-- Select Queue Status --</option>
+                  <option *ngFor="let row of ['Pending Review', 'Accounting', 'Completed']" [value]="row">
+                    {{row}}
+                  </option>
+                </select>
+                <div class="form-text">
+                  <i class="ri-information-line me-1"></i>
+                  Set the next stage in the billing workflow process.
+                </div>
+              </div>
+            </div>
+
+            <!-- Approval Status -->
+            <div class="col-md-6">
+              <div class="border border-warning border-opacity-25 rounded p-3 h-100">
+                <label class="form-label fw-semibold required d-flex align-items-center">
+                  <i class="ri-shield-check-line me-2 text-warning"></i>Approval Decision
+                </label>
+                <select class="form-select" [(ngModel)]="data.review_approved_denied">
+                  <option value="null" disabled>-- Select Approval Status --</option>
+                  <option *ngFor="let row of ['Approved', 'Denied']" [value]="row">
+                    {{row}}
+                  </option>
+                </select>
+                <div class="form-text">
+                  <i class="ri-information-line me-1"></i>
+                  Final approval or denial decision for this billing review.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="row g-4 mt-2">
+            <!-- Billing Comments -->
+            <div class="col-md-6">
+              <div class="border border-info border-opacity-25 rounded p-3 h-100">
+                <label class="form-label fw-semibold d-flex align-items-center">
+                  <i class="ri-chat-3-line me-2 text-info"></i>Billing Comments
+                </label>
+                <textarea class="form-control" 
+                          placeholder="Enter specific billing-related comments, adjustments, or notes..." 
+                          rows="6"
+                          [(ngModel)]="data.review_billing_comments"></textarea>
+                <div class="form-text">
+                  <i class="ri-information-line me-1"></i>
+                  Comments specific to billing calculations, rates, or adjustments.
+                </div>
+              </div>
+            </div>
+
+            <!-- General Comments -->
+            <div class="col-md-6">
+              <div class="border border-secondary border-opacity-25 rounded p-3 h-100">
+                <label class="form-label fw-semibold d-flex align-items-center">
+                  <i class="ri-message-3-line me-2 text-secondary"></i>General Comments
+                </label>
+                <textarea class="form-control" 
+                          placeholder="Enter general review comments, observations, or additional notes..." 
+                          rows="6"
+                          [(ngModel)]="data.review_comments"></textarea>
+                <div class="form-text">
+                  <i class="ri-information-line me-1"></i>
+                  General comments about the review process or ticket overall.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="card-footer bg-light border-top">
+        <div class="d-flex align-items-center justify-content-between">
+          <small class="text-muted">
+            <i class="ri-shield-check-line me-1"></i>
+            All changes are saved when you submit the review
+          </small>
+          <button class="btn btn-primary" (click)="submit()" [disabled]="loading">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i class="ri-save-line me-2" *ngIf="!loading"></i>
+            {{loading ? 'Saving...' : 'Submit Review'}}
+          </button>
+        </div>
+      </div>
     </div>
-    <!-- <div class="col-lg-6">
-        <div [innerHTML]="this.data.review_link | safe"></div>
-    </div> -->
+  </div>
 </div>
+
+<style>
+.required::after {
+  content: " *";
+  color: #dc3545;
+  display: inline;
+  white-space: nowrap;
+}
+
+.required {
+  display: inline-block;
+  width: auto;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>

@@ -1,15 +1,60 @@
-<div class="modal-header text-center">
+<div class="modal-header text-center print-hide">
     <h5 class="modal-title- mb-0 text-center" id="modal-basic-title">
         The Fi Company QIR Response Form. (Internal and External Containment)
     </h5>
 </div>
 
-<div class="modal-body">
+<div class="modal-body" id="printableArea">
+    <!-- Print header that only shows when printing -->
+    <div class="print-only text-center mb-4">
+        <h3>The Fi Company QIR Response Form</h3>
+        <h5>(Internal and External Containment)</h5>
+        <hr>
+    </div>
+    
     <app-qir-response-form (setFormEmitter)="setFormElements($event)" [submitted]="submitted"
         [id]="id"></app-qir-response-form>
 </div>
 
-<div class="modal-footer">
+<div class="modal-footer print-hide">
     <button (click)="dismiss()" type="button" class="btn btn-light me-2 me-auto">Close</button>
+    <button (click)="onPrint()" type="button" class="btn btn-light me-2 me-auto">Print</button>
     <button (click)="onSubmit()" type="button" class="btn btn-primary">Update</button>
 </div>
+
+<!-- Print-specific styles -->
+<style>
+@media print {
+    .print-hide {
+        display: none !important;
+    }
+    
+    .print-only {
+        display: block !important;
+    }
+    
+    .modal-body {
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+    
+    body * {
+        visibility: hidden;
+    }
+    
+    #printableArea, #printableArea * {
+        visibility: visible;
+    }
+    
+    #printableArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+
+.print-only {
+    display: none;
+}
+</style>

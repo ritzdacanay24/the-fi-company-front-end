@@ -33,6 +33,14 @@
       </div>
     </div>
 
+    @if(!data?.salesOrderInfo.SO_CUST){
+      <div class="row">
+        <div class="col text-center align-self-center">
+            <h4>No customer information available. Please contact management for assistance.</h4>
+        </div>
+      </div>
+    }
+
     <div class="row mt-3">
       <div class="hr-sect bg-light">Work Order Information</div>
       <div class="col-lg-6 align-self-center">
@@ -55,6 +63,10 @@
         <div class="row">
           <div class="col-4 mb-2 fw-bolder text-end">Routing</div>
           <div class="col-8 mb-2"> {{data?.woInfo.WR_OP}} {{data?.woInfo.WR_DESC}} </div>
+        </div>
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">Sales/Job</div>
+          <div class="col-8 mb-2"> {{data?.woInfo.WO_SO_JOB}} </div>
         </div>
       </div>
 
@@ -83,6 +95,11 @@
         <div class="row">
           <div class="col-4 mb-2 fw-bolder text-end">Client / Part #</div>
           <div class="col-8 mb-2"> {{data?.bomInfo.Account_Vendor}} / {{data?.bomInfo.SKU_Number}} </div>
+        </div>
+
+        <div class="row">
+          <div class="col-4 mb-2 fw-bolder text-end">SO / Cust</div>
+          <div class="col-8 mb-2"> {{data?.salesOrderInfo.SOD_NBR}} / {{data?.salesOrderInfo.SO_CUST}} </div>
         </div>
 
       </div>

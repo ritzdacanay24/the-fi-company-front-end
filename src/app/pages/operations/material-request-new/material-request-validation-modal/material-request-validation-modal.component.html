@@ -1,0 +1,97 @@
+<div class="modal-header bg-warning bg-gradient border-bottom border-none position-relative overflow-hidden">
+  <div class="d-flex align-items-center w-100">
+    <!-- Icon and Title Section -->
+    <div class="d-flex align-items-center">
+      <span class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm"
+        style="width: 3rem; height: 3rem;">
+        <i class="mdi mdi-clipboard-check fs-3"></i>
+      </span>
+      <div>
+        <h4 class="modal-titlee mb-1 fw-bold">Material Request Validation</h4>
+        <div class="d-flex align-items-center gap-3">
+          <span class="badge bg-light text-dark fs-6 px-3 py-2">
+            <i class="mdi mdi-barcode me-1"></i>
+            MR #{{ requestId || 'Unknown' }}
+          </span>
+          <span class=" small">
+            <i class="mdi mdi-account-check-outline me-1"></i>
+            Review & Validate
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Section -->
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <button type="button" 
+              class="btn btn-outline-light btn-sm border-0 bg-light bg-opacity-10" 
+              style="backdrop-filter: blur(10px);">
+        <i class="mdi mdi-refresh me-1"></i>
+        Refresh
+      </button>
+      <button type="button" 
+              class="btn-close btn-close-white position-relative shadow-sm" 
+              style="z-index: 1;" 
+              (click)="onClose()" 
+              aria-label="Close">
+      </button>
+    </div>
+  </div>
+
+  <!-- Subtle decorative elements -->
+  <div class="position-absolute" style="top: -30px; right: -30px; opacity: 0.08;">
+    <i class="mdi mdi-clipboard-check" style="font-size: 10rem; transform: rotate(15deg);"></i>
+  </div>
+  <div class="position-absolute" style="bottom: -20px; left: -20px; opacity: 0.05;">
+    <i class="mdi mdi-account-group" style="font-size: 6rem; transform: rotate(-10deg);"></i>
+  </div>
+</div>
+
+<div class="modal-body p-3">
+  <app-material-request-validate 
+    *ngIf="request && requestId"
+    [id]="requestId"
+    [goBack]="noOpFunction"
+    #validateComponent>
+  </app-material-request-validate>
+  
+  <!-- Error message if no valid ID found -->
+  <div *ngIf="request && !requestId" class="alert alert-danger">
+    <h5 class="alert-heading">
+      <i class="mdi mdi-alert me-2"></i>Invalid Request Data
+    </h5>
+    <p class="mb-0">
+      Cannot load validation form: No valid request ID found in the provided data.
+    </p>
+    <hr>
+    <small class="mb-0">
+      Expected properties: id, requestId, materialRequestId, request_id, or material_request_id
+    </small>
+  </div>
+</div>
+
+<div class="modal-footer bg-light border-top d-flex justify-content-between">
+  <small class="text-muted">
+    <i class="mdi mdi-information me-1"></i>
+    Material request validation and approval workflow
+  </small>
+  <div>
+    <button type="button" class="btn btn-secondary me-2" (click)="onClose()">Close</button>
+    <button type="button" 
+            class="btn btn-primary me-2" 
+            (click)="onSaveRequest()"
+            [disabled]="!requestId || validateComponent?.isLoading || isSaving">
+      <i class="ri-save-line me-1" *ngIf="!validateComponent?.isLoading && !isSaving"></i>
+      <span class="spinner-border spinner-border-sm me-1" *ngIf="validateComponent?.isLoading || isSaving"></span>
+      Save Changes
+    </button>
+    <button type="button" 
+            class="btn btn-success" 
+            (click)="onValidateRequest()"
+            [disabled]="!requestId || validateComponent?.isLoading || isValidating">
+      <i class="ri-check-line me-1" *ngIf="!validateComponent?.isLoading && !isValidating"></i>
+      <span class="spinner-border spinner-border-sm me-1" *ngIf="validateComponent?.isLoading || isValidating"></span>
+      Validate & Approve
+    </button>
+  </div>
+</div>

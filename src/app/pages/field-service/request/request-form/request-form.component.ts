@@ -227,12 +227,12 @@ export class RequestFormComponent {
       return false;
     }
 
-    var names = [];
-    let data = localStorage.getItem('fs-request-form-cc-em-emails')
-    if (data) names = JSON.parse(data);
-    names.push(e)
+    // var names = [];
+    // let data = localStorage.getItem('fs-request-form-cc-em-emails')
+    // if (data) names = JSON.parse(data);
+    // names.push(e)
 
-    localStorage.setItem('fs-request-form-cc-em-emails', JSON.stringify(names))
+    // localStorage.setItem('fs-request-form-cc-em-emails', JSON.stringify(names))
 
     return validateEmail(e) ? e : false
   }

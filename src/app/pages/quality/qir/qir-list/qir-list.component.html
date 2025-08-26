@@ -36,6 +36,15 @@
         </div>
       </div>
       <div class="card-body p-0">
+        <div class="d-flex justify-content-between align-items-center py-1 px-3">
+          <div>
+            <h4 class="mb-1">Quality Issue Reports</h4>
+            <p class="text-muted mb-0">Track and manage product quality issues and their resolution status</p>
+          </div>
+          <button class="btn btn-primary" (click)="onCreate()">
+            <i class="mdi mdi-plus me-2"></i>Create QIR
+          </button>
+        </div>
         <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
           style="height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
         </ag-grid-angular>

@@ -2,7 +2,7 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { AccessGuard } from "@app/core/guards/access.guard";
-import { ChecklistComponent } from "./checklist/checklist.component";
+import { QuailtyControlPhotosComponent } from "./quailty-control-photos/quailty-control-photos.component";
 
 const routes: Routes = [
   {
@@ -12,7 +12,35 @@ const routes: Routes = [
   },
   {
     path: "checklist",
-    component: ChecklistComponent,
+    loadComponent: () => import('./checklist/checklist.component').then(c => c.ChecklistComponent),
+  },
+  {
+    path: "checklist-instance",
+    loadComponent: () => import('./checklist-instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
+  },
+  {
+    path: "checklist-audit",
+    loadComponent: () => import('./checklist-audit/checklist-audit.component').then(c => c.ChecklistAuditComponent),
+  },
+  {
+    path: "quality-control-photos",
+    component: QuailtyControlPhotosComponent,
+  },
+  {
+    path: "template-manager",
+    loadComponent: () => import('./checklist-template-manager/checklist-template-manager.component').then(c => c.ChecklistTemplateManagerComponent),
+  },
+  {
+    path: "template-editor",
+    loadComponent: () => import('./checklist-template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
+  },
+  {
+    path: "template-editor/:id",
+    loadComponent: () => import('./checklist-template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
+  },
+  {
+    path: "version-control",
+    loadComponent: () => import('./quality-version-control/quality-version-control.component').then(c => c.QualityVersionControlComponent),
   },
   {
     path: "overview",
@@ -49,6 +77,14 @@ const routes: Routes = [
     runGuardsAndResolvers: "always",
   },
   {
+    path: "igt",
+    loadChildren: () =>
+      import("./igt/igt-routing.module").then(
+        (m) => m.IgtRoutingModule
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
     path: "mrb",
     loadChildren: () =>
       import("./mrb/mrb-routing.module").then((m) => m.MrbRoutingModule),
@@ -73,6 +109,26 @@ const routes: Routes = [
     path: "mrb",
     loadChildren: () =>
       import("./mrb/mrb-routing.module").then((m) => m.MrbRoutingModule),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Serial Number Generator",
+    path: "serial-number-generator",
+    loadComponent: () =>
+      import("../tools/serial-number-demo/serial-number-demo.component").then(
+        (m) => m.SerialNumberDemoComponent
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Serial Number Report",
+    path: "serial-number-report",
+    loadComponent: () =>
+      import("../tools/serial-number-report/serial-number-report.component").then(
+        (m) => m.SerialNumberReportComponent
+      ),
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },

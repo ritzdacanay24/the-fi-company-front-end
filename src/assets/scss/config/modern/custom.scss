@@ -25,22 +25,82 @@ File: Custom Css File
 //     font-family: "IBM Plex Sans", sans-serif;
 // }
 
+.modal-dialog-scrollable .modal-content {
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: 25px !important;
+}
 
-.twostep-input .wrapper input{
+/* Bootstrap 5.3 text-light and text-dark utilities with theme adaptation */
+.text-light {
+  color: #f8f9fa !important;
+}
+
+.text-dark {
+  color: #212529 !important;
+}
+
+/* Dark mode adaptations */
+[data-bs-theme="dark"] {
+  .text-light {
+    color: #f8f9fa !important;
+  }
+
+  .text-dark {
+    color: #dee2e6 !important;
+    /* Lighter color for dark mode */
+  }
+}
+
+/* Light mode adaptations */
+[data-bs-theme="light"] {
+  .text-light {
+    color: #6c757d !important;
+    /* Darker color for light mode */
+  }
+
+  .text-dark {
+    color: #212529 !important;
+  }
+}
+
+/* Additional theme-aware text utilities */
+.text-theme-contrast {
+  color: var(--vz-body-color) !important;
+}
+
+[data-bs-theme="dark"] .text-theme-contrast {
+  color: #fff !important;
+}
+
+[data-bs-theme="light"] .text-theme-contrast {
+  color: #000 !important;
+}
+
+.text-theme-muted {
+  color: var(--vz-secondary-color) !important;
+}
+
+[data-bs-theme="dark"] .text-theme-muted {
+  color: #adb5bd !important;
+}
+
+[data-bs-theme="light"] .text-theme-muted {
+  color: #6c757d !important;
+}
+
+.twostep-input .wrapper input {
   background-color: --vz-light;
-  color:#000;
+  color: #000;
 }
 
 .line-through {
   text-decoration: line-through !important;
-  text-decoration-thickness:2px !important;
+  text-decoration-thickness: 2px !important;
   text-decoration-color: #fff !important;
 }
 
-.ng-select.ng-select-multiple
-  .ng-select-container
-  .ng-value-container
-  .ng-value.ng-value-disabled {
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-value.ng-value-disabled {
   background-color: $primary;
 }
 
@@ -140,10 +200,9 @@ File: Custom Css File
 }
 
 @media (min-width: 768px) {
-  :is(
-      [data-layout="vertical"],
-      [data-layout="semibox"]
-    )[data-sidebar-size="sm"] {
+
+  :is([data-layout="vertical"],
+    [data-layout="semibox"])[data-sidebar-size="sm"] {
     min-height: unset;
   }
 }
@@ -191,7 +250,7 @@ button.dropdown-item {
   margin-bottom: 1px;
 }
 
-body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
+body.swal2-shown:has(.show-blur)>[aria-hidden="true"] {
   filter: blur(10px);
 }
 
@@ -224,10 +283,7 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
   color: inherit;
 }
 
-.is-parent
-  > .navbar-menu
-  .navbar-nav
-  .nav-link[data-bs-toggle="collapse"]:after {
+.is-parent>.navbar-menu .navbar-nav .nav-link[data-bs-toggle="collapse"]:after {
   display: block;
   content: "\f0142";
   font-family: "Material Design Icons";
@@ -263,12 +319,12 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
   //     padding: 5px
   // }
 
-  .nav-item > .active.nav-link {
+  .nav-item>.active.nav-link {
     border-radius: 5px;
     margin: 0 8px;
   }
 
-  .nav-item:hover > .nav-link {
+  .nav-item:hover>.nav-link {
     border-radius: 5px;
   }
 
@@ -285,21 +341,18 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
   }
 }
 
-:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
-  .navbar-menu
-  .navbar-nav
-  .nav-link {
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-link {
   margin: 0px;
 }
 
 [data-sidebar="light"] {
   .app-menu {
-    .nav-item > .active.nav-link {
+    .nav-item>.active.nav-link {
       background-color: #eaeaf1;
       color: #000000c1;
     }
 
-    .nav-item:hover > .nav-link {
+    .nav-item:hover>.nav-link {
       background-color: #eaeaf1;
       color: #000000c1;
     }
@@ -321,12 +374,12 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
 
 [data-sidebar="dark"] {
   .app-menu {
-    .nav-item > .active.nav-link {
+    .nav-item>.active.nav-link {
       background-color: rgba(255, 255, 255, 0.05);
       color: #fff;
     }
 
-    .nav-item:hover > .nav-link {
+    .nav-item:hover>.nav-link {
       background-color: rgba(255, 255, 255, 0.05);
       color: #fff;
     }
@@ -379,19 +432,13 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
   font-style: italic;
 }
 
-.ng-select.ng-select-multiple
-  .ng-select-container
-  .ng-value-container
-  .ng-value {
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-value {
   color: #fff;
   background-color: #2271b1;
   border-radius: 5px;
 }
 
-.ng-select.ng-select-multiple.ng-select-disabled
-  > .ng-select-container
-  .ng-value-container
-  .ng-value {
+.ng-select.ng-select-multiple.ng-select-disabled>.ng-select-container .ng-value-container .ng-value {
   background-color: #2271b1;
   border: var(--vz-border-width) solid var(--vz-input-border-custom);
 }
@@ -429,6 +476,7 @@ body.swal2-shown:has(.show-blur) > [aria-hidden="true"] {
 
 .card {
   overflow: hidden;
+  border-radius: 25px;
 }
 
 .btn-gray {
@@ -493,6 +541,7 @@ label.required:after {
 }
 
 @media only screen and (max-width: 768px) {
+
   /* For mobile phones: */
   .field-service-modal-xxl .modal-lg {
     max-width: 100%;
@@ -553,18 +602,11 @@ ng-select {
 }
 
 /*ng select*/
-.ng-select.ng-select-multiple
-  .ng-select-container
-  .ng-value-container
-  .ng-input
-  > input {
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-input>input {
   color: var(--vz-body-color);
 }
 
-.ng-select.ng-select-multiple
-  .ng-select-container
-  .ng-value-container
-  .ng-placeholder {
+.ng-select.ng-select-multiple .ng-select-container .ng-value-container .ng-placeholder {
   top: 7px;
 }
 
@@ -581,15 +623,12 @@ ng-select {
   padding: 5px;
 }
 
-.ng-select
-  .ng-dropdown-panel
-  .ng-dropdown-panel-items
-  .ng-option.ng-option-marked {
+.ng-select .ng-dropdown-panel .ng-dropdown-panel-items .ng-option.ng-option-marked {
   background-color: rgba(var(--vz-light-rgb), 1) !important;
   //border-radius: 5px
 }
 
-.ng-select.ng-select-focused:not(.ng-select-opened) > .ng-select-container {
+.ng-select.ng-select-focused:not(.ng-select-opened)>.ng-select-container {
   border-color: var(--vz-primary-border-subtle);
   outline: 0 none;
   box-shadow: 0 0 1 0.25rem rgba(var(--vz-primary-rgb), 0.25);
@@ -609,10 +648,7 @@ ng-select {
   background-color: var(--#{$prefix}secondary-bg);
 }
 
-:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
-  .navbar-menu
-  .navbar-nav
-  .nav-link {
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-link {
   display: flex;
   align-items: center;
   padding: 0.625rem 25px;
@@ -621,17 +657,13 @@ ng-select {
   font-family: "IBM Plex Sans", sans-serif;
 }
 
-:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
-  .navbar-menu
-  .navbar-nav
-  .menu-dropdown {
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"] .navbar-menu .navbar-nav .menu-dropdown {
   display: none;
   height: auto !important;
   top: 37px;
 }
 
-:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
-  .navbar-menu {
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"] .navbar-menu {
   position: fixed;
 }
 
@@ -649,7 +681,7 @@ ng-select {
   margin-right: 10px;
 }
 
-.card-header > .d-flex,
+.card-header>.d-flex,
 .card-header {
   white-space: nowrap;
   overflow-y: hidden;
@@ -756,7 +788,7 @@ ng-select {
   height: 288px;
 }
 
-.backgroundTransparent .modal{
+.backgroundTransparent .modal {
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
@@ -767,18 +799,42 @@ ng-select {
   overflow: hidden !important;
   -webkit-overflow-scrolling: touch !important;
   outline: 0 !important;
-  width:auto !important;
+  width: auto !important;
 }
-.backgroundTransparent.d-block{
+
+.backgroundTransparent.d-block {
   pointer-events: none;
   background: url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7);
 
 }
-.backgroundTransparent .modal-content{
+
+.backgroundTransparent .modal-content {
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px !important;
 }
 
-.backgroundTransparent1 .cdk-drag-dragging{
+.backgroundTransparent1 .cdk-drag-dragging {
   cursor: grab;
-  
+
+}
+
+
+/* Fix ng-select dropdown positioning when appendToBody is used */
+body.modal-open > .ng-dropdown-panel.ng-select-bottom {
+  position: fixed !important;
+  z-index: 2000 !important;
+  /* Higher than modal z-index */
+}
+
+body.modal-open > .ng-dropdown-panel.ng-select-top {
+  position: fixed !important;
+  z-index: 2000 !important;
+}
+
+body.modal-open > div.dropdown{
+  z-index: 2200 !important;
+}
+
+.modal {
+    --vz-modal-border-radius: 25px !important;
+    --vz-modal-inner-border-radius: 25px !important;
 }

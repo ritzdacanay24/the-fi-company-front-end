@@ -1,0 +1,536 @@
+// Material Request Kanban Board Styles
+
+.material-request-kanban {
+  .kanban-header {
+    border: 1px solid var(--bs-border-color);
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+
+  .kanban-board {
+    .kanban-column {
+      .column-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        &.bg-primary {
+          background-color: #0d6efd !important;
+        }
+
+        &.bg-warning {
+          background-color: #ffc107 !important;
+          color: #000 !important;
+        }
+
+        &.bg-info {
+          background-color: #0dcaf0 !important;
+        }
+
+        &.bg-success {
+          background-color: #198754 !important;
+        }
+
+        &.bg-secondary {
+          background-color: #6c757d !important;
+        }
+
+        &.bg-dark {
+          background-color: #212529 !important;
+        }
+
+        .column-actions {
+          cursor: pointer;
+          opacity: 0.7;
+          transition: opacity 0.2s;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+
+      .column-body {
+        &::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: #f8f9fa;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #dee2e6;
+          border-radius: 3px;
+
+          &:hover {
+            background: #ced4da;
+          }
+        }
+      }
+    }
+
+    .kanban-card {
+      transition: all 0.2s ease;
+
+      &.cursor-pointer:hover {
+        transform: translateY(-2px);
+
+        .card {
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+      }
+
+      .card {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+
+        &.border-danger {
+          border-left-color: #dc3545 !important;
+
+          .card-body {
+            background: linear-gradient(90deg, rgba(220, 53, 69, 0.05) 0%, transparent 10%);
+          }
+        }
+
+        &.border-warning {
+          border-left-color: #ffc107 !important;
+
+          .card-body {
+            background: linear-gradient(90deg, rgba(255, 193, 7, 0.05) 0%, transparent 10%);
+          }
+        }
+
+        .card-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .btn-group-sm .btn {
+          padding: 0.25rem 0.4rem;
+          font-size: 0.75rem;
+        }
+      }
+    }
+  }
+
+  // Drag and drop styling
+  .cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 4px;
+    box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
+      0 8px 10px 1px rgba(0, 0, 0, 0.14),
+      0 3px 14px 2px rgba(0, 0, 0, 0.12);
+    transform: rotate(5deg);
+    opacity: 0.9;
+  }
+
+  .cdk-drag-placeholder {
+    opacity: 0.3;
+    border: 2px dashed #ccc;
+    background: #f8f9fa;
+
+    .card {
+      visibility: hidden;
+    }
+  }
+
+  .cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .cdk-drop-list {
+    min-height: 60px;
+
+    &.cdk-drop-list-dragging .cdk-drag {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  .cdk-drop-list-receiving {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 4px;
+  }
+}
+
+// Floating Action Button
+.fab-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1050;
+
+  .fab {
+    width: 56px;
+    height: 56px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    i {
+      font-size: 1.2rem;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 1200px) {
+  .material-request-kanban .kanban-board {
+    .col-md-2 {
+      min-width: 280px;
+    }
+
+    .row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 1rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .material-request-kanban {
+    .kanban-header {
+
+      .row>.col-md-4,
+      .row>.col-md-6,
+      .row>.col-md-2 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .col-md-6 .row {
+
+        .col-md-4,
+        .col-md-3,
+        .col-md-2 {
+          flex: 0 0 50%;
+          max-width: 50%;
+          margin-bottom: 0.5rem;
+        }
+      }
+    }
+
+    .kanban-board .col-md-2 {
+      min-width: 100%;
+      margin-bottom: 2rem;
+    }
+
+    .kanban-column .column-body {
+      max-height: 400px;
+    }
+  }
+
+  .fab-container {
+    bottom: 1rem;
+    right: 1rem;
+
+    .fab {
+      width: 48px;
+      height: 48px;
+
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .material-request-kanban {
+
+    .kanban-header,
+    .fab-container {
+      display: none;
+    }
+
+    .kanban-board {
+      .kanban-column {
+        page-break-inside: avoid;
+        break-inside: avoid;
+
+        .column-body {
+          max-height: none;
+          overflow: visible;
+        }
+      }
+
+      .kanban-card .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+}
+
+// Dark mode support (if your app supports it)
+@media (prefers-color-scheme: dark) {
+  .material-request-kanban {
+    .kanban-column {
+      .column-body {
+        background-color: #2d3748 !important;
+        border-color: #4a5568 !important;
+
+        &::-webkit-scrollbar-track {
+          background: #2d3748;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: #4a5568;
+
+          &:hover {
+            background: #718096;
+          }
+        }
+      }
+    }
+
+    .kanban-card .card {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #f9fafb !important;
+
+      .card-footer {
+        border-color: #4b5563 !important;
+      }
+    }
+
+    .cdk-drag-placeholder {
+      background: #374151;
+      border-color: #6b7280;
+    }
+  }
+}
+
+// Animation utilities
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tasks-board {
+  display: flex !important;
+  overflow-x: auto;
+  align-items: stretch;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.tasks-board .tasks-list {
+    min-width: 280px !important;
+    max-width: 320px !important;
+    flex: 0 0 auto;
+    margin-right: 0 !important;
+}
+
+// Validation Modal Styles
+::ng-deep .validation-modal {
+  z-index: 2000 !important;
+  
+  .modal-backdrop {
+    z-index: 1999 !important;
+  }
+  
+  .modal-dialog {
+    max-width: 95vw;
+    width: 95vw;
+    margin: 1rem auto;
+    z-index: 2001 !important;
+  }
+
+  .modal-content {
+    height: calc(100vh - 2rem);
+    border-radius: 8px;
+    z-index: 2002 !important;
+  }
+
+  .modal-body {
+    padding: 0;
+    overflow: hidden;
+    height: calc(100vh - 150px);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+
+    .modal-title {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .btn-close {
+      margin: 0;
+      padding: 0.5rem;
+    }
+  }
+
+  .modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+  }
+
+  // Ensure embedded validation component fills the modal
+  app-material-request-validate {
+    height: 100%;
+    display: block;
+    overflow: auto;
+  }
+}
+
+// Global modal backdrop fix
+::ng-deep .modal-backdrop {
+  z-index: 1999 !important;
+}
+
+::ng-deep .modal {
+  z-index: 2000 !important;
+}
+
+// Help Guide Styles
+.help-guide-section {
+    h6 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .process-step {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .stage-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        
+        .badge {
+            margin-right: 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        h6 {
+            margin: 0;
+            color: #0d6efd;
+            border: none;
+        }
+    }
+
+    .step-content {
+        margin-left: 1.5rem;
+        
+        ul {
+            margin-bottom: 0;
+            padding-left: 1.25rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+    }
+
+    .troubleshooting-item {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        
+        strong {
+            color: #856404;
+        }
+    }
+
+    .best-practice-item {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 6px;
+        
+        strong {
+            color: #0c5460;
+        }
+    }
+}
+
+// Offcanvas Scrolling Fix
+::ng-deep .help-guide-offcanvas {
+    width: 480px !important;
+    max-width: 90vw !important;
+    
+    .offcanvas-body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: calc(100vh - 80px) !important;
+        padding: 1.5rem !important;
+    }
+    
+    .offcanvas-header {
+        flex-shrink: 0 !important;
+        padding: 1rem 1.5rem !important;
+        border-bottom: 1px solid #dee2e6 !important;
+    }
+}

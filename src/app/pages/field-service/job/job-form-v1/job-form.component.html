@@ -1,0 +1,1314 @@
+<div class="row g-0">
+  <!-- Sidebar Navigation -->
+  <div class="col-xxl-3 col-lg-3 col-md-3 mb-3 d-none d-lg-block">
+    <div class="position-sticky" style="top: 2rem;">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold text-dark">
+            <i class="mdi mdi-map-outline me-2 text-primary"></i>Navigation
+          </h6>
+        </div>
+        <div class="list-group list-group-flush">
+          <button type="button" 
+                  class="list-group-item list-group-item-action d-flex align-items-center border-0 py-3" 
+                  *ngFor="let row of listOptions"
+                  [ngbScrollSpyItem]="[spy, row.ngbScrollSpyItem]" 
+                  [disabled]="!row.active"
+                  [class.active]="spy.active === row.ngbScrollSpyItem">
+            <i class="mdi me-3 text-primary" [ngClass]="row.icon" style="width: 20px;"></i>
+            <span class="fw-medium">{{row.name}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="col" ngbScrollSpy #spy="ngbScrollSpy" rootMargin="10px" [ngStyle]="ngStyle">
+    <div class="container-fluid px-4">
+      <form class="forms-sample" [formGroup]="form" autofocus="false" autocomplete="off" class="needs-validation" [class.was-validated]="submitted">
+
+        <!-- Section 1: Job Scheduling -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-1">
+          <div class="card-header bg-primary bg-opacity-10 border-bottom position-relative">
+            <h5 class="card-title mb-0 text-dark">
+              <i class="mdi mdi-calendar-clock me-2"></i>
+              Job Scheduling
+            </h5>
+            <small class="text-muted mt-1 d-block">
+              Set the initial scheduling parameters for this job
+            </small>
+            <!-- Circular badge positioned on the right -->
+            <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3">
+              <span class="bg-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 2.5rem; height: 2.5rem;">
+                <span class="fs-5 text-white fw-bold">1</span>
+              </span>
+            </div>
+            <!-- Background decorative icon -->
+            <div class="position-absolute top-50 end-0 translate-middle-y pe-4" style="opacity: 0.1; z-index: 1;">
+              <i class="mdi mdi-calendar-clock" style="font-size: 3rem;"></i>
+            </div>
+          </div>
+          <div class="card-body">
+            <ng-container formGroupName="job">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidator('request_date')">
+                    Start Date
+                  </label>
+                  <input type="text" 
+                         placeholder="Please Select..." 
+                         [mbscOptions]="myDatepickerOptions" 
+                         class="form-control"
+                         mbsc-datepicker 
+                         formControlName="request_date" 
+                         [ngClass]="formClass('request_date')" 
+                         readonly />
+                  <small class="text-muted">Select the preferred start date for this job</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidator('start_time')">
+                    Start Time
+                  </label>
+                  <input type="text" 
+                         placeholder="Please Select..." 
+                         [mbscOptions]="myDatepickerOptionsTime"
+                         class="form-control" 
+                         mbsc-datepicker 
+                         formControlName="start_time" 
+                         [ngClass]="formClass('start_time')"
+                         readonly />
+                  <small class="text-muted">Preferred start time for the job</small>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Section 2: Team Assignment -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-2">
+          <div class="card-header bg-success bg-opacity-10 border-bottom position-relative">
+            <h5 class="card-title mb-0 text-dark">
+              <i class="mdi mdi-account-group me-2"></i>
+              Team Assignment
+            </h5>
+            <small class="text-muted mt-1 d-block">
+              Assign technicians and specify lead roles
+            </small>
+            <!-- Circular badge positioned on the right -->
+            <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3">
+              <span class="bg-success rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 2.5rem; height: 2.5rem;">
+                <span class="fs-5 text-white fw-bold">2</span>
+              </span>
+            </div>
+            <!-- Background decorative icon -->
+            <div class="position-absolute top-50 end-0 translate-middle-y pe-4" style="opacity: 0.1; z-index: 1;">
+              <i class="mdi mdi-account-group" style="font-size: 3rem;"></i>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="text-muted mb-0 border-bottom pb-2 flex-grow-1">
+                <i class="mdi mdi-account-plus me-2"></i>Technician Information
+              </h6>
+              <button class="btn btn-outline-primary btn-sm" (click)="addMoreTechs(1)" type="button">
+                <i class="mdi mdi-plus me-1"></i>Add Tech
+              </button>
+            </div>
+
+            <ng-container formGroupName="resource">
+              <div *ngIf="!getTeams.length" class="text-center py-5">
+                <i class="mdi mdi-account-plus text-muted mb-3" style="font-size: 3rem;"></i>
+                <h6 class="text-muted">No technicians assigned</h6>
+                <p class="text-muted mb-3">Add technicians to work on this job</p>
+                <button class="btn btn-primary" (click)="addMoreTechs(1)" type="button">
+                  <i class="mdi mdi-plus me-1"></i>Add First Tech
+                </button>
+              </div>
+
+              <div *ngIf="getTeams.length">
+                <div class="mb-3" *ngFor="let row of getTeams.controls; let i=index" [formGroupName]="i">
+                  <div class="border border-success border-opacity-25 rounded p-3 bg-success bg-opacity-5">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <div class="d-flex align-items-center">
+                        <span class="badge bg-success me-2">Tech {{i+1}}</span>
+                        <div class="form-check" *ngIf="row.value.title !== 'Vendor'">
+                          <input type="checkbox" class="form-check-input" formControlName="lead_tech" id="lead_{{i}}">
+                          <label class="form-check-label fw-semibold text-success" for="lead_{{i}}">
+                            Lead Technician
+                          </label>
+                        </div>
+                      </div>
+                      <button type="button" 
+                              class="btn btn-outline-danger btn-sm" 
+                              (click)="removeTech(i, row.value)"
+                              title="Remove technician">
+                        <i class="mdi mdi-delete"></i>
+                      </button>
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-8 mb-3">
+                        <label class="form-label fw-semibold">Technician</label>
+                        <ng-select [items]="users$" 
+                                   [searchable]="true" 
+                                   formControlName="user" 
+                                   bindLabel="user"
+                                   bindValue="user" 
+                                   placeholder="Select technician" 
+                                   (change)="onTechChange($event, i)">
+                        </ng-select>
+                      </div>
+                      <div class="col-md-4 mb-3" *ngIf="row.value.title == 'Vendor'">
+                        <label class="form-label fw-semibold">Resource Code</label>
+                        <ng-select [items]="resource_code_options" 
+                                   [selectOnTab]="true" 
+                                   formControlName="contractor_code"
+                                   bindLabel="name" 
+                                   placeholder="Select code" 
+                                   bindValue="value">
+                        </ng-select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Section 3: Job Information -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-3">
+          <div class="card-header bg-info bg-opacity-10 border-bottom position-relative">
+            <h5 class="card-title mb-0 text-dark">
+              <i class="mdi mdi-briefcase me-2"></i>
+              Job Information
+            </h5>
+            <small class="text-muted mt-1 d-block">
+              Basic job details and service requirements
+            </small>
+            <!-- Circular badge positioned on the right -->
+            <div class="position-absolute top-0 end-0 h-100 d-flex align-items-center pe-3">
+              <span class="bg-info rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 2.5rem; height: 2.5rem;">
+                <span class="fs-5 text-white fw-bold">3</span>
+              </span>
+            </div>
+            <!-- Background decorative icon -->
+            <div class="position-absolute top-50 end-0 translate-middle-y pe-4" style="opacity: 0.1; z-index: 1;">
+              <i class="mdi mdi-briefcase" style="font-size: 3rem;"></i>
+            </div>
+          </div>
+          <div class="card-body">
+            <ng-container formGroupName="job">
+              <!-- Basic Information -->
+              <h6 class="text-muted mb-3 border-bottom pb-2">
+                <i class="mdi mdi-information me-2"></i>Basic Details
+              </h6>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('status')">Status</label>
+                  <ng-select [items]="statusType$" 
+                             [selectOnTab]="true" 
+                             formControlName="status" 
+                             bindLabel="name"
+                             placeholder="Select status" 
+                             bindValue="name" 
+                             (open)="getStatusType()" 
+                             [ngClass]="formClassJob('status')">
+                  </ng-select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('service_type')">Service Type</label>
+                  <ng-select [items]="serviceTypes$" 
+                             bindLabel="name" 
+                             bindValue="name" 
+                             formControlName="service_type"
+                             placeholder="Select service type" 
+                             [ngClass]="formClassJob('service_type')" 
+                             (open)="getServiceTypes()"
+                             [selectOnTab]="true">
+                  </ng-select>
+                </div>
+              </div>
+
+              <!-- Cancellation Details (conditional) -->
+              <div *ngIf="this.form?.value?.job?.status?.includes('Cancelled')" class="alert alert-danger border-0 mb-4">
+                <h6 class="alert-heading fw-bold">Cancellation Details</h6>
+                <div class="row mt-3">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold required">Cancellation Code</label>
+                    <select class="form-select" formControlName="customer_cancelled">
+                      <option value="">Select who cancelled</option>
+                      <option value="Customer">Customer</option>
+                      <option value="Eye-Fi">Eye-Fi</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold required">Cancellation Reason</label>
+                    <textarea class="form-control" 
+                              formControlName="cancellation_comments"
+                              [ngClass]="formClass('cancellation_comments')" 
+                              autosize 
+                              [minRows]="2"
+                              placeholder="Explain the reason for cancellation..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Request Details -->
+              <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+                <i class="mdi mdi-account-circle me-2"></i>Request Information
+              </h6>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('requested_by')">Requested By</label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="requested_by" 
+                         placeholder="Enter requestor name"
+                         [ngClass]="formClassJob('requested_by')">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('customer')">Company</label>
+                  <ng-select [items]="company$" 
+                             [selectOnTab]="true" 
+                             bindLabel="name" 
+                             bindValue="name"
+                             placeholder="Select company" 
+                             formControlName="customer" 
+                             [ngClass]="formClassJob('customer')"
+                             (open)="getCompany()">
+                  </ng-select>
+                </div>
+              </div>
+
+              <!-- Billing Information -->
+              <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+                <i class="mdi mdi-currency-usd me-2"></i>Billing Information
+              </h6>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('turnover_fsid')">Turnover ID</label>
+                  <app-job-search [showLabel]="false" 
+                                  [value]="form?.value?.job?.turnover_fsid"
+                                  (notifyParent)="getTurnover($event)" 
+                                  [ngClass]="formClassJob('turnover_fsid')">
+                  </app-job-search>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('billable')">Billable Status</label>
+                  <div class="d-flex gap-3 mt-2">
+                    <div class="form-check" *ngFor="let row of ['Yes', 'No']; let i = index">
+                      <input type="radio" 
+                             class="form-check-input" 
+                             name="billable" 
+                             id="billable{{i}}" 
+                             [value]="row"
+                             formControlName="billable" 
+                             [ngClass]="formClassJob('billable')">
+                      <label class="form-check-label fw-medium" for="billable{{i}}">{{row}}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Non-billable Code (conditional) -->
+              <div *ngIf="getJob.billable.value == 'No'" class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label fw-semibold required" [ngClass]="formValidatorJob('non_billable_code')">
+                    Non-Billable Code
+                  </label>
+                  <ng-select [items]="non_billable_code_options" 
+                             bindValue="code" 
+                             bindLabel="name"
+                             formControlName="non_billable_code" 
+                             [ngClass]="formClassJob('non_billable_code')"
+                             placeholder="Select non-billable reason">
+                    <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                      <div class="py-1">
+                        <div class="fw-semibold">{{item.name}}</div>
+                        <small class="text-muted">{{item.description}}</small>
+                      </div>
+                    </ng-template>
+                  </ng-select>
+                </div>
+              </div>
+
+              <!-- Responsibilities -->
+              <h6 class="text-muted mb-3 mt-4 border-bottom pb-2">
+                <i class="mdi mdi-signature me-2"></i>Responsibilities
+              </h6>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('sign_responsibility')">
+                    Sign Responsibility
+                  </label>
+                  <div class="d-flex gap-3 mt-2">
+                    <div class="form-check" *ngFor="let row of ['EyeFi', 'Customer', 'N/A']; let i = index">
+                      <input type="radio" 
+                             class="form-check-input" 
+                             name="sign_responsibility" 
+                             id="sign_responsibility{{i}}"
+                             [value]="row" 
+                             formControlName="sign_responsibility" 
+                             [ngClass]="formClassJob('sign_responsibility')">
+                      <label class="form-check-label fw-medium" for="sign_responsibility{{i}}">{{row}}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Location & Address Section -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-4">
+          <div class="card-header bg-warning bg-gradient text-white position-relative overflow-hidden p-4">
+            <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+              <i class="mdi mdi-map-marker" style="font-size: 6rem; transform: rotate(15deg);"></i>
+            </div>
+            <div class="d-flex align-items-center position-relative">
+              <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 2.5rem; height: 2.5rem;">
+                <i class="mdi mdi-map-marker fs-4 text-white"></i>
+              </span>
+              <div>
+                <h5 class="mb-1 fw-bold text-white">Location & Address</h5>
+                <p class="text-white-50 mb-0">Job location and customer contact details</p>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-4">
+            <ng-container formGroupName="job">
+              <!-- Property Selection -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold">
+                  <i class="mdi mdi-office-building me-1"></i>Property
+                </label>
+                <app-property-search (notifyParent)="notifyParent($event)" 
+                                     [value]="this.form.value.job.property"
+                                     [editableSearchTerm]="true" 
+                                     [ngClass]="{ 'is-invalid': submitted && getJob.property.errors }"
+                                     [required]="true">
+                </app-property-search>
+              </div>
+
+              <!-- License Information Alert -->
+              <div *ngIf="selectedProperty" class="alert alert-warning border-0 mb-4">
+                <h6 class="alert-heading fw-bold">
+                  <i class="mdi mdi-license me-1"></i>License Information
+                </h6>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <strong>Required:</strong> {{selectedProperty.license_required || 'Not specified'}}
+                  </div>
+                  <div class="col-md-6">
+                    <strong>Notes:</strong> {{selectedProperty.license_notes || 'No additional notes'}}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer Contact Information -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="mdi mdi-account me-1"></i>Onsite Customer Name
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Enter onsite contact name"
+                         formControlName="onsite_customer_name" 
+                         [ngClass]="formClassJob('onsite_customer_name')">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="mdi mdi-phone me-1"></i>Onsite Customer Phone
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="(555) 123-4567"
+                         formControlName="onsite_customer_phone_number" 
+                         [ngClass]="formClassJob('onsite_customer_phone_number')"
+                         prefix="+1" 
+                         mask="(000) 000-0000" 
+                         [showMaskTyped]="true">
+                </div>
+              </div>
+
+              <!-- Address Details -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('address1')">
+                    <i class="mdi mdi-home me-1"></i>Street Address
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="address1" 
+                         placeholder="Enter street address"
+                         autocomplete="new-address1" 
+                         [ngClass]="formClassJob('address1')">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('address2')">
+                    <i class="mdi mdi-office-building-outline me-1"></i>Suite/Unit
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="address2" 
+                         placeholder="Suite, Unit, Floor"
+                         autocomplete="new-address2" 
+                         [ngClass]="formClassJob('address2')">
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-5">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('city')">
+                    <i class="mdi mdi-city me-1"></i>City
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="city" 
+                         placeholder="Enter city" 
+                         autocomplete="off"
+                         [ngClass]="formClassJob('city')">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('state')">
+                    <i class="mdi mdi-map me-1"></i>State
+                  </label>
+                  <select class="form-select" 
+                          formControlName="state" 
+                          [ngClass]="formClassJob('state')" 
+                          autocomplete="off">
+                    <option disabled selected value="">Select state</option>
+                    <option [value]="row.abbreviation" *ngFor="let row of states">{{row.name}}</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('zip_code')">
+                    <i class="mdi mdi-mailbox me-1"></i>Zip Code
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="zip_code" 
+                         placeholder="12345"
+                         autocomplete="off" 
+                         [ngClass]="formClassJob('zip_code')">
+                </div>
+              </div>
+
+              <!-- Coordinates and State Info -->
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('fs_lat')">
+                    <i class="mdi mdi-crosshairs-gps me-1"></i>Latitude
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="fs_lat" 
+                         placeholder="40.7128"
+                         [ngClass]="formClassJob('fs_lat')">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('fs_lon')">
+                    <i class="mdi mdi-crosshairs-gps me-1"></i>Longitude
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="fs_lon" 
+                         placeholder="-74.0060"
+                         [ngClass]="formClassJob('fs_lon')">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold d-block" [ngClass]="formValidatorJob('out_of_state')">
+                    <i class="mdi mdi-map-marker-distance me-1"></i>Out Of State
+                  </label>
+                  <div class="d-flex gap-3 mt-2">
+                    <div class="form-check" *ngFor="let row of ['Yes', 'No']; let i = index">
+                      <input class="form-check-input" 
+                             type="radio" 
+                             name="out_of_state" 
+                             id="out_of_state{{i}}" 
+                             [value]="row"
+                             formControlName="out_of_state" 
+                             [ngClass]="formClassJob('out_of_state')">
+                      <label class="form-check-label fw-medium" for="out_of_state{{i}}">{{row}}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Job Specifications Section -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-5">
+          <div class="card-header bg-secondary bg-gradient text-white position-relative overflow-hidden p-4">
+            <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+              <i class="mdi mdi-cog" style="font-size: 6rem; transform: rotate(15deg);"></i>
+            </div>
+            <div class="d-flex align-items-center position-relative">
+              <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 2.5rem; height: 2.5rem;">
+                <i class="mdi mdi-cog fs-4 text-white"></i>
+              </span>
+              <div>
+                <h5 class="mb-1 fw-bold text-white">Job Specifications</h5>
+                <p class="text-white-50 mb-0">Technical requirements and job details</p>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-4">
+            <ng-container formGroupName="job">
+              <!-- Order Information -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('sales_order_number')">
+                    <i class="mdi mdi-file-document me-1"></i>Sales Order Number
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Enter sales order number"
+                         formControlName="sales_order_number" 
+                         [ngClass]="formClassJob('sales_order_number')">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('co_number')">
+                    <i class="mdi mdi-file-document-outline me-1"></i>Customer CO #
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Enter customer change order number" 
+                         formControlName="co_number"
+                         [ngClass]="formClassJob('co_number')">
+                </div>
+              </div>
+
+              <!-- Technical Specifications -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('platform')">
+                    <i class="mdi mdi-format-list-bulleted me-1"></i>Platform
+                  </label>
+                  <textarea autosize 
+                            [minRows]="2" 
+                            class="form-control" 
+                            formControlName="platform"
+                            placeholder="Describe the platform specifications..." 
+                            [ngClass]="formClassJob('platform')"></textarea>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('sign_type')">
+                    <i class="mdi mdi-settings me-1"></i>Configuration
+                  </label>
+                  <textarea autosize 
+                            [minRows]="2" 
+                            class="form-control" 
+                            formControlName="sign_type"
+                            placeholder="Describe the configuration..." 
+                            [ngClass]="formClassJob('sign_type')"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('sign_theme')">
+                    <i class="mdi mdi-palette me-1"></i>Sign/Theme
+                  </label>
+                  <textarea autosize 
+                            [minRows]="2" 
+                            class="form-control" 
+                            placeholder="Describe sign design and theme..."
+                            formControlName="sign_theme" 
+                            [ngClass]="formClassJob('sign_theme')"></textarea>
+                </div>
+              </div>
+
+              <!-- Requirements Checkboxes -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <div class="border border-primary border-opacity-25 rounded p-3 bg-primary bg-opacity-5">
+                    <h6 class="fw-bold text-primary mb-3">
+                      <i class="mdi mdi-checkbox-marked-circle-outline me-1"></i>Requirements
+                    </h6>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             [ngClass]="formClassJob('licensing_required')"
+                             formControlName="licensing_required" 
+                             id="licensing_required">
+                      <label class="form-check-label fw-medium" for="licensing_required">
+                        <i class="mdi mdi-license me-1"></i>Licensing Required
+                      </label>
+                    </div>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             [ngClass]="formClassJob('site_survey_requested')"
+                             formControlName="site_survey_requested" 
+                             id="site_survey_requested">
+                      <label class="form-check-label fw-medium" for="site_survey_requested">
+                        <i class="mdi mdi-map-search me-1"></i>Site Survey Requested
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="border border-warning border-opacity-25 rounded p-3 bg-warning bg-opacity-5">
+                    <h6 class="fw-bold text-warning mb-3">
+                      <i class="mdi mdi-tools me-1"></i>Installation Options
+                    </h6>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             [ngClass]="formClassJob('bolt_to_floor')"
+                             formControlName="bolt_to_floor" 
+                             id="bolt_to_floor">
+                      <label class="form-check-label fw-medium" for="bolt_to_floor">
+                        <i class="mdi mdi-screwdriver me-1"></i>Bolt to Floor
+                      </label>
+                    </div>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             [ngClass]="formClassJob('sign_jacks')"
+                             formControlName="sign_jacks" 
+                             id="sign_jacks">
+                      <label class="form-check-label fw-medium" for="sign_jacks">
+                        <i class="mdi mdi-hydraulic-oil-level me-1"></i>Sign Jacks
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Site Information -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="mdi mdi-arrow-up-bold me-1"></i>Ceiling Height
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="e.g., 12 feet" 
+                         formControlName="ceiling_height"
+                         [ngClass]="formClassJob('ceiling_height')">
+                </div>
+              </div>
+
+              <!-- Notes and Comments -->
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('notes')">
+                    <i class="mdi mdi-note-text me-1"></i>Tech Notes
+                  </label>
+                  <textarea autosize 
+                            [minRows]="3" 
+                            [value]="getJob.notes.value" 
+                            placeholder="Notes visible to technicians..."
+                            class="form-control" 
+                            formControlName="notes"></textarea>
+                  <div class="form-text">
+                    <i class="mdi mdi-information me-1"></i>These notes will be visible to the assigned technicians
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('comments')">
+                    <i class="mdi mdi-comment-text me-1"></i>Internal Comments
+                  </label>
+                  <textarea autosize 
+                            [minRows]="3" 
+                            [value]="getJob.comments.value" 
+                            placeholder="Internal comments and notes..."
+                            class="form-control" 
+                            formControlName="comments"></textarea>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-12">
+                  <label class="form-label fw-semibold" [ngClass]="formValidatorJob('compliance_license_notes')">
+                    <i class="mdi mdi-shield-check me-1"></i>Compliance/Licensing Notes
+                  </label>
+                  <textarea autosize 
+                            [minRows]="2" 
+                            [value]="getJob.compliance_license_notes.value"
+                            placeholder="Compliance and licensing requirements..."
+                            class="form-control" 
+                            formControlName="compliance_license_notes"></textarea>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Rates Section -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-6">
+          <div class="card-header bg-dark bg-gradient text-white position-relative overflow-hidden p-4">
+            <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+              <i class="mdi mdi-account-cash" style="font-size: 6rem; transform: rotate(15deg);"></i>
+            </div>
+            <div class="d-flex align-items-center position-relative">
+              <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 2.5rem; height: 2.5rem;">
+                <i class="mdi mdi-account-cash fs-4 text-white"></i>
+              </span>
+              <div>
+                <h5 class="mb-1 fw-bold text-white">Rates</h5>
+                <p class="text-white-50 mb-0">Billing rates and markup configuration</p>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-4">
+            <ng-container formGroupName="job">
+              <!-- Billing Rate Section -->
+              <div class="mb-4">
+                <h6 class="fw-bold text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+                  <i class="mdi mdi-currency-usd me-2"></i>Billing Rate
+                </h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold" [ngClass]="formValidatorJob('mark_up_percent')">
+                      <i class="mdi mdi-percent me-1"></i>Mark Up %
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter markup percentage" 
+                           formControlName="mark_up_percent"
+                           [ngClass]="formClassJob('mark_up_percent')">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold" [ngClass]="formValidatorJob('ef_hourly_rate')">
+                      <i class="mdi mdi-clock me-1"></i>Hourly Rate
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter hourly rate" 
+                           formControlName="ef_hourly_rate"
+                           [ngClass]="formClassJob('ef_hourly_rate')">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold" [ngClass]="formValidatorJob('ef_overtime_hourly_rate')">
+                      <i class="mdi mdi-clock-plus me-1"></i>OT Hourly Rate
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter overtime hourly rate"
+                           formControlName="ef_overtime_hourly_rate" 
+                           [ngClass]="formClassJob('ef_overtime_hourly_rate')">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Standard Tech Rate Section -->
+              <div class="mb-4">
+                <h6 class="fw-bold text-success mb-3 border-bottom border-success border-opacity-25 pb-2">
+                  <i class="mdi mdi-account-wrench me-2"></i>Standard Tech Rate
+                </h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold" [ngClass]="formValidatorJob('per_tech_rate')">
+                      <i class="mdi mdi-clock me-1"></i>Hourly Rate
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter hourly rate" 
+                           formControlName="per_tech_rate"
+                           [ngClass]="formClassJob('per_tech_rate')">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold" [ngClass]="formValidatorJob('per_tech_rate_ot')">
+                      <i class="mdi mdi-clock-plus me-1"></i>OT Hourly Rate
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter overtime hourly rate"
+                           formControlName="per_tech_rate_ot" 
+                           [ngClass]="formClassJob('per_tech_rate_ot')">
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Invoice Section (conditional) -->
+        <ng-template [ngIf]="id">
+          <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-7">
+            <div class="card-header bg-danger bg-gradient text-white position-relative overflow-hidden p-4">
+              <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+                <i class="mdi mdi-clipboard-text-play-outline" style="font-size: 6rem; transform: rotate(15deg);"></i>
+              </div>
+              <div class="d-flex align-items-center position-relative">
+                <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style="width: 2.5rem; height: 2.5rem;">
+                  <i class="mdi mdi-clipboard-text-play-outline fs-4 text-white"></i>
+                </span>
+                <div>
+                  <h5 class="mb-1 fw-bold text-white">Invoice Management</h5>
+                  <p class="text-white-50 mb-0">Billing and invoice details for completed jobs</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <ng-container formGroupName="job">
+                <!-- Paperwork Location -->
+                <div class="mb-4">
+                  <label class="form-label fw-semibold">
+                    <i class="mdi mdi-folder me-1"></i>Paperwork Location
+                  </label>
+                  <select class="form-select" formControlName="paper_work_location">
+                    <option selected disabled value="">Select paperwork location</option>
+                    <option *ngFor="let row of ['Field Service', 'Accounting', '3rd Party Contractors']">{{row}}</option>
+                  </select>
+                  <div class="form-text">
+                    <i class="mdi mdi-information me-1"></i>Specify where the job paperwork is located
+                  </div>
+                </div>
+
+                <!-- Vendor Information -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-cash me-1"></i>Vendor Cost
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter vendor cost" 
+                           formControlName="vendor_cost">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-receipt me-1"></i>Vendor Invoice Number
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter vendor invoice number"
+                           formControlName="vendor_inv_number">
+                  </div>
+                </div>
+
+                <!-- Invoice Details -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-currency-usd me-1"></i>Invoice Amount
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter invoice amount" 
+                           formControlName="invoice">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-file-document me-1"></i>Invoice Number
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Enter invoice number" 
+                           formControlName="invoice_number">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-calendar me-1"></i>Invoice Date
+                    </label>
+                    <input type="text" 
+                           placeholder="Select invoice date" 
+                           class="form-control" 
+                           bsDatepicker
+                           formControlName="invoice_date">
+                  </div>
+                </div>
+
+                <!-- Account Status -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="mdi mdi-account-check me-1"></i>Account Status
+                    </label>
+                    <select class="form-select" formControlName="acc_status">
+                      <option selected disabled value="">Select account status</option>
+                      <option *ngFor="let row of ['INVOICED']">{{row}}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Billing Options -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold d-block">
+                      <i class="mdi mdi-cash-multiple me-1"></i>Billable Flat Rate / PO
+                    </label>
+                    <div class="d-flex gap-3 mt-2">
+                      <div class="form-check" *ngFor="let row of ['Yes', 'No']">
+                        <input class="form-check-input" 
+                               type="radio" 
+                               name="billable_flat_rate_or_po"
+                               formControlName="billable_flat_rate_or_po" 
+                               [value]="row" 
+                               id="billable_flat_{{row}}">
+                        <label class="form-check-label fw-medium" for="billable_flat_{{row}}">{{row}}</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold d-block">
+                      <i class="mdi mdi-send me-1"></i>Contractor Inv Sent To AP
+                    </label>
+                    <div class="d-flex gap-3 mt-2">
+                      <div class="form-check" *ngFor="let row of ['Yes', 'No']">
+                        <input class="form-check-input" 
+                               type="radio" 
+                               name="contractor_inv_sent_to_ap"
+                               formControlName="contractor_inv_sent_to_ap" 
+                               [value]="row" 
+                               id="contractor_{{row}}">
+                        <label class="form-check-label fw-medium" for="contractor_{{row}}">{{row}}</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Period -->
+                <div class="mb-4">
+                  <label class="form-label fw-semibold d-block">
+                    <i class="mdi mdi-calendar-range me-1"></i>Period
+                  </label>
+                  <div class="d-flex gap-3 mt-2">
+                    <div class="form-check" *ngFor="let row of ['Yes', 'No']">
+                      <input class="form-check-input" 
+                             type="radio" 
+                             name="period" 
+                             formControlName="period" 
+                             [value]="row" 
+                             id="period_{{row}}">
+                      <label class="form-check-label fw-medium" for="period_{{row}}">{{row}}</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Invoice Notes -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    <i class="mdi mdi-note-text me-1"></i>Invoice Notes
+                  </label>
+                  <textarea class="form-control" 
+                            placeholder="Enter invoice notes and comments..." 
+                            formControlName="invoice_notes"
+                            autosize 
+                            [minRows]="3"></textarea>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Attachments Section (conditional) -->
+        <ng-template [ngIf]="id">
+          <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-8">
+            <div class="card-header bg-info bg-gradient text-white position-relative overflow-hidden p-4">
+              <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+                <i class="mdi mdi-paperclip" style="font-size: 6rem; transform: rotate(15deg);"></i>
+              </div>
+              <div class="d-flex align-items-center position-relative">
+                <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style="width: 2.5rem; height: 2.5rem;">
+                  <i class="mdi mdi-paperclip fs-4 text-white"></i>
+                </span>
+                <div>
+                  <h5 class="mb-1 fw-bold text-white">Attachments</h5>
+                  <p class="text-white-50 mb-0">Upload and manage job-related documents</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">
+                  <i class="mdi mdi-upload me-1"></i>Upload Files
+                </label>
+                <div class="input-group">
+                  <input #myInput 
+                         (change)="this.onFilechange($event)" 
+                         class="form-control" 
+                         type="file" 
+                         id="file" 
+                         multiple
+                         name="file">
+                  <span class="input-group-text">
+                    <i class="mdi mdi-file-document"></i>
+                  </span>
+                </div>
+                <div class="form-text">
+                  <i class="mdi mdi-information me-1"></i>Select multiple files to upload as job attachments
+                </div>
+              </div>
+
+              <div *ngIf="attachments?.length" class="border border-info border-opacity-25 rounded p-3">
+                <h6 class="fw-semibold text-info mb-3">
+                  <i class="mdi mdi-file-multiple me-1"></i>Uploaded Files ({{attachments.length}})
+                </h6>
+                <div class="list-group list-group-flush">
+                  <div class="list-group-item d-flex justify-content-between align-items-center border-0 py-2"
+                       *ngFor="let row of attachments; let i = index">
+                    <div class="d-flex align-items-center" (click)="viewAttachment(row.link)" style="cursor: pointer;">
+                      <i class="mdi mdi-file-document text-primary me-2"></i>
+                      <span class="fw-medium">{{row.fileName}}</span>
+                    </div>
+                    <button type="button" 
+                            class="btn btn-outline-danger btn-sm"
+                            (click)="onDeleteAttachment(row.id, i, attachments)"
+                            title="Delete attachment">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Receipts Section -->
+          <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-9">
+            <div class="card-header bg-success bg-gradient text-white position-relative overflow-hidden p-4">
+              <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+                <i class="mdi mdi-receipt" style="font-size: 6rem; transform: rotate(15deg);"></i>
+              </div>
+              <div class="d-flex align-items-center position-relative">
+                <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style="width: 2.5rem; height: 2.5rem;">
+                  <i class="mdi mdi-receipt fs-4 text-white"></i>
+                </span>
+                <div>
+                  <h5 class="mb-1 fw-bold text-white">Receipts</h5>
+                  <p class="text-white-50 mb-0">Upload and manage expense receipts</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">
+                  <i class="mdi mdi-camera me-1"></i>Upload Receipts
+                </label>
+                <div class="input-group">
+                  <input #myInput 
+                         (change)="this.onReceiptchange($event)" 
+                         class="form-control" 
+                         type="file" 
+                         id="receipt-file"
+                         multiple 
+                         name="file">
+                  <span class="input-group-text">
+                    <i class="mdi mdi-receipt"></i>
+                  </span>
+                </div>
+                <div class="form-text">
+                  <i class="mdi mdi-information me-1"></i>Upload photos or scans of expense receipts
+                </div>
+              </div>
+
+              <div *ngIf="receipts?.length" class="border border-success border-opacity-25 rounded p-3">
+                <h6 class="fw-semibold text-success mb-3">
+                  <i class="mdi mdi-receipt-text me-1"></i>Uploaded Receipts ({{receipts.length}})
+                </h6>
+                <div class="list-group list-group-flush">
+                  <div class="list-group-item d-flex justify-content-between align-items-center border-0 py-2"
+                       *ngFor="let row of receipts; let i = index">
+                    <div class="d-flex align-items-center" (click)="viewAttachment(row.link)" style="cursor: pointer;">
+                      <i class="mdi mdi-receipt text-success me-2"></i>
+                      <span class="fw-medium">{{row.fileName}}</span>
+                    </div>
+                    <button type="button" 
+                            class="btn btn-outline-danger btn-sm"
+                            (click)="onDeleteAttachment(row.id, i, receipts)"
+                            title="Delete receipt">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Job Status Section -->
+        <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-10">
+          <div class="card-header bg-secondary bg-gradient text-white position-relative overflow-hidden p-4">
+            <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+              <i class="mdi mdi-toggle-switch" style="font-size: 6rem; transform: rotate(15deg);"></i>
+            </div>
+            <div class="d-flex align-items-center position-relative">
+              <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 2.5rem; height: 2.5rem;">
+                <i class="mdi mdi-toggle-switch fs-4 text-white"></i>
+              </span>
+              <div>
+                <h5 class="mb-1 fw-bold text-white">Job Status</h5>
+                <p class="text-white-50 mb-0">Control job visibility and publication status</p>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-4">
+            <ng-container formGroupName="job">
+              <div class="row g-4">
+                <div class="col-md-6">
+                  <div class="border border-success border-opacity-25 rounded p-3 bg-success bg-opacity-5">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             id="active" 
+                             formControlName="active">
+                      <label class="form-check-label fw-semibold" for="active">
+                        <i class="mdi mdi-check-circle me-1"></i>Active Status
+                      </label>
+                    </div>
+                    <div class="form-text mt-2">
+                      <i class="mdi mdi-information me-1"></i>Enable to make this job active in the system
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="border border-info border-opacity-25 rounded p-3 bg-info bg-opacity-5">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             id="published" 
+                             formControlName="published">
+                      <label class="form-check-label fw-semibold" for="published">
+                        <i class="mdi mdi-publish me-1"></i>Published Status
+                      </label>
+                    </div>
+                    <div class="form-text mt-2">
+                      <i class="mdi mdi-information me-1"></i>Enable to publish this job for scheduling
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Trip Details Section (conditional) -->
+        <ng-template [ngIf]="id">
+          <div class="card border-0 shadow-sm mb-4" ngbScrollSpyFragment="items-trip-details">
+            <div class="card-header bg-warning bg-gradient text-white position-relative overflow-hidden p-4">
+              <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+                <i class="mdi mdi-map-marker-path" style="font-size: 6rem; transform: rotate(15deg);"></i>
+              </div>
+              <div class="d-flex align-items-center position-relative">
+                <span class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3"
+                      style="width: 2.5rem; height: 2.5rem;">
+                  <i class="mdi mdi-map-marker-path fs-4 text-white"></i>
+                </span>
+                <div>
+                  <h5 class="mb-1 fw-bold text-white">Trip Details</h5>
+                  <p class="text-white-50 mb-0">Travel and trip information for this job</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4">
+              <app-trip-details-summary 
+                [fsId]="id" 
+                [viewTripDetailById]="viewTripDetailById" 
+                (setDatData)="setDatData = $event" 
+                [disableAddEdit]="true" 
+                [useTravelId]="false">
+              </app-trip-details-summary>
+            </div>
+          </div>
+        </ng-template>
+
+        <!-- Alert for new jobs -->
+        <div *ngIf="!id" class="alert alert-primary border-0 mb-4">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information fs-5 me-3 mt-1"></i>
+            <div>
+              <h6 class="alert-heading mb-2">New Job Notice</h6>
+              <p class="mb-0">You will be able to attach documents, upload receipts, and manage trip details after you create the job.</p>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Clean, Professional Styling */
+.forms-sample .card {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+.forms-sample .card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+
+.forms-sample .card-header {
+  background-color: transparent !important;
+  border-radius: 0.5rem 0.5rem 0 0 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.forms-sample .card-title {
+  position: relative;
+  z-index: 2;
+}
+
+.forms-sample .form-check-input:checked {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.forms-sample .form-check-input:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.forms-sample .list-group-item.active {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+}
+
+.forms-sample .position-sticky {
+  z-index: 1020;
+}
+
+.forms-sample .badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.forms-sample .alert {
+  border-radius: 0.5rem;
+}
+
+.forms-sample .form-control:focus,
+.forms-sample .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.forms-sample .card + .card {
+  margin-top: 1.5rem;
+}
+
+.forms-sample .card-header:hover {
+  background-color: #f8f9fa !important;
+}
+
+.forms-sample .required::after {
+  content: " *";
+  color: #dc3545;
+}
+
+@media (max-width: 991.98px) {
+  .forms-sample .position-sticky {
+    position: relative !important;
+  }
+}
+</style>

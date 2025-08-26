@@ -10,7 +10,7 @@ import moment from "moment";
   imports: [SharedModule, FormsModule],
   selector: "app-revenue-by-customer",
   templateUrl: "./revenue-by-customer.component.html",
-  styleUrls: [],
+  styleUrls: ['./revenue-by-customer.component.scss'],
 })
 export class RevenueByCustomerComponent implements OnInit {
   constructor(private revenueService: RevenueService) { }
@@ -42,11 +42,13 @@ export class RevenueByCustomerComponent implements OnInit {
     }
   }
 
-  convert(value) {
-    let e = value.split("-");
+  convert(value: any): string {
+    if (!value) return '';
+    
+    let e = value.toString().split("-");
     if (e?.length == 2) {
       return moment()
-        .month(e[0] - 1)
+        .month(Number(e[0]) - 1)
         .format("MMM") + '-' + e[1];
     } else return value;
   }
@@ -61,16 +63,27 @@ export class RevenueByCustomerComponent implements OnInit {
   isLoadingSubData = false;
 
   total = 0;
-  getTotal(col) {
+  getTotal(col: string): number {
     this.total = 0;
-    this.data.forEach((row, value) => {
-      return this.getSumCol(row[col]);
+    if (!this.data || !col) return 0;
+    
+    this.data.forEach((row: any) => {
+      const value = row[col];
+      if (typeof value === 'number') {
+        this.total += value;
+      } else if (typeof value === 'string' && !isNaN(Number(value))) {
+        this.total += Number(value);
+      }
     });
     return this.total;
   }
 
-  getSumCol(score) {
-    this.total += score;
+  getSumCol(score: any): void {
+    if (typeof score === 'number') {
+      this.total += score;
+    } else if (typeof score === 'string' && !isNaN(Number(score))) {
+      this.total += Number(score);
+    }
   }
 
   getWeekDates(year, month) {
@@ -118,11 +131,64 @@ export class RevenueByCustomerComponent implements OnInit {
     return 0;
   };
 
-  sumSub(value) {
-    let total = 0;
-    return value.reduce((a, b) => {
-      return (total += b.value);
-    }, 0);
+  // sumSub(value) {
+  //   let total = 0;
+  //   return value.reduce((a, b) => {
+  //     return (total += b.value);
+  //   }, 0);
+  // }
+
+  // Updated calculation methods for new field names
+  sumSub(array) {
+    // Keeping for backward compatibility, maps to total
+    let result = 0;
+    for (let i = 0; i < array.length; i++) {
+      result += Number(array[i].total || array[i].value || 0);
+    }
+    return result;
+  }
+
+  sumSubTotal(array) {
+    let result = 0;
+    for (let i = 0; i < array.length; i++) {
+      result += Number(array[i].total || 0);
+    }
+    return result;
+  }
+
+  sumSubRevenueAfterTariff(array) {
+    let result = 0;
+    for (let i = 0; i < array.length; i++) {
+      result += Number(array[i].revenue_after_tariff || 0);
+    }
+    return result;
+  }
+
+  sumSubTariffAmount(array) {
+    let result = 0;
+    for (let i = 0; i < array.length; i++) {
+      result += Number(array[i].tariff_amount || 0);
+    }
+    return result;
+  }
+
+  sumSubNetRevenue(array) {
+    let result = 0;
+    for (let i = 0; i < array.length; i++) {
+      result += Number(array[i].net_revenue || 0);
+    }
+    return result;
+  }
+
+  // Legacy methods for backward compatibility
+  sumSubTariffMultiplier(array) {
+    // Map to revenue_after_tariff for backward compatibility
+    return this.sumSubRevenueAfterTariff(array);
+  }
+
+  sumSubTariffOnly(array) {
+    // Map to tariff_amount for backward compatibility
+    return this.sumSubTariffAmount(array);
   }
 
 
@@ -182,24 +248,27 @@ export class RevenueByCustomerComponent implements OnInit {
       ];
 
       for (let i = 0; i < eee.length; i++) {
-        eee[i].value = 0;
+        eee[i].total = 0;
+        eee[i].revenue_after_tariff = 0;
+        eee[i].tariff_amount = 0;
+        eee[i].net_revenue = 0;
+        
         for (let ii = 0; ii < this.data1.results.length; ii++) {
           const dateToCheck = moment(this.data1.results[ii].DATE1);
-
           const startDate = moment(eee[i].start);
           const endDate = moment(eee[i].end);
-
-          const isBetween = dateToCheck.isBetween(
-            startDate,
-            endDate,
-            "day",
-            "[)"
-          );
+          const isBetween = dateToCheck.isBetween(startDate, endDate, "day", "[)");
 
           if (isBetween) {
-            eee[i].value += this.data1.results[ii].TOTAL;
+            eee[i].total += this.data1.results[ii].TOTAL;
+            eee[i].revenue_after_tariff += this.data1.results[ii].REVENUE_AFTER_TARIFF;
+            eee[i].tariff_amount += this.data1.results[ii].TARIFF_AMOUNT;
+            eee[i].net_revenue += this.data1.results[ii].NET_REVENUE;
           }
         }
+        
+        // Keep legacy field for backward compatibility
+        eee[i].value = eee[i].total;
       }
 
       this.chart2 = eee;
@@ -213,7 +282,14 @@ export class RevenueByCustomerComponent implements OnInit {
             end: eee[f].end,
             weekNumber: eee[f].weekNumber,
             yearNumber: eee[f].yearNumber,
+            total: 0,
+            revenue_after_tariff: 0,
+            tariff_amount: 0,
+            net_revenue: 0,
+            // Legacy fields for backward compatibility
             value: 0,
+            balance_with_tariff_multiplier: 0,
+            balance_tariff_products_only: 0,
           });
         }
       }
@@ -235,7 +311,15 @@ export class RevenueByCustomerComponent implements OnInit {
               );
 
               if (isBetween && key == this.data1.results[ii].SO_CUST) {
-                test[key][f].value += this.data1.results[ii].TOTAL;
+                test[key][f].total += this.data1.results[ii].TOTAL;
+                test[key][f].revenue_after_tariff += this.data1.results[ii].REVENUE_AFTER_TARIFF;
+                test[key][f].tariff_amount += this.data1.results[ii].TARIFF_AMOUNT;
+                test[key][f].net_revenue += this.data1.results[ii].NET_REVENUE;
+                
+                // Keep legacy fields for backward compatibility
+                test[key][f].value = test[key][f].total;
+                test[key][f].balance_with_tariff_multiplier = test[key][f].revenue_after_tariff;
+                test[key][f].balance_tariff_products_only = test[key][f].tariff_amount;
               }
             }
           }
@@ -247,6 +331,40 @@ export class RevenueByCustomerComponent implements OnInit {
       this.isLoadingSubData = false;
     } catch (err) {
       this.isLoadingSubData = false;
+    }
+  }
+
+  // Updated customer classifications with detailed logic descriptions
+  private tariffMultiplierCustomers = ['AMEGAM', 'ZITRO', 'ECLIPSE']; // 9% tariff deduction
+  private tariffProductsOnlyCustomers = ['INTGAM', 'BLUBERI', 'BALTEC', 'EVIGAM', 'SONNY']; // TARIFF product handling
+
+  isTariffMultiplierCustomer(customerCode: string): boolean {
+    return this.tariffMultiplierCustomers.includes(customerCode?.toUpperCase());
+  }
+
+  isTariffProductsOnlyCustomer(customerCode: string): boolean {
+    return this.tariffProductsOnlyCustomers.includes(customerCode?.toUpperCase());
+  }
+
+  // New method to get detailed calculation logic description
+  getCalculationLogic(customerCode: string): string {
+    if (this.isTariffMultiplierCustomer(customerCode)) {
+      return `9.0x Tariff Multiplier: Revenue includes an additional 9% tariff deduction applied to the base amount. This affects both Total Revenue and Tariff Amount calculations.`;
+    } else if (this.isTariffProductsOnlyCustomer(customerCode)) {
+      return `Tariff Products Only: Only TARIFF category products are included in revenue calculations. Standard products are excluded from this customer's revenue totals.`;
+    } else {
+      return `Standard Calculation: All product categories are included with standard tariff handling. No special multipliers or product restrictions applied.`;
+    }
+  }
+
+  // New method to get calculation formula for display
+  getCalculationFormula(customerCode: string): string {
+    if (this.isTariffMultiplierCustomer(customerCode)) {
+      return `Total Revenue = Base Amount × 1.091 | Tariff Amount = -(Total Revenue × 0.09) | Net Revenue = Total Revenue - Tariff Amount`;
+    } else if (this.isTariffProductsOnlyCustomer(customerCode)) {
+      return `Total Revenue = TARIFF Products Only | Tariff Amount = -Standard Rate | Net Revenue = Total Revenue - Tariff Amount`;
+    } else {
+      return `Total Revenue = All Products | Tariff Amount = -Standard Rate | Net Revenue = Total Revenue - Tariff Amount`;
     }
   }
 }

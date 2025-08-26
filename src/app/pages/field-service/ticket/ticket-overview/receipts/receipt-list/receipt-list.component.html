@@ -1,4 +1,4 @@
-<div id="printDiv" class=" d-none d-print-block">
+<div id="printDiv" class="d-none d-print-block">
   <div *ngFor="let row of printedReceipts;let i = index">
     <div *ngIf="isPdf(row.fileName)">
       <p style="line-height:0.4">Type: {{row.name}}</p>
@@ -15,88 +15,381 @@
   </div>
 </div>
 
-
 <div class="row">
-  <div class="col-lg-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <!--<h4 class="float-start">Receipts</h4>-->
-
-        <ul ngbNav #nav="ngbNav" [destroyOnHide]="true" [(activeId)]="active" style="flex-wrap:nowrap;"
-          class="nav justify-content-end nav-tabs-custom rounded card-header-tabs border-bottom-0"
-          (navChange)="onNavChange($event)">
-          <li [ngbNavItem]="'Receipts'" class="nav-item">
-            <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab"><i class="mdi mdi-receipt-text"></i> Uploaded
-              Receipts</a>
-            <ng-template ngbNavContent>
-              <ag-grid-angular class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data"
-                style="width: 100%;height: calc(100vh - 395px);">
-              </ag-grid-angular>
-
-
-              <p class="text-center p-1" style="color:#909090;background-color:	#E8E8E8;margin-left: 0px;
-     margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
-            </ng-template>
-          </li>
-          <li [ngbNavItem]="'Transactions'" class="nav-item">
-            <a ngbNavLink class="nav-link" data-bs-toggle="tab" role="tab"> Transactions</a>
-            <ng-template ngbNavContent>
-
-              <ag-grid-angular class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="transactions"
-                style="width: 100%;height: calc(100vh - 395px);">
-              </ag-grid-angular>
-
-            </ng-template>
-          </li>
-        </ul>
-
-
-        <div class="form-check form-switch form-switch-md ms-auto me-3" *ngIf="active == 'Transactions'">
-          <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="showNoReceipts"
-            (change)="onClickShowNoReceipts()">
-          <label class="form-check-label" for="flexSwitchCheckDefault">Show no receipts found.</label>
+  <!-- Main Content - Receipts List -->
+  <div class="col-lg-8 col-xl-9">
+    <div class="card border-0">
+      <div class="card-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4"
+           style="border-radius: 16px 16px 0 0;">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="mdi mdi-receipt" style="font-size: 8rem; transform: rotate(15deg);"></i>
         </div>
-
-        <div class="d-grid gap-1 d-flex ms-auto m-0 p-0">
-
-          <div class="btn-group text-end" role="group" aria-label="Button group with nested dropdown"
-            *ngIf="active == 'Transactions'">
-            <div ngbDropdown class="d-none d-sm-block  m-0" placement="bottom-right" container="body">
-              <button type="button" class="btn btn-primary btn-sm" id="dropdownBasic1"
-                ngbDropdownToggle>Actions</button>
-              <div ngbDropdownMenu aria-labelledby="dropdownBasic1" container="body">
-                <button ngbDropdownItem class="py-2" (click)="sendEmail()">
-                  <i class="feather icon-printer me-2 text-primary"></i>Email missing receipts to techs
-                </button>
-              </div>
+        
+        <div class="d-flex align-items-center justify-content-between position-relative">
+          <div class="d-flex align-items-center">
+            <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                  style="width: 2.5rem; height: 2.5rem;">
+              <i class="mdi mdi-receipt fs-4 text-white"></i>
+            </span>
+            <div>
+              <h4 class="mb-1 fw-bold text-white">
+                Receipt Management
+              </h4>
+              <p class="text-white-50 mb-0">Upload, manage and track receipt documentation</p>
             </div>
           </div>
-
-          <button class="btn btn-warning  btn-sm m-0" *ngIf="active != 'Transactions'" (click)="create('Folder')">
-            Upload Receipt
-          </button>
-          <button class="btn btn-primary btn-sm m-0" (click)="printReceipts()">Print Receipts</button>
-
+          
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-warning btn-sm" (click)="create('Folder')">
+              <i class="mdi mdi-upload me-1"></i>Upload Receipt
+            </button>
+            <button class="btn btn-info btn-sm" (click)="openCopyFromTicketModal()">
+              <i class="ri-file-copy-line me-1"></i>Copy From Another Ticket
+            </button>
+            <button class="btn btn-light btn-sm" (click)="printReceipts()">
+              <i class="mdi mdi-printer me-1"></i>Print Receipts
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="card-body p-0 rounded-0" style="height: calc(100vh - 395px);overflow: auto;">
-        <!--<div *ngIf="loading" class="text-center p-3"> Loading data. Please wait.</div>-->
-        <div *ngIf="!data.length && !loading" class="text-center p-3"> No receipts found.</div>
+      <div class="card-body p-0">
+        <div style="height: calc(100vh - 300px);">
+          <div *ngIf="!data.length && !loading" class="text-center p-5">
+            <i class="mdi mdi-receipt text-muted mb-3" style="font-size: 3rem;"></i>
+            <h5 class="text-muted">No receipts found</h5>
+            <p class="text-muted mb-0">Upload your first receipt to get started.</p>
+          </div>
 
-        <div [ngbNavOutlet]="nav"></div>
+          <ag-grid-angular *ngIf="data.length && !loading" 
+                           class="ag-theme-quartz no-border" 
+                           [gridOptions]="gridOptions" 
+                           [rowData]="data"
+                           style="width: 100%; height: 100%;">
+          </ag-grid-angular>
 
-
+          <div *ngIf="data.length && !loading" class="text-center p-3 bg-light border-top">
+            <small class="text-muted">
+              <i class="mdi mdi-check me-1"></i>End of data
+            </small>
+          </div>
+        </div>
       </div>
 
-
-      <div class="card-footer text-start">
-        Total Amount:
-        <span class="text-success"> {{tripExpenseTotal | currency}}</span>
+      <div class="card-footer bg-light border-top">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="mdi mdi-currency-usd text-success me-2"></i>
+            <span class="fw-semibold">Total Amount:</span>
+            <span class="text-success fw-bold ms-2">{{tripExpenseTotal | currency}}</span>
+          </div>
+          <small class="text-muted">
+            <i class="mdi mdi-information me-1"></i>
+            Click on any row to view details
+          </small>
+        </div>
       </div>
-
     </div>
-
   </div>
 
+  <!-- Right Sidebar - Receipt Management Info -->
+  <div class="col-lg-4 col-xl-3">
+    <!-- Receipt Statistics -->
+    <div class="card border-0 mb-4">
+      <div class="card-header bg-light border-bottom">
+        <h6 class="card-title mb-0 text-muted">
+          <i class="ri-bar-chart-line me-2"></i>Receipt Statistics
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3 text-center">
+          <div class="col-6">
+            <div class="p-3 bg-primary bg-opacity-10 rounded">
+              <div class="fs-4 fw-bold text-primary">{{data?.length || 0}}</div>
+              <small class="text-muted">Total Receipts</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 bg-success bg-opacity-10 rounded">
+              <div class="fs-4 fw-bold text-success">{{tripExpenseTotal | currency:'USD':'symbol':'1.0-0'}}</div>
+              <small class="text-muted">Total Amount</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-3 pt-3 border-top">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">By Category:</small>
+          </div>
+          <div class="small" *ngFor="let category of getReceiptsByCategory()">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="text-muted">
+                <i class="mdi mdi-tag-multiple-outline me-1"></i>
+                {{category.name || 'Uncategorized'}}
+              </span>
+              <span>
+                <span class="text-success fw-semibold me-2">
+                  {{category.total | currency:'USD':'symbol':'1.0-0'}}
+                </span>
+                <span class="badge bg-secondary me-1">
+                  <i class="mdi mdi-receipt-outline"></i> {{category.count}}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Receipts -->
+    <div class="card border-0 mb-4" *ngIf="data?.length">
+      <div class="card-header bg-light border-bottom">
+        <h6 class="card-title mb-0 text-muted">
+          <i class="ri-time-line me-2"></i>Recent Activity
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="small">
+          <div *ngFor="let receipt of getRecentReceipts(); let i = index" class="d-flex align-items-center mb-2">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+                 style="width: 24px; height: 24px;">
+              <i class="ri-receipt-line text-primary" style="font-size: 12px;"></i>
+            </div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold text-truncate">{{receipt.vendor_name || 'Unknown Vendor'}}</div>
+              <div class="text-muted small">{{receipt.cost | currency}} • {{receipt.created_date | date:'short'}}</div>
+            </div>
+          </div>
+          
+          <div *ngIf="!data?.length" class="text-center text-muted py-3">
+            <i class="ri-inbox-line mb-2" style="font-size: 2rem;"></i>
+            <div>No receipts uploaded yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Tracking -->
+    <div class="card border-0 mb-4">
+      <div class="card-header bg-light border-bottom">
+        <h6 class="card-title mb-0 text-muted">
+          <i class="ri-pie-chart-line me-2"></i>Expense Tracking
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="small">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted">This Month:</span>
+              <span class="fw-bold text-primary">{{getMonthlyTotal() | currency}}</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-primary" [style.width.%]="getMonthlyProgress()"></div>
+            </div>
+            <small class="text-muted">{{getMonthlyProgress()}}% of typical monthly expenses</small>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted">Average Receipt:</span>
+            <span class="fw-bold">{{getAverageReceiptAmount() | currency}}</span>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Largest Receipt:</span>
+            <span class="fw-bold text-success">{{getLargestReceiptAmount() | currency}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card border-0">
+      <div class="card-header bg-light border-bottom">
+        <h6 class="card-title mb-0 text-muted">
+          <i class="ri-tools-line me-2"></i>Quick Actions
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-primary btn-sm" (click)="create('Folder')">
+            <i class="ri-upload-2-line me-2"></i>Upload Receipt
+          </button>
+          <button class="btn btn-outline-success btn-sm" (click)="exportReceipts()" [disabled]="!data?.length">
+            <i class="ri-download-2-line me-2"></i>Export All
+          </button>
+          <button class="btn btn-outline-info btn-sm" (click)="generateReport()" [disabled]="!data?.length">
+            <i class="ri-file-chart-line me-2"></i>Generate Report
+          </button>
+        </div>
+        
+        <div class="mt-3 pt-3 border-top">
+          <small class="text-muted">
+            <i class="ri-shield-check-line me-1"></i>
+            All receipts are automatically backed up and secured.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Copy From Ticket Modal -->
+<ng-template #copyFromTicketModal let-modal>
+  <div class="modal-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4"
+       style="border-radius: 16px 16px 0 0;">
+    <!-- Background Pattern -->
+    <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+      <i class="mdi mdi-receipt" style="font-size: 8rem; transform: rotate(15deg);"></i>
+    </div>
+    
+    <div class="d-flex align-items-center position-relative">
+      <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+        <i class="mdi mdi-receipt fs-4 text-white"></i>
+      </span>
+      <div>
+        <h4 class="mb-1 fw-bold text-white">
+          Copy Receipts From Another Ticket
+        </h4>
+        <p class="text-white-50 mb-0">Select and copy receipts from existing tickets</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close position-relative" style="z-index: 1;" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="alert alert-info mb-4 border-0">
+      <i class="mdi mdi-information me-2"></i>
+      Select a source ticket and choose which receipts to copy to the current ticket. Copied receipts will be marked
+      with a "Copied from" badge for easy identification.
+    </div>
+
+    <!-- Step 1: Ticket Selection -->
+    <div class="mb-4">
+      <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+        <i class="mdi mdi-magnify me-2"></i>Step 1: Select Source Ticket
+      </h6>
+      <div class="mb-3">
+        <label class="form-label required">
+          <i class="mdi mdi-ticket me-1"></i>Source Ticket
+        </label>
+        <app-job-search (notifyParent)="notifyParent($event)" [value]="selectedSourceTicketId" [showLabel]="false"
+          [autoFocus]="true">
+        </app-job-search>
+      </div>
+    </div>
+
+    <!-- Step 2: Receipt Selection -->
+    <div *ngIf="sourceTicketRecords?.length" class="mb-4">
+      <h6 class="text-primary mb-3 border-bottom border-primary border-opacity-25 pb-2">
+        <i class="mdi mdi-checkbox-multiple-marked me-2"></i>Step 2: Select Receipts to Copy
+      </h6>
+      <div class="table-responsive border border-primary border-opacity-25 rounded"
+        style="max-height:300px;overflow:auto;">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th class="py-2">
+                <input type="checkbox" [(ngModel)]="selectAllRecords" (change)="toggleSelectAllRecords()"
+                  [ngModelOptions]="{standalone: true}" class="form-check-input">
+              </th>
+              <th class="py-2">Vendor</th>
+              <th class="py-2">Category</th>
+              <th class="py-2">Amount</th>
+              <th class="py-2">Date</th>
+              <th class="py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rec of sourceTicketRecords; let i = index" [class.table-active]="rec._selected">
+              <td>
+                <input type="checkbox" [(ngModel)]="rec._selected" [ngModelOptions]="{standalone: true}"
+                  class="form-check-input">
+              </td>
+              <td>
+                <span class="fw-semibold">{{rec.vendor_name || 'N/A'}}</span>
+              </td>
+              <td>
+                <span class="text-muted">{{rec.name || 'N/A'}}</span>
+              </td>
+              <td>
+                <span class="fw-bold text-success">{{rec.cost | currency}}</span>
+              </td>
+              <td class="text-nowrap">{{rec.date | date:'short'}}</td>
+              <td>
+                <span *ngIf="rec.copiedFromTicketId" class="badge bg-warning bg-opacity-10 text-warning">
+                  <i class="mdi mdi-file-copy me-1"></i>Already Copied
+                </span>
+                <span *ngIf="!rec.copiedFromTicketId" class="badge bg-success bg-opacity-10 text-success">
+                  <i class="mdi mdi-file-add me-1"></i>Original
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-text text-muted mt-2">
+        <i class="mdi mdi-information me-1"></i>
+        Selected receipts will be copied and marked with "Copied from #{{selectedSourceTicketId}}" badge for
+        identification.
+      </div>
+    </div>
+
+    <div *ngIf="selectedSourceTicketId && !sourceTicketRecords?.length" class="alert alert-warning border-0">
+      <i class="mdi mdi-alert me-2"></i>No receipts found for this ticket.
+    </div>
+
+    <!-- Copy Results -->
+    <div *ngIf="copySuccessCount > 0 || copyErrors.length > 0" class="mt-4">
+      <div *ngIf="copySuccessCount > 0" class="alert alert-success border-0">
+        <i class="mdi mdi-check-circle me-2"></i>Successfully copied {{copySuccessCount}} receipt(s).
+      </div>
+      <div *ngIf="copyErrors.length > 0" class="alert alert-danger border-0">
+        <div class="fw-bold mb-2">
+          <i class="mdi mdi-alert-circle me-2"></i>Failed to copy {{copyErrors.length}} receipt(s):
+        </div>
+        <ul class="mb-0 small">
+          <li *ngFor="let error of copyErrors">{{error}}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer bg-light border-top d-flex justify-content-between">
+    <small class="text-muted">
+      <i class="mdi mdi-shield-check me-1"></i>
+      Copied receipts will be clearly marked with their source ticket ID
+    </small>
+    <div>
+      <button type="button" class="btn btn-outline-secondary me-2" (click)="modal.dismiss()">
+        <i class="mdi mdi-close me-1"></i>Cancel
+      </button>
+      <button type="button" class="btn btn-primary" (click)="copySelectedRecords(modal)"
+        [disabled]="!hasSelectedRecords()">
+        <i class="mdi mdi-content-copy me-1"></i>Copy Selected
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Add custom styles for copied receipts -->
+<style>
+  .copied-receipt {
+    border-left: 4px solid #0dcaf0 !important;
+    background-color: rgba(13, 202, 240, 0.05) !important;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+  }
+
+  .ag-row[row-id] .ag-cell {
+    border-left: 4px solid transparent;
+  }
+
+  .ag-row[data-copied="true"] .ag-cell {
+    border-left: 4px solid #0dcaf0;
+    background-color: rgba(13, 202, 240, 0.02);
+  }
+</style>

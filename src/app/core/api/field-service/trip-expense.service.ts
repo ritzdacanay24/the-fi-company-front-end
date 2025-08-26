@@ -57,4 +57,19 @@ export class TripExpenseService {
   getPredictApi(id) {
     return firstValueFrom(this.http.get(`${url}/getPredictApi.php`));
   }
+
+  async copyReceiptFile(params: {
+    sourceLink: string;
+    sourceReceiptId: number;
+    targetWorkOrderId: string;
+    targetFsId: string;
+  }) {
+    // This would copy the actual file and return new file details
+    return this.http.post(`${url}/copy-file`, params).toPromise();
+  }
+
+  // Alternative method if you want to get receipts by workOrderId
+  // async getByWorkOrderId(workOrderId: string) {
+  //   return this.http.get(`${this.url}/by-work-order/${workOrderId}`).toPromise();
+  // }
 }

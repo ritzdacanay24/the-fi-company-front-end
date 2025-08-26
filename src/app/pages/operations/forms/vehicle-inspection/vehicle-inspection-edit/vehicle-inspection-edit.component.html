@@ -1,11 +1,17 @@
 <div class="row" *ngIf="!data && !id">
     <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-        <div class="card">
-            <div class="card-body" style="min-height:300px">
-                Please select from list.
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center" style="min-height:300px; display: flex; align-items: center; justify-content: center;">
+                <div>
+                    <i class="mdi mdi-clipboard-alert text-muted mb-3" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mb-3">No Inspection Selected</h5>
+                    <p class="text-muted">Please select a vehicle inspection from the list to view or edit.</p>
+                </div>
             </div>
-            <div class="card-footer d-flex  d-flex justify-content-between">
-                <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+            <div class="card-footer bg-light d-flex justify-content-center">
+                <button class="btn btn-outline-primary px-4" [disabled]="isLoading" (click)="onCancel()">
+                    <i class="mdi mdi-format-list-bulleted me-2"></i>Go to List
+                </button>
             </div>
         </div>
     </div>
@@ -13,52 +19,130 @@
 
 <div class="row" [hidden]="!data && !id">
     <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-                    (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-                <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-            </div>
-            <div class="card-body" style="min-height:300px">
-
-
-                <div class="row">
-                    <div class="col-lg-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <p>Truck Details</p>
+        
+        <!-- Enhanced Header Section -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body bg-primary position-relative overflow-hidden text-white">
+                <!-- Background Pattern -->
+                <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+                    <i class="mdi mdi-truck" style="font-size: 8rem;"></i>
+                </div>
+                
+                <div class="row align-items-center position-relative">
+                    <div class="col-auto">
+                        <button class="btn btn-light btn-sm shadow-sm rounded-pill px-3" *ngIf="goBack" (click)="goBack()">
+                            <i class="mdi mdi-arrow-left me-1"></i> Back
+                        </button>
+                    </div>
+                    <div class="col">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
+                                    <i class="mdi mdi-truck text-white" style="font-size: 1.5rem;"></i>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <p>{{info?.vehicleMake}}</p>
-                                <p>{{info?.vehicleNumber}}</p>
-                                <p>{{info?.vin}}</p>
+                            <div>
+                                <h2 class="mb-1 fw-bold text-white">{{title}}</h2>
+                                <p class="mb-2 fs-6 text-white opacity-75">Review and manage vehicle inspection details</p>
+                                <div class="badge bg-white text-primary px-3 py-1 fw-medium" *ngIf="id">Inspection # {{id}}</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <app-vehicle-inspection-form (setFormEmitter)="setFormEmitter($event)"
-                    (setDetailsFormEmitter)="setDetailsFormEmitter($event)" [formValues]="formValues"
-                    [submitted]="submitted" [getData]="getData" (setFormErrorsEmitter)="setFormErrorsEmitter($event)"></app-vehicle-inspection-form>
-
-                <div class="mt-3">
-                    <h4>Attachments</h4>
-                    <p *ngIf="attachments?.length == 0">No Attachment found....
-                    <p>
-
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex justify-content-between align-items-center pointer"
-                            (click)="viewImage(row)" *ngFor="let row of attachments; let i = index">
-                            {{row.fileName}}
-                        </li>
-                    </ul>
-                </div>
-
-            </div>
-            <div class="card-footer d-flex d-flex justify-content-between">
-                <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-                <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
             </div>
         </div>
+
+        <!-- Vehicle Details Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light border-0">
+                <h5 class="card-title mb-1 text-muted">
+                    <i class="mdi mdi-car-info me-2"></i>Vehicle Information
+                </h5>
+                <small class="text-muted">Details of the inspected vehicle</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <label class="form-label text-muted small fw-medium">Vehicle Make</label>
+                        <div class="fw-semibold text-dark">{{info?.vehicleMake || 'Not specified'}}</div>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <label class="form-label text-muted small fw-medium">Vehicle Number</label>
+                        <div class="fw-semibold text-dark">{{info?.vehicleNumber || 'Not specified'}}</div>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <label class="form-label text-muted small fw-medium">VIN</label>
+                        <div class="fw-semibold text-dark">{{info?.vin || 'Not specified'}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Inspection Form -->
+        <app-vehicle-inspection-form 
+            (setFormEmitter)="setFormEmitter($event)"
+            (setDetailsFormEmitter)="setDetailsFormEmitter($event)" 
+            [formValues]="formValues"
+            [submitted]="submitted" 
+            [getData]="getData" 
+            (setFormErrorsEmitter)="setFormErrorsEmitter($event)" 
+            [id]="id"
+            [isSubmitted]="true">
+        </app-vehicle-inspection-form>
+
+        <!-- Attachments Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-light border-0">
+                <h5 class="card-title mb-1 text-muted">
+                    <i class="mdi mdi-paperclip me-2"></i>Attachments
+                </h5>
+                <small class="text-muted">Supporting documents and images</small>
+            </div>
+            <div class="card-body">
+                <div *ngIf="attachments?.length === 0" class="text-center py-4">
+                    <i class="mdi mdi-file-outline text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h6 class="text-muted mb-2">No Attachments Found</h6>
+                    <p class="text-muted small">No supporting documents have been uploaded for this inspection.</p>
+                </div>
+
+                <div class="row g-3" *ngIf="attachments?.length > 0">
+                    <div class="col-12" *ngFor="let row of attachments; let i = index">
+                        <div class="card border-0 shadow-sm hover-shadow" style="cursor: pointer;" (click)="viewImage(row)">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+                                        <i class="mdi mdi-file text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-medium text-dark">{{row.fileName}}</div>
+                                        <small class="text-muted">Click to view attachment</small>
+                                    </div>
+                                    <div class="text-muted">
+                                        <i class="mdi mdi-eye"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="card shadow-sm border-0">
+            <div class="card-footer bg-white border-0">
+                <div class="d-flex justify-content-end gap-2 p-3 bg-light rounded">
+                    <button class="btn btn-outline-secondary px-4" [disabled]="isLoading" (click)="onCancel()">
+                        <i class="mdi mdi-close me-2"></i>Cancel
+                    </button>
+                    <button class="btn btn-primary px-4" [disabled]="isLoading" (click)="onSubmit()">
+                        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <i *ngIf="!isLoading" class="mdi mdi-content-save me-2"></i>
+                        {{isLoading ? 'Saving...' : 'Save Changes'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>

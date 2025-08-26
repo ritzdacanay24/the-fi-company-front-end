@@ -1,0 +1,565 @@
+<div class="serial-number-generator">
+    <!-- Add custom styles for animations -->
+    <style>
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .serial-number-generator .btn:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        .serial-number-generator .card {
+            transition: all 0.3s ease;
+        }
+
+        .serial-number-generator .serial-display {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <!-- Information Alert - Only show if saveToDatabase -->
+    <div class="alert alert-info" *ngIf="showForm && saveToDatabase">
+        <h6 class="alert-heading">
+            <i class="mdi mdi-information me-2"></i>Serial Number Generation & Database Storage
+        </h6>
+        <p class="mb-1">
+            This tool generates unique serial numbers and automatically saves them to the database for tracking and
+            reporting.
+        </p>
+        <p class="mb-0">
+            <i class="mdi mdi-chart-line me-1"></i>
+            <small>View all generated serial numbers in the <a routerLink="/dashboard/quality/serial-number-report"
+                    class="alert-link">Serial Number Report</a></small>
+        </p>
+    </div>
+
+    <!-- Main Serial Number Display Card -->
+    <div class="card border-primary shadow-lg" style="border-width: 3px;">
+        <div class="card-header bg-primary text-white py-4">
+            <h3 class="card-title mb-0 text-center fw-bold">
+                <i class="mdi mdi-barcode me-3" style="font-size: 2rem;"></i>Serial Number Generator
+            </h3>
+        </div>
+        <div class="card-body text-center p-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+            <!-- Current Serial Number Display -->
+            <div class="mb-5">
+                <div *ngIf="!generatedSerialNumber && !previewSerialNumber" class="text-muted">
+                    <i class="mdi mdi-barcode" style="font-size: 6rem; opacity: 0.2; color: #0d6efd;"></i>
+                    <h4 class="mt-3 mb-0 text-secondary">Click "Generate Serial Number" to create a unique serial number
+                    </h4>
+                </div>
+
+                <div *ngIf="generatedSerialNumber || previewSerialNumber" class="serial-display">
+                    <div class="position-relative mb-4">
+                        <div class="badge bg-primary text-white p-4 shadow-lg"
+                            style="font-size: 2.5rem; font-family: 'Courier New', monospace; border-radius: 15px; letter-spacing: 2px;">
+                            {{ generatedSerialNumber || previewSerialNumber }}
+                        </div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 rounded-3"
+                            style="background: linear-gradient(45deg, rgba(13,110,253,0.1) 0%, rgba(13,110,253,0.05) 100%); animation: pulse 2s infinite;">
+                        </div>
+                    </div>
+
+                    <!-- Status indicator -->
+                    <div *ngIf="generatedSerialNumber" class="mb-3">
+                        <span class="badge bg-success" *ngIf="isSerialNumberSaved">
+                            <i class="mdi mdi-database-check me-1"></i>
+                            Generated & Saved to Database
+                        </span>
+                        <span class="badge bg-warning" *ngIf="!isSerialNumberSaved">
+                            <i class="mdi mdi-eye me-1"></i>
+                            Preview Only - Click "Use This Serial Number" to Save
+                        </span>
+                    </div>
+
+                    <div *ngIf="!generatedSerialNumber && previewSerialNumber" class="mb-3">
+                        <span class="badge bg-warning">
+                            <i class="mdi mdi-eye me-1"></i>Preview Only - Not Saved
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Action Buttons -->
+            <div class="d-flex gap-4 justify-content-center flex-wrap mb-5">
+                <button type="button" class="btn btn-primary btn-lg px-5 py-3 shadow-lg"
+                    (click)="generateSerialNumber()" [disabled]="isGenerating"
+                    style="font-size: 1.2rem; border-radius: 50px; min-width: 250px;">
+                    <i class="mdi mdi-plus me-2" *ngIf="!isGenerating" style="font-size: 1.3rem;"></i>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" *ngIf="isGenerating"></span>
+                    {{ isGenerating ? 'Generating...' : (generatedSerialNumber ? 'Generate New Serial Number' :
+                    'Generate Serial Number') }}
+                </button>
+
+                <button type="button" class="btn btn-outline-primary btn-lg px-4 py-3 shadow"
+                    (click)="useCurrentSerialNumber()" [disabled]="!generatedSerialNumber && !previewSerialNumber"
+                    style="font-size: 1.1rem; border-radius: 50px; min-width: 200px; border-width: 2px;">
+                    <i class="mdi mdi-content-save me-2" style="font-size: 1.2rem;"
+                        *ngIf="saveToDatabase && !isSerialNumberSaved"></i>
+                    <i class="mdi mdi-check me-2" style="font-size: 1.2rem;"
+                        *ngIf="!saveToDatabase || isSerialNumberSaved"></i>
+                    {{ saveToDatabase && !isSerialNumberSaved ? 'Save & Use Serial Number' : 'Use This Serial Number' }}
+                </button>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="d-flex gap-3 justify-content-center flex-wrap"
+                *ngIf="generatedSerialNumber || previewSerialNumber">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3 py-2 shadow-sm"
+                    (click)="copyToClipboard(generatedSerialNumber || previewSerialNumber)"
+                    style="border-radius: 25px; font-weight: 500;">
+                    <i class="mdi mdi-content-copy me-1"></i>Copy to Clipboard
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm px-3 py-2 shadow-sm"
+                    (click)="toggleBarcodePreview()" style="border-radius: 25px; font-weight: 500;">
+                    <i class="mdi mdi-barcode me-1"></i>{{ showBarcode ? 'Hide' : 'Show' }} Barcode
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm px-3 py-2 shadow-sm"
+                    (click)="printZebraLabel()" style="border-radius: 25px; font-weight: 500;">
+                    <i class="mdi mdi-printer me-1"></i>Print Zebra Label
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Configuration Toggle -->
+    <div class="text-center mt-3" *ngIf="showForm">
+        <button type="button" class="btn btn-link text-muted" (click)="openAdvancedConfig()">
+            <i class="mdi mdi-cog me-1"></i>
+            Advanced Configuration
+            <i class="mdi mdi-chevron-right ms-1"></i>
+        </button>
+    </div>
+    <!-- Offcanvas Template for Advanced Configuration -->
+    <ng-template #advancedConfigOffcanvas let-offcanvas>
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title text-primary">
+                <i class="mdi mdi-tune me-2"></i>Advanced Serial Number Configuration
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss()"></button>
+        </div>
+        <div class="offcanvas-body">
+            <!-- Quick Presets -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-bold text-secondary mb-0">
+                        <i class="mdi mdi-lightning-bolt me-1"></i>Quick Presets
+                    </label>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                        (click)="clearPreset()" *ngIf="activePreset">
+                        <i class="mdi mdi-broom me-1"></i>Clear
+                    </button>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" 
+                        [class]="'btn btn-sm ' + (activePreset === 'simple' ? 'btn-primary' : 'btn-outline-primary')"
+                        (click)="usePreset('simple'); updatePreview()">
+                        <i class="mdi mdi-format-text me-1"></i>Simple Format
+                        <small class="d-block text-muted">YYMMDD-XXX</small>
+                    </button>
+                    <button type="button" 
+                        [class]="'btn btn-sm ' + (activePreset === 'standard' ? 'btn-primary' : 'btn-outline-primary')"
+                        (click)="usePreset('standard'); updatePreview()">
+                        <i class="mdi mdi-star me-1"></i>Standard Format
+                        <small class="d-block text-muted">SN-YYYYMMDD-XXXX</small>
+                    </button>
+                    <button type="button" 
+                        [class]="'btn btn-sm ' + (activePreset === 'detailed' ? 'btn-primary' : 'btn-outline-primary')"
+                        (click)="usePreset('detailed'); updatePreview()">
+                        <i class="mdi mdi-details me-1"></i>Detailed Format
+                        <small class="d-block text-muted">PROD-YYYYMMDD-HHMMSS-XXX</small>
+                    </button>
+                    <button type="button" 
+                        [class]="'btn btn-sm ' + (activePreset === 'timestamp' ? 'btn-primary' : 'btn-outline-primary')"
+                        (click)="usePreset('timestamp'); updatePreview()">
+                        <i class="mdi mdi-clock me-1"></i>Timestamp Format
+                        <small class="d-block text-muted">Unix-XXXX</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configuration Form -->
+            <form [formGroup]="form">
+                <!-- Basic Settings -->
+                <div class="mb-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="mdi mdi-cog me-1"></i>Basic Settings
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label">Prefix</label>
+                        <input type="text" class="form-control" formControlName="prefix"
+                            placeholder="e.g., SN, PROD, WO">
+                        <div class="form-text">
+                            <small class="text-muted">{{ getFieldHelpText('prefix') }}</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" formControlName="suffix" placeholder="e.g., -A, -FINAL">
+                        <div class="form-text">
+                            <small class="text-muted">{{ getFieldHelpText('suffix') }}</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Separator</label>
+                        <input type="text" class="form-control" formControlName="separator"
+                            placeholder="e.g., -, _, (leave empty for none)">
+                        <div class="form-text">
+                            <small class="text-muted">{{ getFieldHelpText('separator') }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date & Time Settings -->
+                <div class="mb-4" [class.opacity-50]="!isFieldRelevant('includeDate')">
+                    <h6 class="text-primary mb-3">
+                        <i class="mdi mdi-calendar-clock me-1"></i>Date & Time Settings
+                        <span class="badge bg-secondary ms-2" *ngIf="!isFieldRelevant('includeDate')">Disabled</span>
+                    </h6>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" formControlName="includeDate"
+                                id="includeDate" [disabled]="!isFieldRelevant('includeDate')">
+                            <label class="form-check-label" for="includeDate">Include Date</label>
+                        </div>
+                        <div class="mt-2" *ngIf="form.get('includeDate')?.value">
+                            <label class="form-label small">Date Format</label>
+                            <select class="form-select form-select-sm" formControlName="dateFormat"
+                                [disabled]="!isFieldRelevant('dateFormat')">
+                                <option value="YYYYMMDD">YYYYMMDD (20250820)</option>
+                                <option value="YYMMDD">YYMMDD (250820)</option>
+                                <option value="YYYY-MM-DD">YYYY-MM-DD (2025-08-20)</option>
+                                <option value="MM/DD/YYYY">MM/DD/YYYY (08/20/2025)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" formControlName="includeTime"
+                                id="includeTime" [disabled]="!isFieldRelevant('includeTime')">
+                            <label class="form-check-label" for="includeTime">Include Time</label>
+                        </div>
+                        <div class="mt-2" *ngIf="form.get('includeTime')?.value">
+                            <label class="form-label small">Time Format</label>
+                            <select class="form-select form-select-sm" formControlName="timeFormat"
+                                [disabled]="!isFieldRelevant('timeFormat')">
+                                <option value="HHmmss">HHmmss (143052)</option>
+                                <option value="HHmm">HHmm (1430)</option>
+                                <option value="HH:mm:ss">HH:mm:ss (14:30:52)</option>
+                                <option value="HH:mm">HH:mm (14:30)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-text" *ngIf="!isFieldRelevant('includeDate')">
+                        <small class="text-muted">
+                            <i class="mdi mdi-information me-1"></i>
+                            Not used when Custom Format is specified.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Random Numbers Settings -->
+                <div class="mb-4" [class.opacity-50]="!isFieldRelevant('includeRandomNumbers')">
+                    <h6 class="text-primary mb-3">
+                        <i class="mdi mdi-dice-multiple me-1"></i>Random Numbers
+                        <span class="badge bg-secondary ms-2" *ngIf="!isFieldRelevant('includeRandomNumbers')">Disabled</span>
+                    </h6>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" formControlName="includeRandomNumbers"
+                                id="includeRandomNumbers" [disabled]="!isFieldRelevant('includeRandomNumbers')">
+                            <label class="form-check-label" for="includeRandomNumbers">Include Random Numbers</label>
+                        </div>
+                        <div class="mt-2" *ngIf="form.get('includeRandomNumbers')?.value">
+                            <label class="form-label small">Random Number Length</label>
+                            <input type="number" class="form-control form-control-sm"
+                                formControlName="randomNumberLength" min="1" max="10" 
+                                [disabled]="!isFieldRelevant('randomNumberLength')">
+                        </div>
+                    </div>
+                    
+                    <div class="form-text" *ngIf="!isFieldRelevant('includeRandomNumbers')">
+                        <small class="text-muted">
+                            <i class="mdi mdi-information me-1"></i>
+                            Not used when Custom Format is specified.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Custom Format -->
+                <div class="mb-4">
+                    <h6 class="text-primary mb-3">
+                        <i class="mdi mdi-code-braces me-1"></i>Custom Format
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Format String</label>
+                        <input type="text" class="form-control" formControlName="customFormat"
+                            placeholder="e.g., &#123;TIMESTAMP&#125;-&#123;RANDOM:4&#125;">
+                        <div class="form-text">
+                            <small>
+                                Placeholders: &#123;DATE:format&#125;, &#123;TIME:format&#125;, &#123;RANDOM:length&#125;, &#123;TIMESTAMP&#125;
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Preview -->
+                <div class="mb-3">
+                    <div class="alert alert-light border-primary">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-primary">Live Preview:</strong>
+                                <span *ngIf="activePreset" class="badge bg-success ms-2">{{ activePreset | titlecase }}</span>
+                                <br>
+                                <code class="fs-6">{{ previewSerialNumber }}</code>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                (click)="updatePreview()">
+                                <i class="mdi mdi-refresh me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="button" class="btn btn-primary" (click)="updatePreview(); offcanvas.close()">
+                    <i class="mdi mdi-check me-1"></i>Apply Changes
+                </button>
+                <button type="button" class="btn btn-outline-secondary" (click)="offcanvas.dismiss()">
+                    <i class="mdi mdi-close me-1"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </ng-template>
+
+    <!-- Barcode Preview (Simple) -->
+    <div class="row mt-3" *ngIf="showBarcode && (generatedSerialNumber || previewSerialNumber)">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0 text-info">
+                        <i class="mdi mdi-barcode me-1"></i>Barcode Preview
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Preview Barcode</label>
+                            <div class="p-3 border rounded bg-white" *ngIf="previewSerialNumber">
+                                <ngx-barcode6 [bc-value]="previewSerialNumber" [bc-display-value]="true"
+                                    [bc-height]="60" [bc-width]="2" [bc-font-size]="16" [bc-margin-left]="0"
+                                    [bc-text-align]="'center'" [bc-background]="'white'">
+                                </ngx-barcode6>
+                            </div>
+                        </div>
+                        <div class="col-md-6" *ngIf="generatedSerialNumber">
+                            <label class="form-label">Generated Barcode</label>
+                            <div class="p-3 border rounded bg-white">
+                                <ngx-barcode6 [bc-value]="generatedSerialNumber" [bc-display-value]="true"
+                                    [bc-height]="60" [bc-width]="2" [bc-font-size]="16" [bc-margin-left]="0"
+                                    [bc-text-align]="'center'" [bc-background]="'white'">
+                                </ngx-barcode6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="mdi mdi-information me-1"></i>
+                            Barcodes are generated using Code 128 format, compatible with most barcode scanners
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZPL Preview Section -->
+    <div class="row mt-3" *ngIf="(generatedSerialNumber || previewSerialNumber) && selectedTemplate">
+        <div class="col-12">
+            <div class="card border-secondary">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0 text-secondary">
+                        <i class="mdi mdi-code-tags me-1"></i>ZPL Preview ({{ getSelectedTemplateName() }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ previewZebraLabel() }}</code></pre>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="mdi mdi-information me-1"></i>
+                            ZPL (Zebra Programming Language) commands ready for Zebra thermal printers
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML Label Preview Section -->
+    <div class="row mt-3" *ngIf="showLabelPreview && (labelPreviewHtml || allTemplatesPreviewHtml.length > 0)">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 text-info">
+                            <i class="mdi mdi-tag me-1"></i>Physical Label Preview {{ showAllTemplates ? '- All
+                            Templates' : '' }}
+                        </h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-info btn-sm" (click)="generateLabelPreview()">
+                                <i class="mdi mdi-refresh me-1"></i>Refresh Preview
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                (click)="showAllTemplates = !showAllTemplates; generateLabelPreview()">
+                                <i class="mdi mdi-view-grid me-1"></i>{{ showAllTemplates ? 'Single' : 'Compare All' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Preview area with printer-like background -->
+                    <div style="
+                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                    border: 2px dashed #adb5bd;
+                    border-radius: 8px;
+                    padding: 30px;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                  ">
+                        <!-- Printer simulation background -->
+                        <div style="
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      right: 0;
+                      bottom: 0;
+                      background: 
+                        radial-gradient(circle at 20% 20%, rgba(108,117,125,0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(108,117,125,0.05) 0%, transparent 50%);
+                      pointer-events: none;
+                    "></div>
+
+                        <!-- Single template preview -->
+                        <div *ngIf="!showAllTemplates && labelPreviewHtml" [innerHTML]="labelPreviewHtml"
+                            style="position: relative; z-index: 1;"></div>
+
+                        <!-- All templates comparison -->
+                        <div *ngIf="showAllTemplates && allTemplatesPreviewHtml.length > 0"
+                            style="position: relative; z-index: 1;">
+                            <div class="row justify-content-center">
+                                <div class="col-auto mb-3"
+                                    *ngFor="let templateHtml of allTemplatesPreviewHtml; let i = index">
+                                    <div style="text-align: center;">
+                                        <div style="margin-bottom: 10px;">
+                                            <span class="badge bg-primary">{{ zebraTemplates[i].name }}</span>
+                                        </div>
+                                        <div [innerHTML]="templateHtml"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Printer output simulation -->
+                        <div style="
+                      position: absolute;
+                      bottom: 10px;
+                      left: 50%;
+                      transform: translateX(-50%);
+                      font-size: 11px;
+                      color: #6c757d;
+                      background: rgba(255,255,255,0.9);
+                      padding: 4px 8px;
+                      border-radius: 12px;
+                      border: 1px solid #dee2e6;
+                    ">
+                            <i class="mdi mdi-printer me-1"></i>Zebra Thermal Printer Simulation
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="alert alert-light border-info">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <small class="text-muted">
+                                        <i class="mdi mdi-information me-1"></i>
+                                        {{ showAllTemplates ?
+                                        'Compare all available label templates to choose the best fit for your needs.' :
+                                        'This preview shows the approximate layout and appearance of your printed
+                                        thermal label.' }}
+                                        Actual print quality may vary depending on printer settings and label material.
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <small class="text-muted">
+                                        <strong>Print Resolution:</strong> 203 DPI<br>
+                                        <strong>Label Type:</strong> Thermal Transfer
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Examples Section -->
+<div class="row mt-3" *ngIf="showForm">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Example Formats</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Simple:</strong><br>
+                        <code>{{ getQuickGenerate('simple') }}</code>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Detailed:</strong><br>
+                        <code>{{ getQuickGenerate('detailed') }}</code>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Timestamp:</strong><br>
+                        <code>{{ getQuickGenerate('timestamp') }}</code>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Current:</strong><br>
+                        <code>{{ previewSerialNumber }}</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

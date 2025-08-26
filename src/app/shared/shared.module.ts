@@ -21,6 +21,10 @@ import { RouterModule } from "@angular/router";
 import { SimplebarAngularModule } from "simplebar-angular";
 import { NgxMaskDirective, provideNgxMask } from "ngx-mask";
 import { LoadingComponent } from "./loading/loading.component";
+import { IgtHelpModule } from "./components/igt-help/igt-help.module";
+
+// AG Grid
+import { AgGridModule } from "ag-grid-angular";
 
 @NgModule({
   declarations: [],
@@ -34,6 +38,8 @@ import { LoadingComponent } from "./loading/loading.component";
     SimplebarAngularModule,
     NgxMaskDirective,
     LoadingComponent,
+    IgtHelpModule,
+    AgGridModule,
   ],
   imports: [
     CommonModule,
@@ -50,6 +56,8 @@ import { LoadingComponent } from "./loading/loading.component";
     SimplebarAngularModule,
     NgxMaskDirective,
     LoadingComponent,
+    IgtHelpModule,
+    AgGridModule,
   ],
   providers: [provideNgxMask(), provideHttpClient(withInterceptorsFromDi())],
 })

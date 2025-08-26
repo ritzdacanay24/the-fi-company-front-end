@@ -1,0 +1,433 @@
+<!-- Enhanced Modal Header with Progress Tracking -->
+<div class="modal-header bg-gradient-primary text-white">
+  <div class="d-flex flex-column w-100">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="modal-title mb-0" id="modal-basic-title">
+        {{checkList[0]?.name}} - {{woNumber}}
+      </h5>
+      <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="dismiss()"></button>
+    </div>
+    
+    <!-- Progress Tracking -->
+    <div class="d-flex align-items-center justify-content-between text-white-75">
+      <small>Progress: {{currentPhotoCount}} of {{requiredPhotoCount}} photos</small>
+      <span class="badge bg-light text-primary">{{viewIndex}} / {{getTotal()}}</span>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="progress mt-2" style="height: 4px;">
+      <div class="progress-bar bg-warning" 
+           [style.width.%]="(currentPhotoCount / requiredPhotoCount) * 100"
+           role="progressbar" 
+           [attr.aria-valuenow]="currentPhotoCount" 
+           [attr.aria-valuemin]="0" 
+           [attr.aria-valuemax]="requiredPhotoCount">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Modal Body -->
+<div class="modal-body photo-checklist-body" [class.loading]="loadingIndicator">
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="loadingIndicator">
+    <div class="d-flex align-items-center bg-white rounded shadow p-3">
+      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+      <small>Processing...</small>
+    </div>
+  </div>
+
+  <!-- Submission Status Alert -->
+  <div class="alert alert-success alert-sm mb-3" *ngIf="isChecklistSubmitted">
+    <i class="mdi mdi-check-circle me-2"></i>
+    <strong>Completed!</strong> Checklist submitted on: {{isChecklistSubmitted}}
+  </div>
+  <!-- Main Content - Photo Taking Mode -->
+  <div class="row" *ngIf="!isReview">
+    <div class="col-12">
+      <div *ngFor="let row of checkList">
+        <div *ngFor="let det of row.details | slice:beforeIndex:viewIndex; let ii = index">
+          
+          <!-- Task Description Card -->
+          <div class="card task-description-card mb-3 fade-in">
+            <div class="card-body">
+              <h6 class="card-title text-primary mb-2">
+                <i class="mdi mdi-clipboard-text me-2"></i>
+                Photo Task {{viewIndex}} of {{getTotal()}}
+              </h6>
+              <p class="card-text mb-0">{{det.checklist}}</p>
+              
+              <!-- Progress Indicator -->
+              <div class="mt-2">
+                <div class="d-flex align-items-center">
+                  <div class="progress flex-grow-1 me-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" 
+                         [style.width.%]="(viewIndex / getTotal()) * 100"
+                         role="progressbar">
+                    </div>
+                  </div>
+                  <small class="text-muted">{{viewIndex}}/{{getTotal()}}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Your Photo Section -->
+            <div class="col-lg-6 mb-3">
+              <div class="card photo-card h-100" [class.completed]="det.photo">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <span>
+                    <i class="mdi mdi-camera me-2"></i>
+                    Your Photo
+                  </span>
+                  <span class="badge" [class]="det.photo ? 'bg-success' : 'bg-secondary'">
+                    {{det.photo ? 'Completed' : 'Required'}}
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="photo-display" *ngIf="det.photo">
+                    <img [src]="det.photo" 
+                         class="img-fluid rounded photo-preview mb-3" 
+                         style="width: 100%; height: 200px; object-fit: cover;"
+                         *ngIf="det.type === 'img'">
+
+                    <video class="w-100 rounded mb-3" height="200" controls *ngIf="det.type === 'video'">
+                      <source [src]="det.photo" type="video/mp4">
+                      <source [src]="det.photo" type="video/ogg">
+                      Your browser does not support the video tag.
+                    </video>
+
+                    <div class="text-center">
+                      <button class="btn btn-outline-danger btn-sm" 
+                              (click)="remove(viewIndex)"
+                              [disabled]="isChecklistSubmitted">
+                        <i class="mdi mdi-delete me-1"></i>
+                        Remove Photo
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="upload-area" *ngIf="!det.photo">
+                    <div class="upload-placeholder text-center p-4 border-2 border-dashed rounded">
+                      <i class="mdi mdi-camera-plus text-muted mb-2" style="font-size: 3rem;"></i>
+                      <p class="text-muted mb-3">No photo taken yet</p>
+                      
+                      <!-- Enhanced Upload Options -->
+                      <div class="upload-buttons d-flex justify-content-center flex-wrap mb-3">
+                        <!-- Camera Capture -->
+                        <label class="btn btn-primary btn-sm me-2 mb-2" for="customFileInput2">
+                          <input type="file" accept="image/*" capture="environment"
+                                 class="d-none" id="customFileInput2"
+                                 #myInput ng2FileSelect [uploader]="uploader"
+                                 (onFileSelected)="onFileSelected($event, ii)" 
+                                 [disabled]="isChecklistSubmitted">
+                          <i class="mdi mdi-camera me-1"></i>
+                          Camera
+                        </label>
+                        
+                        <!-- Gallery Upload -->
+                        <label class="btn btn-outline-primary btn-sm me-2 mb-2" for="customFileInput3">
+                          <input type="file" accept="image/*"
+                                 class="d-none" id="customFileInput3"
+                                 #myInput ng2FileSelect [uploader]="uploader"
+                                 (onFileSelected)="onFileSelected($event, ii)" 
+                                 [disabled]="isChecklistSubmitted">
+                          <i class="mdi mdi-image me-1"></i>
+                          Gallery
+                        </label>
+                        
+                        <!-- Video Option -->
+                        <label class="btn btn-outline-secondary btn-sm me-2 mb-2" for="customFileInput1">
+                          <input capture="camcorder" type="file" accept="video/*" 
+                                 class="d-none" id="customFileInput1" 
+                                 #myInput ng2FileSelect [uploader]="uploader" 
+                                 (onFileSelected)="onFileSelected($event, ii)" 
+                                 [disabled]="isChecklistSubmitted">
+                          <i class="mdi mdi-video me-1"></i>
+                          Video
+                        </label>
+                      </div>
+                      
+                      <!-- Quick Tips -->
+                      <div class="alert alert-info alert-sm p-2 mb-0">
+                        <i class="mdi mdi-lightbulb-outline me-1"></i>
+                        <small><strong>Tip:</strong> Use Camera for best quality or Gallery for existing photos</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sample Reference Section -->
+            <div class="col-lg-6 mb-3">
+              <div class="card sample-card h-100">
+                <div class="card-header bg-info text-white">
+                  <i class="mdi mdi-image me-2"></i>
+                  Sample Reference
+                </div>
+                <div class="card-body">
+                  <div *ngIf="det.exampleImage; else noSample">
+                    <img [src]="det.exampleImage" 
+                         class="img-fluid rounded mb-3" 
+                         style="width: 100%; height: 200px; object-fit: cover;"
+                         [alt]="'Sample for: ' + det.checklist">
+                    
+                    <div class="requirements-list">
+                      <small class="text-muted">
+                        <strong>Photo Requirements:</strong>
+                        <ul class="mt-2 ps-3">
+                          <li><i class="mdi mdi-check"></i> Match the angle and positioning</li>
+                          <li><i class="mdi mdi-check"></i> Include all visible components</li>
+                          <li><i class="mdi mdi-check"></i> Ensure good lighting and clarity</li>
+                        </ul>
+                      </small>
+                    </div>
+                  </div>
+                  
+                  <ng-template #noSample>
+                    <div class="no-sample text-center p-4">
+                      <i class="mdi mdi-image-off text-muted mb-2" style="font-size: 3rem;"></i>
+                      <p class="text-muted mb-0">No sample image available</p>
+                      <small class="text-muted">Follow standard photo guidelines</small>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Review Mode -->
+  <div class="row" *ngIf="isReview">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Photo Review</h5>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="largeViewCheck" [(ngModel)]="largeView">
+          <label class="form-check-label" for="largeViewCheck">
+            {{largeView ? 'Large View' : 'Standard View'}}
+          </label>
+        </div>
+      </div>
+
+      <!-- Standard Review Table -->
+      <div class="row" *ngIf="isReview && checkList.length > 0 && !largeView">
+        <div class="col-12">
+          <div *ngFor="let row of checkList">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">{{checkList[0].name}} - Review Summary</h6>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="p-3">Photo Description</th>
+                        <th class="p-3 text-center">Sample</th>
+                        <th class="p-3 text-center">Your Photo</th>
+                        <th class="p-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let det of row.details; let ii = index" 
+                          [class]="isSubmitted && det.error ? 'table-danger' : ''">
+                        <td class="p-3">
+                          <a href="javascript:void(0)" 
+                             (click)="goTo(ii);review()" 
+                             class="text-decoration-none">
+                            {{det.checklist}}
+                          </a>
+                        </td>
+                        <td class="text-center p-3">
+                          <img [src]="det.exampleImage" 
+                               class="rounded border" 
+                               style="width:60px; height:60px; object-fit: cover;" 
+                               *ngIf="det.exampleImage">
+                          <span class="text-muted" *ngIf="!det.exampleImage">No sample</span>
+                        </td>
+                        <td class="text-center p-3">
+                          <img [src]="det.photo" 
+                               class="rounded border" 
+                               style="width:60px; height:60px; object-fit: cover;"
+                               *ngIf="det.type === 'img' && det.photo">
+                          <video width="60" height="60" class="rounded border" 
+                                 *ngIf="det.type === 'video' && det.photo">
+                            <source [src]="det.photo" type="video/mp4">
+                            <source [src]="det.photo" type="video/ogg">
+                          </video>
+                          <span class="text-danger" *ngIf="!det.photo">Missing</span>
+                        </td>
+                        <td class="text-center p-3">
+                          <span class="badge bg-success" *ngIf="det.photo">
+                            <i class="mdi mdi-check me-1"></i>Complete
+                          </span>
+                          <span class="badge bg-danger" *ngIf="!det.photo">
+                            <i class="mdi mdi-close me-1"></i>Missing
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Large View Review -->
+      <div class="row" *ngIf="isReview && checkList.length > 0 && largeView">
+        <div class="col-12">
+          <div *ngFor="let row of checkList">
+            <div class="card">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">{{checkList[0].name}} - Detailed Review</h6>
+              </div>
+              <div class="card-body">
+                <div *ngFor="let det of row.details; let ii = index" class="mb-4 border-bottom pb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">
+                      <a href="javascript:void(0)" 
+                         (click)="goTo(ii);review()" 
+                         class="text-decoration-none">
+                        {{det.checklist}}
+                      </a>
+                    </h6>
+                    <span class="badge" [class]="det.photo ? 'bg-success' : 'bg-danger'">
+                      {{det.photo ? 'Complete' : 'Missing'}}
+                    </span>
+                  </div>
+                  
+                  <div class="row">
+                    <div class="col-md-6">
+                      <h6 class="text-muted mb-2">Sample Reference</h6>
+                      <img [src]="det.exampleImage" 
+                           class="img-fluid rounded border" 
+                           style="max-height: 250px; width: 100%; object-fit: cover;" 
+                           *ngIf="det.exampleImage">
+                      <div class="text-muted text-center p-4 border rounded" *ngIf="!det.exampleImage">
+                        No sample image available
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                      <h6 class="text-muted mb-2">Your Photo</h6>
+                      <img [src]="det.photo" 
+                           class="img-fluid rounded border" 
+                           style="max-height: 250px; width: 100%; object-fit: cover;"
+                           *ngIf="det.type === 'img' && det.photo">
+                      <video class="w-100 rounded border" 
+                             style="max-height: 250px;" 
+                             controls 
+                             *ngIf="det.type === 'video' && det.photo">
+                        <source [src]="det.photo" type="video/mp4">
+                        <source [src]="det.photo" type="video/ogg">
+                      </video>
+                      <div class="text-danger text-center p-4 border border-danger rounded" *ngIf="!det.photo">
+                        <i class="mdi mdi-alert-circle mb-2" style="font-size: 2rem;"></i>
+                        <p class="mb-0">No photo uploaded</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Modal Footer -->
+<div class="modal-footer" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+  
+  <!-- Navigation Controls (Photo Taking Mode) -->
+  <div class="container-fluid" *ngIf="!isReview">
+    <div class="row align-items-center">
+      <div class="col-md-4">
+        <button type="button" 
+                class="btn btn-outline-secondary btn-sm" 
+                (click)="change('before')"
+                [disabled]="checkList && getMinLength()">
+          <i class="mdi mdi-chevron-left me-1"></i>
+          Previous
+        </button>
+      </div>
+      
+      <div class="col-md-4 text-center">
+        <div class="d-flex align-items-center justify-content-center">
+          <span class="badge bg-primary me-2">{{viewIndex}} / {{getTotal()}}</span>
+          <div class="progress flex-grow-1 mx-2" style="height: 6px;">
+            <div class="progress-bar" 
+                 [style.width.%]="(viewIndex / getTotal()) * 100"
+                 role="progressbar">
+            </div>
+          </div>
+          <small class="text-muted">{{currentPhotoCount}}/{{requiredPhotoCount}} photos</small>
+        </div>
+      </div>
+      
+      <div class="col-md-4 text-end">
+        <button type="button" 
+                class="btn btn-outline-secondary btn-sm" 
+                (click)="change('after')"
+                [disabled]="checkList && getMaxLength()">
+          Next
+          <i class="mdi mdi-chevron-right ms-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Controls -->
+  <div class="container-fluid mt-2">
+    <div class="row">
+      <div class="col-md-4">
+        <button (click)="close()" 
+                type="button" 
+                class="btn btn-secondary">
+          <i class="mdi mdi-close me-1"></i>
+          Close
+        </button>
+      </div>
+      
+      <div class="col-md-8 text-end">
+        <div class="btn-group" role="group">
+          <!-- Review Button (Photo Taking Mode) -->
+          <button (click)="review()" 
+                  type="button" 
+                  class="btn btn-info" 
+                  *ngIf="!isReview">
+            <i class="mdi mdi-eye me-1"></i>
+            Review All ({{currentPhotoCount}}/{{requiredPhotoCount}})
+          </button>
+          
+          <!-- Edit Button (Review Mode) -->
+          <button (click)="change('first')" 
+                  type="button" 
+                  class="btn btn-warning" 
+                  *ngIf="isReview && !isChecklistSubmitted">
+            <i class="mdi mdi-pencil me-1"></i>
+            Edit Photos
+          </button>
+          
+          <!-- Submit Button (Review Mode) -->
+          <button (click)="submit()" 
+                  type="button" 
+                  class="btn btn-success" 
+                  *ngIf="isReview && !isChecklistSubmitted" 
+                  [disabled]="isChecklistSubmitted">
+            <i class="mdi mdi-send me-1"></i>
+            Submit Checklist
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

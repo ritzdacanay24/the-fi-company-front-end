@@ -1,0 +1,109 @@
+<div class="modal-header bg-primary bg-gradient border-bottom border-none position-relative overflow-hidden">
+  <div class="d-flex align-items-center w-100">
+    <!-- Icon and Title Section -->
+    <div class="d-flex align-items-center">
+      <span class="bg-white bg-opacity-15 rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm"
+        style="width: 3rem; height: 3rem;">
+        <i class="mdi mdi-package-variant fs-3 text-white"></i>
+      </span>
+      <div>
+        <h4 class="modal-title text-white mb-1 fw-bold">
+          <span *ngIf="!focusOnQuantities && !viewMode">Material Request Picking</span>
+          <span *ngIf="focusOnQuantities">Enter Picked Quantities</span>
+          <span *ngIf="viewMode && !focusOnQuantities">View Pick Sheet</span>
+        </h4>
+        <div class="d-flex align-items-center gap-3">
+          <span class="badge bg-white bg-opacity-20 text-white fs-6 px-3 py-2">
+            <i class="mdi mdi-barcode me-1"></i>
+            MR #{{ request?.id || request?.requestNumber || request?.request_number }}
+          </span>
+          <span class="text-white-50 small">
+            <i class="mdi mdi-clock-outline me-1"></i>
+            <span *ngIf="!focusOnQuantities && !viewMode">Pick & Process</span>
+            <span *ngIf="focusOnQuantities">Quantity Entry</span>
+            <span *ngIf="viewMode && !focusOnQuantities">Pick Sheet View</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Section -->
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <button type="button" 
+              class="btn btn-outline-light btn-sm border-0 bg-white bg-opacity-10" 
+              style="backdrop-filter: blur(10px);">
+        <i class="mdi mdi-refresh me-1"></i>
+        Refresh
+      </button>
+      <button type="button" 
+              class="btn-close btn-close-white position-relative shadow-sm" 
+              style="z-index: 1;" 
+              (click)="onClose()" 
+              aria-label="Close">
+      </button>
+    </div>
+  </div>
+
+  <!-- Subtle decorative elements -->
+  <div class="position-absolute" style="top: -30px; right: -30px; opacity: 0.08;">
+    <i class="mdi mdi-package-variant" style="font-size: 10rem; transform: rotate(15deg);"></i>
+  </div>
+  <div class="position-absolute" style="bottom: -20px; left: -20px; opacity: 0.05;">
+    <i class="mdi mdi-barcode-scan" style="font-size: 6rem; transform: rotate(-10deg);"></i>
+  </div>
+</div>
+
+<div class="modal-body p-3">
+  <app-material-request-picking-improved 
+    *ngIf="request"
+    [id]="request.id"
+    [viewMode]="viewMode"
+    [editMode]="editMode"
+    [focusOnQuantities]="focusOnQuantities"
+    [showPickingProgress]="showPickingProgress"
+    [showShortageEntry]="showShortageEntry"
+    #pickingComponent>
+  </app-material-request-picking-improved>
+</div>
+
+<div class="modal-footer bg-light border-top d-flex justify-content-between">
+  <small class="text-muted">
+    <i class="mdi mdi-information me-1"></i>
+    <span *ngIf="!focusOnQuantities && !viewMode">Material picking and inventory management</span>
+    <span *ngIf="focusOnQuantities">Enter actual quantities picked and any shortages</span>
+    <span *ngIf="viewMode && !focusOnQuantities">Review pick sheet details</span>
+  </small>
+  <div>
+    <button type="button" class="btn btn-secondary me-2" (click)="onClose()">
+      <span *ngIf="focusOnQuantities">Cancel</span>
+      <span *ngIf="!focusOnQuantities">Close</span>
+    </button>
+    
+    <!-- Print button for view mode -->
+    <button type="button" 
+            class="btn btn-warning me-2" 
+            (click)="onPrintPickingSheet()"
+            [disabled]="!request"
+            *ngIf="viewMode && !focusOnQuantities">
+      <i class="ri-printer-line me-1"></i>Print Pick Sheet
+    </button>
+    
+    <!-- Save button for quantity entry mode -->
+    <button type="button" 
+            class="btn btn-success" 
+            (click)="onSaveQuantities()"
+            [disabled]="!request"
+            *ngIf="focusOnQuantities">
+      <i class="ri-save-line me-1"></i>Save Quantities
+    </button>
+    
+    <!-- Default print button for other modes -->
+    <button type="button" 
+            class="btn btn-warning" 
+            (click)="onPrintPickingSheet()"
+            [disabled]="!request"
+            *ngIf="!viewMode && !focusOnQuantities">
+      <i class="ri-printer-line me-1"></i>Print Pick Sheet
+    </button>
+  </div>
+</div>

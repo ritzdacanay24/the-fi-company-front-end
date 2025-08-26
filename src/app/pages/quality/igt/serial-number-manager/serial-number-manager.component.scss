@@ -1,0 +1,199 @@
+// AG-Grid Theme Import
+// @import "ag-grid-community/styles/ag-grid.css";
+// @import "ag-grid-community/styles/ag-theme-alpine.css";
+
+// AG-Grid custom styles
+// .ag-theme-alpine {
+//   // Action buttons styling
+//   .btn-group-sm {
+//     .btn {
+//       padding: 0.25rem 0.4rem;
+//       font-size: 0.75rem;
+      
+//       &.btn-edit {
+//         &:hover {
+//           background-color: var(--bs-primary);
+//           border-color: var(--bs-primary);
+//           color: white;
+//         }
+//       }
+      
+//       &.btn-soft-delete {
+//         &:hover {
+//           background-color: var(--bs-warning);
+//           border-color: var(--bs-warning);
+//           color: white;
+//         }
+//       }
+      
+//       &.btn-hard-delete {
+//         &:hover {
+//           background-color: var(--bs-danger);
+//           border-color: var(--bs-danger);
+//           color: white;
+//         }
+//       }
+//     }
+//   }
+
+//   // Custom dropdown styling for AG-Grid
+//   .btn-delete-menu {
+//     min-width: 180px;
+//     padding: 0.5rem 0;
+//     background-color: white;
+//     border: 1px solid rgba(0, 0, 0, 0.15);
+//     border-radius: 0.375rem;
+//     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    
+//     .dropdown-header {
+//       padding: 0.5rem 1rem;
+//       margin-bottom: 0;
+//       font-size: 0.75rem;
+//       color: #6c757d;
+//       white-space: nowrap;
+//       font-weight: 600;
+//     }
+    
+//     .dropdown-item {
+//       display: block;
+//       width: 100%;
+//       padding: 0.5rem 1rem;
+//       clear: both;
+//       font-weight: 400;
+//       color: #212529;
+//       text-align: inherit;
+//       text-decoration: none;
+//       white-space: nowrap;
+//       background-color: transparent;
+//       border: 0;
+      
+//       &:hover,
+//       &:focus {
+//         color: #1e2125;
+//         background-color: #e9ecef;
+//       }
+      
+//       &.text-danger:hover,
+//       &.text-danger:focus {
+//         color: #fff;
+//         background-color: #dc3545;
+//       }
+      
+//       small {
+//         font-size: 0.7rem;
+//       }
+//     }
+    
+//     .dropdown-divider {
+//       height: 0;
+//       margin: 0.5rem 0;
+//       overflow: hidden;
+//       border-top: 1px solid rgba(0, 0, 0, 0.15);
+//     }
+//   }
+
+//   // Grid styling improvements
+//   .ag-header {
+//     background-color: #f8f9fa;
+//     border-bottom: 2px solid #dee2e6;
+//   }
+
+//   .ag-row:hover {
+//     background-color: #f8f9fa;
+//   }
+
+//   .ag-cell {
+//     display: flex;
+//     align-items: center;
+//   }
+// }
+
+.nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+  
+  .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    
+    &:hover {
+      border-bottom-color: #dee2e6;
+      color: #495057;
+    }
+    
+    &.active {
+      color: #0d6efd;
+      border-bottom-color: #0d6efd;
+      background: none;
+    }
+  }
+}
+
+.table {
+  th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+  }
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+code {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.alert-light {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.badge {
+  font-size: 0.75rem;
+  
+  &.bg-secondary-subtle {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    border: 1px solid #dee2e6;
+  }
+  
+  &.bg-info-subtle {
+    background-color: #e7f3fa !important;
+    color: #0dcaf0 !important;
+    border: 1px solid #b8daff;
+  }
+}
+
+.form-control:invalid,
+.form-select:invalid {
+  border-color: #dc3545;
+  
+  &:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+  }
+}
+
+.card {
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+}
+
+.btn {
+  transition: all 0.15s ease-in-out;
+}

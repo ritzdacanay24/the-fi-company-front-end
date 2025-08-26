@@ -73,4 +73,102 @@ export class TripDetailsSummaryComponent implements OnInit {
       }
     } catch (err) {}
   };
+
+  // Add trip type configuration with better icons and colors
+  getTripConfig(tripType: string) {
+    const configs = {
+      flight: {
+        icon: "mdi mdi-airplane-takeoff",
+        color: "primary",
+        bgClass: "bg-primary",
+        label: "Flight",
+        description: "Air Travel",
+      },
+      rental_car: {
+        icon: "mdi mdi-car-hatchback",
+        color: "success",
+        bgClass: "bg-success",
+        label: "Rental Car",
+        description: "Ground Transportation",
+      },
+      hotel: {
+        icon: "mdi mdi-bed-outline",
+        color: "info",
+        bgClass: "bg-info",
+        label: "Hotel",
+        description: "Accommodation",
+      },
+      equipment: {
+        icon: "mdi mdi-tools",
+        color: "warning",
+        bgClass: "bg-warning",
+        label: "Equipment",
+        description: "Equipment Rental",
+      },
+      meal: {
+        icon: "mdi mdi-food-fork-drink",
+        color: "secondary",
+        bgClass: "bg-secondary",
+        label: "Meals",
+        description: "Food & Dining",
+      },
+      transportation: {
+        icon: "mdi mdi-bus",
+        color: "dark",
+        bgClass: "bg-dark",
+        label: "Transport",
+        description: "Public Transportation",
+      },
+    };
+
+    return configs[tripType] || {
+      icon: "mdi mdi-map-marker",
+      color: "secondary",
+      bgClass: "bg-secondary",
+      label: "Other",
+      description: "Misc Travel",
+    };
+  }
+
+  // Add method to calculate trip duration
+  getTripDuration(startDate: string, endDate: string): string {
+    if (!startDate || !endDate) return "";
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return "1 day";
+    if (diffDays < 7) return `${diffDays} days`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks`;
+    return `${Math.ceil(diffDays / 30)} months`;
+  }
+
+  // Add method to get trip status
+  getTripStatus(trip: any): {
+    status: string;
+    class: string;
+    icon: string;
+  } {
+    if (trip.email_sent) {
+      return {
+        status: "Confirmed",
+        class: "success",
+        icon: "mdi mdi-check-circle",
+      };
+    } else if (trip.confirmation) {
+      return {
+        status: "Booked",
+        class: "warning",
+        icon: "mdi mdi-clock-outline",
+      };
+    } else {
+      return {
+        status: "Pending",
+        class: "danger",
+        icon: "mdi mdi-alert-circle",
+      };
+    }
+  }
 }

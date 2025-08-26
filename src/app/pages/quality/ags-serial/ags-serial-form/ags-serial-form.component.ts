@@ -1,7 +1,9 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
+import { SerialNumberModalComponent } from "@app/shared/components/serial-number-modal/serial-number-modal.component";
 import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
@@ -17,7 +19,10 @@ import { SharedModule } from "@app/shared/shared.module";
   styleUrls: ["./ags-serial-form.component.scss"],
 })
 export class AgsSerialFormComponent {
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private modalService: NgbModal
+  ) {}
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
@@ -56,5 +61,45 @@ export class AgsSerialFormComponent {
 
   getCustomerPartNumber($event) {
     this.form.patchValue({ sgPartNumber: $event.cp_cust_part });
+  }
+
+  openSerialNumberGenerator(fieldName: string = 'generated_SG_asset') {
+    const modalRef = this.modalService.open(SerialNumberModalComponent, { 
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    // Configure the modal based on the field being generated for
+    if (fieldName === 'generated_SG_asset') {
+      modalRef.componentInstance.title = 'Generate AGS Serial Number';
+      modalRef.componentInstance.config = {
+        prefix: 'AGS',
+        includeDate: true,
+        includeTime: false,
+        dateFormat: 'YYYYMMDD',
+        includeRandomNumbers: true,
+        randomNumberLength: 4,
+        separator: '-'
+      };
+    } else if (fieldName === 'serialNumber') {
+      modalRef.componentInstance.title = 'Generate Serial Number';
+      modalRef.componentInstance.config = {
+        prefix: 'SN',
+        includeDate: true,
+        includeTime: false,
+        dateFormat: 'YYYYMMDD',
+        includeRandomNumbers: true,
+        randomNumberLength: 6,
+        separator: '-'
+      };
+    }
+
+    modalRef.result.then((result) => {
+      if (result) {
+        this.form.patchValue({ [fieldName]: result });
+      }
+    }).catch(() => {
+      // Modal dismissed
+    });
   }
 }

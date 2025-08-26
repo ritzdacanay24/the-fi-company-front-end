@@ -1,0 +1,66 @@
+<ng-template #exportModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="mdi mdi-download me-2"></i>
+      Export Document - {{ selectedDocument?.document_number }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3">
+      <h6>Select Export Format:</h6>
+      <div class="list-group">
+        <button type="button" 
+                class="list-group-item list-group-item-action" 
+                (click)="exportWithFormat('pdf'); modal.close()"
+                [disabled]="exporting">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">
+              <i class="mdi mdi-file-pdf-box text-danger me-2"></i>
+              PDF Document
+            </h6>
+            <small>Recommended</small>
+          </div>
+          <p class="mb-1">Export as a formatted PDF document for printing and sharing.</p>
+        </button>
+        
+        <button type="button" 
+                class="list-group-item list-group-item-action" 
+                (click)="exportWithFormat('excel'); modal.close()"
+                [disabled]="exporting">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">
+              <i class="mdi mdi-file-excel text-success me-2"></i>
+              Excel Spreadsheet
+            </h6>
+          </div>
+          <p class="mb-1">Export document data as an Excel file for data analysis.</p>
+        </button>
+        
+        <button type="button" 
+                class="list-group-item list-group-item-action" 
+                (click)="exportWithFormat('json'); modal.close()"
+                [disabled]="exporting">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">
+              <i class="mdi mdi-code-json text-info me-2"></i>
+              JSON Data
+            </h6>
+            <small>For Developers</small>
+          </div>
+          <p class="mb-1">Export raw document data in JSON format for system integration.</p>
+        </button>
+      </div>
+    </div>
+    
+    <div class="alert alert-info" *ngIf="exporting">
+      <i class="mdi mdi-loading mdi-spin me-2"></i>
+      Preparing export... Please wait.
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="exporting">
+      Close
+    </button>
+  </div>
+</ng-template>

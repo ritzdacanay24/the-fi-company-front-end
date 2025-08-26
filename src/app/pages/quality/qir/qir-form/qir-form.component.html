@@ -1,213 +1,275 @@
 <form [formGroup]="form" autocomplete="off">
 
-  <div class="row">
-    <div class="col-sm-6 mb-3">
-      <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
-      <input class="form-control" type="text" formControlName="first_name"
-        [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" placeholder="Enter your first name" />
+  <!-- Contact Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-account me-2"></i>Contact Information
+      </h5>
+      <small class="text-muted">Provide your contact details for follow-up communication</small>
     </div>
-    <div class="col-sm-6 mb-3">
-      <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
-      <input class="form-control" type="text" formControlName="last_name"
-        [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" placeholder="Enter your last name" />
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('first_name')">First Name</label>
+          <input class="form-control" type="text" formControlName="first_name"
+            [ngClass]="{ 'is-invalid': submitted && f.first_name.errors }" placeholder="Enter first name" />
+        </div>
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('last_name')">Last Name</label>
+          <input class="form-control" type="text" formControlName="last_name"
+            [ngClass]="{ 'is-invalid': submitted && f.last_name.errors }" placeholder="Enter last name" />
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" [ngClass]="formValidator('email')">Business Email Address</label>
+        <input class="form-control" type="text" formControlName="email"
+          [ngClass]="{ 'is-invalid': submitted && f.email.errors }" placeholder="Enter business email address" />
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('email')">Your Email Address</label>
-    <input class="form-control" type="text" formControlName="email"
-      [ngClass]="{ 'is-invalid': submitted && f.email.errors }" placeholder="Enter your email address" />
-  </div>
+  <!-- Issue Details Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-alert-circle me-2"></i>Quality Issue Details
+      </h5>
+      <small class="text-muted">Describe when and where the quality issue occurred</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Customer Reported Date</label>
+          <input class="form-control" type="date" formControlName="customerReportedDate"
+            [ngClass]="{ 'is-invalid': submitted && f.customerReportedDate.errors }" />
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('priority')">Priority</label>
+          <ng-select [items]="formData?.priority" [searchable]="true" formControlName="priority" bindLabel="name"
+            bindValue="name" placeholder="Select priority" [ngClass]="{ 'is-invalid': submitted && f.priority.errors }"
+            [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+      </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('customerReportedDate')">Customer Reported Date</label>
-      <input class="form-control" type="date" formControlName="customerReportedDate"
-        [ngClass]="{ 'is-invalid': submitted && f.customerReportedDate.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('priority')">Priority</label>
-      <ng-select [items]="formData?.priority" [searchable]="true" formControlName="priority" bindLabel="name"
-        bindValue="name" placeholder="Select priority" [ngClass]="{ 'is-invalid': submitted && f.priority.errors }"
-        [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-  </div>
+      <div class="row">
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('status')">Status</label>
+          <ng-select [items]="formData?.status" [searchable]="true" formControlName="status" bindLabel="name"
+            bindValue="name" placeholder="Select status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }"
+            [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('status_reason')">Status Reason</label>
+          <ng-select [items]="formData?.statusReason" [searchable]="true" formControlName="status_reason" bindLabel="name"
+            bindValue="name" placeholder="Select status reason"
+            [ngClass]="{ 'is-invalid': submitted && f.status_reason.errors }" [addTag]="false" [markFirst]="false"
+            [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+      </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('status')">Status</label>
-      <ng-select [items]="formData?.status" [searchable]="true" formControlName="status" bindLabel="name"
-        bindValue="name" placeholder="Select status" [ngClass]="{ 'is-invalid': submitted && f.status.errors }"
-        [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('status_reason')">Status Reason</label>
-      <ng-select [items]="formData?.statusReason" [searchable]="true" formControlName="status_reason" bindLabel="name"
-        bindValue="name" placeholder="Select status reason"
-        [ngClass]="{ 'is-invalid': submitted && f.status_reason.errors }" [addTag]="false" [markFirst]="false"
-        [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-
-  </div>
-
-  <div class="row">
-    <div class="col-sm-6 mb-3">
-      <app-qad-customer-name-search (notifyParent)="getCustomerName($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.customerName.errors }" [value]="f.customerName.value"
-        [required]="true"></app-qad-customer-name-search>
-    </div>
-    <div class="col-sm-6 mb-3">
-      <app-qad-customer-part-search [form_label]="'Customer Part Number (If Available)'" (notifyParent)="getCustomerPartNumber($event)"
-        [ngClass]="{ 'is-invalid': submitted && f.CustomerPartNumber.errors }" [value]="f.CustomerPartNumber.value"
-        placeholder="Enter customer part number" [editableSearchTerm]="true"></app-qad-customer-part-search>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <app-qad-part-search (notifyParent)="setQadPartNumber($event)" [editableSearchTerm]="true"
-        [ngClass]="{ 'is-invalid': submitted && f.eyefiPartNumber.errors }" [form_label]="'Eyefi Part Number (If Available)'"
-        [placeholder]="'Enter eyefi part number'" [value]="f.eyefiPartNumber.value"></app-qad-part-search>
+      <div class="row">
+        <div class="col-sm-8 mb-3">
+          <label class="form-label" [ngClass]="formValidator('location')">Location of Issue</label>
+          <input type="text" class="form-control" name="location" formControlName="location"
+            [ngClass]="{ 'is-invalid': submitted && f.location.errors }" placeholder="Specify where the issue occurred" />
+        </div>
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('casinoName')">Facility Name</label>
+          <input type="text" class="form-control" name="casinoName" formControlName="casinoName"
+            [ngClass]="{ 'is-invalid': submitted && f.casinoName.errors }" placeholder="Enter facility name" />
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm-8 mb-3">
-      <label class="form-label" [ngClass]="formValidator('location')">Location of failure</label>
-      <input type="text" class="form-control" name="location" formControlName="location"
-        [ngClass]="{ 'is-invalid': submitted && f.location.errors }" placeholder="Enter location" />
+  <!-- Product Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-package-variant me-2"></i>Product Information
+      </h5>
+      <small class="text-muted">Identify the affected products and customer details</small>
     </div>
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('casinoName')">Casino Name</label>
-      <input type="text" class="form-control" name="casinoName" formControlName="casinoName"
-        [ngClass]="{ 'is-invalid': submitted && f.casinoName.errors }" placeholder="Enter casino name" />
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <app-qad-customer-name-search (notifyParent)="getCustomerName($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.customerName.errors }" [value]="f.customerName.value"
+            [required]="true"></app-qad-customer-name-search>
+        </div>
+        <div class="col-sm-6 mb-3">
+          <app-qad-customer-part-search [form_label]="'Customer Part Number (If Available)'" (notifyParent)="getCustomerPartNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.CustomerPartNumber.errors }" [value]="f.CustomerPartNumber.value"
+            placeholder="Enter customer part number" [editableSearchTerm]="true"></app-qad-customer-part-search>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm mb-3">
+          <app-qad-part-search (notifyParent)="setQadPartNumber($event)" [editableSearchTerm]="true"
+            [ngClass]="{ 'is-invalid': submitted && f.eyefiPartNumber.errors }" [form_label]="'Eyefi Part Number (If Available)'"
+            [placeholder]="'Enter eyefi part number'" [value]="f.eyefiPartNumber.value"></app-qad-part-search>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('eyefiSerialNumber')">EYE-Fi Serial Number (If Available)</label>
+          <input type="text" class="form-control" name="eyefiSerialNumber" formControlName="eyefiSerialNumber"
+            [ngClass]="{ 'is-invalid': submitted && f.eyefiSerialNumber.errors }" placeholder="Enter serial number if available" />
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('lotNumber')">Lot Number (If Available)</label>
+          <input type="text" class="form-control" name="lotNumber" formControlName="lotNumber"
+            [ngClass]="{ 'is-invalid': submitted && f.lotNumber.errors }" placeholder="Enter lot number if available" />
+        </div>
+        <div class="col-sm mb-3">
+          <label class="form-label" [ngClass]="formValidator('warranty_replacement')">Warranty Status</label>
+          <select class="form-select" formControlName="warranty_replacement"
+            [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
+            <option selected disabled value="null">Select warranty status</option>
+            <option *ngFor="let row of ['Yes', 'No', 'N/A']" [value]="row">{{row}}</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('eyefiSerialNumber')">Eyefi Serial Number (If Available)</label>
-      <input type="text" class="form-control" name="eyefiSerialNumber" formControlName="eyefiSerialNumber"
-        [ngClass]="{ 'is-invalid': submitted && f.eyefiSerialNumber.errors }" placeholder="Enter eyefi serial number" />
+  <!-- Classification Details Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-tag-multiple me-2"></i>Issue Classification
+      </h5>
+      <small class="text-muted">Categorize the type and nature of the quality issue</small>
     </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('lotNumber')">Lot #  (If Available)</label>
-      <input type="text" class="form-control" name="lotNumber" formControlName="lotNumber"
-        [ngClass]="{ 'is-invalid': submitted && f.lotNumber.errors }" placeholder="Enter lot #" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('warranty_replacement')">Warranty Replacement</label>
-      <select class="form-select" formControlName="warranty_replacement"
-        [ngClass]="{ 'is-invalid': submitted && f.warranty_replacement.errors }">
-        <option selected disabled value="null">--SELECT--</option>
-        <option *ngFor="let row of ['Yes', 'No', 'N/A']" [value]="row">{{row}}</option>
-      </select>
-    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('type1')">Type</label>
+          <ng-select [items]="formData?.type" [searchable]="true" formControlName="type1" bindLabel="name" bindValue="name"
+            placeholder="Select type" [ngClass]="{ 'is-invalid': submitted && f.type1.errors }" [addTag]="false"
+            [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+        <div class="col-sm-6 mb-3" *ngIf="form.get('type1')?.value?.includes('External')">
+          <label class="form-label" [ngClass]="formValidator('typeSub')">External Type</label>
+          <ng-select [items]="formData?.typeSub" [searchable]="true" formControlName="typeSub" bindLabel="name"
+            bindValue="name" placeholder="Select type" [ngClass]="{ 'is-invalid': submitted && f.typeSub.errors }"
+            [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+      </div>
 
-  </div>
+      <div class="row">
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('componentType')">Component Type</label>
+          <ng-select [items]="formData?.componentType" [searchable]="true" formControlName="componentType" bindLabel="name"
+            bindValue="name" placeholder="Select component type"
+            [ngClass]="{ 'is-invalid': submitted && f.componentType.errors }" [addTag]="false" [markFirst]="false"
+            [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+        <div class="col-sm-3 mb-3">
+          <label class="form-label" [ngClass]="formValidator('platformType')">Platform Type</label>
+          <ng-select [items]="formData?.platformType" [searchable]="true" formControlName="platformType" bindLabel="name"
+            bindValue="name" placeholder="Select platform" [ngClass]="{ 'is-invalid': submitted && f.platformType.errors }"
+            [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+        <div class="col-sm-5 mb-3">
+          <label class="form-label" [ngClass]="formValidator('failureType')">Failure Type</label>
+          <ng-select [items]="formData?.failureType" [searchable]="true" formControlName="failureType" bindLabel="name"
+            bindValue="name" placeholder="Select failure type"
+            [ngClass]="{ 'is-invalid': submitted && f.failureType.errors }" [addTag]="false" [markFirst]="false"
+            [appendTo]="'body'" (click)="getQirSettings()">
+          </ng-select>
+        </div>
+      </div>
 
-  <div class="row">
-    <div class="col-sm-6 mb-3">
-      <label class="form-label" [ngClass]="formValidator('type1')">Type</label>
-      <ng-select [items]="formData?.type" [searchable]="true" formControlName="type1" bindLabel="name" bindValue="name"
-        placeholder="Select type" [ngClass]="{ 'is-invalid': submitted && f.type1.errors }" [addTag]="false"
-        [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-    <div class="col-sm-6 mb-3" *ngIf="form.get('type1')?.value?.includes('External')">
-      <label class="form-label" [ngClass]="formValidator('typeSub')">External Type</label>
-      <ng-select [items]="formData?.typeSub" [searchable]="true" formControlName="typeSub" bindLabel="name"
-        bindValue="name" placeholder="Select type" [ngClass]="{ 'is-invalid': submitted && f.typeSub.errors }"
-        [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-  </div>
+      <div class="mb-3">
+        <label class="form-label" [ngClass]="formValidator('stakeholder')">Stakeholder</label>
+        <ng-select [items]="formData?.stakeholder" [searchable]="true" formControlName="stakeholder" bindLabel="name"
+          bindValue="name" placeholder="Select stakeholder" [ngClass]="{ 'is-invalid': submitted && f.stakeholder.errors }"
+          [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
+        </ng-select>
+      </div>
 
-  <div class="row">
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('componentType')">Component Type</label>
-      <ng-select [items]="formData?.componentType" [searchable]="true" formControlName="componentType" bindLabel="name"
-        bindValue="name" placeholder="Select component type"
-        [ngClass]="{ 'is-invalid': submitted && f.componentType.errors }" [addTag]="false" [markFirst]="false"
-        [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-    <div class="col-sm-3 mb-3">
-      <label class="form-label" [ngClass]="formValidator('platformType')">Platform Type</label>
-      <ng-select [items]="formData?.platformType" [searchable]="true" formControlName="platformType" bindLabel="name"
-        bindValue="name" placeholder="Select platform" [ngClass]="{ 'is-invalid': submitted && f.platformType.errors }"
-        [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-    <div class="col-sm-5 mb-3">
-      <label class="form-label" [ngClass]="formValidator('failureType')">Failure Type</label>
-      <ng-select [items]="formData?.failureType" [searchable]="true" formControlName="failureType" bindLabel="name"
-        bindValue="name" placeholder="Select failure type"
-        [ngClass]="{ 'is-invalid': submitted && f.failureType.errors }" [addTag]="false" [markFirst]="false"
-        [appendTo]="'body'" (click)="getQirSettings()">
-      </ng-select>
-    </div>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('stakeholder')">Stakeholder</label>
-    <ng-select [items]="formData?.stakeholder" [searchable]="true" formControlName="stakeholder" bindLabel="name"
-      bindValue="name" placeholder="Select stakeholder" [ngClass]="{ 'is-invalid': submitted && f.stakeholder.errors }"
-      [addTag]="false" [markFirst]="false" [appendTo]="'body'" (click)="getQirSettings()">
-    </ng-select>
-  </div>
-
-  <div class="mb-3" *ngIf="form.get('stakeholder')?.value?.includes('Supplier')">
-    <label class="form-label" [ngClass]="formValidator('supplierName')">Supplier Name</label>
-    <input type="text" class="form-control" name="supplierName" formControlName="supplierName"
-      [ngClass]="{ 'is-invalid': submitted && f.supplierName.errors }" placeholder="Enter supplier name" />
-  </div>
-
-  <div class="row">
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('purchaseOrder')">PO number / SO number (If Available)</label>
-      <input type="text" class="form-control" name="purchaseOrder" formControlName="purchaseOrder"
-        [ngClass]="{ 'is-invalid': submitted && f.purchaseOrder.errors }" placeholder="Enter PO/SO Number" />
-    </div>
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('qtyAffected')">Qty of component affected (If Available)</label>
-      <input type="text" class="form-control" name="qtyAffected" formControlName="qtyAffected"
-        [ngClass]="{ 'is-invalid': submitted && f.qtyAffected.errors }"
-        placeholder="Enter qty of components affected" />
-    </div>
-    <div class="col-sm-4 mb-3">
-      <label class="form-label" [ngClass]="formValidator('qtyAffected1')">Qty of units affected (If Available)</label>
-      <input type="text" class="form-control" name="qtyAffected1" formControlName="qtyAffected1"
-        placeholder="Enter qty of units affected" [ngClass]="{ 'is-invalid': submitted && f.qtyAffected1.errors }" />
+      <div class="mb-3" *ngIf="form.get('stakeholder')?.value?.includes('Supplier')">
+        <label class="form-label" [ngClass]="formValidator('supplierName')">Supplier Name</label>
+        <input type="text" class="form-control" name="supplierName" formControlName="supplierName"
+          [ngClass]="{ 'is-invalid': submitted && f.supplierName.errors }" placeholder="Enter supplier company name" />
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm-12 mb-3">
-      <app-job-search (notifyParent)="notifyParent($event)" [form_label]="'FSID (If Available)'"
-        [value]="form.value.fieldServiceSchedulerId"></app-job-search>
-      <small>Please enter the field service scheduler id number if applicable.</small>
+  <!-- Additional Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-file-document-edit me-2"></i>Additional Information
+      </h5>
+      <small class="text-muted">Provide detailed description and any additional context</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('purchaseOrder')">Purchase/Sales Order Number (If Available)</label>
+          <input type="text" class="form-control" name="purchaseOrder" formControlName="purchaseOrder"
+            [ngClass]="{ 'is-invalid': submitted && f.purchaseOrder.errors }" placeholder="Enter PO/SO number" />
+        </div>
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('qtyAffected')">Quantity of Components Affected (If Available)</label>
+          <input type="text" class="form-control" name="qtyAffected" formControlName="qtyAffected"
+            [ngClass]="{ 'is-invalid': submitted && f.qtyAffected.errors }"
+            placeholder="Enter component quantity" />
+        </div>
+        <div class="col-sm-4 mb-3">
+          <label class="form-label" [ngClass]="formValidator('qtyAffected1')">Quantity of Units Affected (If Available)</label>
+          <input type="text" class="form-control" name="qtyAffected1" formControlName="qtyAffected1"
+            placeholder="Enter unit quantity" [ngClass]="{ 'is-invalid': submitted && f.qtyAffected1.errors }" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12 mb-3">
+          <app-job-search (notifyParent)="notifyParent($event)" [form_label]="'Field Service ID (If Available)'"
+            [value]="form.value.fieldServiceSchedulerId"></app-job-search>
+          <small class="text-muted">Enter the field service ID number if this issue relates to a service request.</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" [ngClass]="formValidator('issueComment')">
+          Issue Description and Troubleshooting Details
+        </label>
+        <quill-editor [ngClass]="{ 'is-invalid border border-danger rounded': submitted && f.issueComment.errors }" formControlName="issueComment"
+          placeholder="Provide a detailed description of the issue, including any troubleshooting steps performed, error messages, and conditions when the problem occurs..." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">
+        </quill-editor>
+      </div>
     </div>
   </div>
 
-  <div class="mb-3">
-    <label class="form-label" [ngClass]="formValidator('issueComment')">
-      Describe the issue or problem in detail (Also describe any troubleshooting performed)
-    </label>
-    <quill-editor [ngClass]="{ 'is-invalid border border-danger rounded': submitted && f.issueComment.errors }" formControlName="issueComment"
-      placeholder="Enter Comments here.." [modules]="quillConfig" [styles]="{height: '300px'}" style="width:100%">
-    </quill-editor>
-
-  </div>
-
-  <div class="mb-3">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
-        (change)="setBooleanToNumber('active')">
-      <label class="form-check-label" for="active">Active</label>
+  <!-- Status Management Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light border-0">
+      <h5 class="card-title mb-1 text-muted">
+        <i class="mdi mdi-toggle-switch me-2"></i>Status Management
+      </h5>
+      <small class="text-muted">Control the visibility and status of this QIR</small>
+    </div>
+    <div class="card-body">
+      <div class="form-check form-switch form-switch-md">
+        <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+          (change)="setBooleanToNumber('active')">
+        <label class="form-check-label" for="active">Active</label>
+      </div>
+      <small class="text-muted">Uncheck to mark this QIR as inactive (soft delete). Inactive QIRs are hidden from the main list but remain in the system for audit purposes.</small>
     </div>
   </div>
 

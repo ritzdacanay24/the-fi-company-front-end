@@ -1,0 +1,314 @@
+<div class="ul-label-usage">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0">
+              <i class="mdi mdi-clipboard-check me-2"></i>Record UL Label Usage
+            </h4>
+            <button type="button" 
+                    class="btn btn-outline-info btn-sm" 
+                    (click)="navigateToReport()">
+              <i class="mdi mdi-chart-line me-1"></i>View Usage Report
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- UL Label Selection & Info -->
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">UL Number <span class="required-asterisk">*</span></label>
+                <div class="position-relative">
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="ul_number"
+                         [class.is-invalid]="isFieldInvalid('ul_number')"
+                         [ngbTypeahead]="searchULNumbers"
+                         [resultTemplate]="ulNumberTemplate"
+                         [inputFormatter]="ulNumberFormatter"
+                         (selectItem)="onULNumberSelected($event.item)"
+                         (blur)="onULNumberBlur($any($event.target).value)"
+                         placeholder="Start typing UL number... (e.g., E123456)"
+                         #ulNumberInput>
+                  
+                  <div class="position-absolute top-50 end-0 translate-middle-y me-3" 
+                       *ngIf="!selectedULLabel && usageForm.get('ul_number')?.value">
+                    <i class="mdi mdi-magnify icon-muted"></i>
+                  </div>
+                  
+                  <div class="position-absolute top-50 end-0 translate-middle-y me-3" 
+                       *ngIf="selectedULLabel">
+                    <i class="mdi mdi-check-circle icon-ok"></i>
+                  </div>
+                </div>
+                
+                <ng-template #ulNumberTemplate let-result="result" let-term="term">
+                  <div class="d-flex align-items-center py-2">
+                    <i class="mdi mdi-certificate icon-accent me-3"></i>
+                    <div>
+                      <div class="fw-bold">{{ result }}</div>
+                      <small class="text-muted">Click to select this UL number</small>
+                    </div>
+                  </div>
+                </ng-template>
+                
+                <div class="invalid-feedback" *ngIf="isFieldInvalid('ul_number')">
+                  {{ getFieldError('ul_number') }}
+                </div>
+                
+                <div class="form-text" *ngIf="ulNumbers.length > 0">
+                  {{ ulNumbers.length }} UL numbers available for selection
+                </div>
+              </div>
+            </div>
+            
+              <div class="col-md-4">
+              <div class="card selected-card" *ngIf="selectedULLabel">
+                <div class="card-header header-selected">
+                  <h6 class="card-title mb-0">
+                    <i class="mdi mdi-check-circle me-2"></i>Selected UL Label
+                  </h6>
+                </div>
+                <div class="card-body">
+                  <div class="mb-2">
+                    <strong class="selected-ul-number">{{ selectedULLabel.ul_number }}</strong>
+                    <span class="status-badge ms-2"
+                          [ngClass]="{
+                            'active': selectedULLabel.status === 'active',
+                            'inactive': selectedULLabel.status === 'inactive',
+                            'expired': selectedULLabel.status === 'expired'
+                          }">
+                      {{ selectedULLabel.status | titlecase }}
+                    </span>
+                  </div>
+                  
+                  <p class="text-muted small mb-2">{{ selectedULLabel.description }}</p>
+                  
+                  <div class="small">
+                    <div class="mb-1" *ngIf="selectedULLabel.category">
+                      <i class="mdi mdi-tag me-1"></i>{{ selectedULLabel.category }}
+                    </div>
+                    <div class="mb-1" *ngIf="selectedULLabel.manufacturer">
+                      <i class="mdi mdi-factory me-1"></i>{{ selectedULLabel.manufacturer }}
+                    </div>
+                    <div *ngIf="selectedULLabel.certification_date">
+                      <i class="mdi mdi-calendar me-1"></i>Certified: {{ selectedULLabel.certification_date | date:'shortDate' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="alert alert-muted" *ngIf="!selectedULLabel && usageForm.get('ul_number')?.value">
+                <i class="mdi mdi-alert icon-tip me-2"></i>
+                <strong>UL Number not found</strong><br>
+                <small>Please select a valid UL number from the dropdown</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Usage Form -->
+          <form [formGroup]="usageForm" (ngSubmit)="onSubmit()">
+            <div class="row">
+              <!-- Serial Number and Quantity -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Eyefi Serial Number <span class="required-asterisk">*</span></label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="eyefi_serial_number"
+                         [class.is-invalid]="isFieldInvalid('eyefi_serial_number')"
+                         placeholder="Enter Eyefi serial number">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('eyefi_serial_number')">
+                    {{ getFieldError('eyefi_serial_number') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label class="form-label">Quantity Used <span class="required-asterisk">*</span></label>
+                  <input type="number" 
+                         class="form-control" 
+                         formControlName="quantity_used"
+                         [class.is-invalid]="isFieldInvalid('quantity_used')"
+                         min="1">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('quantity_used')">
+                    {{ getFieldError('quantity_used') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label class="form-label">Date Used <span class="required-asterisk">*</span></label>
+                  <input type="date" 
+                         class="form-control" 
+                         formControlName="date_used"
+                         [class.is-invalid]="isFieldInvalid('date_used')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('date_used')">
+                    {{ getFieldError('date_used') }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- User Information -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">User Name <span class="required-asterisk">*</span></label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="user_name"
+                         [class.is-invalid]="isFieldInvalid('user_name')"
+                         placeholder="Enter user's full name">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('user_name')">
+                    {{ getFieldError('user_name') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">User Signature/Wedge <span class="required-asterisk">*</span></label>
+                  <div class="input-group">
+                    <input type="text" 
+                           class="form-control" 
+                           formControlName="user_signature"
+                           [class.is-invalid]="isFieldInvalid('user_signature')"
+                           placeholder="Enter signature or wedge">
+                    <button type="button" 
+                            class="btn btn-outline-secondary" 
+                            (click)="generateSignature()"
+                            title="Generate signature">
+                      <i class="mdi mdi-auto-fix"></i>
+                    </button>
+                  </div>
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('user_signature')">
+                    {{ getFieldError('user_signature') }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Customer Information -->
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Customer Name <span class="required-asterisk">*</span></label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="customer_name"
+                         [class.is-invalid]="isFieldInvalid('customer_name')"
+                         placeholder="Enter customer or project name">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('customer_name')">
+                    {{ getFieldError('customer_name') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Notes</label>
+                  <textarea class="form-control" 
+                            formControlName="notes"
+                            rows="2"
+                            placeholder="Additional notes or comments"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Fill Buttons -->
+            <div class="mb-3">
+              <label class="form-label">Quick Fill:</label>
+              <div class="btn-group ms-2">
+                <button type="button" 
+                        class="btn btn-outline-primary btn-sm" 
+                        (click)="quickFillProduction()">
+                  <i class="mdi mdi-factory me-1"></i>Production
+                </button>
+                <button type="button" 
+                        class="btn btn-outline-muted btn-sm" 
+                        (click)="quickFillTesting()">
+                  <i class="mdi mdi-test-tube me-1"></i>Testing
+                </button>
+                <button type="button" 
+                        class="btn btn-outline-primary-alt btn-sm" 
+                        (click)="quickFillCustomer()">
+                  <i class="mdi mdi-account me-1"></i>Customer
+                </button>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-end gap-2">
+              <!-- Debug info for form validation -->
+              <div class="me-auto" *ngIf="!usageForm.valid">
+                  <small class="text-muted">
+                  Form Status: 
+                  <span class="status-indicator invalid" *ngIf="usageForm.invalid">Invalid</span>
+                  <span class="status-indicator valid" *ngIf="usageForm.valid">Valid</span>
+                  | UL Selected: 
+                  <span class="status-indicator missing" *ngIf="!selectedULLabel">No</span>
+                  <span class="status-indicator present" *ngIf="selectedULLabel">Yes</span>
+                  <br>
+                  <span class="status-indicator invalid" *ngIf="getInvalidFields().length > 0">
+                    Invalid fields: {{ getInvalidFields().join(', ') }}
+                  </span>
+                </small>
+              </div>
+              
+              <button type="button" 
+                      class="btn btn-secondary" 
+                      (click)="resetForm()">
+                <i class="mdi mdi-refresh me-1"></i>Reset
+              </button>
+              <button type="submit" 
+                      class="btn btn-primary" 
+                      [disabled]="isLoading">
+                <span class="spinner-border spinner-border-sm me-2" *ngIf="isLoading"></span>
+                <i class="mdi mdi-content-save me-1" *ngIf="!isLoading"></i>
+                {{ isLoading ? 'Recording...' : 'Record Usage' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage Guidelines -->
+  <div class="row mt-3">
+    <div class="col-12">
+      <div class="card border-info">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">
+            <i class="mdi mdi-information me-1"></i>Usage Guidelines
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Required Information:</h6>
+              <ul class="list-unstyled">
+                <li><i class="mdi mdi-check text-success me-1"></i>Valid UL Number from database</li>
+                <li><i class="mdi mdi-check text-success me-1"></i>Eyefi Serial Number</li>
+                <li><i class="mdi mdi-check text-success me-1"></i>Quantity used (minimum 1)</li>
+                <li><i class="mdi mdi-check text-success me-1"></i>User name and signature</li>
+                <li><i class="mdi mdi-check text-success me-1"></i>Customer name</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6>Tips:</h6>
+              <ul class="list-unstyled">
+                <li><i class="mdi mdi-lightbulb text-warning me-1"></i>Use autocomplete for UL numbers</li>
+                <li><i class="mdi mdi-lightbulb text-warning me-1"></i>Generate signature automatically</li>
+                <li><i class="mdi mdi-lightbulb text-warning me-1"></i>Use quick fill for common scenarios</li>
+                <li><i class="mdi mdi-lightbulb text-warning me-1"></i>Add notes for special circumstances</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

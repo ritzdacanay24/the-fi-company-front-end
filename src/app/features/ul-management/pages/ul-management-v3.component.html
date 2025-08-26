@@ -1,0 +1,336 @@
+<div class="ul-v3-container">
+  <!-- Header -->
+  <div class="header-section">
+    <h1>UL Management v3</h1>
+    <p class="subtitle">Admin adds ranges, users select next available UL for usage</p>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">{{ getStats().total }}</div>
+        <div class="stat-label">Total ULs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ getStats().available }}</div>
+        <div class="stat-label">Available</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ getStats().used }}</div>
+        <div class="stat-label">Used</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ getStats().totalUsages }}</div>
+        <div class="stat-label">Total Usages</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Section - Add UL Range -->
+  <div class="admin-section">
+    <h2>Admin: Add UL Range</h2>
+    <button 
+      class="btn btn-primary" 
+      (click)="showRangeForm = !showRangeForm"
+      [disabled]="isProcessingRange"
+      type="button">
+      {{ showRangeForm ? 'Cancel' : 'Add UL Range' }}
+    </button>
+    
+    <!-- Progress Indicator for Large Ranges -->
+    <div class="range-progress" *ngIf="isProcessingRange">
+      <div class="progress-container">
+        <div class="progress-header">
+          <h4>Processing UL Range...</h4>
+          <p>{{ rangeProgress.message }}</p>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" 
+               [style.width.%]="(rangeProgress.current / rangeProgress.total) * 100"
+               role="progressbar">
+            {{ rangeProgress.current }} / {{ rangeProgress.total }}
+          </div>
+        </div>
+        <div class="progress-stats">
+          <small>
+            Progress: {{ ((rangeProgress.current / rangeProgress.total) * 100).toFixed(1) }}% 
+            ({{ rangeProgress.current }} of {{ rangeProgress.total }} processed)
+          </small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="range-form" *ngIf="showRangeForm && !isProcessingRange">
+      <form [formGroup]="rangeForm" (ngSubmit)="onRangeSubmit()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Number</label>
+            <input 
+              formControlName="startNumber" 
+              placeholder="73908498" 
+              class="form-control"
+              type="text">
+          </div>
+          <div class="form-group">
+            <label>End Number</label>
+            <input 
+              formControlName="endNumber" 
+              placeholder="73908517" 
+              class="form-control"
+              type="text">
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-success" [disabled]="rangeForm.invalid || isProcessingRange">
+              Add Range
+            </button>
+          </div>
+        </div>
+        
+        <!-- Range Preview/Validation Feedback -->
+        <div class="range-preview" *ngIf="rangeForm.get('startNumber')?.value && rangeForm.get('endNumber')?.value">
+          <div class="alert" [class]="checkRangeOverlap().isPotentialTypo ? 'alert-danger' : (checkRangeOverlap().hasOverlap ? 'alert-warning' : 'alert-info')">
+            <strong>Range Preview:</strong>
+            <div class="mt-2">
+              <div>Total ULs in range: {{ checkRangeOverlap().totalCount.toLocaleString() }}</div>
+              
+              <!-- Typo Warning -->
+              <div *ngIf="checkRangeOverlap().isPotentialTypo" class="text-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>POTENTIAL TYPO!</strong> This range seems unusually large.
+                <br>Did you mean: {{ checkRangeOverlap().typoSuggestion }}?
+              </div>
+              
+              <!-- Large range warning -->
+              <div *ngIf="checkRangeOverlap().totalCount > 100000 && !checkRangeOverlap().isPotentialTypo" class="text-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>EXTREMELY LARGE RANGE!</strong> This will be rejected (max: 50,000).
+              </div>
+              
+              <!-- Regular warnings for reasonable ranges -->
+              <div *ngIf="checkRangeOverlap().totalCount <= 100000">
+                <div *ngIf="checkRangeOverlap().totalCount > 1000" class="text-info">
+                  <i class="fas fa-info-circle"></i>
+                  Large range detected - will use background processing with progress indicator
+                </div>
+                <div *ngIf="checkRangeOverlap().hasOverlap" class="text-warning">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ checkRangeOverlap().overlapCount }} UL(s) already exist - will be skipped
+                </div>
+                <div *ngIf="checkRangeOverlap().newCount > 0" class="text-success">
+                  <i class="fas fa-check"></i>
+                  {{ checkRangeOverlap().newCount }} new UL(s) will be added
+                </div>
+                <div *ngIf="checkRangeOverlap().newCount === 0 && !checkRangeOverlap().isPotentialTypo" class="text-danger">
+                  <i class="fas fa-times"></i>
+                  All ULs in this range already exist
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- User Section - Select UL and Record Usage -->
+  <div class="user-section">
+    <h2>Users: Select UL and Record Usage</h2>
+    
+    <!-- Quick Select Next Available -->
+    <div class="quick-action" *ngIf="!selectedUL">
+      <button 
+        class="btn btn-outline-primary btn-lg" 
+        (click)="selectNextAvailable()"
+        [disabled]="getNextAvailableUL() === null">
+        Select Next Available UL: {{ getNextAvailableUL()?.ul_number || 'None Available' }}
+      </button>
+    </div>
+
+    <!-- Selected UL and Usage Form -->
+    <div class="usage-form-section" *ngIf="selectedUL">
+      <div class="selected-ul">
+        <h3>Selected UL: {{ selectedUL.ul_number }}</h3>
+        <button class="btn btn-secondary" (click)="cancelUsage()">Cancel</button>
+      </div>
+      
+      <form [formGroup]="usageForm" (ngSubmit)="onUsageSubmit()" class="usage-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Serial Number *</label>
+            <input formControlName="serial_number" class="form-control" placeholder="Enter serial number">
+          </div>
+          
+          <div class="form-group">
+            <label>Quantity *</label>
+            <input formControlName="quantity" type="number" min="1" class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>Date Used *</label>
+            <input formControlName="date_used" type="date" class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>User Signature *</label>
+            <input formControlName="user_signature" class="form-control" placeholder="Your signature">
+          </div>
+          
+          <div class="form-group">
+            <label>Customer *</label>
+            <input formControlName="customer" class="form-control" placeholder="Customer name">
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-success" [disabled]="usageForm.invalid">
+            Record Usage
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Available ULs Table -->
+  <div class="table-section">
+    <h2>Available UL Numbers</h2>
+    <div class="table-container">
+      <table class="ul-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" (change)="toggleSelectAll($event)" /></th>
+            <th>UL Number</th>
+            <th>Status</th>
+            <th>Date Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let label of getAvailableLabels()" 
+              [class.selected]="selectedUL?.id === label.id">
+            <td><input type="checkbox" [checked]="selectedULIds.includes(label.id)" (change)="toggleSelect(label.id, $event)" /></td>
+            <td class="ul-number">{{ label.ul_number }}</td>
+            <td>
+              <span class="badge badge-success">{{ label.status }}</span>
+            </td>
+            <td>{{ label.dateCreated | date:'short' }}</td>
+            <td>
+              <button 
+                class="btn btn-sm btn-primary" 
+                (click)="selectUL(label)">
+                Select
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="empty-state" *ngIf="getAvailableLabels().length === 0">
+        <p>No available UL numbers. Admin needs to add a range.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="batch-actions" *ngIf="selectedULIds.length > 0">
+    <div class="form-inline">
+      <span>{{ selectedULIds.length }} selected</span>
+      <button class="btn btn-sm btn-success" (click)="openBatchModal(batchModal)">Record Batch Usage</button>
+      <button class="btn btn-sm btn-secondary" (click)="clearSelection()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Recent Usages -->
+  <div class="usages-section" *ngIf="usages.length > 0">
+    <h2>Recent Usages</h2>
+    <div class="table-container">
+      <table class="ul-table">
+        <thead>
+          <tr>
+            <th>UL Number</th>
+            <th>Serial Number</th>
+            <th>Quantity</th>
+            <th>User</th>
+            <th>Customer</th>
+            <th>Date Used</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let usage of usages.slice(0, 10)">
+            <td>{{ usage.ul_number }}</td>
+            <td>{{ usage.serial_number }}</td>
+            <td>{{ usage.quantity }}</td>
+            <td>{{ usage.user_signature }}</td>
+            <td>{{ usage.customer }}</td>
+            <td>{{ usage.date_used | date:'short' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Batch Usage Modal (ng-bootstrap) -->
+<ng-template #batchModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">Record Batch Usage ({{ selectedULIds.length }} ULs)</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-info mb-3">
+      <small>Recording usage for {{ selectedULIds.length }} selected ULs. Enter details for each UL below.</small>
+    </div>
+    
+    <div class="ul-forms-container">
+      <div *ngFor="let ulId of selectedULIds; let i = index" class="ul-form-card mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">UL #{{ getULById(ulId)?.ul_number }} ({{ i + 1 }} of {{ selectedULIds.length }})</h5>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="batchForms[ulId]">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>Serial Number *</label>
+                    <input formControlName="serial_number" class="form-control" placeholder="Enter Eyefi serial number" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>Quantity *</label>
+                    <input formControlName="quantity" type="number" min="1" class="form-control" />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>Date Used *</label>
+                    <input formControlName="date_used" type="date" class="form-control" />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>User Signature *</label>
+                    <input formControlName="user_signature" class="form-control" placeholder="User signature" />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group">
+                    <label>Customer *</label>
+                    <input formControlName="customer" class="form-control" placeholder="Customer name" />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button type="button" class="btn btn-success" (click)="submitBatchUsage()">Record All Usage</button>
+      <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+    </div>
+  </div>
+</ng-template>

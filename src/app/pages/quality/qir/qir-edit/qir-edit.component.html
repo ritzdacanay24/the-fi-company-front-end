@@ -13,15 +13,103 @@
 
 <div class="row" [hidden]="!data && !id">
   <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+    
+    <!-- QIR Details Header -->
+    <div class="card shadow-sm border-0 mb-4" *ngIf="data">
+      <div class="card-body bg-primary position-relative overflow-hidden text-white">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="mdi mdi-clipboard-check" style="font-size: 8rem;"></i>
+        </div>
+        
+        <div class="row align-items-center position-relative">
+          <div class="col-auto">
+            <button class="btn btn-light btn-sm shadow-sm rounded-pill px-3" *ngIf="goBack" (click)="goBack()">
+              <i class="mdi mdi-arrow-left me-1"></i> Back
+            </button>
+          </div>
+          <div class="col">
+            <div class="d-flex align-items-center">
+              <div class="me-4">
+                <div class="bg-white bg-opacity-25 rounded-1 p-3 d-inline-flex">
+                  <i class="mdi mdi-clipboard-edit text-white" style="font-size: 1.5rem;"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1">
+                <div class="row">
+                  <div class="col-lg-8">
+                    <h2 class="mb-2 fw-bold text-white">QIR #{{data.id}}</h2>
+                    <div class="mb-3">
+                      <h6 class="text-white opacity-90 mb-1">{{data.customerName}}</h6>
+                      <p class="mb-0 text-white opacity-75">{{data.failureType}} | {{data.location}}</p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <span class="badge bg-white text-primary px-3 py-1 fw-medium">
+                        <i class="mdi mdi-flag me-1"></i>{{data.priority}}
+                      </span>
+                      <span class="badge bg-white text-success px-3 py-1 fw-medium">
+                        <i class="mdi mdi-check-circle me-1"></i>{{data.status}}
+                      </span>
+                      <span class="badge bg-white text-info px-3 py-1 fw-medium">
+                        <i class="mdi mdi-cog me-1"></i>{{data.componentType}}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <div class="bg-primary-subtle bg-opacity-15 rounded p-3">
+                      <div class="text-primary">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <small class="opacity-75 text-start">Created:</small>
+                          <small class="fw-medium">{{data.createdDate | date:'MMM d, y'}}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <small class="opacity-75 text-start">Reported:</small>
+                          <small class="fw-medium">{{data.customerReportedDate | date:'MMM d, y'}}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                          <small class="opacity-75 text-start">Submitted by:</small>
+                          <small class="fw-medium">{{data.first_name}} {{data.last_name}}</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-auto">
+            <button type="button" (click)="onDownloadAsPdf()" class="btn btn-light btn-sm shadow-sm px-3" [disabled]="isLoading">
+              <i class="bx bxs-file-pdf text-danger me-2"></i> Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
-      <div class="card-header d-flex align-items-center">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0 text-dark">
+            <i class="mdi mdi-form-select me-2 text-primary"></i>Edit Quality Incident Report
+          </h5>
+          <div class="d-flex gap-2">
+            <button (click)="openQirResponse()" class="btn btn-outline-primary btn-sm">
+              <i class="mdi mdi-reply me-1"></i>QIR Response
+            </button>
+            <button type="button" (click)="onDownloadAsPdf()" class="btn btn-outline-secondary btn-sm" [disabled]="isLoading">
+              <i class="bx bxs-file-pdf text-danger me-1"></i>Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card-header d-flex align-items-center" *ngIf="!data">
         <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
           (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
         <h4 class="card-title mb-0 flex-grow-1 text-center d-none d-lg-block"> {{title}} </h4>
         <button type="button" (click)="onDownloadAsPdf()" class="btn btn-sm btn-light" [disabled]="isLoading">
           <span class="icon-on"><i class="bx bxs-file-pdf text-danger me-2"></i> Download as PDF</span>
         </button>
-
       </div>
       <div class="card-body" style="min-height:300;height: calc(100vh - 231px);overflow:auto">
         <app-qir-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-qir-form>
@@ -48,8 +136,11 @@
       </div>
       <div class="card-footer d-flex d-flex">
         <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button (click)="openQirResponse()" class="btn btn-primary me-2">QIR Response</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <i *ngIf="!isLoading" class="mdi mdi-content-save me-2"></i>
+          {{isLoading ? 'Updating...' : 'Update QIR'}}
+        </button>
       </div>
     </div>
   </div>
@@ -123,39 +214,39 @@
     </tr>
     <tr>
       <td class="bg-grey"><b>Preliminary Investigation Date</b></td>
-      <td>{{qirResponse?.preliminary_investigation}}</td>
+      <td class="wrap-text"><pre class="print-pre">{{ qirResponse?.preliminary_investigation }}</pre></td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>QA Findings</b></td>
     </tr>
     <tr>
-      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.findings}}</td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.findings }}</pre></td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Document Control Response</b></td>
     </tr>
     <tr>
-      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.document_control_response}}</td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.document_control_response }}</pre></td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Engineering Response</b></td>
     </tr>
     <tr>
-      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.fs_engineering_reponse}}</td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.fs_engineering_reponse }}</pre></td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Quality Team</b></td>
     </tr>
     <tr>
-      <td colspan="3" style="height:50px;vertical-align: top;">{{qirResponse?.quality_team}}</td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.quality_team }}</pre></td>
     </tr>
     <tr>
       <td class="bg-grey"><b>Closure By</b></td>
       <td class="bg-grey"><b>Closure Date</b></td>
     </tr>
     <tr>
-      <td>{{qirResponse?.closure_by}}</td>
-      <td>{{qirResponse?.closure_date}}</td>
+      <td>{{ qirResponse?.closure_by }}</td>
+      <td>{{ qirResponse?.closure_date }}</td>
     </tr>
   </table>
   <!-- <p class="text-right" style="text-align:right">FORM:8.70-00-1 REV NC</p> -->

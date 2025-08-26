@@ -1,26 +1,168 @@
-<div class="modal-header">
-  <h4 class="modal-title" id="modal-basic-title">{{title}}</h4>
+<div class="modal-header bg-primary bg-gradient border-bottom border-none position-relative">
+  <div class="d-flex align-items-center">
+    <div class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+         style="width: 2.5rem; height: 2.5rem;">
+      <i class="ri-quill-pen-line fs-4 text-white"></i>
+    </div>
+    <div>
+      <h4 class="modal-title mb-0 text-white" id="modal-basic-title">{{title}}</h4>
+      <p class="text-white text-opacity-75 mb-0 small mt-1">
+        Create your digital signature by typing your name below
+      </p>
+    </div>
+    <!-- Transparent decorative icon on the right -->
+    <div class="position-absolute top-50 end-0 translate-middle-y pe-4" style="opacity: 0.08; z-index: 1;">
+      <i class="ri-quill-pen-line" style="font-size: 3.5rem;"></i>
+    </div>
+  </div>
 </div>
-<div class="modal-body" style="margin-top:50px">
-  <div class="modal-content p-0 border-none text-center" style="width:100%;margin:auto;border:none">
-    <canvas id="canvas" height="150" style="border: solid 1px gray;padding:3px;display: none"></canvas>
-    <div class="row g-2 grid-margin">
-      <div class="col-md">
-        <div class="form-group form-group-lg">
-          <div class="col-sm-12">
-            <input autocomplete="off" type="text" class="form-control input-lg signature-text"
-              [(ngModel)]="signed_name" id="contentToWrite1" placeholder="Enter name" autofocus="off" #focus
-              [ngStyle]="{'font-family': signatureTypeDefault?.fontFamily}" (keyup.enter)="close()"
-              style="font-size: 2.875rem;border: dashed 2px gray;text-align:center;-webkit-box-shadow: unset;box-shadow: unset;">
-            <label for="contentToWrite1" class="mt-2">Enter Name</label>
+
+<div class="modal-body p-4">
+  <!-- Instructions Alert -->
+  <div class="alert alert-info border-0 mb-4">
+    <div class="d-flex align-items-start">
+      <i class="ri-information-line fs-5 me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-2">Digital Signature Instructions</h6>
+        <p class="mb-0">Type your full name in the field below to create your digital signature. This will be converted to a signature format and saved securely.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signature Creation Section -->
+  <div class="card border-0 bg-light">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+             style="width: 2.5rem; height: 2.5rem;">
+          <i class="ri-edit-line text-primary"></i>
+        </div>
+        <div>
+          <h5 class="mb-0 text-primary fw-semibold">Signature Input</h5>
+          <small class="text-muted">Enter your full name as you would like it to appear</small>
+        </div>
+      </div>
+
+      <!-- Hidden Canvas -->
+      <canvas id="canvas" height="150" style="border: solid 1px gray;padding:3px;display: none"></canvas>
+      
+      <!-- Signature Input -->
+      <div class="signature-input-container">
+        <label for="contentToWrite1" class="form-label fw-semibold required mb-2">
+          <i class="ri-user-line me-2"></i>Full Name for Signature
+        </label>
+        <input autocomplete="off" 
+               type="text" 
+               class="form-control signature-input"
+               [(ngModel)]="signed_name" 
+               id="contentToWrite1" 
+               placeholder="Type your full name here..." 
+               autofocus="off" 
+               #focus
+               [ngStyle]="{'font-family': signatureTypeDefault?.fontFamily}" 
+               (keyup.enter)="close()">
+        <div class="form-text mt-2">
+          <i class="ri-lightbulb-line me-1"></i>
+          Your name will be formatted as a digital signature. Press Enter to save quickly.
+        </div>
+        
+        <!-- Preview Section -->
+        <div *ngIf="signed_name" class="mt-4 p-3 border border-success border-opacity-25 rounded bg-white">
+          <label class="form-label fw-semibold text-success mb-2">
+            <i class="ri-eye-line me-2"></i>Signature Preview
+          </label>
+          <div class="signature-preview text-center py-3" 
+               [ngStyle]="{'font-family': signatureTypeDefault?.fontFamily}">
+            {{signed_name}}
+          </div>
+          <div class="text-center">
+            <small class="text-success">
+              <i class="ri-check-line me-1"></i>
+              This is how your signature will appear
+            </small>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Legal Notice -->
+  <div class="alert alert-warning border-0 mt-4">
+    <i class="ri-shield-check-line me-2"></i>
+    <small><strong>Legal Notice:</strong> By creating this digital signature, you acknowledge that it will serve as your legal signature for this document and carries the same legal weight as a handwritten signature.</small>
+  </div>
 </div>
-<div class="modal-footer d-flex">
-  <button (click)="dismiss()" type="button" class="btn btn-light me-auto">Close</button>
-  <button (click)="clear()" type="button" class="btn btn-danger">Clear</button>
-  <button (click)="close()" type="button" class="btn btn-primary">Save</button>
+
+<div class="modal-footer bg-light border-top">
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <small class="text-muted">
+      <i class="ri-information-line me-1"></i>
+      Signature will be saved and applied to the document
+    </small>
+    <div class="d-flex gap-2">
+      <button (click)="dismiss()" type="button" class="btn btn-outline-secondary">
+        <i class="ri-close-line me-2"></i>Cancel
+      </button>
+      <button (click)="clear()" type="button" class="btn btn-outline-danger" [disabled]="!signed_name">
+        <i class="ri-delete-bin-line me-2"></i>Clear
+      </button>
+      <button (click)="close()" type="button" class="btn btn-primary" [disabled]="!signed_name?.trim()">
+        <i class="ri-save-line me-2"></i>Save Signature
+      </button>
+    </div>
+  </div>
 </div>
+
+<style>
+.signature-input {
+  font-size: 2rem !important;
+  text-align: center;
+  border: 2px dashed #6c757d;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+.signature-input:focus {
+  border-color: var(--bs-primary);
+  border-style: solid;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+  -webkit-box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.signature-preview {
+  font-size: 2.5rem;
+  color: var(--bs-primary);
+  font-style: italic;
+  font-weight: 500;
+  border-bottom: 2px solid #dee2e6;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signature-input-container {
+  position: relative;
+}
+
+.required::after {
+  content: " *";
+  color: #dc3545;
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+.modal-header {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.modal-footer {
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+</style>

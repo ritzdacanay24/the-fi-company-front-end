@@ -1,0 +1,80 @@
+<!-- Photo Taking Section -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-light border-0 py-3">
+    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
+      <i class="mdi mdi-camera me-2 text-primary"></i>
+      Your Photos
+      <span class="badge bg-primary ms-2 rounded-pill" *ngIf="getPhotos().length > 0">
+        {{getPhotos().length}}
+      </span>
+    </h6>
+  </div>
+  
+  <div class="card-body p-4">
+    <!-- Photo Display Grid -->
+    <div class="row g-3" *ngIf="getPhotos().length > 0">
+      <div class="col-6 col-md-4 col-lg-3" *ngFor="let photo of getPhotos(); let i = index">
+        <div class="position-relative">
+          <div class="ratio ratio-1x1 rounded overflow-hidden shadow-sm">
+            <img [src]="getPhotoUrl(photo)" 
+                 class="object-fit-cover"
+                 [alt]="'Photo ' + (i + 1)"
+                 loading="lazy">
+          </div>
+          
+          <!-- Delete Button -->
+          <button class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle"
+                  style="width: 24px; height: 24px; padding: 0;"
+                  [disabled]="isDisabled()"
+                  (click)="onDeletePhoto(photo, progress?.item?.id)"
+                  title="Delete photo">
+            <i class="mdi mdi-close" style="font-size: 0.75rem;"></i>
+          </button>
+          
+          <!-- Photo Number -->
+          <span class="badge bg-dark position-absolute bottom-0 start-0 m-1 rounded-pill">
+            {{i + 1}}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- No Photos Message -->
+    <div class="text-center py-4" *ngIf="getPhotos().length === 0">
+      <i class="mdi mdi-camera-outline text-muted mb-2" style="font-size: 3rem;"></i>
+      <p class="text-muted mb-0">No photos taken yet</p>
+    </div>
+    
+    <!-- Upload Section -->
+    <div class="mt-4">
+      <div class="d-grid">
+        <label class="btn btn-primary btn-lg rounded-pill position-relative overflow-hidden" 
+               [class.disabled]="isDisabled()">
+          <i class="mdi mdi-camera-plus me-2"></i>
+          <span class="fw-semibold">Take Photo</span>
+          
+          <input type="file" 
+                 class="position-absolute opacity-0" 
+                 style="top: 0; left: 0; width: 100%; height: 100%;"
+                 accept="image/*" 
+                 capture="environment"
+                 [disabled]="isDisabled()"
+                 (change)="onFileSelect($event, progress?.item?.id)">
+        </label>
+      </div>
+      
+      <!-- Upload Requirements -->
+      <div class="mt-3 p-3 bg-light rounded">
+        <small class="text-muted d-block">
+          <i class="mdi mdi-information-outline me-1"></i>
+          <strong>Photo Requirements:</strong>
+        </small>
+        <ul class="small text-muted mb-0 mt-1">
+          <li>Take clear, well-lit photos</li>
+          <li>Ensure all relevant details are visible</li>
+          <li>Multiple angles may be helpful</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

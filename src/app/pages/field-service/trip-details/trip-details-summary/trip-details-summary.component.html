@@ -1,68 +1,255 @@
-<div class="table-responsive">
-    <table class="table table-sm table-bordered" [ngClass]="fontSizeClass">
-        <ng-container *ngFor="let row of data | sortBydate  : 'start_datetime'; let i = index">
-            <thead>
-                <tr [ngClass]="{'bg-info text-dark':row.id == id}">
-                    <th colspan="5">
-                        {{row.type_of_travel?.replace('_', ' ') | uppercase}} #{{row.id}} FSID. {{row.fsId
-                        || 'Not Assigned to FSID #'}}
-                        <span (click)="viewTripDetailById(row.id)" class="float-end pointer" *ngIf="!disableAddEdit"><u>
-                                Edit </u></span>
-                        <span class="float-end mx-2" *ngIf="!disableAddEdit"> | </span>
-                        <span (click)="add(row)" class="float-end pointer" *ngIf="!disableAddEdit"><u> Add </u></span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="test-{{row.id}}">
-                <tr>
-                    <th class="table-active">Name</th>
-                    <th>{{row.address_name}}</th>
-                    <th class="table-active">Confirmation #</th>
-                    <th>{{row.confirmation}}</th>
-                </tr>
-                <tr *ngIf="row.type_of_travel == 'flight'">
-                    <th class="table-active">Flight Out</th>
-                    <th>{{row.flight_out}}</th>
-                    <th class="table-active">Flight In</th>
-                    <th>{{row.flight_in}}</th>
-                </tr>
-                <tr>
-                    <th rowspan="2" class="table-active">{{row.location_name || 'Location'}}</th>
-                    <th>{{row.address}} {{row.address1}}</th>
-                    <th class="table-active">{{row.start_datetime_name}}</th>
-                    <th>{{row.start_datetime | date: 'MM/dd/yyyy hh:mm a'}}</th>
-                </tr>
-                <tr>
-                    <th>{{row.city}}, {{row.state}} {{row.zip_code}}</th>
-                    <th class="table-active">{{row.end_datetime_name}}</th>
-                    <th>{{row.end_datetime | date: 'MM/dd/yyyy hh:mm a'}}</th>
-                </tr>
-                <tr *ngIf="row.type_of_travel == 'rental_car'">
-                    <th class="table-active">Driver</th>
-                    <th colspan="3">{{row.rental_car_driver}}</th>
-                </tr>
-                <tr>
-                    <th colspan="4">
-                        Attachments
-                    </th>
-                </tr>
-                <tr *ngIf="!row.attachments?.length">
-                    <th colspan="4">
-                        <span class="text-info">No Attachments found</span>
-                    </th>
-                </tr>
-                <tr *ngFor="let row of row?.attachments; let ii = index">
-                    <th style="width:50px">{{ii+1}}</th>
-                    <th colspan="4">
-                        <i class="feather icon-users"></i> <a [href]="row.url" target="_blank">{{row.fileName}}</a>
-                    </th>
-                </tr>
-                <tr>
-                    <th colspan="4" [ngClass]="{'text-danger': !row.email_sent, 'text-success': row.email_sent}">
-                        Email Sent On : {{row.email_sent || 'Not Sent'}}</th>
-                </tr>
-            </tbody>
-            <br />
-        </ng-container>
-    </table>
+<div class="container-fluid">
+  <!-- Trip Timeline Container -->
+  <div class="position-relative" *ngIf="data?.length">
+    <!-- Timeline Line -->
+    <div class="position-absolute start-0 top-0 bottom-0 d-none d-md-block" 
+         style="left: 2rem; width: 2px; background: linear-gradient(to bottom, #e9ecef, #6c757d, #e9ecef); z-index: 1;">
+    </div>
+    
+    <ng-container *ngFor="let trip of data | sortBydate : 'start_datetime'; let i = index; let first = first; let last = last">
+      <!-- Trip Item -->
+      <div class="position-relative mb-3" [id]="'test-' + trip.id">
+        
+        <!-- Enhanced Timeline Node -->
+        <div class="position-absolute d-none d-md-flex align-items-center justify-content-center"
+             style="left: 1rem; top: 1.5rem; width: 2.5rem; height: 2.5rem; z-index: 2;">
+          <div class="position-relative">
+            <!-- Trip sequence number -->
+            <div class="position-absolute bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                 style="top: -6px; right: -6px; width: 1rem; height: 1rem; font-size: 0.6rem; border: 1px solid var(--bs-border-color); z-index: 3;">
+              {{i + 1}}
+            </div>
+            <!-- Main icon with enhanced styling -->
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm position-relative"
+                 style="width: 2.5rem; height: 2.5rem; border: 3px solid white;"
+                 [ngClass]="getTripConfig(trip.type_of_travel).bgClass">
+              <!-- Pulse animation for active trip -->
+              <div *ngIf="trip.id == id" class="position-absolute rounded-circle animate-pulse"
+                   style="width: 100%; height: 100%; top: 0; left: 0;"
+                   [ngClass]="getTripConfig(trip.type_of_travel).bgClass + ' opacity-25'">
+              </div>
+              <i [class]="getTripConfig(trip.type_of_travel).icon" 
+                 class="text-white position-relative" style="font-size: 1rem; z-index: 2;"></i>
+            </div>
+            <!-- Status indicator dot -->
+            <div class="position-absolute rounded-circle"
+                 style="bottom: -2px; right: -2px; width: 0.75rem; height: 0.75rem; border: 2px solid white; z-index: 3;"
+                 [ngClass]="{
+                   'bg-success': trip.email_sent,
+                   'bg-warning': trip.confirmation && !trip.email_sent,
+                   'bg-secondary': !trip.confirmation
+                 }">
+            </div>
+          </div>
+        </div>
+
+        <!-- Compact Trip Card -->
+        <div class="ms-md-5 ps-md-3">
+          <div class="card border-0 shadow-sm" 
+               [class.border-primary]="trip.id == id" 
+               [class.border-2]="trip.id == id"
+               style="border-radius: 12px;">
+            
+            <!-- Compact Header -->
+            <div class="card-header border-0 py-2 px-3"
+                 [ngClass]="{
+                   'bg-primary bg-opacity-10': trip.type_of_travel === 'flight',
+                   'bg-success bg-opacity-10': trip.type_of_travel === 'rental_car',
+                   'bg-info bg-opacity-10': trip.type_of_travel === 'hotel',
+                   'bg-warning bg-opacity-10': trip.type_of_travel === 'equipment'
+                 }"
+                 style="border-radius: 12px 12px 0 0;">
+              
+              <div class="row align-items-center">
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center">
+                    <span class="rounded-circle d-flex align-items-center justify-content-center me-2"
+                          style="width: 1.75rem; height: 1.75rem;"
+                          [ngClass]="{
+                            'bg-primary': trip.type_of_travel === 'flight',
+                            'bg-success': trip.type_of_travel === 'rental_car',
+                            'bg-info': trip.type_of_travel === 'hotel',
+                            'bg-warning': trip.type_of_travel === 'equipment'
+                          }">
+                      <i [class]="getTripConfig(trip.type_of_travel).icon" 
+                         class="text-white" style="font-size: 0.875rem;"></i>
+                    </span>
+                    <div>
+                      <h6 class="mb-0 fw-semibold">
+                        {{trip.type_of_travel?.replace('_', ' ') | titlecase}} 
+                        <span class="badge bg-secondary ms-1">#{{trip.id}}</span>
+                      </h6>
+                      <small class="text-white">{{trip.address_name || 'Unnamed'}}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                  <div class="d-flex align-items-center justify-content-md-end gap-2">
+                    <small class="text-white">FSID: {{trip.fsId || 'Unassigned'}}</small>
+                    <div class="d-flex gap-1" *ngIf="!disableAddEdit">
+                      <button class="btn btn-outline-primary btn-sm py-0 px-2" (click)="add(trip)" title="Add">
+                        <i class="mdi mdi-plus" style="font-size: 0.75rem;"></i>
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="viewTripDetailById(trip.id)" title="Edit">
+                        <i class="mdi mdi-pencil" style="font-size: 0.75rem;"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Compact Content -->
+            <div class="card-body p-3">
+              <div class="row">
+                <!-- Left Column: Basic Info -->
+                <div class="col-md-4">
+                  <div class="mb-2">
+                    <small class="text-muted fw-medium d-block">Confirmation</small>
+                    <span class="badge bg-success-subtle text-success">{{trip.confirmation || 'Pending'}}</span>
+                  </div>
+                  
+                  <!-- Flight Specific -->
+                  <div *ngIf="trip.type_of_travel === 'flight'" class="mb-2">
+                    <small class="text-muted fw-medium d-block">
+                      <i class="mdi mdi-airplane-takeoff me-1"></i>Flight Info
+                    </small>
+                    <div class="small">
+                      <div><i class="mdi mdi-airplane-takeoff text-success me-1"></i><strong>Out:</strong> {{trip.flight_out || 'TBD'}}</div>
+                      <div><i class="mdi mdi-airplane-landing text-danger me-1"></i><strong>In:</strong> {{trip.flight_in || 'TBD'}}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Rental Car Specific -->
+                  <div *ngIf="trip.type_of_travel === 'rental_car'" class="mb-2">
+                    <small class="text-muted fw-medium d-block">
+                      <i class="mdi mdi-account-circle me-1"></i>Driver
+                    </small>
+                    <div class="small fw-semibold">
+                      <i class="mdi mdi-account me-1 text-muted"></i>{{trip.rental_car_driver || 'Not specified'}}
+                    </div>
+                  </div>
+
+                  <!-- Hotel Specific -->
+                  <div *ngIf="trip.type_of_travel === 'hotel'" class="mb-2">
+                    <small class="text-muted fw-medium d-block">
+                      <i class="mdi mdi-bed-outline me-1"></i>Accommodation
+                    </small>
+                    <div class="small fw-semibold">
+                      <i class="mdi mdi-home-city me-1 text-muted"></i>{{trip.address_name || 'Hotel Name'}}
+                    </div>
+                  </div>
+
+                  <!-- Equipment Specific -->
+                  <div *ngIf="trip.type_of_travel === 'equipment'" class="mb-2">
+                    <small class="text-muted fw-medium d-block">
+                      <i class="mdi mdi-tools me-1"></i>Equipment
+                    </small>
+                    <div class="small fw-semibold">
+                      <i class="mdi mdi-wrench me-1 text-muted"></i>{{trip.address_name || 'Equipment Type'}}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Center Column: Location -->
+                <div class="col-md-4">
+                  <small class="text-muted fw-medium d-block">
+                    <i class="mdi mdi-map-marker me-1"></i>{{trip.location_name || 'Location'}}
+                  </small>
+                  <div class="small text-muted">
+                    <div><i class="mdi mdi-home-map-marker me-1 text-primary"></i>{{trip.address}} {{trip.address1}}</div>
+                    <div><i class="mdi mdi-map-marker-outline me-1"></i>{{trip.city}}, {{trip.state}} {{trip.zip_code}}</div>
+                  </div>
+                </div>
+
+                <!-- Right Column: Schedule -->
+                <div class="col-md-4">
+                  <div class="row">
+                    <div class="col-6">
+                      <small class="text-muted fw-medium d-block">
+                        <i class="mdi mdi-calendar-start me-1"></i>{{trip.start_datetime_name || 'Start'}}
+                      </small>
+                      <div class="small fw-semibold text-success">
+                        {{trip.start_datetime | date: 'MMM dd'}}
+                      </div>
+                      <div class="small text-muted">{{trip.start_datetime | date: 'h:mm a'}}</div>
+                    </div>
+                    <div class="col-6">
+                      <small class="text-muted fw-medium d-block">
+                        <i class="mdi mdi-calendar-end me-1"></i>{{trip.end_datetime_name || 'End'}}
+                      </small>
+                      <div class="small fw-semibold text-danger">
+                        {{trip.end_datetime | date: 'MMM dd'}}
+                      </div>
+                      <div class="small text-muted">{{trip.end_datetime | date: 'h:mm a'}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer Row -->
+              <div class="row mt-3 pt-2 border-top">
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center">
+                    <small class="text-muted me-2">Email:</small>
+                    <span class="badge badge-sm" [ngClass]="{
+                      'bg-success mdi ': trip.email_sent,
+                      'bg-warning mdi ': !trip.email_sent
+                    }">
+                      <i [ngClass]="{
+                        'mdi mdi-email-check': trip.email_sent,
+                        'mdi mdi-email-alert': !trip.email_sent
+                      }" class="me-1" style="font-size: 0.7rem;"></i>
+                      {{trip.email_sent ? 'Sent' : 'Pending'}}
+                    </span>
+                  </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                  <small class="text-muted">
+                    <i class="mdi mdi-paperclip me-1"></i>
+                    {{trip.attachments?.length || 0}} attachments
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Empty State -->
+  <div class="text-center py-4" *ngIf="!data?.length">
+    <div class="mb-3">
+      <i class="mdi mdi-airplane-off text-muted" style="font-size: 2.5rem;"></i>
+    </div>
+    <h6 class="text-muted">No Trip Details Found</h6>
+    <p class="text-muted small">No travel arrangements have been made for this job yet.</p>
+    <button class="btn btn-primary btn-sm" *ngIf="!disableAddEdit" (click)="add({})">
+      <i class="mdi mdi-plus me-1"></i>Add Trip Details
+    </button>
+  </div>
 </div>
+
+<style>
+@keyframes flow {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(1.5rem); opacity: 0.7; }
+  100% { transform: translateY(2.5rem); opacity: 0; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+</style>

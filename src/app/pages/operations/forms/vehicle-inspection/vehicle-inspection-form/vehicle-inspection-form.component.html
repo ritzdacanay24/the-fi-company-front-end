@@ -1,149 +1,291 @@
 <form [formGroup]="form" autocomplete="off">
-    <div class="row">
-        <div class="col-lg-4 mb-3 col-sm-12">
-            <div class="form-group">
-                <label for="date" class="control-label required">Inspector Name</label>
-                <input type="type" class="form-control" placeholder="Enter inspectors name" formControlName="created_by"
-                    [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
-            </div>
-        </div>
-        <div class="col-lg-4 mb-3 col-sm-12">
-            <div class="form-group">
-                <label for="date" class="control-label required">Truck License Plate</label>
-                <select class="form-select" formControlName="truck_license_plate" (change)="checkAnyFailures()">
-                    <option class="form-select" disabled selected value="null">--SELECT--</option>
-                    <option *ngFor="let row of vehicleList" [value]="row.licensePlate">License Plate #:
-                        {{row.licensePlate}} - {{row.vehicleNumber}}</option>
-                </select>
-            </div>
-        </div>
+
+
+  <!-- Inspector Information Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-body-secondary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-account-check me-2"></i>Inspector Information
+      </h5>
+      <small class="text-body-secondary">Person conducting the inspection</small>
     </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-lg-6 mb-3">
+          <label for="created_by" class="form-label required">Inspector Name</label>
+          <input type="text" class="form-control" placeholder="Enter inspector's name" formControlName="created_by"
+            [ngClass]="{ 'is-invalid': submitted && f['created_by'].errors }">
+        </div>
+        <div class="col-lg-6 mb-3">
+          <label for="truck_license_plate" class="form-label required">Vehicle Selection</label>
+          <select class="form-select" formControlName="truck_license_plate" (change)="checkAnyFailures()">
+            <option disabled selected value="null">Select vehicle to inspect</option>
+            <option *ngFor="let row of vehicleList" [value]="row.licensePlate">
+              License Plate: {{row.licensePlate}} - {{row.vehicleNumber}}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <div class="row" *ngIf="form?.value?.truck_license_plate">
-        <div class="col-lg-4 mb-3 col-sm-12">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="not_used" formControlName="not_used">
-                <label class="form-check-label" for="not_used">
-                    Not Used
-                </label>
+  <!-- Vehicle Details Card -->
+  <div class="card mb-4 shadow-sm" *ngIf="form?.value?.truck_license_plate">
+    <div class="card-header bg-body-secondary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-car-info me-2"></i>Vehicle Details
+      </h5>
+      <small class="text-body-secondary">Current vehicle status and mileage</small>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-lg-4 mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="not_used" formControlName="not_used">
+            <label class="form-check-label" for="not_used">
+              <strong>Vehicle Not Used Today</strong>
+            </label>
+          </div>
+          <small class="text-body-secondary">Check if vehicle was not operated today</small>
+        </div>
+        <div class="col-lg-4 mb-3">
+          <label for="mileage" class="form-label">Current Mileage</label>
+          <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter current mileage"
+            formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure Alert -->
+  <div class="alert d-flex align-items-center" role="alert" *ngIf="failureMessage" [ngClass]="failureClass">
+    <i class="mdi mdi-alert-circle me-2"></i>
+    {{failureMessage}}
+  </div>
+
+  <!-- Inspection Checklist Card -->
+  <div class="card mb-4 shadow-sm" *ngIf="!form?.value?.not_used && form?.value?.truck_license_plate">
+    <div class="card-header bg-body-secondary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-clipboard-check me-2"></i>Inspection Checklist
+      </h5>
+      <small class="text-body-secondary">Complete safety and maintenance inspection</small>
+    </div>
+    <div class="card-body">
+      <div class="inspection-section mb-4" *ngFor="let row of formValues?.checklist; let i = index">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+              <div class="flex-grow-1 mb-3 mb-md-0">
+                <h6 class="mb-0 text-white">{{row.name}}</h6>
+              </div>
+              <div class="d-flex flex-column flex-sm-row gap-2">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input bg-success border-success" id="status-{{i}}"
+                    [(ngModel)]="row.status" [ngModelOptions]="{standalone: true}"
+                    (change)="groupSelect(row, row.details, 'status')" [disabled]="this.form.disabled">
+                  <label class="form-check-label text-white fw-medium" for="status-{{i}}">
+                    <i class="mdi mdi-check-all me-1"></i>All Pass
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input bg-danger border-danger" id="needMaint-{{i}}"
+                    [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
+                    (change)="groupSelect(row, row.details, 'needMaint')" [disabled]="this.form.disabled">
+                  <label class="form-check-label text-white fw-medium" for="needMaint-{{i}}">
+                    <i class="mdi mdi-alert me-1"></i>Has Failures
+                  </label>
+                </div>
+              </div>
             </div>
-        </div>
-        <div class="col-lg-4 mb-3 col-sm-12">
-            <label for="date" class="control-label">Mileage</label>
-            <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter mileage"
-                formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
-        </div>
-    </div>
+          </div>
+          <div class="card-body p-0">
+            <!-- Mobile-friendly layout -->
+            <div class="d-block d-lg-none">
+              <div *ngFor="let row1 of row.details; let ii = index;" class="border-bottom">
+                <div class="p-4">
+                  <!-- Item Header -->
+                  <div class="mb-3">
+                    <h6 class="fw-semibold mb-2">{{row1.name}}</h6>
+                    <p class="text-body-secondary small mb-2 lh-sm">{{getItemDescription(row1.name)}}</p>
+                    
+                    <!-- Error Badges -->
+                    <div class="mb-2" *ngIf="row1.error || row1.allErrors?.length">
+                      <span class="badge bg-danger" *ngIf="row1.error">Required</span>
+                      <div *ngFor="let item of row1.allErrors" class="mt-1">
+                        <a href="https://dashboard.eye-fi.com/dist/web/dashboard/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" 
+                           target="_blank" class="badge bg-warning text-decoration-none">
+                          <i class="mdi mdi-alert-circle me-1"></i>Unresolved Issue
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Action Buttons -->
+                  <div class="d-grid gap-2">
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <div class="form-check p-0">
+                          <input type="radio" class="btn-check" id="pass-mobile-{{i}}-{{ii}}"
+                            name="{{row.name}}{{row1.name}}{{ii}}" [(ngModel)]="row1.status"
+                            [ngModelOptions]="{standalone: true}" [value]="1" [disabled]="this.form.disabled"
+                            (change)="updateHeaderStatus(row, row.details)">
+                          <label class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center" 
+                                 for="pass-mobile-{{i}}-{{ii}}"
+                                 [ngClass]="{'btn-success text-white': row1.status === 1}">
+                            <i class="mdi mdi-check-circle me-2" *ngIf="row1.status === 1"></i>
+                            <i class="mdi mdi-check me-2" *ngIf="row1.status !== 1"></i>
+                            Pass
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="form-check p-0">
+                          <input type="radio" class="btn-check" id="fail-mobile-{{i}}-{{ii}}"
+                            [(ngModel)]="row1.status" [ngModelOptions]="{standalone: true}"
+                            name="{{row.name}}{{row1.name}}{{ii}}" [value]="0" [disabled]="this.form.disabled"
+                            (change)="updateHeaderStatus(row, row.details)">
+                          <label class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center" 
+                                 for="fail-mobile-{{i}}-{{ii}}"
+                                 [ngClass]="{'btn-danger text-white': row1.status === 0}">
+                            <i class="mdi mdi-close-circle me-2" *ngIf="row1.status === 0"></i>
+                            <i class="mdi mdi-close me-2" *ngIf="row1.status !== 0"></i>
+                            Fail
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
+                    <!-- Resolve Button -->
+                    <button class="btn btn-sm mt-2" (click)="resolveIssue(row1)" 
+                      [disabled]="row1?.id"
+                      [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-outline-secondary'"
+                      *ngIf="id && row1.status === 0">
+                      <i class="mdi me-2" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : row1?.resolved_confirmed_date ? 'mdi-clock-outline' : 'mdi-wrench'"></i>
+                      {{row1?.resolved_confirmed_date ? 'Issue Resolved' : row1?.resolved_confirmed_date ? 'Pending Review' : 'Resolve Issue'}}
+                    </button>
+                    
+                    <!-- No Action Required Message -->
+                    <div class="text-center mt-2" *ngIf="id && row1.status === 1">
+                      <small class="text-success fst-italic">
+                        <i class="mdi mdi-check-circle me-1"></i>
+                        No action required - Passed inspection
+                      </small>
+                    </div>
+                    
+                    <!-- Placeholder when not submitted -->
+                    <div class="text-center mt-2" *ngIf="!id">
+                      <small class="text-body-secondary fst-italic">
+                        <i class="mdi mdi-information-outline me-1"></i>
+                        Issue reporting available after inspection submission
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-
-    <div [ngClass]="failureClass" role="alert" *ngIf="failureMessage">
-        {{failureMessage}}
-    </div>
-
-
-    <hr>
-    <div class="row" *ngIf="!form?.value?.not_used && form?.value?.truck_license_plate">
-        <div class="col-lg-12 mb-3">
-            <div class="table-responsive">
-                <table class="table table-bordered mb-3" *ngFor="let row of formValues?.checklist; let i = index">
-                    <thead class="bg-light">
-                        <tr>
-                            <th style="white-space: normal;">{{row.name}}</th>
-                            <th>
-                                <div class="form-check form-check-flat form-check-success m-0 p-0">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" class="form-check-input" id="status-{{i}}"
-                                            [(ngModel)]="row.status" [ngModelOptions]="{standalone: true}"
-                                            (change)="groupSelect(row, row.details, 'status')"
-                                            [disabled]="this.form.disabled">
-                                        <i class="input-frame"></i> Pass
-                                    </label>
-                                </div>
-                            </th>
-                            <th>
-                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" class="form-check-input" id="needMaint-{{i}}"
-                                            [(ngModel)]="row.needMaint" [ngModelOptions]="{standalone: true}"
-                                            (change)="groupSelect(row, row.details, 'needMaint')"
-                                            [disabled]="this.form.disabled">
-                                        <i class="input-frame"></i> Fail
-                                    </label>
-                                </div>
-                            </th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody style="white-space: nowrap;" *ngFor="let row1 of row.details; let ii = index;">
-                        <tr>
-                            <td style="white-space: normal;min-width:400px;max-width:400px">{{row1.name}} <span
-                                    class="text-danger" *ngIf="row1.error">(Required)</span>
-                                    <div *ngFor="let item of row1.allErrors" class="text-danger">
-                                        <a href="https://dashboard.eye-fi.com/dist/web/dashboard/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" target="_blank" class="text-danger"><u>Unresolved Errors {{item.date_created}}</u></a> 
-                                    </div>
-                            </td>
-                            <td style="width:250px;cursor:pointer;text-align:center">
-                                <div class="form-check  form-check-success m-0 p-0">
-                                    <label class="form-check-label" for="s{{ii}}">
-                                        <input type="radio" class="form-check-input" id="s{{ii}}"
-                                            name="{{row.name}}{{row1.name}}{{ii}}" [(ngModel)]="row1.status"
-                                            [ngModelOptions]="{standalone: true}" [value]="1"
-                                            [disabled]="this.form.disabled">
-                                        <i class="input-frame"></i> Pass
-                                    </label>
-                                </div>
-                            </td>
-                            <td style="width:250px;cursor:pointer;text-align:center">
-                                <div class="form-check form-check-flat form-check-danger m-0 p-0">
-                                    <label class="form-check-label" for="v{{ii}}1">
-                                        <input type="radio" class="form-check-input" id="v{{ii}}1"
-                                            [(ngModel)]="row1.status" [ngModelOptions]="{standalone: true}"
-                                            name="{{row.name}}{{row1.name}}{{ii}}" [value]="0"
-                                            [disabled]="this.form.disabled">
-                                        <i class="input-frame"></i> Fail
-                                    </label>
-                                </div>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm" (click)="resolveIssue(row1)" [disabled]="!row1?.id"
-                                    [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-light'">
-                                    {{
-                                    row1?.resolved_confirmed_date ? 'Resolved' : row1?.resolved_confirmed_date ?
-                                    'Pending Review': 'Resolve'
-                                    }}</button>
-                            </td>
-                        </tr>
-                        <!-- <tr *ngIf="row1.status == 0">
-                            <td colspan="3">
-                                <textarea autosize [minRows]="1" class="form-control border border-danger" [(ngModel)]="row1.comments" placeholder="Enter reason why it failed. (Option)"></textarea>
-                            </td>
-                        </tr> -->
-                    </tbody>
+            <!-- Desktop layout -->
+            <div class="d-none d-lg-block">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50%;">Inspection Item</th>
+                      <th style="width: 15%;" class="text-center">Pass</th>
+                      <th style="width: 15%;" class="text-center">Fail</th>
+                      <th style="width: 20%;" class="text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="align-middle" *ngFor="let row1 of row.details; let ii = index;">
+                      <td class="ps-4">
+                        <div class="py-2">
+                          <h6 class="fw-semibold mb-2">{{row1.name}}</h6>
+                          <p class="text-body-secondary small mb-2 lh-sm">{{getItemDescription(row1.name)}}</p>
+                          <div *ngIf="row1.error || row1.allErrors?.length">
+                            <span class="badge bg-danger me-2" *ngIf="row1.error">Required</span>
+                            <div *ngFor="let item of row1.allErrors" class="mt-1">
+                              <a href="https://dashboard.eye-fi.com/dist/web/dashboard/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" 
+                                 target="_blank" class="badge bg-warning text-decoration-none">
+                                <i class="mdi mdi-alert-circle me-1"></i>Unresolved Issue
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check d-inline-block">
+                          <input type="radio" class="btn-check" id="pass-{{i}}-{{ii}}"
+                            name="{{row.name}}{{row1.name}}{{ii}}" [(ngModel)]="row1.status"
+                            [ngModelOptions]="{standalone: true}" [value]="1" [disabled]="this.form.disabled"
+                            (change)="updateHeaderStatus(row, row.details)">
+                          <label class="btn btn-outline-success" for="pass-{{i}}-{{ii}}"
+                                 [ngClass]="{'btn-success text-white': row1.status === 1}">
+                            <i class="mdi mdi-check-circle me-1" *ngIf="row1.status === 1"></i>
+                            <i class="mdi mdi-check me-1" *ngIf="row1.status !== 1"></i>
+                            Pass
+                          </label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <div class="form-check d-inline-block">
+                          <input type="radio" class="btn-check" id="fail-{{i}}-{{ii}}"
+                            [(ngModel)]="row1.status" [ngModelOptions]="{standalone: true}"
+                            name="{{row.name}}{{row1.name}}{{ii}}" [value]="0" [disabled]="this.form.disabled"
+                            (change)="updateHeaderStatus(row, row.details)">
+                          <label class="btn btn-outline-danger" for="fail-{{i}}-{{ii}}"
+                                 [ngClass]="{'btn-danger text-white': row1.status === 0}">
+                            <i class="mdi mdi-close-circle me-1" *ngIf="row1.status === 0"></i>
+                            <i class="mdi mdi-close me-1" *ngIf="row1.status !== 0"></i>
+                            Fail
+                          </label>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <button class="btn btn-sm" (click)="resolveIssue(row1)" 
+                          [disabled]="id && (!row1?.id || !isSubmitted)"
+                          [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-outline-secondary'"
+                          *ngIf="isSubmitted && row1.status === 0">
+                          <i class="mdi me-1" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : row1?.resolved_confirmed_date ? 'mdi-clock-outline' : 'mdi-wrench'"></i>
+                          {{row1?.resolved_confirmed_date ? 'Resolved' : row1?.resolved_confirmed_date ? 'Pending' : 'Report Issue'}}
+                        </button>
+                        
+                        <!-- No Action Required Message -->
+                        <small class="text-success fst-italic" *ngIf="isSubmitted && row1.status === 1">
+                          <i class="mdi mdi-check-circle me-1"></i>
+                          No action required
+                        </small>
+                        
+                        <!-- Placeholder when not submitted -->
+                        <small class="text-body-secondary fst-italic" *ngIf="!id">
+                          <i class="mdi mdi-lock me-1"></i>
+                          Complete inspection first
+                        </small>
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-    <div class="row">
-        <div class="col-lg-12 mb-3">
-            <div class="form-group">
-                <label for="comment">Additional Comments:</label>
-                <textarea class="form-control" rows="10" id="comment" formControlName="comments" required></textarea>
-            </div>
-        </div>
+  </div>
+
+  <!-- Additional Comments Card -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-body-secondary border-0">
+      <h5 class="card-title mb-1 text-body-secondary">
+        <i class="mdi mdi-comment-text me-2"></i>Additional Comments
+      </h5>
+      <small class="text-body-secondary">Any additional observations or notes</small>
     </div>
+    <div class="card-body">
+      <textarea class="form-control" rows="4" id="comments" formControlName="comments" 
+        placeholder="Enter any additional comments, observations, or maintenance notes..."></textarea>
+    </div>
+  </div>
 
-
-    <!-- <div>
-        <h4>Attachments</h4>
-        <p *ngIf="mainData?.attachments?.length == 0">No Attachment found.
-        <p>
-
-        <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between align-items-center pointer"
-                (click)="viewImage(row)" *ngFor="let row of mainData?.attachments; let i = index">
-                {{row.fileName}}
-            </li>
-        </ul>
-    </div> -->
 </form>

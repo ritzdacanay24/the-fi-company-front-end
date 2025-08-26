@@ -24,11 +24,12 @@ import { VehicleInspectionResolveModalService } from "./vehicle-inspection-resol
 })
 export class VehicleInspectionFormComponent implements OnInit {
   @Input() formValues = formValues;
-  form: FormGroup;
-
   @Input() submitted: boolean;
+  @Input() id: number | null = null; // ID of the vehicle inspection
+  @Input() isSubmitted: boolean = false; // Track if inspection has been submitted
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() setFormErrorsEmitter: EventEmitter<any> = new EventEmitter();
+  form: FormGroup;
 
   // convenience getter for easy access to form fields
   get f() {
@@ -38,33 +39,73 @@ export class VehicleInspectionFormComponent implements OnInit {
   public groupSelect(main, row, name) {
     if (name == "status") {
       if (main.status) {
+        // When "All Pass" is checked, uncheck "Has Failures" and set all items to Pass
         main.needMaint = false;
+        for (var i = 0; i < row.length; i++) {
+          row[i].status = 1;
+        }
+      } else {
+        // When "All Pass" is unchecked, reset all items to no selection
+        for (var i = 0; i < row.length; i++) {
+          row[i].status = null;
+        }
       }
     }
+    
     if (name == "needMaint") {
       if (main.needMaint) {
+        // When "Has Failures" is checked, uncheck "All Pass" and set all items to Fail
         main.status = false;
+        for (var i = 0; i < row.length; i++) {
+          row[i].status = 0;
+        }
+      } else {
+        // When "Has Failures" is unchecked, reset all items to no selection
+        for (var i = 0; i < row.length; i++) {
+          row[i].status = null;
+        }
       }
     }
+  }
 
-    for (var i = 0; i < row.length; i++) {
-      if (name == "status") {
-        if (main.status) {
-          row[i].needMaint = 1;
-          row[i].status = 1;
-        } else {
-          row[i].status = 0;
-        }
-      }
-      if (name == "needMaint") {
-        if (main.needMaint) {
-          row[i].status = 0;
-          row[i].needMaint = 0;
-        } else {
-          row[i].needMaint = 1;
-        }
-      }
+  // Add method to update header checkboxes based on individual item status
+  public updateHeaderStatus(main, row) {
+    const allPass = row.every(item => item.status === 1);
+    const allFail = row.every(item => item.status === 0);
+    const hasFailures = row.some(item => item.status === 0);
+    
+    if (allPass) {
+      main.status = true;
+      main.needMaint = false;
+    } else if (hasFailures) {
+      main.status = false;
+      main.needMaint = true;
+    } else {
+      main.status = false;
+      main.needMaint = false;
     }
+  }
+
+  // Add method to get description for each inspection item
+  public getItemDescription(itemName: string): string {
+    const descriptions = {
+      'Engine Oil and Coolant Levels': 'Verify adequate oil and coolant levels using dipstick and reservoir indicators',
+      'Windshield & Mirrors': 'Ensure clear visibility through windshield and proper adjustment of all mirrors',
+      'Doors & Windows Operation': 'Test all doors for secure closing and windows for proper operation',
+      'Emergency Brake System': 'Verify emergency brake engages and releases properly with adequate tension',
+      'Tire Condition & Pressure': 'Check tire pressure, tread depth, and inspect for wear patterns or damage',
+      'Fluid Leak Inspection': 'Examine ground under vehicle for any oil, coolant, brake fluid, or other leaks',
+      'Insurance Documentation': 'Confirm current insurance card is present and easily accessible in vehicle',
+      'Vehicle Registration': 'Verify vehicle registration is current and stored in designated location',
+      'Vehicle Cleanliness & Damage Assessment': 'Inspect interior and exterior for cleanliness, dents, scratches, or damage',
+      'Fuel Level & Dashboard Indicators': 'Check adequate fuel level and ensure no warning lights are illuminated',
+      'Windshield Wipers & Washers': 'Test wiper operation and washer fluid function, check blade condition',
+      'Horn Function Test': 'Verify horn produces clear, audible sound when activated',
+      'Lighting Systems Check': 'Test headlights, taillights, turn signals, hazard lights, and brake lights',
+      'Climate Control Systems': 'Verify heater, air conditioning, and defroster operation when applicable'
+    };
+    
+    return descriptions[itemName] || 'Complete inspection according to established safety standards';
   }
 
   constructor(
@@ -82,6 +123,9 @@ export class VehicleInspectionFormComponent implements OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["formValues"]) {
       this.formValues = changes["formValues"].currentValue;
+    }
+    if (changes["id"]) {
+      this.id = changes["id"].currentValue;
     }
   }
   @Output() setDetailsFormEmitter: EventEmitter<any> = new EventEmitter();

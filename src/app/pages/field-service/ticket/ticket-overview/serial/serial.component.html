@@ -1,13 +1,47 @@
-<div class="row">
-  <div class="content-grid col-xxl-8">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <h4 class="card-title mb-0 flex-grow-1 me-auto">Serial</h4>
-        <button class="btn btn-primary float-end btn-md" (click)="open(content)" [disabled]="loading">Add More</button>
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-8">
+    <div class="card border-0">
+      <div class="card-header bg-warning bg-gradient text-white position-relative overflow-hidden p-4"
+           style="border-radius: 16px 16px 0 0;">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+          <i class="ri-qr-code-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+        </div>
+        
+        <div class="d-flex align-items-center justify-content-between position-relative">
+          <div class="d-flex align-items-center">
+            <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                  style="width: 2.5rem; height: 2.5rem;">
+              <i class="ri-qr-code-line fs-4 text-white"></i>
+            </span>
+            <div>
+              <h4 class="mb-1 fw-bold text-white">
+                Serial Information
+              </h4>
+              <p class="text-white-50 mb-0">Manage device serial numbers and asset tracking</p>
+            </div>
+          </div>
+          
+          <div class="position-relative" style="z-index: 2;">
+            <button class="btn btn-light btn-sm" (click)="open(content)" [disabled]="loading">
+              <i class="ri-add-line me-1"></i>Add Serial
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="card-body p-0" style="height: calc(100vh - 312px);overflow: auto;">
-        <div *ngIf="loading" class="text-center p-3"> Loading data. Please wait. </div>
-        <div *ngIf="!data?.length && !loading" class="text-center p-3"> No serial numbers found.</div>
+
+      <div class="card-body p-0" style="height: calc(100vh - 300px);overflow: auto;">
+        <div *ngIf="loading" class="text-center p-5">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted">Loading serial data. Please wait...</p>
+        </div>
+        <div *ngIf="!data?.length && !loading" class="text-center p-5">
+          <i class="ri-qr-code-line text-muted mb-3" style="font-size: 3rem;"></i>
+          <h5 class="text-muted">No serial numbers found</h5>
+          <p class="text-muted mb-0">Add your first serial number to get started.</p>
+        </div>
         <div class="list-group list-group-flush">
           <a class="list-group-item list-group-item-action flex-column align-items-start"
             (click)="!disabled && open(content, row)" *ngFor="let row of data;">
@@ -18,46 +52,169 @@
             <p class="mb-1">Asset: {{row.customerAsset || '-'}}</p>
           </a>
         </div>
-        <p class="text-center p-1 bg-light" style="margin-left: 0px;
-              margin-right: 0px;" *ngIf="data.length && !loading">End of data</p>
+        <div *ngIf="data.length && !loading" class="text-center p-3 bg-light border-top">
+          <small class="text-muted">
+            <i class="ri-check-line me-1"></i>End of data
+          </small>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<ng-template #content let-offcanvas>
-  <div class="offcanvas-header">
-    <h4 class="offcanvas-title mb-0" id="offcanvas-basic-title">{{editInfo.id ? 'Edit': 'Add'}} Serial Info</h4>
+<ng-template #content let-modal>
+  <div class="modal-header bg-warning bg-gradient text-white position-relative overflow-hidden p-4"
+       style="border-radius: 16px 16px 0 0;">
+    <!-- Background Pattern -->
+    <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+      <i class="ri-qr-code-line" style="font-size: 8rem; transform: rotate(15deg);"></i>
+    </div>
+    
+    <div class="d-flex align-items-center position-relative">
+      <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+            style="width: 2.5rem; height: 2.5rem;">
+        <i class="ri-qr-code-line fs-4 text-white"></i>
+      </span>
+      <div>
+        <h4 class="mb-1 fw-bold text-white">
+          {{editInfo.id ? 'Edit' : 'Add'}} Serial Information
+        </h4>
+        <p class="text-white-50 mb-0">Manage device serial numbers and asset details</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close position-relative" style="z-index: 1;" (click)="modal.dismiss()"></button>
   </div>
-  <div class="offcanvas-body h-50">
-    <div class="mb-3">
-      <label class="form-label required">Type</label>
 
-      <div class="form-check" *ngFor="let row of ['Sign', 'Wedge']">
-        <input class="form-check-input mb-2" id="enum_answer_{{row}}" type="radio" name="flexRadioDefault"
-          [(ngModel)]="editInfo.type" [value]="row">
-        <label class="form-check-label mb-2" for="enum_answer_{{row}}">
-          {{row}}
-        </label>
+  <div class="modal-body">
+    <!-- Instructions Alert -->
+    <div class="alert alert-info border-0 mb-4">
+      <div class="d-flex align-items-start">
+        <i class="ri-information-line fs-5 me-3 mt-1"></i>
+        <div>
+          <h6 class="alert-heading mb-2">Serial Number Management</h6>
+          <p class="mb-0">Enter the device type and corresponding asset information for tracking and inventory purposes.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Type Selection -->
+    <div class="mb-4">
+      <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+             style="width: 2.5rem; height: 2.5rem;">
+          <i class="ri-settings-line text-primary"></i>
+        </div>
+        <div>
+          <h5 class="mb-0 text-primary fw-semibold">Device Type</h5>
+          <small class="text-muted">Select the type of device being tracked</small>
+        </div>
       </div>
 
+      <div class="border border-primary border-opacity-25 rounded p-3">
+        <label class="form-label fw-semibold required">
+          <i class="ri-device-line me-1"></i>Type
+        </label>
+        <div class="row">
+          <div class="col-md-6" *ngFor="let row of ['Sign', 'Wedge']">
+            <div class="form-check p-3 border rounded mb-2" 
+                 [class.border-primary]="editInfo.type === row"
+                 [class.bg-primary]="editInfo.type === row"
+                 [class.bg-opacity-10]="editInfo.type === row">
+              <input class="form-check-input" 
+                     id="type_{{row}}" 
+                     type="radio" 
+                     name="deviceType"
+                     [(ngModel)]="editInfo.type" 
+                     [value]="row">
+              <label class="form-check-label fw-semibold" for="type_{{row}}">
+                <i class="ri-{{row === 'Sign' ? 'signpost' : 'triangle'}}-line me-2"></i>
+                {{row}}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label">Customer Asset</label>
-      <input type="text" class="form-control form-control" placeholder="Customer Asset"
-        [(ngModel)]="editInfo.customerAsset">
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Eyefi Asset</label>
-      <input type="text" class="form-control form-control" placeholder="Eyefi Asset"
-        [(ngModel)]="editInfo.eyefiAsset">
+
+    <!-- Asset Information -->
+    <div class="row g-4">
+      <!-- Customer Asset -->
+      <div class="col-md-6">
+        <div class="border border-success border-opacity-25 rounded p-3 h-100">
+          <label class="form-label fw-semibold d-flex align-items-center">
+            <i class="ri-user-line me-2 text-success"></i>Customer Asset
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 placeholder="Enter customer asset identifier..." 
+                 [(ngModel)]="editInfo.customerAsset">
+          <div class="form-text">
+            <i class="ri-information-line me-1"></i>
+            Asset identifier provided by the customer.
+          </div>
+        </div>
+      </div>
+
+      <!-- Eyefi Asset -->
+      <div class="col-md-6">
+        <div class="border border-info border-opacity-25 rounded p-3 h-100">
+          <label class="form-label fw-semibold d-flex align-items-center">
+            <i class="ri-building-line me-2 text-info"></i>Eyefi Asset
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 placeholder="Enter Eyefi asset identifier..." 
+                 [(ngModel)]="editInfo.eyefiAsset">
+          <div class="form-text">
+            <i class="ri-information-line me-1"></i>
+            Internal Eyefi asset tracking number.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="offcanvas-footer p-2 mb-2">
-    <div class="text-end">
-      <button type="button" class="btn btn-light me-2" (click)="offcanvasService.dismiss()">Cancel</button>
-      <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="editInfo.id">Delete</button>
-      <button type="button" class="btn btn-primary" (click)="onSubmit()">Save</button>
+
+  <div class="modal-footer bg-light border-top">
+    <div class="d-flex align-items-center justify-content-between w-100">
+      <small class="text-muted">
+        <i class="ri-shield-check-line me-1"></i>
+        Asset information is saved for tracking and inventory
+      </small>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
+          <i class="ri-close-line me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-outline-danger" (click)="onDelete(); modal.close()" *ngIf="editInfo.id">
+          <i class="ri-delete-bin-line me-1"></i>Delete
+        </button>
+        <button type="button" class="btn btn-primary" (click)="onSubmit(); modal.close()">
+          <i class="ri-save-line me-1"></i>Save Serial
+        </button>
+      </div>
     </div>
   </div>
 </ng-template>
+
+<style>
+.required::after {
+  content: " *";
+  color: #dc3545;
+  display: inline;
+  white-space: nowrap;
+}
+
+.required {
+  display: inline-block;
+  width: auto;
+}
+
+.form-check:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-control:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>

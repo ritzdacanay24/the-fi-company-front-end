@@ -1,0 +1,2785 @@
+{
+  "priorityOptions": ["Low", "Medium", "High"],
+  "reasonCategory": [
+    "Kitting",
+    "Service",
+    "MRB Replacement",
+    "Item Not On Bom",
+    "Proto",
+    "Short On Work Order",
+    "Lost Part",
+    "Rework",
+    "IGT Rework",
+    "Cable",
+    "Floor Stock",
+    "Integrated sign Non-Conforming",
+    "Inventory Discrepancy",
+    "RTS – QC",
+    "RTS- Production",
+    "RTS- Field Service",
+    "RTS- Proto",
+    "N/A"
+  ],
+  "transactionType": [{
+    "TrType": "N/A",
+    "Description": "Not Applicable"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "BACK-CN",
+    "Description": "Return from Consignment Inspection (CN)"
+  }, {
+    "TrType": "BACK-DO",
+    "Description": "Return from Inspection (DO)"
+  }, {
+    "TrType": "BACK-PO",
+    "Description": "Return from Inspection (PO)"
+  }, {
+    "TrType": "BACK-SOR",
+    "Description": "Inspection Passes for SO Return"
+  }, {
+    "TrType": "BACK-UNP",
+    "Description": "Return From Inspection (Unplanned Rcpt)"
+  }, {
+    "TrType": "BACK-WH",
+    "Description": "Return from Inspection (Inter-Whse Rcpt)"
+  }, {
+    "TrType": "BACK-WO",
+    "Description": "Return from Inspection (WO)"
+  }, {
+    "TrType": "CN-RCT",
+    "Description": "Consignment Receipt"
+  }, {
+    "TrType": "CYC-CNT",
+    "Description": "Cycle Count"
+  }, {
+    "TrType": "CYC-RCNT",
+    "Description": "Cycle Count (Recount)"
+  }, {
+    "TrType": "CYC-ZERO",
+    "Description": "Empty Location Count"
+  }, {
+    "TrType": "FAIL-PO",
+    "Description": "PO Fail Transaction"
+  }, {
+    "TrType": "FAIL-SOR",
+    "Description": "Inspection Failed after SO Return"
+  }, {
+    "TrType": "FAIL-UNP",
+    "Description": "Unplanned QA Fail"
+  }, {
+    "TrType": "FAIL-WO",
+    "Description": "WO Fail Transaction"
+  }, {
+    "TrType": "FOR-DO",
+    "Description": "Distribution Order Forecast"
+  }, {
+    "TrType": "FOR-PO",
+    "Description": "Purchase Order Receipt Forecast"
+  }, {
+    "TrType": "FOR-WO",
+    "Description": "Work Order Receipt Forecast"
+  }, {
+    "TrType": "INSP-CN",
+    "Description": "Inspection of Consignment PO"
+  }, {
+    "TrType": "INSP-DO",
+    "Description": "Inspection for DO Receipt"
+  }, {
+    "TrType": "INSP-PO",
+    "Description": "Inspection of Purchase Order"
+  }, {
+    "TrType": "INSP-SOR",
+    "Description": "Inspection from SO Return"
+  }, {
+    "TrType": "INSP-UNP",
+    "Description": "Inspection of Unplanned Receipt"
+  }, {
+    "TrType": "INSP-WH",
+    "Description": "Inspection for Inter-Warehouse Receipt"
+  }, {
+    "TrType": "INSP-WO",
+    "Description": "Inspection for WO Receipt"
+  }, {
+    "TrType": "ISRC-RE",
+    "Description": "External Routing - Replenishment"
+  }, {
+    "TrType": "ISRC-RPS",
+    "Description": "External Routing - Repetitive"
+  }, {
+    "TrType": "ISRC-SO",
+    "Description": "External Routing - Sales Orders"
+  }, {
+    "TrType": "ISRC-UNP",
+    "Description": "External Routing - Unplanned"
+  }, {
+    "TrType": "ISRC-WH",
+    "Description": "External Routing - Inter Whse Transfer"
+  }, {
+    "TrType": "ISRC-WO",
+    "Description": "External Routing - Works Orders"
+  }, {
+    "TrType": "ISS-DO",
+    "Description": "Distribution Order Shipments"
+  }, {
+    "TrType": "ISS-FAS",
+    "Description": "Sales Order Bill Issue"
+  }, {
+    "TrType": "ISS-RMA",
+    "Description": "Issue RMA"
+  }, {
+    "TrType": "ISS-SO",
+    "Description": "Sales Order Shipments"
+  }, {
+    "TrType": "ISS-UNP",
+    "Description": "Issue Unplanned"
+  }, {
+    "TrType": "ISS-WH",
+    "Description": "Transfer Issue - Inter Warehouse"
+  }, {
+    "TrType": "ISS-WO",
+    "Description": "WO Issue Or Backflush"
+  }, {
+    "TrType": "IWRC-RE",
+    "Description": "Inter Warehouse Receipt - Replenishment"
+  }, {
+    "TrType": "IWRC-RPS",
+    "Description": "Inter Warehouse Receipt - Repetitive"
+  }, {
+    "TrType": "IWRC-SO",
+    "Description": "Inter Warehouse Receipt - Sales Orders"
+  }, {
+    "TrType": "IWRC-UNP",
+    "Description": "Inter Warehouse Receipt - Unplanned"
+  }, {
+    "TrType": "IWRC-WH",
+    "Description": "Inter Warehouse Receipt - Transfer"
+  }, {
+    "TrType": "IWRC-WO",
+    "Description": "Inter Warehouse Receipt - Works Orders"
+  }, {
+    "TrType": "LOC-TR",
+    "Description": "Location Transfer"
+  }, {
+    "TrType": "OTF-TR",
+    "Description": "RF Transfer"
+  }, {
+    "TrType": "PICK-BP",
+    "Description": "Bulk Picking"
+  }, {
+    "TrType": "PICK-DO",
+    "Description": "Distribution Order Pick"
+  }, {
+    "TrType": "PICK-FAS",
+    "Description": "Pick Sales Order Bill Component"
+  }, {
+    "TrType": "PICK-RE",
+    "Description": "Replenishment Pick"
+  }, {
+    "TrType": "PICK-RPS",
+    "Description": "Repetitive Work Order Pick"
+  }, {
+    "TrType": "PICK-SO",
+    "Description": "Sales Order Pick"
+  }, {
+    "TrType": "PICK-UNP",
+    "Description": "Unplanned Issue Pick"
+  }, {
+    "TrType": "PICK-WO",
+    "Description": "Work Orders Pick"
+  }, {
+    "TrType": "PUT-TR",
+    "Description": "Inventory Transfers"
+  }, {
+    "TrType": "RCT-BACK",
+    "Description": "Return from Picking Area"
+  }, {
+    "TrType": "RCT-DO",
+    "Description": "Distribution Order Receipt"
+  }, {
+    "TrType": "RCT-FAS",
+    "Description": "Sales Order Bill Receipt"
+  }, {
+    "TrType": "RCT-PO",
+    "Description": "Purchase Order Receipt"
+  }, {
+    "TrType": "RCT-SOR",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RCT-UNP",
+    "Description": "Unplanned Receipt"
+  }, {
+    "TrType": "RCT-WO",
+    "Description": "WO Receipt or Backflush"
+  }, {
+    "TrType": "RET-SO",
+    "Description": "Sales Order Return"
+  }, {
+    "TrType": "RET-WO",
+    "Description": "Work Orders Return"
+  }, {
+    "TrType": "SHRT-DO",
+    "Description": "Distribution Order Shortage"
+  }, {
+    "TrType": "SHRT-SO",
+    "Description": "Sales Order Shortage"
+  }, {
+    "TrType": "SHRT-TFR",
+    "Description": "Orders Global Shortage"
+  }, {
+    "TrType": "SHRT-WO",
+    "Description": "Work Order Shortage"
+  }, {
+    "TrType": "TRANSFER",
+    "Description": "Inventory Transfers"
+  }],
+  "accountCodes": [{
+    "ac_code": 10005,
+    "ac_desc": "Wells Fargo Disbursement"
+  }, {
+    "ac_code": 10006,
+    "ac_desc": "Banc of California"
+  }, {
+    "ac_code": 10007,
+    "ac_desc": "Banc of California-Hold"
+  }, {
+    "ac_code": 10008,
+    "ac_desc": "PEX-Prepaid Card Funding"
+  }, {
+    "ac_code": 10009,
+    "ac_desc": "BAML-Operating"
+  }, {
+    "ac_code": 10010,
+    "ac_desc": "BAML-Payroll"
+  }, {
+    "ac_code": 10011,
+    "ac_desc": "JP Morgan Chase- Deposit"
+  }, {
+    "ac_code": 10015,
+    "ac_desc": "BAML-Eye-Fi Holdings"
+  }, {
+    "ac_code": 10020,
+    "ac_desc": "Banc of California-ZING"
+  }, {
+    "ac_code": 10030,
+    "ac_desc": "AP Clearing"
+  }, {
+    "ac_code": 10111,
+    "ac_desc": "BAML - Yellowfish"
+  }, {
+    "ac_code": 10500,
+    "ac_desc": "Petty Cash"
+  }, {
+    "ac_code": 10600,
+    "ac_desc": "BAML-Zing"
+  }, {
+    "ac_code": 11000,
+    "ac_desc": "Accounts Receivable"
+  }, {
+    "ac_code": 11001,
+    "ac_desc": "Pending Customer Credit"
+  }, {
+    "ac_code": 11150,
+    "ac_desc": "Allow for Doubtful Accts"
+  }, {
+    "ac_code": 11155,
+    "ac_desc": "Due from Employee"
+  }, {
+    "ac_code": 11500,
+    "ac_desc": "Accrued Revenue"
+  }, {
+    "ac_code": 11501,
+    "ac_desc": "AccrCommishRec- Jiaxing"
+  }, {
+    "ac_code": 11800,
+    "ac_desc": "Inter Company Loans"
+  }, {
+    "ac_code": 11820,
+    "ac_desc": "Loan"
+  }, {
+    "ac_code": 11900,
+    "ac_desc": "Bank Transfers"
+  }, {
+    "ac_code": 12001,
+    "ac_desc": "Inventory Adjustments"
+  }, {
+    "ac_code": 12050,
+    "ac_desc": "Inventory-New Items"
+  }, {
+    "ac_code": 12060,
+    "ac_desc": "Inventory-Tariffs"
+  }, {
+    "ac_code": 12100,
+    "ac_desc": "Inventory Reserve"
+  }, {
+    "ac_code": 12150,
+    "ac_desc": "In-Transit Inventory"
+  }, {
+    "ac_code": 12200,
+    "ac_desc": "Raw Materials"
+  }, {
+    "ac_code": 12201,
+    "ac_desc": "Raw Materials-Offset"
+  }, {
+    "ac_code": 12210,
+    "ac_desc": "WIP Inventory"
+  }, {
+    "ac_code": 12211,
+    "ac_desc": "Work-in-Process"
+  }, {
+    "ac_code": 12212,
+    "ac_desc": "WIP-Materials Processing"
+  }, {
+    "ac_code": 12213,
+    "ac_desc": "WIP Prototype"
+  }, {
+    "ac_code": 12214,
+    "ac_desc": "WIP-R&D Prototype"
+  }, {
+    "ac_code": 12220,
+    "ac_desc": "Prepaid Inventory"
+  }, {
+    "ac_code": 12221,
+    "ac_desc": "Prepaid Inventory-Manual"
+  }, {
+    "ac_code": 12300,
+    "ac_desc": "Finished Goods"
+  }, {
+    "ac_code": 14201,
+    "ac_desc": "Prepaid Insurance"
+  }, {
+    "ac_code": 14202,
+    "ac_desc": "Prepaid Auto Insurance"
+  }, {
+    "ac_code": 14203,
+    "ac_desc": "Prepaid Workers Comp Ins"
+  }, {
+    "ac_code": 14204,
+    "ac_desc": "Prepaid Business Pkg Ins"
+  }, {
+    "ac_code": 14205,
+    "ac_desc": "Prepaid Other"
+  }, {
+    "ac_code": 14206,
+    "ac_desc": "Prepaid Property Tax"
+  }, {
+    "ac_code": 14207,
+    "ac_desc": "Prepaid Rent"
+  }, {
+    "ac_code": 14208,
+    "ac_desc": "Prepaid Commercial Polic"
+  }, {
+    "ac_code": 14209,
+    "ac_desc": "Prepaid Mgmt Liability I"
+  }, {
+    "ac_code": 14210,
+    "ac_desc": "PrepaidServiceExp_CrCard"
+  }, {
+    "ac_code": 14211,
+    "ac_desc": "PPaid - Software License"
+  }, {
+    "ac_code": 14212,
+    "ac_desc": "PPaid Packaging Supplies"
+  }, {
+    "ac_code": 14300,
+    "ac_desc": "Deposits"
+  }, {
+    "ac_code": 14301,
+    "ac_desc": "Deposit Jiaxing Sunstone"
+  }, {
+    "ac_code": 14302,
+    "ac_desc": "Refunds"
+  }, {
+    "ac_code": 14400,
+    "ac_desc": "Captive Insurance"
+  }, {
+    "ac_code": 14500,
+    "ac_desc": "Capital Improvements"
+  }, {
+    "ac_code": 14513,
+    "ac_desc": "Shared Expense Allocate"
+  }, {
+    "ac_code": 14800,
+    "ac_desc": "Investment-Subsidiary Co"
+  }, {
+    "ac_code": 15000,
+    "ac_desc": "Fixed Assets"
+  }, {
+    "ac_code": 15010,
+    "ac_desc": "Software & Intangibles"
+  }, {
+    "ac_code": 15020,
+    "ac_desc": "Furniture & Equipment"
+  }, {
+    "ac_code": 15030,
+    "ac_desc": "Computer Equipment"
+  }, {
+    "ac_code": 15040,
+    "ac_desc": "Office Equipment"
+  }, {
+    "ac_code": 15050,
+    "ac_desc": "Machinery & Equipment"
+  }, {
+    "ac_code": 15060,
+    "ac_desc": "Autos & Trucks"
+  }, {
+    "ac_code": 15070,
+    "ac_desc": "Leasehold Improvements"
+  }, {
+    "ac_code": 15080,
+    "ac_desc": "Gaming Equipment"
+  }, {
+    "ac_code": 15090,
+    "ac_desc": "CIP-Construction in Pro"
+  }, {
+    "ac_code": 15100,
+    "ac_desc": "Design-Capital Purchases"
+  }, {
+    "ac_code": 15190,
+    "ac_desc": "Design-CIP"
+  }, {
+    "ac_code": 16000,
+    "ac_desc": "Market Investments"
+  }, {
+    "ac_code": 17000,
+    "ac_desc": "Accumulated Depreciation"
+  }, {
+    "ac_code": 17010,
+    "ac_desc": "Accum Dep-Purchased Soft"
+  }, {
+    "ac_code": 17020,
+    "ac_desc": "Accum Dep-Furniture & Eq"
+  }, {
+    "ac_code": 17030,
+    "ac_desc": "Accum Dep-Computer Equip"
+  }, {
+    "ac_code": 17040,
+    "ac_desc": "Accum Dep - Office Equip"
+  }, {
+    "ac_code": 17050,
+    "ac_desc": "Accum Dep - Mach & Equip"
+  }, {
+    "ac_code": 17060,
+    "ac_desc": "Accum Dep-Autos & Trucks"
+  }, {
+    "ac_code": 17070,
+    "ac_desc": "Accum Dep-Leasehold Imp"
+  }, {
+    "ac_code": 17080,
+    "ac_desc": "Accum Dep - Gaming Equip"
+  }, {
+    "ac_code": 17100,
+    "ac_desc": "Accum Dep - Design"
+  }, {
+    "ac_code": 18000,
+    "ac_desc": "Intangible Assets"
+  }, {
+    "ac_code": 18001,
+    "ac_desc": "Goodwill"
+  }, {
+    "ac_code": 18002,
+    "ac_desc": "Financing Costs"
+  }, {
+    "ac_code": 18003,
+    "ac_desc": "Escrow - Transaction Rel"
+  }, {
+    "ac_code": 18301,
+    "ac_desc": "Accum Amort-Goodwill"
+  }, {
+    "ac_code": 18302,
+    "ac_desc": "Accum Amort-Deal Fin"
+  }, {
+    "ac_code": 18999,
+    "ac_desc": "Unapplied Cash"
+  }, {
+    "ac_code": 19000,
+    "ac_desc": "Intercompany"
+  }, {
+    "ac_code": 19100,
+    "ac_desc": "Intercompany - YF"
+  }, {
+    "ac_code": 19200,
+    "ac_desc": "Intercompany-FabriFi"
+  }, {
+    "ac_code": 19999,
+    "ac_desc": "Intercompany-SouthFi"
+  }, {
+    "ac_code": 20000,
+    "ac_desc": "Accounts Payable"
+  }, {
+    "ac_code": 20001,
+    "ac_desc": "APCkForCollection"
+  }, {
+    "ac_code": 20009,
+    "ac_desc": "Unmatched Invoices"
+  }, {
+    "ac_code": 20010,
+    "ac_desc": "Accrued Inventory"
+  }, {
+    "ac_code": 20020,
+    "ac_desc": "Deferred Pmt-Software"
+  }, {
+    "ac_code": 20099,
+    "ac_desc": "Incentive Plan Payable"
+  }, {
+    "ac_code": 20100,
+    "ac_desc": "Current Debt Liabilities"
+  }, {
+    "ac_code": 21001,
+    "ac_desc": "AP Open Stop Payments"
+  }, {
+    "ac_code": 21005,
+    "ac_desc": "Visa-John McBeath-4411"
+  }, {
+    "ac_code": 21010,
+    "ac_desc": "American Express -46006"
+  }, {
+    "ac_code": 21011,
+    "ac_desc": "Yellowfish - Payables"
+  }, {
+    "ac_code": 21015,
+    "ac_desc": "River City Petroleum"
+  }, {
+    "ac_code": 21016,
+    "ac_desc": "Home Depot Card"
+  }, {
+    "ac_code": 21017,
+    "ac_desc": "Visa - 6881 - SW Travel"
+  }, {
+    "ac_code": 21018,
+    "ac_desc": "Capital One Credit Card"
+  }, {
+    "ac_code": 21019,
+    "ac_desc": "AMEX-American Express"
+  }, {
+    "ac_code": 21020,
+    "ac_desc": "JP Morgan Credit Card"
+  }, {
+    "ac_code": 22001,
+    "ac_desc": "Mfg PO Liability"
+  }, {
+    "ac_code": 22002,
+    "ac_desc": "Mfg Supplier Liability"
+  }, {
+    "ac_code": 22003,
+    "ac_desc": "Mfg Resource Liability"
+  }, {
+    "ac_code": 22005,
+    "ac_desc": "PO Receipt Control"
+  }, {
+    "ac_code": 22006,
+    "ac_desc": "PO RecieptControl Offset"
+  }, {
+    "ac_code": 24000,
+    "ac_desc": "Payroll Liabilities"
+  }, {
+    "ac_code": 24100,
+    "ac_desc": "Accrued Payroll"
+  }, {
+    "ac_code": 24200,
+    "ac_desc": "Accrued Bonus"
+  }, {
+    "ac_code": 24201,
+    "ac_desc": "Accrued 401 (K) Union"
+  }, {
+    "ac_code": 24300,
+    "ac_desc": "Accrued PTO"
+  }, {
+    "ac_code": 24301,
+    "ac_desc": "Accrued PTO"
+  }, {
+    "ac_code": 24302,
+    "ac_desc": "Accrued PTO - Sick"
+  }, {
+    "ac_code": 24303,
+    "ac_desc": "Accrued PTO - Holiday"
+  }, {
+    "ac_code": 24500,
+    "ac_desc": "Deferred SS Tax (CARES)"
+  }, {
+    "ac_code": 24501,
+    "ac_desc": "FICA-Social Security Tax"
+  }, {
+    "ac_code": 24502,
+    "ac_desc": "Medicare Tax"
+  }, {
+    "ac_code": 24503,
+    "ac_desc": "Federal Withholding Tax"
+  }, {
+    "ac_code": 24504,
+    "ac_desc": "Other Payroll Tax"
+  }, {
+    "ac_code": 24505,
+    "ac_desc": "Accrued SUTA Tax"
+  }, {
+    "ac_code": 24506,
+    "ac_desc": "Accrued FUTA Tax"
+  }, {
+    "ac_code": 24507,
+    "ac_desc": "Accrued Business Taxes"
+  }, {
+    "ac_code": 24508,
+    "ac_desc": "Accrued IRS Levy"
+  }, {
+    "ac_code": 24509,
+    "ac_desc": "Accrued 401(K) Match Exp"
+  }, {
+    "ac_code": 24550,
+    "ac_desc": "Accrued Commissions"
+  }, {
+    "ac_code": 24551,
+    "ac_desc": "Accrued Payroll"
+  }, {
+    "ac_code": 24552,
+    "ac_desc": "Accrued Expenses"
+  }, {
+    "ac_code": 24553,
+    "ac_desc": "Employee Flex Spending"
+  }, {
+    "ac_code": 24554,
+    "ac_desc": "Accrued Payroll IC"
+  }, {
+    "ac_code": 24555,
+    "ac_desc": "Due to Employee"
+  }, {
+    "ac_code": 24600,
+    "ac_desc": "Accrued SIMPLE IRA Payro"
+  }, {
+    "ac_code": 24700,
+    "ac_desc": "Accrued Health Ins Payro"
+  }, {
+    "ac_code": 24801,
+    "ac_desc": "Child Support State Fee"
+  }, {
+    "ac_code": 24900,
+    "ac_desc": "Other Payroll W/H Garnis"
+  }, {
+    "ac_code": 25000,
+    "ac_desc": "Accrued Interest-Notes"
+  }, {
+    "ac_code": 25100,
+    "ac_desc": "Accrued Interest - Term "
+  }, {
+    "ac_code": 25200,
+    "ac_desc": "Accrued Interest - Subor"
+  }, {
+    "ac_code": 25300,
+    "ac_desc": "Accrued Interest-Revolve"
+  }, {
+    "ac_code": 25400,
+    "ac_desc": "Accrued Interest-Term De"
+  }, {
+    "ac_code": 25500,
+    "ac_desc": "Sales Tax Payable"
+  }, {
+    "ac_code": 25501,
+    "ac_desc": "Use Tax Payable"
+  }, {
+    "ac_code": 26000,
+    "ac_desc": "Market Investment Liab"
+  }, {
+    "ac_code": 26400,
+    "ac_desc": "Accrued Liability Other"
+  }, {
+    "ac_code": 26451,
+    "ac_desc": "Rent Deposit-Mediumrare"
+  }, {
+    "ac_code": 26500,
+    "ac_desc": "Prepaid Inventory Offset"
+  }, {
+    "ac_code": 26800,
+    "ac_desc": "Deferred Rent"
+  }, {
+    "ac_code": 26801,
+    "ac_desc": "Design-Deferred Rent"
+  }, {
+    "ac_code": 26900,
+    "ac_desc": "Accrued Acquisition-Subs"
+  }, {
+    "ac_code": 27000,
+    "ac_desc": "Notes Payable"
+  }, {
+    "ac_code": 27001,
+    "ac_desc": "Banc of California- Loan"
+  }, {
+    "ac_code": 27002,
+    "ac_desc": "Term Loan(Banc of Calif)"
+  }, {
+    "ac_code": 27003,
+    "ac_desc": "Subordinated Debt"
+  }, {
+    "ac_code": 27004,
+    "ac_desc": "Revolver - BAML"
+  }, {
+    "ac_code": 27005,
+    "ac_desc": "Term Loan - BAML"
+  }, {
+    "ac_code": 27006,
+    "ac_desc": "Delayed Draw Term Loan"
+  }, {
+    "ac_code": 27100,
+    "ac_desc": "AFCO - Insurance Finance"
+  }, {
+    "ac_code": 27200,
+    "ac_desc": "Cap Lease-Sunset Racking"
+  }, {
+    "ac_code": 27210,
+    "ac_desc": "Cap Lease-Sunset Refurb"
+  }, {
+    "ac_code": 27220,
+    "ac_desc": "Capital Lease-Byline Fin"
+  }, {
+    "ac_code": 27300,
+    "ac_desc": "Debt Discount"
+  }, {
+    "ac_code": 27500,
+    "ac_desc": "Contingent Liabilities"
+  }, {
+    "ac_code": 27501,
+    "ac_desc": "Year Two Earnout"
+  }, {
+    "ac_code": 27502,
+    "ac_desc": "Exit MOI Earnout"
+  }, {
+    "ac_code": 27503,
+    "ac_desc": "SWMS Earn-out"
+  }, {
+    "ac_code": 27504,
+    "ac_desc": "Fabrifi Earnout"
+  }, {
+    "ac_code": 27900,
+    "ac_desc": "Due To Seller"
+  }, {
+    "ac_code": 30000,
+    "ac_desc": "Opening Balance Equity"
+  }, {
+    "ac_code": 30100,
+    "ac_desc": "Capital Stock"
+  }, {
+    "ac_code": 30200,
+    "ac_desc": "Additional Paid In Capit"
+  }, {
+    "ac_code": 30202,
+    "ac_desc": "Class B membership units"
+  }, {
+    "ac_code": 30203,
+    "ac_desc": "Class C Membership Units"
+  }, {
+    "ac_code": 31000,
+    "ac_desc": "Other Comprehensive Inc."
+  }, {
+    "ac_code": 31400,
+    "ac_desc": "Shareholder Distribution"
+  }, {
+    "ac_code": 32000,
+    "ac_desc": "Retained Earnings"
+  }, {
+    "ac_code": 32001,
+    "ac_desc": "Ret.Earning_PriorSystem"
+  }, {
+    "ac_code": 39001,
+    "ac_desc": "Retained Earnings PYs"
+  }, {
+    "ac_code": 39002,
+    "ac_desc": "Retained Earnings CY"
+  }, {
+    "ac_code": 47000,
+    "ac_desc": "Product Revenue"
+  }, {
+    "ac_code": 47500,
+    "ac_desc": "Graphics Revenue"
+  }, {
+    "ac_code": 47900,
+    "ac_desc": "Service Revenue-Parts"
+  }, {
+    "ac_code": 47903,
+    "ac_desc": "InterCo Sales-SouthFi"
+  }, {
+    "ac_code": 47904,
+    "ac_desc": "InterCo Sales-FabriFi"
+  }, {
+    "ac_code": 47950,
+    "ac_desc": "Install and Service Rev"
+  }, {
+    "ac_code": 47960,
+    "ac_desc": "IGT Kitting Program"
+  }, {
+    "ac_code": 47970,
+    "ac_desc": "Design Studio Revenue"
+  }, {
+    "ac_code": 48300,
+    "ac_desc": "Sales Discounts & Allowa"
+  }, {
+    "ac_code": 48900,
+    "ac_desc": "Shipping & Delivery Inc"
+  }, {
+    "ac_code": 48901,
+    "ac_desc": "Packaging & Handling Fee"
+  }, {
+    "ac_code": 50000,
+    "ac_desc": "COGS-Subcontract"
+  }, {
+    "ac_code": 50001,
+    "ac_desc": "Cost of Goods Sold-Mat'l"
+  }, {
+    "ac_code": 50002,
+    "ac_desc": "Purchase Discounts"
+  }, {
+    "ac_code": 50003,
+    "ac_desc": "Damaged-Unusable"
+  }, {
+    "ac_code": 50004,
+    "ac_desc": "COGS-Graphics"
+  }, {
+    "ac_code": 50005,
+    "ac_desc": "Rework"
+  }, {
+    "ac_code": 50006,
+    "ac_desc": "Assy Control-Raw Mat'l"
+  }, {
+    "ac_code": 50007,
+    "ac_desc": "Assy Control-Resouce"
+  }, {
+    "ac_code": 50008,
+    "ac_desc": "Assy Control-Finish Good"
+  }, {
+    "ac_code": 50009,
+    "ac_desc": "Dispense/Return Control"
+  }, {
+    "ac_code": 50010,
+    "ac_desc": "Packaging Materials"
+  }, {
+    "ac_code": 50011,
+    "ac_desc": "Rental - Equipment"
+  }, {
+    "ac_code": 50012,
+    "ac_desc": "Resource Transfer Contro"
+  }, {
+    "ac_code": 50013,
+    "ac_desc": "Sales Transfer Control"
+  }, {
+    "ac_code": 50014,
+    "ac_desc": "Woodshop"
+  }, {
+    "ac_code": 50015,
+    "ac_desc": "Assembly Variance"
+  }, {
+    "ac_code": 50020,
+    "ac_desc": "Inventory Adjustment"
+  }, {
+    "ac_code": 50021,
+    "ac_desc": "Inventory Discrepancy"
+  }, {
+    "ac_code": 50022,
+    "ac_desc": "Cost Revaluation"
+  }, {
+    "ac_code": 50023,
+    "ac_desc": "Scrap"
+  }, {
+    "ac_code": 50024,
+    "ac_desc": "Discontinued Inv Adjust"
+  }, {
+    "ac_code": 50025,
+    "ac_desc": "Cost Adjustment Variance"
+  }, {
+    "ac_code": 50026,
+    "ac_desc": "Inventory-Obsolescence"
+  }, {
+    "ac_code": 50030,
+    "ac_desc": "POvsStandard Variance"
+  }, {
+    "ac_code": 50031,
+    "ac_desc": "Customer Refurb Variance"
+  }, {
+    "ac_code": 50032,
+    "ac_desc": "POvsAP Price Variance"
+  }, {
+    "ac_code": 50033,
+    "ac_desc": "Method Variance"
+  }, {
+    "ac_code": 50034,
+    "ac_desc": "Transfer Variance"
+  }, {
+    "ac_code": 50035,
+    "ac_desc": "Material Usage Variance"
+  }, {
+    "ac_code": 50036,
+    "ac_desc": "Material Rate Variance"
+  }, {
+    "ac_code": 50037,
+    "ac_desc": "Labor Usage Variance"
+  }, {
+    "ac_code": 50038,
+    "ac_desc": "Labor Rate Variance"
+  }, {
+    "ac_code": 50039,
+    "ac_desc": "Burden Usage Variance"
+  }, {
+    "ac_code": 50040,
+    "ac_desc": "Burden Rate Variance"
+  }, {
+    "ac_code": 50041,
+    "ac_desc": "Subc Usage Variance"
+  }, {
+    "ac_code": 50042,
+    "ac_desc": "Subc Rate Variance"
+  }, {
+    "ac_code": 50043,
+    "ac_desc": "Mixed Variance"
+  }, {
+    "ac_code": 50044,
+    "ac_desc": "Exp Item Usage Variance"
+  }, {
+    "ac_code": 50045,
+    "ac_desc": "Exp Item Rate Variance"
+  }, {
+    "ac_code": 50100,
+    "ac_desc": "Shop Supplies"
+  }, {
+    "ac_code": 50110,
+    "ac_desc": "Medical Supplies"
+  }, {
+    "ac_code": 50200,
+    "ac_desc": "Shop Hardware Expenses"
+  }, {
+    "ac_code": 50300,
+    "ac_desc": "Labor-Warehouse & Log"
+  }, {
+    "ac_code": 50301,
+    "ac_desc": "Labor-Graphics"
+  }, {
+    "ac_code": 50302,
+    "ac_desc": "Labor-Metal Shop "
+  }, {
+    "ac_code": 50303,
+    "ac_desc": "Labor-Assembly "
+  }, {
+    "ac_code": 50304,
+    "ac_desc": "Salaried Staff"
+  }, {
+    "ac_code": 50305,
+    "ac_desc": "Cable Labor"
+  }, {
+    "ac_code": 50350,
+    "ac_desc": "OT-Warehouse & Logistics"
+  }, {
+    "ac_code": 50351,
+    "ac_desc": "OT-Metal Shop"
+  }, {
+    "ac_code": 50352,
+    "ac_desc": "OT-Assembly"
+  }, {
+    "ac_code": 50353,
+    "ac_desc": "OT-Cable"
+  }, {
+    "ac_code": 50354,
+    "ac_desc": "OT-Graphics"
+  }, {
+    "ac_code": 50376,
+    "ac_desc": "Paid Time Off (PTO)"
+  }, {
+    "ac_code": 50377,
+    "ac_desc": "Paid Time Off - Design"
+  }, {
+    "ac_code": 50379,
+    "ac_desc": "Holiday Pay"
+  }, {
+    "ac_code": 50381,
+    "ac_desc": "Temporary Agency"
+  }, {
+    "ac_code": 50901,
+    "ac_desc": "Piece Work Agreement"
+  }, {
+    "ac_code": 51100,
+    "ac_desc": "Freight & Shipping Costs"
+  }, {
+    "ac_code": 51101,
+    "ac_desc": "Freight-Bill to Customer"
+  }, {
+    "ac_code": 51125,
+    "ac_desc": "Freight- Import"
+  }, {
+    "ac_code": 51130,
+    "ac_desc": "Freight-Inbound"
+  }, {
+    "ac_code": 51150,
+    "ac_desc": "Freight- Premium"
+  }, {
+    "ac_code": 51175,
+    "ac_desc": "Freight- Air Freight"
+  }, {
+    "ac_code": 51180,
+    "ac_desc": "Freight- Custom Duty"
+  }, {
+    "ac_code": 51190,
+    "ac_desc": "Freight-Tariffs"
+  }, {
+    "ac_code": 51200,
+    "ac_desc": "Scrap Sales"
+  }, {
+    "ac_code": 51500,
+    "ac_desc": "Indirect & Overhead Exp"
+  }, {
+    "ac_code": 51501,
+    "ac_desc": "Indirect Labor"
+  }, {
+    "ac_code": 51510,
+    "ac_desc": "Salaries-Indirect"
+  }, {
+    "ac_code": 51511,
+    "ac_desc": "Indirect - Temp Labor"
+  }, {
+    "ac_code": 51512,
+    "ac_desc": "Indirect - Bonus"
+  }, {
+    "ac_code": 51513,
+    "ac_desc": "Management S&B Allocated"
+  }, {
+    "ac_code": 51514,
+    "ac_desc": "Management Allocated Exp"
+  }, {
+    "ac_code": 51515,
+    "ac_desc": "Sales Allocated Expense"
+  }, {
+    "ac_code": 51516,
+    "ac_desc": "Sales S&B Allocated"
+  }, {
+    "ac_code": 51517,
+    "ac_desc": "Sales Allocated Expense"
+  }, {
+    "ac_code": 51520,
+    "ac_desc": "Indirect Labor Sick Pay"
+  }, {
+    "ac_code": 51525,
+    "ac_desc": "Indirect Labor Holiday P"
+  }, {
+    "ac_code": 51530,
+    "ac_desc": "Vehicle Tracking - GPS"
+  }, {
+    "ac_code": 51540,
+    "ac_desc": "Warehouse Service Repair"
+  }, {
+    "ac_code": 51900,
+    "ac_desc": "Sales Commissions"
+  }, {
+    "ac_code": 51901,
+    "ac_desc": "Sales Comms-B Bergeson"
+  }, {
+    "ac_code": 51903,
+    "ac_desc": "Sales Comms-J Koziol"
+  }, {
+    "ac_code": 51904,
+    "ac_desc": "Sales Comm-D Wilkerson"
+  }, {
+    "ac_code": 51905,
+    "ac_desc": "Sales Comms-J Currie"
+  }, {
+    "ac_code": 51907,
+    "ac_desc": "Sales Comms-K Nakamoto"
+  }, {
+    "ac_code": 51950,
+    "ac_desc": "Import Commission"
+  }, {
+    "ac_code": 52000,
+    "ac_desc": "Installation Expense"
+  }, {
+    "ac_code": 52001,
+    "ac_desc": "Installation Labor"
+  }, {
+    "ac_code": 52010,
+    "ac_desc": "Labor-Install Direct"
+  }, {
+    "ac_code": 52015,
+    "ac_desc": "Service-Install Direct"
+  }, {
+    "ac_code": 52020,
+    "ac_desc": "OT-Install"
+  }, {
+    "ac_code": 52021,
+    "ac_desc": "Installation Vacation Pa"
+  }, {
+    "ac_code": 52022,
+    "ac_desc": "Installation Sick Pay"
+  }, {
+    "ac_code": 52023,
+    "ac_desc": "Installation Holiday Pay"
+  }, {
+    "ac_code": 52100,
+    "ac_desc": "Install-Airfare Expense"
+  }, {
+    "ac_code": 52101,
+    "ac_desc": "Install-Hotel Expense"
+  }, {
+    "ac_code": 52102,
+    "ac_desc": "Install-Auto Rental"
+  }, {
+    "ac_code": 52103,
+    "ac_desc": "Install-Travel - Misc"
+  }, {
+    "ac_code": 52104,
+    "ac_desc": "Install-Meal Allowance"
+  }, {
+    "ac_code": 52105,
+    "ac_desc": "Install-Taxi/Transport"
+  }, {
+    "ac_code": 52106,
+    "ac_desc": "Install-Equip Rental"
+  }, {
+    "ac_code": 52108,
+    "ac_desc": "Install-Auto Expense"
+  }, {
+    "ac_code": 52109,
+    "ac_desc": "Install-3rd Party Exp"
+  }, {
+    "ac_code": 52110,
+    "ac_desc": "Install-Engineering&Prof"
+  }, {
+    "ac_code": 52111,
+    "ac_desc": "Install-Uniform Expense"
+  }, {
+    "ac_code": 52112,
+    "ac_desc": "Install - Licensing"
+  }, {
+    "ac_code": 52113,
+    "ac_desc": "Software & Technical"
+  }, {
+    "ac_code": 52114,
+    "ac_desc": "Install - Supplies"
+  }, {
+    "ac_code": 52115,
+    "ac_desc": "Install-Replacement Part"
+  }, {
+    "ac_code": 52116,
+    "ac_desc": "Install-Tools"
+  }, {
+    "ac_code": 55000,
+    "ac_desc": "Sales Expense"
+  }, {
+    "ac_code": 55100,
+    "ac_desc": "Salaries-Sales"
+  }, {
+    "ac_code": 55150,
+    "ac_desc": "Sales - Bonus"
+  }, {
+    "ac_code": 55200,
+    "ac_desc": "Sales - Meals and Entert"
+  }, {
+    "ac_code": 55500,
+    "ac_desc": "Sales - Show Expense"
+  }, {
+    "ac_code": 56000,
+    "ac_desc": "Design-Salaries"
+  }, {
+    "ac_code": 56001,
+    "ac_desc": "Design-Bonuses"
+  }, {
+    "ac_code": 56002,
+    "ac_desc": "Design-Entertainment"
+  }, {
+    "ac_code": 56003,
+    "ac_desc": "DFy-Staff Devel & Incent"
+  }, {
+    "ac_code": 56004,
+    "ac_desc": "Design-Travel - Misc"
+  }, {
+    "ac_code": 56005,
+    "ac_desc": "Design-Office Expenses"
+  }, {
+    "ac_code": 56006,
+    "ac_desc": "Design-Show Expense"
+  }, {
+    "ac_code": 56007,
+    "ac_desc": "Design-Misc Expense"
+  }, {
+    "ac_code": 56008,
+    "ac_desc": "Design-Professional Fees"
+  }, {
+    "ac_code": 56009,
+    "ac_desc": "Design-Computer&Software"
+  }, {
+    "ac_code": 56010,
+    "ac_desc": "Design-Commercial Ins."
+  }, {
+    "ac_code": 56011,
+    "ac_desc": "Design-Rent Expense"
+  }, {
+    "ac_code": 56012,
+    "ac_desc": "Design-Relocation"
+  }, {
+    "ac_code": 56013,
+    "ac_desc": "Design-Meals"
+  }, {
+    "ac_code": 56014,
+    "ac_desc": "Design-Airfare Expense"
+  }, {
+    "ac_code": 56015,
+    "ac_desc": "Design-Hotel Expense"
+  }, {
+    "ac_code": 56016,
+    "ac_desc": "Design-Utilities"
+  }, {
+    "ac_code": 56017,
+    "ac_desc": "Design- Cell Reimburse"
+  }, {
+    "ac_code": 56100,
+    "ac_desc": "Design-Depreciation"
+  }, {
+    "ac_code": 56200,
+    "ac_desc": "Design - 401 Match Exp"
+  }, {
+    "ac_code": 56201,
+    "ac_desc": "Design-ER Payroll Taxes"
+  }, {
+    "ac_code": 56202,
+    "ac_desc": "Design-Health Ins."
+  }, {
+    "ac_code": 56203,
+    "ac_desc": "Design - Payroll Fees"
+  }, {
+    "ac_code": 56300,
+    "ac_desc": "Design - R & D Expense"
+  }, {
+    "ac_code": 56406,
+    "ac_desc": "D-Fy Relocation Expense"
+  }, {
+    "ac_code": 60000,
+    "ac_desc": "Advertising & Promotion"
+  }, {
+    "ac_code": 60200,
+    "ac_desc": "Automobile Expense"
+  }, {
+    "ac_code": 60300,
+    "ac_desc": "Bad Debt Expense"
+  }, {
+    "ac_code": 60400,
+    "ac_desc": "Credit Card Fees"
+  }, {
+    "ac_code": 60401,
+    "ac_desc": "Bank Fees"
+  }, {
+    "ac_code": 60402,
+    "ac_desc": "Payroll Processing Fees"
+  }, {
+    "ac_code": 60403,
+    "ac_desc": "Credit Card Fees"
+  }, {
+    "ac_code": 60404,
+    "ac_desc": "Finance Charge"
+  }, {
+    "ac_code": 61000,
+    "ac_desc": "Business Licenses & Perm"
+  }, {
+    "ac_code": 61100,
+    "ac_desc": "Warehouse-Repair & Maint"
+  }, {
+    "ac_code": 61120,
+    "ac_desc": "Board Fees"
+  }, {
+    "ac_code": 61150,
+    "ac_desc": "Equipment Maint/Repairs"
+  }, {
+    "ac_code": 61151,
+    "ac_desc": "Equip Repair-Travel Exp"
+  }, {
+    "ac_code": 61160,
+    "ac_desc": "Warehouse Expenses"
+  }, {
+    "ac_code": 61165,
+    "ac_desc": "Credit Card Trans-Clear"
+  }, {
+    "ac_code": 61400,
+    "ac_desc": "Charitable Contributions"
+  }, {
+    "ac_code": 61500,
+    "ac_desc": "Consulting Fees"
+  }, {
+    "ac_code": 61600,
+    "ac_desc": "Shop Tools & Molds"
+  }, {
+    "ac_code": 61700,
+    "ac_desc": "Computer & Internet Exp"
+  }, {
+    "ac_code": 62400,
+    "ac_desc": "Depreciation Expense"
+  }, {
+    "ac_code": 62500,
+    "ac_desc": "Dues and Subscriptions"
+  }, {
+    "ac_code": 62550,
+    "ac_desc": "Software Subscriptions"
+  }, {
+    "ac_code": 62600,
+    "ac_desc": "Equipment Rental"
+  }, {
+    "ac_code": 63300,
+    "ac_desc": "Insurance Expense"
+  }, {
+    "ac_code": 63310,
+    "ac_desc": "General Liability Ins"
+  }, {
+    "ac_code": 63312,
+    "ac_desc": "Commercial Insurance"
+  }, {
+    "ac_code": 63319,
+    "ac_desc": "HRA Expense"
+  }, {
+    "ac_code": 63320,
+    "ac_desc": "Health Insurance"
+  }, {
+    "ac_code": 63321,
+    "ac_desc": "Health Ins-Warehouse    "
+  }, {
+    "ac_code": 63322,
+    "ac_desc": "Health Ins-Graphics"
+  }, {
+    "ac_code": 63323,
+    "ac_desc": "Health Ins-Metal Shop"
+  }, {
+    "ac_code": 63324,
+    "ac_desc": "Health Ins-Assembly"
+  }, {
+    "ac_code": 63325,
+    "ac_desc": "Health Ins-Indirect"
+  }, {
+    "ac_code": 63326,
+    "ac_desc": "Health Ins-Installation"
+  }, {
+    "ac_code": 63327,
+    "ac_desc": "Health Ins-Service"
+  }, {
+    "ac_code": 63328,
+    "ac_desc": "Health Ins-Sales"
+  }, {
+    "ac_code": 63329,
+    "ac_desc": "Health Ins-Executive"
+  }, {
+    "ac_code": 63330,
+    "ac_desc": "Health Ins-G&A"
+  }, {
+    "ac_code": 63335,
+    "ac_desc": "Management Liability Ins"
+  }, {
+    "ac_code": 63340,
+    "ac_desc": "Automobile Insurance"
+  }, {
+    "ac_code": 63360,
+    "ac_desc": "Workers Compensation Ins"
+  }, {
+    "ac_code": 63370,
+    "ac_desc": "Property Insurance"
+  }, {
+    "ac_code": 63375,
+    "ac_desc": "Annual Prem Stck ThruPut"
+  }, {
+    "ac_code": 63380,
+    "ac_desc": "Internt/Cyber Liab Insur"
+  }, {
+    "ac_code": 63400,
+    "ac_desc": "Interest Expense"
+  }, {
+    "ac_code": 63401,
+    "ac_desc": "Loan Amortization Costs"
+  }, {
+    "ac_code": 63500,
+    "ac_desc": "Janitorial Expense"
+  }, {
+    "ac_code": 64300,
+    "ac_desc": "Meals Expense"
+  }, {
+    "ac_code": 64301,
+    "ac_desc": "Entertainment"
+  }, {
+    "ac_code": 64302,
+    "ac_desc": "Staff Develop & Incent"
+  }, {
+    "ac_code": 64700,
+    "ac_desc": "Miscellaneous Expense"
+  }, {
+    "ac_code": 64800,
+    "ac_desc": "Uniform Expense"
+  }, {
+    "ac_code": 64900,
+    "ac_desc": "Office Supplies"
+  }, {
+    "ac_code": 66000,
+    "ac_desc": "Payroll Expenses"
+  }, {
+    "ac_code": 66100,
+    "ac_desc": "Wages"
+  }, {
+    "ac_code": 66110,
+    "ac_desc": "Salaries - Executive"
+  }, {
+    "ac_code": 66115,
+    "ac_desc": "Bonus-Executive & Admim"
+  }, {
+    "ac_code": 66120,
+    "ac_desc": "Salaries-G&A"
+  }, {
+    "ac_code": 66128,
+    "ac_desc": "Vacation-Exec & Admin"
+  }, {
+    "ac_code": 66129,
+    "ac_desc": "Sick Pay-Exec & Admin"
+  }, {
+    "ac_code": 66130,
+    "ac_desc": "Holiday Pay-Exec & Admin"
+  }, {
+    "ac_code": 66140,
+    "ac_desc": "Severance-SG&A"
+  }, {
+    "ac_code": 66141,
+    "ac_desc": "Severance-Add Back"
+  }, {
+    "ac_code": 66150,
+    "ac_desc": "Severance"
+  }, {
+    "ac_code": 66190,
+    "ac_desc": "ER Payroll Tax-G&A"
+  }, {
+    "ac_code": 66191,
+    "ac_desc": "ER Payroll Tax-Warehouse"
+  }, {
+    "ac_code": 66192,
+    "ac_desc": "ER Payroll Tax-Graphics"
+  }, {
+    "ac_code": 66193,
+    "ac_desc": "ER Payroll Tax-MetalShop"
+  }, {
+    "ac_code": 66194,
+    "ac_desc": "ER Payroll Tax-Assembly"
+  }, {
+    "ac_code": 66195,
+    "ac_desc": "ER Payroll Tax-Indirect"
+  }, {
+    "ac_code": 66196,
+    "ac_desc": "ER Payroll Tax-Install"
+  }, {
+    "ac_code": 66197,
+    "ac_desc": "ER Payroll Tax-Service"
+  }, {
+    "ac_code": 66198,
+    "ac_desc": "ER Payroll Tax-Sales"
+  }, {
+    "ac_code": 66199,
+    "ac_desc": "ER Payroll Tax-Executive"
+  }, {
+    "ac_code": 66200,
+    "ac_desc": "Payroll Taxes"
+  }, {
+    "ac_code": 66201,
+    "ac_desc": "Employer Payroll Taxes"
+  }, {
+    "ac_code": 66202,
+    "ac_desc": "Medicare Tax"
+  }, {
+    "ac_code": 66203,
+    "ac_desc": "SUTA Tax"
+  }, {
+    "ac_code": 66204,
+    "ac_desc": "FUTA Tax"
+  }, {
+    "ac_code": 66205,
+    "ac_desc": "Modified Business Tax-NV"
+  }, {
+    "ac_code": 66206,
+    "ac_desc": "NV ER Bond Contribution"
+  }, {
+    "ac_code": 66207,
+    "ac_desc": "CA ETT Taxes"
+  }, {
+    "ac_code": 66208,
+    "ac_desc": "CA SUI Taxes"
+  }, {
+    "ac_code": 66209,
+    "ac_desc": "401 (K) Match Expense"
+  }, {
+    "ac_code": 66211,
+    "ac_desc": "401K Match-Warehouse"
+  }, {
+    "ac_code": 66212,
+    "ac_desc": "401K Match-Graphics"
+  }, {
+    "ac_code": 66213,
+    "ac_desc": "401K Match-Metal Shop"
+  }, {
+    "ac_code": 66214,
+    "ac_desc": "401K Match-Assembly"
+  }, {
+    "ac_code": 66215,
+    "ac_desc": "401K Match-Indirect"
+  }, {
+    "ac_code": 66216,
+    "ac_desc": "401K Match-Installation"
+  }, {
+    "ac_code": 66217,
+    "ac_desc": "401K Match-Service"
+  }, {
+    "ac_code": 66218,
+    "ac_desc": "401K Match-Sales"
+  }, {
+    "ac_code": 66219,
+    "ac_desc": "401K Match-Executive"
+  }, {
+    "ac_code": 66220,
+    "ac_desc": "401K Match-G&A"
+  }, {
+    "ac_code": 66300,
+    "ac_desc": "SIMPLE IRA Employer Cont"
+  }, {
+    "ac_code": 66500,
+    "ac_desc": "Postage and Delivery"
+  }, {
+    "ac_code": 66600,
+    "ac_desc": "Printing & Reproduction"
+  }, {
+    "ac_code": 66700,
+    "ac_desc": "Professional Fees"
+  }, {
+    "ac_code": 66701,
+    "ac_desc": "Accounting Fees"
+  }, {
+    "ac_code": 66702,
+    "ac_desc": "Legal Fees"
+  }, {
+    "ac_code": 66703,
+    "ac_desc": "U.L. Certification"
+  }, {
+    "ac_code": 66704,
+    "ac_desc": "Profess. Fees-Rebranding"
+  }, {
+    "ac_code": 66705,
+    "ac_desc": "Engineering Fees"
+  }, {
+    "ac_code": 66706,
+    "ac_desc": "Fines & Fees"
+  }, {
+    "ac_code": 66707,
+    "ac_desc": "Legal Fees - Debt"
+  }, {
+    "ac_code": 66750,
+    "ac_desc": "Pre-Employment Testing"
+  }, {
+    "ac_code": 66900,
+    "ac_desc": "Reconciliation Discrepan"
+  }, {
+    "ac_code": 67100,
+    "ac_desc": "Rent Expense"
+  }, {
+    "ac_code": 67125,
+    "ac_desc": "CAM Charges"
+  }, {
+    "ac_code": 67150,
+    "ac_desc": "Rent - Office"
+  }, {
+    "ac_code": 67200,
+    "ac_desc": "Repairs and Maintenance"
+  }, {
+    "ac_code": 67500,
+    "ac_desc": "R & D Expense"
+  }, {
+    "ac_code": 67501,
+    "ac_desc": "Original Polish-Marketin"
+  }, {
+    "ac_code": 68000,
+    "ac_desc": "Business Taxes"
+  }, {
+    "ac_code": 68001,
+    "ac_desc": "Taxes - Property"
+  }, {
+    "ac_code": 68002,
+    "ac_desc": "Taxes - Revenue"
+  }, {
+    "ac_code": 68005,
+    "ac_desc": "Taxes - Miscellaneous"
+  }, {
+    "ac_code": 68008,
+    "ac_desc": "Taxes - Commerce Nevada"
+  }, {
+    "ac_code": 68010,
+    "ac_desc": "Sales / Use Tax"
+  }, {
+    "ac_code": 68011,
+    "ac_desc": "Sales Tax Paid"
+  }, {
+    "ac_code": 68012,
+    "ac_desc": "Haz Mat"
+  }, {
+    "ac_code": 68100,
+    "ac_desc": "Telephone Expense"
+  }, {
+    "ac_code": 68109,
+    "ac_desc": "Telephone"
+  }, {
+    "ac_code": 68110,
+    "ac_desc": "Cell Phone"
+  }, {
+    "ac_code": 68400,
+    "ac_desc": "Travel Expense"
+  }, {
+    "ac_code": 68401,
+    "ac_desc": "Airfare Expense"
+  }, {
+    "ac_code": 68402,
+    "ac_desc": "Hotel Expense"
+  }, {
+    "ac_code": 68403,
+    "ac_desc": "Auto Rental"
+  }, {
+    "ac_code": 68405,
+    "ac_desc": "Travel - Misc"
+  }, {
+    "ac_code": 68406,
+    "ac_desc": "Relocation Expense"
+  }, {
+    "ac_code": 68600,
+    "ac_desc": "Utilities"
+  }, {
+    "ac_code": 68601,
+    "ac_desc": "Electricity Charges"
+  }, {
+    "ac_code": 68602,
+    "ac_desc": "Water & Sewer Charges"
+  }, {
+    "ac_code": 68603,
+    "ac_desc": "Natural Gas Charges"
+  }, {
+    "ac_code": 68604,
+    "ac_desc": "Trash Removal Charges"
+  }, {
+    "ac_code": 68605,
+    "ac_desc": "Recycling"
+  }, {
+    "ac_code": 68606,
+    "ac_desc": "Security"
+  }, {
+    "ac_code": 70000,
+    "ac_desc": "Other Income/Expense"
+  }, {
+    "ac_code": 70001,
+    "ac_desc": "Finance Charge Income"
+  }, {
+    "ac_code": 70200,
+    "ac_desc": "Interest Income"
+  }, {
+    "ac_code": 70250,
+    "ac_desc": "Restitution Income"
+  }, {
+    "ac_code": 70300,
+    "ac_desc": "Gain on Sale of FAs"
+  }, {
+    "ac_code": 70400,
+    "ac_desc": "Miscellaneous Income"
+  }, {
+    "ac_code": 80000,
+    "ac_desc": "Ask My Accountant"
+  }, {
+    "ac_code": 81000,
+    "ac_desc": "Other Non-Operating Exp"
+  }, {
+    "ac_code": 81001,
+    "ac_desc": "Other Expense"
+  }, {
+    "ac_code": 81005,
+    "ac_desc": "Deal Related Expenses"
+  }, {
+    "ac_code": 81006,
+    "ac_desc": "Debt Issuance Expense"
+  }, {
+    "ac_code": 81200,
+    "ac_desc": "Amortization-Transaction"
+  }, {
+    "ac_code": 81300,
+    "ac_desc": "Loss on Sale of FAs"
+  }, {
+    "ac_code": 81500,
+    "ac_desc": "Transaction Related Exp"
+  }, {
+    "ac_code": 81510,
+    "ac_desc": "Post Integration Expense"
+  }, {
+    "ac_code": 81515,
+    "ac_desc": "ClassC StockCompensation"
+  }, {
+    "ac_code": 81520,
+    "ac_desc": "Valuation Adjustment"
+  }, {
+    "ac_code": 81521,
+    "ac_desc": "Earnout Valuation Adjust"
+  }, {
+    "ac_code": 81600,
+    "ac_desc": "Prior Year-County Licen"
+  }, {
+    "ac_code": 81700,
+    "ac_desc": "Prior Year - Insurance"
+  }, {
+    "ac_code": 82000,
+    "ac_desc": "Office Move & Renovation"
+  }, {
+    "ac_code": 82010,
+    "ac_desc": "Equipment Move"
+  }, {
+    "ac_code": 82500,
+    "ac_desc": "Migration Expense"
+  }, {
+    "ac_code": 82600,
+    "ac_desc": "Migration Travel - TJ"
+  }, {
+    "ac_code": 99990,
+    "ac_desc": "P&L Closing"
+  }, {
+    "ac_code": 99993,
+    "ac_desc": "Rounding Differences Acc"
+  }, {
+    "ac_code": 99997,
+    "ac_desc": "Inventory Clearing"
+  }, {
+    "ac_code": 99998,
+    "ac_desc": "Inter-company Suspense"
+  }, {
+    "ac_code": 99999,
+    "ac_desc": "Miscellaneous Suspense"
+  }, {
+    "ac_code": "AP_QB",
+    "ac_desc": "Quickbooks AP"
+  }, {
+    "ac_code": "AR_QB",
+    "ac_desc": "AR Xfer from QB"
+  }, {
+    "ac_code": "OpnChkQB",
+    "ac_desc": "Uncleared checks from QB"
+  }]
+}

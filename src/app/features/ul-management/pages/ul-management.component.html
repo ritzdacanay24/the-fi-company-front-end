@@ -1,0 +1,268 @@
+<div class="ul-management-dashboard">
+  <!-- Development Mode Toggle -->
+  <div class="row mb-3" *ngIf="!isProduction">
+    <div class="col-12">
+      <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+          <i class="mdi mdi-dev-to me-2"></i>
+          <strong>Development Mode:</strong> 
+          Currently using {{ (mockToggle.useMockData$ | async) ? 'Mock Data' : 'Real API' }}
+        </div>
+        <button type="button" 
+                class="btn btn-sm btn-outline-primary"
+                (click)="toggleMockData()">
+          <i class="mdi mdi-swap-horizontal me-1"></i>
+          Switch to {{ (mockToggle.useMockData$ | async) ? 'Real API' : 'Mock Data' }}
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h3 class="card-title mb-1">
+                <i class="mdi mdi-certificate me-2"></i>UL Management System
+              </h3>
+              <p class="card-text mb-0">
+                Manage UL labels, track usage, and generate comprehensive reports
+              </p>
+            </div>
+            <div class="text-end">
+              <i class="mdi mdi-shield-check" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card bg-info text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Total UL Labels</h6>
+              <h2 class="mb-0">
+                <span *ngIf="!isLoadingStats">{{ stats.totalLabels }}</span>
+                <div class="spinner-border spinner-border-sm" *ngIf="isLoadingStats"></div>
+              </h2>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-certificate" style="font-size: 2.5rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-link text-white p-0" (click)="navigateToLabelsReport()">
+              <small>View All Labels →</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card bg-success text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Active Labels</h6>
+              <h2 class="mb-0">
+                <span *ngIf="!isLoadingStats">{{ stats.activeLabels }}</span>
+                <div class="spinner-border spinner-border-sm" *ngIf="isLoadingStats"></div>
+              </h2>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-check-circle" style="font-size: 2.5rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <small class="text-white-50">Ready for use</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card bg-warning text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Expired Labels</h6>
+              <h2 class="mb-0">
+                <span *ngIf="!isLoadingStats">{{ stats.expiredLabels }}</span>
+                <div class="spinner-border spinner-border-sm" *ngIf="isLoadingStats"></div>
+              </h2>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-close-circle" style="font-size: 2.5rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <small class="text-white-50">Requires attention</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card bg-dark text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Total Usages</h6>
+              <h2 class="mb-0">
+                <span *ngIf="!isLoadingStats">{{ stats.recentUsages }}</span>
+                <div class="spinner-border spinner-border-sm" *ngIf="isLoadingStats"></div>
+              </h2>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-clipboard-check" style="font-size: 2.5rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-link text-white p-0" (click)="navigateToUsageReport()">
+              <small>View Usage Report →</small>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Cards -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="mdi mdi-upload text-primary me-2"></i>Upload & Management
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="card-text">
+            Upload new UL labels to the database, either individually or in bulk via CSV/Excel files.
+            Manage existing labels and their status.
+          </p>
+          
+          <div class="d-grid gap-2">
+            <button type="button" 
+                    class="btn btn-primary" 
+                    (click)="navigateToUpload()">
+              <i class="mdi mdi-plus me-2"></i>Upload UL Labels
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-primary" 
+                    (click)="navigateToLabelsReport()">
+              <i class="mdi mdi-table me-2"></i>Manage Existing Labels
+            </button>
+          </div>
+
+          <hr>
+          
+          <h6 class="text-muted">Features:</h6>
+          <ul class="list-unstyled">
+            <li><i class="mdi mdi-check text-success me-1"></i>Single label upload</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>Bulk CSV/Excel import</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>Template download</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>Status management</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="mdi mdi-clipboard-check text-success me-2"></i>Usage Tracking
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="card-text">
+            Record when UL labels are used with Eyefi serial numbers. Track quantities, users, 
+            customers, and generate comprehensive usage reports.
+          </p>
+          
+          <div class="d-grid gap-2">
+            <button type="button" 
+                    class="btn btn-success" 
+                    (click)="navigateToUsage()">
+              <i class="mdi mdi-clipboard-plus me-2"></i>Record New Usage
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-success" 
+                    (click)="navigateToUsageReport()">
+              <i class="mdi mdi-chart-line me-2"></i>View Usage Reports
+            </button>
+          </div>
+
+          <hr>
+          
+          <h6 class="text-muted">Features:</h6>
+          <ul class="list-unstyled">
+            <li><i class="mdi mdi-check text-success me-1"></i>UL number validation</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>Serial number tracking</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>User signatures</li>
+            <li><i class="mdi mdi-check text-success me-1"></i>Customer tracking</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Access -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card border-info">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">
+            <i class="mdi mdi-lightning-bolt me-1"></i>Quick Access
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <h6>Management</h6>
+              <div class="d-grid gap-1">
+                <button class="btn btn-outline-primary btn-sm" (click)="navigateToUpload()">
+                  <i class="mdi mdi-upload me-1"></i>Upload Labels
+                </button>
+                <button class="btn btn-outline-primary btn-sm" (click)="navigateToLabelsReport()">
+                  <i class="mdi mdi-table me-1"></i>View All Labels
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <h6>Usage</h6>
+              <div class="d-grid gap-1">
+                <button class="btn btn-outline-success btn-sm" (click)="navigateToUsage()">
+                  <i class="mdi mdi-clipboard-plus me-1"></i>Record Usage
+                </button>
+                <button class="btn btn-outline-success btn-sm" (click)="navigateToUsageReport()">
+                  <i class="mdi mdi-chart-line me-1"></i>Usage Reports
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <h6>Information</h6>
+              <p class="small text-muted mb-2">
+                The UL Management System helps track Underwriters Laboratories certified 
+                labels and their usage with Eyefi products for compliance and auditing purposes.
+              </p>
+              <p class="small text-muted mb-0">
+                <strong>Last updated:</strong> date__
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

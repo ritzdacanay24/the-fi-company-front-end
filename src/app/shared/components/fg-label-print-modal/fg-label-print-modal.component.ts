@@ -164,12 +164,15 @@ export class FgLabelPrintModalComponent {
       ^FO50,750^FD${this.description1}^FS
       ^FO50,800 ^BY2,10,80 ^BC,80,N,N,N,N
       ^FD${this.customerPartNumber || this.partNumber}^FS
-      ^FO50,920^FDQty:^FS
+      ^FO50,920^FDQty:^FS 
       ^FO50,970^FD${this.qtyPerLabel}^FS
       ^FO50,9600 ^BY2,10,80 ^BC,80,N,N,N,N
       ^FD${this.qtyPerLabel}^FS
       ^CF0,90
       ^CF0,30
+      ^FO50,1070^FDCustomer: ${
+        this.row.SO_CUST
+      } ^FS
       ^FO50,1170^FD${
         this.authenticationService.currentUserValue.full_name
       } ^FS

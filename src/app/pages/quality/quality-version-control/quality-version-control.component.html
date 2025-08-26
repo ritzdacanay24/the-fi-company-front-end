@@ -1,0 +1,279 @@
+<div class="container-fluid quality-version-control-page">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">Quality Version Control</h2>
+      <p class="text-muted mb-0">Manage quality documents and revisions (QA-FRM-202, rev2)</p>
+    </div>
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="toggleCreateForm()">
+      <i class="mdi mdi-plus me-2"></i>Create Document
+    </button>
+  </div>
+
+  <!-- Create Document Form -->
+  <div class="card mb-4" *ngIf="showCreateForm">
+    <div class="card-header bg-primary text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="mdi mdi-plus me-2"></i>Create New Quality Document
+        </h5>
+        <button type="button" class="btn btn-outline-light btn-sm" (click)="cancelCreateForm()">
+          <i class="mdi mdi-close"></i>
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="alert alert-info">
+        <i class="mdi mdi-information me-2"></i>
+        <strong>Document Number Format:</strong> QA-FRM-202, rev2
+      </div>
+      
+      <form [formGroup]="createDocumentForm" (ngSubmit)="onCreateDocument()">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Document Type <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="document_type"
+                    [class.is-invalid]="createDocumentForm.get('document_type')?.invalid && createDocumentForm.get('document_type')?.touched">
+              <option value="">Select Document Type</option>
+              <option *ngFor="let type of documentTypes" [value]="type.value">
+                {{type.label}} ({{type.value}})
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="createDocumentForm.get('document_type')?.invalid && createDocumentForm.get('document_type')?.touched">
+              Please select a document type
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">Department <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="department"
+                    [class.is-invalid]="createDocumentForm.get('department')?.invalid && createDocumentForm.get('department')?.touched">
+              <option value="">Select Department</option>
+              <option *ngFor="let dept of departments" [value]="dept">{{dept}}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="createDocumentForm.get('department')?.invalid && createDocumentForm.get('department')?.touched">
+              Please select a department
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-md-8">
+            <label class="form-label">Document Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="title" 
+                   placeholder="Enter document title..."
+                   [class.is-invalid]="createDocumentForm.get('title')?.invalid && createDocumentForm.get('title')?.touched">
+            <div class="invalid-feedback" *ngIf="createDocumentForm.get('title')?.invalid && createDocumentForm.get('title')?.touched">
+              Document title is required
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">Category <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="category"
+                    [class.is-invalid]="createDocumentForm.get('category')?.invalid && createDocumentForm.get('category')?.touched">
+              <option value="">Select Category</option>
+              <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="createDocumentForm.get('category')?.invalid && createDocumentForm.get('category')?.touched">
+              Please select a category
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" formControlName="description" rows="2" 
+                      placeholder="Optional description of this document"></textarea>
+          </div>
+        </div>
+
+        <!-- Initial Revision Information -->
+        <div formGroupName="initial_revision" class="mt-4 pt-3 border-top">
+          <h6 class="text-primary">Initial Revision (Rev 1)</h6>
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Revision Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" formControlName="title" 
+                     placeholder="Title for the initial revision..."
+                     [class.is-invalid]="createDocumentForm.get('initial_revision.title')?.invalid && createDocumentForm.get('initial_revision.title')?.touched">
+              <div class="invalid-feedback" *ngIf="createDocumentForm.get('initial_revision.title')?.invalid && createDocumentForm.get('initial_revision.title')?.touched">
+                Revision title is required
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Effective Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" formControlName="effective_date"
+                     [class.is-invalid]="createDocumentForm.get('initial_revision.effective_date')?.invalid && createDocumentForm.get('initial_revision.effective_date')?.touched">
+              <div class="invalid-feedback" *ngIf="createDocumentForm.get('initial_revision.effective_date')?.invalid && createDocumentForm.get('initial_revision.effective_date')?.touched">
+                Effective date is required
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <label class="form-label">Revision Description</label>
+              <textarea class="form-control" formControlName="description" rows="2" 
+                        placeholder="Optional description for this revision"></textarea>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Change Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" formControlName="change_description" rows="2" 
+                        placeholder="Describe what this revision includes..."
+                        [class.is-invalid]="createDocumentForm.get('initial_revision.change_description')?.invalid && createDocumentForm.get('initial_revision.change_description')?.touched"></textarea>
+              <div class="invalid-feedback" *ngIf="createDocumentForm.get('initial_revision.change_description')?.invalid && createDocumentForm.get('initial_revision.change_description')?.touched">
+                Change description is required
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn btn-secondary" (click)="cancelCreateForm()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="creating || createDocumentForm.invalid">
+            <span *ngIf="creating" class="spinner-border spinner-border-sm me-2"></span>
+            {{creating ? 'Creating...' : 'Create Document'}}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content Tabs -->
+  <div class="card">
+    <div class="card-header border-bottom-0">
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" 
+                  [class.active]="selectedTab === 'documents'"
+                  (click)="selectedTab = 'documents'">
+            <i class="mdi mdi-file-document me-1"></i>
+            Documents ({{ documentsCount }})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link"
+                  [class.active]="selectedTab === 'approvals'"
+                  (click)="selectedTab = 'approvals'">
+            <i class="mdi mdi-check-circle me-1"></i>
+            Approvals
+            <span class="badge bg-warning ms-1" *ngIf="pendingApprovalsCount > 0">
+              {{ pendingApprovalsCount }}
+            </span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link"
+                  [class.active]="selectedTab === 'stats'"
+                  (click)="selectedTab = 'stats'">
+            <i class="mdi mdi-chart-line me-1"></i>
+            Statistics
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body">
+      <!-- Documents Tab -->
+      <div *ngIf="selectedTab === 'documents'">
+        <div class="row">
+          <!-- Filters -->
+          <div class="col-md-12 mb-3">
+            <div class="row g-2">
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" [(ngModel)]="filterType" (change)="onFilterChange()">
+                  <option value="">All Types</option>
+                  <option *ngFor="let type of documentTypes" [value]="type.value">{{type.label}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" [(ngModel)]="filterCategory" (change)="onFilterChange()">
+                  <option value="">All Categories</option>
+                  <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" [(ngModel)]="filterDepartment" (change)="onFilterChange()">
+                  <option value="">All Departments</option>
+                  <option *ngFor="let dept of departments" [value]="dept">{{dept}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+                  <option value="">All Statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="pending_approval">Pending Approval</option>
+                  <option value="approved">Approved</option>
+                  <option value="superseded">Superseded</option>
+                  <option value="obsolete">Obsolete</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <input type="text" class="form-control form-control-sm" 
+                       placeholder="Search documents..." 
+                       [(ngModel)]="searchQuery" 
+                       (input)="onSearchChange()">
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-outline-secondary btn-sm w-100" (click)="clearFilters()" title="Clear all filters">
+                  <i class="mdi mdi-filter-remove"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document Grid -->
+          <div class="col-md-8">
+            <app-quality-document-grid
+              [documents]="filteredDocuments"
+              [loading]="loading"
+              [selectedDocument]="selectedDocument"
+              (documentSelected)="onDocumentSelected($event)"
+              (documentAction)="onDocumentAction($event)">
+            </app-quality-document-grid>
+          </div>
+
+          <!-- Revision Workflow Sidebar -->
+          <div class="col-md-4">
+            <app-revision-workflow
+              [selectedDocument]="selectedDocument"
+              [documentRevisions]="documentRevisions"
+              [creating]="creating"
+              (createRevision)="onCreateRevisionRequest($event)"
+              (revisionAction)="onRevisionAction($event)"
+              (downloadRevision)="downloadRevision($event)">
+            </app-revision-workflow>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approvals Tab -->
+      <div *ngIf="selectedTab === 'approvals'">
+        <app-approval-queue
+          [documents]="documents"
+          (approveRevision)="onApproveRevision($event)"
+          (rejectRevision)="onRejectRevision($event)"
+          (viewRevisionDetails)="viewRevisionDetails($event.document, $event.revision)">
+        </app-approval-queue>
+      </div>
+
+      <!-- Statistics Tab -->
+      <div *ngIf="selectedTab === 'stats'">
+        <app-document-stats
+          [stats]="stats"
+          [documents]="documents">
+        </app-document-stats>
+      </div>
+    </div>
+  </div>
+</div>

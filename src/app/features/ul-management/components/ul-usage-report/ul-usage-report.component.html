@@ -1,0 +1,211 @@
+<div class="ul-usage-report">
+  <!-- Header Section -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0">
+              <i class="mdi mdi-clipboard-check me-2"></i>UL Label Usage Report
+            </h4>
+            <div class="btn-group">
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="refreshData()">
+                <i class="mdi mdi-refresh me-1"></i>Refresh
+              </button>
+              <button type="button" class="btn btn-outline-success btn-sm" (click)="exportData()">
+                <i class="mdi mdi-download me-1"></i>Export
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Total Usages</h6>
+              <h3 class="mb-0">{{ getUsageSummary().totalUsages }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-clipboard-check" style="font-size: 2rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Total Quantity</h6>
+              <h3 class="mb-0">{{ getUsageSummary().totalQuantity }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-counter" style="font-size: 2rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Unique UL Numbers</h6>
+              <h3 class="mb-0">{{ getUsageSummary().uniqueULNumbers }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-certificate" style="font-size: 2rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title">Unique Customers</h6>
+              <h3 class="mb-0">{{ getUsageSummary().uniqueCustomers }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="mdi mdi-account-group" style="font-size: 2rem; opacity: 0.7;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title mb-0">
+            <i class="mdi mdi-filter me-1"></i>Filters
+          </h6>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="filterForm">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label class="form-label">Search</label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="search"
+                         placeholder="UL Number, Serial Number, User, etc.">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label class="form-label">UL Number</label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="ulNumber"
+                         placeholder="Filter by UL Number">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label class="form-label">Customer</label>
+                  <input type="text" 
+                         class="form-control" 
+                         formControlName="customer"
+                         placeholder="Filter by Customer">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label class="form-label">Start Date</label>
+                  <input type="date" class="form-control" formControlName="startDate">
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label class="form-label">End Date</label>
+                  <input type="date" class="form-control" formControlName="endDate">
+                </div>
+              </div>
+              <div class="col-md-1">
+                <div class="mb-3">
+                  <label class="form-label">&nbsp;</label>
+                  <div class="d-grid">
+                    <button type="button" 
+                            class="btn btn-outline-secondary" 
+                            (click)="clearFilters()">
+                      <i class="mdi mdi-close"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Quick Filter Buttons -->
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" 
+                    class="btn btn-outline-primary btn-sm" 
+                    (click)="filterByDateRange(7)">
+              <i class="mdi mdi-calendar-week me-1"></i>Last 7 Days
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-primary btn-sm" 
+                    (click)="filterByDateRange(30)">
+              <i class="mdi mdi-calendar-month me-1"></i>Last 30 Days
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-primary btn-sm" 
+                    (click)="filterByDateRange(90)">
+              <i class="mdi mdi-calendar-range me-1"></i>Last 90 Days
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-secondary btn-sm" 
+                    (click)="loadUsageData()">
+              <i class="mdi mdi-magnify me-1"></i>Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Grid -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">
+              Usage Records ({{ filteredData.length }} of {{ usageData.length }})
+            </h6>
+            <div class="spinner-border spinner-border-sm text-primary" *ngIf="isLoading"></div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <ag-grid-angular
+            id="ul-usage-grid"
+            class="ag-theme-bootstrap"
+            style="height: 500px; width: 100%;"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [rowData]="filteredData"
+            [suppressMenuHide]="true"
+            [tooltipShowDelay]="500"
+            (gridReady)="onGridReady($event)">
+          </ag-grid-angular>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,47 @@
+@media (max-width: 575.98px) {
+  .g-recaptcha {
+    display: inline-block;
+  }
+}
+div.waiver p {
+  margin-bottom: 7px;
+  font-weight: 400;
+  font-size: 17px;
+}
+
+.invalid-feedback {
+  margin-bottom: 5px;
+}
+
+.form-check
+  .form-check-label
+  input[type="radio"]:disabled:checked
+  + .input-frame:before {
+  background: #3a4066;
+}
+
+.form-check
+  .form-check-label
+  input[type="checkbox"]:disabled:checked
+  + .input-frame:after {
+  background: #3a4066;
+  color: #ffffff;
+}
+
+.form-control.sig3 input[type="input"]:read-only {
+  background: #3a4066;
+}
+
+.dropdown-toggle::after {
+  display: none;
+}
+
+.card-footer {
+  padding: 0.675rem 1.5rem;
+  background-color: rgba(0, 0, 0, 0);
+  border-top: 1px solid #f2f4f9;
+}
+.ng-select.is-invalid {
+  border-radius: 5px;
+  border: 1px var(--vz-form-invalid-border-color) solid !important;
+}

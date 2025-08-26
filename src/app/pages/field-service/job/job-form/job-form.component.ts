@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute, Router } from "@angular/router";
 import {
   NgbModule,
+  NgbModal,
   NgbNavModule,
   NgbScrollSpyModule,
 } from "@ng-bootstrap/ng-bootstrap";
@@ -52,6 +53,7 @@ import { SortBydatePipe } from "@app/shared/pipes/sort-by-date.pipe";
 import { time_now } from "src/assets/js/util/time-now";
 import { TripDetailsSummaryComponent } from "../../trip-details/trip-details-summary/trip-details-summary.component";
 import { TripDetailsModalService } from "../../trip-details/trip-details-modal/trip-details-modal.component";
+import { JobConnectionService } from "@app/core/api/field-service/job-connection.service";
 
 @Component({
   standalone: true,
@@ -90,10 +92,13 @@ export class JobFormComponent implements OnInit {
     private publicAttachment: PublicAttachment,
     private attachmentService: AttachmentService,
     private jobTripDetailModalService: JobTripDetailModalService,
-    private tripDetailsModalService: TripDetailsModalService
+    private tripDetailsModalService: TripDetailsModalService,
+    private modalService: NgbModal,
+    private jobConnectionService: JobConnectionService
   ) {}
 
   @Input() ngStyle = { height: "calc(100vh - 262px)" };
+  @ViewChild('jobConnectionModalContent', { static: false }) jobConnectionModalContent: any;
 
   currentSection = "item-3";
 
@@ -222,6 +227,7 @@ export class JobFormComponent implements OnInit {
 
     if (this.id) {
       this.getAttachments();
+      this.loadConnectedJobs(); // Load connected jobs for existing job
     } else {
       for (let i = 0; i < this.listOptions.length; i++) {
         if (
@@ -492,7 +498,7 @@ export class JobFormComponent implements OnInit {
       fs_calendar_id: [null],
       onsite_customer_name: [""],
       onsite_customer_phone_number: [""],
-      licensing_required: [""],
+      licensing_required: [null],
       ceiling_height: [""],
       bolt_to_floor: [""],
       sign_jacks: [""],
@@ -723,6 +729,309 @@ export class JobFormComponent implements OnInit {
       this.resetInput();
       this.getAttachments();
       this.isLoading = false;
+    }
+  }
+
+  // Job Connection Properties
+  connectedJobs: any[] = [];
+  selectedRelationshipType: string = 'Related';
+  selectedJobForConnection: string = '';
+  selectedJobs: string[] = [];
+
+  // Store connection IDs for deletion
+  connectionIds: { [key: string]: number } = {};
+
+  // Job Connection Methods
+  
+  /**
+   * Opens the job connection modal
+   */
+  openJobConnectionModal() {
+    this.resetJobConnectionModal();
+    
+    // Use native Bootstrap modal
+    setTimeout(() => {
+      const modalElement = document.getElementById('jobConnectionModal');
+      if (modalElement) {
+        try {
+          if (typeof (window as any).bootstrap !== 'undefined') {
+            const modal = new (window as any).bootstrap.Modal(modalElement, {
+              backdrop: 'static',
+              keyboard: false
+            });
+            modal.show();
+          } else {
+            // Manual fallback
+            modalElement.classList.add('show');
+            modalElement.style.display = 'block';
+            modalElement.setAttribute('aria-modal', 'true');
+            modalElement.setAttribute('role', 'dialog');
+            document.body.classList.add('modal-open');
+            
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = 'jobConnectionModalBackdrop';
+            document.body.appendChild(backdrop);
+          }
+        } catch (error) {
+          console.error('Failed to open modal:', error);
+          alert('Unable to open the job connection dialog. Please try again.');
+        }
+      }
+    }, 100);
+  }
+
+  /**
+   * Closes the job connection modal
+   */
+  closeJobConnectionModal() {
+    const modalElement = document.getElementById('jobConnectionModal');
+    const backdrop = document.getElementById('jobConnectionModalBackdrop');
+    
+    if (modalElement) {
+      if (typeof (window as any).bootstrap !== 'undefined') {
+        const modal = (window as any).bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+          modal.hide();
+        }
+      } else {
+        modalElement.classList.remove('show');
+        modalElement.style.display = 'none';
+        modalElement.removeAttribute('aria-modal');
+        modalElement.removeAttribute('role');
+        document.body.classList.remove('modal-open');
+      }
+    }
+    
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    this.resetJobConnectionModal();
+  }
+
+  /**
+   * Resets the job connection modal to initial state
+   */
+  resetJobConnectionModal() {
+    this.selectedRelationshipType = 'Related';
+    this.selectedJobForConnection = '';
+    this.selectedJobs = [];
+  }
+
+  /**
+   * Handles job selection from the app-job-search component
+   */
+  onJobSelected(jobData: any) {
+    console.log('Job selected:', jobData);
+    if (jobData && (jobData.fs_id || jobData.id)) {
+      this.selectedJobForConnection = jobData.fs_id || jobData.id;
+    } else if (typeof jobData === 'string' || typeof jobData === 'number') {
+      this.selectedJobForConnection = jobData.toString();
+    }
+  }
+
+  /**
+   * Adds the currently selected job to the connection list
+   */
+  addJobToConnectionList() {
+    if (!this.selectedJobForConnection) {
+      alert('Please select a job first.');
+      return;
+    }
+    
+    // Check if job is already in the list
+    if (this.selectedJobs.includes(this.selectedJobForConnection)) {
+      alert('This job is already in the connection list.');
+      return;
+    }
+    
+    // Check if trying to connect job to itself
+    if (this.id && this.selectedJobForConnection === this.id.toString()) {
+      alert('Cannot connect a job to itself.');
+      return;
+    }
+    
+    this.selectedJobs.push(this.selectedJobForConnection);
+    this.selectedJobForConnection = ''; // Clear selection for next job
+  }
+
+  /**
+   * Removes a job from selection
+   */
+  removeFromSelection(jobId: string) {
+    const index = this.selectedJobs.indexOf(jobId);
+    if (index > -1) {
+      this.selectedJobs.splice(index, 1);
+    }
+  }
+
+  /**
+   * Connects the selected jobs using the fs_job_connections table
+   */
+  async connectSelectedJobs() {
+    if (this.selectedJobs.length === 0) return;
+
+    if (!this.id) {
+      alert('Cannot create connections - job must be saved first');
+      return;
+    }
+
+    try {
+      // Create connections for all selected jobs at once
+      const connectionData = this.selectedJobs.map(jobId => ({
+        parent_job_id: this.id,
+        connected_job_id: jobId,
+        relationship_type: this.selectedRelationshipType,
+        notes: '',
+        created_by: 'user' // You might want to get this from auth service
+      }));
+
+      await this.jobConnectionService.createMultipleConnections(connectionData);
+
+      // Reload connected jobs to show the new connections
+      await this.loadConnectedJobs();
+
+      // Close modal and show success
+      this.closeJobConnectionModal();
+      alert(`Successfully connected ${this.selectedJobs.length} job(s)!`);
+      this.resetJobConnectionModal();
+
+    } catch (error) {
+      console.error('Error creating job connections:', error);
+      alert('Error creating job connections: ' + (error.message || 'Unknown error'));
+    }
+  }
+
+  /**
+   * Loads job details for newly connected jobs (legacy method - can be removed)
+   */
+  private loadJobDetailsForConnections(jobIds: string[]) {
+    // This method is no longer needed with the table-based approach
+    // as job details are fetched directly in the API
+    console.log('loadJobDetailsForConnections called but not needed with table approach');
+  }
+
+  /**
+   * Disconnects a job from the current job using fs_job_connections table
+   */
+  async disconnectJob(jobId: string) {
+    if (!confirm('Are you sure you want to disconnect this job?')) return;
+
+    try {
+      // Find the connection ID for this job
+      const connectionId = this.connectionIds[jobId];
+      
+      if (!connectionId) {
+        console.error('Connection ID not found for job:', jobId);
+        alert('Error: Connection ID not found');
+        return;
+      }
+
+      // Delete the connection from the database
+      await this.jobConnectionService.deleteJobConnection(connectionId);
+
+      // Refresh the connected jobs list from the backend
+      await this.loadConnectedJobs();
+
+      alert('Job disconnected successfully!');
+
+    } catch (error) {
+      console.error('Error disconnecting job:', error);
+      alert('Error disconnecting job: ' + (error.message || 'Unknown error'));
+    }
+  }
+
+  /**
+   * Loads connected jobs for the current job using fs_job_connections table
+   */
+  async loadConnectedJobs() {
+    if (!this.id) return;
+
+    console.log('Loading connected jobs for job ID:', this.id);
+
+    try {
+      // Use the new table-based API
+      const connections: any = await this.jobConnectionService.getJobConnections(this.id);
+      
+      console.log('Job connections from API:', connections);
+      
+      if (connections && connections.length > 0) {
+        this.connectedJobs = connections.map((conn: any) => ({
+          id: conn.connected_job_id,
+          fs_id: conn.fs_id,
+          relationship_type: conn.relationship_type || 'Related',
+          customer: conn.customer || 'Unknown',
+          service_type: conn.service_type || 'Unknown',
+          status: conn.status || 'Unknown',
+          request_date: conn.request_date || new Date(),
+          connection_id: conn.connection_id,
+          notes: conn.notes || ''
+        }));
+
+        // Store connection IDs for deletion
+        this.connectionIds = {};
+        connections.forEach((conn: any) => {
+          this.connectionIds[conn.fs_id] = conn.connection_id;
+        });
+        
+        console.log('Loaded connected jobs:', this.connectedJobs);
+        console.log('Connection IDs mapping:', this.connectionIds);
+      } else {
+        console.log('No connected jobs found');
+        this.connectedJobs = [];
+        this.connectionIds = {};
+      }
+    } catch (error) {
+      console.error('Error loading connected jobs from API:', error);
+      this.connectedJobs = [];
+      this.connectionIds = {};
+    }
+  }
+
+  /**
+   * Debug method to check current job connections (remove in production)
+   */
+  async debugConnections() {
+    console.log('=== JOB CONNECTIONS DEBUG ===');
+    console.log('Current job ID:', this.id);
+    console.log('Connected jobs array:', this.connectedJobs);
+    console.log('Connection IDs mapping:', this.connectionIds);
+    
+    if (this.id) {
+      try {
+        const stats = await this.jobConnectionService.getConnectionStats(this.id);
+        console.log('Connection stats:', stats);
+      } catch (error) {
+        console.log('Error getting connection stats:', error);
+      }
+    }
+    
+    console.log('===========================');
+    
+    // Also show in alert for user
+    alert(`Debug Info:
+Job ID: ${this.id}
+Connected Jobs Count: ${this.connectedJobs.length}
+Connection IDs: ${Object.keys(this.connectionIds).length}`);
+  }
+
+  /**
+   * Test method to view job connections (remove in production)
+   */
+  async testViewConnections() {
+    if (!this.id) {
+      alert('Cannot view connections - no job ID available');
+      return;
+    }
+
+    try {
+      const connections: any = await this.jobConnectionService.getJobConnections(this.id);
+      console.log('Job connections:', connections);
+      alert(`Found ${Array.isArray(connections) ? connections.length : 0} job connections. Check console for details.`);
+    } catch (error) {
+      console.error('Error viewing connections:', error);
+      alert('Error viewing connections: ' + error.message);
     }
   }
 }

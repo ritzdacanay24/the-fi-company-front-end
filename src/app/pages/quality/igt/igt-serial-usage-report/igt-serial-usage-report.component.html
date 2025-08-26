@@ -1,0 +1,58 @@
+<div class="card border-0">
+  <div class="card-header bg-info-subtle border-info p-3">
+    <h6 class="mb-0 fw-bold text-info-emphasis">
+      <i class="mdi mdi-chart-bar me-2"></i>
+      Serial Number Usage Report
+    </h6>
+  </div>
+  <div class="card-body p-4">
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border text-info"></div>
+      <div class="mt-2">Loading usage statistics...</div>
+    </div>
+    <div *ngIf="error" class="alert alert-danger">
+      {{error}}
+    </div>
+    <div *ngIf="statistics">
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="card border-0 bg-primary-subtle">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-database fs-1 text-primary mb-2"></i>
+              <h4 class="text-primary mb-1">{{statistics.total || 0}}</h4>
+              <small class="text-muted">Total Serial Numbers</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-success-subtle">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-check-circle fs-1 text-success mb-2"></i>
+              <h4 class="text-success mb-1">{{statistics.available || 0}}</h4>
+              <small class="text-muted">Available</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-warning-subtle">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-clock fs-1 text-warning mb-2"></i>
+              <h4 class="text-warning mb-1">{{statistics.reserved || 0}}</h4>
+              <small class="text-muted">Reserved</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 bg-danger-subtle">
+            <div class="card-body text-center p-3">
+              <i class="mdi mdi-tag fs-1 text-danger mb-2"></i>
+              <h4 class="text-danger mb-1">{{statistics.used || 0}}</h4>
+              <small class="text-muted">Used in Tags</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Optionally, add more detailed breakdowns here -->
+    </div>
+  </div>
+</div>

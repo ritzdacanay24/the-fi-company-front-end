@@ -1,0 +1,190 @@
+// Full width modal styling
+:host ::ng-deep .modal-fullwidth .modal-dialog {
+  max-width: 95vw !important;
+  width: 95vw !important;
+  margin: 1rem auto !important;
+}
+
+:host ::ng-deep .modal-fullwidth .modal-content {
+  height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+:host ::ng-deep .modal-fullwidth .modal-body {
+  flex: 1 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+// Grid height adjustment for full width modal
+:host ::ng-deep .modal-fullwidth .ag-theme-custom {
+  height: calc(90vh - 200px) !important; // Account for header and footer
+}
+
+.ag-theme-custom .ag-header-cell-label {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+}
+
+.bg-info-subtle {
+  background: #e7f3fa !important;
+}
+
+.bg-warning-subtle {
+  background: #fff8e1 !important;
+}
+
+.bg-success-subtle {
+  background: #e6f4ea !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+.form-check {
+  margin-bottom: 0;
+}
+
+.badge {
+  font-size: 0.75em;
+}
+
+.ag-theme-custom {
+  --ag-border-color: #e0e0e0;
+  --ag-header-background-color: #f8f9fa;
+  --ag-odd-row-background-color: #fdfdfd;
+  --ag-row-hover-color: #f1f3f4;
+}
+
+.ag-theme-custom .ag-row-level-0 {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.ag-theme-custom .ag-row-level-1 {
+  background-color: #ffffff;
+}
+
+.ag-theme-custom .ag-row-level-2 {
+  background-color: #fafafa;
+}
+
+.ag-theme-custom .ag-row-level-3 {
+  background-color: #f5f5f5;
+}
+
+.ag-theme-custom .ag-row-level-4 {
+  background-color: #f0f0f0;
+}
+
+.bg-light-blue {
+  background-color: #e3f2fd !important;
+}
+
+// Enhanced BOM level styling
+.ag-theme-custom .ag-row {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ag-theme-custom .ag-row:hover {
+  background-color: #f1f3f4 !important;
+}
+
+// Group column styling for better hierarchy visualization
+.ag-theme-custom .ag-group-expanded .ag-icon {
+  color: #1976d2;
+}
+
+.ag-theme-custom .ag-group-contracted .ag-icon {
+  color: #757575;
+}
+
+.ag-theme-custom .ag-group-indent {
+  border-left: 2px solid #e0e0e0;
+  margin-left: 8px;
+  padding-left: 8px;
+}
+
+.ag-theme-custom .ag-cell {
+  padding: 8px 12px;
+  line-height: 1.4;
+}
+
+.ag-theme-custom .ag-header-cell {
+  padding: 12px;
+}
+
+// Tree indentation styling
+.ag-theme-custom .ag-row-group-indent-1 {
+  padding-left: 20px;
+}
+
+.ag-theme-custom .ag-row-group-indent-2 {
+  padding-left: 40px;
+}
+
+.ag-theme-custom .ag-row-group-indent-3 {
+  padding-left: 60px;
+}
+
+.ag-theme-custom .ag-row-group-indent-4 {
+  padding-left: 80px;
+}
+
+.ag-theme-custom .ag-row-group-indent-5 {
+  padding-left: 100px;
+}
+
+// Loading animation
+.spinner-border {
+  border-width: 0.25em;
+}
+
+// Badge colors for BOM types
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .modal-body {
+    padding: 0.5rem;
+  }
+  
+  .ag-theme-custom {
+    font-size: 0.875rem;
+  }
+  
+  .badge {
+    font-size: 0.65em;
+    padding: 0.25em 0.5em;
+  }
+}

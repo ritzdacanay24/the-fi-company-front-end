@@ -1,0 +1,716 @@
+.enterprise-dashboard {
+  background: var(--vz-body-bg);
+  min-height: 100vh;
+  padding: 1rem 0.5rem; // Reduced from 2rem 1rem
+}
+
+.dashboard-header {
+  .page-title-section {
+    .page-title {
+      font-size: 2rem; // Reduced from 2.5rem
+      font-weight: 700;
+      color: var(--vz-body-color);
+      margin-bottom: 0.25rem; // Reduced from 0.5rem
+    }
+    
+    .page-subtitle {
+      font-size: 1rem; // Reduced from 1.1rem
+      font-weight: 400;
+      color: var(--vz-secondary-color);
+    }
+  }
+}
+
+.enterprise-switch {
+  .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    border-radius: 1rem;
+    
+    &:checked {
+      background-color: var(--vz-success);
+      border-color: var(--vz-success);
+    }
+  }
+  
+  .form-check-label {
+    font-size: 0.95rem;
+    color: var(--vz-body-color);
+    margin-left: 0.5rem;
+  }
+}
+
+.enterprise-btn {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem; // Reduced from 0.75rem 1.5rem
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(var(--vz-primary-rgb), 0.3);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(var(--vz-primary-rgb), 0.4);
+  }
+}
+
+.enterprise-card {
+  animation: slideInUp 0.6s ease-out;
+  
+  .card {
+    border: 1px solid var(--vz-border-color);
+    background-color: var(--vz-card-bg);
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+      transition: all 0.3s ease;
+    }
+  }
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #667eea 0%, #43cea2 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+}
+
+.header-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.loading-section {
+  .loading-animation {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border: 2px solid rgba(var(--vz-primary-rgb), 0.1);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+.enterprise-table {
+  .table-header {
+    background: var(--vz-light);
+    
+    .enterprise-th {
+      border: none;
+      padding: 0.75rem 0.5rem; // Reduced from 1.2rem 1rem
+      font-weight: 700;
+      font-size: 0.9rem; // Added smaller font size
+      color: var(--vz-body-color);
+      position: relative;
+      
+      &.highlighted-column {
+        background: linear-gradient(135deg, #2271b1 0%, #1085e6 100%);
+        color: white;
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #ff6b6b, #feca57);
+        }
+        
+        .header-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+      }
+      
+      &.current-period-column {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        color: white;
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #28a745;
+        }
+      }
+      
+      &.current-and-selected {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        color: white;
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #ff6b6b, #feca57, #28a745);
+          animation: pulse-glow 2s infinite;
+        }
+      }
+    }
+  }
+  
+  .data-row {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background-color: rgba(var(--vz-primary-rgb), 0.05);
+    //   transform: scale(1.01);
+    }
+    
+    .enterprise-td {
+      padding: 0.6rem 0.5rem; // Reduced from 1rem
+      border: 1px solid var(--vz-border-color);
+      vertical-align: middle;
+      background-color: var(--vz-card-bg);
+      color: var(--vz-body-color);
+      font-size: 0.85rem; // Added smaller font size
+      
+      &.customer-cell {
+        background: var(--vz-light);
+        font-weight: 600;
+        
+        .customer-name {
+          display: flex;
+          align-items: center;
+          color: var(--vz-body-color);
+          
+          .badge {
+            font-size: 0.6rem; // Reduced from 0.65rem
+            padding: 0.2rem 0.3rem; // Reduced from 0.25rem 0.4rem
+            font-weight: 600;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+            
+            &.bg-warning {
+              background-color: var(--vz-warning) !important;
+              color: var(--vz-dark) !important;
+              border: 1px solid var(--vz-warning-border-subtle);
+              
+              [data-bs-theme="dark"] & {
+                color: var(--vz-warning-text-emphasis) !important;
+                background-color: var(--vz-warning-bg-subtle) !important;
+                border-color: var(--vz-warning-border-subtle);
+              }
+            }
+            
+            &.bg-info {
+              background-color: var(--vz-info) !important;
+              color: var(--vz-white) !important;
+              border: 1px solid var(--vz-info-border-subtle);
+              
+              [data-bs-theme="dark"] & {
+                background-color: var(--vz-info-bg-subtle) !important;
+                color: var(--vz-info-text-emphasis) !important;
+                border-color: var(--vz-info-border-subtle);
+              }
+            }
+            
+            i {
+              font-size: 0.65rem; // Reduced from 0.7rem
+              opacity: 0.9;
+              
+              [data-bs-theme="dark"] & {
+                opacity: 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .table-footer {
+    .summary-row {
+      background: var(--vz-gray-800);
+      color: white;
+      
+      .enterprise-th {
+        border: none;
+        padding: 0.75rem 0.5rem; // Reduced from 1.2rem 1rem
+        font-size: 0.9rem; // Added smaller font size
+        
+        &.highlighted-column {
+          background: linear-gradient(135deg, var(--vz-danger) 0%, #c82333 100%);
+        }
+        
+        &.current-period-column {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        &.current-and-selected {
+          background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        }
+        
+        .footer-content {
+          display: flex;
+          align-items: center;
+          
+          .total-label {
+            font-size: 0.9rem; // Reduced from 1rem
+            font-weight: 700;
+          }
+          
+          .total-amount {
+            font-size: 1rem; // Reduced from 1.1rem
+            font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+}
+
+.enterprise-detail-table {
+  .detail-header {
+    background: rgba(var(--vz-primary-rgb), 0.1);
+    
+    th {
+      padding: 0.5rem 0.4rem; // Reduced from 0.75rem 0.5rem
+      font-size: 0.8rem; // Reduced from 0.85rem
+      font-weight: 600;
+      color: var(--vz-body-color);
+      border: none;
+    }
+  }
+  
+  .current-week-row {
+    background: var(--vz-warning-bg-subtle);
+    border-left: 4px solid var(--vz-warning);
+    
+    .week-badge {
+      background: var(--vz-warning);
+      color: var(--vz-warning-text-emphasis);
+      font-weight: 700;
+    }
+  }
+  
+  .week-badge {
+    background: var(--vz-primary); // Changed from var(--vz-secondary)
+    color: white;
+    padding: 0.2rem 0.4rem; // Reduced from 0.25rem 0.5rem
+    border-radius: 0.375rem;
+    font-size: 0.7rem; // Reduced from 0.75rem
+    font-weight: 600;
+  }
+  
+  .amount {
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  
+  .total-cell .amount {
+    color: var(--vz-primary);
+    font-weight: 600;
+  }
+  
+  .tariff-amount-cell .amount {
+    color: var(--vz-danger); // Changed from var(--vz-warning) to show as deduction
+    font-weight: 600;
+  }
+  
+  .net-revenue-cell .amount {
+    color: var(--vz-success);
+    font-weight: 700;
+  }
+  
+  // Remove redundant styling classes:
+  // .revenue-after-tariff-cell - REMOVED
+  // .tariff-multiplier-cell - REMOVED  
+  // .tariff-cell - REMOVED (keeping tariff-amount-cell)
+  
+  .detail-total {
+    background: var(--vz-light);
+    
+    th {
+      font-size: 0.85rem; // Reduced from 0.9rem
+      font-weight: 700;
+      color: var(--vz-body-color);
+      padding: 0.5rem 0.4rem; // Reduced from 0.75rem 0.5rem
+    }
+  }
+}
+
+.enterprise-summary-table {
+  .summary-header {
+    background: rgba(var(--vz-success-rgb), 0.1);
+    
+    th {
+      padding: 0.5rem 0.4rem; // Reduced from 0.75rem 0.5rem
+      font-weight: 600;
+      font-size: 0.85rem; // Reduced from 0.9rem
+      color: var(--vz-body-color);
+      border: none;
+    }
+  }
+  
+  .current-week-highlight {
+    background: var(--vz-info-bg-subtle);
+    border-left: 4px solid var(--vz-info);
+    
+    .week-badge-large {
+      background: var(--vz-info);
+      color: white;
+    }
+  }
+  
+  .week-badge-large {
+    background: var(--vz-primary); // Changed from var(--vz-secondary)
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    text-align: center;
+    display: inline-block;
+    min-width: 45px;
+    
+    .week-number {
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: block;
+      line-height: 1;
+    }
+    
+    .year-number {
+      font-size: 0.6rem;
+      opacity: 0.8;
+    }
+  }
+  
+  .revenue-amount {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  
+  .total-revenue .revenue-amount {
+    color: var(--vz-primary); // Changed to match detail table
+  }
+  
+  .tariff-revenue .revenue-amount {
+    color: var(--vz-danger); // Changed from var(--vz-warning) to show as deduction
+  }
+  
+  .net-revenue .revenue-amount {
+    color: var(--vz-success);
+  }
+  
+  .grand-total-row {
+    background: var(--vz-gray-800);
+    color: white;
+    
+    th {
+      padding: 0.5rem 0.4rem; // Reduced from 0.75rem 0.5rem
+      font-size: 0.9rem; // Reduced from 1rem
+      font-weight: 700;
+    }
+  }
+
+  // Add compact table row spacing
+  tbody tr td {
+    padding: 0.5rem 0.4rem; // Reduced padding for all table cells
+    font-size: 0.85rem; // Smaller font size
+    vertical-align: middle;
+  }
+
+  .week-identifier {
+    padding: 0.4rem 0.3rem; // More compact week identifier cell
+  }
+
+  .date-range {
+    padding: 0.4rem 0.3rem; // More compact date range cell
+    
+    .date-info {
+      .date-text {
+        font-size: 0.8rem; // Smaller date text
+      }
+    }
+  }
+}
+
+// Enhanced tooltip styling for dark mode
+[title] {
+  cursor: help;
+  
+  &:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+  }
+}
+
+// Badge hover effects for better interaction feedback
+.badge {
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
+    [data-bs-theme="dark"] & {
+      box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// Icon color adjustments for dark mode
+.mdi {
+  [data-bs-theme="dark"] & {
+    &.mdi-calculator,
+    &.mdi-tag {
+      filter: brightness(1.1);
+    }
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .enterprise-dashboard {
+    padding: 0.5rem 0.25rem; // Reduced further for mobile
+  }
+  
+  .dashboard-header {
+    .page-title {
+      font-size: 1.75rem !important; // Reduced from 2rem
+    }
+    
+    .enterprise-btn {
+      width: 100%;
+      margin-top: 1rem;
+    }
+  }
+  
+  .enterprise-table {
+    font-size: 0.8rem; // Reduced from 0.85rem
+    
+    .enterprise-td,
+    .enterprise-th {
+      padding: 0.4rem !important; // Reduced from 0.5rem
+    }
+  }
+}
+
+// Metric cards styling
+.metric-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: var(--vz-card-bg);
+  border: 1px solid var(--vz-border-color);
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .metric-icon {
+    margin-right: 1rem;
+    
+    i {
+      font-size: 2rem;
+      opacity: 0.8;
+    }
+  }
+  
+  .metric-content {
+    flex: 1;
+    
+    .metric-label {
+      font-size: 0.85rem;
+      color: var(--vz-secondary-color);
+      margin-bottom: 0.25rem;
+      font-weight: 500;
+    }
+    
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.2;
+    }
+  }
+}
+
+// Pulse animation for current and selected column
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleY(1.1);
+  }
+}
+
+// Revenue value badge styling
+.revenue-value {
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    
+    i {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+// Enhanced header icon styling
+.header-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  
+  [data-bs-theme="dark"] & {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+.highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.1) !important;
+  border-left: 3px solid var(--vz-primary) !important;
+  border-right: 3px solid var(--vz-primary) !important;
+  position: relative;
+}
+
+.highlighted-column:first-child {
+  border-left: 3px solid var(--vz-primary) !important;
+}
+
+.highlighted-column:last-child {
+  border-right: 3px solid var(--vz-primary) !important;
+}
+
+// Dark mode support
+[data-bs-theme="dark"] .highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.2) !important;
+  color: var(--vz-body-color) !important;
+}
+
+// Enhanced visibility for clickable cells
+.clickable-cell.highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.15) !important;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .clickable-cell.highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.25) !important;
+  color: var(--vz-body-color) !important;
+}
+
+// Remove all hover effects
+.enterprise-table tbody tr:hover td {
+  background-color: inherit !important;
+}
+
+.enterprise-table tbody tr:hover {
+  background-color: inherit !important;
+}
+
+// Ensure highlighted columns stay highlighted even on hover
+.enterprise-table tbody tr:hover .highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.1) !important;
+}
+
+[data-bs-theme="dark"] .enterprise-table tbody tr:hover .highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.2) !important;
+  color: var(--vz-body-color) !important;
+}
+
+.enterprise-table tbody tr:hover .clickable-cell.highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.15) !important;
+}
+
+[data-bs-theme="dark"] .enterprise-table tbody tr:hover .clickable-cell.highlighted-column {
+  background-color: rgba(var(--vz-primary-rgb), 0.25) !important;
+  color: var(--vz-body-color) !important;
+}
+
+.customer-breakdown {
+  .customer-section {
+    // ...existing code...
+    
+    .customer-header {
+      // ...existing code...
+      
+      .alert-light {
+        border: 1px solid rgba(var(--vz-info-rgb), 0.2);
+        background-color: rgba(var(--vz-info-rgb), 0.05);
+        
+        [data-bs-theme="dark"] & {
+          background-color: rgba(var(--vz-info-rgb), 0.1);
+          border-color: rgba(var(--vz-info-rgb), 0.3);
+          color: var(--vz-body-color);
+        }
+        
+        .mdi-information-outline {
+          color: var(--vz-info);
+        }
+      }
+    }
+  }
+}
+
+// Enhanced styling for calculation logic display
+.calculation-logic {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  
+  strong {
+    color: var(--vz-primary);
+    font-weight: 600;
+  }
+}

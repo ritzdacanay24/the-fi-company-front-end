@@ -1,0 +1,77 @@
+.document-stats {
+  .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+    
+    &:hover {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  }
+  
+  .card-body {
+    h3 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    
+    p {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+  }
+  
+  .progress {
+    background-color: rgba(255, 255, 255, 0.2);
+    
+    .progress-bar {
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+  }
+  
+  .activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    i {
+      font-size: 1.2rem;
+    }
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    min-width: 50px;
+    text-align: center;
+  }
+  
+  // Color overrides for progress bars to match badges
+  .bg-primary .progress-bar {
+    background-color: var(--bs-primary) !important;
+  }
+  
+  .bg-success .progress-bar {
+    background-color: var(--bs-success) !important;
+  }
+  
+  .bg-info .progress-bar {
+    background-color: var(--bs-info) !important;
+  }
+  
+  .bg-warning .progress-bar {
+    background-color: var(--bs-warning) !important;
+  }
+  
+  .bg-danger .progress-bar {
+    background-color: var(--bs-danger) !important;
+  }
+  
+  .bg-secondary .progress-bar {
+    background-color: var(--bs-secondary) !important;
+  }
+}

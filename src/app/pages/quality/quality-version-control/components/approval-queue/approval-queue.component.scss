@@ -1,0 +1,104 @@
+.approval-queue {
+  .approval-item {
+    .card {
+      border: 1px solid #dee2e6;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-color: var(--bs-primary);
+      }
+    }
+    
+    .approval-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(13, 110, 253, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      
+      i {
+        font-size: 1.25rem;
+        color: var(--bs-primary);
+      }
+    }
+    
+    .btn-group-vertical {
+      .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        
+        &:not(:last-child) {
+          margin-bottom: 0.25rem;
+        }
+      }
+    }
+    
+    h6 {
+      font-weight: 600;
+      color: var(--bs-dark);
+    }
+    
+    .badge {
+      font-size: 0.7rem;
+    }
+  }
+  
+  // Urgency indicators
+  .approval-item {
+    &.high-urgency {
+      .card {
+        border-left: 4px solid var(--bs-danger);
+      }
+    }
+    
+    &.medium-urgency {
+      .card {
+        border-left: 4px solid var(--bs-warning);
+      }
+    }
+    
+    &.low-urgency {
+      .card {
+        border-left: 4px solid var(--bs-success);
+      }
+    }
+  }
+  
+  // Empty state styling
+  .text-center {
+    i {
+      opacity: 0.5;
+    }
+  }
+  
+  // Alert customization
+  .alert-info {
+    border: none;
+    background-color: rgba(13, 202, 240, 0.1);
+    color: var(--bs-info);
+    
+    i {
+      color: var(--bs-info);
+    }
+  }
+  
+  // Animation for new items
+  .approval-item {
+    animation: slideIn 0.3s ease;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

@@ -1,0 +1,151 @@
+.ul-usage-report {
+  .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    
+    &.bg-primary,
+    &.bg-info,
+    &.bg-success,
+    &.bg-warning {
+      border: none;
+    }
+  }
+
+  .ag-theme-bootstrap {
+    border: none;
+    font-size: 0.875rem;
+    
+    .ag-header {
+  background-color: $color-surface;
+  border-bottom: 1px solid $color-border;
+    }
+    
+    .ag-row {
+      border-bottom: 1px solid #dee2e6;
+      
+      &:hover {
+        background-color: lighten($color-surface, 2%);
+      }
+    }
+    
+    .ag-cell {
+      padding: 8px 12px;
+      
+      .btn-group {
+        .btn {
+          padding: 2px 6px;
+          font-size: 0.75rem;
+          line-height: 1.2;
+        }
+      }
+      
+      .badge {
+        font-size: 0.75rem;
+        padding: 0.25em 0.5em;
+      }
+      
+      code {
+        font-size: 0.8rem;
+        padding: 2px 4px;
+        background-color: lighten($color-surface, 2%);
+        border-radius: 3px;
+      }
+    }
+  }
+
+  .text-primary { color: $color-primary !important; }
+  .text-info { color: $color-info !important; }
+
+  .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+  border-color: $color-primary;
+  @include focus-outline($color-primary-dark);
+  }
+
+  .btn {
+    transition: all 0.15s ease-in-out;
+  }
+
+    .btn-outline-primary {
+    &:hover {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: white;
+    }
+  }
+
+    .btn-outline-secondary {
+    &:hover {
+      background-color: $color-muted;
+      border-color: $color-muted;
+      color: white;
+    }
+  }
+
+  .card-header { background-color: $color-surface; border-bottom: 1px solid $color-border; }
+
+  .mb-3 {
+    margin-bottom: 1rem !important;
+  }
+
+  // Summary cards styling
+  .card.bg-primary,
+  .card.bg-info,
+  .card.bg-success,
+  .card.bg-warning {
+    .card-body {
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 100%);
+        pointer-events: none;
+      }
+    }
+  }
+
+  // Quick filter buttons
+  .d-flex.gap-2 {
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      
+      i {
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .card .card-body {
+      .d-flex {
+        flex-direction: column;
+        text-align: center;
+
+        .align-self-center {
+          margin-top: 1rem;
+        }
+      }
+    }
+    
+    .d-flex.gap-2 {
+      flex-direction: column;
+      
+      .btn {
+        margin-bottom: 0.25rem;
+      }
+    }
+  }
+}

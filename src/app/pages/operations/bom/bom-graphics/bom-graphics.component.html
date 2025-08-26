@@ -1,0 +1,71 @@
+<div class="container-fluid pb-3">
+  <div class="card border-0">
+    <!-- Header -->
+    <div class="card-header bg-primary bg-gradient text-white p-4 position-relative overflow-hidden">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
+        <i class="mdi mdi-image-filter-vintage" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      <div class="d-flex align-items-center justify-content-between position-relative">
+        <div class="d-flex align-items-center">
+          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 2.5rem; height: 2.5rem;">
+            <i class="mdi mdi-image-filter-vintage fs-4 text-white"></i>
+          </span>
+          <div>
+            <h4 class="mb-1 fw-bold text-white">Graphics BOM Lookup</h4>
+            <p class="mb-0 text-white-50">Search and edit graphics BOM work orders</p>
+          </div>
+        </div>
+        <div class="badge bg-light text-primary fs-6 px-3 py-2">
+          <i class="mdi mdi-database me-1"></i>
+          Operations
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="card-body p-0">
+      <div *ngIf="loading" class="p-4 text-center">
+        <div class="spinner-border text-primary me-2"></div>
+        Loading graphics BOM data...
+      </div>
+      <div *ngIf="!loading && bomData.length === 0" class="p-4 text-center text-muted">
+        <i class="mdi mdi-database-search display-4 mb-3"></i>
+        <h6>No Graphics BOM Data</h6>
+        <p>Enter search criteria above to load graphics BOM information.</p>
+      </div>
+      <div *ngIf="!loading && bomData.length > 0" class="position-relative">
+        <div class="alert alert-info border-0 m-3">
+          <i class="mdi mdi-information-outline me-2"></i>
+          <strong>Instructions:</strong> Click on the WO Number column to edit work order numbers. Changes are saved automatically.
+        </div>
+        <ag-grid-angular
+          class="ag-theme-quartz no-border border-r"
+          style="height: calc(100vh - 354px); width: 100%;"
+          [gridOptions]="gridOptions"
+          [rowData]="bomData"
+          [columnDefs]="columnDefs"
+          (selectionChanged)="onSelectionChanged()">
+        </ag-grid-angular>
+      </div>
+    </div>
+
+    <div class="card-footer bg-light" *ngIf="!loading && bomData.length > 0">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Double-click WO Number cells to edit. Changes are saved automatically.
+        </small>
+        <div class="d-flex align-items-center gap-3">
+          <small class="text-muted">
+            <i class="mdi mdi-database me-1"></i>
+            Total Records: <strong>{{bomData.length}}</strong>
+          </small>
+          <button class="btn btn-outline-success btn-sm" [disabled]="bomData.length === 0" (click)="exportToCsv()">
+            <i class="mdi mdi-download me-1"></i>
+            Export CSV
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -110,23 +110,23 @@ export class ShippedOrdersReportV1Component implements OnInit {
     {
       field: "SOD_PART",
       headerName: "Part",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
         onClick: (e) => this.itemInfoModalService.open(e.rowData.SOD_PART),
         isLink: true,
       },
     },
-    { field: "FULLDESC", headerName: "Desc", filter: "agTextColumnFilter" },
+    { field: "FULLDESC", headerName: "Desc", filter: "agMultiColumnFilter" },
     {
       field: "CP_CUST_PART",
       headerName: "Cust Part #",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     {
       field: "SOD_NBR",
       headerName: "SO #",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
@@ -138,23 +138,23 @@ export class ShippedOrdersReportV1Component implements OnInit {
     {
       field: "SOD_CONTR_ID",
       headerName: "PO #",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       cellDataType: "text",
     },
     { field: "SO_CUST", headerName: "Cust", filter: "agMultiColumnFilter" },
-    { field: "SO_SHIP", headerName: "Ship To", filter: "agTextColumnFilter" },
+    { field: "SO_SHIP", headerName: "Ship To", filter: "agMultiColumnFilter" },
     {
       field: "SOD_QTY_ORD",
       headerName: "Qty Ordered",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     {
       field: "SOD_QTY_SHIP",
       headerName: "Qty Shipped (MSTR)",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
-    { field: "QTYOPEN", headerName: "Qty Open", filter: "agTextColumnFilter" },
-    { field: "LD_QTY_OH", headerName: "Qty OH", filter: "agTextColumnFilter" },
+    { field: "QTYOPEN", headerName: "Qty Open", filter: "agMultiColumnFilter" },
+    { field: "LD_QTY_OH", headerName: "Qty OH", filter: "agMultiColumnFilter" },
     {
       field: "SOD_DUE_DATE",
       headerName: "Due Date",
@@ -163,7 +163,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
     {
       field: "SOD_ORDER_CATEGORY",
       headerName: "Customer CO #",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       cellDataType: "text",
     },
     {
@@ -191,7 +191,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
       filter: "agSetColumnFilter",
     },
     { field: "PT_ROUTING", headerName: "Routing", filter: "agSetColumnFilter" },
-    { field: "WORKORDERS", headerName: "WO #", filter: "agTextColumnFilter" },
+    { field: "WORKORDERS", headerName: "WO #", filter: "agMultiColumnFilter" },
     {
       field: "add_comments",
       headerName: "Comments",
@@ -209,40 +209,40 @@ export class ShippedOrdersReportV1Component implements OnInit {
     {
       field: "recent_comments.comments_html",
       headerName: "Recent Comment",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       maxWidth: 300,
     },
     {
       field: "CMT_CMMT",
       headerName: "QAD Comments",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     { field: "OWNER", headerName: "Owner", filter: "agSetColumnFilter" },
     {
       field: "ABS_SHIP_QTY",
       headerName: "Qty Shipped",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     {
       field: "ABS_PAR_ID",
       headerName: "Shipper",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     {
       field: "ABS_SHP_DATE",
       headerName: "Shipped On",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
     {
       field: "TRANSACTIONTIME",
       headerName: "Transaction Time",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
-    { field: "ABS_INV_NBR", headerName: "Inv #", filter: "agTextColumnFilter" },
+    { field: "ABS_INV_NBR", headerName: "Inv #", filter: "agMultiColumnFilter" },
     {
       field: "EXT",
       headerName: "Extended Amount",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
       valueFormatter: currencyFormatter,
     },
     {
@@ -258,10 +258,10 @@ export class ShippedOrdersReportV1Component implements OnInit {
     {
       field: "arrivalDate",
       headerName: "Arrival Date",
-      filter: "agTextColumnFilter",
+      filter: "agMultiColumnFilter",
     },
-    { field: "sod_type", headerName: "Type", filter: "agTextColumnFilter" },
-    { field: "SO_RMKS", headerName: "Remarks", filter: "agTextColumnFilter" },
+    { field: "sod_type", headerName: "Type", filter: "agMultiColumnFilter" },
+    { field: "SO_RMKS", headerName: "Remarks", filter: "agMultiColumnFilter" },
     {
       field: "VIEW_PARTS_ORDER_REQUEST",
       headerName: "View Parts Order Request",
@@ -272,7 +272,7 @@ export class ShippedOrdersReportV1Component implements OnInit {
         iconName: "mdi mdi-ballot-outline",
       },
     },
-    { field: "tj_po_number", headerName: "TJ PO #", filter: "agTextColumnFilter" },
+    { field: "tj_po_number", headerName: "TJ PO #", filter: "agMultiColumnFilter" },
     
   ];
 

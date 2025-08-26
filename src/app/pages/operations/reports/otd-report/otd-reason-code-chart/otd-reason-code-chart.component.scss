@@ -1,0 +1,465 @@
+.chart-container {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 0.75rem;
+  
+  ::ng-deep {
+    .apexcharts-canvas {
+      margin: 0 auto;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    // Professional title styling
+    .apexcharts-title-text {
+      font-weight: 700;
+      font-size: 1.125rem;
+      fill: #1e293b;
+      font-family: inherit;
+      text-anchor: middle;
+    }
+    
+    .apexcharts-subtitle-text {
+      font-weight: 500;
+      font-size: 0.9rem;
+      fill: #64748b;
+      font-family: inherit;
+      text-anchor: middle;
+    }
+    
+    // Enhanced legend styling
+    .apexcharts-legend {
+      color: #1e293b;
+      font-family: inherit;
+      
+      .apexcharts-legend-series {
+        margin: 4px 8px;
+        
+        .apexcharts-legend-text {
+          color: #1e293b !important;
+          font-weight: 600;
+          font-size: 0.8rem;
+          font-family: inherit;
+        }
+        
+        .apexcharts-legend-marker {
+          border-radius: 3px !important;
+          border: 2px solid white !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+          margin-right: 6px !important;
+        }
+      }
+    }
+    
+    // Professional pie data labels
+    .apexcharts-datalabel-label,
+    .apexcharts-datalabel-value {
+      font-weight: 700;
+      fill: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+      font-family: inherit;
+      font-size: 11px;
+    }
+    
+    .apexcharts-datalabel-label {
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .apexcharts-datalabel-value {
+      font-size: 12px;
+      font-weight: 800;
+    }
+    
+    // Enhanced pie slice styling
+    .apexcharts-pie-label {
+      font-weight: 600;
+      fill: #1e293b;
+      font-family: inherit;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+    
+    .apexcharts-pie-slice {
+      transition: all 0.3s ease;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      
+      &:hover {
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15)) brightness(1.05);
+        transform: scale(1.02);
+      }
+    }
+    
+    // Professional tooltip styling
+    .apexcharts-tooltip {
+      background: white !important;
+      border: none !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      border-radius: 0.75rem !important;
+      font-family: inherit;
+      backdrop-filter: blur(8px);
+      
+      .apexcharts-tooltip-title {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: white !important;
+        border-bottom: none !important;
+        font-weight: 700;
+        font-size: 0.875rem;
+        border-radius: 0.75rem 0.75rem 0 0 !important;
+        font-family: inherit;
+        padding: 0.75rem 1rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+      
+      .apexcharts-tooltip-series-group {
+        background: white !important;
+        color: #1e293b !important;
+        font-family: inherit;
+        padding: 0.5rem 1rem;
+        
+        .apexcharts-tooltip-text-y-label {
+          color: #64748b !important;
+          font-family: inherit;
+          font-weight: 500;
+          font-size: 0.875rem;
+        }
+        
+        .apexcharts-tooltip-text-y-value {
+          color: #1e293b !important;
+          font-family: inherit;
+          font-weight: 700;
+          font-size: 0.875rem;
+        }
+        
+        .apexcharts-tooltip-marker {
+          border-radius: 50% !important;
+          border: 2px solid white !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+          width: 10px !important;
+          height: 10px !important;
+        }
+      }
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        pointer-events: none;
+      }
+    }
+    
+    // Professional toolbar styling
+    .apexcharts-toolbar {
+      background: rgba(248, 250, 252, 0.95) !important;
+      border-radius: 0.5rem;
+      backdrop-filter: blur(12px);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      
+      svg {
+        fill: #475569 !important;
+        transition: fill 0.2s ease;
+        
+        &:hover {
+          fill: #1e293b !important;
+        }
+      }
+      
+      .apexcharts-zoom-icon,
+      .apexcharts-zoomin-icon,
+      .apexcharts-zoomout-icon,
+      .apexcharts-reset-icon,
+      .apexcharts-pan-icon,
+      .apexcharts-selection-icon,
+      .apexcharts-menu-icon {
+        border-radius: 0.25rem;
+        padding: 2px;
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: rgba(245, 158, 11, 0.1);
+        }
+      }
+    }
+    
+    // Enhanced menu styling
+    .apexcharts-menu {
+      background: white !important;
+      border: none !important;
+      border-radius: 0.5rem !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      font-family: inherit;
+      backdrop-filter: blur(8px);
+      
+      .apexcharts-menu-item {
+        color: #1e293b !important;
+        font-family: inherit;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background: #fef3c7 !important;
+          color: #92400e !important;
+        }
+      }
+    }
+  }
+}
+
+// Professional no-data state
+.no-data-container {
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 0.75rem;
+  border: 2px dashed #86efac;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+  }
+  
+  .no-data-content {
+    text-align: center;
+    color: #059669;
+    z-index: 1;
+    
+    .no-data-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.8;
+      color: #10b981;
+      filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));
+      animation: pulse 2s infinite;
+    }
+    
+    .no-data-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #065f46;
+      font-family: inherit;
+    }
+    
+    .no-data-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      margin: 0;
+      line-height: 1.5;
+      font-family: inherit;
+      font-weight: 500;
+      color: #047857;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+// Custom pie tooltip styles
+::ng-deep .custom-pie-tooltip {
+  background: white;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0;
+  min-width: 220px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+  
+  .tooltip-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 0.875rem 1rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tooltip-body {
+    padding: 0.875rem 1rem;
+  }
+  
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    
+    &:not(:last-child) {
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .tooltip-label {
+      color: #64748b;
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+    
+    .tooltip-value {
+      color: #1e293b;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Professional loading state
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 380px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 0.75rem;
+  border: 2px dashed #cbd5e1;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+  }
+  
+  .loading-content {
+    text-align: center;
+    color: #64748b;
+    z-index: 1;
+    
+    .spinner {
+      width: 3rem;
+      height: 3rem;
+      margin-bottom: 1.5rem;
+      color: #f59e0b;
+      filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.2));
+    }
+    
+    .loading-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #1e293b;
+      font-family: inherit;
+    }
+    
+    .loading-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin: 0;
+      font-family: inherit;
+      font-weight: 500;
+    }
+  }
+}
+
+// Responsive design enhancements
+@media (max-width: 768px) {
+  .chart-container {
+    ::ng-deep {
+      .apexcharts-title-text {
+        font-size: 1rem;
+      }
+      
+      .apexcharts-subtitle-text {
+        font-size: 0.8rem;
+      }
+      
+      .apexcharts-legend {
+        .apexcharts-legend-text {
+          font-size: 0.7rem !important;
+        }
+      }
+      
+      .apexcharts-datalabel-label,
+      .apexcharts-datalabel-value {
+        font-size: 10px;
+      }
+      
+      .apexcharts-tooltip {
+        .apexcharts-tooltip-title {
+          font-size: 0.8rem;
+          padding: 0.625rem 0.75rem;
+        }
+        
+        .apexcharts-tooltip-series-group {
+          padding: 0.375rem 0.75rem;
+          
+          .apexcharts-tooltip-text-y-label,
+          .apexcharts-tooltip-text-y-value {
+            font-size: 0.8rem !important;
+          }
+        }
+      }
+    }
+  }
+  
+  .no-data-container,
+  .chart-loading {
+    height: 300px;
+    
+    .no-data-content,
+    .loading-content {
+      .no-data-icon,
+      .spinner {
+        font-size: 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .no-data-title,
+      .loading-title {
+        font-size: 1rem;
+      }
+      
+      .no-data-subtitle,
+      .loading-subtitle {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .chart-container {
+    ::ng-deep {
+      .apexcharts-toolbar {
+        display: none !important;
+      }
+      
+      .apexcharts-tooltip {
+        display: none !important;
+      }
+    }
+  }
+}

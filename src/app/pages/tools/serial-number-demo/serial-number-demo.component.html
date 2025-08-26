@@ -1,0 +1,269 @@
+<div class="container-fluid">
+  <!-- Page Title -->
+  <div class="row">
+    <div class="col-12">
+      <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+        <h4 class="mb-sm-0">{{ title }}</h4>
+        <div class="page-title-right">
+          <ol class="breadcrumb m-0">
+            <li class="breadcrumb-item"><a href="javascript: void(0);">Tools</a></li>
+            <li class="breadcrumb-item active">Serial Number Generator</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar-sm me-3">
+              <span class="avatar-title rounded-circle bg-primary-subtle text-primary">
+                <i class="{{ icon }}"></i>
+              </span>
+            </div>
+            <div>
+              <h5 class="card-title mb-1">Serial Number Generator</h5>
+              <p class="card-text text-muted mb-0">
+                Generate unique serial numbers with customizable formats including date, time, and random components.
+                Perfect for product identification, inventory tracking, and asset management.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Gallery -->
+  <!-- <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="card-title mb-0">Template Gallery</h6>
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearTemplate()" *ngIf="selectedTemplate">
+            <i class="mdi mdi-close me-1"></i>Clear Template
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info" *ngIf="selectedTemplate">
+            <i class="mdi mdi-information me-2"></i>
+            <strong>{{ selectedTemplate.name }}</strong> template applied. The configuration has been automatically set below.
+          </div>
+          
+          <div *ngFor="let category of getCategories()" class="mb-4">
+            <h6 class="text-muted mb-3">{{ category }}</h6>
+            <div class="row">
+              <div class="col-md-6 col-lg-4 mb-3" *ngFor="let template of getTemplatesByCategory(category)">
+                <div class="card border h-100" 
+                     [class.border-primary]="selectedTemplate?.id === template.id"
+                     style="cursor: pointer;"
+                     (click)="applyTemplate(template)">
+                  <div class="card-body p-3">
+                    <div class="d-flex align-items-start">
+                      <div class="avatar-sm me-3">
+                        <span class="avatar-title rounded-circle bg-primary-subtle text-primary">
+                          <i class="{{ template.icon }}"></i>
+                        </span>
+                      </div>
+                      <div class="flex-grow-1">
+                        <h6 class="card-title mb-1">{{ template.name }}</h6>
+                        <p class="card-text text-muted small mb-2">{{ template.description }}</p>
+                        <code class="small">{{ template.example }}</code>
+                      </div>
+                    </div>
+                    <div class="mt-2" *ngIf="selectedTemplate?.id === template.id">
+                      <span class="badge bg-primary-subtle text-primary">
+                        <i class="mdi mdi-check me-1"></i>Applied
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Main Serial Number Generator -->
+  <div class="row">
+    <div class="col-12">
+      <app-serial-number-generator 
+        [config]="selectedTemplate?.config || {}"
+        [usedFor]="'demo'"
+        [saveToDatabase]="true"
+        (serialNumberGenerated)="onSerialNumberGenerated($event)">
+      </app-serial-number-generator>
+    </div>
+  </div>
+
+  <!-- Generated History and Quick Actions -->
+  <div class="row mt-4">
+    <!-- Current Generated Number -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title mb-0">Current Generated Serial Number</h6>
+        </div>
+        <div class="card-body">
+          <div class="text-center p-4" *ngIf="!currentSerialNumber">
+            <i class="mdi mdi-barcode text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-2">No serial number generated yet</p>
+          </div>
+          <div *ngIf="currentSerialNumber" class="text-center">
+            <div class="d-flex align-items-center justify-content-center mb-3">
+              <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 1.2rem; font-family: monospace;">
+                {{ currentSerialNumber }}
+              </span>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" (click)="copyToClipboard(currentSerialNumber)">
+              <i class="mdi mdi-content-copy me-1"></i>Copy to Clipboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generation History -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="card-title mb-0">Generation History</h6>
+          <div class="btn-group">
+            <a class="btn btn-outline-info btn-sm" routerLink="/dashboard/quality/serial-number-report">
+              <i class="mdi mdi-chart-line me-1"></i>View Full Report
+            </a>
+            <button class="btn btn-outline-danger btn-sm" (click)="clearHistory()" *ngIf="serialHistory.length > 0">
+              <i class="mdi mdi-delete me-1"></i>Clear
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="text-center p-4" *ngIf="serialHistory.length === 0">
+            <i class="mdi mdi-history text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2 mb-0">No history yet</p>
+          </div>
+          <div *ngIf="serialHistory.length > 0">
+            <div class="list-group list-group-flush">
+              <div class="list-group-item d-flex justify-content-between align-items-center px-0" 
+                   *ngFor="let serial of serialHistory; let i = index">
+                <span class="font-monospace">{{ serial }}</span>
+                <button class="btn btn-link btn-sm text-muted p-0" (click)="copyToClipboard(serial)">
+                  <i class="mdi mdi-content-copy"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage Examples -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title mb-0">Template Usage Examples</h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="p-3 border rounded">
+                <h6 class="text-primary">Product Serial Numbers</h6>
+                <code class="d-block mb-2">PROD-20250819-1234</code>
+                <small class="text-muted">For physical products and inventory</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3 border rounded">
+                <h6 class="text-primary">Asset Tags</h6>
+                <code class="d-block mb-2">AT-250819-5678</code>
+                <small class="text-muted">For equipment and asset tracking</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3 border rounded">
+                <h6 class="text-primary">Work Orders</h6>
+                <code class="d-block mb-2">WO-20250819-143052-9012</code>
+                <small class="text-muted">For service and maintenance orders</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="p-3 border rounded">
+                <h6 class="text-primary">Transaction IDs</h6>
+                <code class="d-block mb-2">1724072252-3456</code>
+                <small class="text-muted">For transaction and audit trails</small>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="alert alert-light">
+              <i class="mdi mdi-lightbulb-on me-2"></i>
+              <strong>Tip:</strong> Click on any template above to automatically configure the generator with predefined settings.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integration Guide -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="card-title mb-0">Integration Guide</h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <h6>Basic Usage</h6>
+              <pre class="bg-light p-3 rounded"><code>&lt;app-serial-number-generator 
+  (serialNumberGenerated)="onSerialGenerated($event)"&gt;
+&lt;/app-serial-number-generator&gt;</code></pre>
+            </div>
+            <div class="col-md-4">
+              <h6>With Template Configuration</h6>
+              <pre class="bg-light p-3 rounded"><code>&lt;app-serial-number-generator 
+  [config]="&#123; prefix: 'PROD', includeDate: true &#125;"
+  [autoGenerate]="true"
+  (serialNumberGenerated)="onSerialGenerated($event)"&gt;
+&lt;/app-serial-number-generator&gt;</code></pre>
+            </div>
+            <div class="col-md-4">
+              <h6>With Barcode Printing</h6>
+              <pre class="bg-light p-3 rounded"><code>&lt;app-serial-number-generator 
+  [config]="templateConfig"
+  [showForm]="true"
+  (serialNumberGenerated)="onSerialGenerated($event)"&gt;
+&lt;/app-serial-number-generator&gt;</code></pre>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="alert alert-info">
+                <h6 class="alert-heading">
+                  <i class="mdi mdi-information me-2"></i>Template System
+                </h6>
+                <p class="mb-2">The template system provides predefined configurations for common use cases:</p>
+                <ul class="mb-0">
+                  <li><strong>Product Templates:</strong> Standard product serial numbers with date and random components</li>
+                  <li><strong>Asset Templates:</strong> Asset tracking tags optimized for equipment management</li>
+                  <li><strong>Operations Templates:</strong> Work orders, quality control, and service tickets</li>
+                  <li><strong>Financial Templates:</strong> Transaction IDs and audit trail numbers</li>
+                  <li><strong>Logistics Templates:</strong> Shipment tracking and batch numbers</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

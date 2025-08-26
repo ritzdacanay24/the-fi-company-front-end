@@ -1,9 +1,9 @@
 <div class="row">
     <div class="col-12 col-xl-12">
-        <div class="card">
-            <div class="card-header pb-0">
+        <div class="card shadow-sm">
+            <div class="card-header pb-0 bg-body-tertiary border-0">
                 <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
-                    [appendToBody]="'body'" [ngClass]="'mb-0'" [placeholder]="'Search'"
+                    [appendToBody]="'body'" [ngClass]="'mb-0'" [placeholder]="'Search employees...'"
                     [editableSearchTerm]="false"></app-user-search-v1>
             </div>
             <div class="card-body p-0" style="height: calc(100vh - 170px);">
@@ -23,78 +23,133 @@
             </div>
         </div>
 
-
         <div class="row" style="position: absolute;top: 92px;right: 35px;">
             <div class="col-lg-12">
-                <table class="table table-sm bg-light">
-                    <tbody>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1" style="border-radius:100px;background-color:gray;margin-top:6px"></div>
-                            </td>
-                            <td>Hire date not set</td>
-                        </tr>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1" style="border-radius:50px;background-color:orange;margin-top:6px">
-                                </div>
-                            </td>
-                            <td>New Position</td>
-                        </tr>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1 bg-info"
-                                    style="border-radius:50px;background-color:rgb(0, 195, 255);margin-top:6px"></div>
-                            </td>
-                            <td>Less than 6 months</td>
-                        </tr>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1 " style="border-radius:50px;background-color:#4B0082;margin-top:6px">
-                                </div>
-                            </td>
-                            <td>Less than 12 months</td>
-                        </tr>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1" style="border-radius:50px;background-color:#002D62;margin-top:6px">
-                                </div>
-                            </td>
-                            <td>12 + months</td>
-                        </tr>
-                        <tr>
-                            <td class=" px-2">
-                                <div class="p-1" style="border-radius:50px;background-color:red;margin-top:6px"></div>
-                            </td>
-                            <td>Open</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="card shadow border-0">
+                    <div class="card-header bg-body-secondary border-0 py-2">
+                        <h6 class="mb-0 text-body-secondary fw-semibold">
+                            <i class="mdi mdi-information-outline me-2"></i>
+                            Status Legend
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:gray;width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">Hire date not set</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:orange;width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">New Position</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:rgb(0, 195, 255);width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">Less than 6 months</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:#4B0082;width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">Less than 12 months</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:#002D62;width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">12+ months</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1">
+                                        <div class="rounded-circle"
+                                            style="background-color:red;width: 12px; height: 12px; margin-top: 2px;"></div>
+                                    </td>
+                                    <td class="py-1">
+                                        <small class="text-body-secondary">Open Position</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="action-buttons" style="position: absolute;bottom: 40px;right: 35px;">
-            <div class="btn-group-vertical">
-                <p class="mb-2 bg-info py-1 px-1 w-100 text-center text-white" *ngIf="this.currentView">Viewing User Id: {{this.currentView}}</p>
-                <button (click)="chart.setExpanded(this.currentView).render()" *ngIf="this.currentView"
-                    class="btn btn-info mb-2">Set Expand</button>
-                <button (click)="chart.setExpanded(this.currentView,false).render()" *ngIf="this.currentView"
-                    class="btn btn-info mb-2">Collapse</button>
-                <button (click)="chart.setUpToTheRootHighlighted(this.currentView).render().fit()"
-                    *ngIf="this.currentView" class="btn btn-info mb-2">Mark Root</button>
-                <button (click)="clearMark()"
-                    *ngIf="this.currentView" class="btn btn-info mb-2">Clear Mark</button>
+            <div class="card shadow border-0">
+                <div class="card-body p-3">
+                    <div class="btn-group-vertical w-100">
+                        <div class="mb-2" *ngIf="currentView">
+                            <div class="alert alert-info py-2 px-3 mb-2 border-0">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <small class="text-body">
+                                        <i class="mdi mdi-account-circle me-1"></i>
+                                        Viewing User: <strong>{{currentView}}</strong>
+                                    </small>
+                                    <button class="btn btn-sm btn-outline-info" (click)="clearMark()">
+                                        <i class="mdi mdi-close"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- <button (click)="expandImmediate()" class="btn btn-primary mb-2">Expand By User Default </button> -->
-                <button (click)="chart.expandAll()" class="btn btn-primary mb-2">Expand All </button>
-                <button (click)="chart.collapseAll()" class="btn btn-primary mb-2">Collpase All </button>
-                <button (click)="chart.fit()" class="btn btn-primary mb-2">Fit </button>
-                <!-- <button (click)="addNode()" class="btn btn-primary mb-2">Add Node </button> -->
-                <!-- <button class="btn btn-primary mb-2" (click)="horizontal()">Horizontal</button>
-                <button class="btn btn-primary mb-2" (click)="compact()">Compact</button> -->
-                <!-- <button class="btn btn-primary mb-2" (click)="chart.removeNode(3).render()">Compact</button> -->
+                        <div *ngIf="currentView" class="mb-2">
+                            <button (click)="chart?.setExpanded && chart.setExpanded(currentView).render()"
+                                class="btn btn-info mb-1 w-100"
+                                [disabled]="!chart?.setExpanded">
+                                <i class="mdi mdi-plus me-1"></i>Set Expand
+                            </button>
+                            <button (click)="chart?.setExpanded && chart.setExpanded(currentView, false).render()"
+                                class="btn btn-info mb-1 w-100"
+                                [disabled]="!chart?.setExpanded">
+                                <i class="mdi mdi-minus me-1"></i>Collapse
+                            </button>
+                            <button (click)="chart?.setUpToTheRootHighlighted && chart.setUpToTheRootHighlighted(currentView).render().fit()"
+                                class="btn btn-info mb-2 w-100"
+                                [disabled]="!chart?.setUpToTheRootHighlighted">
+                                <i class="mdi mdi-sitemap me-1"></i>Mark Root
+                            </button>
+                        </div>
+
+                        <button (click)="chart?.expandAll && chart.expandAll()" 
+                                class="btn btn-primary mb-2 w-100"
+                                [disabled]="!chart?.expandAll">
+                            <i class="mdi mdi-unfold-more-horizontal me-1"></i>Expand All
+                        </button>
+                        <button (click)="chart?.collapseAll && chart.collapseAll()" 
+                                class="btn btn-primary mb-2 w-100"
+                                [disabled]="!chart?.collapseAll">
+                            <i class="mdi mdi-unfold-less-horizontal me-1"></i>Collapse All
+                        </button>
+                        <button (click)="chart?.fit && chart.fit()" 
+                                class="btn btn-primary mb-2 w-100"
+                                [disabled]="!chart?.fit">
+                            <i class="mdi mdi-fit-to-screen me-1"></i>Fit
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
 </div>

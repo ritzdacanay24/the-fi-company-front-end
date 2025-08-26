@@ -1,0 +1,66 @@
+<ng-template #createRevisionModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="mdi mdi-plus me-2"></i>
+      Create New Revision - {{ selectedDocument?.document_number }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-info">
+      <i class="mdi mdi-information me-2"></i>
+      <strong>Current Revision:</strong> {{ selectedDocument?.current_revision }} | 
+      <strong>New Revision:</strong> {{ (selectedDocument?.current_revision | number) + 1 }}
+    </div>
+    
+    <form [formGroup]="createRevisionForm" (ngSubmit)="onCreateRevision(modal)">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Revision Title <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" formControlName="title" 
+                 placeholder="Enter revision title"
+                 [class.is-invalid]="createRevisionForm.get('title')?.invalid && createRevisionForm.get('title')?.touched">
+          <div class="invalid-feedback" *ngIf="createRevisionForm.get('title')?.invalid && createRevisionForm.get('title')?.touched">
+            Please enter a revision title
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Effective Date <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" formControlName="effective_date"
+                 [class.is-invalid]="createRevisionForm.get('effective_date')?.invalid && createRevisionForm.get('effective_date')?.touched">
+          <div class="invalid-feedback" *ngIf="createRevisionForm.get('effective_date')?.invalid && createRevisionForm.get('effective_date')?.touched">
+            Please select an effective date
+          </div>
+        </div>
+        
+        <div class="col-12">
+          <label class="form-label">Revision Description</label>
+          <textarea class="form-control" formControlName="description" rows="3" 
+                    placeholder="Enter revision description (optional)"></textarea>
+        </div>
+        
+        <div class="col-12">
+          <label class="form-label">Change Description <span class="text-danger">*</span></label>
+          <textarea class="form-control" formControlName="change_description" rows="3" 
+                    placeholder="Describe what changes were made in this revision"
+                    [class.is-invalid]="createRevisionForm.get('change_description')?.invalid && createRevisionForm.get('change_description')?.touched"></textarea>
+          <div class="invalid-feedback" *ngIf="createRevisionForm.get('change_description')?.invalid && createRevisionForm.get('change_description')?.touched">
+            Please describe the changes made
+          </div>
+          <small class="text-muted">Be specific about what was changed, added, or removed</small>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="creating">
+      Cancel
+    </button>
+    <button type="button" class="btn btn-primary" (click)="onCreateRevision(modal)" [disabled]="creating || createRevisionForm.invalid">
+      <span *ngIf="creating" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!creating" class="mdi mdi-content-save me-2"></i>
+      {{ creating ? 'Creating...' : 'Create Revision' }}
+    </button>
+  </div>
+</ng-template>

@@ -1,0 +1,533 @@
+<div class="container-fluid">
+  <!-- Workflow Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Material Request Workflow</h4>
+            <button class="btn btn-outline-secondary btn-sm" (click)="goToList()">
+              <i class="ri-list-check"></i> View All Requests
+            </button>
+          </div>
+        </div>
+        
+        <!-- Progress Steps -->
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12">
+              <div class="progress-nav">
+                <div class="progress-nav-step" 
+                     *ngFor="let step of [1,2,3,4]" 
+                     [class.completed]="isStepCompleted(step)"
+                     [class.active]="isStepActive(step)"
+                     (click)="goToStep(step)">
+                  <div class="progress-nav-step-icon">
+                    <i [class]="getStepIcon(step)"></i>
+                  </div>
+                  <div class="progress-nav-step-text">
+                    <div class="step-title">{{getStepTitle(step)}}</div>
+                    <div class="step-number">Step {{step}}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Content -->
+  <div class="row">
+    <div class="col-12">
+      
+      <!-- Step 1: Create Request -->
+      <div class="card" *ngIf="currentStep === 1">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ri-file-add-line me-2"></i>
+            Step 1: Create Material Request
+          </h5>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="requestForm" (ngSubmit)="submitRequest()">
+            
+            <!-- Request Information -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h6 class="text-muted mb-3">Request Information</h6>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Requestor</label>
+                <input type="text" 
+                       class="form-control" 
+                       formControlName="requestor"
+                       [class.is-invalid]="submitted && requestForm.get('requestor')?.errors">
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('requestor')?.errors">
+                  Requestor is required
+                </div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Assembly Number</label>
+                <input type="text" 
+                       class="form-control" 
+                       formControlName="assemblyNumber"
+                       placeholder="Enter assembly number"
+                       [class.is-invalid]="submitted && requestForm.get('assemblyNumber')?.errors">
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('assemblyNumber')?.errors">
+                  Assembly number is required
+                </div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Line Number</label>
+                <input type="text" 
+                       class="form-control" 
+                       formControlName="lineNumber"
+                       placeholder="Enter production line number"
+                       [class.is-invalid]="submitted && requestForm.get('lineNumber')?.errors">
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('lineNumber')?.errors">
+                  Line number is required
+                </div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Pick List Number</label>
+                <input type="text" 
+                       class="form-control" 
+                       formControlName="pickList"
+                       placeholder="Enter pick list number"
+                       [class.is-invalid]="submitted && requestForm.get('pickList')?.errors">
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('pickList')?.errors">
+                  Pick list number is required
+                </div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Due Date</label>
+                <input type="date" 
+                       class="form-control" 
+                       formControlName="dueDate"
+                       [class.is-invalid]="submitted && requestForm.get('dueDate')?.errors">
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('dueDate')?.errors">
+                  Due date is required
+                </div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">Priority</label>
+                <select class="form-select" 
+                        formControlName="priority"
+                        [class.is-invalid]="submitted && requestForm.get('priority')?.errors">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+                <div class="invalid-feedback" *ngIf="submitted && requestForm.get('priority')?.errors">
+                  Priority is required
+                </div>
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label class="form-label">Special Instructions</label>
+                <textarea class="form-control" 
+                          formControlName="specialInstructions"
+                          rows="3"
+                          placeholder="Enter any special handling instructions..."></textarea>
+              </div>
+            </div>
+
+            <!-- Material Items -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="text-muted mb-0">Material Items</h6>
+                  <div class="btn-group" role="group">
+                    <button type="button" 
+                            class="btn btn-outline-info btn-sm" 
+                            (click)="toggleBulkEntry()">
+                      <i class="ri-file-text-line"></i> Bulk Entry
+                    </button>
+                    <button type="button" 
+                            class="btn btn-outline-primary btn-sm" 
+                            (click)="addNewItem()">
+                      <i class="ri-add-line"></i> Add Item
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Auto-save indicator -->
+                <div class="auto-save-indicator mb-3" *ngIf="lastAutoSave">
+                  <small class="text-muted">
+                    <i class="ri-save-line me-1"></i>
+                    Last auto-saved: {{lastAutoSave | date:'short'}}
+                  </small>
+                </div>
+                
+                <!-- Load Draft Button -->
+                <div class="draft-controls mb-3" *ngIf="hasDraft() && !lastAutoSave">
+                  <div class="alert alert-info">
+                    <i class="ri-information-line me-2"></i>
+                    A saved draft was found.
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-2" (click)="loadDraft()">
+                      Load Draft
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1" (click)="clearDraft()">
+                      Clear Draft
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Bulk Entry Section -->
+                <div class="bulk-entry-section mb-4" *ngIf="showBulkEntry">
+                  <div class="card">
+                    <div class="card-header">
+                      <h6 class="mb-0">Bulk Part Entry</h6>
+                    </div>
+                    <div class="card-body">
+                      <p class="text-muted small mb-3">
+                        Enter one part per line in format: <strong>PART_NUMBER QUANTITY</strong>
+                        <br>Example: EYE12794 25
+                      </p>
+                      <textarea class="form-control mb-3" 
+                                [(ngModel)]="bulkPartEntry"
+                                rows="6"
+                                placeholder="EYE12794 25&#10;ELE-44581-424 3&#10;EYE12795 5"></textarea>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button type="button" 
+                                class="btn btn-outline-secondary btn-sm" 
+                                (click)="toggleBulkEntry()">
+                          Cancel
+                        </button>
+                        <button type="button" 
+                                class="btn btn-primary btn-sm" 
+                                (click)="processBulkEntry()"
+                                [disabled]="!bulkPartEntry.trim()">
+                          <i class="ri-check-line"></i> Process Items
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th width="15%">Part Number *</th>
+                        <th width="20%">Description</th>
+                        <th width="10%">Qty *</th>
+                        <th width="15%">Reason Code *</th>
+                        <th width="15%">Validation Status</th>
+                        <th width="15%">Validation Comment</th>
+                        <th width="10%">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody formArrayName="items">
+                      <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i">
+                        <td>
+                          <input type="text" 
+                                 class="form-control" 
+                                 formControlName="partNumber"
+                                 placeholder="Enter part number"
+                                 (blur)="onPartNumberChange(i, item.get('partNumber')?.value)"
+                                 [class.is-invalid]="submitted && item.get('partNumber')?.errors">
+                          <div class="invalid-feedback" *ngIf="submitted && item.get('partNumber')?.errors">
+                            {{getItemError(i, 'partNumber')}}
+                          </div>
+                          <div class="part-lookup-indicator" *ngIf="partSearchLoading">
+                            <small class="text-muted">
+                              <i class="ri-loader-line spinner"></i> Looking up part...
+                            </small>
+                          </div>
+                        </td>
+                        <td>
+                          <input type="text" 
+                                 class="form-control" 
+                                 formControlName="description"
+                                 placeholder="Auto-filled from QAD"
+                                 readonly>
+                          <small class="text-muted" *ngIf="item.get('availableQty')?.value > 0">
+                            Available: {{item.get('availableQty')?.value}}
+                          </small>
+                        </td>
+                        <td>
+                          <input type="number" 
+                                 class="form-control" 
+                                 formControlName="quantity"
+                                 min="1"
+                                 [class.is-invalid]="submitted && item.get('quantity')?.errors">
+                          <div class="invalid-feedback" *ngIf="submitted && item.get('quantity')?.errors">
+                            {{getItemError(i, 'quantity')}}
+                          </div>
+                        </td>
+                        <td>
+                          <select class="form-select" 
+                                  formControlName="reasonCode"
+                                  [class.is-invalid]="submitted && item.get('reasonCode')?.errors">
+                            <option value="">Select reason</option>
+                            <option *ngFor="let reason of reasonCodes" [value]="reason.value">
+                              {{reason.label}}
+                            </option>
+                          </select>
+                          <div class="invalid-feedback" *ngIf="submitted && item.get('reasonCode')?.errors">
+                            {{getItemError(i, 'reasonCode')}}
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge"
+                                [ngClass]="{
+                                  'bg-success': item.get('validationStatus')?.value === 'approved',
+                                  'bg-danger': item.get('validationStatus')?.value === 'rejected',
+                                  'bg-warning': item.get('validationStatus')?.value === 'pending'
+                                }">
+                            {{ item.get('validationStatus')?.value | titlecase }}
+                          </span>
+                        </td>
+                        <td>
+                          <span *ngIf="item.get('validationComment')?.value; else noPartComment">{{item.get('validationComment')?.value}}</span>
+                          <ng-template #noPartComment><span class="text-muted">-</span></ng-template>
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-outline-success btn-sm me-1" (click)="approvePart(item.value)">
+                            <i class="ri-check-line"></i>
+                          </button>
+                          <button type="button" class="btn btn-outline-danger btn-sm me-1" (click)="rejectPart(item.value)">
+                            <i class="ri-close-line"></i>
+                          </button>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="commentPart(item.value)">
+                            <i class="ri-chat-1-line"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <!-- Empty state -->
+                      <tr *ngIf="items.length === 0">
+                        <td colspan="7" class="text-center text-muted py-4">
+                          <i class="ri-inbox-line" style="font-size: 2rem;"></i>
+                          <p class="mb-0 mt-2">No items added yet</p>
+                          <small>Click "Add Item" or use "Bulk Entry" to add parts</small>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between">
+              <button type="button" class="btn btn-outline-secondary" (click)="resetWorkflow()">
+                <i class="ri-refresh-line"></i> Reset
+              </button>
+              
+              <button type="submit" 
+                      class="btn btn-primary"
+                      [disabled]="isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                <i class="ri-send-plane-line" *ngIf="!isLoading"></i>
+                Submit Request
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Step 2: Review & Validation -->
+      <div class="card" *ngIf="currentStep === 2">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ri-user-search-line me-2"></i>
+            Step 2: Review & Validation
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            <i class="ri-information-line me-2"></i>
+            This request is under review. All assigned reviewers must complete their review before the admin validator can send it to picking.
+          </div>
+
+          <div class="row" *ngIf="workflowData.step1">
+            <div class="col-md-6">
+              <h6>Request Details</h6>
+              <p><strong>Request ID:</strong> {{workflowData.step1.id}}</p>
+              <p><strong>Assembly:</strong> {{workflowData.step1.main.assemblyNumber}}</p>
+              <p><strong>Line:</strong> {{workflowData.step1.main.lineNumber}}</p>
+              <p><strong>Priority:</strong>
+                <span class="badge"
+                      [class]="'bg-' + (workflowData.step1.main.priority === 'Critical' ? 'danger' :
+                                       workflowData.step1.main.priority === 'High' ? 'warning' :
+                                       workflowData.step1.main.priority === 'Medium' ? 'primary' : 'secondary')">
+                  {{workflowData.step1.main.priority}}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6>Status</h6>
+              <div class="status-timeline">
+                <div class="status-item completed">
+                  <i class="ri-checkbox-circle-fill"></i>
+                  <span>Request Created</span>
+                </div>
+                <div class="status-item pending">
+                  <i class="ri-time-line"></i>
+                  <span>Under Review</span>
+                </div>
+                <div class="status-item">
+                  <i class="ri-circle-line"></i>
+                  <span>Material Picking</span>
+                </div>
+                <div class="status-item">
+                  <i class="ri-circle-line"></i>
+                  <span>Completed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviewers Table -->
+          <div class="mt-4">
+            <h6>Reviewers</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Comments</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let reviewer of reviewers">
+                    <td>{{reviewer.name}}</td>
+                    <td>
+                      <span class="badge"
+                            [ngClass]="{
+                              'bg-success': reviewer.status === 'approved',
+                              'bg-danger': reviewer.status === 'rejected',
+                              'bg-warning': reviewer.status === 'pending'
+                            }">
+                        {{ reviewer.status | titlecase }}
+                      </span>
+                    </td>
+                    <td>
+                      <span *ngIf="reviewer.comment; else noComment">{{reviewer.comment}}</span>
+                      <ng-template #noComment><span class="text-muted">-</span></ng-template>
+                    </td>
+                    <td>
+                      <ng-container *ngIf="reviewer.canReview">
+                        <button class="btn btn-outline-success btn-sm me-1" (click)="approveReview(reviewer)">
+                          <i class="ri-check-line"></i> Approve
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm me-1" (click)="rejectReview(reviewer)">
+                          <i class="ri-close-line"></i> Reject
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="addComment(reviewer)">
+                          <i class="ri-chat-1-line"></i> Comment
+                        </button>
+                      </ng-container>
+                      <ng-container *ngIf="!reviewer.canReview">
+                        <span class="text-muted">-</span>
+                      </ng-container>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Admin Validator Controls -->
+          <div class="mt-4" *ngIf="isAdminValidator">
+            <div class="alert alert-warning" *ngIf="!allReviewsComplete">
+              <i class="ri-error-warning-line me-2"></i>
+              All reviewers must complete their review before you can send this request to picking.
+            </div>
+            <button class="btn btn-primary" [disabled]="!allReviewsComplete" (click)="sendToPicking()">
+              <i class="ri-truck-line"></i> Send to Picking
+            </button>
+          </div>
+
+          <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-outline-secondary" (click)="previousStep()">
+              <i class="ri-arrow-left-line"></i> Previous
+            </button>
+            <!-- No nextStep button here; admin must send to picking -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Material Picking -->
+      <div class="card" *ngIf="currentStep === 3">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ri-hand-heart-line me-2"></i>
+            Step 3: Material Picking
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning">
+            <i class="ri-truck-line me-2"></i>
+            Your request has been validated and sent to the picking team.
+          </div>
+          
+          <div class="picking-progress">
+            <h6>Picking Progress</h6>
+            <div class="row">
+              <div class="col-md-8">
+                <div class="progress mb-3">
+                  <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <span class="text-muted">0 of {{items.length}} items picked</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-outline-secondary" (click)="previousStep()">
+              <i class="ri-arrow-left-line"></i> Previous
+            </button>
+            <button type="button" class="btn btn-primary" (click)="nextStep()">
+              Continue <i class="ri-arrow-right-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Request Completed -->
+      <div class="card" *ngIf="currentStep === 4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ri-checkbox-circle-line me-2"></i>
+            Step 4: Request Completed
+          </h5>
+        </div>
+        <div class="card-body text-center">
+          <div class="success-icon mb-4">
+            <i class="ri-checkbox-circle-fill text-success" style="font-size: 4rem;"></i>
+          </div>
+          
+          <h4 class="text-success mb-3">Request Completed Successfully!</h4>
+          <p class="text-muted mb-4">
+            Your material request has been processed and all items have been picked and delivered.
+          </p>
+          
+          <div class="d-flex justify-content-center gap-3">
+            <button type="button" class="btn btn-outline-primary" (click)="goToList()">
+              <i class="ri-list-check"></i> View All Requests
+            </button>
+            <button type="button" class="btn btn-primary" (click)="resetWorkflow()">
+              <i class="ri-add-line"></i> Create New Request
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

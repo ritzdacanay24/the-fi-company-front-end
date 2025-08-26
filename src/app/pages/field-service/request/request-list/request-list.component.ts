@@ -38,6 +38,8 @@ export class RequestsListComponent implements OnInit {
   average = 0;
   typeOfView = "Weekly";
 
+  onCreate(){}
+
   dateFrom = moment().subtract(6, "months").format("YYYY-MM-DD");
   dateTo = moment().format("YYYY-MM-DD");
   dateRange = [this.dateFrom, this.dateTo];

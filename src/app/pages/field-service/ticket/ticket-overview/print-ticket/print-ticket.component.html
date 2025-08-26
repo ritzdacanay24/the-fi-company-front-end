@@ -1,27 +1,345 @@
-<div class="modal-header">
-  <h5 class="modal-title" id="modal-basic-title">Ticket Summary</h5>
+<div class="modal-header bg-primary bg-gradient border-bottom border-none position-relative overflow-hidden">
+  <h5 class="modal-title text-white d-flex align-items-center" id="modal-basic-title">
+    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+      style="width: 2.5rem; height: 2.5rem;">
+      <i class="mdi mdi-file-document fs-4 text-white"></i>
+    </span>
+    Ticket Summary
+  </h5>
+  <!-- Transparent decorative icon on the right -->
+  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+    <i class="mdi mdi-file-document" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  </div>
+  <button type="button" class="btn-close btn-close-white position-relative" style="z-index: 1;" aria-hidden="true"></button>
 </div>
-<div class="modal-body mh-250">
 
-  <div class="container h-100" *ngIf="!workOrderInfo">
-    <div class="row align-items-center h-100">
-      <div class="col-6 mx-auto">
-        <div class="jumbotron text-center">
-          <h5>You will be able to view the ticket once the ticket is created.</h5>
+<div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+  <div class="container-fluid h-100" *ngIf="!workOrderInfo">
+    <div class="row align-items-center justify-content-center" style="min-height: 300px;">
+      <div class="col-md-8 text-center">
+        <div class="py-5">
+          <i class="mdi mdi-file-document text-muted mb-3" style="font-size: 3rem;"></i>
+          <h5 class="text-muted">Ticket Not Available</h5>
+          <p class="text-muted mb-0">You will be able to view the ticket once it is created.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="invoiceWorkOrders" *ngIf="workOrderInfo">
+  <!-- Modern UI Preview -->
+  <div *ngIf="workOrderInfo">
+    <div *ngIf="!workOrderInfo.dateSubmitted" class="alert alert-warning border-0 rounded-0 mb-4 text-center">
+      <i class="mdi mdi-alert me-2"></i>
+      <strong>DRAFT STATUS:</strong> This ticket has not been submitted yet.
+    </div>
+
+    <!-- Header Section -->
+    <div class="card border-0 mb-4">
+      <div class="card-body">
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+              style="width: 170px; height: auto;" alt="Company Logo" />
+          </div>
+          <div class="col-md-6 text-end">
+            <div class="bg-light p-3 rounded">
+              <div class="row">
+                <div class="col text-end fw-semibold">Billing #:</div>
+                <div class="col">___________________</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="table-responsive">
+              <table class="table table-sm table-borderless">
+                <tr>
+                  <td class="fw-bold text-primary py-1">Company:</td>
+                  <td class="py-1">{{jobInfo?.customer || 'No customer added'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Property:</td>
+                  <td class="py-1">{{jobInfo?.property || 'No property added'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Sign/Theme:</td>
+                  <td class="py-1">{{jobInfo?.service_type || 'Not Listed '}}/{{jobInfo?.sign_theme || 'Not Listed'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Service Date:</td>
+                  <td class="py-1">{{jobInfo?.request_date + ' ' + jobInfo?.start_time}}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="table-responsive">
+              <table class="table table-sm table-borderless">
+                <tr>
+                  <td class="fw-bold text-primary py-1">Id#/Job#:</td>
+                  <td class="py-1">{{workOrderInfo?.fs_scheduler_id}} - {{workOrderInfo?.id}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">SO#:</td>
+                  <td class="py-1">{{jobInfo?.sales_order_number || 'Not Listed'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Submitted:</td>
+                  <td class="py-1">{{workOrderInfo?.dateSubmitted}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Completed:</td>
+                  <td class="py-1">{{workOrderInfo?.workCompleted}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-primary py-1">Techs:</td>
+                  <td class="py-1">{{teams || 'Not Listed'}}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Section -->
+    <div class="card border-0 mb-4">
+      <div class="card-header bg-primary bg-gradient text-white">
+        <h5 class="card-title mb-0 d-flex align-items-center text-white">
+          <i class="ri-time-line me-2"></i>
+          Timeline
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="py-3" style="white-space: nowrap;">
+                  <i class="ri-bookmark-line me-1"></i>Type
+                </th>
+                <th class="text-center py-3" style="white-space: nowrap;">
+                  <i class="ri-time-line me-1"></i>Start/Finish
+                </th>
+                <th class="text-end py-3" style="white-space: nowrap;">
+                  <i class="ri-calculator-line me-1"></i>QTR Hours
+                </th>
+                <th class="text-end py-3" style="white-space: nowrap;">
+                  <i class="ri-timer-line me-1"></i>Time
+                </th>
+              </tr>
+            </thead>
+            <tbody *ngFor="let g of groupArrays">
+              <tr>
+                <td colspan="4" class="pt-2 pb-2 font-weight-bold">
+                  {{g.date == 'null' || !g.date ? 'No start date' : g.date }}
+                </td>
+              </tr>
+              <tr *ngFor="let row of g.games; let i = index" class="fw-normal">
+                <td class=" text-start ps-4 text-wrap align-middle" style="white-space: nowrap;">{{i+1}}.
+                  {{row.event_name}}
+                  <p class="ms-3 m-0 p-0" *ngIf="row.flight_hrs_delay">Flight Hr delay: {{row.flight_hrs_delay}}</p>
+                  <p class="ms-3 m-0 p-0" *ngIf="row.description && printDetails" style="font-size:12px">-
+                    {{row.description}}</p>
+                </td>
+                <td class=" text-center align-middle" style="white-space: nowrap;">
+                  {{compare(row.projectStart, row.projectFinish).start}} {{zoneAbbr(row.projectStartTz)}} -
+                  {{compare(row.projectStart, row.projectFinish).finish}} {{zoneAbbr(row.projectFinishTz)}}
+                </td>
+                <td class=" text-end align-middle" style="white-space: nowrap;"
+                  [ngClass]="{'bg-danger text-white': calculateTotal(row) < 0}">
+                  {{calculateTotal(row)/60 | number : '1.2-2' }} </td>
+                <td class=" text-end align-middle" style="white-space: nowrap;"
+                  [ngClass]="{'bg-danger text-white': calculateTotal(row) < 0}">
+                  {{timeConvert(calculateTotal(row)) }} </td>
+              </tr>
+              <tr style="page-break-inside: after;">
+                <td colspan="2" class="text-end font-weight-bold align-middle">
+                  Sub Total
+                </td>
+                <td class="text-end font-weight-bold align-middle">
+                  {{g.groupTotal/60 | number : '1.2-2'}}
+                </td>
+                <td class="text-end font-weight-bold align-middle">
+                  {{timeConvert(g.groupTotal,'short')}}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot style="display: table-row-group;">
+              <tr style="font-size:20px">
+                <td colspan="2" class="text-end font-weight-bold align-middle">
+                  <h4 class="p-0 m-0">Total</h4>
+                </td>
+                <td class="text-end font-weight-bold align-middle">
+                  <h4 class="p-0 m-0">
+                    {{_travelAndWorkTotalHrs/60 | number : '1.2-2'}}</h4>
+                </td>
+                <td class="text-end font-weight-bold align-middle">
+                  <h4 class="p-0 m-0">
+                    {{timeConvert(_travelAndWorkTotalHrs,'short')}}</h4>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crash Kit Details Section -->
+    <div class="card border-0 mb-4" *ngIf="crashKitDetails?.length > 0">
+      <div class="card-header bg-warning bg-gradient text-dark">
+        <h5 class="card-title mb-0 d-flex align-items-center">
+          <i class="ri-tools-line me-2"></i>
+          Crash Kit Details
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="py-3">Part Number</th>
+                <th class="py-3">Description</th>
+                <th class="text-end py-3">Qty</th>
+                <th class="text-end py-3">Unit Price</th>
+                <th class="text-end py-3">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of crashKitDetails">
+                <td class="fw-semibold">{{row.part_number}}</td>
+                <td>{{row.description}}</td>
+                <td class="text-end">{{row.qty}}</td>
+                <td class="text-end">{{row.price | currency}}</td>
+                <td class="text-end fw-semibold">{{row.price * row.qty | currency}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work Done Section -->
+    <div class="card border-0 mb-4">
+      <div class="card-header bg-success bg-gradient text-white">
+        <h5 class="card-title mb-0 d-flex align-items-center">
+          <i class="ri-checkbox-circle-line me-2"></i>
+          Work Done
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="bg-light p-3 rounded">
+          <ul class="mb-0 ps-3" *ngIf="installNotes?.length > 0">
+            <li *ngFor="let row of installNotes" class="mb-1">{{row}}</li>
+          </ul>
+          <p *ngIf="!installNotes || installNotes?.length == 0" class="mb-0 text-muted">
+            <i class="ri-information-line me-1"></i>No comments added
+          </p>
+        </div>
+
+        <div class="d-print-none mt-4">
+          <h6 class="text-primary mb-3">
+            <i class="ri-sticky-note-line me-2"></i>
+            Scheduler Notes/Other Comments
+          </h6>
+          <div class="bg-light p-3 rounded">
+            <ul class="mb-0 ps-3" *ngIf="schedulerNotesComments?.length > 0">
+              <li *ngFor="let row of schedulerNotesComments" class="mb-1">{{row}}</li>
+            </ul>
+            <p *ngIf="schedulerNotesComments?.length == 0" class="mb-0 text-muted">
+              <i class="ri-information-line me-1"></i>No comments added
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Serial/Assets and Signatures Section -->
+    <div class="card border-0 mb-4">
+      <div class="card-header bg-info bg-gradient text-white">
+        <h5 class="card-title mb-0 d-flex align-items-center">
+          <i class="ri-shield-check-line me-2"></i>
+          Assets & Signatures
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="text-primary mb-3">
+              <i class="ri-qr-code-line me-2"></i>
+              Serial/Assets
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Cust Serial/Asset #:</th>
+                    <th>EYE-FI Asset #:</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngIf="misc?.length == 0">
+                    <td colspan="2" class="text-center text-muted py-3">
+                      <i class="ri-information-line me-1"></i>No information provided
+                    </td>
+                  </tr>
+                  <tr *ngFor="let row of misc">
+                    <td>{{row.customerAsset}}</td>
+                    <td>{{row.eyefiAsset}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="row">
+              <div class="col-6">
+                <h6 class="text-primary mb-3">
+                  <i class="ri-user-line me-2"></i>
+                  Customer
+                </h6>
+                <div class="border border-2 border-dashed border-primary rounded p-2 text-center" style="min-height: 120px;">
+                  <img *ngIf="workOrderInfo.customerSignatureImage" 
+                       src="{{ workOrderInfo.customerSignatureImage }}"
+                       class="img-fluid"
+                       style="max-height: 100px; width: auto;">
+                  <div *ngIf="!workOrderInfo.customerSignatureImage" class="d-flex align-items-center justify-content-center h-100 text-muted">
+                    <i class="ri-quill-pen-line me-1"></i>No signature
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <h6 class="text-primary mb-3">
+                  <i class="ri-user-settings-line me-2"></i>
+                  Technician
+                </h6>
+                <div class="border border-2 border-dashed border-success rounded p-2 text-center" style="min-height: 120px;">
+                  <img *ngIf="workOrderInfo.technicianSignatureImage"
+                       src="{{ workOrderInfo.technicianSignatureImage }}"
+                       class="img-fluid"
+                       style="max-height: 100px; width: auto;">
+                  <div *ngIf="!workOrderInfo.technicianSignatureImage" class="d-flex align-items-center justify-content-center h-100 text-muted">
+                    <i class="ri-quill-pen-line me-1"></i>No signature
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Print Template - Original Design -->
+  <div id="invoiceWorkOrders" class="d-none" *ngIf="workOrderInfo">
     <h5 id="watermark" *ngIf="!workOrderInfo.dateSubmitted" class="text-center text-danger mb-3">
       ----------- This is not submitted yet. -----------
     </h5>
 
     <table class="report-container" style="width:100%">
-
       <thead id="header" class="report-header">
-        <!-- Will print at the top of every page -->
         <tr>
           <th>
             <div class="row mb-3">
@@ -63,7 +381,6 @@
                 </table>
               </div>
               <div class="col test">
-
                 <table class="float-start  header-table1">
                   <tr>
                     <td class="text-start pe-2 font-weight-bold text-nowrap">Id#/Job#:</td>
@@ -92,14 +409,12 @@
             <hr>
           </th>
         </tr>
-
       </thead>
-      <tbody id="main " class="report-content">
-
+      
+      <tbody id="main" class="report-content">
         <tr>
           <th>
             <h5 class="mt-2 mb-2">Time line</h5>
-
             <table class="table table-bordered table-sm">
               <thead>
                 <tr>
@@ -165,13 +480,10 @@
         </tr>
       </tbody>
 
-
-
       <tbody id="main" class="report-content" *ngIf="crashKitDetails?.length > 0">
         <tr>
           <td>
             <h5 class="mt-3 mb-2">Crash kit Details</h5>
-
             <table class="table table-bordered table-sm">
               <thead>
                 <tr>
@@ -191,23 +503,12 @@
                   <td class="text-end">{{row.price * row.qty | currency}}</td>
                 </tr>
               </tbody>
-              <!-- <tfoot style="display: table-row-group;">
-                <tr style="font-size:20px">
-                  <td colspan="4" class="text-end font-weight-bold align-middle">
-                    <h4 class="p-0 m-0">Total</h4>
-                  </td>
-                  <td class="text-end font-weight-bold align-middle">
-                    <h4 class="p-0 m-0">
-                      {{crashKitDetailsSum | currency}}</h4>
-                  </td>
-                </tr>
-              </tfoot> -->
             </table>
           </td>
         </tr>
       </tbody>
 
-      <tbody id="main " class="report-content">
+      <tbody id="main" class="report-content">
         <tr>
           <th>
             <h5 class="mt-3 mb-2">Work Done</h5>
@@ -227,21 +528,17 @@
                 <p *ngIf="schedulerNotesComments?.length == 0">No comments added</p>
               </div>
             </span>
-
           </th>
         </tr>
       </tbody>
 
-      <tbody id="main " class="report-content">
+      <tbody id="main" class="report-content">
         <tr>
           <th>
             <div class="row travelInfoBorder1">
               <div class="col-6">
-
                 <h5 class="mt-2 mb-2">Serial/Assets</h5>
-
                 <table class="table table-bordered table-sm">
-
                   <thead>
                     <tr>
                       <td>Cust Serial/Asset #:</td>
@@ -253,14 +550,11 @@
                       <td colspan="2">No information provided</td>
                     </tr>
                     <tr *ngFor="let row of misc">
-                      <td>
-                        {{row.customerAsset}}</td>
-                      <td>
-                        {{row.eyefiAsset}}</td>
+                      <td>{{row.customerAsset}}</td>
+                      <td>{{row.eyefiAsset}}</td>
                     </tr>
                   </tbody>
                 </table>
-
               </div>
               <div class="col-6">
                 <div class="row">
@@ -281,13 +575,24 @@
           </th>
         </tr>
       </tbody>
-
     </table>
-
   </div>
 </div>
-<div class="modal-footer">
-  <button (click)="dismiss()" type="button" class="btn btn-light mr-auto">Close</button>
-  <button (click)="getData()" type="button" class="btn btn-warning">Refresh</button>
-  <button (click)="print()" type="button" class="btn btn-info">Print</button>
+
+<div class="modal-footer bg-light border-top d-flex justify-content-between">
+  <small class="text-muted">
+    <i class="mdi mdi-information me-1"></i>
+    Use Print button to generate a PDF version
+  </small>
+  <div class="btn-group">
+    <button (click)="dismiss()" type="button" class="btn btn-outline-secondary me-1">
+      <i class="mdi mdi-close me-1"></i>Close
+    </button>
+    <button (click)="getData()" type="button" class="btn btn-warning me-1">
+      <i class="mdi mdi-refresh me-1"></i>Refresh
+    </button>
+    <button (click)="print()" type="button" class="btn btn-primary">
+      <i class="mdi mdi-printer me-1"></i>Print
+    </button>
+  </div>
 </div>

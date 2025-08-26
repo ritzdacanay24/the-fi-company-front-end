@@ -1,0 +1,906 @@
+<div class="row" *ngIf="!data && !id">
+  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+    <div class="card">
+      <div class="card-body" style="min-height:300px">
+        Please select from list.
+      </div>
+      <div class="card-footer d-flex  d-flex justify-content-between">
+        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" [hidden]="!data && !id">
+  <div class="content-grid col col-lg-12 col-xl-12 col-xxl-12">
+    <div class="card">
+      <div class="card-body">
+
+
+        <!-- Success Alert -->
+        <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
+          role="alert" *ngIf="header?.validated">
+          <i class="mdi mdi-checkbox-marked-circle label-icon"></i><strong>Validation Completed</strong> - This request was validated on {{header?.validated}}
+        </div>
+
+        <!-- Validation Progress Bar -->
+        <div *ngIf="details?.length" class="mb-3">
+          <label class="form-label">Validation Progress</label>
+          <div class="progress">
+            <div *ngIf="countByStatus(null, 'approved') > 0"
+              class="progress-bar bg-success" role="progressbar"
+              [style.width]="(countByStatus(null, 'approved') / details.length * 100) + '%'">
+              {{countByStatus(null, 'approved')}} / {{details.length}} Approved
+            </div>
+            <div *ngIf="countByStatus(null, 'rejected') > 0"
+              class="progress-bar bg-danger" role="progressbar"
+              [style.width]="(countByStatus(null, 'rejected') / details.length * 100) + '%'">
+              {{countByStatus(null, 'rejected')}} Rejected
+            </div>
+            <div *ngIf="countByStatus(null, 'pending') > 0"
+              class="progress-bar bg-warning" role="progressbar"
+              [style.width]="(countByStatus(null, 'pending') / details.length * 100) + '%'">
+              {{countByStatus(null, 'pending')}} Pending
+            </div>
+          </div>
+        </div>
+
+        <!-- Pre-Picking Validation Alert -->
+        <div *ngIf="!header?.validated && details?.length" class="mb-3">
+          <div class="alert alert-warning" *ngIf="details && !validateBeforeSendingToPicking().canSendToPicking">
+            <h6><i class="mdi mdi-alert me-2"></i>Items Not Ready for Picking</h6>
+            <p class="mb-2">The following items must be resolved before sending to picking:</p>
+            <ul class="mb-0">
+              <li *ngFor="let issue of validateBeforeSendingToPicking().details">
+                <strong>{{issue.partNumber}}:</strong> {{issue.issue}}
+              </li>
+            </ul>
+          </div>
+          <div class="alert alert-success" *ngIf="details && validateBeforeSendingToPicking().canSendToPicking">
+            <h6><i class="mdi mdi-checkbox-marked-circle me-2"></i>Ready for Picking</h6>
+            <p class="mb-3">All items have been validated and approved. Ready to send to picking.</p>
+            
+            <!-- Submit to Picking Button -->
+            <div class="d-flex gap-2">
+              <button type="button" 
+                      class="btn btn-success"
+                      (click)="submitToPicking()"
+                      [disabled]="header?.validated || isSubmittingToPicking">
+                <span *ngIf="!isSubmittingToPicking">
+                  <i class="mdi mdi-send me-2"></i>Submit to Picking
+                </span>
+                <span *ngIf="isSubmittingToPicking">
+                  <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                  Submitting...
+                </span>
+              </button>
+              <button type="button" 
+                      class="btn btn-outline-info"
+                      (click)="previewPickingSheet()"
+                      [disabled]="isSubmittingToPicking">
+                <i class="mdi mdi-eye me-2"></i>Preview Pick Sheet
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div *ngIf="details?.length && !header?.validated" class="d-flex align-items-center mb-3 p-3 bg-light rounded">
+          <div class="form-check me-3">
+            <input class="form-check-input" type="checkbox" 
+                   [checked]="selectedItemsForReview.size === details?.length"
+                   [attr.indeterminate]="selectedItemsForReview.size > 0 && selectedItemsForReview.size < (details?.length || 0) ? true : null"
+                   (change)="handleSelectAllChange($event)">
+            <label class="form-check-label">
+              Select All ({{selectedItemsForReview?.size || 0}} selected)
+            </label>
+          </div>
+          
+          <!-- Primary Bulk Actions -->
+          <div class="btn-group me-3" role="group" *ngIf="hasSelectedItems()">
+            <button type="button" class="btn btn-success btn-sm" 
+                    [disabled]="!hasSelectedItems()"
+                    (click)="bulkApproveItems()"
+                    title="Approve all selected items">
+              <i class="mdi mdi-check me-1"></i>Approve Selected
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" 
+                    [disabled]="!hasSelectedItems()"
+                    (click)="bulkRejectItems()"
+                    title="Reject all selected items">
+              <i class="mdi mdi-close me-1"></i>Reject Selected
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" 
+                    [disabled]="!hasSelectedItems()"
+                    (click)="bulkCommentItems()"
+                    title="Add comment to all selected items">
+              <i class="mdi mdi-comment-text me-1"></i>Add Comment
+            </button>
+          </div>
+          
+          <!-- Secondary Bulk Actions -->
+          <div class="btn-group me-3" role="group" *ngIf="hasSelectedItems()">
+            <button type="button" class="btn btn-outline-info btn-sm" 
+                    [disabled]="!hasSelectedItems()"
+                    (click)="openReviewModal()"
+                    title="Send selected items for review">
+              <i class="mdi mdi-account-search me-1"></i>Send for Review
+            </button>
+            <button type="button" class="btn btn-outline-warning btn-sm" 
+                    [disabled]="!hasSelectedItems() || !hasSelectedItemsWithStatus(['approved', 'rejected'])"
+                    (click)="undoSelectedItems()"
+                    title="Reset selected approved/rejected items back to pending">
+              <i class="mdi mdi-undo me-1"></i>Undo Selected
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" 
+                    [disabled]="!hasSelectedItems() || !hasSelectedItemsWithPendingReviews()"
+                    (click)="bulkCancelReviews()"
+                    title="Cancel pending reviews for selected items">
+              <i class="mdi mdi-cancel me-1"></i>Cancel Reviews
+            </button>
+          </div>
+
+          <!-- Configuration Bulk Actions -->
+          <div class="btn-group me-3" role="group" *ngIf="hasSelectedItems()">
+            <div class="d-flex gap-2 align-items-center">
+              <!-- AC Code ng-select -->
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 text-nowrap small">AC Code:</label>
+                <ng-select [items]="materialRequestForm.accountCodes"
+                           [searchable]="true"
+                           [clearable]="true"
+                           bindLabel="ac_code"
+                           bindValue="ac_code"
+                           placeholder="Select AC Code"
+                           (change)="onBulkAcCodeChange($event)"
+                           style="min-width: 200px;">
+                  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                    <div>{{item.ac_code}}</div>
+                    <div class="text-muted small">{{item.ac_desc}}</div>
+                  </ng-template>
+                </ng-select>
+              </div>
+              
+              <!-- TR Type ng-select -->
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 text-nowrap small">TR Type:</label>
+                <ng-select [items]="materialRequestForm.transactionType"
+                           [searchable]="true"
+                           [clearable]="true"
+                           bindLabel="TrType"
+                           bindValue="TrType"
+                           placeholder="Select TR Type"
+                           (change)="onBulkTrTypeChange($event)"
+                           style="min-width: 200px;">
+                  <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                    <div>{{item.TrType}}</div>
+                    <div class="text-muted small">{{item.Description}}</div>
+                  </ng-template>
+                </ng-select>
+              </div>
+            </div>
+          </div>
+          
+          <small class="text-muted ms-auto">
+            {{selectedItemsForReview?.size || 0}} of {{details?.length || 0}} items selected
+          </small>
+        </div>
+
+        <!-- Info about review process -->
+        <div *ngIf="details?.length && !header?.validated" class="alert alert-info alert-sm mb-3">
+          <i class="mdi mdi-information me-2"></i>
+          <strong>Review Process:</strong> You can send items for review at any time for escalation or second opinions, even if they're already approved. Individual pending reviews or all reviews can be cancelled if needed. Only globally validated requests cannot be modified.
+        </div>
+
+        <!-- Smart Grouped Validation Table -->
+        <div *ngIf="details?.length" class="mb-3">
+          <!-- Desktop Table View -->
+          <div class="d-none d-lg-block">
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th width="30" *ngIf="!header?.validated">
+                      <input type="checkbox" class="form-check-input" 
+                             [checked]="selectedItemsForReview.size === details?.length"
+                             [attr.indeterminate]="selectedItemsForReview.size > 0 && selectedItemsForReview.size < (details?.length || 0) ? true : null"
+                             (change)="handleSelectAllChange($event)">
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Item Details</div>
+                      <small class="text-muted">Part • Description • Qty</small>
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Configuration</div>
+                      <small class="text-muted">AC Code • TR Type</small>
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Status</div>
+                      <small class="text-muted">Approval Status</small>
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Review</div>
+                      <small class="text-muted">External Reviews</small>
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Notes & Comments</div>
+                      <small class="text-muted">Requestor • Validation</small>
+                    </th>
+                    <th class="text-center">
+                      <div class="fw-bold">Actions</div>
+                      <small class="text-muted">Approve • Reject • Review</small>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let control of details.controls; let i = index" [formGroup]="$any(control)">
+                    <!-- Selection -->
+                    <td *ngIf="!header?.validated" class="text-center">
+                      <input type="checkbox" class="form-check-input" 
+                             [checked]="isItemSelected(i)"
+                             (change)="toggleItemSelection(i)">
+                    </td>
+
+                    <!-- Item Details Group -->
+                    <td style="min-width: 280px;">
+                      <div class="d-flex flex-column gap-1">
+                        <div class="fw-bold text-primary">{{control.get('partNumber')?.value}}</div>
+                        <div class="text-muted small" style="line-height: 1.2;">
+                          {{control.get('description')?.value}}
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                          <span class="badge bg-info">Qty: {{control.get('qty')?.value}}</span>
+                          <span class="badge bg-light text-dark" *ngIf="control.get('availableQty')?.value">
+                            Avail: {{control.get('availableQty')?.value}}
+                          </span>
+                          <span class="badge bg-secondary" *ngIf="control.get('reasonCode')?.value">
+                            {{control.get('reasonCode')?.value}}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Configuration Group -->
+                    <td style="min-width: 200px;">
+                      <div class="d-flex flex-column gap-2">
+                        <ng-select [items]="materialRequestForm.accountCodes" 
+                                   [searchable]="true"
+                                   formControlName="ac_code" 
+                                   bindLabel="ac_code" 
+                                   bindValue="ac_code" 
+                                   placeholder="Select account code"
+                                   [clearable]="false" 
+                                   [editableSearchTerm]="true"
+                                   [disabled]="header?.validated"
+                                   appendTo="body">
+                          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                            <div>{{item.ac_code}}</div>
+                            <div class="text-muted small">{{item.ac_desc}}</div>
+                          </ng-template>
+                        </ng-select>
+                        <ng-select [items]="materialRequestForm.transactionType" 
+                                   [searchable]="true"
+                                   formControlName="trType" 
+                                   bindLabel="TrType" 
+                                   bindValue="TrType" 
+                                   placeholder="Select transaction type"
+                                   [clearable]="false" 
+                                   [editableSearchTerm]="true"
+                                   [disabled]="header?.validated"
+                                   appendTo="body">
+                          <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+                            <div>{{item.TrType}}</div>
+                            <div class="text-muted small">{{item.Description}}</div>
+                          </ng-template>
+                        </ng-select>
+                      </div>
+                    </td>
+
+                    <!-- Status Column -->
+                    <td style="min-width: 100px;" class="text-center">
+                      <span class="badge fs-6 px-3 py-2"
+                            [ngClass]="{
+                              'bg-success': getItemStatus(i) === 'approved',
+                              'bg-danger': getItemStatus(i) === 'rejected',
+                              'bg-warning text-dark': getItemStatus(i) === 'pending'
+                            }">
+                        {{ getItemStatus(i) | titlecase }}
+                      </span>
+                    </td>
+
+                    <!-- Review Column -->
+                    <td style="min-width: 140px;" class="text-center">
+                      <div class="position-relative">
+                        <!-- Main Review Status Badge -->
+                        <div class="mb-1">
+                          <span class="badge px-2 py-1 position-relative"
+                                [ngClass]="{
+                                  'bg-info': getItemReviewStatus(i) === 'pending_review',
+                                  'bg-light text-dark border': getItemReviewStatus(i) === 'none',
+                                  'bg-success': getItemReviewStatus(i) === 'approved',
+                                  'bg-danger': getItemReviewStatus(i) === 'rejected',
+                                  'bg-warning text-dark': getItemReviewStatus(i) === 'needs_clarification',
+                                  'bg-primary': getItemReviewStatus(i) === 'mixed'
+                                }"
+                                [title]="getItemReviewSummary(i)"
+                                style="cursor: help;">
+                            <i class="mdi mdi-account-search me-1" 
+                               [ngClass]="{
+                                 'mdi-account-clock': getItemReviewStatus(i) === 'pending_review',
+                                 'mdi-account-off': getItemReviewStatus(i) === 'none',
+                                 'mdi-account-check': getItemReviewStatus(i) === 'approved',
+                                 'mdi-account-cancel': getItemReviewStatus(i) === 'rejected',
+                                 'mdi-account-alert': getItemReviewStatus(i) === 'needs_clarification',
+                                 'mdi-account-multiple': getItemReviewStatus(i) === 'mixed'
+                               }"></i>
+                            {{ 
+                              getItemReviewStatus(i) === 'none' ? 'None' : 
+                              getItemReviewStatus(i) === 'pending_review' ? 'Pending' :
+                              getItemReviewStatus(i) === 'needs_clarification' ? 'Clarification' :
+                              getItemReviewStatus(i) === 'mixed' ? 'Mixed' :
+                              (getItemReviewStatus(i) | titlecase) 
+                            }}
+                            
+                            <!-- Review count indicator for multiple reviews -->
+                            <span *ngIf="getItemReviewCounts(i).total > 1" 
+                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary"
+                                  style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
+                              {{getItemReviewCounts(i).total}}
+                            </span>
+                          </span>
+                        </div>
+                        
+                        <!-- Compact Review Details for Multiple Reviews -->
+                        <div *ngIf="hasMultipleReviews(i)" class="d-flex justify-content-center gap-1" 
+                             style="font-size: 0.7rem;">
+                          <span *ngIf="getItemReviewCounts(i).approved > 0" 
+                                class="badge bg-success rounded-pill" 
+                                style="font-size: 0.6rem; padding: 0.15rem 0.4rem;"
+                                title="{{getItemReviewCounts(i).approved}} Approved">
+                            {{getItemReviewCounts(i).approved}}✓
+                          </span>
+                          <span *ngIf="getItemReviewCounts(i).rejected > 0" 
+                                class="badge bg-danger rounded-pill" 
+                                style="font-size: 0.6rem; padding: 0.15rem 0.4rem;"
+                                title="{{getItemReviewCounts(i).rejected}} Rejected">
+                            {{getItemReviewCounts(i).rejected}}✗
+                          </span>
+                          <span *ngIf="getItemReviewCounts(i).pending > 0" 
+                                class="badge bg-info rounded-pill" 
+                                style="font-size: 0.6rem; padding: 0.15rem 0.4rem;"
+                                title="{{getItemReviewCounts(i).pending}} Pending">
+                            {{getItemReviewCounts(i).pending}}⏳
+                          </span>
+                        </div>
+                        
+                        <!-- Cancel Review Button (Only show if has pending reviews) -->
+                        <div *ngIf="canCancelReview(i) && !header?.validated && getPendingReviewsForItem(i).length > 0" 
+                             class="mt-1">
+                          <div ngbDropdown class="d-inline-block" container="body">
+                            <button type="button" 
+                                    class="btn btn-outline-danger btn-sm px-2 py-1" 
+                                    style="font-size: 0.7rem; line-height: 1.2;"
+                                    ngbDropdownToggle
+                                    [id]="'cancelReviewDropdown' + i"
+                                    title="Cancel pending review(s)">
+                              <i class="mdi mdi-close me-1"></i>Cancel
+                            </button>
+                            <div ngbDropdownMenu [attr.aria-labelledby]="'cancelReviewDropdown' + i" 
+                                 style="max-height: 400px; overflow-y: auto; min-width: 300px; z-index: 1070;">
+                              <h6 class="dropdown-header">Cancel Review Assignment</h6>
+                              <div style="max-height: 300px; overflow-y: auto;">
+                                <div *ngFor="let review of getPendingReviewsForItem(i)" class="dropdown-item-text small">
+                                  <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                      <div class="fw-bold">{{review.displayName}}</div>
+                                      <div class="text-muted small">Priority: {{review.priorityText}}</div>
+                                      <div class="text-muted small" *ngIf="review.reviewNote">Note: {{review.reviewNote | slice:0:30}}{{review.reviewNote.length > 30 ? '...' : ''}}</div>
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger ms-2"
+                                            (click)="cancelSpecificReview(data[i], i, review.id, review.displayName)"
+                                            title="Cancel this review">
+                                      <i class="mdi mdi-close"></i>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="dropdown-divider" *ngIf="getPendingReviewsForItem(i).length > 1"></div>
+                              <button *ngIf="getPendingReviewsForItem(i).length > 1" 
+                                      ngbDropdownItem 
+                                      class="text-danger"
+                                      (click)="cancelItemReview(data[i], i)">
+                                <i class="mdi mdi-cancel me-2"></i>Cancel All Reviews
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Notes & Comments Group -->
+                    <td style="min-width: 200px;">
+                      <div class="d-flex flex-column gap-2">
+                        <!-- Read-only Notes from Requestor -->
+                        <div *ngIf="control.get('notes')?.value" class="bg-light border rounded p-2 small">
+                          <div class="fw-semibold text-muted mb-1">
+                            <i class="mdi mdi-note-text me-1"></i>Requestor Notes:
+                          </div>
+                          <div class="text-dark">{{control.get('notes')?.value}}</div>
+                        </div>
+                        
+                        <!-- Comments from Validation Process -->
+                        <div *ngIf="getItemComment(i)" 
+                             class="bg-warning-subtle border border-warning rounded p-2 small">
+                          <div class="fw-semibold text-warning-emphasis mb-1">
+                            <i class="mdi mdi-comment-text me-1"></i>Validation Comment:
+                          </div>
+                          <div class="text-dark">{{getItemComment(i)}}</div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Actions Group -->
+                    <td style="min-width: 120px;">
+                      <div ngbDropdown class="d-inline-block w-100" container="body">
+                        <button class="btn btn-outline-secondary btn-sm w-100" 
+                                type="button" 
+                                [id]="'actionsDropdown' + i" 
+                                ngbDropdownToggle
+                                [disabled]="header?.validated">
+                          <i class="mdi mdi-dots-vertical me-1"></i>Actions
+                        </button>
+                        <div ngbDropdownMenu [attr.aria-labelledby]="'actionsDropdown' + i" 
+                             style="max-height: 500px; overflow-y: auto; min-width: 280px; z-index: 1070;">
+                          <!-- Primary Actions -->
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated || getItemStatus(i) === 'approved'" 
+                                  (click)="approvePart(data[i], i)">
+                            <i class="mdi mdi-check text-success me-2"></i>Approve
+                          </button>
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated || getItemStatus(i) === 'rejected'" 
+                                  (click)="rejectPart(data[i], i)">
+                            <i class="mdi mdi-close text-danger me-2"></i>Reject
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          
+                          <!-- Review Action -->
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="!canSendForReview(i)" 
+                                  (click)="openReviewModal(data[i], i)"
+                                  [title]="getReviewButtonTooltip(i)">
+                            <i class="mdi mdi-account-search text-info me-2"></i>Send for Review
+                          </button>
+                          
+                          <!-- Cancel Review Options -->
+                          <div *ngIf="canCancelReview(i) && getPendingReviewsForItem(i).length > 0" class="dropdown-divider"></div>
+                          <h6 *ngIf="canCancelReview(i) && getPendingReviewsForItem(i).length > 0" class="dropdown-header">Cancel Reviews</h6>
+                          
+                          <!-- Scrollable Individual Review Cancellation -->
+                          <div *ngIf="canCancelReview(i) && getPendingReviewsForItem(i).length > 0" 
+                               style="max-height: 200px; overflow-y: auto;">
+                            <div *ngFor="let review of getPendingReviewsForItem(i)" class="dropdown-item-text">
+                              <div class="d-flex justify-content-between align-items-center py-1">
+                                <div class="flex-grow-1 small">
+                                  <div class="fw-bold">{{review.displayName}}</div>
+                                  <div class="text-muted" style="font-size: 0.75rem;">{{review.priorityText}} Priority</div>
+                                </div>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger"
+                                        (click)="cancelSpecificReview(data[i], i, review.id, review.displayName)"
+                                        title="Cancel this specific review">
+                                  <i class="mdi mdi-close"></i>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Cancel All Reviews Option -->
+                          <button *ngIf="getPendingReviewsForItem(i).length > 1" 
+                                  ngbDropdownItem
+                                  type="button"
+                                  class="text-danger" 
+                                  (click)="cancelItemReview(data[i], i)"
+                                  title="Cancel all pending reviews for this item">
+                            <i class="mdi mdi-cancel text-danger me-2"></i>Cancel All Reviews
+                          </button>
+                          <button *ngIf="getPendingReviewsForItem(i).length === 1" 
+                                  ngbDropdownItem
+                                  type="button"
+                                  class="text-danger" 
+                                  (click)="cancelItemReview(data[i], i)"
+                                  title="Cancel pending review for this item">
+                            <i class="mdi mdi-cancel text-danger me-2"></i>Cancel Review
+                          </button>
+                          
+                          <!-- Secondary Actions -->
+                          <div class="dropdown-divider"></div>
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated || getItemStatus(i) === 'pending'" 
+                                  (click)="undoPart(data[i], i)"
+                                  [class.text-warning]="getItemStatus(i) !== 'pending'">
+                            <i class="mdi mdi-undo me-2" 
+                               [class.text-warning]="getItemStatus(i) !== 'pending'"></i>Undo to Pending
+                          </button>
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated" 
+                                  (click)="commentPart(data[i], i)">
+                            <i class="mdi mdi-comment-text text-secondary me-2"></i>Add Comment
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mobile/Tablet Card View -->
+          <div class="d-lg-none">
+            <div class="row g-3">
+              <div class="col-12" *ngFor="let control of details.controls; let i = index">
+                <div class="card shadow-sm" [formGroup]="$any(control)">
+                  <div class="card-body">
+                    <!-- Header with selection and status -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                      <div class="d-flex align-items-center">
+                        <input type="checkbox" class="form-check-input me-2" 
+                               *ngIf="!header?.validated"
+                               [checked]="isItemSelected(i)"
+                               (change)="toggleItemSelection(i)">
+                        <div>
+                          <h6 class="mb-1 text-primary fw-bold">{{control.get('partNumber')?.value}}</h6>
+                          <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-info">Qty: {{control.get('qty')?.value}}</span>
+                            <span class="badge bg-light text-dark" *ngIf="control.get('availableQty')?.value">
+                              Avail: {{control.get('availableQty')?.value}}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="d-flex flex-column align-items-end gap-1">
+                        <span class="badge"
+                              [ngClass]="{
+                                'bg-success': getItemStatus(i) === 'approved',
+                                'bg-danger': getItemStatus(i) === 'rejected',
+                                'bg-warning text-dark': getItemStatus(i) === 'pending'
+                              }">
+                          {{ getItemStatus(i) | titlecase }}
+                        </span>
+                        <span class="badge small position-relative"
+                              [ngClass]="{
+                                'bg-info': getItemReviewStatus(i) === 'pending_review',
+                                'bg-light text-dark border': getItemReviewStatus(i) === 'none',
+                                'bg-success': getItemReviewStatus(i) === 'approved',
+                                'bg-danger': getItemReviewStatus(i) === 'rejected',
+                                'bg-warning text-dark': getItemReviewStatus(i) === 'needs_clarification',
+                                'bg-primary': getItemReviewStatus(i) === 'mixed'
+                              }"
+                              [title]="getItemReviewSummary(i)">
+                          <i class="mdi me-1" 
+                             [ngClass]="{
+                               'mdi-account-clock': getItemReviewStatus(i) === 'pending_review',
+                               'mdi-account-off': getItemReviewStatus(i) === 'none',
+                               'mdi-account-check': getItemReviewStatus(i) === 'approved',
+                               'mdi-account-cancel': getItemReviewStatus(i) === 'rejected',
+                               'mdi-account-alert': getItemReviewStatus(i) === 'needs_clarification',
+                               'mdi-account-multiple': getItemReviewStatus(i) === 'mixed'
+                             }"></i>
+                          {{ 
+                            getItemReviewStatus(i) === 'none' ? 'None' : 
+                            getItemReviewStatus(i) === 'pending_review' ? 'Pending' :
+                            getItemReviewStatus(i) === 'needs_clarification' ? 'Clarification' :
+                            getItemReviewStatus(i) === 'mixed' ? 'Mixed' :
+                            (getItemReviewStatus(i) | titlecase) 
+                          }}
+                          
+                          <!-- Review count indicator -->
+                          <span *ngIf="getItemReviewCounts(i).total > 1" 
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary"
+                                style="font-size: 0.5rem; padding: 0.1rem 0.3rem;">
+                            {{getItemReviewCounts(i).total}}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                      <small class="text-muted">{{control.get('description')?.value}}</small>
+                    </div>
+
+                    <!-- Configuration Row -->
+                    <div class="row mb-3">
+                      <div class="col-6">
+                        <label class="form-label small fw-semibold">AC Code</label>
+                        <ng-select [items]="materialRequestForm.accountCodes" 
+                                   [searchable]="true"
+                                   formControlName="ac_code" 
+                                   bindLabel="ac_code" 
+                                   bindValue="ac_code" 
+                                   placeholder="Select AC Code"
+                                   [clearable]="false" 
+                                   [editableSearchTerm]="true"
+                                   [disabled]="header?.validated">
+                          <ng-template ng-option-tmp let-item="item">
+                            <div>{{item.ac_code}}</div>
+                            <div class="text-muted small">{{item.ac_desc}}</div>
+                          </ng-template>
+                        </ng-select>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small fw-semibold">TR Type</label>
+                        <ng-select [items]="materialRequestForm.transactionType" 
+                                   [searchable]="true"
+                                   formControlName="trType" 
+                                   bindLabel="TrType" 
+                                   bindValue="TrType" 
+                                   placeholder="Select TR Type"
+                                   [clearable]="false" 
+                                   [editableSearchTerm]="true"
+                                   [disabled]="header?.validated">
+                          <ng-template ng-option-tmp let-item="item">
+                            <div>{{item.TrType}}</div>
+                            <div class="text-muted small">{{item.Description}}</div>
+                          </ng-template>
+                        </ng-select>
+                      </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">Notes & Comments</label>
+                      
+                      <!-- Read-only Notes from Requestor -->
+                      <div *ngIf="control.get('notes')?.value" class="bg-light border rounded p-2 small mb-2">
+                        <div class="fw-semibold text-muted mb-1">
+                          <i class="mdi mdi-note-text me-1"></i>Requestor Notes:
+                        </div>
+                        <div class="text-dark">{{control.get('notes')?.value}}</div>
+                      </div>
+                      
+                      <!-- Comments from Validation Process -->
+                      <div *ngIf="getItemComment(i)" 
+                           class="bg-warning-subtle border border-warning rounded p-2 small">
+                        <div class="fw-semibold text-warning-emphasis mb-1">
+                          <i class="mdi mdi-comment-text me-1"></i>Validation Comment:
+                        </div>
+                        <div class="text-dark">{{getItemComment(i)}}</div>
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 flex-wrap">
+                      <button class="btn btn-success btn-sm" 
+                              [disabled]="header?.validated || getItemStatus(i) === 'approved'" 
+                              (click)="approvePart(data[i], i)">
+                        <i class="mdi mdi-check me-1"></i>Approve
+                      </button>
+                      <button class="btn btn-danger btn-sm" 
+                              [disabled]="header?.validated || getItemStatus(i) === 'rejected'" 
+                              (click)="rejectPart(data[i], i)">
+                        <i class="mdi mdi-close me-1"></i>Reject
+                      </button>
+                      <button class="btn btn-info btn-sm" 
+                              [disabled]="!canSendForReview(i)" 
+                              (click)="openReviewModal(data[i], i)">
+                        <i class="mdi mdi-account-search me-1"></i>Review
+                      </button>
+                      <div ngbDropdown class="d-inline-block">
+                        <button class="btn btn-outline-secondary btn-sm" 
+                                type="button" 
+                                ngbDropdownToggle
+                                [disabled]="header?.validated">
+                          <i class="mdi mdi-dots-vertical"></i>
+                        </button>
+                        <div ngbDropdownMenu>
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated || getItemStatus(i) === 'pending'" 
+                                  (click)="undoPart(data[i], i)">
+                            <i class="mdi mdi-undo me-2"></i>Undo to Pending
+                          </button>
+                          <button ngbDropdownItem
+                                  type="button"
+                                  [disabled]="header?.validated" 
+                                  (click)="commentPart(data[i], i)">
+                            <i class="mdi mdi-comment-text me-2"></i>Add Comment
+                          </button>
+                          <div class="dropdown-divider" 
+                               *ngIf="canCancelReview(i) && getPendingReviewsForItem(i).length > 0"></div>
+                          <button *ngIf="getPendingReviewsForItem(i).length > 0" 
+                                  ngbDropdownItem
+                                  type="button"
+                                  class="text-danger" 
+                                  (click)="cancelItemReview(data[i], i)">
+                            <i class="mdi mdi-cancel me-2"></i>Cancel Review{{getPendingReviewsForItem(i).length > 1 ? 's' : ''}}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden form component - needed for form initialization -->
+        <div style="display: none;">
+          <app-material-request-form [enableEdit]="true" (setFormEmitter)="form = $event" [submitted]="submitted"
+            [onDeleteItem]="onDeleteItem" [id]="id"></app-material-request-form>
+        </div>
+
+        <!-- Material Request Header Information -->
+        <div class="alert alert-light mb-3">
+          <h6><i class="mdi mdi-information me-2"></i>Request Information</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <strong>Request ID:</strong> {{header?.id || 'N/A'}}<br>
+              <strong>Requested By:</strong> {{header?.requestedBy || 'N/A'}}<br>
+              <strong>Department:</strong> {{header?.department || 'N/A'}}
+            </div>
+            <div class="col-md-6">
+              <strong>Priority:</strong> {{header?.priority || 'Normal'}}<br>
+              <strong>Request Date:</strong> {{header?.requestDate || 'N/A'}}<br>
+              <strong>Status:</strong> 
+              <span class="badge bg-primary">{{header?.status || 'Pending'}}</span>
+            </div>
+          </div>
+          <div *ngIf="header?.notes" class="mt-2">
+            <strong>Notes:</strong> {{header?.notes}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Review Assignment Modal -->
+<div class="modal fade" [class.show]="showReviewModal" [style.display]="showReviewModal ? 'block' : 'none'" 
+     tabindex="-1" role="dialog" *ngIf="showReviewModal">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="mdi mdi-account-search me-2"></i>
+          Send Items for Review
+        </h5>
+        <button type="button" class="btn-close" (click)="closeReviewModal()"></button>
+      </div>
+      
+      <form [formGroup]="reviewForm" (ngSubmit)="submitForReview()">
+        <div class="modal-body">
+          <!-- Items to Review Summary -->
+          <div class="alert alert-info">
+            <h6><i class="mdi mdi-information me-2"></i>Items Selected for Review</h6>
+            <div class="row">
+              <div class="col-12">
+                <div *ngFor="let item of itemsForReview" class="d-flex justify-content-between align-items-center border-bottom py-1">
+                  <span><strong>{{item.partNumber}}</strong> - {{item.description}}</span>
+                  <span class="badge bg-secondary">Qty: {{item.qty}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviewer Selection -->
+          <div class="mb-3">
+            <app-user-search 
+              [appendToBody]="'body'"
+              form_label="Assign Reviewer"
+              [required]="true"
+              [value]="selectedReviewer"
+              placeholder="Search for a reviewer by name or email"
+              [minTermLength]="2"
+              [debounceTime]="300"
+              className="form-select"
+              (notifyParent)="onReviewerSelected($event)">
+            </app-user-search>
+            <div class="form-text">Search and select an employee to review these items</div>
+          </div>
+
+          <!-- Priority Level -->
+          <div class="mb-3">
+            <label for="priority" class="form-label">Priority Level</label>
+            <select class="form-select" id="priority" formControlName="priority">
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+
+          <!-- Review Notes -->
+          <div class="mb-3">
+            <label for="reviewNote" class="form-label">Review Instructions</label>
+            <textarea class="form-control" id="reviewNote" formControlName="reviewNote" 
+                      rows="3" placeholder="Add any specific instructions or context for the reviewer..."></textarea>
+            <div class="form-text">Optional: Provide additional context or specific questions for the reviewer</div>
+          </div>
+
+          <!-- Review Process Info -->
+          <div class="alert alert-light">
+            <h6><i class="mdi mdi-lightbulb-on me-2"></i>Review Process</h6>
+            <ul class="mb-0">
+              <li>The selected reviewer will receive an email notification</li>
+              <li>Items will be assigned additional reviews alongside any existing ones</li>
+              <li>This allows for escalation, second opinions, or clarification requests</li>
+              <li>You can track all review statuses in the main table</li>
+              <li>Reviewers can approve, reject, or request more information</li>
+              <li><strong>You can cancel individual pending reviews or all reviews for an item if needed</strong></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeReviewModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="reviewForm.invalid">
+            <i class="mdi mdi-send me-1"></i>
+            Send for Review ({{itemsForReview.length}} items)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal backdrop -->
+<div class="modal-backdrop fade" [class.show]="showReviewModal" *ngIf="showReviewModal"></div>
+
+<!-- Edit Material Request Modal -->
+<ng-template #editRequestModal role="document" let-modal>
+  <div class="modal-header p-3 bg-info-subtle">
+    <h5 class="modal-title d-flex align-items-center">
+      <i class="mdi mdi-pencil me-2"></i>
+      Edit Material Request
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="onCancelModalRequest()"></button>
+  </div>
+  
+  <div class="modal-body p-0" style="max-height: 75vh; overflow-y: auto;">
+    <div class="p-4">
+      <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+        <i class="mdi mdi-alert me-2"></i>
+        <div>
+          <strong>Note:</strong> Changes made here will affect the entire request. Individual item validation statuses will be preserved.
+        </div>
+      </div>
+      
+      <app-material-request-form 
+        [enableEdit]="true"
+        [submitted]="modalFormSubmitted"
+        [id]="id"
+        (setFormEmitter)="onModalFormSet($event)">
+      </app-material-request-form>
+    </div>
+  </div>
+  
+  <div class="modal-footer p-3 bg-light">
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <div class="text-muted small">
+        <i class="mdi mdi-shield-check-line me-1"></i>
+        Form validation will check for required fields
+      </div>
+      <div class="hstack gap-2">
+        <button type="button" class="btn btn-light" (click)="onCancelModalRequest()" [disabled]="modalFormSubmitted">
+          <i class="mdi mdi-close-line me-1"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-info" (click)="onSaveModalRequest()" 
+                [disabled]="!modalForm || modalForm.invalid || modalFormSubmitted">
+          <span *ngIf="modalFormSubmitted" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          <i *ngIf="!modalFormSubmitted" class="mdi mdi-content-save me-1"></i>
+          {{modalFormSubmitted ? 'Saving...' : 'Save Changes'}}
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>

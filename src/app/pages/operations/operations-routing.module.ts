@@ -46,6 +46,13 @@ const routes: Routes = [
     component: LocationLookupComponent,
   },
   {
+    path: "bom",
+    loadChildren: () =>
+      import("./bom/bom.module").then((m) => m.BomModule),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
     path: "reports",
     loadChildren: () =>
       import("./reports/reports-routing.module").then(
@@ -145,6 +152,26 @@ const routes: Routes = [
     loadChildren: () =>
       import("./cycle-time/cycle-time-routing.module").then(
         (m) => m.CycleTimeRoutingModule
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Serial Number Generator",
+    path: "serial-number-generator",
+    loadComponent: () =>
+      import("../tools/serial-number-demo/serial-number-demo.component").then(
+        (m) => m.SerialNumberDemoComponent
+      ),
+    canActivate: [AccessGuard],
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Serial Number Report",
+    path: "serial-number-report",
+    loadComponent: () =>
+      import("../tools/serial-number-report/serial-number-report.component").then(
+        (m) => m.SerialNumberReportComponent
       ),
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",

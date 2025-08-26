@@ -1,0 +1,651 @@
+<div class="checklist-audit">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+    <div>
+      <h4 class="mb-1">Photo Checklist Audit</h4>
+      <p class="text-muted mb-0">Search and generate detailed photo reports for customer review</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" [routerLink]="['../checklist']">
+        <i class="mdi mdi-arrow-left me-2"></i>
+        Back to Checklists
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Panel -->
+  <div class="card shadow-sm mb-4 d-print-none">
+    <div class="card-header bg-primary bg-gradient text-white position-relative overflow-hidden p-4" style="border-radius: 16px 16px 0 0;">
+      <!-- Background Pattern -->
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
+        <i class="mdi mdi-database-search-outline" style="font-size: 8rem; transform: rotate(15deg);"></i>
+      </div>
+      
+      <div class="d-flex align-items-center position-relative">
+        <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+              style="width: 2.5rem; height: 2.5rem;">
+          <i class="mdi mdi-database-search-outline fs-4 text-white"></i>
+        </span>
+        <div>
+          <h5 class="mb-1 fw-bold text-white">
+            Search Criteria
+          </h5>
+          <p class="text-white-50 mb-0">
+            Find checklist instances by part number, serial number, or work order
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card-body p-4">
+      <!-- Primary Search Fields -->
+      <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-bold">
+            <i class="mdi mdi-cube-outline me-1"></i>
+            Part Number
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.partNumber"
+                 placeholder="e.g., VWL-03513-210"
+                 style="border-radius: 8px;">
+          <small class="text-muted">Search by exact or partial part number</small>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-bold">
+            <i class="mdi mdi-barcode me-1"></i>
+            Serial Number
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.serialNumber"
+                 placeholder="e.g., SN123456789"
+                 style="border-radius: 8px;">
+          <small class="text-muted">Search by exact or partial serial number</small>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+          <label class="form-label fw-bold">
+            <i class="mdi mdi-file-document-outline me-1"></i>
+            Work Order
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.workOrderNumber"
+                 placeholder="e.g., WO-2024-001"
+                 style="border-radius: 8px;">
+          <small class="text-muted">Search by work order number</small>
+        </div>
+      </div>
+
+      <!-- Additional Filters -->
+      <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Template Name</label>
+          <input type="text" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.templateName"
+                 placeholder="Template name..."
+                 style="border-radius: 8px;">
+        </div>
+        
+        <div class="col-md-2 mb-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" 
+                  [(ngModel)]="searchCriteria.status"
+                  style="border-radius: 8px;">
+            <option value="">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="submitted">Submitted</option>
+          </select>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+          <label class="form-label">Date From</label>
+          <input type="date" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.dateFrom"
+                 style="border-radius: 8px;">
+        </div>
+        
+        <div class="col-md-2 mb-3">
+          <label class="form-label">Date To</label>
+          <input type="date" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.dateTo"
+                 style="border-radius: 8px;">
+        </div>
+        
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Operator</label>
+          <input type="text" 
+                 class="form-control" 
+                 [(ngModel)]="searchCriteria.operator"
+                 placeholder="Operator name..."
+                 style="border-radius: 8px;">
+        </div>
+      </div>
+
+      <!-- Search Actions -->
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <button class="btn btn-primary btn-lg me-3" 
+                  (click)="performSearch()"
+                  [disabled]="loading">
+            <i class="mdi mdi-magnify me-2" *ngIf="!loading"></i>
+            <div class="spinner-border spinner-border-sm me-2" *ngIf="loading"></div>
+            {{loading ? 'Searching...' : 'Search Checklists'}}
+          </button>
+          
+          <button class="btn btn-outline-secondary" 
+                  (click)="clearSearch()">
+            <i class="mdi mdi-refresh me-2"></i>
+            Clear
+          </button>
+        </div>
+        
+        <div class="text-muted">
+          <small>
+            <i class="mdi mdi-information-outline me-1"></i>
+            Search requires at least one primary field (Part Number, Serial Number, or Work Order)
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+    <h5 class="text-muted">Searching checklist records...</h5>
+    <p class="text-muted">Please wait while we gather your data</p>
+  </div>
+
+  <!-- Results Section -->
+  <div *ngIf="!loading && searchPerformed">
+    
+    <!-- Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4" *ngIf="auditResults.length > 0">
+      <div>
+        <h5 class="mb-1">
+          <i class="mdi mdi-file-chart me-2 text-primary"></i>
+          Audit Results
+        </h5>
+        <p class="text-muted mb-0">Found {{auditResults.length}} checklist instance{{auditResults.length !== 1 ? 's' : ''}}</p>
+      </div>
+      
+      <div class="d-flex gap-2 d-print-none">
+        <!-- View Mode Toggle -->
+        <div class="btn-group" role="group">
+          <button type="button" 
+                  class="btn" 
+                  [class]="viewMode === 'summary' ? 'btn-primary' : 'btn-outline-primary'"
+                  (click)="viewMode = 'summary'">
+            <i class="mdi mdi-format-list-bulleted me-1"></i>
+            Summary
+          </button>
+          <button type="button" 
+                  class="btn" 
+                  [class]="viewMode === 'gallery' ? 'btn-primary' : 'btn-outline-primary'"
+                  (click)="switchToGalleryView()">
+            <i class="mdi mdi-view-grid me-1"></i>
+            Gallery
+          </button>
+        </div>
+        
+        <!-- Export Options -->
+        <div class="btn-group" role="group">
+          <button class="btn btn-success" (click)="exportToExcel()">
+            <i class="mdi mdi-file-excel me-2"></i>
+            Export Excel
+          </button>
+          <button class="btn btn-info" (click)="printReport()">
+            <i class="mdi mdi-printer me-2"></i>
+            Print Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary View -->
+    <div *ngIf="viewMode === 'summary' && auditResults.length > 0">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="p-3">Work Order</th>
+                  <th class="p-3">Part Number</th>
+                  <th class="p-3">Serial Number</th>
+                  <th class="p-3">Template</th>
+                  <th class="p-3">Progress</th>
+                  <th class="p-3">Photos</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3">Date</th>
+                  <th class="p-3 d-print-none">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let result of auditResults; let i = index" class="align-middle">
+                  <td class="p-3">
+                    <strong>{{result.instance.work_order_number}}</strong>
+                  </td>
+                  <td class="p-3">
+                    <code class="bg-light text-dark">{{result.instance.part_number}}</code>
+                  </td>
+                  <td class="p-3">
+                    <code class="bg-light text-dark">{{result.instance.serial_number}}</code>
+                  </td>
+                  <td class="p-3">
+                    <div>{{result.templateInfo.name}}</div>
+                    <small class="text-muted">v{{result.templateInfo.version}} • {{result.templateInfo.category}}</small>
+                  </td>
+                  <td class="p-3">
+                    <div class="d-flex align-items-center">
+                      <div class="progress me-2" style="width: 60px; height: 8px;">
+                        <div class="progress-bar bg-success" 
+                             [style.width.%]="getProgressPercentage(result)"></div>
+                      </div>
+                      <small class="text-muted">{{getCompletedItemsCount(result)}}/{{getTotalItemsCount(result)}}</small>
+                    </div>
+                  </td>
+                  <td class="p-3">
+                    <span class="badge bg-info">
+                      <i class="mdi mdi-camera me-1"></i>
+                      {{getTotalPhotos(result)}} photos
+                    </span>
+                  </td>
+                  <td class="p-3">
+                    <span class="badge" [class]="getStatusBadgeClass(result.instance.status)">
+                      {{result.instance.status | titlecase}}
+                    </span>
+                  </td>
+                  <td class="p-3">
+                    <div>{{formatDate(result.instance.created_at)}}</div>
+                    <small class="text-muted" *ngIf="result.instance.submitted_at">
+                      Completed: {{formatDate(result.instance.submitted_at)}}
+                    </small>
+                  </td>
+                  <td class="p-3 d-print-none">
+                    <button class="btn btn-sm btn-outline-primary" 
+                            (click)="selectResult(result)"
+                            [disabled]="loadingDetails">
+                      <div class="spinner-border spinner-border-sm me-1" *ngIf="loadingDetails"></div>
+                      <i class="mdi mdi-eye me-1" *ngIf="!loadingDetails"></i>
+                      {{loadingDetails ? 'Loading...' : 'View Details'}}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery View -->
+    <div *ngIf="viewMode === 'gallery' && auditResults.length > 0">
+      <div class="row">
+        <div class="col-12" *ngFor="let result of auditResults; let i = index">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <h6 class="mb-1">
+                    <i class="mdi mdi-clipboard-check me-2"></i>
+                    {{result.instance.work_order_number}} - {{result.instance.part_number}}
+                  </h6>
+                  <div class="d-flex align-items-center gap-3">
+                    <small class="text-muted">
+                      <i class="mdi mdi-barcode me-1"></i>
+                      S/N: {{result.instance.serial_number}}
+                    </small>
+                    <small class="text-muted">
+                      <i class="mdi mdi-account me-1"></i>
+                      {{result.instance.operator_name}}
+                    </small>
+                    <span class="badge" [class]="getStatusBadgeClass(result.instance.status)">
+                      {{result.instance.status | titlecase}}
+                    </span>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <div class="d-flex align-items-center justify-content-end gap-2">
+                    <span class="badge bg-info">
+                      <i class="mdi mdi-camera me-1"></i>
+                      {{getTotalPhotos(result)}} photos
+                    </span>
+                    <div class="progress" style="width: 80px; height: 8px;">
+                      <div class="progress-bar bg-success" 
+                           [style.width.%]="getProgressPercentage(result)"></div>
+                    </div>
+                    <small class="text-muted">{{getProgressPercentage(result)}}%</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <!-- Loading message for gallery view -->
+              <div *ngIf="result.photos.length === 0 && !loading" class="text-center py-4">
+                <i class="mdi mdi-loading mdi-spin text-primary mb-2" style="font-size: 2rem;"></i>
+                <p class="text-muted">Loading photo details...</p>
+              </div>
+              
+              <!-- Photos content -->
+              <div class="row" *ngIf="result.photos.length > 0">
+                <div class="col-12" *ngFor="let photo of result.photos">
+                  <div class="border-bottom pb-3 mb-3" *ngIf="hasPhotos(photo)">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <h6 class="text-primary mb-2">
+                          <i class="mdi mdi-clipboard-text me-1"></i>
+                          {{photo.itemTitle}}
+                          <span class="badge bg-danger ms-2" *ngIf="photo.isRequired">Required</span>
+                        </h6>
+                        <p class="text-muted small mb-3" *ngIf="photo.itemDescription">
+                          {{photo.itemDescription}}
+                        </p>
+                        
+                        <!-- User Photos -->
+                        <div class="mb-3">
+                          <label class="form-label small fw-bold">Photos Taken ({{photo.photoUrls.length}})</label>
+                          <div class="d-flex flex-wrap gap-2">
+                            <img *ngFor="let photoUrl of photo.photoUrls" 
+                                 [src]="photoUrl"
+                                 class="img-thumbnail rounded border"
+                                 style="width: 120px; height: 120px; object-fit: cover; cursor: pointer;"
+                                 (click)="openPreviewModal(photoUrl)"
+                                 [alt]="'Photo for ' + photo.itemTitle">
+                          </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div *ngIf="photo.notes" class="mb-2">
+                          <label class="form-label small fw-bold">Notes</label>
+                          <div class="bg-light p-2 rounded small">
+                            {{photo.notes}}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-6" *ngIf="photo.sampleImageUrl">
+                        <label class="form-label small fw-bold">Sample Reference</label>
+                        <div class="text-center">
+                          <img [src]="photo.sampleImageUrl"
+                               class="img-fluid rounded border"
+                               style="max-height: 200px; cursor: pointer;"
+                               (click)="openPreviewModal(photo.sampleImageUrl)"
+                               [alt]="'Sample for ' + photo.itemTitle">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed View -->
+    <div *ngIf="viewMode === 'detailed' && selectedResult">
+      <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
+        <h5>
+          <i class="mdi mdi-file-chart me-2"></i>
+          Detailed Report: {{selectedResult.instance.work_order_number}}
+        </h5>
+        <button class="btn btn-outline-secondary" (click)="viewMode = 'summary'; selectedResult = null">
+          <i class="mdi mdi-arrow-left me-2"></i>
+          Back to Results
+        </button>
+      </div>
+
+      <!-- Detailed Report Content -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary bg-gradient text-white p-4">
+          <div class="row">
+            <div class="col-md-8">
+              <h5 class="text-white mb-2">
+                {{selectedResult.templateInfo.name}}
+              </h5>
+              <div class="row text-white-50">
+                <div class="col-md-6">
+                  <small>Work Order: {{selectedResult.instance.work_order_number}}</small><br>
+                  <small>Part Number: {{selectedResult.instance.part_number}}</small>
+                </div>
+                <div class="col-md-6">
+                  <small>Serial Number: {{selectedResult.instance.serial_number}}</small><br>
+                  <small>Operator: {{selectedResult.instance.operator_name}}</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 text-end">
+              <div class="text-white">
+                <div class="mb-2">
+                  <span class="badge bg-white text-primary px-3 py-2">
+                    {{selectedResult.instance.status | titlecase}}
+                  </span>
+                </div>
+                <small class="text-white-50">
+                  Created: {{formatDate(selectedResult.instance.created_at)}}
+                </small>
+                <div *ngIf="selectedResult.instance.submitted_at">
+                  <small class="text-white-50">
+                    Completed: {{formatDate(selectedResult.instance.submitted_at)}}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-4">
+          <div *ngFor="let photo of selectedResult.photos; let i = index" class="mb-5">
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="text-primary mb-0">
+                    <span class="badge bg-primary me-2">{{i + 1}}</span>
+                    {{photo.itemTitle}}
+                    <span class="badge bg-danger ms-2" *ngIf="photo.isRequired">Required</span>
+                  </h6>
+                  <small class="text-muted">
+                    {{photo.photoUrls.length}} photo{{photo.photoUrls.length !== 1 ? 's' : ''}} taken
+                  </small>
+                </div>
+                
+                <p class="text-muted mb-3" *ngIf="photo.itemDescription">
+                  {{photo.itemDescription}}
+                </p>
+              </div>
+            </div>
+            
+            <div class="row">
+              <!-- Photos Taken -->
+              <div class="col-md-8">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Photos Taken</label>
+                  <div *ngIf="hasPhotos(photo); else noPhotos" class="d-flex flex-wrap gap-3">
+                    <div *ngFor="let photoUrl of photo.photoUrls; let photoIndex = index" 
+                         class="text-center">
+                      <img [src]="photoUrl"
+                           class="img-thumbnail rounded"
+                           style="width: 180px; height: 180px; object-fit: cover; cursor: pointer;"
+                           (click)="openPreviewModal(photoUrl)"
+                           [alt]="'Photo ' + (photoIndex + 1) + ' for ' + photo.itemTitle">
+                      <small class="text-muted d-block mt-1">Photo {{photoIndex + 1}}</small>
+                    </div>
+                  </div>
+                  <ng-template #noPhotos>
+                    <div class="text-center p-4 border border-dashed rounded bg-light">
+                      <i class="mdi mdi-camera-off text-muted mb-2" style="font-size: 2rem;"></i>
+                      <p class="text-muted mb-0">No photos taken for this item</p>
+                    </div>
+                  </ng-template>
+                </div>
+                
+                <!-- Notes -->
+                <div *ngIf="photo.notes" class="mb-3">
+                  <label class="form-label fw-bold">Notes</label>
+                  <div class="bg-light p-3 rounded">
+                    {{photo.notes}}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Sample Reference -->
+              <div class="col-md-4">
+                <div *ngIf="photo.sampleImageUrl; else noSample">
+                  <label class="form-label fw-bold">Sample Reference</label>
+                  <div class="text-center">
+                    <img [src]="photo.sampleImageUrl"
+                         class="img-fluid rounded border"
+                         style="max-height: 250px; cursor: pointer;"
+                         (click)="openPreviewModal(photo.sampleImageUrl)"
+                         [alt]="'Sample reference for ' + photo.itemTitle">
+                  </div>
+                  
+                  <!-- Photo Requirements -->
+                  <div class="mt-3" *ngIf="photo.photoRequirements">
+                    <label class="form-label small fw-bold">Requirements</label>
+                    <div class="small text-muted">
+                      <div *ngIf="photo.photoRequirements.angle">
+                        <i class="mdi mdi-camera-metering-spot me-1"></i>
+                        Angle: {{photo.photoRequirements.angle}}
+                      </div>
+                      <div *ngIf="photo.photoRequirements.distance">
+                        <i class="mdi mdi-arrow-expand-all me-1"></i>
+                        Distance: {{photo.photoRequirements.distance}}
+                      </div>
+                      <div *ngIf="photo.photoRequirements.lighting">
+                        <i class="mdi mdi-lightbulb me-1"></i>
+                        Lighting: {{photo.photoRequirements.lighting}}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noSample>
+                  <div class="text-center p-4">
+                    <i class="mdi mdi-image-off text-muted mb-2" style="font-size: 2rem;"></i>
+                    <p class="text-muted small mb-0">No sample reference provided</p>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+            
+            <hr *ngIf="i < selectedResult.photos.length - 1" class="my-4">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Results -->
+    <div class="text-center py-5" *ngIf="auditResults.length === 0">
+      <i class="mdi mdi-file-search-outline text-muted mb-3" style="font-size: 4rem;"></i>
+      <h5 class="text-muted">No Results Found</h5>
+      <p class="text-muted mb-4">
+        No checklist instances match your search criteria.<br>
+        Try adjusting your search parameters or expanding the date range.
+      </p>
+      <button class="btn btn-outline-primary" (click)="clearSearch()">
+        <i class="mdi mdi-refresh me-2"></i>
+        Clear Search & Try Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State (No Search Performed) -->
+  <div class="text-center py-5" *ngIf="!loading && !searchPerformed">
+    <i class="mdi mdi-database-search text-muted mb-3" style="font-size: 4rem;"></i>
+    <h5 class="text-muted">Ready to Search</h5>
+    <p class="text-muted mb-4">
+      Enter search criteria above to find checklist instances.<br>
+      Perfect for generating customer reports or quality audits.
+    </p>
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="alert alert-info">
+          <h6 class="alert-heading">
+            <i class="mdi mdi-lightbulb-outline me-2"></i>
+            Search Tips
+          </h6>
+          <ul class="mb-0 text-start">
+            <li>Use <strong>Part Number</strong> to find all instances for a specific product</li>
+            <li>Use <strong>Serial Number</strong> to track a specific unit's quality history</li>
+            <li>Use <strong>Work Order</strong> to review all checklists for a manufacturing run</li>
+            <li>Combine criteria for more specific results</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div *ngIf="showPreviewModal" class="modal-backdrop fade show d-print-none" style="display: block;"></div>
+<div *ngIf="showPreviewModal" class="modal fade show d-block d-print-none" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Photo Preview</h5>
+        <button type="button" class="btn-close" (click)="closePreviewModal()"></button>
+      </div>
+      <div class="modal-body text-center p-0">
+        <img [src]="previewImage" 
+             class="img-fluid" 
+             style="max-height: 80vh; width: auto;"
+             *ngIf="previewImage">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closePreviewModal()">Close</button>
+        <a [href]="previewImage" download class="btn btn-primary" *ngIf="previewImage">
+          <i class="mdi mdi-download me-2"></i>
+          Download
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+@media print {
+  .d-print-none {
+    display: none !important;
+  }
+  
+  .card {
+    border: 1px solid #dee2e6 !important;
+    page-break-inside: avoid;
+  }
+  
+  .card-header {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+  }
+  
+  .badge {
+    border: 1px solid #000 !important;
+  }
+  
+  .text-primary {
+    color: #000 !important;
+  }
+  
+  .bg-primary {
+    background-color: #f8f9fa !important;
+  }
+  
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+}
+</style>
