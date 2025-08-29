@@ -1,0 +1,207 @@
+<!-- Record Usage Form Component -->
+<div class="record-usage-form">
+  
+  <!-- Selected UL Info -->
+  <div *ngIf="selectedUL" class="selected-ul-info mb-4">
+    <div class="alert alert-primary d-flex align-items-center">
+      <i class="mdi mdi-information me-2"></i>
+      <div class="flex-grow-1">
+        <div>
+          <strong>Selected UL Number: {{ selectedUL.ul_number }}</strong>
+          <span *ngIf="selectedUL.category"
+                class="badge bg-secondary-subtle text-secondary border-secondary ms-2">
+            {{ selectedUL.category }}
+          </span>
+        </div>
+        <small *ngIf="selectedUL.description" class="text-muted d-block mt-1">
+          {{ selectedUL.description }}
+        </small>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="onCancel()">
+        <i class="mdi mdi-close me-1"></i>Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Usage Form -->
+  <div *ngIf="selectedUL" class="usage-form-container">
+    <form [formGroup]="usageForm" (ngSubmit)="onSubmit()" class="usage-form">
+      
+      <!-- Form Header -->
+      <div class="form-header mb-4">
+        <h6 class="fw-bold text-dark mb-2">
+          <i class="mdi mdi-clipboard-text me-2"></i>Record Usage Details
+        </h6>
+        <p class="text-muted small mb-0">
+          Please fill in all required information to record the usage of this UL number.
+        </p>
+      </div>
+
+      <!-- Form Fields -->
+      <div class="row g-3">
+        
+        <!-- Serial Number -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">
+            <i class="mdi mdi-identifier me-1"></i>Serial Number *
+            <i class="mdi mdi-information text-muted ms-1" 
+               data-bs-toggle="tooltip"
+               title="Enter the device serial number (alphanumeric, minimum 3 characters)"></i>
+          </label>
+          <input 
+            formControlName="serial_number" 
+            class="form-control"
+            [class.is-invalid]="hasFieldError('serial_number')"
+            placeholder="e.g., EYE12345ABC or SN001234"
+            autofocus>
+          <div class="form-text">Device or component serial number</div>
+          <div *ngIf="getFieldError('serial_number')" class="invalid-feedback">
+            {{ getFieldError('serial_number') }}
+          </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">
+            <i class="mdi mdi-numeric me-1"></i>Quantity *
+            <i class="mdi mdi-information text-muted ms-1" 
+               data-bs-toggle="tooltip"
+               title="Number of units used (must be 1 or greater)"></i>
+          </label>
+          <input 
+            formControlName="quantity" 
+            type="number" 
+            min="1"
+            class="form-control"
+            [class.is-invalid]="hasFieldError('quantity')"
+            placeholder="1">
+          <div class="form-text">Units consumed</div>
+          <div *ngIf="getFieldError('quantity')" class="invalid-feedback">
+            {{ getFieldError('quantity') }}
+          </div>
+        </div>
+
+        <!-- Date Used -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">
+            <i class="mdi mdi-calendar me-1"></i>Date Used *
+            <i class="mdi mdi-information text-muted ms-1" 
+               data-bs-toggle="tooltip"
+               title="When the UL was used or consumed"></i>
+          </label>
+          <input 
+            formControlName="date_used" 
+            type="date"
+            class="form-control"
+            [class.is-invalid]="hasFieldError('date_used')">
+          <div class="form-text">Usage date</div>
+          <div *ngIf="getFieldError('date_used')" class="invalid-feedback">
+            {{ getFieldError('date_used') }}
+          </div>
+        </div>
+
+        <!-- User Signature -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">
+            <i class="mdi mdi-account-edit me-1"></i>User Signature *
+            <i class="mdi mdi-information text-muted ms-1" 
+               data-bs-toggle="tooltip"
+               title="Name or signature of the person recording this usage"></i>
+          </label>
+          <input 
+            formControlName="user_signature" 
+            class="form-control"
+            [class.is-invalid]="hasFieldError('user_signature')"
+            placeholder="e.g., John Smith or J.Smith">
+          <div class="form-text">
+            Person recording this usage
+            <span class="text-success small ms-1">
+              <i class="mdi mdi-check-circle me-1"></i>Auto-filled from your profile
+            </span>
+          </div>
+          <div *ngIf="getFieldError('user_signature')" class="invalid-feedback">
+            {{ getFieldError('user_signature') }}
+          </div>
+        </div>
+
+        <!-- Customer -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">
+            <i class="mdi mdi-domain me-1"></i>Customer *
+            <i class="mdi mdi-information text-muted ms-1" 
+               data-bs-toggle="tooltip"
+               title="Customer or project name where this UL is being used"></i>
+          </label>
+          <input 
+            formControlName="customer" 
+            class="form-control"
+            [class.is-invalid]="hasFieldError('customer')"
+            placeholder="e.g., AGS or IGT">
+          <div class="form-text">Customer or project name</div>
+          <div *ngIf="getFieldError('customer')" class="invalid-feedback">
+            {{ getFieldError('customer') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- User Info Display -->
+      <div class="user-info-display mt-4">
+        <div class="card bg-light border-0">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center text-muted small">
+              <i class="mdi mdi-account-circle me-2"></i>
+              <span>Logged in as: <strong class="text-dark">{{ getCurrentUserDisplayName() }}</strong></span>
+              <span *ngIf="getCurrentUserEmail()" class="ms-2 text-muted">({{ getCurrentUserEmail() }})</span>
+            </div>
+            <div class="text-muted small mt-1">
+              <i class="mdi mdi-information me-1"></i>
+              Some fields are automatically prefilled with your information
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions d-flex justify-content-end gap-2 mt-4">
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary"
+          (click)="onCancel()">
+          <i class="mdi mdi-close me-2"></i>
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          class="btn btn-success d-flex align-items-center"
+          [disabled]="usageForm.invalid">
+          <i class="mdi mdi-content-save me-2"></i>
+          Record Usage
+        </button>
+      </div>
+
+      <!-- Form Validation Summary -->
+      <div *ngIf="usageForm.invalid && usageForm.touched" class="validation-summary mt-3">
+        <div class="alert alert-warning d-flex align-items-start">
+          <i class="mdi mdi-alert-triangle me-2 mt-1"></i>
+          <div>
+            <strong>Please correct the following errors:</strong>
+            <ul class="mb-0 mt-1">
+              <li *ngIf="getFieldError('serial_number')">{{ getFieldError('serial_number') }}</li>
+              <li *ngIf="getFieldError('quantity')">{{ getFieldError('quantity') }}</li>
+              <li *ngIf="getFieldError('date_used')">{{ getFieldError('date_used') }}</li>
+              <li *ngIf="getFieldError('user_signature')">{{ getFieldError('user_signature') }}</li>
+              <li *ngIf="getFieldError('customer')">{{ getFieldError('customer') }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- No UL Selected State -->
+  <div *ngIf="!selectedUL" class="no-selection-state text-center py-5">
+    <i class="mdi mdi-clipboard-remove mdi-48px text-muted mb-3"></i>
+    <h6 class="text-muted">No UL Selected</h6>
+    <p class="text-muted small mb-0">Please select a UL number to record usage.</p>
+  </div>
+</div>

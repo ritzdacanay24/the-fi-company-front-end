@@ -1,112 +1,351 @@
-<div *ngIf="!id">
-    <div class="row">
-        <div class="col-xl-5">
-            <div class="card card-body">
-                <h4>Please enter the title in the designated field and click the start button to begin the process.
+<!-- Modern Mobile-First Time Tracker -->
+<div class="mobile-time-tracker">
+  
+  <!-- Start Screen -->
+  <div *ngIf="!id" class="start-screen">
+    <!-- Top Navigation -->
+    <div class="mobile-nav">
+      <div class="nav-content">
+        <h1 class="nav-title">Time Tracker</h1>
+      </div>
+    </div>
 
-                </h4>
-
-                <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <input class="form-control" [(ngModel)]="name" type="text" placeholder="Enter name">
-                </div>
-
-                <button class="btn-primary btn ms-auto" (click)="start()" *ngIf="!id" [disabled]="!name">Start</button>
-            </div>
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="timer-visual">
+          <div class="timer-circle">
+            <i class="mdi mdi-timer mdi-48px"></i>
+          </div>
         </div>
+        <h2 class="hero-title">Start Your Work Session</h2>
+        <p class="hero-subtitle">Track your productivity with ease</p>
+      </div>
     </div>
-</div>
 
-<div class="card mb-3" *ngIf="completed?.length > 0">
-    <div class="card-header">
-        <h4 class="card-title mb-0">Completed Times</h4>
-    </div>
-    <div class="card-body p-4">
-        <ul class="p-0 m-0 ms-2">
-            <li *ngFor="let row of completed">
-                {{row.id}} {{row.time_tracker_title}}
-                <ul class="p-0 m-0 ms-2">
-                    <li *ngFor="let item of row.times">
-                        <small>{{item.start_time}} - {{item.end_time}}</small>
-                    </li>
-                </ul>
-            </li>
-        </ul>
-    </div>
-</div>
-
-<div *ngIf="id">
-    <div class="mb-3">
-        <h5>ID#: {{data?.id}}</h5>
-        <h5>Title: {{data?.title}}</h5>
-        <p>Created Date: {{data?.created_date}}</p>
-        <p>Created By: {{data?.created_by_name}}</p>
-        <p>Completed Date: {{data?.completed_date}}</p>
-        <button type="button" class="btn btn-danger me-2" (click)="onDeleteMain()"
-            *ngIf="!data?.completed_date">Delete</button>
-    </div>
-    <div class="row">
-        <div class="col-xl-5">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">Time Tracker</h4>
-                </div>
-                <div class="card-body">
-
-                    <h4 *ngIf="!times.length">No times recorded.</h4>
-                    <ol class="list-group list-group-numbered">
-                        <li class="list-group-item d-flex justify-content-between align-items-start pointer"
-                            *ngFor="let row of times" (click)="!data?.completed_date && edit(content, row)">
-                            <div class="ms-2 me-auto">
-                                <div class="fw-bold">{{row.title}}
-                                </div>
-                                <p>Start: {{row.start_time}}</p>
-                                <p>End: {{row.end_time}}</p>
-                                <p>Total Time: {{getTotalTime(row.start_time, row.end_time) || 0}}</p>
-                            </div>
-                        </li>
-                    </ol>
-                </div>
-                <div class="card-footer d-flex">
-                    <button class="btn-success btn" (click)="finish();" *ngIf="times.length > 0"
-                        [disabled]="data?.completed_date">Finished</button>
-                    <button class="btn-primary btn ms-auto" (click)="openBottom(content)"
-                        [disabled]="data?.completed_date">Add Time</button>
-                </div>
-            </div>
+    <!-- Quick Start Form -->
+    <div class="quick-start-section">
+      <div class="form-container">
+        <div class="input-group-modern">
+          <div class="input-wrapper">
+            <i class="mdi mdi-briefcase input-icon"></i>
+            <input 
+              class="modern-input" 
+              [(ngModel)]="name" 
+              type="text" 
+              placeholder="What are you working on?"
+              maxlength="50">
+            <div class="input-line"></div>
+          </div>
+          <div class="char-counter">{{ name?.length || 0 }}/50</div>
         </div>
+        
+        <button 
+          class="start-button" 
+          (click)="start()" 
+          [disabled]="!name?.trim()"
+          [class.disabled]="!name?.trim()">
+          <div class="button-content">
+            <i class="mdi mdi-play button-icon"></i>
+            <span class="button-text">Start Session</span>
+          </div>
+          <div class="button-ripple"></div>
+        </button>
+      </div>
     </div>
 
-    <ng-template #content let-offcanvas>
-        <div class="offcanvas-header">
-            <h4 class="offcanvas-title">Time Tracker</h4>
-            <button type="button" class="btn-close" aria-label="Close"
-                (click)="offcanvas.dismiss('Cross click')"></button>
+    <!-- Recent Activity -->
+    <div *ngIf="completed?.length > 0" class="recent-activity">
+      <div class="section-header">
+        <h3>Recent Sessions</h3>
+        <span class="session-count">{{ completed.length }}</span>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item" *ngFor="let session of completed | slice:0:4">
+          <div class="activity-icon">
+            <i class="mdi mdi-check-circle"></i>
+          </div>
+          <div class="activity-content">
+            <h4 class="activity-title">{{ session.time_tracker_title }}</h4>
+            <div class="activity-meta">
+              <span class="entry-count">{{ session.times?.length || 0 }} entries</span>
+              <span class="duration">{{ getSessionTotalTime(session) }}</span>
+            </div>
+          </div>
+          <div class="activity-arrow">
+            <i class="mdi mdi-chevron-right"></i>
+          </div>
         </div>
-        <div class="offcanvas-body" style="height:400px !important">
+      </div>
+    </div>
 
-            <div class="mb-3">
-                <label class="form-label">Name</label>
-                <input class="form-control" [(ngModel)]="name" type="text" placeholder="Enter name">
-            </div>
+    <!-- Bottom Safe Area -->
+    <div class="safe-area-bottom"></div>
+  </div>
 
-            <div class="mb-3">
-                <label class="form-label">Start Time</label>
-                <input class="form-control" [(ngModel)]="start_time" type="datetime-local">
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">End Time</label>
-                <input class="form-control" [(ngModel)]="end_time" type="datetime-local">
-            </div>
-
-            <div class="text-end">
-                <button type="button" class="btn btn-light me-2"
-                    (click)="offcanvas.close('Close click')">Cancel</button>
-                <button type="button" class="btn btn-danger me-2" (click)="onDelete()" *ngIf="edit_id">Delete</button>
-                <button type="button" class="btn btn-outline-success"
-                    (click)="offcanvas.close({name,start_time,end_time})">Save</button>
-            </div>
+  <!-- Active Session -->
+  <div *ngIf="id" class="active-session-screen">
+    
+    <!-- Mobile Header -->
+    <div class="session-header">
+      <div class="header-content">
+        <div class="session-info">
+          <h1 class="session-title">{{ data?.title }}</h1>
+          <div class="session-meta">
+            <span class="created-by">
+              <i class="mdi mdi-account-circle"></i>
+              {{ data?.created_by_name }}
+            </span>
+            <span class="created-date">
+              <i class="mdi mdi-calendar"></i>
+              {{ data?.created_date | date:'MMM d, y' }}
+            </span>
+          </div>
         </div>
-    </ng-template>
+        <div class="header-actions">
+          <button 
+            class="action-btn delete-btn" 
+            (click)="onDeleteMain()"
+            *ngIf="!data?.completed_date">
+            <i class="mdi mdi-delete"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-icon">
+            <i class="mdi mdi-format-list-numbered"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ times.length }}</div>
+            <div class="stat-label">Entries</div>
+          </div>
+        </div>
+        
+        <div class="stat-card success">
+          <div class="stat-icon">
+            <i class="mdi mdi-clock"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-number">{{ getTotalSessionTime() }}</div>
+            <div class="stat-label">Total Time</div>
+          </div>
+        </div>
+        
+        <div class="stat-card" [class.warning]="!data?.completed_date" [class.success]="data?.completed_date">
+          <div class="stat-icon">
+            <i class="mdi" [class.mdi-clock-outline]="!data?.completed_date" [class.mdi-check-circle]="data?.completed_date"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-status">{{ data?.completed_date ? 'Done' : 'Active' }}</div>
+            <div class="stat-label">Status</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Entries -->
+    <div class="entries-section">
+      <div class="section-header">
+        <h3>Time Entries</h3>
+        <div class="entries-count">{{ times.length }}</div>
+      </div>
+      
+      <!-- Empty State -->
+      <div *ngIf="!times.length" class="empty-entries">
+        <div class="empty-icon">
+          <i class="mdi mdi-clock-plus-outline"></i>
+        </div>
+        <h4>No entries yet</h4>
+        <p>Tap "Add Entry" to start logging your time</p>
+      </div>
+
+      <!-- Entry List -->
+      <div *ngIf="times.length" class="entries-list">
+        <div 
+          class="entry-card" 
+          *ngFor="let entry of times; let i = index"
+          (click)="!data?.completed_date && edit(content, entry)"
+          [class.clickable]="!data?.completed_date">
+          
+          <div class="entry-header">
+            <div class="entry-number">#{{ i + 1 }}</div>
+            <div class="entry-duration">
+              {{ getTotalTime(entry.start_time, entry.end_time) }}
+            </div>
+          </div>
+          
+          <div class="entry-content">
+            <h4 class="entry-title">{{ entry.title }}</h4>
+            <div class="entry-time-range">
+              <div class="time-start">
+                <i class="mdi mdi-play-circle-outline"></i>
+                <span>{{ entry.start_time | date:'h:mm a' }}</span>
+              </div>
+              <div class="time-separator">
+                <i class="mdi mdi-arrow-right"></i>
+              </div>
+              <div class="time-end">
+                <i class="mdi mdi-stop-circle-outline"></i>
+                <span>{{ entry.end_time | date:'h:mm a' }}</span>
+              </div>
+            </div>
+            <div class="entry-date">
+              {{ entry.start_time | date:'EEEE, MMM d' }}
+            </div>
+          </div>
+          
+          <div class="entry-action" *ngIf="!data?.completed_date">
+            <i class="mdi mdi-pencil"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions">
+      <button 
+        *ngIf="times.length > 0"
+        class="fab secondary" 
+        (click)="finish()" 
+        [disabled]="data?.completed_date"
+        title="Complete Session">
+        <i class="mdi mdi-check"></i>
+      </button>
+      
+      <button 
+        class="fab primary" 
+        (click)="openBottom(content)"
+        [disabled]="data?.completed_date"
+        title="Add Time Entry">
+        <i class="mdi mdi-plus"></i>
+      </button>
+    </div>
+
+    <!-- Bottom Safe Area -->
+    <div class="safe-area-bottom"></div>
+  </div>
+
+  <!-- Enhanced Modal -->
+  <ng-template #content let-offcanvas>
+    <div class="modern-modal">
+      <div class="modal-header">
+        <div class="modal-handle"></div>
+        <div class="modal-title-section">
+          <h2 class="modal-title">
+            {{ edit_id ? 'Edit Entry' : 'Add Time Entry' }}
+          </h2>
+          <p class="modal-subtitle">
+            {{ edit_id ? 'Update your time entry details' : 'Log your work time' }}
+          </p>
+        </div>
+        <button class="modal-close" (click)="offcanvas.dismiss()">
+          <i class="mdi mdi-close"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form class="entry-form">
+          
+          <!-- Task Input -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="mdi mdi-text"></i>
+              Task Description
+            </label>
+            <div class="input-wrapper">
+              <input 
+                class="form-input" 
+                [(ngModel)]="name" 
+                name="taskName"
+                type="text" 
+                placeholder="Describe what you worked on..."
+                maxlength="100"
+                autofocus>
+              <div class="char-count">{{ name?.length || 0 }}/100</div>
+            </div>
+          </div>
+
+          <!-- Time Inputs -->
+          <div class="time-inputs">
+            <div class="form-group">
+              <label class="form-label">
+                <i class="mdi mdi-clock-start"></i>
+                Start Time
+              </label>
+              <input 
+                class="form-input time-input" 
+                [(ngModel)]="start_time" 
+                name="startTime"
+                type="datetime-local">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">
+                <i class="mdi mdi-clock-end"></i>
+                End Time
+              </label>
+              <input 
+                class="form-input time-input" 
+                [(ngModel)]="end_time" 
+                name="endTime"
+                type="datetime-local">
+            </div>
+          </div>
+
+          <!-- Duration Display -->
+          <div *ngIf="start_time && end_time" class="duration-display">
+            <div class="duration-card">
+              <div class="duration-icon">
+                <i class="mdi mdi-timer"></i>
+              </div>
+              <div class="duration-info">
+                <div class="duration-label">Total Duration</div>
+                <div class="duration-value">{{ getTotalTime(start_time, end_time) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="form-actions">
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              (click)="offcanvas.close({name, start_time, end_time})">
+              <i class="mdi mdi-check"></i>
+              {{ edit_id ? 'Update' : 'Save' }} Entry
+            </button>
+            
+            <div class="secondary-actions" *ngIf="edit_id">
+              <button 
+                type="button" 
+                class="btn btn-danger" 
+                (click)="onDelete()">
+                <i class="mdi mdi-delete"></i>
+                Delete
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-secondary" 
+                (click)="offcanvas.dismiss()">
+                Cancel
+              </button>
+            </div>
+            
+            <button 
+              *ngIf="!edit_id"
+              type="button" 
+              class="btn btn-secondary" 
+              (click)="offcanvas.dismiss()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </ng-template>
 </div>

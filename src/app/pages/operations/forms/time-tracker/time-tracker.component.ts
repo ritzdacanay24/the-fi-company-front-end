@@ -211,4 +211,48 @@ export class TimeTrackerComponent {
     this.times = [];
     this.time_tracker_title = "";
   }
+
+  // Helper method to get total session time
+  getTotalSessionTime(): string {
+    if (!this.times || this.times.length === 0) return "0m";
+    
+    let totalMinutes = 0;
+    this.times.forEach(entry => {
+      const start = moment(entry.start_time);
+      const end = moment(entry.end_time);
+      if (start.isValid() && end.isValid()) {
+        totalMinutes += end.diff(start, 'minutes');
+      }
+    });
+    
+    if (totalMinutes < 60) {
+      return `${totalMinutes}m`;
+    } else {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+  }
+
+  // Helper method to get session total time for completed sessions
+  getSessionTotalTime(session: any): string {
+    if (!session.times || session.times.length === 0) return "0m";
+    
+    let totalMinutes = 0;
+    session.times.forEach((entry: any) => {
+      const start = moment(entry.start_time);
+      const end = moment(entry.end_time);
+      if (start.isValid() && end.isValid()) {
+        totalMinutes += end.diff(start, 'minutes');
+      }
+    });
+    
+    if (totalMinutes < 60) {
+      return `${totalMinutes}m`;
+    } else {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+  }
 }

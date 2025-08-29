@@ -1,336 +1,1234 @@
-<div class="ul-v3-container">
-  <!-- Header -->
-  <div class="header-section">
-    <h1>UL Management v3</h1>
-    <p class="subtitle">Admin adds ranges, users select next available UL for usage</p>
-    
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">{{ getStats().total }}</div>
-        <div class="stat-label">Total ULs</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">{{ getStats().available }}</div>
-        <div class="stat-label">Available</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">{{ getStats().used }}</div>
-        <div class="stat-label">Used</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">{{ getStats().totalUsages }}</div>
-        <div class="stat-label">Total Usages</div>
-      </div>
-    </div>
-  </div>
+<div class="container-fluid py-4">
+    <div class="mx-auto" style="max-width: 1400px;">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h1 class="h3 mb-1 text-dark fw-bold">UL Management System</h1>
+                        <p class="text-muted mb-0">Manage UL number inventory and track usage efficiently</p>
+                    </div>
+                    <div class="badge bg-primary fs-6 px-3 py-2">v3.0</div>
+                </div>
 
-  <!-- Admin Section - Add UL Range -->
-  <div class="admin-section">
-    <h2>Admin: Add UL Range</h2>
-    <button 
-      class="btn btn-primary" 
-      (click)="showRangeForm = !showRangeForm"
-      [disabled]="isProcessingRange"
-      type="button">
-      {{ showRangeForm ? 'Cancel' : 'Add UL Range' }}
-    </button>
-    
-    <!-- Progress Indicator for Large Ranges -->
-    <div class="range-progress" *ngIf="isProcessingRange">
-      <div class="progress-container">
-        <div class="progress-header">
-          <h4>Processing UL Range...</h4>
-          <p>{{ rangeProgress.message }}</p>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" 
-               [style.width.%]="(rangeProgress.current / rangeProgress.total) * 100"
-               role="progressbar">
-            {{ rangeProgress.current }} / {{ rangeProgress.total }}
-          </div>
-        </div>
-        <div class="progress-stats">
-          <small>
-            Progress: {{ ((rangeProgress.current / rangeProgress.total) * 100).toFixed(1) }}% 
-            ({{ rangeProgress.current }} of {{ rangeProgress.total }} processed)
-          </small>
-        </div>
-      </div>
-    </div>
-    
-    <div class="range-form" *ngIf="showRangeForm && !isProcessingRange">
-      <form [formGroup]="rangeForm" (ngSubmit)="onRangeSubmit()">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Start Number</label>
-            <input 
-              formControlName="startNumber" 
-              placeholder="73908498" 
-              class="form-control"
-              type="text">
-          </div>
-          <div class="form-group">
-            <label>End Number</label>
-            <input 
-              formControlName="endNumber" 
-              placeholder="73908517" 
-              class="form-control"
-              type="text">
-          </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-success" [disabled]="rangeForm.invalid || isProcessingRange">
-              Add Range
-            </button>
-          </div>
-        </div>
-        
-        <!-- Range Preview/Validation Feedback -->
-        <div class="range-preview" *ngIf="rangeForm.get('startNumber')?.value && rangeForm.get('endNumber')?.value">
-          <div class="alert" [class]="checkRangeOverlap().isPotentialTypo ? 'alert-danger' : (checkRangeOverlap().hasOverlap ? 'alert-warning' : 'alert-info')">
-            <strong>Range Preview:</strong>
-            <div class="mt-2">
-              <div>Total ULs in range: {{ checkRangeOverlap().totalCount.toLocaleString() }}</div>
-              
-              <!-- Typo Warning -->
-              <div *ngIf="checkRangeOverlap().isPotentialTypo" class="text-danger">
-                <i class="fas fa-exclamation-circle"></i>
-                <strong>POTENTIAL TYPO!</strong> This range seems unusually large.
-                <br>Did you mean: {{ checkRangeOverlap().typoSuggestion }}?
-              </div>
-              
-              <!-- Large range warning -->
-              <div *ngIf="checkRangeOverlap().totalCount > 100000 && !checkRangeOverlap().isPotentialTypo" class="text-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>EXTREMELY LARGE RANGE!</strong> This will be rejected (max: 50,000).
-              </div>
-              
-              <!-- Regular warnings for reasonable ranges -->
-              <div *ngIf="checkRangeOverlap().totalCount <= 100000">
-                <div *ngIf="checkRangeOverlap().totalCount > 1000" class="text-info">
-                  <i class="fas fa-info-circle"></i>
-                  Large range detected - will use background processing with progress indicator
+                <!-- Stats Cards -->
+                <div class="row g-3">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="mdi mdi-database text-primary me-2"></i>
+                                    <span class="h4 mb-0 fw-bold text-primary">{{ getStats().total }}</span>
+                                </div>
+                                <p class="text-muted mb-0 small">Total UL Numbers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="mdi mdi-check-circle text-success me-2"></i>
+                                    <span class="h4 mb-0 fw-bold text-success">{{ getStats().available }}</span>
+                                </div>
+                                <p class="text-muted mb-0 small">Available</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="mdi mdi-close-circle text-danger me-2"></i>
+                                    <span class="h4 mb-0 fw-bold text-danger">{{ getStats().used }}</span>
+                                </div>
+                                <p class="text-muted mb-0 small">Used</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="mdi mdi-chart-line text-info me-2"></i>
+                                    <span class="h4 mb-0 fw-bold text-info">{{ getStats().totalUsages }}</span>
+                                </div>
+                                <p class="text-muted mb-0 small">Total Usages</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div *ngIf="checkRangeOverlap().hasOverlap" class="text-warning">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  {{ checkRangeOverlap().overlapCount }} UL(s) already exist - will be skipped
-                </div>
-                <div *ngIf="checkRangeOverlap().newCount > 0" class="text-success">
-                  <i class="fas fa-check"></i>
-                  {{ checkRangeOverlap().newCount }} new UL(s) will be added
-                </div>
-                <div *ngIf="checkRangeOverlap().newCount === 0 && !checkRangeOverlap().isPotentialTypo" class="text-danger">
-                  <i class="fas fa-times"></i>
-                  All ULs in this range already exist
-                </div>
-              </div>
             </div>
-          </div>
         </div>
-      </form>
-    </div>
-  </div>
 
-  <!-- User Section - Select UL and Record Usage -->
-  <div class="user-section">
-    <h2>Users: Select UL and Record Usage</h2>
-    
-    <!-- Quick Select Next Available -->
-    <div class="quick-action" *ngIf="!selectedUL">
-      <button 
-        class="btn btn-outline-primary btn-lg" 
-        (click)="selectNextAvailable()"
-        [disabled]="getNextAvailableUL() === null">
-        Select Next Available UL: {{ getNextAvailableUL()?.ul_number || 'None Available' }}
-      </button>
-    </div>
+        <ul ngbNav #nav="ngbNav" class="nav-tabs">
+            <li ngbNavItem>
+                <button ngbNavLink>Record UL Usaged</button>
+                <ng-template ngbNavContent>
 
-    <!-- Selected UL and Usage Form -->
-    <div class="usage-form-section" *ngIf="selectedUL">
-      <div class="selected-ul">
-        <h3>Selected UL: {{ selectedUL.ul_number }}</h3>
-        <button class="btn btn-secondary" (click)="cancelUsage()">Cancel</button>
-      </div>
-      
-      <form [formGroup]="usageForm" (ngSubmit)="onUsageSubmit()" class="usage-form">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Serial Number *</label>
-            <input formControlName="serial_number" class="form-control" placeholder="Enter serial number">
-          </div>
-          
-          <div class="form-group">
-            <label>Quantity *</label>
-            <input formControlName="quantity" type="number" min="1" class="form-control">
-          </div>
-          
-          <div class="form-group">
-            <label>Date Used *</label>
-            <input formControlName="date_used" type="date" class="form-control">
-          </div>
-          
-          <div class="form-group">
-            <label>User Signature *</label>
-            <input formControlName="user_signature" class="form-control" placeholder="Your signature">
-          </div>
-          
-          <div class="form-group">
-            <label>Customer *</label>
-            <input formControlName="customer" class="form-control" placeholder="Customer name">
-          </div>
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn btn-success" [disabled]="usageForm.invalid">
-            Record Usage
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+                    <!-- User Section - Select UL and Record Usage -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-dark">
+                                                <i class="mdi mdi-account text-success me-2"></i>
+                                                User: Record UL Usage
+                                            </h5>
+                                            <p class="text-muted mb-0 small">Select and record usage for UL numbers</p>
+                                            <div class="mt-2">
+                                                <div class="d-flex align-items-center text-muted small">
+                                                    <i class="mdi mdi-account-circle me-2"></i>
+                                                    <span>Logged in as: <strong>{{ getCurrentUserDisplayName()
+                                                            }}</strong></span>
+                                                    <span *ngIf="getCurrentUserEmail()" class="ms-2 text-muted">({{
+                                                        getCurrentUserEmail() }})</span>
+                                                </div>
+                                                <div class="text-muted small mt-1">
+                                                    <i class="mdi mdi-information me-1"></i>
+                                                    Forms are automatically prefilled with your information
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-  <!-- Available ULs Table -->
-  <div class="table-section">
-    <h2>Available UL Numbers</h2>
-    <div class="table-container">
-      <table class="ul-table">
-        <thead>
-          <tr>
-            <th style="width:40px;"><input type="checkbox" (change)="toggleSelectAll($event)" /></th>
-            <th>UL Number</th>
-            <th>Status</th>
-            <th>Date Created</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let label of getAvailableLabels()" 
-              [class.selected]="selectedUL?.id === label.id">
-            <td><input type="checkbox" [checked]="selectedULIds.includes(label.id)" (change)="toggleSelect(label.id, $event)" /></td>
-            <td class="ul-number">{{ label.ul_number }}</td>
-            <td>
-              <span class="badge badge-success">{{ label.status }}</span>
-            </td>
-            <td>{{ label.dateCreated | date:'short' }}</td>
-            <td>
-              <button 
-                class="btn btn-sm btn-primary" 
-                (click)="selectUL(label)">
-                Select
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      
-      <div class="empty-state" *ngIf="getAvailableLabels().length === 0">
-        <p>No available UL numbers. Admin needs to add a range.</p>
-      </div>
-    </div>
-  </div>
+                                <div class="card-body">
+                                    <!-- Quick Select Next Available -->
+                                    <div *ngIf="!selectedUL" class="text-center py-4">
+                                        <div class="mb-3">
+                                            <i class="mdi mdi-magnify mdi-48px text-muted mb-3"></i>
+                                            <h6 class="text-muted">Quick Start</h6>
+                                        </div>
 
-  <div class="batch-actions" *ngIf="selectedULIds.length > 0">
-    <div class="form-inline">
-      <span>{{ selectedULIds.length }} selected</span>
-      <button class="btn btn-sm btn-success" (click)="openBatchModal(batchModal)">Record Batch Usage</button>
-      <button class="btn btn-sm btn-secondary" (click)="clearSelection()">Clear</button>
-    </div>
-  </div>
+                                        <!-- Quick Start Category Filter -->
+                                        <div class="row justify-content-center mb-4">
+                                            <div class="col-md-6 col-lg-4">
+                                                <label class="form-label fw-semibold small text-muted">Select from
+                                                    Category</label>
+                                                <select [(ngModel)]="quickStartCategoryFilter" class="form-select"
+                                                    (change)="onQuickStartCategoryChange()">
+                                                    <option value="">Any Category</option>
+                                                    <option value="Gaming">Gaming ({{ getCategoryCounts()['Gaming'] || 0
+                                                        }})</option>
+                                                    <option value="Other">Other ({{ getCategoryCounts()['Other'] || 0
+                                                        }})</option>
+                                                    <option value="no-category">No Category ({{
+                                                        getCategoryCounts()['no-category'] || 0 }})</option>
+                                                </select>
+                                            </div>
+                                        </div>
 
-  <!-- Recent Usages -->
-  <div class="usages-section" *ngIf="usages.length > 0">
-    <h2>Recent Usages</h2>
-    <div class="table-container">
-      <table class="ul-table">
-        <thead>
-          <tr>
-            <th>UL Number</th>
-            <th>Serial Number</th>
-            <th>Quantity</th>
-            <th>User</th>
-            <th>Customer</th>
-            <th>Date Used</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let usage of usages.slice(0, 10)">
-            <td>{{ usage.ul_number }}</td>
-            <td>{{ usage.serial_number }}</td>
-            <td>{{ usage.quantity }}</td>
-            <td>{{ usage.user_signature }}</td>
-            <td>{{ usage.customer }}</td>
-            <td>{{ usage.date_used | date:'short' }}</td>
-          </tr>
-        </tbody>
-      </table>
+                                        <button class="btn btn-outline-primary btn-lg d-flex align-items-center mx-auto"
+                                            (click)="selectNextAvailable()"
+                                            [disabled]="getNextAvailableFromQuickStart() === null">
+                                            <i class="mdi mdi-arrow-right me-2"></i>
+                                            <span *ngIf="!quickStartCategoryFilter">Select Next Available:</span>
+                                            <span *ngIf="quickStartCategoryFilter">Select Next {{
+                                                quickStartCategoryFilter === 'no-category' ? 'Uncategorized' :
+                                                quickStartCategoryFilter }}:</span>
+                                            <span class="fw-bold ms-2">
+                                                {{ getNextAvailableFromQuickStart()?.ul_number || 'None Available'
+                                                }}</span>
+                                        </button>
+
+                                        <!-- Quick info about selection -->
+                                        <div *ngIf="quickStartCategoryFilter && getQuickStartFilteredCount() > 0"
+                                            class="mt-3">
+                                            <small class="text-muted">
+                                                {{ getQuickStartFilteredCount() }} available in
+                                                <span class="badge bg-secondary-subtle text-secondary">
+                                                    {{ quickStartCategoryFilter === 'no-category' ? 'No Category' :
+                                                    quickStartCategoryFilter }}
+                                                </span>
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Selected UL and Usage Form -->
+                                    <div *ngIf="selectedUL">
+                                        <!-- Using the new record-usage-form component -->
+                                        <app-record-usage-form 
+                                            [selectedUL]="selectedUL"
+                                            (usageSubmitted)="onRecordUsageSubmit($event)"
+                                            (cancelled)="cancelUsage()">
+                                        </app-record-usage-form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available ULs Table -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-dark">
+                                                <i class="fas fa-list text-info me-2"></i>
+                                                Available UL Numbers
+                                            </h5>
+                                            <p class="text-muted mb-0 small">Select one or more UL numbers to record
+                                                usage
+                                            </p>
+                                        </div>
+                                        <span class="badge bg-info fs-6 px-3 py-2">{{
+                                            getFilteredAvailableLabels().length }}
+                                            Available</span>
+                                    </div>
+
+                                    <!-- Category Filter -->
+                                    <div class="row mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold small">Filter by Category</label>
+                                            <select [(ngModel)]="availableULCategoryFilter"
+                                                class="form-select form-select-sm" (change)="onCategoryFilterChange()">
+                                                <option value="">All Categories ({{ getAvailableLabels().length }})
+                                                </option>
+                                                <option value="Gaming">Gaming ({{ getCategoryCounts()['Gaming'] || 0 }})
+                                                </option>
+                                                <option value="Other">Other ({{ getCategoryCounts()['Other'] || 0 }})
+                                                </option>
+                                                <option value="no-category">No Category ({{
+                                                    getCategoryCounts()['no-category'] || 0 }})</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-body p-0">
+                                    <!-- Batch Actions -->
+                                    <div *ngIf="selectedULIds.length > 0" class="bg-light border-bottom px-3 py-2">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                <span class="fw-semibold">{{ selectedULIds.length }} UL(s)
+                                                    selected</span>
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-success" (click)="openBatchModal(batchModal)">
+                                                    <i class="fas fa-edit me-1"></i>Record Batch Usage
+                                                </button>
+                                                <button class="btn btn-outline-secondary" (click)="clearSelection()">
+                                                    <i class="fas fa-times me-1"></i>Clear
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-center" style="width:50px;">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                (change)="toggleSelectAll($event)">
+                                                        </div>
+                                                    </th>
+                                                    <th class="fw-semibold text-center">UL Number</th>
+                                                    <th class="fw-semibold text-center">Category</th>
+                                                    <th class="fw-semibold text-center">Status</th>
+                                                    <th class="fw-semibold text-center">Date Created</th>
+                                                    <th class="fw-semibold text-center" style="width:120px;">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let label of getFilteredAvailableLabels()"
+                                                    [class.table-primary]="selectedUL?.id === label.id">
+                                                    <td class="text-center">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                [checked]="selectedULIds.includes(label.id)"
+                                                                (change)="toggleSelect(label.id, $event)">
+                                                        </div>
+                                                    </td>
+                                                    <td class="fw-bold text-dark text-center">{{ label.ul_number }}</td>
+                                                    <td class="text-center">
+                                                        <span *ngIf="label.category"
+                                                            class="badge bg-secondary-subtle text-secondary border-secondary">
+                                                            {{ label.category }}
+                                                        </span>
+                                                        <span *ngIf="!label.category"
+                                                            class="text-muted fst-italic small">No category</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span
+                                                            class="badge bg-success-subtle text-success border border-success">
+                                                            <i class="fas fa-check-circle me-1"></i>{{ label.status }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-muted text-center">{{ label.dateCreated |
+                                                        date:'short' }}</td>
+                                                    <td class="text-center">
+                                                        <button class="btn btn-sm btn-outline-primary"
+                                                            (click)="selectUL(label)">
+                                                            <i class="fas fa-arrow-right me-1"></i>Select
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Empty State -->
+                                        <div *ngIf="getFilteredAvailableLabels().length === 0" class="text-center py-5">
+                                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                            <h6 class="text-muted">
+                                                <span *ngIf="!availableULCategoryFilter">No Available UL Numbers</span>
+                                                <span *ngIf="availableULCategoryFilter">No Available UL Numbers in "{{
+                                                    availableULCategoryFilter }}" Category</span>
+                                            </h6>
+                                            <p class="text-muted small mb-0">
+                                                <span *ngIf="!availableULCategoryFilter">Admin needs to add a UL range
+                                                    to get started.</span>
+                                                <span *ngIf="availableULCategoryFilter">Try selecting a different
+                                                    category or clear the filter.</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Usages -->
+                    <div class="row mb-4" *ngIf="usages.length > 0">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-dark">
+                                                <i class="fas fa-history text-warning me-2"></i>
+                                                Recent Usages
+                                            </h5>
+                                            <p class="text-muted mb-0 small">Latest UL number usage records</p>
+                                        </div>
+                                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ usages.length }}
+                                            Total</span>
+                                    </div>
+                                </div>
+
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="fw-semibold">UL Number</th>
+                                                    <th class="fw-semibold">Serial Number</th>
+                                                    <th class="fw-semibold text-center">Qty</th>
+                                                    <th class="fw-semibold">User</th>
+                                                    <th class="fw-semibold">Customer</th>
+                                                    <th class="fw-semibold">Date Used</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let usage of usages.slice(0, 10)">
+                                                    <td class="fw-bold text-dark">{{ usage.ul_number }}</td>
+                                                    <td class="font-monospace">{{ usage.serial_number }}</td>
+                                                    <td class="text-center">
+                                                        <span
+                                                            class="badge bg-primary-subtle text-primary border border-primary">{{
+                                                            usage.quantity }}</span>
+                                                    </td>
+                                                    <td>{{ usage.user_signature }}</td>
+                                                    <td>{{ usage.customer }}</td>
+                                                    <td class="text-muted">{{ usage.date_used | date:'short' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ng-template>
+            </li>
+            <li ngbNavItem>
+                <button ngbNavLink>UL Management</button>
+                <ng-template ngbNavContent>
+
+                    <!-- Admin Section - Add UL Range -->
+                    <div class="row mb-4">
+                        <div class="col-12 mx-auto">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-dark">
+                                                <i class="mdi mdi-cog text-primary me-2"></i>
+                                                Admin: UL Range Management
+                                            </h5>
+                                            <p class="text-muted mb-0 small">Add new UL number ranges to the inventory
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-body" *ngIf="showRangeForm || isProcessingRange">
+                                    <!-- Progress Indicator for Large Ranges -->
+                                    <div *ngIf="isProcessingRange" class="mb-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="spinner-border spinner-border-sm text-primary me-3"
+                                                role="status">
+                                                <span class="visually-hidden">Processing...</span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">Processing UL Range...</h6>
+                                                <p class="text-muted mb-0 small">{{ rangeProgress.message }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar bg-primary"
+                                                [style.width.%]="(rangeProgress.current / rangeProgress.total) * 100"
+                                                role="progressbar">
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-muted">
+                                                {{ rangeProgress.current }} of {{ rangeProgress.total }} processed
+                                            </small>
+                                            <small class="text-muted">
+                                                {{ ((rangeProgress.current / rangeProgress.total) * 100).toFixed(1) }}%
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Range Form -->
+                                    <div *ngIf="showRangeForm && !isProcessingRange">
+                                        <div class="mx-auto">
+                                            <form [formGroup]="rangeForm" (ngSubmit)="onRangeSubmit()">
+                                                <div class="row g-3 mx-auto">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-semibold">
+                                                            Prefix (Optional)
+                                                            <i class="mdi mdi-information text-muted ms-1"
+                                                                data-bs-toggle="tooltip"
+                                                                title="Optional prefix for UL numbers (e.g., T7 for T75096553)"></i>
+                                                        </label>
+                                                        <input formControlName="prefix" placeholder="e.g., T7"
+                                                            class="form-control" type="text">
+                                                        <div class="form-text">UL number prefix</div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-semibold">
+                                                            Start Number
+                                                            <i class="mdi mdi-information text-muted ms-1"
+                                                                data-bs-toggle="tooltip"
+                                                                title="Enter the first numeric part (e.g., 5096553 for T75096553)"></i>
+                                                        </label>
+                                                        <input formControlName="startNumber" placeholder="e.g., 5096553"
+                                                            class="form-control" type="text">
+                                                        <div class="form-text">First number in range</div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label fw-semibold">
+                                                            End Number
+                                                            <i class="mdi mdi-information text-muted ms-1"
+                                                                data-bs-toggle="tooltip"
+                                                                title="Enter the last numeric part (e.g., 5096558 for T75096558)"></i>
+                                                        </label>
+                                                        <input formControlName="endNumber" placeholder="e.g., 5096558"
+                                                            class="form-control" type="text">
+                                                        <div class="form-text">Last number in range</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Description Field -->
+                                                <div class="row g-3 mt-2">
+                                                    <div class="col-md-8">
+                                                        <label class="form-label fw-semibold">
+                                                            Description (Optional)
+                                                            <i class="mdi mdi-information text-muted ms-1"
+                                                                data-bs-toggle="tooltip"
+                                                                title="Optional description for this UL range"></i>
+                                                        </label>
+                                                        <textarea formControlName="description" class="form-control"
+                                                            rows="2"
+                                                            placeholder="e.g., Gaming machine UL labels for Q1 2025"></textarea>
+                                                        <div class="form-text">Description for this UL range</div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-semibold">
+                                                            Category (Optional)
+                                                            <i class="mdi mdi-information text-muted ms-1"
+                                                                data-bs-toggle="tooltip"
+                                                                title="Category for organizing UL numbers"></i>
+                                                        </label>
+                                                        <select formControlName="category" class="form-select">
+                                                            <option value="">Select Category...</option>
+                                                            <option value="Gaming">Gaming</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                        <div class="form-text">UL category type</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Range Preview/Validation Feedback -->
+                                                <div *ngIf="rangeForm.get('startNumber')?.value && rangeForm.get('endNumber')?.value"
+                                                    class="mt-3">
+                                                    <div class="alert mb-0"
+                                                        [class]="checkRangeOverlap().isPotentialTypo ? 'alert-danger' : (checkRangeOverlap().hasOverlap ? 'alert-warning' : 'alert-info')">
+                                                        <div class="d-flex align-items-start">
+                                                            <i class="mdi me-2 mt-1"
+                                                                [class.mdi-alert-circle]="checkRangeOverlap().isPotentialTypo"
+                                                                [class.mdi-alert-triangle]="checkRangeOverlap().hasOverlap && !checkRangeOverlap().isPotentialTypo"
+                                                                [class.mdi-information]="!checkRangeOverlap().hasOverlap && !checkRangeOverlap().isPotentialTypo"></i>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="alert-heading mb-2">Range Analysis</h6>
+                                                                <p class="mb-2"><strong>Total ULs in range:</strong> {{
+                                                                    checkRangeOverlap().totalCount.toLocaleString() }}
+                                                                </p>
+
+                                                                <!-- Typo Warning -->
+                                                                <div *ngIf="checkRangeOverlap().isPotentialTypo"
+                                                                    class="mb-2">
+                                                                    <strong class="text-danger">POTENTIAL TYPO
+                                                                        DETECTED!</strong><br>
+                                                                    <small>This range seems unusually large. Did you
+                                                                        mean:
+                                                                        <strong>{{
+                                                                            checkRangeOverlap().typoSuggestion
+                                                                            }}</strong>?</small>
+                                                                </div>
+
+                                                                <!-- Large range warning -->
+                                                                <div *ngIf="checkRangeOverlap().totalCount > 100000 && !checkRangeOverlap().isPotentialTypo"
+                                                                    class="mb-2">
+                                                                    <strong class="text-danger">EXTREMELY LARGE
+                                                                        RANGE!</strong><br>
+                                                                    <small>This will be rejected (maximum: 50,000 ULs
+                                                                        per
+                                                                        batch).</small>
+                                                                </div>
+
+                                                                <!-- Regular feedback for reasonable ranges -->
+                                                                <div *ngIf="checkRangeOverlap().totalCount <= 100000"
+                                                                    class="small">
+                                                                    <div *ngIf="checkRangeOverlap().totalCount > 1000"
+                                                                        class="mb-1">
+                                                                        <i class="mdi mdi-clock text-info me-1"></i>
+                                                                        Large range - will use background processing
+                                                                        with
+                                                                        progress indicator
+                                                                    </div>
+                                                                    <div *ngIf="checkRangeOverlap().hasOverlap"
+                                                                        class="mb-1">
+                                                                        <i
+                                                                            class="mdi mdi-alert-triangle text-warning me-1"></i>
+                                                                        {{ checkRangeOverlap().overlapCount }} UL(s)
+                                                                        already
+                                                                        exist and will
+                                                                        be skipped
+                                                                    </div>
+                                                                    <div *ngIf="checkRangeOverlap().newCount > 0"
+                                                                        class="mb-1">
+                                                                        <i class="mdi mdi-check text-success me-1"></i>
+                                                                        {{ checkRangeOverlap().newCount }} new UL(s)
+                                                                        will be
+                                                                        added
+                                                                    </div>
+                                                                    <div
+                                                                        *ngIf="checkRangeOverlap().newCount === 0 && !checkRangeOverlap().isPotentialTypo">
+                                                                        <i class="mdi mdi-close text-danger me-1"></i>
+                                                                        All ULs in this range already exist
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Footer with Add UL Range Button -->
+                                <div class="card-footer bg-light border-top text-end py-3">
+                                    <button class="btn btn-primary mx-auto me-2"
+                                        (click)="showRangeForm = !showRangeForm" [disabled]="isProcessingRange"
+                                        type="button">
+                                        <i class="mdi" [class.mdi-plus]="!showRangeForm"
+                                            [class.mdi-close]="showRangeForm" class="me-2"></i>
+                                        {{ showRangeForm ? 'Cancel' : 'Add UL Range' }}
+                                    </button>
+                                    @if(showRangeForm){
+                                    <button type="submit" (click)="onRangeSubmit()" class="btn btn-success"
+                                        [disabled]="rangeForm.invalid || isProcessingRange">
+                                        <i class="mdi mdi-plus me-2"></i>
+                                        Add Range
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin UL Management Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-1 fw-bold text-dark">
+                                                <i class="mdi mdi-format-list-bulleted text-warning me-2"></i>
+                                                Admin: Manage UL Numbers
+                                            </h5>
+                                            <p class="text-muted mb-0 small">View, edit, and manage all UL numbers in
+                                                the
+                                                system</p>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-outline-primary btn-sm d-flex align-items-center"
+                                                (click)="exportULs()">
+                                                <i class="mdi mdi-download me-1"></i>
+                                                Export
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                                                (click)="refreshULList()">
+                                                <i class="mdi mdi-refresh me-1"></i>
+                                                Refresh
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <!-- Search and Filter Controls -->
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold small">Search UL Numbers</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="mdi mdi-magnify text-muted"></i>
+                                                </span>
+                                                <input type="text" class="form-control"
+                                                    placeholder="Search by UL number..." [(ngModel)]="adminSearchTerm"
+                                                    (input)="filterULs()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold small">Filter by Status</label>
+                                            <select class="form-select" [(ngModel)]="adminStatusFilter"
+                                                (change)="filterULs()">
+                                                <option value="">All Status</option>
+                                                <option value="available">Available</option>
+                                                <option value="used">Used</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold small">Items per Page</label>
+                                            <select class="form-select" [(ngModel)]="adminPageSize"
+                                                (change)="updatePagination()">
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                                <option value="250">250</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold small">Actions</label>
+                                            <div class="d-grid">
+                                                <button class="btn btn-outline-danger btn-sm"
+                                                    [disabled]="selectedAdminULs.length === 0"
+                                                    (click)="bulkDeleteULs()">
+                                                    <i class="mdi mdi-delete me-1"></i>
+                                                    Delete ({{ selectedAdminULs.length }})
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Results Summary -->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="text-muted small">
+                                            Showing {{ getDisplayedULs().length }} of {{ getFilteredULs().length }} UL
+                                            numbers
+                                            <span *ngIf="adminSearchTerm || adminStatusFilter">
+                                                (filtered from {{ labels.length }} total)
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2"
+                                            *ngIf="selectedAdminULs.length > 0">
+                                            <span class="badge bg-primary">{{ selectedAdminULs.length }} selected</span>
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                (click)="clearAdminSelection()">
+                                                <i class="mdi mdi-close me-1"></i>Clear
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- UL Management Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th class="text-center" style="width:50px;">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                [checked]="areAllDisplayedULsSelected()"
+                                                                [indeterminate]="isSomeULsSelected()"
+                                                                (change)="toggleSelectAllDisplayed($event)">
+                                                        </div>
+                                                    </th>
+                                                    <th class="fw-semibold text-center">
+                                                        <button
+                                                            class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
+                                                            (click)="sortULs('ul_number')">
+                                                            UL Number
+                                                            <i class="mdi mdi-chevron-up"
+                                                                *ngIf="adminSortField === 'ul_number' && adminSortDirection === 'asc'"></i>
+                                                            <i class="mdi mdi-chevron-down"
+                                                                *ngIf="adminSortField === 'ul_number' && adminSortDirection === 'desc'"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th class="fw-semibold text-center">
+                                                        <button
+                                                            class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
+                                                            (click)="sortULs('description')">
+                                                            Description
+                                                            <i class="mdi mdi-chevron-up"
+                                                                *ngIf="adminSortField === 'description' && adminSortDirection === 'asc'"></i>
+                                                            <i class="mdi mdi-chevron-down"
+                                                                *ngIf="adminSortField === 'description' && adminSortDirection === 'desc'"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th class="fw-semibold">
+                                                        <button
+                                                            class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
+                                                            (click)="sortULs('category')">
+                                                            Category
+                                                            <i class="mdi mdi-chevron-up"
+                                                                *ngIf="adminSortField === 'category' && adminSortDirection === 'asc'"></i>
+                                                            <i class="mdi mdi-chevron-down"
+                                                                *ngIf="adminSortField === 'category' && adminSortDirection === 'desc'"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th class="fw-semibold">
+                                                        <button
+                                                            class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
+                                                            (click)="sortULs('status')">
+                                                            Status
+                                                            <i class="mdi mdi-chevron-up"
+                                                                *ngIf="adminSortField === 'status' && adminSortDirection === 'asc'"></i>
+                                                            <i class="mdi mdi-chevron-down"
+                                                                *ngIf="adminSortField === 'status' && adminSortDirection === 'desc'"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th class="fw-semibold">
+                                                        <button
+                                                            class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold"
+                                                            (click)="sortULs('dateCreated')">
+                                                            Date Created
+                                                            <i class="mdi mdi-chevron-up"
+                                                                *ngIf="adminSortField === 'dateCreated' && adminSortDirection === 'asc'"></i>
+                                                            <i class="mdi mdi-chevron-down"
+                                                                *ngIf="adminSortField === 'dateCreated' && adminSortDirection === 'desc'"></i>
+                                                        </button>
+                                                    </th>
+                                                    <th class="fw-semibold">Date Used</th>
+                                                    <th class="fw-semibold">Usage Details</th>
+                                                    <th class="fw-semibold text-center" style="width:140px;">Actions
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let label of getDisplayedULs(); trackBy: trackByULId"
+                                                    [class.table-warning]="selectedAdminULs.includes(label.id)">
+                                                    <td>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox"
+                                                                [checked]="selectedAdminULs.includes(label.id)"
+                                                                (change)="toggleAdminSelect(label.id, $event)">
+                                                        </div>
+                                                    </td>
+                                                    <td class="fw-bold text-dark font-monospace">{{ label.ul_number }}
+                                                    </td>
+                                                    <td class="text-muted small">
+                                                        <span *ngIf="label.description"
+                                                            class="text-truncate d-inline-block"
+                                                            style="max-width: 200px;" [title]="label.description">
+                                                            {{ label.description }}
+                                                        </span>
+                                                        <span *ngIf="!label.description"
+                                                            class="text-muted fst-italic">No description</span>
+                                                    </td>
+                                                    <td class="text-muted small">
+                                                        <span *ngIf="label.category"
+                                                            class="badge bg-secondary-subtle text-secondary border-secondary">
+                                                            {{ label.category }}
+                                                        </span>
+                                                        <span *ngIf="!label.category" class="text-muted fst-italic">No
+                                                            category</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge"
+                                                            [class.bg-success-subtle]="label.status === 'available'"
+                                                            [class.text-success]="label.status === 'available'"
+                                                            [class.border-success]="label.status === 'available'"
+                                                            [class.bg-danger-subtle]="label.status === 'used'"
+                                                            [class.text-danger]="label.status === 'used'"
+                                                            [class.border-danger]="label.status === 'used'"
+                                                            [class.border]="true">
+                                                            <i class="mdi"
+                                                                [class.mdi-check-circle]="label.status === 'available'"
+                                                                [class.mdi-close-circle]="label.status === 'used'"
+                                                                class="me-1"></i>
+                                                            {{ label.status }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-muted">{{ label.dateCreated | date:'short' }}</td>
+                                                    <td class="text-muted">
+                                                        <span *ngIf="label.dateUsed">{{ label.dateUsed | date:'short'
+                                                            }}</span>
+                                                        <span *ngIf="!label.dateUsed" class="text-muted">—</span>
+                                                    </td>
+                                                    <td class="small">
+                                                        <div *ngIf="getULUsage(label.ul_number) as usage">
+                                                            <div><strong>Serial:</strong> {{ usage.serial_number }}
+                                                            </div>
+                                                            <div><strong>User:</strong> {{ usage.user_signature }}</div>
+                                                            <div><strong>Customer:</strong> {{ usage.customer }}</div>
+                                                        </div>
+                                                        <span *ngIf="!getULUsage(label.ul_number)" class="text-muted">No
+                                                            usage
+                                                            data</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="btn-group btn-group-sm">
+                                                            <button class="btn btn-outline-primary"
+                                                                (click)="openEditModal(label, editULModal)"
+                                                                data-bs-toggle="tooltip" title="Edit UL">
+                                                                <i class="mdi mdi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-info"
+                                                                (click)="openHistoryModal(label, ulHistoryModal)"
+                                                                data-bs-toggle="tooltip" title="View History">
+                                                                <i class="mdi mdi-history"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger"
+                                                                (click)="deleteUL(label)" data-bs-toggle="tooltip"
+                                                                title="Delete UL">
+                                                                <i class="mdi mdi-delete"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Empty State -->
+                                        <div *ngIf="getDisplayedULs().length === 0" class="text-center py-5">
+                                            <i class="mdi mdi-database-off mdi-48px text-muted mb-3"></i>
+                                            <h6 class="text-muted">No UL Numbers Found</h6>
+                                            <p class="text-muted small mb-0">
+                                                <span *ngIf="adminSearchTerm || adminStatusFilter">
+                                                    Try adjusting your search or filter criteria.
+                                                </span>
+                                                <span *ngIf="!adminSearchTerm && !adminStatusFilter">
+                                                    Add some UL ranges to get started.
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <nav *ngIf="getTotalPages() > 1" class="mt-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="text-muted small">
+                                                Page {{ adminCurrentPage }} of {{ getTotalPages() }}
+                                            </div>
+                                            <ul class="pagination pagination-sm mb-0">
+                                                <li class="page-item" [class.disabled]="adminCurrentPage === 1">
+                                                    <button class="page-link" (click)="goToPage(1)"
+                                                        [disabled]="adminCurrentPage === 1">
+                                                        <i class="mdi mdi-chevron-double-left"></i>
+                                                    </button>
+                                                </li>
+                                                <li class="page-item" [class.disabled]="adminCurrentPage === 1">
+                                                    <button class="page-link" (click)="goToPage(adminCurrentPage - 1)"
+                                                        [disabled]="adminCurrentPage === 1">
+                                                        <i class="mdi mdi-chevron-left"></i>
+                                                    </button>
+                                                </li>
+
+                                                <li *ngFor="let page of getVisiblePages()" class="page-item"
+                                                    [class.active]="page === adminCurrentPage">
+                                                    <button class="page-link" (click)="goToPage(page)">{{ page
+                                                        }}</button>
+                                                </li>
+
+                                                <li class="page-item"
+                                                    [class.disabled]="adminCurrentPage === getTotalPages()">
+                                                    <button class="page-link" (click)="goToPage(adminCurrentPage + 1)"
+                                                        [disabled]="adminCurrentPage === getTotalPages()">
+                                                        <i class="mdi mdi-chevron-right"></i>
+                                                    </button>
+                                                </li>
+                                                <li class="page-item"
+                                                    [class.disabled]="adminCurrentPage === getTotalPages()">
+                                                    <button class="page-link" (click)="goToPage(getTotalPages())"
+                                                        [disabled]="adminCurrentPage === getTotalPages()">
+                                                        <i class="mdi mdi-chevron-double-right"></i>
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ng-template>
+            </li>
+        </ul>
+        <div [ngbNavOutlet]="nav" class="py-3"></div>
+
     </div>
-  </div>
 </div>
 
 <!-- Batch Usage Modal (ng-bootstrap) -->
 <ng-template #batchModal let-modal>
-  <div class="modal-header">
-    <h4 class="modal-title">Record Batch Usage ({{ selectedULIds.length }} ULs)</h4>
-    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss()">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  <div class="modal-body">
-    <div class="alert alert-info mb-3">
-      <small>Recording usage for {{ selectedULIds.length }} selected ULs. Enter details for each UL below.</small>
-    </div>
-    
-    <div class="ul-forms-container">
-      <div *ngFor="let ulId of selectedULIds; let i = index" class="ul-form-card mb-4">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">UL #{{ getULById(ulId)?.ul_number }} ({{ i + 1 }} of {{ selectedULIds.length }})</h5>
-          </div>
-          <div class="card-body">
-            <form [formGroup]="batchForms[ulId]">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label>Serial Number *</label>
-                    <input formControlName="serial_number" class="form-control" placeholder="Enter Eyefi serial number" />
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-group">
-                    <label>Quantity *</label>
-                    <input formControlName="quantity" type="number" min="1" class="form-control" />
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label>Date Used *</label>
-                    <input formControlName="date_used" type="date" class="form-control" />
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label>User Signature *</label>
-                    <input formControlName="user_signature" class="form-control" placeholder="User signature" />
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-group">
-                    <label>Customer *</label>
-                    <input formControlName="customer" class="form-control" placeholder="Customer name" />
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
+    <div class="modal-header border-bottom-0 pb-0">
+        <div>
+            <h4 class="modal-title fw-bold">
+                <i class="fas fa-edit text-success me-2"></i>
+                Record Batch Usage
+            </h4>
+            <p class="text-muted mb-0 small">Processing {{ selectedULIds.length }} selected UL numbers</p>
         </div>
-      </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
     </div>
-    
-    <div class="modal-actions">
-      <button type="button" class="btn btn-success" (click)="submitBatchUsage()">Record All Usage</button>
-      <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+
+    <div class="modal-body">
+        <div class="alert alert-info d-flex align-items-start mb-4">
+            <i class="fas fa-info-circle me-3 mt-1"></i>
+            <div>
+                <strong>Batch Usage Recording</strong><br>
+                <div class="small mt-1">
+                    Record usage for {{ selectedULIds.length }} selected UL numbers. Each UL can have different usage
+                    details.
+                    Complete all required fields (*) for each UL before submitting.
+                </div>
+                <div class="small mt-2 text-primary">
+                    <i class="fas fa-user-circle me-1"></i>
+                    <span>Recording as: <strong>{{ getCurrentUserDisplayName() }}</strong></span>
+                    <span class="text-muted ms-2">(forms prefilled with your information)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ul-forms-container">
+            <div *ngFor="let ulId of selectedULIds; let i = index" class="mb-3">
+                <div class="card border">
+                    <div class="card-header bg-light py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold text-dark">
+                                <i class="fas fa-tag text-primary me-2"></i>
+                                UL #{{ getULById(ulId)?.ul_number }}
+                            </h6>
+                            <span class="badge bg-primary">{{ i + 1 }} of {{ selectedULIds.length }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body py-3">
+                        <form [formGroup]="batchForms[ulId]">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        Serial Number *
+                                        <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                            title="Enter the device serial number for this UL"></i>
+                                    </label>
+                                    <input formControlName="serial_number" class="form-control form-control-sm"
+                                        placeholder="e.g., EYE12345ABC">
+                                    <div class="form-text small">Device or component serial number</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        Quantity *
+                                        <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                            title="Number of units used (must be 1 or greater)"></i>
+                                    </label>
+                                    <input formControlName="quantity" type="number" min="1"
+                                        class="form-control form-control-sm" placeholder="1">
+                                    <div class="form-text small">Units consumed</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">
+                                        Date Used *
+                                        <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                            title="When this UL was used or consumed"></i>
+                                    </label>
+                                    <input formControlName="date_used" type="date" class="form-control form-control-sm">
+                                    <div class="form-text small">Usage date</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">
+                                        User Signature *
+                                        <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                            title="Name or signature of the person using this UL"></i>
+                                    </label>
+                                    <input formControlName="user_signature" class="form-control form-control-sm"
+                                        placeholder="e.g., John Smith">
+                                    <div class="form-text small">Person using this UL</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">
+                                        Customer *
+                                        <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                            title="Customer or project where this UL is being used"></i>
+                                    </label>
+                                    <input formControlName="customer" class="form-control form-control-sm"
+                                        placeholder="e.g., Acme Corp">
+                                    <div class="form-text small">Customer or project name</div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-success d-flex align-items-center" (click)="submitBatchUsage()">
+            <i class="fas fa-save me-2"></i>
+            Record All Usage
+        </button>
+        <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="modal.dismiss()">
+            <i class="fas fa-times me-2"></i>
+            Cancel
+        </button>
+    </div>
+</ng-template>
+
+<!-- Edit UL Modal -->
+<ng-template #editULModal let-modal>
+    <div class="modal-header border-bottom-0 pb-0">
+        <div>
+            <h4 class="modal-title fw-bold">
+                <i class="mdi mdi-pencil text-primary me-2"></i>
+                Edit UL Number
+            </h4>
+            <p class="text-muted mb-0 small">Modify UL number details and status</p>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+    </div>
+
+    <div class="modal-body" *ngIf="editingUL">
+        <div class="alert alert-warning d-flex align-items-start mb-4">
+            <i class="mdi mdi-alert-triangle me-3 mt-1"></i>
+            <div>
+                <strong>Important!</strong><br>
+                <div class="small mt-1">
+                    Editing UL numbers should be done carefully. Changes to used ULs may affect historical records.
+                    Always verify the information before saving.
+                </div>
+            </div>
+        </div>
+
+        <form [formGroup]="editULForm">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        UL Number *
+                        <i class="mdi mdi-information text-muted ms-1" data-bs-toggle="tooltip"
+                            title="The UL number identifier"></i>
+                    </label>
+                    <input formControlName="ul_number" class="form-control font-monospace" placeholder="e.g., 73908498">
+                    <div class="form-text">Unique UL identifier</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        Status *
+                        <i class="mdi mdi-information text-muted ms-1" data-bs-toggle="tooltip"
+                            title="Current status of the UL number"></i>
+                    </label>
+                    <select formControlName="status" class="form-select">
+                        <option value="available">Available</option>
+                        <option value="used">Used</option>
+                    </select>
+                    <div class="form-text">Current UL status</div>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">
+                        Description
+                        <i class="mdi mdi-information text-muted ms-1" data-bs-toggle="tooltip"
+                            title="Optional description for this UL"></i>
+                    </label>
+                    <textarea formControlName="description" class="form-control" rows="2"
+                        placeholder="e.g., Gaming machine UL labels for Q1 2025"></textarea>
+                    <div class="form-text">Description for this UL</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        Category
+                        <i class="mdi mdi-information text-muted ms-1" data-bs-toggle="tooltip"
+                            title="Category for organizing UL numbers"></i>
+                    </label>
+                    <select formControlName="category" class="form-select">
+                        <option value="">Select Category...</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="form-text">UL category type</div>
+                </div>
+
+                <div class="col-12" *ngIf="editULForm.get('status')?.value === 'used'">
+                    <div class="card bg-light">
+                        <div class="card-header py-2">
+                            <h6 class="mb-0 fw-semibold">Usage Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Serial Number</label>
+                                    <input formControlName="serial_number" class="form-control form-control-sm"
+                                        placeholder="e.g., EYE12345ABC">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Quantity</label>
+                                    <input formControlName="quantity" type="number" min="1"
+                                        class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Date Used</label>
+                                    <input formControlName="date_used" type="date" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">User Signature</label>
+                                    <input formControlName="user_signature" class="form-control form-control-sm"
+                                        placeholder="e.g., John Smith">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Customer</label>
+                                    <input formControlName="customer" class="form-control form-control-sm"
+                                        placeholder="e.g., Acme Corp">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-primary d-flex align-items-center" (click)="saveULEdit()">
+            <i class="mdi mdi-content-save me-2"></i>
+            Save Changes
+        </button>
+        <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="modal.dismiss()">
+            <i class="mdi mdi-close me-2"></i>
+            Cancel
+        </button>
+    </div>
+</ng-template>
+
+<!-- UL History Modal -->
+<ng-template #ulHistoryModal let-modal>
+    <div class="modal-header border-bottom-0 pb-0">
+        <div>
+            <h4 class="modal-title fw-bold">
+                <i class="mdi mdi-history text-info me-2"></i>
+                UL Number History
+            </h4>
+            <p class="text-muted mb-0 small" *ngIf="selectedULForHistory">
+                Complete history for UL #{{ selectedULForHistory.ul_number }}
+            </p>
+        </div>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedULForHistory">
+        <!-- UL Details Card -->
+        <div class="card mb-4">
+            <div class="card-header py-2">
+                <h6 class="mb-0 fw-semibold d-flex align-items-center">
+                    <i class="mdi mdi-information me-2"></i>
+                    UL Details
+                </h6>
+            </div>
+            <div class="card-body py-3">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <strong class="small text-muted">UL Number:</strong><br>
+                        <span class="font-monospace">{{ selectedULForHistory.ul_number }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="small text-muted">Current Status:</strong><br>
+                        <span class="badge" [class.bg-success-subtle]="selectedULForHistory.status === 'available'"
+                            [class.text-success]="selectedULForHistory.status === 'available'"
+                            [class.bg-danger-subtle]="selectedULForHistory.status === 'used'"
+                            [class.text-danger]="selectedULForHistory.status === 'used'">
+                            {{ selectedULForHistory.status }}
+                        </span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong class="small text-muted">Date Created:</strong><br>
+                        <span>{{ selectedULForHistory.dateCreated | date:'medium' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage History -->
+        <div class="card">
+            <div class="card-header py-2">
+                <h6 class="mb-0 fw-semibold d-flex align-items-center">
+                    <i class="mdi mdi-format-list-bulleted me-2"></i>
+                    Usage History
+                </h6>
+            </div>
+            <div class="card-body py-0">
+                <div *ngIf="getULUsageHistory(selectedULForHistory.ul_number).length > 0; else noHistory">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="fw-semibold small">Date Used</th>
+                                    <th class="fw-semibold small">Serial Number</th>
+                                    <th class="fw-semibold small text-center">Qty</th>
+                                    <th class="fw-semibold small">User</th>
+                                    <th class="fw-semibold small">Customer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let usage of getULUsageHistory(selectedULForHistory.ul_number)">
+                                    <td class="small">{{ usage.date_used | date:'short' }}</td>
+                                    <td class="small font-monospace">{{ usage.serial_number }}</td>
+                                    <td class="small text-center">{{ usage.quantity }}</td>
+                                    <td class="small">{{ usage.user_signature }}</td>
+                                    <td class="small">{{ usage.customer }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <ng-template #noHistory>
+                    <div class="text-center py-4">
+                        <i class="mdi mdi-clock-outline mdi-48px text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No usage history available</p>
+                        <small class="text-muted">This UL number has not been used yet.</small>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary d-flex align-items-center" (click)="modal.dismiss()">
+            <i class="mdi mdi-close me-2"></i>
+            Close
+        </button>
+    </div>
 </ng-template>

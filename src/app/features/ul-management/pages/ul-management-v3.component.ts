@@ -1,13 +1,19 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgbModule, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { faker } from '@faker-js/faker';
+import { AuthenticationService } from '@app/core/services/auth.service';
+import { RecordUsageFormComponent } from '../components/record-usage-form/record-usage-form.component';
 
 export interface ULLabel {
   id: number;
   ul_number: string;
+  prefix?: string; // Optional prefix like "T7"
+  numeric_part: number; // Numeric part for sorting
+  description?: string; // Optional description of the UL label
+  category?: string; // Optional category like "Gaming", "Kiosk", "ATM"
   status: 'available' | 'used';
   dateCreated: Date;
   dateUsed?: Date;
@@ -26,7 +32,7 @@ export interface ULUsage {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, NgbModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, NgbModule, RecordUsageFormComponent],
   selector: 'app-ul-management-v3',
   templateUrl: './ul-management-v3.component.html',
   styleUrls: ['./ul-management-v3.component.scss']
@@ -53,18 +59,65 @@ export class ULManagementV3Component implements OnInit {
   rangeProgress = { current: 0, total: 0, message: '' };
   batchUsageForm: FormGroup;
   
-  constructor(private fb: FormBuilder, private modalService: NgbModal) {
+  // Current user from auth service
+  currentUser: any = null;
+  
+  // Admin UL Management properties
+  adminSearchTerm = '';
+  adminStatusFilter = '';
+  adminPageSize = 50;
+  adminCurrentPage = 1;
+  adminSortField = 'ul_number';
+  adminSortDirection: 'asc' | 'desc' = 'asc';
+  selectedAdminULs: number[] = [];
+  filteredULs: ULLabel[] = [];
+  
+  // Edit UL Modal
+  editULForm: FormGroup;
+  editingUL: ULLabel | null = null;
+  selectedULForHistory: ULLabel | null = null;
+  
+  // Available UL Category Filter
+  availableULCategoryFilter = '';
+  
+  // Quick Start Category Filter (separate from table filter)
+  quickStartCategoryFilter = '';
+  
+  constructor(
+    private fb: FormBuilder, 
+    private modalService: NgbModal, 
+    private authService: AuthenticationService
+  ) {
+    // Get current user
+    this.currentUser = this.authService.currentUser();
+    
     this.rangeForm = this.fb.group({
+      prefix: [''], // Optional prefix like "T7"
       startNumber: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
-      endNumber: ['', [Validators.required, Validators.pattern(/^\d+$/)]]
+      endNumber: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+      description: [''], // Optional description
+      category: [''] // Optional category
     });
     
     this.usageForm = this.fb.group({
       serial_number: ['', [Validators.required, Validators.minLength(3)]],
       quantity: [1, [Validators.required, Validators.min(1)]],
       date_used: [new Date().toISOString().substring(0, 10), Validators.required],
-      user_signature: ['', [Validators.required, Validators.minLength(2)]],
-      customer: ['', [Validators.required, Validators.minLength(2)]]
+      user_signature: [this.getUserSignature(), [Validators.required, Validators.minLength(2)]],
+      customer: [this.getDefaultCustomer(), [Validators.required, Validators.minLength(2)]]
+    });
+    // Note: usageForm is kept for batch operations, but single UL usage now uses RecordUsageFormComponent
+
+    this.editULForm = this.fb.group({
+      ul_number: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+      status: ['available', Validators.required],
+      description: [''],
+      category: [''],
+      serial_number: [''],
+      quantity: [1, [Validators.min(1)]],
+      date_used: [''],
+      user_signature: [''],
+      customer: ['']
     });
 
     // Remove the standalone batchUsageForm since we'll create individual forms
@@ -74,12 +127,85 @@ export class ULManagementV3Component implements OnInit {
     this.loadFromStorage();
     if (this.labels.length === 0) {
       // Add some sample data for demo
-      this.addULRange('73908498', '73908507');
+      this.addULRange('73908498', '73908507', '', 'Sample UL range for demo purposes', 'Gaming');
+      this.addULRange('74000001', '74000005', '', 'Kiosk UL labels for retail locations', 'Kiosk');
+      this.addULRange('75100001', '75100003', 'ATM', 'ATM machine labels', 'ATM');
+      this.addULRange('76200001', '76200002', '', 'Uncategorized UL labels', '');
     }
   }
 
+  // Helper method to get user signature from auth service
+  private getUserSignature(): string {
+    if (this.currentUser) {
+      // Try different possible user name fields
+      if (this.currentUser.firstName && this.currentUser.lastName) {
+        return `${this.currentUser.firstName} ${this.currentUser.lastName}`;
+      }
+      if (this.currentUser.first_name && this.currentUser.last_name) {
+        return `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+      }
+      if (this.currentUser.username) {
+        return this.currentUser.username;
+      }
+      if (this.currentUser.email) {
+        return this.currentUser.email;
+      }
+      if (this.currentUser.name) {
+        return this.currentUser.name;
+      }
+    }
+    return '';
+  }
+
+  // Helper method to get default customer from user's department or company
+  private getDefaultCustomer(): string {
+    if (this.currentUser) {
+      if (this.currentUser.department) {
+        return this.currentUser.department;
+      }
+      if (this.currentUser.company) {
+        return this.currentUser.company;
+      }
+    }
+    return '';
+  }
+
+  // Helper method to get current user display name for UI
+  getCurrentUserDisplayName(): string {
+    const signature = this.getUserSignature();
+    return signature || 'Unknown User';
+  }
+
+  // Helper method to get current user email for UI
+  getCurrentUserEmail(): string {
+    return this.currentUser?.email || '';
+  }
+
+  // Helper method to parse UL number and extract prefix/numeric parts
+  parseULNumber(ulNumber: string): { prefix: string; numericPart: number; fullNumber: string } {
+    const match = ulNumber.match(/^([A-Za-z]*)(\d+)$/);
+    if (match) {
+      return {
+        prefix: match[1] || '',
+        numericPart: parseInt(match[2], 10),
+        fullNumber: ulNumber
+      };
+    }
+    // Fallback for pure numeric
+    return {
+      prefix: '',
+      numericPart: parseInt(ulNumber, 10) || 0,
+      fullNumber: ulNumber
+    };
+  }
+
+  // Helper method to create UL number with prefix
+  createULNumber(prefix: string, numericPart: number): string {
+    return prefix ? `${prefix}${numericPart}` : numericPart.toString();
+  }
+
   // Admin functionality - Add UL range
-  async addULRange(start: string, end: string) {
+  async addULRange(start: string, end: string, prefix?: string, description?: string, category?: string) {
     const startNum = parseInt(start, 10);
     const endNum = parseInt(end, 10);
     
@@ -96,15 +222,15 @@ export class ULManagementV3Component implements OnInit {
     
     // For large ranges (>1000), use async processing
     if (count > 1000) {
-      await this.processLargeRange(startNum, endNum);
+      await this.processLargeRange(startNum, endNum, prefix, description, category);
       return;
     }
     
     // For smaller ranges, use synchronous processing
-    this.processSmallerRange(startNum, endNum);
+    this.processSmallerRange(startNum, endNum, prefix, description, category);
   }
 
-  private async processLargeRange(startNum: number, endNum: number) {
+  private async processLargeRange(startNum: number, endNum: number, prefix?: string, description?: string, category?: string) {
     this.isProcessingRange = true;
     const totalCount = endNum - startNum + 1;
     let processedCount = 0;
@@ -131,13 +257,18 @@ export class ULManagementV3Component implements OnInit {
         
         // Process chunk
         for (let j = i; j <= chunkEnd; j++) {
-          const ulNumber = j.toString();
+          const ulNumber = this.createULNumber(prefix || '', j);
           const existingLabel = this.labels.find(l => l.ul_number === ulNumber);
           
           if (!existingLabel) {
+            const parsed = this.parseULNumber(ulNumber);
             newULs.push({
               id: this.nextId++,
               ul_number: ulNumber,
+              prefix: parsed.prefix,
+              numeric_part: parsed.numericPart,
+              description: description,
+              category: category,
               status: 'available',
               dateCreated: new Date()
             });
@@ -186,13 +317,13 @@ export class ULManagementV3Component implements OnInit {
     }
   }
 
-  private processSmallerRange(startNum: number, endNum: number) {
+  private processSmallerRange(startNum: number, endNum: number, prefix?: string, description?: string, category?: string) {
     // Check for existing UL numbers in the range
     const existingULs: string[] = [];
     const newULs: string[] = [];
     
     for (let i = startNum; i <= endNum; i++) {
-      const ulNumber = i.toString();
+      const ulNumber = this.createULNumber(prefix || '', i);
       const existingLabel = this.labels.find(l => l.ul_number === ulNumber);
       
       if (existingLabel) {
@@ -230,7 +361,7 @@ export class ULManagementV3Component implements OnInit {
         }
         
         // Add only new ULs
-        this.addNewULsToDatabase(newULs);
+        this.addNewULsToDatabase(newULs, prefix, description, category);
         
         alert(`Successfully added ${newCount} new UL numbers. Skipped ${duplicateCount} duplicates.`);
       } else {
@@ -240,7 +371,7 @@ export class ULManagementV3Component implements OnInit {
       }
     } else {
       // No duplicates, add all ULs
-      this.addNewULsToDatabase(newULs);
+      this.addNewULsToDatabase(newULs, prefix, description, category);
       alert(`Successfully added ${newULs.length} new UL numbers to the database.`);
     }
     
@@ -251,11 +382,16 @@ export class ULManagementV3Component implements OnInit {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  private addNewULsToDatabase(ulNumbers: string[]) {
+  private addNewULsToDatabase(ulNumbers: string[], prefix?: string, description?: string, category?: string) {
     ulNumbers.forEach(ulNumber => {
+      const parsed = this.parseULNumber(ulNumber);
       this.labels.push({
         id: this.nextId++,
         ul_number: ulNumber,
+        prefix: parsed.prefix,
+        numeric_part: parsed.numericPart,
+        description: description,
+        category: category,
         status: 'available',
         dateCreated: new Date()
       });
@@ -264,7 +400,7 @@ export class ULManagementV3Component implements OnInit {
 
   onRangeSubmit() {
     if (this.rangeForm.valid && !this.isProcessingRange) {
-      const { startNumber, endNumber } = this.rangeForm.value;
+      const { prefix, startNumber, endNumber, description, category } = this.rangeForm.value;
       
       // Validate range first
       const startNum = parseInt(startNumber, 10);
@@ -326,8 +462,9 @@ export class ULManagementV3Component implements OnInit {
       
       const confirmed = confirm(confirmMessage);
       if (confirmed) {
-        this.addULRange(startNumber, endNumber);
+        this.addULRange(startNumber, endNumber, prefix, description, category);
         this.rangeForm.reset();
+        this.refreshULList();
         this.showRangeForm = false;
       }
     }
@@ -438,8 +575,11 @@ export class ULManagementV3Component implements OnInit {
         if (confirmed) {
           this.selectedUL = nextAvailable;
           this.usageForm.reset({
+            serial_number: '',
             quantity: 1,
-            date_used: new Date().toISOString().substring(0, 10)
+            date_used: new Date().toISOString().substring(0, 10),
+            user_signature: this.getUserSignature(),
+            customer: this.getDefaultCustomer()
           });
         }
       } else {
@@ -448,8 +588,11 @@ export class ULManagementV3Component implements OnInit {
     } else if (label.status === 'available') {
       this.selectedUL = label;
       this.usageForm.reset({
+        serial_number: '',
         quantity: 1,
-        date_used: new Date().toISOString().substring(0, 10)
+        date_used: new Date().toISOString().substring(0, 10),
+        user_signature: this.getUserSignature(),
+        customer: this.getDefaultCustomer()
       });
     }
   }
@@ -497,8 +640,8 @@ export class ULManagementV3Component implements OnInit {
         serial_number: ['', [Validators.required, Validators.minLength(3)]],
         quantity: [1, [Validators.required, Validators.min(1)]],
         date_used: [new Date().toISOString().substring(0, 10), Validators.required],
-        user_signature: ['Batch User', [Validators.required, Validators.minLength(2)]],
-        customer: ['Eyefi', [Validators.required, Validators.minLength(2)]]
+        user_signature: [this.getUserSignature(), [Validators.required, Validators.minLength(2)]],
+        customer: [this.getDefaultCustomer(), [Validators.required, Validators.minLength(2)]]
       });
     });
     
@@ -655,9 +798,63 @@ export class ULManagementV3Component implements OnInit {
     }
   }
 
+  // Handle usage submission from the new record-usage-form component
+  onRecordUsageSubmit(usageData: any) {
+    if (this.selectedUL) {
+      // Check if the selected UL is still available
+      if (this.selectedUL.status === 'used') {
+        const nextAvailable = this.getNextAvailableUL();
+        if (nextAvailable) {
+          const confirmed = confirm(
+            `UL ${this.selectedUL.ul_number} is already used. Replace with next available UL ${nextAvailable.ul_number}?`
+          );
+          
+          if (confirmed) {
+            this.selectedUL = nextAvailable;
+          } else {
+            alert('Please select a different UL number.');
+            this.selectedUL = null;
+            return;
+          }
+        } else {
+          alert('UL is already used and no available ULs for replacement. Please select a different UL.');
+          this.selectedUL = null;
+          return;
+        }
+      }
+      
+      const usage: ULUsage = {
+        id: this.nextId++,
+        ul_number: this.selectedUL.ul_number,
+        serial_number: usageData.eyefiSerialNumber,
+        quantity: usageData.quantityUsed,
+        date_used: new Date(usageData.dateUsed),
+        user_signature: usageData.userSignature,
+        customer: usageData.customerName,
+        dateCreated: new Date()
+      };
+      
+      this.usages.push(usage);
+      this.selectedUL.status = 'used';
+      this.selectedUL.dateUsed = new Date();
+      
+      const successMessage = `Successfully recorded usage for UL ${this.selectedUL.ul_number}.`;
+      alert(successMessage);
+      
+      this.selectedUL = null;
+      this.saveToStorage();
+    }
+  }
+
   cancelUsage() {
     this.selectedUL = null;
-    this.usageForm.reset();
+    this.usageForm.reset({
+      serial_number: '',
+      quantity: 1,
+      date_used: new Date().toISOString().substring(0, 10),
+      user_signature: this.getUserSignature(),
+      customer: this.getDefaultCustomer()
+    });
   }
 
   // Storage
@@ -705,8 +902,69 @@ export class ULManagementV3Component implements OnInit {
     );
   }
 
-  getNextAvailableUL(): ULLabel | null {
+  getFilteredAvailableLabels(): ULLabel[] {
+    let available = this.getAvailableLabels();
+    
+    if (this.availableULCategoryFilter) {
+      if (this.availableULCategoryFilter === 'no-category') {
+        available = available.filter(l => !l.category);
+      } else {
+        available = available.filter(l => l.category === this.availableULCategoryFilter);
+      }
+    }
+    
+    return available;
+  }
+
+  onCategoryFilterChange(): void {
+    // Clear any selected ULs when filter changes since they might not be visible anymore
+    this.selectedULIds = [];
+    this.selectedUL = null;
+  }
+
+  getCategoryCounts(): { [key: string]: number } {
     const available = this.getAvailableLabels();
+    const counts: { [key: string]: number } = {};
+    
+    available.forEach(label => {
+      const category = label.category || 'no-category';
+      counts[category] = (counts[category] || 0) + 1;
+    });
+    
+    return counts;
+  }
+
+  // Quick Start specific methods
+  getNextAvailableFromQuickStart(): ULLabel | null {
+    const available = this.getQuickStartFilteredLabels();
+    return available.length > 0 ? available[0] : null;
+  }
+
+  getQuickStartFilteredLabels(): ULLabel[] {
+    let available = this.getAvailableLabels();
+    
+    if (this.quickStartCategoryFilter) {
+      if (this.quickStartCategoryFilter === 'no-category') {
+        available = available.filter(l => !l.category);
+      } else {
+        available = available.filter(l => l.category === this.quickStartCategoryFilter);
+      }
+    }
+    
+    return available;
+  }
+
+  getQuickStartFilteredCount(): number {
+    return this.getQuickStartFilteredLabels().length;
+  }
+
+  onQuickStartCategoryChange(): void {
+    // Optional: Could clear selected UL if you want
+    // this.selectedUL = null;
+  }
+
+  getNextAvailableUL(): ULLabel | null {
+    const available = this.getFilteredAvailableLabels();
     return available.length > 0 ? available[0] : null;
   }
 
@@ -721,7 +979,7 @@ export class ULManagementV3Component implements OnInit {
 
   // Quick actions
   selectNextAvailable() {
-    const next = this.getNextAvailableUL();
+    const next = this.getNextAvailableFromQuickStart();
     if (next) {
       this.selectUL(next);
     }
@@ -774,5 +1032,335 @@ export class ULManagementV3Component implements OnInit {
       isPotentialTypo: typoCheck.isPotentialTypo,
       typoSuggestion: typoCheck.isPotentialTypo ? `${typoCheck.suggestedStart} to ${typoCheck.suggestedEnd}` : undefined
     };
+  }
+
+  // ========================================
+  // ADMIN UL MANAGEMENT METHODS
+  // ========================================
+
+  // Filter and search functionality
+  filterULs() {
+    let filtered = this.labels;
+
+    // Apply search filter
+    if (this.adminSearchTerm.trim()) {
+      const searchTerm = this.adminSearchTerm.toLowerCase();
+      filtered = filtered.filter(ul => 
+        ul.ul_number.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply status filter
+    if (this.adminStatusFilter) {
+      filtered = filtered.filter(ul => ul.status === this.adminStatusFilter);
+    }
+
+    this.filteredULs = filtered;
+    this.adminCurrentPage = 1; // Reset to first page when filtering
+  }
+
+  // Get filtered ULs (for display)
+  getFilteredULs(): ULLabel[] {
+    if (this.filteredULs.length === 0 && !this.adminSearchTerm && !this.adminStatusFilter) {
+      this.filteredULs = [...this.labels];
+    }
+    return this.filteredULs;
+  }
+
+  // Sort ULs
+  sortULs(field: keyof ULLabel) {
+    if (this.adminSortField === field) {
+      this.adminSortDirection = this.adminSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.adminSortField = field;
+      this.adminSortDirection = 'asc';
+    }
+
+    this.getFilteredULs().sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      // Special handling for ul_number sorting - use numeric_part for proper ordering
+      if (field === 'ul_number') {
+        // First sort by prefix, then by numeric part
+        const prefixA = a.prefix || '';
+        const prefixB = b.prefix || '';
+        
+        if (prefixA !== prefixB) {
+          valueA = prefixA.toLowerCase();
+          valueB = prefixB.toLowerCase();
+        } else {
+          // Same prefix, sort by numeric part
+          valueA = a.numeric_part;
+          valueB = b.numeric_part;
+        }
+      } else {
+        valueA = a[field];
+        valueB = b[field];
+      }
+
+      // Handle dates
+      if (valueA instanceof Date) valueA = valueA.getTime();
+      if (valueB instanceof Date) valueB = valueB.getTime();
+
+      // Handle strings
+      if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+      if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+
+      if (valueA < valueB) return this.adminSortDirection === 'asc' ? -1 : 1;
+      if (valueA > valueB) return this.adminSortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // Pagination
+  getTotalPages(): number {
+    return Math.ceil(this.getFilteredULs().length / this.adminPageSize);
+  }
+
+  getDisplayedULs(): ULLabel[] {
+    const filtered = this.getFilteredULs();
+    const startIndex = (this.adminCurrentPage - 1) * this.adminPageSize;
+    const endIndex = startIndex + this.adminPageSize;
+    return filtered.slice(startIndex, endIndex);
+  }
+
+  getVisiblePages(): number[] {
+    const totalPages = this.getTotalPages();
+    const currentPage = this.adminCurrentPage;
+    const visiblePages: number[] = [];
+    
+    // Show up to 5 pages around current page
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      visiblePages.push(i);
+    }
+    
+    return visiblePages;
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.getTotalPages()) {
+      this.adminCurrentPage = page;
+    }
+  }
+
+  updatePagination() {
+    this.adminCurrentPage = 1;
+  }
+
+  // Selection functionality
+  toggleAdminSelect(ulId: number, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedAdminULs.includes(ulId)) {
+        this.selectedAdminULs.push(ulId);
+      }
+    } else {
+      this.selectedAdminULs = this.selectedAdminULs.filter(id => id !== ulId);
+    }
+  }
+
+  toggleSelectAllDisplayed(event: any) {
+    const displayedULs = this.getDisplayedULs();
+    if (event.target.checked) {
+      displayedULs.forEach(ul => {
+        if (!this.selectedAdminULs.includes(ul.id)) {
+          this.selectedAdminULs.push(ul.id);
+        }
+      });
+    } else {
+      const displayedIds = displayedULs.map(ul => ul.id);
+      this.selectedAdminULs = this.selectedAdminULs.filter(id => !displayedIds.includes(id));
+    }
+  }
+
+  areAllDisplayedULsSelected(): boolean {
+    const displayedULs = this.getDisplayedULs();
+    return displayedULs.length > 0 && displayedULs.every(ul => this.selectedAdminULs.includes(ul.id));
+  }
+
+  isSomeULsSelected(): boolean {
+    const displayedULs = this.getDisplayedULs();
+    return displayedULs.some(ul => this.selectedAdminULs.includes(ul.id)) && !this.areAllDisplayedULsSelected();
+  }
+
+  clearAdminSelection() {
+    this.selectedAdminULs = [];
+  }
+
+  // CRUD Operations
+  openEditModal(ul: ULLabel, modalTemplate: any) {
+    this.editUL(ul);
+    this.modalService.open(modalTemplate, { size: 'lg' });
+  }
+
+  openHistoryModal(ul: ULLabel, modalTemplate: any) {
+    this.viewULHistory(ul);
+    this.modalService.open(modalTemplate, { size: 'lg' });
+  }
+
+  editUL(ul: ULLabel) {
+    this.editingUL = ul;
+    const usage = this.getULUsage(ul.ul_number);
+    
+    this.editULForm.patchValue({
+      ul_number: ul.ul_number,
+      status: ul.status,
+      description: ul.description || '',
+      category: ul.category || '',
+      serial_number: usage?.serial_number || '',
+      quantity: usage?.quantity || 1,
+      date_used: usage?.date_used ? new Date(usage.date_used).toISOString().substring(0, 10) : '',
+      user_signature: usage?.user_signature || '',
+      customer: usage?.customer || ''
+    });
+  }
+
+  saveULEdit() {
+    if (this.editULForm.valid && this.editingUL) {
+      const formValue = this.editULForm.value;
+      
+      // Update the UL label
+      this.editingUL.ul_number = formValue.ul_number;
+      this.editingUL.status = formValue.status;
+      this.editingUL.description = formValue.description;
+      this.editingUL.category = formValue.category;
+      
+      // Update parsed values for the new UL number
+      const parsed = this.parseULNumber(formValue.ul_number);
+      this.editingUL.prefix = parsed.prefix;
+      this.editingUL.numeric_part = parsed.numericPart;
+      
+      if (formValue.status === 'used') {
+        this.editingUL.dateUsed = new Date();
+        
+        // Update or create usage record
+        const existingUsage = this.usages.find(u => u.ul_number === this.editingUL!.ul_number);
+        if (existingUsage) {
+          existingUsage.serial_number = formValue.serial_number;
+          existingUsage.quantity = formValue.quantity;
+          existingUsage.date_used = new Date(formValue.date_used);
+          existingUsage.user_signature = formValue.user_signature;
+          existingUsage.customer = formValue.customer;
+        } else {
+          this.usages.push({
+            id: this.nextId++,
+            ul_number: formValue.ul_number,
+            serial_number: formValue.serial_number,
+            quantity: formValue.quantity,
+            date_used: new Date(formValue.date_used),
+            user_signature: formValue.user_signature,
+            customer: formValue.customer,
+            dateCreated: new Date()
+          });
+        }
+      } else {
+        // If changing from used to available, remove usage record
+        this.usages = this.usages.filter(u => u.ul_number !== this.editingUL!.ul_number);
+        this.editingUL.dateUsed = undefined;
+      }
+      
+      this.saveToStorage();
+      this.filterULs(); // Refresh filtered list
+      this.modalService.dismissAll();
+      this.editingUL = null;
+    }
+  }
+
+  deleteUL(ul: ULLabel) {
+    if (confirm(`Are you sure you want to delete UL number ${ul.ul_number}?`)) {
+      // Remove from labels
+      this.labels = this.labels.filter(l => l.id !== ul.id);
+      // Remove any usage records
+      this.usages = this.usages.filter(u => u.ul_number !== ul.ul_number);
+      // Remove from selections
+      this.selectedAdminULs = this.selectedAdminULs.filter(id => id !== ul.id);
+      
+      this.saveToStorage();
+      this.filterULs(); // Refresh filtered list
+    }
+  }
+
+  bulkDeleteULs() {
+    if (this.selectedAdminULs.length === 0) return;
+    
+    const count = this.selectedAdminULs.length;
+    if (confirm(`Are you sure you want to delete ${count} UL number(s)?`)) {
+      // Remove from labels
+      this.labels = this.labels.filter(l => !this.selectedAdminULs.includes(l.id));
+      // Remove any usage records
+      const selectedULNumbers = this.selectedAdminULs.map(id => this.getULById(id)?.ul_number).filter(Boolean);
+      this.usages = this.usages.filter(u => !selectedULNumbers.includes(u.ul_number));
+      
+      this.selectedAdminULs = [];
+      this.saveToStorage();
+      this.filterULs(); // Refresh filtered list
+    }
+  }
+
+  viewULHistory(ul: ULLabel) {
+    this.selectedULForHistory = ul;
+  }
+
+  getULUsageHistory(ulNumber: string): ULUsage[] {
+    return this.usages.filter(usage => usage.ul_number === ulNumber);
+  }
+
+  getULUsage(ulNumber: string): ULUsage | undefined {
+    return this.usages.find(usage => usage.ul_number === ulNumber);
+  }
+
+  // Utility functions
+  exportULs() {
+    const data = this.getFilteredULs().map(ul => {
+      const usage = this.getULUsage(ul.ul_number);
+      return {
+        'UL Number': ul.ul_number,
+        'Status': ul.status,
+        'Date Created': ul.dateCreated.toISOString(),
+        'Date Used': ul.dateUsed?.toISOString() || '',
+        'Serial Number': usage?.serial_number || '',
+        'Quantity': usage?.quantity || '',
+        'User Signature': usage?.user_signature || '',
+        'Customer': usage?.customer || ''
+      };
+    });
+
+    const csvContent = this.convertToCSV(data);
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ul-numbers-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  private convertToCSV(data: any[]): string {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvHeaders = headers.join(',');
+    const csvRows = data.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        // Escape quotes and wrap in quotes if contains comma
+        return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+          ? `"${value.replace(/"/g, '""')}"` 
+          : value;
+      }).join(',')
+    );
+    
+    return [csvHeaders, ...csvRows].join('\n');
+  }
+
+  refreshULList() {
+    this.filterULs();
+  }
+
+  trackByULId(index: number, ul: ULLabel): number {
+    return ul.id;
   }
 }

@@ -1,3 +1,5 @@
+//schedule meeting with team to discuss database migration
+
 -- UL Management System Database Migration
 -- Created: 2024-08-20
 -- Description: Creates tables for UL (Underwriters Laboratories) label management system

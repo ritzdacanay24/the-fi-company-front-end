@@ -12,6 +12,7 @@ import { LayoutComponent } from "./layouts/layout.component";
 import { AuthGuard } from "./core/guards/auth.guard";
 import { RequestPublicComponent } from "./pages/public/request-public/request-public.component";
 import { QirCreatePublicComponent } from "./pages/quality/qir/qir-create-public/qir-create-public.component";
+import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-usage-form.component";
 
 import { FlagBasedPreloadingStrategy } from "./shared/providers/preload";
 import { MenuComponent } from "./pages/menu/menu.component";
@@ -29,6 +30,11 @@ const routes: Routes = [
   { path: "menu", component: MenuComponent },
   { path: "request", component: RequestPublicComponent },
   { path: "quality-incident-request", component: QirCreatePublicComponent },
+  { 
+    path: "ul-usage", 
+    component: StandaloneULUsageFormComponent,
+    title: "UL Usage Entry"
+  },
   {
     path: "auth",
     loadChildren: () =>

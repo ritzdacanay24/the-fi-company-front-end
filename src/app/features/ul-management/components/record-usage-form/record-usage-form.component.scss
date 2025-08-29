@@ -1,0 +1,192 @@
+// Record Usage Form Component Styles
+.record-usage-form {
+  .selected-ul-info {
+    .alert {
+      border-radius: 0.75rem;
+      border: none;
+      background-color: rgba(13, 110, 253, 0.1);
+      
+      .btn {
+        border-radius: 0.5rem;
+      }
+    }
+  }
+
+  .usage-form-container {
+    .form-header {
+      h6 {
+        color: #495057;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    .usage-form {
+      .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        color: #495057;
+
+        i.mdi-information {
+          cursor: help;
+          opacity: 0.7;
+          transition: opacity 0.2s ease;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+
+      .form-control {
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        
+        &:focus {
+          border-color: #0d6efd;
+          box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        &.is-invalid {
+          border-color: #dc3545;
+          
+          &:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+          }
+        }
+      }
+
+      .form-text {
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        color: #6c757d;
+
+        .text-success {
+          color: #198754 !important;
+        }
+      }
+
+      .invalid-feedback {
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .user-info-display {
+      .card {
+        border-radius: 0.75rem;
+        
+        .card-body {
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    .form-actions {
+      .btn {
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.3s ease;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .validation-summary {
+      .alert {
+        border-radius: 0.75rem;
+        border: none;
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #856404;
+
+        ul {
+          margin-left: 1rem;
+          
+          li {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+          }
+        }
+      }
+    }
+  }
+
+  .no-selection-state {
+    i {
+      opacity: 0.5;
+    }
+  }
+}
+
+// Mobile responsive adjustments
+@media (max-width: 768px) {
+  .record-usage-form {
+    .usage-form-container {
+      .usage-form {
+        .form-actions {
+          flex-direction: column;
+          gap: 0.75rem;
+
+          .btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      }
+    }
+
+    .selected-ul-info {
+      .alert {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+
+        .btn {
+          margin-top: 0.75rem;
+          align-self: center;
+        }
+      }
+    }
+  }
+}
+
+// Enhanced focus states for accessibility
+.record-usage-form {
+  .form-control:focus,
+  .btn:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+  }
+
+  // Loading state styles (for future enhancement)
+  &.loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+}
+
+// Animation for form appearance
+.record-usage-form {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
