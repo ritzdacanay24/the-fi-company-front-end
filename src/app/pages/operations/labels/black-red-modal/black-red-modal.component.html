@@ -1,0 +1,109 @@
+<div class="modal-header mb-0 pb-0">
+    <h4 class="modal-title" id="modal-basic-title">{{data?.labelName}} - {{data?.labelSize}}</h4>
+</div>
+
+<div class="modal-body">
+
+    <div class="mb-5 text-center">
+        <img [src]="data?.labelImage" style="width:200px" class="img-fluid img-thumbnail">
+    </div>
+
+    <form [formGroup]="form" autocomplete="off">
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">
+                <i class="mdi mdi-palette me-1"></i>
+                Color
+            </label>
+            <select class="form-select" formControlName="color">
+                <option value="Black">Black</option>
+                <option value="Red">Red</option>
+            </select>
+            <div class="form-text">Select the color for your labels</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">
+                <i class="mdi mdi-package-variant me-1"></i>
+                Labels per Batch
+            </label>
+            <input formControlName="batchSize" 
+                   type="number" 
+                   class="form-control" 
+                   placeholder="Enter number of labels per batch"
+                   min="1"
+                   max="50">
+            <div class="form-text">Each batch will have labels numbered 1, 2, 3... up to this number</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">
+                <i class="mdi mdi-counter me-1"></i>
+                Number of Batches
+            </label>
+            <input formControlName="totalBatches" 
+                   type="number" 
+                   class="form-control" 
+                   placeholder="Enter number of batches to print"
+                   min="1"
+                   max="20">
+            <div class="form-text">
+                How many times to repeat the batch. 
+                Total labels: <strong>{{ getBatchInfo().totalLabels }}</strong>
+            </div>
+        </div>
+
+        <!-- Preview section -->
+        <div class="mb-3" *ngIf="form.value.batchSize > 0 && form.value.totalBatches > 0">
+            <label class="form-label fw-semibold">
+                <i class="mdi mdi-eye me-1"></i>
+                Preview
+            </label>
+            <div class="alert alert-light border">
+                <div class="small text-muted mb-2">
+                    Batch pattern (repeats {{ form.value.totalBatches }} time{{ form.value.totalBatches > 1 ? 's' : '' }}):
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">Each batch contains:</small>
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        <span *ngFor="let i of getPreviewNumbers()" 
+                              class="badge" 
+                              [class]="form.value.color === 'Red' ? 'bg-danger' : 'bg-dark'">
+                            {{ form.value.color || 'Black' }} {{ i }}
+                        </span>
+                        <span *ngIf="form.value.batchSize > 10" class="badge bg-secondary">
+                            ... up to {{ form.value.color || 'Black' }} {{ form.value.batchSize }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="small text-muted">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    <strong>Total Output:</strong> {{ getBatchInfo().totalLabels }} labels 
+                    ({{ form.value.totalBatches }} identical batch{{ form.value.totalBatches > 1 ? 'es' : '' }} 
+                    of {{ form.value.batchSize }} label{{ form.value.batchSize > 1 ? 's' : '' }} each)
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+<div class="modal-footer">
+    <button (click)="dismiss()" type="button" class="btn btn-light me-auto">
+        <i class="mdi mdi-close me-1"></i>
+        Close
+    </button>
+    <button (click)="onPrint()" 
+            type="button" 
+            class="btn btn-primary"
+            [disabled]="!form.value.batchSize || form.value.batchSize <= 0 || !form.value.totalBatches || form.value.totalBatches <= 0">
+        <i class="mdi mdi-printer me-1"></i>
+        Print {{ getBatchInfo().totalLabels }} Label{{ getBatchInfo().totalLabels === 1 ? '' : 's' }}
+        <span *ngIf="form.value.totalBatches > 1">
+            ({{ form.value.totalBatches }} batches)
+        </span>
+    </button>
+</div>

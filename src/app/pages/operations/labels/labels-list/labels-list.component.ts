@@ -29,6 +29,7 @@ import { PartAndSNModalService } from "../part-and-sn-modal/part-and-sn-modal.co
 import { SNULAssetModalService } from "../sn-ul-asset-modal/sn-ul-asset-modal.component";
 import { ContinuityModalService } from "../continuity-test-modal/continuity-test-modal.component";
 import { TotalLabelsModalService } from "../total-labels-modal/total-labels-modal.component";
+import { BlackRedLabelModalService } from "@app/pages/operations/labels/black-red-modal/black-red-modal.component";
 
 tippy.setDefaultProps({ delay: 0 });
 tippy.setDefaultProps({ animation: false });
@@ -63,7 +64,8 @@ export class LabelsListComponent implements OnInit {
     private partAndSNModalService: PartAndSNModalService,
     private sNULAssetModalService: SNULAssetModalService,
     private continuityModalService: ContinuityModalService,
-    private totalLabelsModalService: TotalLabelsModalService
+    private totalLabelsModalService: TotalLabelsModalService,
+    private blackRedLabelModalService: BlackRedLabelModalService
   ) { }
 
   ngOnInit(): void {

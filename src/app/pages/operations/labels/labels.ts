@@ -308,4 +308,13 @@ export let labelData = [
         "labelImage": "assets/images/labels/total-labels.png",
         "service": "totalLabelsModalService",
     },
+    {
+        "id": 28,
+        "labelName": "Red/Black Labels",
+        "labelSize": "2 x 3",
+        "orientation": "Landscape",
+        "labelImage": "",
+        "service": "blackRedLabelModalService",
+    },
+    
 ]

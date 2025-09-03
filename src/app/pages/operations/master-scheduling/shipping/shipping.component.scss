@@ -1,0 +1,61 @@
+/* Priority Grid Styling */
+.priority-grid {
+  .ag-row {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+  }
+  
+  .ag-row:hover {
+    border-left-color: #007bff;
+    background-color: #f8f9fa !important;
+  }
+  
+  .ag-row[aria-rowindex="1"] {
+    border-left-color: #dc3545;
+    background-color: #fff5f5;
+  }
+  
+  .ag-row[aria-rowindex="2"] {
+    border-left-color: #fd7e14;
+    background-color: #fff8f0;
+  }
+  
+  .ag-row[aria-rowindex="3"] {
+    border-left-color: #ffc107;
+    background-color: #fffbf0;
+  }
+  
+  .ag-row-drag {
+    cursor: grab;
+  }
+  
+  .ag-row-dragging {
+    cursor: grabbing;
+    opacity: 0.8;
+    transform: rotate(2deg);
+  }
+}
+
+/* Priority Action Buttons */
+.btn-sm {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* Priority Badge Styling */
+.badge {
+  &.bg-warning {
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Mock Data Banner */
+.alert-info {
+  border-left: 4px solid #0dcaf0;
+}

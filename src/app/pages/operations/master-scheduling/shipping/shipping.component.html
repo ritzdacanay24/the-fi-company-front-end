@@ -1,7 +1,56 @@
 <div class="row">
     <div class="col-12 col-xl-12">
+        
+        <!-- Mock Data Banner -->
+        <div class="alert alert-info alert-dismissible mb-3" role="alert">
+            <i class="mdi mdi-information me-2"></i>
+            <strong>Development Mode:</strong> Using mock data for shipping priorities. Changes will not be saved to the database.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Priority Management Help -->
+        <div class="alert alert-light border mb-3" role="alert">
+            <div class="d-flex align-items-start">
+                <i class="mdi mdi-lightbulb-outline text-warning me-2 mt-1"></i>
+                <div>
+                    <strong>Priority Management:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li><strong>Add to Priority:</strong> Click "Add to Priority" button - automatically assigns next available priority</li>
+                        <li><strong>Change Order:</strong> Use ↑↓ buttons or drag & drop in Priority tab to reorder</li>
+                        <li><strong>Make Top Priority:</strong> Click "Make Priority #1" - automatically shifts others down</li>
+                        <li><strong>Remove:</strong> Click "Remove Priority" to take out of priority queue</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-header d-flex align-items-center">
+                
+                <!-- Priority Tab Navigation -->
+                <ul class="nav nav-pills me-3" id="priorityTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" 
+                                [class.active]="activeTab === 'all'"
+                                (click)="switchTab('all')" 
+                                type="button" role="tab">
+                            <i class="mdi mdi-format-list-bulleted me-1"></i>
+                            All Orders
+                            <span class="badge bg-light text-dark ms-1">{{allOrdersCount}}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" 
+                                [class.active]="activeTab === 'priority'"
+                                (click)="switchTab('priority')" 
+                                type="button" role="tab">
+                            <i class="mdi mdi-star me-1"></i>
+                            Priority Orders
+                            <span class="badge bg-warning text-dark ms-1">{{priorityOrdersCount}}</span>
+                        </button>
+                    </li>
+                </ul>
+
                 <div>
                     <div class="form-icon">
                         <input type="search" class="form-control form-control-icon" style="width:250px"
@@ -11,13 +60,24 @@
                     </div>
                 </div>
 
-                <button class="btn btn-light ms-3" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
+                <button class="btn btn-light ms-3" (click)="getData()">
+                    <i class="mdi mdi-refresh"></i>
+                </button>
+                
+                <button class="btn btn-outline-info ms-2" (click)="refreshMockData()" title="Refresh Mock Priority Data">
+                    <i class="mdi mdi-database-refresh"></i>
+                    Mock Data
+                </button>
+                
+                <button class="btn btn-outline-success ms-2" (click)="testMockPriorities()" title="Test Priority System with Sample Data">
+                    <i class="mdi mdi-flask"></i>
+                    Test Mock
+                </button>
 
                 <div class="ms-3">
                     <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi"
                         [pageId]="pageId" [value]="gridViewId" (emitGrid)="emitGrid($event)"></app-grid-settings>
                 </div>
-
 
                 <div class="ms-3 me-3">
                     <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi"
@@ -39,9 +99,40 @@
                     {{statusCount.pastDue + statusCount.todayDue + statusCount.futureDue}} Total</span>
             </div>
             <div class="card-body p-0">
-                <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-                    style="width: 100%;height: calc(100vh - 170px);" [rowData]="data" [columnDefs]="columnDefs">
-                </ag-grid-angular>
+                
+                <!-- All Orders Tab Content -->
+                <div *ngIf="activeTab === 'all'">
+                    <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+                        style="width: 100%;height: calc(100vh - 210px);" [rowData]="data" [columnDefs]="columnDefs">
+                    </ag-grid-angular>
+                </div>
+
+                <!-- Priority Orders Tab Content -->
+                <div *ngIf="activeTab === 'priority'">
+                    
+                    <!-- Priority Management Instructions -->
+                    <div class="alert alert-info m-3">
+                        <i class="mdi mdi-information me-2"></i>
+                        <strong>🎯 Priority Management:</strong> 
+                        Drag and drop rows to reorder priorities. Position determines priority number (top = Priority 1).
+                        <ul class="mb-0 mt-2 small">
+                            <li>🖱️ <strong>Drag rows</strong> to reorder priorities</li>
+                            <li>🔢 <strong>Position = Priority</strong> (1st row = Priority 1, 2nd row = Priority 2, etc.)</li>
+                            <li>⚡ <strong>Auto-save</strong> on every reorder</li>
+                            <li>🗑️ <strong>Remove</strong> priority to send back to main list</li>
+                        </ul>
+                    </div>
+
+                    <ag-grid-angular 
+                        class="ag-theme-quartz no-border priority-grid"
+                        style="width: 100%;height: calc(100vh - 320px);" 
+                        [columnDefs]="priorityColumns"
+                        [rowData]="priorityOrdersData"
+                        [gridOptions]="priorityGridOptions"
+                        (gridReady)="onPriorityGridReady($event)">
+                    </ag-grid-angular>
+                </div>
+
             </div>
         </div>
     </div>

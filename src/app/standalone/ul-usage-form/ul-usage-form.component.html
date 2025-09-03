@@ -1,304 +1,812 @@
 <!-- Desktop UL Usage Form - Standalone -->
 <div class="standalone-ul-form">
-  
-  <!-- Header -->
-  <div class="form-header bg-primary text-white">
-    <div class="container">
-      <div class="row align-items-center py-3">
-        <div class="col">
-          <h3 class="mb-0 fw-bold text-white">
-            <i class="mdi mdi-label me-2"></i>
-            UL Usage Recording
-          </h3>
-          <p class="mb-0 opacity-75">Quick UL number usage tracking</p>
+
+    <!-- Floating Bubbles Background -->
+    <div class="bubble-container">
+        <div class="bubble bubble-1">
+            <div class="bubble-logo"></div>
         </div>
-        <div class="col-auto" *ngIf="isAuthenticated">
-          <div class="d-flex align-items-center">
-            <div class="session-info me-3">
-              <div class="fw-semibold">{{ currentUser?.full_name }}</div>
-              <div class="small opacity-75">
-                <i class="mdi mdi-timer me-1"></i>
-                Session: {{ getTimeRemainingFormatted() }}
-              </div>
-            </div>
-            <div class="btn-group">
-              <button class="btn btn-outline-light btn-sm" (click)="extendSession()">
-                <i class="mdi mdi-refresh me-1"></i>Extend
-              </button>
-              <button class="btn btn-outline-light btn-sm" (click)="logout()">
-                <i class="mdi mdi-logout me-1"></i>Logout
-              </button>
-            </div>
-          </div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3">
+            <div class="bubble-logo"></div>
         </div>
-      </div>
+        <div class="bubble bubble-4"></div>
+        <div class="bubble bubble-5">
+            <div class="bubble-logo"></div>
+        </div>
+        <div class="bubble bubble-6"></div>
+        <div class="bubble bubble-7">
+            <div class="bubble-logo"></div>
+        </div>
+        <div class="bubble bubble-8"></div>
+        <div class="bubble bubble-9">
+            <div class="bubble-logo"></div>
+        </div>
+        <div class="bubble bubble-10"></div>
     </div>
-  </div>
 
-  <!-- Success Message -->
-  <div *ngIf="showSuccessMessage" class="alert alert-success alert-dismissible fade show m-0" role="alert">
-    <div class="container">
-      <div class="d-flex align-items-center">
-        <i class="mdi mdi-check-circle me-2"></i>
-        <div class="flex-grow-1">
-          <strong>Success!</strong> UL usage has been recorded successfully.
-        </div>
-        <button type="button" class="btn-close" (click)="showSuccessMessage = false"></button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="form-content">
-    <div class="container py-5">
-      
-      <!-- Authentication Required -->
-      <div *ngIf="!isAuthenticated" class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-          <div class="card border-0 shadow-lg">
-            <div class="card-body p-5 text-center">
-              <div class="auth-icon mb-4">
-                <i class="mdi mdi-shield-account mdi-72px text-warning"></i>
-              </div>
-              <h4 class="fw-bold mb-3">Authentication Required</h4>
-              <p class="text-muted mb-4">
-                Please login to record UL usage. Your session will be automatically managed for security.
-              </p>
-              <button 
-                class="btn btn-primary btn-lg px-4" 
-                (click)="openLoginModal(loginModal)">
-                <i class="mdi mdi-login me-2"></i>
-                Login to Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- UL Usage Form -->
-      <div *ngIf="isAuthenticated" class="row justify-content-center">
-        <div class="col-lg-8 col-xl-7">
-          <div class="card border-0 shadow-lg">
-            <div class="card-header bg-white border-bottom py-4">
-              <h5 class="mb-0 fw-bold text-dark">
-                <i class="mdi mdi-form-select me-2"></i>
-                Record UL Usage
-              </h5>
-            </div>
-            <div class="card-body p-4">
-              
-              <form [formGroup]="usageForm" (ngSubmit)="onSubmit()">
-                
-                <!-- UL Number Selection -->
-                <div class="row g-3 mb-4">
-                  <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-numeric me-1"></i>
-                      UL Number *
-                    </label>
-                    <select 
-                      formControlName="ul_number" 
-                      class="form-select form-select-lg">
-                      <option value="">Select UL Number...</option>
-                      <option 
-                        *ngFor="let ul of getAvailableULOptions()" 
-                        [value]="ul.ul_number">
-                        {{ ul.ul_number }}
-                        <span *ngIf="ul.category"> - {{ ul.category }}</span>
-                      </option>
-                    </select>
-                    <div class="form-text">Choose an available UL number from the list</div>
-                  </div>
-                  
-                  <div class="col-md-6" *ngIf="selectedUL">
-                    <label class="form-label fw-semibold">UL Details</label>
-                    <div class="ul-details p-3 bg-light rounded">
-                      <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                          <div class="fw-bold text-dark">{{ selectedUL.ul_number }}</div>
-                          <div class="text-muted small" *ngIf="selectedUL.description">
-                            {{ selectedUL.description }}
-                          </div>
+    <!-- Header -->
+    <div class="form-header bg-primary text-white">
+        <div class="container">
+            <div class="row align-items-center py-3">
+                <div class="col-auto">
+                    <img src="https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png"
+                        alt="The Fi Company" class="company-logo me-3" style="height: 50px; width: auto;">
+                </div>
+                <div class="col">
+                    <h3 class="mb-0 fw-bold text-white">
+                        <i class="mdi mdi-label me-2"></i>
+                        UL Usage Recording
+                    </h3>
+                    <p class="mb-0 opacity-75">Quick UL number usage tracking</p>
+                </div>
+                <div class="col-auto" *ngIf="isAuthenticated">
+                    <div class="d-flex align-items-center">
+                        <div class="session-info me-3">
+                            <div class="fw-semibold">{{ currentUser?.full_name }}</div>
+                            <div class="small opacity-75">
+                                <i class="mdi mdi-timer me-1"></i>
+                                Session: {{ getTimeRemainingFormatted() }}
+                            </div>
+                            <div class="small opacity-75">
+                                <i class="mdi mdi-account-clock me-1"></i>
+                                Activity: {{ getInactivityTimeRemainingFormatted() }}
+                            </div>
                         </div>
-                        <span *ngIf="selectedUL.category" 
-                              class="badge bg-secondary-subtle text-secondary">
-                          {{ selectedUL.category }}
-                        </span>
-                      </div>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-light btn-sm" (click)="extendSession()">
+                                <i class="mdi mdi-refresh me-1"></i>Extend
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" (click)="logout()">
+                                <i class="mdi mdi-logout me-1"></i>Logout
+                            </button>
+                        </div>
                     </div>
-                  </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Card -->
+    <div *ngIf="showSuccessMessage" class="success-overlay">
+        <div class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-5 text-center">
+                            <div class="success-icon mb-4">
+                                <div class="icon-background bg-success bg-opacity-10">
+                                    <i class="mdi mdi-check-circle text-success" style="font-size: 4rem;"></i>
+                                </div>
+                            </div>
+                            <h3 class="fw-bold text-success mb-3">Success!</h3>
+                            <p class="text-muted mb-4 fs-5">
+                                UL usage has been recorded successfully.
+                            </p>
+                            
+                            <!-- Summary of recorded ULs -->
+                            <div class="alert alert-light border mb-4">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <i class="mdi mdi-information me-2"></i>
+                                    <strong>Transaction Summary</strong>
+                                </div>
+                                <div class="small text-muted">
+                                    <span *ngIf="lastSubmittedULs.length === 1">
+                                        Recorded UL: <strong>{{ lastSubmittedULs[0] }}</strong>
+                                    </span>
+                                    <span *ngIf="lastSubmittedULs.length > 1">
+                                        Recorded <strong>{{ lastSubmittedULs.length }} UL numbers</strong>: 
+                                        {{ lastSubmittedULs.join(', ') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Auto logout countdown -->
+                            <div class="mb-4" *ngIf="autoLogoutCountdown > 0">
+                                <div class="alert alert-warning border-warning bg-warning bg-opacity-10">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="mdi mdi-timer me-2"></i>
+                                        <span class="small">
+                                            Auto logout in <strong>{{ autoLogoutCountdown }}</strong> seconds
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="d-grid gap-3">
+                                <button class="btn btn-primary btn-lg" (click)="startNewULUsage()">
+                                    <i class="mdi mdi-plus me-2"></i>
+                                    Record Another UL Usage
+                                </button>
+                                <button class="btn btn-outline-danger btn-lg" (click)="logout()">
+                                    <i class="mdi mdi-logout me-2"></i>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="form-content" *ngIf="!showSuccessMessage">
+        <div class="container py-5">
+
+            <!-- Authentication Required -->
+            <div *ngIf="!isAuthenticated" class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-5 text-center">
+                            <div class="auth-icon mb-4">
+                                <div class="icon-background">
+                                    <i class="mdi mdi-shield-account text-warning" style="font-size: 4rem;"></i>
+                                </div>
+                            </div>
+                            <h4 class="fw-bold mb-3">Authentication Required</h4>
+                            <p class="text-muted mb-4">
+                                Please login to record UL usage. Your session will be automatically managed for
+                                security.
+                            </p>
+                            <button class="btn btn-primary btn-lg px-4" (click)="openLoginModal(loginModal)">
+                                <i class="mdi mdi-login me-2"></i>
+                                Login to Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UL Usage Form -->
+            <div *ngIf="isAuthenticated" class="row justify-content-center">
+                <div class="col-lg-8 col-xl-7">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-white border-bottom py-4">
+                            <h5 class="mb-0 fw-bold text-dark">
+                                <i class="mdi mdi-form-select me-2"></i>
+                                Record UL Usage
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+
+                            <form [formGroup]="usageForm" (ngSubmit)="onSubmit()">
+
+                                <!-- Bulk Mode Toggle - Remove this since it's now automatic -->
+
+                                <!-- Category Selection (Required First) -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="p-4 bg-light rounded border">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-12 mb-3">
+                                                    <label class="form-label fw-semibold mb-3">
+                                                        <i class="mdi mdi-tag me-2"></i>
+                                                        Select Category First *
+                                                    </label>
+                                                    <select formControlName="category"
+                                                        class="form-select form-select-lg">
+                                                        <option value="">Choose category to see available UL numbers...
+                                                        </option>
+                                                        <option *ngFor="let option of categoryOptions"
+                                                            [value]="option.value">
+                                                            {{ option.label }}
+                                                        </option>
+                                                    </select>
+                                                    <div class="form-text mt-2">
+                                                        <i class="mdi mdi-information me-1"></i>
+                                                        UL numbers will be automatically assigned based on your category
+                                                        selection
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center">
+                                                <div class="col-md-12" *ngIf="usageForm.get('category')?.value">
+                                                    <div
+                                                        class="p-3 bg-primary bg-opacity-10 rounded border border-primary border-opacity-25">
+                                                        <h6 class="mb-2 fw-semibold text-primary">
+                                                            <i class="mdi mdi-check-circle me-2"></i>
+                                                            {{ usageForm.get('category')?.value }} Category Selected
+                                                        </h6>
+                                                        <p class="mb-1 small text-muted">
+                                                            Available UL numbers: {{ getAvailableULOptions().length }}
+                                                        </p>
+                                                        <p class="mb-0 small text-muted">
+                                                            Next available UL will be automatically assigned
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quantity Selection -->
+                                <div class="row mb-4" *ngIf="isAuthenticated && usageForm.get('category')?.value">
+                                    <div class="col-12">
+                                        <div class="p-4 bg-light rounded border">
+                                            <h6 class="mb-3 fw-semibold text-dark">
+                                                <i class="mdi mdi-counter me-2"></i>
+                                                How many UL numbers do you need?
+                                            </h6>
+
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold">
+                                                        <i class="mdi mdi-numeric me-1"></i>
+                                                        Quantity *
+                                                    </label>
+                                                    <select formControlName="ul_quantity"
+                                                        class="form-select form-select-lg"
+                                                        (change)="onQuantityChange($event)">
+                                                        <option value="">Select quantity...</option>
+                                                        <option value="1">1 UL Number (Single Transaction)</option>
+                                                        <option value="2">2 UL Numbers</option>
+                                                        <option value="3">3 UL Numbers</option>
+                                                        <option value="4">4 UL Numbers</option>
+                                                        <option value="5">5 UL Numbers</option>
+                                                        <option value="10">10 UL Numbers</option>
+                                                        <option value="15">15 UL Numbers</option>
+                                                        <option value="20">20 UL Numbers</option>
+                                                        <option value="25">25 UL Numbers</option>
+                                                        <option value="50">50 UL Numbers</option>
+                                                    </select>
+                                                    <div class="form-text mt-2">
+                                                        <i class="mdi mdi-information me-1"></i>
+                                                        System will automatically assign the next available UL numbers
+                                                        in sequence
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6" *ngIf="assignedULNumbers.length > 0">
+                                                    <label class="form-label fw-semibold">
+                                                        <i class="mdi mdi-check-circle me-1"></i>
+                                                        Assigned UL Numbers
+                                                    </label>
+                                                    <div
+                                                        class="assigned-uls p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
+                                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                                            <span *ngFor="let ulNumber of assignedULNumbers"
+                                                                class="badge bg-success text-white">
+                                                                {{ ulNumber }}
+                                                            </span>
+                                                        </div>
+                                                        <div class="small text-success">
+                                                            <i class="mdi mdi-information me-1"></i>
+                                                            {{ assignedULNumbers.length }} UL number{{
+                                                            assignedULNumbers.length > 1 ? 's' : '' }} assigned
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- UL Number Range Display -->
+                                <div class="row mb-4" *ngIf="isAuthenticated && usageForm.get('category')?.value">
+                                    <div class="col-12">
+                                        <div class="ul-range-display p-4 bg-light rounded border">
+                                            <h6 class="mb-3 fw-semibold text-dark">
+                                                <i class="mdi mdi-order-numeric-ascending me-2"></i>
+                                                UL Number Sequence Overview
+                                            </h6>
+
+                                            <div class="row g-3">
+                                                <!-- Previous 5 Used ULs -->
+                                                <div class="col-md-4">
+                                                    <div class="ul-section">
+                                                        <h6 class="small text-muted mb-2 fw-semibold">
+                                                            <i class="mdi mdi-history me-1"></i>Previous 5 Used
+                                                        </h6>
+                                                        <div class="ul-badges-container">
+                                                            <div *ngIf="lastUsedULs.length === 0"
+                                                                class="text-muted small">
+                                                                No previous usage
+                                                            </div>
+                                                            <div *ngIf="lastUsedULs.length > 0"
+                                                                class="d-flex flex-wrap gap-1">
+                                                                <span *ngFor="let ul of lastUsedULs"
+                                                                    class="badge bg-secondary text-white">
+                                                                    {{ ul.ul_number }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Selected/Assigned ULs -->
+                                                <div class="col-md-4">
+                                                    <div class="ul-section">
+                                                        <h6 class="small text-primary mb-2 fw-semibold">
+                                                            <i class="mdi mdi-arrow-right me-1"></i>
+                                                            {{ assignedULNumbers.length > 0 ? 'Selected ULs' : 'Next to Use' }}
+                                                        </h6>
+                                                        <div class="ul-badges-container">
+                                                            <div *ngIf="assignedULNumbers.length === 0 && currentUL"
+                                                                class="d-flex flex-wrap gap-1">
+                                                                <span class="badge bg-primary text-white">
+                                                                    {{ currentUL.ul_number }}
+                                                                </span>
+                                                            </div>
+                                                            <div *ngIf="assignedULNumbers.length > 0"
+                                                                class="d-flex flex-wrap gap-1">
+                                                                <span *ngFor="let ulNumber of assignedULNumbers"
+                                                                    class="badge bg-success text-white">
+                                                                    {{ ulNumber }}
+                                                                </span>
+                                                            </div>
+                                                            <div *ngIf="assignedULNumbers.length === 0 && !currentUL"
+                                                                class="text-muted small">
+                                                                No UL available
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Next 10 Available ULs -->
+                                                <div class="col-md-4">
+                                                    <div class="ul-section">
+                                                        <h6 class="small text-success mb-2 fw-semibold">
+                                                            <i class="mdi mdi-arrow-right-bold me-1"></i>Next 10
+                                                            Available
+                                                        </h6>
+                                                        <div class="ul-badges-container">
+                                                            <div *ngIf="nextULs.length === 0" class="text-muted small">
+                                                                No upcoming ULs
+                                                            </div>
+                                                            <div *ngIf="nextULs.length > 0"
+                                                                class="d-flex flex-wrap gap-1">
+                                                                <span *ngFor="let ul of nextULs"
+                                                                    class="badge bg-success-subtle text-success border border-success border-opacity-25">
+                                                                    {{ ul.ul_number }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Summary Information -->
+                                            <div class="mt-3 pt-3 border-top">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <small class="text-muted">
+                                                            <i class="mdi mdi-information me-1"></i>
+                                                            <strong>{{ usageForm.get('category')?.value }}</strong>
+                                                            category selected
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-6 text-end">
+                                                        <small class="text-muted">
+                                                            <i class="mdi mdi-counter me-1"></i>
+                                                            {{ getAvailableULOptions().length }} total available ULs
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Form Fields for each UL -->
+                                <div *ngIf="assignedULNumbers.length > 0">
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <h6 class="fw-semibold text-dark mb-3">
+                                                <i class="mdi mdi-form-select me-2"></i>
+                                                {{ assignedULNumbers.length === 1 ? 'Transaction Details' : 'Bulk Transaction Details' }}
+                                            </h6>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bulk Input Helper (for multiple ULs) -->
+                                    <div *ngIf="assignedULNumbers.length > 1" class="bulk-helper mb-4">
+                                        <div class="card border-primary border-opacity-25  bg-opacity-5">
+                                            <div
+                                                class="card-header bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25">
+                                                <h6 class="mb-0 fw-semibold text-primary">
+                                                    <i class="mdi mdi-content-copy me-2"></i>
+                                                    Bulk Input Helper - Apply to All UL Forms
+                                                </h6>
+                                                <small class="text-muted">Enter common information once to populate all
+                                                    {{ assignedULNumbers.length }} UL forms</small>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-domain me-1"></i>
+                                                            Customer (Apply to All)
+                                                        </label>
+                                                        <input type="text" [(ngModel)]="bulkCustomer"
+                                                            [ngModelOptions]="{standalone: true}" name="bulkCustomer"
+                                                            class="form-control"
+                                                            placeholder="Enter customer name for all ULs"
+                                                            (input)="applyBulkCustomer()">
+                                                        <div class="form-text">This will populate the customer field for
+                                                            all UL forms</div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-text-subject me-1"></i>
+                                                            Description (Apply to All)
+                                                        </label>
+                                                        <input type="text" [(ngModel)]="bulkDescription"
+                                                            [ngModelOptions]="{standalone: true}" name="bulkDescription"
+                                                            class="form-control"
+                                                            placeholder="Enter description for all ULs"
+                                                            (input)="applyBulkDescription()">
+                                                        <div class="form-text">This will populate the description field
+                                                            for all UL forms</div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row g-3 mt-2">
+                                                    <div class="col-12">
+                                                        <div class="d-flex gap-2">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                                                (click)="clearBulkFields()">
+                                                                <i class="mdi mdi-broom me-1"></i>
+                                                                Clear All Fields
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-success btn-sm"
+                                                                (click)="applyAllBulkFields()">
+                                                                <i class="mdi mdi-check-all me-1"></i>
+                                                                Apply to All Forms
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Single UL Form -->
+                                    <div *ngIf="assignedULNumbers.length === 1" class="single-ul-form">
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-8">
+                                                <label class="form-label fw-semibold">
+                                                    <i class="mdi mdi-barcode me-1"></i>
+                                                    Serial Number *
+                                                </label>
+                                                <input type="text" formControlName="serial_number"
+                                                    class="form-control form-control-lg"
+                                                    placeholder="Enter device serial number">
+                                                <div class="form-text">Device or component serial number for {{
+                                                    assignedULNumbers[0] }}</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold">
+                                                    <i class="mdi mdi-counter me-1"></i>
+                                                    Quantity *
+                                                </label>
+                                                <input type="number" formControlName="quantity"
+                                                    class="form-control form-control-lg" min="1" placeholder="1">
+                                                <div class="form-text">Number of units</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-12">
+                                                <label class="form-label fw-semibold">
+                                                    <i class="mdi mdi-domain me-1"></i>
+                                                    Customer *
+                                                </label>
+                                                <input type="text" formControlName="customer"
+                                                    class="form-control form-control-lg"
+                                                    placeholder="Customer name or company">
+                                                <div class="form-text">Customer receiving the device</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-12">
+                                                <label class="form-label fw-semibold">
+                                                    <i class="mdi mdi-text-subject me-1"></i>
+                                                    Description *
+                                                </label>
+                                                <input type="text" formControlName="description"
+                                                    class="form-control form-control-lg"
+                                                    placeholder="Device description">
+                                                <div class="form-text">Brief description of the device/component</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Notes Section for Single Mode -->
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-12">
+                                                <label class="form-label fw-semibold">
+                                                    <i class="mdi mdi-note-text me-1"></i>
+                                                    Notes (Optional)
+                                                </label>
+                                                <textarea formControlName="notes" class="form-control" rows="3"
+                                                    placeholder="Additional notes or comments">
+                                                </textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bulk UL Forms -->
+                                    <div *ngIf="assignedULNumbers.length > 1" class="bulk-ul-forms">
+                                        <div *ngFor="let ulNumber of assignedULNumbers; let i = index"
+                                            class="ul-form-card card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0 fw-semibold">
+                                                    <i class="mdi mdi-numeric me-2"></i>
+                                                    UL {{ ulNumber }} - Transaction {{ i + 1 }}
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-barcode me-1"></i>
+                                                            Serial Number *
+                                                        </label>
+                                                        <input type="text"
+                                                            [(ngModel)]="bulkTransactions[i].serial_number"
+                                                            [ngModelOptions]="{standalone: true}"
+                                                            name="bulk_serial_{{ i }}" class="form-control"
+                                                            placeholder="Enter device serial number" required>
+                                                    </div>
+
+                                                    <div class="col-md-2">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-counter me-1"></i>
+                                                            Quantity *
+                                                        </label>
+                                                        <input type="number" [(ngModel)]="bulkTransactions[i].quantity"
+                                                            [ngModelOptions]="{standalone: true}"
+                                                            name="bulk_quantity_{{ i }}" class="form-control" min="1"
+                                                            placeholder="1" required>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-domain me-1"></i>
+                                                            Customer *
+                                                        </label>
+                                                        <input type="text" [(ngModel)]="bulkTransactions[i].customer"
+                                                            [ngModelOptions]="{standalone: true}"
+                                                            name="bulk_customer_{{ i }}" class="form-control"
+                                                            placeholder="Customer name" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row g-3 mt-2">
+
+                                                    <div class="col-md-12">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-text-subject me-1"></i>
+                                                            Description *
+                                                        </label>
+                                                        <input type="text" [(ngModel)]="bulkTransactions[i].description"
+                                                            [ngModelOptions]="{standalone: true}"
+                                                            name="bulk_description_{{ i }}" class="form-control"
+                                                            placeholder="Device description" required>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row g-3 mt-2">
+                                                    <div class="col-12">
+                                                        <label class="form-label fw-semibold">
+                                                            <i class="mdi mdi-note-text me-1"></i>
+                                                            Notes (Optional)
+                                                        </label>
+                                                        <textarea [(ngModel)]="bulkTransactions[i].notes"
+                                                            [ngModelOptions]="{standalone: true}"
+                                                            name="bulk_notes_{{ i }}" class="form-control" rows="2"
+                                                            placeholder="Additional notes for this UL">
+                                                        </textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Section -->
+                                <div class="submit-section mt-5 pt-4 border-top">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <div class="form-summary">
+                                                <div class="text-muted small">
+                                                    <strong>Summary:</strong>
+                                                    <span *ngIf="assignedULNumbers.length === 1">
+                                                        UL {{ assignedULNumbers[0] }}
+                                                    </span>
+                                                    <span *ngIf="assignedULNumbers.length > 1">
+                                                        {{ assignedULNumbers.length }} UL numbers ({{
+                                                        assignedULNumbers[0] }}{{ assignedULNumbers.length > 1 ? ' + ' +
+                                                        (assignedULNumbers.length - 1) + ' more' : '' }})
+                                                    </span>
+                                                    <span *ngIf="usageForm.get('category')?.value">
+                                                        - {{ usageForm.get('category')?.value }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <button type="submit" class="btn btn-success btn-lg px-5"
+                                                [disabled]="!isFormValid() || isSubmitting">
+                                                <i *ngIf="isSubmitting" class="mdi mdi-loading mdi-spin me-2"></i>
+                                                <i *ngIf="!isSubmitting" class="mdi mdi-check me-2"></i>
+                                                {{ 
+                                                    isSubmitting ? (assignedULNumbers.length > 1 ? 'Recording Bulk Usage...' : 'Recording...') : (assignedULNumbers.length > 1 ? 'Record Bulk Usage' : 'Record Usage') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div *ngIf="showConfirmationModal" class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-3">
+                <h4 class="modal-title fw-bold w-100 text-center">
+                    <i class="mdi mdi-clipboard-check me-2 text-primary"></i>
+                    Confirm UL Usage Submission
+                </h4>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="mdi mdi-information me-2"></i>
+                            <span>Please review the following information before submitting</span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Device Information -->
-                <div class="row g-3 mb-4">
-                  <div class="col-md-8">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-barcode me-1"></i>
-                      Serial Number *
-                    </label>
-                    <input 
-                      type="text" 
-                      formControlName="serial_number" 
-                      class="form-control form-control-lg"
-                      placeholder="Enter device serial number">
-                    <div class="form-text">Device or component serial number</div>
-                  </div>
-                  
-                  <div class="col-md-4">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-counter me-1"></i>
-                      Quantity *
-                    </label>
-                    <input 
-                      type="number" 
-                      formControlName="quantity" 
-                      class="form-control form-control-lg"
-                      min="1" 
-                      placeholder="1">
-                    <div class="form-text">Number of units</div>
-                  </div>
-                </div>
-
-                <!-- Customer Information -->
-                <div class="row g-3 mb-4">
-                  <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-domain me-1"></i>
-                      Customer *
-                    </label>
-                    <input 
-                      type="text" 
-                      formControlName="customer" 
-                      class="form-control form-control-lg"
-                      placeholder="Customer name or company">
-                    <div class="form-text">Customer receiving the device</div>
-                  </div>
-                  
-                  <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                      <i class="mdi mdi-note-text me-1"></i>
-                      Notes (Optional)
-                    </label>
-                    <input 
-                      type="text" 
-                      formControlName="notes" 
-                      class="form-control form-control-lg"
-                      placeholder="Additional notes or comments">
-                    <div class="form-text">Any additional information</div>
-                  </div>
-                </div>
-
-                <!-- Submit Section -->
-                <div class="submit-section mt-5 pt-4 border-top">
-                  <div class="row align-items-center">
+                <!-- Summary Information -->
+                <div class="row mb-4">
                     <div class="col-md-6">
-                      <div class="form-summary">
-                        <div class="text-muted small">
-                          <strong>Summary:</strong>
-                          <span *ngIf="usageForm.get('ul_number')?.value">
-                            UL {{ usageForm.get('ul_number')?.value }}
-                          </span>
-                          <span *ngIf="usageForm.get('quantity')?.value > 1">
-                            ({{ usageForm.get('quantity')?.value }} units)
-                          </span>
-                          <span *ngIf="usageForm.get('customer')?.value">
-                            for {{ usageForm.get('customer')?.value }}
-                          </span>
+                        <div class="summary-card p-3 bg-light rounded border">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="mdi mdi-account me-1"></i>
+                                User Information
+                            </h6>
+                            <div class="small">
+                                <div><strong>User:</strong> {{ currentUser?.full_name || currentUser?.username }}</div>
+                                <div><strong>Date:</strong> {{ getCurrentDate() | date:'medium' }}</div>
+                            </div>
                         </div>
-                      </div>
                     </div>
-                    <div class="col-md-6 text-end">
-                      <button 
-                        type="submit" 
-                        class="btn btn-success btn-lg px-5"
-                        [disabled]="!isFormValid() || isSubmitting">
-                        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
-                        <i *ngIf="!isSubmitting" class="mdi mdi-check me-2"></i>
-                        {{ isSubmitting ? 'Recording...' : 'Record Usage' }}
-                      </button>
+                    <div class="col-md-6">
+                        <div class="summary-card p-3 bg-light rounded border">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="mdi mdi-tag me-1"></i>
+                                Transaction Summary
+                            </h6>
+                            <div class="small">
+                                <div><strong>Category:</strong> {{ pendingSubmissionData[0]?.category }}</div>
+                                <div><strong>Total ULs:</strong> {{ pendingSubmissionData.length }}</div>
+                            </div>
+                        </div>
                     </div>
-                  </div>
                 </div>
-              </form>
+
+                <!-- UL Details Table -->
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>UL Number</th>
+                                <th>Serial Number</th>
+                                <th>Quantity</th>
+                                <th>Customer</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let record of pendingSubmissionData">
+                                <td class="fw-semibold">{{ record.ul_number }}</td>
+                                <td>{{ record.serial_number }}</td>
+                                <td class="text-center">{{ record.quantity }}</td>
+                                <td>{{ record.customer }}</td>
+                                <td>{{ record.description }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Warning Message -->
+                <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 mt-3">
+                    <div class="d-flex align-items-start">
+                        <i class="mdi mdi-alert-triangle me-2 mt-1"></i>
+                        <div class="small">
+                            <strong>Important:</strong> Once submitted, this UL usage cannot be undone. 
+                            Please verify all information is correct before proceeding.
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <div class="d-flex gap-3 w-100">
+                    <button type="button" class="btn btn-outline-secondary flex-fill" (click)="cancelSubmission()">
+                        <i class="mdi mdi-close me-2"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-success flex-fill" (click)="confirmSubmission()" [disabled]="isSubmitting">
+                        <i *ngIf="isSubmitting" class="mdi mdi-loading mdi-spin me-2"></i>
+                        <i *ngIf="!isSubmitting" class="mdi mdi-check me-2"></i>
+                        {{ isSubmitting ? 'Submitting...' : 'Confirm & Submit' }}
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <!-- Login Modal -->
 <ng-template #loginModal let-modal>
-  <div class="modal-header border-bottom-0 pb-0">
-    <h4 class="modal-title fw-bold">
-      <i class="mdi mdi-login me-2"></i>
-      Temporary Login
-    </h4>
-  </div>
-  <div class="modal-body p-4">
-    <div class="text-center mb-4">
-      <div class="login-icon mb-3">
-        <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
-      </div>
-      <p class="text-muted">
-        Enter your credentials for temporary access. 
-        Your session will automatically expire in 30 minutes.
-      </p>
+    <div class="modal-header border-bottom-0 pb-0">
+        <h4 class="modal-title fw-bold w-100 text-center">
+            <i class="mdi mdi-login me-2"></i>
+            Temporary Login
+        </h4>
     </div>
-    
-    <!-- Error Alert -->
-    <div *ngIf="loginError" class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-      <div class="d-flex align-items-center">
-        <i class="mdi mdi-alert-circle me-2"></i>
-        <div class="flex-grow-1">
-          {{ loginError }}
+    <div class="modal-body p-4">
+        <div class="text-center mb-4">
+            <div class="login-icon mb-3">
+                <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
+            </div>
+            <p class="text-muted">
+                Enter your credentials for temporary access.
+                Your session will expire in 15 minutes or after 1 minute of inactivity.
+            </p>
         </div>
-        <button type="button" class="btn-close" (click)="loginError = ''"></button>
-      </div>
+
+        <div *ngIf="loginError" class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="mdi mdi-alert-circle me-2"></i>
+                <div class="flex-grow-1">
+                    {{ loginError }}
+                </div>
+                <button type="button" class="btn btn-link p-0" (click)="loginError = ''">
+                    <i class="mdi mdi-close text-muted"></i>
+                </button>
+            </div>
+        </div>
+
+        <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Username</label>
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-lg" name="username" ngModel required autofocus
+                        placeholder="riz.dacanay">
+                    <span class="input-group-text">&#64;the-fi-company.com</span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Password</label>
+                <input type="password" class="form-control form-control-lg" name="password" ngModel required
+                    placeholder="Enter your password">
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg" [disabled]="!loginForm.valid || isLoggingIn">
+                    <i *ngIf="isLoggingIn" class="mdi mdi-loading mdi-spin me-2"></i>
+                    <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
+                    {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
+                </button>
+                <button type="button" class="btn btn-light" [disabled]="isLoggingIn" (click)="modal.dismiss()">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
-    
-    <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Username</label>
-        <input 
-          type="text" 
-          class="form-control form-control-lg" 
-          name="username"
-          ngModel
-          required
-          autofocus
-          placeholder="Enter your username">
-      </div>
-      
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Password</label>
-        <input 
-          type="password" 
-          class="form-control form-control-lg" 
-          name="password"
-          ngModel
-          required
-          placeholder="Enter your password">
-      </div>
-      
-      <div class="d-grid gap-2">
-        <button 
-          type="submit" 
-          class="btn btn-primary btn-lg"
-          [disabled]="!loginForm.valid || isLoggingIn">
-          <span *ngIf="isLoggingIn" class="spinner-border spinner-border-sm me-2"></span>
-          <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
-          {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-light" 
-          [disabled]="isLoggingIn"
-          (click)="modal.dismiss()">
-          Cancel
-        </button>
-      </div>
-    </form>
-  </div>
 </ng-template>

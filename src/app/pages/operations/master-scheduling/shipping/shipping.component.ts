@@ -52,6 +52,31 @@ import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-r
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
 
+// Priority-related interfaces
+interface PriorityData {
+  order_id: string;
+  sales_order_number: string;
+  sales_order_line: string;
+  priority_level: number;
+  notes?: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
+  is_active: boolean;
+}
+
+interface ShippingOrder {
+  id: any;
+  SOD_NBR: string;
+  SOD_LINE: string;
+  SOD_PART: string;
+  STATUS: string;
+  shipping_priority?: number;
+  priority_notes?: string;
+  [key: string]: any; // For other dynamic properties
+}
+
 const WS_SHIPPING = "WS_SHIPPING";
 
 @Component({
@@ -66,6 +91,7 @@ const WS_SHIPPING = "WS_SHIPPING";
   ],
   selector: "app-shipping",
   templateUrl: "./shipping.component.html",
+  styleUrls: ["./shipping.component.scss"],
 })
 export class ShippingComponent implements OnInit {
   onBtExport() {
@@ -202,6 +228,14 @@ export class ShippingComponent implements OnInit {
       this.comment = params["comment"];
     });
 
+    // Initialize user ID
+    this.userSsoId = this.authenticationService.currentUserValue?.ssoId || 'unknown';
+
+    // Set up global methods for cell renderer buttons
+    (window as any).removePriorityOrder = (orderId: string) => this.removePriorityOrder(orderId);
+    (window as any).movePriorityToTop = (orderId: string) => this.movePriorityToTop(orderId);
+    (window as any).addToPriorityList = (orderData: any) => this.addToPriorityList(orderData);
+
     this.getData();
 
     if (this.comment) {
@@ -235,6 +269,111 @@ export class ShippingComponent implements OnInit {
   id = null;
 
   title = "Shipping";
+
+  // Priority system properties
+  activeTab: 'all' | 'priority' = 'all';
+  priorityData: PriorityData[] = [];
+  priorityMap = new Map<string, PriorityData>();
+  allOrdersData: ShippingOrder[] = [];
+  priorityOrdersData: ShippingOrder[] = [];
+  allOrdersCount = 0;
+  priorityOrdersCount = 0;
+  userSsoId: string = '';
+  
+  // Priority management grid
+  priorityGridApi!: GridApi;
+  priorityGridOptions: GridOptions = {
+    rowDragManaged: true,
+    animateRows: true,
+    suppressMoveWhenRowDragging: true,
+    rowDragEntireRow: true,
+    suppressRowDrag: false,
+    onRowDragEnd: (event) => this.onPriorityRowDragEnd(event),
+    getRowStyle: (params) => {
+      if (params.data.shipping_priority) {
+        return { 
+          backgroundColor: '#f8f9fa', 
+          border: '2px solid #007bff',
+          fontWeight: 'bold'
+        };
+      }
+      return null;
+    }
+  };
+
+  priorityColumns: ColDef[] = [
+    {
+      field: 'priority_position',
+      headerName: '#',
+      width: 60,
+      cellStyle: { textAlign: 'center', fontWeight: 'bold', fontSize: '16px' },
+      valueGetter: (params) => {
+        const rowIndex = params.node?.rowIndex;
+        return rowIndex !== undefined ? rowIndex + 1 : '';
+      }
+    },
+    {
+      rowDrag: true,
+      headerName: '',
+      width: 40,
+      cellRenderer: () => '<i class="mdi mdi-drag-vertical" style="cursor: grab; color: #6c757d;"></i>'
+    },
+    {
+      field: 'SOD_NBR',
+      headerName: 'Sales Order',
+      width: 120,
+      cellStyle: { fontWeight: 'bold' }
+    },
+    {
+      field: 'SOD_LINE', 
+      headerName: 'Line',
+      width: 80
+    },
+    {
+      field: 'SOD_PART',
+      headerName: 'Part Number',
+      width: 150
+    },
+    {
+      field: 'SOD_CUSTOMER_NAME',
+      headerName: 'Customer',
+      width: 200
+    },
+    {
+      field: 'SOD_DUE_DATE',
+      headerName: 'Due Date',
+      width: 120,
+      valueFormatter: (params) => {
+        if (params.value) {
+          return moment(params.value).format('MM/DD/YYYY');
+        }
+        return '';
+      }
+    },
+    {
+      field: 'priority_notes',
+      headerName: 'Priority Notes',
+      width: 200,
+      editable: true,
+      cellEditor: 'agTextCellEditor'
+    },
+    {
+      headerName: 'Actions',
+      width: 120,
+      cellRenderer: (params: any) => {
+        return `
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-danger" onclick="window.removePriorityOrder('${params.data.id}')" title="Remove from Priority">
+              <i class="mdi mdi-close"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="window.movePriorityToTop('${params.data.id}')" title="Move to Top">
+              <i class="mdi mdi-chevron-double-up"></i>
+            </button>
+          </div>
+        `;
+      }
+    }
+  ];
 
   public isInspection(data: any) {
     return (
@@ -395,6 +534,305 @@ export class ShippingComponent implements OnInit {
     this.gridApi.setGridOption("quickFilterText", value);
   }
 
+  // Priority-related methods
+  switchTab(tab: 'all' | 'priority') {
+    this.activeTab = tab;
+    if (tab === 'all') {
+      this.data = this.allOrdersData;
+    } else {
+      this.data = this.priorityOrdersData;
+    }
+    this.updateCounts();
+  }
+
+  updateCounts() {
+    this.allOrdersCount = this.allOrdersData.length;
+    this.priorityOrdersCount = this.priorityOrdersData.length;
+  }
+
+  // Method to refresh mock data - useful for testing
+  refreshMockData() {
+    console.log('Refreshing mock priority data...');
+    this.loadPriorities();
+  }
+
+  // Method to demonstrate mock functionality with test data
+  testMockPriorities() {
+    console.log('🧪 Testing Mock Priority System...');
+    
+    // Simulate adding priorities to some orders
+    if (this.data.length > 0) {
+      const testOrders = this.data.slice(0, 3); // Take first 3 orders for testing
+      
+      testOrders.forEach(async (order, index) => {
+        const testPriority = index + 1;
+        console.log(`🔧 Setting priority ${testPriority} for ${order.SOD_NBR}-${order.SOD_LINE}`);
+        await this.updatePriority(order, testPriority);
+      });
+      
+      setTimeout(() => {
+        console.log('🎉 Mock test completed! Check the Priority Orders tab.');
+        alert('Mock test completed! Check the Priority Orders tab to see the results.');
+      }, 1000);
+    } else {
+      console.log('⚠️ No orders available for testing');
+      alert('No orders available for testing. Please load some shipping data first.');
+    }
+  }
+
+  // AG-Grid Priority Management Methods
+  onPriorityGridReady(params: any) {
+    this.priorityGridApi = params.api;
+    this.updatePriorityGrid();
+  }
+
+  onPriorityRowDragEnd(event: any) {
+    console.log('🔄 Priority row drag ended');
+    this.recalculatePriorities();
+  }
+
+  recalculatePriorities() {
+    const allRowData: any[] = [];
+    this.priorityGridApi.forEachNode((node, index) => {
+      if (node.data) {
+        // Update priority based on new position
+        const newPriority = index + 1;
+        const oldPriority = node.data.shipping_priority;
+        
+        node.data.shipping_priority = newPriority;
+        allRowData.push(node.data);
+        
+        // Update the priority in the mock service
+        this.updatePriorityInService(node.data, newPriority);
+        
+        console.log(`📍 Reordered: ${node.data.SOD_NBR}-${node.data.SOD_LINE} from priority ${oldPriority} to ${newPriority}`);
+      }
+    });
+
+    // Update the main data
+    this.priorityOrdersData = [...allRowData];
+    this.updateCounts();
+    
+    // Refresh the main grid to show updated priorities
+    if (this.gridApi) {
+      this.gridApi.refreshCells();
+    }
+
+    console.log('✅ Priority recalculation completed');
+  }
+
+  async updatePriorityInService(orderData: any, newPriority: number) {
+    try {
+      await this.api.updateShippingPriority({
+        orderId: `${orderData.SOD_NBR}-${orderData.SOD_LINE}`,
+        salesOrderNumber: orderData.SOD_NBR,
+        salesOrderLine: orderData.SOD_LINE,
+        priority: newPriority,
+        notes: orderData.priority_notes || `Priority ${newPriority}`
+      });
+    } catch (error) {
+      console.error('Error updating priority in service:', error);
+    }
+  }
+
+  updatePriorityGrid() {
+    if (this.priorityGridApi && this.priorityOrdersData) {
+      // Sort by current priority
+      const sortedData = [...this.priorityOrdersData].sort((a, b) => {
+        return (a.shipping_priority || 999) - (b.shipping_priority || 999);
+      });
+      
+      this.priorityGridApi.setGridOption('rowData', sortedData);
+      console.log('🔄 Priority grid updated with', sortedData.length, 'orders');
+    }
+  }
+
+  // Quick action methods (called from cell renderer buttons)
+  removePriorityOrder(orderId: string) {
+    const order = this.priorityOrdersData.find(o => o.id === orderId);
+    if (order) {
+      this.updatePriority(order, 0); // Remove priority
+      setTimeout(() => {
+        this.updatePriorityGrid();
+      }, 100);
+    }
+  }
+
+  movePriorityToTop(orderId: string) {
+    const orderIndex = this.priorityOrdersData.findIndex(o => o.id === orderId);
+    if (orderIndex > 0) {
+      // Move order to top of array
+      const order = this.priorityOrdersData.splice(orderIndex, 1)[0];
+      this.priorityOrdersData.unshift(order);
+      
+      // Update grid and recalculate priorities
+      this.updatePriorityGrid();
+      setTimeout(() => {
+        this.recalculatePriorities();
+      }, 100);
+    }
+  }
+
+  // Add order to priority list
+  addToPriorityList(orderIdOrData: any) {
+    let orderData;
+    
+    // Handle both order ID and order object inputs
+    if (typeof orderIdOrData === 'string') {
+      // Find order by ID
+      orderData = this.allOrdersData.find(order => order.id === orderIdOrData);
+      if (!orderData) {
+        console.error('Order not found with ID:', orderIdOrData);
+        return;
+      }
+    } else {
+      orderData = orderIdOrData;
+    }
+    
+    if (!orderData.shipping_priority) {
+      const nextPriority = this.priorityOrdersData.length + 1;
+      console.log(`➕ Adding order ${orderData.SOD_NBR}-${orderData.SOD_LINE} to priority list as priority ${nextPriority}`);
+      
+      this.updatePriority(orderData, nextPriority);
+      
+      setTimeout(() => {
+        this.updatePriorityGrid();
+      }, 200);
+    } else {
+      console.log(`⚠️ Order ${orderData.SOD_NBR}-${orderData.SOD_LINE} already has priority ${orderData.shipping_priority}`);
+    }
+  }
+
+  async updatePriority(orderData: ShippingOrder, newPriority: number): Promise<boolean> {
+    try {
+      // Generate order ID from SO number and line
+      const orderId = `${orderData.SOD_NBR}-${orderData.SOD_LINE}`;
+      
+      console.log('🎯 Mock Priority Update Request:', {
+        orderId,
+        currentPriority: orderData.shipping_priority,
+        newPriority,
+        orderDetails: `${orderData.SOD_NBR}-${orderData.SOD_LINE}`
+      });
+      
+      // Check if priority already exists (excluding current order)
+      const existingOrder = this.allOrdersData.find(
+        order => order.shipping_priority === newPriority && 
+                order.id !== orderData.id && 
+                newPriority > 0
+      );
+      
+      if (existingOrder && newPriority > 0) {
+        console.log('❌ Priority conflict detected:', `Priority ${newPriority} already assigned to ${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+        alert(`Priority ${newPriority} is already assigned to SO#${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+        return false;
+      }
+
+      // Update via API (mock)
+      await this.api.updateShippingPriority({
+        orderId: orderId,
+        salesOrderNumber: orderData.SOD_NBR,
+        salesOrderLine: orderData.SOD_LINE,
+        priority: newPriority,
+        notes: `Priority set for ${orderData.SOD_PART}`
+      });
+
+      // Update local data
+      orderData.shipping_priority = newPriority;
+      
+      // Update priority map
+      if (newPriority > 0) {
+        this.priorityMap.set(orderId, {
+          priority_level: newPriority,
+          order_id: orderId,
+          sales_order_number: orderData.SOD_NBR,
+          sales_order_line: orderData.SOD_LINE,
+          notes: `Priority set for ${orderData.SOD_PART}`,
+          created_at: new Date().toISOString(),
+          created_by: this.userSsoId || 'unknown',
+          updated_at: new Date().toISOString(),
+          updated_by: this.userSsoId || 'unknown',
+          is_active: true
+        });
+        
+        console.log('✅ Mock Priority Set:', {
+          orderId,
+          priority: newPriority,
+          totalPriorities: this.priorityMap.size
+        });
+      } else {
+        this.priorityMap.delete(orderId);
+        console.log('🗑️ Mock Priority Removed:', orderId);
+      }
+      
+      this.refreshPriorityData();
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error updating mock priority:', error);
+      alert('Failed to update priority. Please try again.');
+      return false;
+    }
+  }
+
+  async loadPriorities() {
+    try {
+      const response = await this.api.getShippingPriorities();
+      if (response && response.success) {
+        // Create a map of order IDs to priority data
+        this.priorityMap.clear();
+        if (response.data) {
+          response.data.forEach((priority: any) => {
+            this.priorityMap.set(priority.order_id, priority);
+          });
+        }
+        
+        console.log('Mock Priorities Loaded:', {
+          count: this.priorityMap.size,
+          priorities: Array.from(this.priorityMap.values())
+        });
+        
+        // Merge priority data with shipping data
+        this.mergePriorityData();
+      }
+    } catch (error) {
+      console.error('Error loading priorities:', error);
+    }
+  }
+
+  mergePriorityData() {
+    // Add priority information to shipping data
+    this.data.forEach((order: any) => {
+      const orderId = `${order.SOD_NBR}-${order.SOD_LINE}`;
+      const priorityData = this.priorityMap.get(orderId);
+      
+      if (priorityData) {
+        order.shipping_priority = priorityData.priority_level;
+        order.priority_notes = priorityData.notes;
+      } else {
+        order.shipping_priority = 0;
+        order.priority_notes = null;
+      }
+    });
+    
+    this.refreshPriorityData();
+  }
+
+  refreshPriorityData() {
+    // Split data based on priority
+    this.allOrdersData = [...this.data];
+    this.priorityOrdersData = this.data.filter(order => 
+      order.shipping_priority && order.shipping_priority > 0
+    ).sort((a, b) => a.shipping_priority - b.shipping_priority);
+    
+    this.updateCounts();
+    
+    // Refresh current view
+    if (this.activeTab === 'priority') {
+      this.data = this.priorityOrdersData;
+    }
+  }
+
   columnDefs: ColDef[] = [
     {
       field: "Misc Edit",
@@ -417,6 +855,74 @@ export class ShippingComponent implements OnInit {
       },
       maxWidth: 120,
       suppressHeaderMenuButton: false,
+    },
+    {
+      field: "shipping_priority",
+      headerName: "Priority",
+      filter: false,
+      editable: true,
+      maxWidth: 100,
+      cellEditor: 'agNumberCellEditor',
+      cellEditorParams: {
+        min: 0,
+        max: 9999,
+        precision: 0
+      },
+      cellRenderer: (params: any) => {
+        if (params.data && params.value > 0) {
+          return `<span class="badge bg-warning text-dark">
+                    <i class="mdi mdi-star me-1"></i>${params.value}
+                  </span>`;
+        }
+        return params.value || '';
+      },
+      onCellValueChanged: async (params: any) => {
+        const newPriority = parseInt(params.newValue) || 0;
+        const success = await this.updatePriority(params.data, newPriority);
+        if (!success) {
+          // Revert the change if it failed
+          params.data.shipping_priority = params.oldValue;
+          this.gridApi.refreshCells({ rowNodes: [params.node] });
+        }
+      },
+      tooltipField: 'shipping_priority',
+      headerTooltip: 'Set shipping priority (1 = highest priority). Must be unique.',
+    },
+    {
+      headerName: "Priority Actions",
+      filter: false,
+      sortable: false,
+      maxWidth: 150,
+      cellRenderer: (params: any) => {
+        const hasPriority = params.data?.shipping_priority > 0;
+        
+        if (hasPriority) {
+          return `
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-danger" 
+                      onclick="window.removePriorityOrder('${params.data.id}')" 
+                      title="Remove Priority">
+                <i class="mdi mdi-star-off"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-primary" 
+                      onclick="window.movePriorityToTop('${params.data.id}')" 
+                      title="Move to Top Priority">
+                <i class="mdi mdi-chevron-double-up"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          return `
+            <button class="btn btn-sm btn-outline-success" 
+                    onclick="window.addToPriorityList('${params.data.id}')" 
+                    title="Add to Priority List">
+              <i class="mdi mdi-star-plus"></i>
+              Add Priority
+            </button>
+          `;
+        }
+      },
+      headerTooltip: 'Quick actions for priority management',
     },
     {
       field: "STATUS",
@@ -1280,8 +1786,24 @@ export class ShippingComponent implements OnInit {
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();
-      this.data = await this.api.getShipping();
+      
+      // Load shipping data and priorities in parallel
+      const [shippingData] = await Promise.all([
+        this.api.getShipping(),
+        this.loadPriorities()
+      ]);
+      
+      this.data = shippingData;
       this.statusCount = this.calculateStatus();
+      
+      // Merge priority data with shipping data
+      this.mergePriorityData();
+      
+      // Set data based on active tab
+      if (this.activeTab === 'priority') {
+        this.data = this.priorityOrdersData;
+      }
+      
       this.setPinnedRows();
       this.gridApi?.hideOverlay();
     } catch (err) {
