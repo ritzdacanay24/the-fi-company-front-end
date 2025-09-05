@@ -1,61 +1,172 @@
-/* Priority Grid Styling */
-.priority-grid {
-  .ag-row {
-    border-left: 4px solid transparent;
-    transition: all 0.2s ease;
-  }
+// /* Priority Grid Styling */
+// // .priority-grid {
+// //   .ag-row {
+// //     border-left: 4px solid transparent;
+// //     transition: all 0.2s ease;
+// //   }
   
-  .ag-row:hover {
-    border-left-color: #007bff;
-    background-color: #f8f9fa !important;
-  }
+// //   .ag-row:hover {
+// //     border-left-color: #007bff;
+// //     background-color: #f8f9fa !important;
+// //   }
   
-  .ag-row[aria-rowindex="1"] {
-    border-left-color: #dc3545;
-    background-color: #fff5f5;
-  }
+// //   .ag-row[aria-rowindex="1"] {
+// //     border-left-color: #dc3545;
+// //     background-color: #fff5f5;
+// //   }
   
-  .ag-row[aria-rowindex="2"] {
-    border-left-color: #fd7e14;
-    background-color: #fff8f0;
-  }
+// //   .ag-row[aria-rowindex="2"] {
+// //     border-left-color: #fd7e14;
+// //     background-color: #fff8f0;
+// //   }
   
-  .ag-row[aria-rowindex="3"] {
-    border-left-color: #ffc107;
-    background-color: #fffbf0;
-  }
+// //   .ag-row[aria-rowindex="3"] {
+// //     border-left-color: #ffc107;
+// //     background-color: #fffbf0;
+// //   }
   
-  .ag-row-drag {
-    cursor: grab;
-  }
+// //   .ag-row-drag {
+// //     cursor: grab;
+// //   }
   
-  .ag-row-dragging {
-    cursor: grabbing;
-    opacity: 0.8;
-    transform: rotate(2deg);
-  }
-}
+// //   .ag-row-dragging {
+// //     cursor: grabbing;
+// //     opacity: 0.8;
+// //     transform: rotate(2deg);
+// //   }
+// // }
 
-/* Priority Action Buttons */
-.btn-sm {
-  padding: 0.2rem 0.4rem;
-  font-size: 0.75rem;
-}
+// /* Priority Action Buttons */
+// .btn-sm {
+//   padding: 0.2rem 0.4rem;
+//   font-size: 0.75rem;
+//   transition: all 0.3s ease;
+// }
 
-/* Priority Badge Styling */
-.badge {
-  &.bg-warning {
-    animation: pulse 2s infinite;
-  }
-}
+// /* Priority Toggle Button - Consistent sizing and alignment */
+// .priority-toggle-btn {
+//   min-width: 120px;
+//   height: 32px;
+//   transition: all 0.3s ease;
+//   display: inline-flex;
+//   align-items: center;
+//   justify-content: center;
+  
+//   &:hover {
+//     transform: translateY(-1px);
+//     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+//   }
+  
+//   &:disabled {
+//     cursor: not-allowed;
+//     transform: none;
+//     box-shadow: none;
+//   }
+  
+//   .btn-text {
+//     transition: all 0.2s ease;
+//   }
+  
+//   &.btn-outline-success {
+//     border-color: #28a745;
+//     color: #28a745;
+    
+//     &:hover {
+//       background-color: #28a745;
+//       color: white;
+//     }
+//   }
+  
+//   &.btn-outline-danger {
+//     border-color: #dc3545;
+//     color: #dc3545;
+    
+//     &:hover {
+//       background-color: #dc3545;
+//       color: white;
+//     }
+//   }
+// }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
+// /* Button State Animations */
+// .btn-warning {
+//   animation: pulse-warning 1.5s infinite;
+// }
 
-/* Mock Data Banner */
-.alert-info {
-  border-left: 4px solid #0dcaf0;
-}
+// @keyframes pulse-warning {
+//   0% { transform: scale(1); }
+//   50% { transform: scale(1.02); }
+//   100% { transform: scale(1); }
+// }
+
+// /* Loading spinner */
+// .mdi-spin {
+//   animation: spin 1s linear infinite;
+// }
+
+// @keyframes spin {
+//   0% { transform: rotate(0deg); }
+//   100% { transform: rotate(360deg); }
+// }
+
+// /* Priority Badge Styling */
+// .priority-badge {
+//   font-size: 0.75rem;
+//   padding: 0.35rem 0.6rem;
+//   border-radius: 0.375rem;
+//   font-weight: 600;
+//   letter-spacing: 0.025em;
+//   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+//   transition: all 0.2s ease;
+  
+//   &.bg-danger {
+//     background: linear-gradient(45deg, #dc3545, #c82333) !important;
+//     animation: priority-glow 2s infinite alternate;
+//   }
+  
+//   &.bg-warning {
+//     background: linear-gradient(45deg, #ffc107, #e0a800) !important;
+//   }
+  
+//   &.bg-info {
+//     background: linear-gradient(45deg, #17a2b8, #138496) !important;
+//   }
+// }
+
+// @keyframes priority-glow {
+//   0% { box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3); }
+//   100% { box-shadow: 0 2px 8px rgba(220, 53, 69, 0.5); }
+// }
+
+// .badge {
+//   &.bg-warning {
+//     animation: pulse 2s infinite;
+//   }
+  
+//   &.bg-success {
+//     background: linear-gradient(45deg, #28a745, #20c997) !important;
+//     box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+//     border: 1px solid rgba(255, 255, 255, 0.2);
+    
+//     .mdi-check-circle {
+//       animation: check-bounce 0.6s ease;
+//     }
+//   }
+// }
+
+// @keyframes check-bounce {
+//   0% { transform: scale(0); }
+//   50% { transform: scale(1.2); }
+//   100% { transform: scale(1); }
+// }
+
+// @keyframes pulse {
+//   0% { transform: scale(1); }
+//   50% { transform: scale(1.05); }
+//   100% { transform: scale(1); }
+// }
+
+// /* Mock Data Banner */
+// .alert-info {
+//   border-left: 4px solid #0dcaf0;
+// }

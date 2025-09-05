@@ -21,11 +21,17 @@ export class SgAssetFormComponent {
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
+    
+    // Lock form if in edit mode
+    if (this.isEditMode) {
+      this.form.disable();
+    }
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
+  @Input() isEditMode = false; // New input to determine if form should be locked
 
   get f() {
     return this.form.controls;

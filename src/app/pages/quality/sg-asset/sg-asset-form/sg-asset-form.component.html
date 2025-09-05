@@ -1,4 +1,10 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" autocomplete="off" [class.readonly-form]="isEditMode">
+
+  <!-- Show locked message when in edit mode -->
+  <div class="alert alert-warning" role="alert" *ngIf="isEditMode">
+    <i class="mdi mdi-lock me-2"></i>
+    <strong>Form Locked:</strong> This SG Asset has been created and cannot be edited to maintain data integrity.
+  </div>
 
   <div class="mb-3">
     <label class="form-label">L&W Serial #</label>
@@ -9,7 +15,7 @@
 
   <div class="mb-3">
     <app-qad-wo-search [form_label]="'WO Number'" (notifyParent)="getWoNumber($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" [value]="f.poNumber.value"></app-qad-wo-search>
+      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" [value]="f.poNumber.value" [disabled]="isEditMode"></app-qad-wo-search>
 
     <!-- <input class="form-control" type="text" formControlName="poNumber" placeholder="Enter WO Number"
       [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" /> -->
@@ -24,7 +30,7 @@
   <div class="mb-3">
     <app-qad-customer-part-search [form_label]="'SG Part #'" (notifyParent)="getCustomerPartNumber($event)"
       [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
-      [value]="f.sgPartNumber.value"></app-qad-customer-part-search>
+      [value]="f.sgPartNumber.value" [disabled]="isEditMode"></app-qad-customer-part-search>
   </div>
 
   <div class="mb-3">

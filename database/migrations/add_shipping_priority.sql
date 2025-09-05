@@ -1,5 +1,10 @@
 -- Create shipping priority table to support order prioritization
 -- This allows users to set unique priorities for shipping orders
+-- Compatible with MySQL 5.7+ and 8.0+
+
+-- =============================================================================
+-- SHIPPING PRIORITIES TABLE
+-- =============================================================================
 
 -- Create new table for shipping priorities
 CREATE TABLE shipping_priorities (
@@ -16,21 +21,29 @@ CREATE TABLE shipping_priorities (
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Whether this priority is currently active'
 );
 
+-- =============================================================================
+-- INDEXES FOR PERFORMANCE
+-- =============================================================================
+
 -- Add indexes for performance
 CREATE INDEX idx_shipping_priorities_order_id ON shipping_priorities(order_id);
 CREATE INDEX idx_shipping_priorities_so_number ON shipping_priorities(sales_order_number);
 CREATE INDEX idx_shipping_priorities_priority ON shipping_priorities(priority_level);
 CREATE INDEX idx_shipping_priorities_active ON shipping_priorities(is_active);
 
--- Add unique constraint to prevent duplicate priorities (only for active records)
-CREATE UNIQUE INDEX idx_unique_active_priority 
-ON shipping_priorities(priority_level) 
-WHERE is_active = TRUE;
+-- =============================================================================
+-- TRIGGERS FOR BUSINESS RULE ENFORCEMENT
+-- =============================================================================
+-- Triggers removed to allow flexible reordering operations
+-- Business rules will be enforced at the application level
 
--- Add unique constraint to prevent duplicate order priorities (only for active records)
-CREATE UNIQUE INDEX idx_unique_active_order 
-ON shipping_priorities(order_id) 
-WHERE is_active = TRUE;
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS prevent_duplicate_priority_insert;
+DROP TRIGGER IF EXISTS prevent_duplicate_priority_update;
+
+-- =============================================================================
+-- VIEWS FOR EASY QUERYING
+-- =============================================================================
 
 -- Create a view for easy querying of active priority orders
 CREATE OR REPLACE VIEW active_shipping_priorities AS
@@ -46,8 +59,23 @@ FROM shipping_priorities sp
 WHERE sp.is_active = TRUE
 ORDER BY sp.priority_level ASC;
 
--- Sample data for testing (remove in production)
+-- =============================================================================
+-- SAMPLE DATA FOR TESTING (OPTIONAL)
+-- =============================================================================
+
+-- Uncomment the following lines to add sample test data
 -- INSERT INTO shipping_priorities (order_id, sales_order_number, sales_order_line, priority_level, created_by, notes) 
 -- VALUES 
---     ('12345', 'SO001234', '1', 1, 'admin', 'Rush order for important client'),
---     ('12346', 'SO001235', '2', 2, 'admin', 'Customer requested expedited shipping');
+--     ('SO001234-1', 'SO001234', '1', 1, 'admin', 'Rush order for important client'),
+--     ('SO001235-2', 'SO001235', '2', 2, 'admin', 'Customer requested expedited shipping'),
+--     ('SO001236-1', 'SO001236', '1', 3, 'admin', 'Production line dependency');
+
+-- =============================================================================
+-- MIGRATION ROLLBACK (IF NEEDED)
+-- =============================================================================
+
+-- To rollback this migration, uncomment and run the following:
+-- DROP TRIGGER IF EXISTS prevent_duplicate_priority_insert;
+-- DROP TRIGGER IF EXISTS prevent_duplicate_priority_update;
+-- DROP VIEW IF EXISTS active_shipping_priorities;
+-- DROP TABLE IF EXISTS shipping_priorities;

@@ -13,6 +13,7 @@ import { AuthGuard } from "./core/guards/auth.guard";
 import { RequestPublicComponent } from "./pages/public/request-public/request-public.component";
 import { QirCreatePublicComponent } from "./pages/quality/qir/qir-create-public/qir-create-public.component";
 import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-usage-form.component";
+import { StandaloneShippingPriorityDisplayComponent } from "./standalone/shipping-priority-display/shipping-priority-display.component";
 
 import { FlagBasedPreloadingStrategy } from "./shared/providers/preload";
 import { MenuComponent } from "./pages/menu/menu.component";
@@ -34,6 +35,11 @@ const routes: Routes = [
     path: "ul-usage", 
     component: StandaloneULUsageFormComponent,
     title: "UL Usage Entry"
+  },
+  { 
+    path: "shipping-priority-display", 
+    component: StandaloneShippingPriorityDisplayComponent,
+    title: "Shipping Priority Display"
   },
   {
     path: "auth",

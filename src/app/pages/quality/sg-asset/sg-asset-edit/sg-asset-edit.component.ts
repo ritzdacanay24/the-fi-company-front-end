@@ -30,7 +30,7 @@ export class SgAssetEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "View SG Asset";
 
   form: FormGroup;
 
@@ -54,28 +54,12 @@ export class SgAssetEditComponent {
     } catch (err) { }
   }
 
-  async onSubmit() {
-    this.submitted = true;
-
-    if (this.form.invalid) return;
-
-    try {
-      this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
-      this.isLoading = false;
-      this.toastrService.success('Successfully Updated');
-      this.goBack();
-    } catch (err) {
-      this.isLoading = false;
-    }
-  }
-
   onCancel() {
     this.goBack()
   }
 
   onPrint() {
-    let row = this.form.getRawValue();
+    let row = this.data;
 
 
     setTimeout(() => {

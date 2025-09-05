@@ -20,12 +20,11 @@
         <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
       </div>
       <div class="card-body" style="min-height:300px">
-        <app-sg-asset-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-sg-asset-form>
+        <app-sg-asset-form (setFormEmitter)="form = $event" [submitted]="submitted" [isEditMode]="true"></app-sg-asset-form>
       </div>
       <div class="card-footer d-flex d-flex" *ngIf="data && id">
-        <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-light me-2" [disabled]="isLoading" (click)="onPrint()">Print Label</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Update</button>
+        <button class="btn btn-light me-auto" [disabled]="isLoading" (click)="onCancel()">Back to List</button>
+        <button class="btn btn-primary" [disabled]="isLoading" (click)="onPrint()">Print Label</button>
       </div>
     </div>
   </div>
