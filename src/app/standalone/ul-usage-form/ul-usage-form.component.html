@@ -163,127 +163,106 @@
             <div *ngIf="isAuthenticated" class="row justify-content-center">
                 <div class="col-lg-8 col-xl-7">
                     <div class="card border-0 shadow-lg">
-                        <div class="card-header bg-white border-bottom py-4">
-                            <h5 class="mb-0 fw-bold text-dark">
-                                <i class="mdi mdi-form-select me-2"></i>
-                                Record UL Usage
-                            </h5>
-                        </div>
                         <div class="card-body p-4">
 
-                            <form [formGroup]="usageForm" (ngSubmit)="onSubmit()">
+                            <form [formGroup]="usageForm" class="settings-form" (ngSubmit)="onSubmit()" id="usageForm">
 
-                                <!-- Bulk Mode Toggle - Remove this since it's now automatic -->
+                                <div class="body">
 
-                                <!-- Category Selection (Required First) -->
-                                <div class="row mb-4">
-                                    <div class="col-12">
-                                        <div class="p-4 bg-light rounded border">
-                                            <div class="row align-items-center">
-                                                <div class="col-md-12 mb-3">
-                                                    <label class="form-label fw-semibold mb-3">
-                                                        <i class="mdi mdi-tag me-2"></i>
-                                                        Select Category First *
-                                                    </label>
-                                                    <select formControlName="category"
-                                                        class="form-select form-select-lg">
-                                                        <option value="">Choose category to see available UL numbers...
-                                                        </option>
-                                                        <option *ngFor="let option of categoryOptions"
-                                                            [value]="option.value">
-                                                            {{ option.label }}
-                                                        </option>
-                                                    </select>
-                                                    <div class="form-text mt-2">
-                                                        <i class="mdi mdi-information me-1"></i>
-                                                        UL numbers will be automatically assigned based on your category
-                                                        selection
-                                                    </div>
+                                    <!-- Category Selection Section -->
+                                    <div class="mb-4 pb-4 border-bottom">
+                                        <div class="mb-3">
+                                            <h3 class="h5 mb-1">Category Selection</h3>
+                                            <p class="text-muted mb-0">
+                                                Select the category to see available UL numbers for usage recording.
+                                            </p>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label class="form-label">
+                                                    Category <span class="text-danger">*</span>
+                                                </label>
+                                                <select formControlName="category" class="form-control">
+                                                    <option value="">Choose category to see available UL numbers...</option>
+                                                    <option *ngFor="let option of categoryOptions" [value]="option.value">
+                                                        {{ option.label }}
+                                                    </option>
+                                                </select>
+                                                <div class="form-text">
+                                                    <i class="mdi mdi-information-outline me-1"></i>
+                                                    UL numbers will be automatically assigned based on your category selection
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row" *ngIf="usageForm.get('category')?.value">
+                                            <div class="col-12 mb-3">
+                                                <div class="bg-primary bg-opacity-10 p-3 border border-primary border-opacity-25 rounded">
+                                                    <h6 class="mb-2 fw-semibold text-primary">
+                                                        <i class="mdi mdi-check-circle me-2"></i>
+                                                        {{ usageForm.get('category')?.value }} Category Selected
+                                                    </h6>
+                                                    <p class="mb-1 small text-muted">
+                                                        Available UL numbers: {{ getAvailableULOptions().length }}
+                                                    </p>
+                                                    <p class="mb-0 small text-muted">
+                                                        Next available UL will be automatically assigned
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quantity Selection Section -->
+                                    <div class="mb-4 pb-4 border-bottom" *ngIf="usageForm.get('category')?.value">
+                                        <div class="mb-3">
+                                            <h3 class="h5 mb-1">Quantity Selection</h3>
+                                            <p class="text-muted mb-0">
+                                                How many UL numbers do you need for this usage recording?
+                                            </p>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">
+                                                    Quantity <span class="text-danger">*</span>
+                                                </label>
+                                                <select formControlName="ul_quantity" class="form-control" (change)="onQuantityChange($event)">
+                                                    <option value="">Select quantity...</option>
+                                                    <option value="1">1 UL Number (Single Transaction)</option>
+                                                    <option value="2">2 UL Numbers</option>
+                                                    <option value="3">3 UL Numbers</option>
+                                                    <option value="4">4 UL Numbers</option>
+                                                    <option value="5">5 UL Numbers</option>
+                                                    <option value="10">10 UL Numbers</option>
+                                                    <option value="15">15 UL Numbers</option>
+                                                    <option value="20">20 UL Numbers</option>
+                                                    <option value="25">25 UL Numbers</option>
+                                                    <option value="50">50 UL Numbers</option>
+                                                </select>
+                                                <div class="form-text">
+                                                    <i class="mdi mdi-information-outline me-1"></i>
+                                                    System will automatically assign the next available UL numbers in sequence
                                                 </div>
                                             </div>
 
-                                            <div class="row align-items-center">
-                                                <div class="col-md-12" *ngIf="usageForm.get('category')?.value">
-                                                    <div
-                                                        class="p-3 bg-primary bg-opacity-10 rounded border border-primary border-opacity-25">
-                                                        <h6 class="mb-2 fw-semibold text-primary">
-                                                            <i class="mdi mdi-check-circle me-2"></i>
-                                                            {{ usageForm.get('category')?.value }} Category Selected
-                                                        </h6>
-                                                        <p class="mb-1 small text-muted">
-                                                            Available UL numbers: {{ getAvailableULOptions().length }}
-                                                        </p>
-                                                        <p class="mb-0 small text-muted">
-                                                            Next available UL will be automatically assigned
-                                                        </p>
+                                            <div class="col-md-6 mb-3" *ngIf="assignedULNumbers.length > 0">
+                                                <label class="form-label">Assigned UL Numbers</label>
+                                                <div class="bg-success bg-opacity-10 p-3 border border-success border-opacity-25 rounded">
+                                                    <div class="d-flex flex-wrap gap-1 mb-2">
+                                                        <span *ngFor="let ulNumber of assignedULNumbers" class="badge bg-success text-white">
+                                                            {{ ulNumber }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="form-text">
+                                                        <i class="mdi mdi-information-outline me-1"></i>
+                                                        {{ assignedULNumbers.length }} UL number{{ assignedULNumbers.length > 1 ? 's' : '' }} assigned
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <!-- Quantity Selection -->
-                                <div class="row mb-4" *ngIf="isAuthenticated && usageForm.get('category')?.value">
-                                    <div class="col-12">
-                                        <div class="p-4 bg-light rounded border">
-                                            <h6 class="mb-3 fw-semibold text-dark">
-                                                <i class="mdi mdi-counter me-2"></i>
-                                                How many UL numbers do you need?
-                                            </h6>
-
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="mdi mdi-numeric me-1"></i>
-                                                        Quantity *
-                                                    </label>
-                                                    <select formControlName="ul_quantity"
-                                                        class="form-select form-select-lg"
-                                                        (change)="onQuantityChange($event)">
-                                                        <option value="">Select quantity...</option>
-                                                        <option value="1">1 UL Number (Single Transaction)</option>
-                                                        <option value="2">2 UL Numbers</option>
-                                                        <option value="3">3 UL Numbers</option>
-                                                        <option value="4">4 UL Numbers</option>
-                                                        <option value="5">5 UL Numbers</option>
-                                                        <option value="10">10 UL Numbers</option>
-                                                        <option value="15">15 UL Numbers</option>
-                                                        <option value="20">20 UL Numbers</option>
-                                                        <option value="25">25 UL Numbers</option>
-                                                        <option value="50">50 UL Numbers</option>
-                                                    </select>
-                                                    <div class="form-text mt-2">
-                                                        <i class="mdi mdi-information me-1"></i>
-                                                        System will automatically assign the next available UL numbers
-                                                        in sequence
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-6" *ngIf="assignedULNumbers.length > 0">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="mdi mdi-check-circle me-1"></i>
-                                                        Assigned UL Numbers
-                                                    </label>
-                                                    <div
-                                                        class="assigned-uls p-3 bg-success bg-opacity-10 rounded border border-success border-opacity-25">
-                                                        <div class="d-flex flex-wrap gap-1 mb-2">
-                                                            <span *ngFor="let ulNumber of assignedULNumbers"
-                                                                class="badge bg-success text-white">
-                                                                {{ ulNumber }}
-                                                            </span>
-                                                        </div>
-                                                        <div class="small text-success">
-                                                            <i class="mdi mdi-information me-1"></i>
-                                                            {{ assignedULNumbers.length }} UL number{{
-                                                            assignedULNumbers.length > 1 ? 's' : '' }} assigned
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <!-- UL Number Range Display -->
                                 <div class="row mb-4" *ngIf="isAuthenticated && usageForm.get('category')?.value">
@@ -403,7 +382,7 @@
                                     </div>
 
                                     <!-- Bulk Input Helper (for multiple ULs) -->
-                                    <div *ngIf="assignedULNumbers.length > 1" class="bulk-helper mb-4">
+                                    <!-- <div *ngIf="assignedULNumbers.length > 1" class="bulk-helper mb-4">
                                         <div class="card border-primary border-opacity-25  bg-opacity-5">
                                             <div
                                                 class="card-header bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25">
@@ -463,7 +442,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
 
                                     <!-- Single UL Form -->
                                     <div *ngIf="assignedULNumbers.length === 1" class="single-ul-form">
@@ -491,7 +470,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="row g-3 mb-4">
+                                        <!-- <div class="row g-3 mb-4">
                                             <div class="col-md-12">
                                                 <label class="form-label fw-semibold">
                                                     <i class="mdi mdi-domain me-1"></i>
@@ -502,8 +481,8 @@
                                                     placeholder="Customer name or company">
                                                 <div class="form-text">Customer receiving the device</div>
                                             </div>
-                                        </div>
-
+                                        </div> -->
+<!-- 
                                         <div class="row g-3 mb-4">
                                             <div class="col-md-12">
                                                 <label class="form-label fw-semibold">
@@ -515,10 +494,10 @@
                                                     placeholder="Device description">
                                                 <div class="form-text">Brief description of the device/component</div>
                                             </div>
-                                        </div>
+                                        </div> -->
 
                                         <!-- Notes Section for Single Mode -->
-                                        <div class="row g-3 mb-4">
+                                        <!-- <div class="row g-3 mb-4">
                                             <div class="col-12">
                                                 <label class="form-label fw-semibold">
                                                     <i class="mdi mdi-note-text me-1"></i>
@@ -528,7 +507,7 @@
                                                     placeholder="Additional notes or comments">
                                                 </textarea>
                                             </div>
-                                        </div>
+                                        </div> -->
                                     </div>
 
                                     <!-- Bulk UL Forms -->
@@ -566,7 +545,7 @@
                                                             placeholder="1" required>
                                                     </div>
 
-                                                    <div class="col-md-4">
+                                                    <!-- <div class="col-md-4">
                                                         <label class="form-label fw-semibold">
                                                             <i class="mdi mdi-domain me-1"></i>
                                                             Customer *
@@ -575,9 +554,9 @@
                                                             [ngModelOptions]="{standalone: true}"
                                                             name="bulk_customer_{{ i }}" class="form-control"
                                                             placeholder="Customer name" required>
-                                                    </div>
+                                                    </div> -->
                                                 </div>
-                                                <div class="row g-3 mt-2">
+                                                <!-- <div class="row g-3 mt-2">
 
                                                     <div class="col-md-12">
                                                         <label class="form-label fw-semibold">
@@ -589,9 +568,9 @@
                                                             name="bulk_description_{{ i }}" class="form-control"
                                                             placeholder="Device description" required>
                                                     </div>
-                                                </div>
+                                                </div> -->
 
-                                                <div class="row g-3 mt-2">
+                                                <!-- <div class="row g-3 mt-2">
                                                     <div class="col-12">
                                                         <label class="form-label fw-semibold">
                                                             <i class="mdi mdi-note-text me-1"></i>
@@ -603,45 +582,30 @@
                                                             placeholder="Additional notes for this UL">
                                                         </textarea>
                                                     </div>
-                                                </div>
+                                                </div> -->
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Submit Section -->
-                                <div class="submit-section mt-5 pt-4 border-top">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6">
-                                            <div class="form-summary">
-                                                <div class="text-muted small">
-                                                    <strong>Summary:</strong>
-                                                    <span *ngIf="assignedULNumbers.length === 1">
-                                                        UL {{ assignedULNumbers[0] }}
-                                                    </span>
-                                                    <span *ngIf="assignedULNumbers.length > 1">
-                                                        {{ assignedULNumbers.length }} UL numbers ({{
-                                                        assignedULNumbers[0] }}{{ assignedULNumbers.length > 1 ? ' + ' +
-                                                        (assignedULNumbers.length - 1) + ' more' : '' }})
-                                                    </span>
-                                                    <span *ngIf="usageForm.get('category')?.value">
-                                                        - {{ usageForm.get('category')?.value }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 text-end">
-                                            <button type="submit" class="btn btn-success btn-lg px-5"
-                                                [disabled]="!isFormValid() || isSubmitting">
-                                                <i *ngIf="isSubmitting" class="mdi mdi-loading mdi-spin me-2"></i>
-                                                <i *ngIf="!isSubmitting" class="mdi mdi-check me-2"></i>
-                                                {{ 
-                                                    isSubmitting ? (assignedULNumbers.length > 1 ? 'Recording Bulk Usage...' : 'Recording...') : (assignedULNumbers.length > 1 ? 'Record Bulk Usage' : 'Record Usage') }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                </div> <!-- end body container -->
                             </form>
+                        </div>
+
+                        <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+                            <button class="btn btn-light" type="button" (click)="usageForm.reset(); assignedULNumbers = []">
+                                <i class="mdi mdi-refresh me-1"></i>Reset Form
+                            </button>
+                            <button class="btn btn-success" type="submit" form="usageForm"
+                                    [disabled]="!isFormValid() || isSubmitting || assignedULNumbers.length === 0">
+                                @if (isSubmitting) {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    {{ assignedULNumbers.length > 1 ? 'Recording Bulk Usage...' : 'Recording...' }}
+                                } @else {
+                                    <i class="mdi mdi-check me-1"></i>
+                                    {{ assignedULNumbers.length > 1 ? 'Record ' + assignedULNumbers.length + ' UL Usages' : 'Record UL Usage' }}
+                                }
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -764,7 +728,7 @@
                 <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
             </div>
             <p class="text-muted">
-                Enter your credentials for temporary access.
+                Enter your credentials for temporary access. You can login using your username with password, or simply scan your employee card number.
                 Your session will expire in 15 minutes or after 1 minute of inactivity.
             </p>
         </div>
@@ -782,23 +746,69 @@
         </div>
 
         <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
-            <div class="mb-3">
+            
+            <!-- Login Method Toggle -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-center">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="loginMethod" id="username" value="username" 
+                               [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+                        <label class="btn btn-outline-primary" for="username">
+                            <i class="mdi mdi-account me-1"></i>Username
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="loginMethod" id="cardNumber" value="cardNumber" 
+                               [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+                        <label class="btn btn-outline-primary" for="cardNumber">
+                            <i class="mdi mdi-credit-card me-1"></i>Card Number
+                        </label>
+                    </div>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">Choose your preferred login method</small>
+                </div>
+            </div>
+
+            <!-- Username Login -->
+            <div class="mb-3" *ngIf="loginMethod === 'username'">
                 <label class="form-label fw-semibold">Username</label>
                 <div class="input-group">
                     <input type="text" class="form-control form-control-lg" name="username" ngModel required autofocus
                         placeholder="riz.dacanay">
                     <span class="input-group-text">&#64;the-fi-company.com</span>
                 </div>
+                <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Enter your company username
+                </div>
             </div>
 
-            <div class="mb-4">
+            <!-- Card Number Login -->
+            <div class="mb-3" *ngIf="loginMethod === 'cardNumber'">
+                <label class="form-label fw-semibold">Employee Card Number</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="mdi mdi-credit-card"></i>
+                    </span>
+                    <input type="password" class="form-control form-control-lg" name="cardNumber" ngModel required
+                        placeholder="Scan or enter your employee card number" maxlength="20" autocomplete="off"
+                        (keydown.enter)="onCardNumberEnter($event, loginForm)" #cardNumberInput>
+                </div>
+                <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Scan or enter your employee ID card number (input is hidden for security). Press Enter or scan card to login.
+                </div>
+            </div>
+
+            <!-- Password field only for username login -->
+            <div class="mb-4" *ngIf="loginMethod === 'username'">
                 <label class="form-label fw-semibold">Password</label>
                 <input type="password" class="form-control form-control-lg" name="password" ngModel required
                     placeholder="Enter your password">
             </div>
 
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg" [disabled]="!loginForm.valid || isLoggingIn">
+                <button type="submit" class="btn btn-primary btn-lg" [disabled]="!isLoginFormValid(loginForm) || isLoggingIn">
                     <i *ngIf="isLoggingIn" class="mdi mdi-loading mdi-spin me-2"></i>
                     <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
                     {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}

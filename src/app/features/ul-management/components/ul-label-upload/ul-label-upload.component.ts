@@ -4,10 +4,12 @@ import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
 import { ULLabelService } from '../../services/ul-label.service';
 import { ULLabel } from '../../models/ul-label.model';
+import { BreadcrumbComponent, BreadcrumbItem } from "@app/shared/components/breadcrumb/breadcrumb.component";
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   standalone: true,
-  imports: [SharedModule],
+  imports: [SharedModule, BreadcrumbComponent],
   selector: 'app-ul-label-upload',
   templateUrl: './ul-label-upload.component.html',
   styleUrls: ['./ul-label-upload.component.scss']
@@ -20,14 +22,16 @@ export class ULLabelUploadComponent implements OnInit {
   uploadProgress = 0;
   showBulkUpload = false;
   showRangeUpload = false;
-  
+
   // Upload mode: 'single', 'bulk', 'range'
   uploadMode = 'single';
 
   constructor(
     private fb: FormBuilder,
     private ulLabelService: ULLabelService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private router: Router,
+    private activatedRoute: ActivatedRoute
   ) {
     this.uploadForm = this.fb.group({
       ul_number: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)]],
@@ -55,7 +59,7 @@ export class ULLabelUploadComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   onFileSelected(event: any): void {
     const file = event.target.files[0];
@@ -72,7 +76,7 @@ export class ULLabelUploadComponent implements OnInit {
     if (this.uploadForm.valid) {
       this.isLoading = true;
       const ulLabel: ULLabel = this.uploadForm.value;
-      
+
       this.ulLabelService.createULLabel(ulLabel).subscribe({
         next: (response) => {
           this.isLoading = false;
@@ -100,13 +104,13 @@ export class ULLabelUploadComponent implements OnInit {
       const formData = this.rangeForm.value;
       const startNum = parseInt(formData.start_number);
       const endNum = parseInt(formData.end_number);
-      
+
       // Validation
       if (startNum >= endNum) {
         this.toastr.error('End number must be greater than start number');
         return;
       }
-      
+
       const totalNumbers = endNum - startNum + 1;
       if (totalNumbers > 1000) {
         this.toastr.error('Range too large. Maximum 1000 UL numbers per upload.');
@@ -160,38 +164,38 @@ export class ULLabelUploadComponent implements OnInit {
 
   generatePreview(): string[] {
     if (!this.rangeForm.valid) return [];
-    
+
     const formData = this.rangeForm.value;
     const startNum = parseInt(formData.start_number);
     const endNum = parseInt(formData.end_number);
-    
+
     if (isNaN(startNum) || isNaN(endNum) || startNum >= endNum) return [];
-    
+
     const preview: string[] = [];
     const maxPreview = Math.min(5, endNum - startNum + 1);
-    
+
     for (let i = 0; i < maxPreview; i++) {
       const num = startNum + i;
       preview.push(`${formData.prefix}${num}${formData.suffix}`);
     }
-    
+
     if (endNum - startNum + 1 > 5) {
       preview.push('...');
       preview.push(`${formData.prefix}${endNum}${formData.suffix}`);
     }
-    
+
     return preview;
   }
 
   getRangeCount(): number {
     if (!this.rangeForm.valid) return 0;
-    
+
     const formData = this.rangeForm.value;
     const startNum = parseInt(formData.start_number);
     const endNum = parseInt(formData.end_number);
-    
+
     if (isNaN(startNum) || isNaN(endNum) || startNum >= endNum) return 0;
-    
+
     return endNum - startNum + 1;
   }
 
@@ -230,8 +234,8 @@ export class ULLabelUploadComponent implements OnInit {
   downloadTemplate(): void {
     // Create a CSV template file
     const csvContent = 'ul_number,description,category,manufacturer,part_number,certification_date,expiry_date,status\\n' +
-                      'E123456,Sample UL Label,Electronics,Sample Manufacturer,PN-001,2024-01-01,2026-01-01,active';
-    
+      'E123456,Sample UL Label,Electronics,Sample Manufacturer,PN-001,2024-01-01,2026-01-01,active';
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -265,5 +269,19 @@ export class ULLabelUploadComponent implements OnInit {
       if (field.errors['minlength']) return `${fieldName.replace('_', ' ')} is too short`;
     }
     return '';
+  }
+
+  // Breadcrumb navigation
+  breadcrumbItems(): BreadcrumbItem[] {
+    return [
+      { label: 'Dashboard', link: '/dashboard' },
+      { label: 'UL Management', link: '/ul-management' },
+      { label: 'Upload UL Labels' }
+    ];
+  }
+
+  // Navigation methods
+  goBack(): void {
+    this.router.navigate(['../ul-management'], { relativeTo: this.activatedRoute });
   }
 }

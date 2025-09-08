@@ -70,6 +70,12 @@
                     <i class="mdi mdi-refresh"></i>
                 </button>
                 
+                <!-- Priority Display Button -->
+                <button class="btn btn-primary ms-2" (click)="openPriorityDisplay()" title="Open Full Screen Priority Display">
+                    <i class="mdi mdi-monitor-dashboard me-1"></i>
+                    Priority Display
+                </button>
+                
                 <!-- Development Tools - Development Only -->
                 <div *ngIf="isDevelopmentMode" class="btn-group ms-2" role="group">
                     <button class="btn btn-outline-info" (click)="refreshMockData()" title="Refresh Mock Priority Data">

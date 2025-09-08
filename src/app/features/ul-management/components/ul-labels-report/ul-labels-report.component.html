@@ -1,104 +1,126 @@
-<div class="ul-labels-report">
-  <!-- Header Section -->
-  <div class="row mb-3">
+<div class="container-fluid">
+  <div class="row justify-content-center">
     <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center">
-            <h4 class="card-title mb-0">
-              <i class="mdi mdi-certificate me-2"></i>UL Labels Report
-            </h4>
-            <div class="btn-group">
-              <button type="button" class="btn btn-outline-primary btn-sm" (click)="refreshData()">
-                <i class="mdi mdi-refresh me-1"></i>Refresh
-              </button>
-              <button type="button" class="btn btn-outline-success btn-sm" (click)="exportData()">
-                <i class="mdi mdi-download me-1"></i>Export
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Summary Cards -->
-  <div class="row mb-3">
-    <div class="col-md-3">
-      <div class="card summary-card summary-primary">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">Total Labels</h6>
-              <h3 class="mb-0">{{ getStatusSummary().total }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="mdi mdi-certificate" style="font-size: 2rem; opacity: 0.7;"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card summary-card summary-success">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">Active</h6>
-              <h3 class="mb-0">{{ getStatusSummary().active }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="mdi mdi-check-circle" style="font-size: 2rem; opacity: 0.7;"></i>
-            </div>
-          </div>
-          <button class="btn btn-link text-white p-0 mt-2" (click)="quickFilterActive()">
-            <small>View Active →</small>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card summary-card summary-warning">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">Inactive</h6>
-              <h3 class="mb-0">{{ getStatusSummary().inactive }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="mdi mdi-pause-circle" style="font-size: 2rem; opacity: 0.7;"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card summary-card summary-danger">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title">Expired</h6>
-              <h3 class="mb-0">{{ getStatusSummary().expired }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="mdi mdi-close-circle" style="font-size: 2rem; opacity: 0.7;"></i>
-            </div>
-          </div>
-          <button class="btn btn-link text-white p-0 mt-2" (click)="quickFilterExpired()">
-            <small>View Expired →</small>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+      <!-- Breadcrumb Navigation -->
+      <app-breadcrumb [items]="breadcrumbItems()"></app-breadcrumb>
 
-  <!-- Filters Section -->
-  <div class="row mb-3">
-    <div class="col-12">
-      <div class="card">
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-outline-secondary me-3" (click)="goBackToMain()"
+              title="Back to UL Management Dashboard">
+              <i class="mdi mdi-arrow-left me-2"></i>Back
+            </button>
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-certificate text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-info">UL Labels Report</h2>
+              <p class="text-muted mb-0">View and manage all UL certified labels and their status information</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" (click)="refreshData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-2"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-outline-success" (click)="exportData()" title="Export to Excel">
+              <i class="mdi mdi-download me-2"></i>Export
+            </button>
+            <button type="button" class="btn btn-outline-info" (click)="goToUpload()" title="Upload UL label ranges">
+              <i class="mdi mdi-upload me-2"></i>Upload Labels
+            </button>
+            <button type="button" class="btn btn-primary" (click)="createULLabel()" title="Create new UL label">
+              <i class="mdi mdi-plus me-2"></i>Create UL Label
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-info border-info border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">UL Labels Overview</h6>
+              <p class="mb-0">
+                Track and monitor all UL certified labels in your system. View <strong>certification status</strong>,
+                expiration dates, and manage label categories efficiently.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Total Labels</h6>
+                  <h3 class="mb-0 text-primary">{{ getStatusSummary().total }}</h3>
+                </div>
+                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                  <i class="mdi mdi-certificate text-primary fs-4"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Active</h6>
+                  <h3 class="mb-0 text-success">{{ getStatusSummary().active }}</h3>
+                </div>
+                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                  <i class="mdi mdi-check-circle text-success fs-4"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Expired</h6>
+                  <h3 class="mb-0 text-danger">{{ getStatusSummary().expired }}</h3>
+                </div>
+                <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                  <i class="mdi mdi-close-circle text-danger fs-4"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="text-muted mb-1">Expiring Soon</h6>
+                  <h3 class="mb-0 text-warning">{{ getStatusSummary().expiringSoon }}</h3>
+                </div>
+                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                  <i class="mdi mdi-clock-alert text-warning fs-4"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Card -->
+      <div class="card shadow-sm border-0 mb-4">
         <div class="card-header">
           <h6 class="card-title mb-0">
-            <i class="mdi mdi-filter me-1"></i>Filters
+            <i class="mdi mdi-filter me-2"></i>Filters & Search
           </h6>
         </div>
         <div class="card-body">
@@ -106,11 +128,9 @@
             <div class="row">
               <div class="col-md-3">
                 <div class="mb-3">
-                  <label class="form-label">Search</label>
-                  <input type="text" 
-                         class="form-control" 
-                         formControlName="search"
-                         placeholder="UL Number, Description, etc.">
+                  <label class="form-label">Search UL Numbers</label>
+                  <input type="text" class="form-control" formControlName="search"
+                    placeholder="Search by UL number or description...">
                 </div>
               </div>
               <div class="col-md-2">
@@ -133,8 +153,8 @@
                   <select class="form-select" formControlName="status">
                     <option value="">All Status</option>
                     <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
                     <option value="expired">Expired</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
@@ -154,9 +174,8 @@
                 <div class="mb-3">
                   <label class="form-label">&nbsp;</label>
                   <div class="d-grid">
-                    <button type="button" 
-                            class="btn btn-outline-secondary" 
-                            (click)="clearFilters()">
+                    <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()"
+                      title="Clear all filters">
                       <i class="mdi mdi-close"></i>
                     </button>
                   </div>
@@ -167,43 +186,53 @@
 
           <!-- Quick Filter Buttons -->
           <div class="d-flex gap-2 flex-wrap">
-            <button type="button" 
-                    class="btn btn-outline-warning btn-sm" 
-                    (click)="quickFilterExpiringSoon()">
+            <button type="button" class="btn btn-outline-warning btn-sm" (click)="quickFilterExpiringSoon()">
               <i class="mdi mdi-clock-alert me-1"></i>Expiring Soon (30 days)
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" (click)="quickFilterExpired()">
+              <i class="mdi mdi-close-circle me-1"></i>Expired Labels
+            </button>
+            <button type="button" class="btn btn-outline-success btn-sm" (click)="quickFilterActive()">
+              <i class="mdi mdi-check-circle me-1"></i>Active Only
             </button>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Data Grid -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
+      <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">
-              UL Labels ({{ filteredData.length }} of {{ ulLabels.length }})
-            </h6>
-            <div class="spinner-border spinner-border-sm text-primary" *ngIf="isLoading"></div>
+          <div class="d-flex align-items-center">
+            <div class="form-icon me-3">
+              <input type="search" class="form-control form-control-icon" style="width:300px"
+                (ngModelChange)="setFilter($event);" [(ngModel)]="query" placeholder="Search UL labels...">
+              <i class="mdi mdi-magnify"></i>
+            </div>
+            <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <div class="ms-auto">
+              <h4 class="card-title mb-0">
+                <i class="mdi mdi-certificate me-2"></i>{{title()}}
+              </h4>
+            </div>
           </div>
         </div>
+
         <div class="card-body p-0">
-          <ag-grid-angular
-            id="ul-labels-grid"
-            class="ag-theme-bootstrap"
-            style="height: 500px; width: 100%;"
-            [columnDefs]="columnDefs"
-            [defaultColDef]="defaultColDef"
-            [rowData]="filteredData"
-            [suppressMenuHide]="true"
-            [tooltipShowDelay]="500"
-            (gridReady)="onGridReady($event)">
+          <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data()" [gridOptions]="gridOptions"
+            style="width: 100%;height: calc(100vh - 400px);">
           </ag-grid-angular>
         </div>
+
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Click "Edit" to modify UL label details or "View" to see full certification information</span>
+          <div class="ms-auto">
+            <small>Total: {{data().length}} UL labels</small>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </div>

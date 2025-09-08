@@ -110,6 +110,31 @@ export class AuthenticationService {
   }
 
   /**
+   * Login with card number
+   * @param cardNumber employee card number
+   */
+  loginWithCardNumber(cardNumber: string) {
+    return this.http
+      .post(
+        AUTH_API + "auth/Login/login-card",
+        {
+          card_number: cardNumber
+        },
+        httpOptions
+      )
+      .pipe(
+        map((response: any) => {
+          const user = response;
+          return user;
+        }),
+        catchError((error: any) => {
+          const errorMessage = "Card number login failed"; 
+          return throwError(errorMessage);
+        })
+      );
+  }
+
+  /**
    * Returns the current user
    */
   public currentUser(): any {

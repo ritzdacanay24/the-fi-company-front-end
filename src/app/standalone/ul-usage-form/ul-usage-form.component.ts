@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -103,6 +103,10 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   // Login modal state
   loginError: string = '';
   isLoggingIn = false;
+  loginMethod: 'username' | 'cardNumber' = 'cardNumber'; // Default to cardNumber login
+  
+  // ViewChild reference for card number input
+  @ViewChild('cardNumberInput') cardNumberInput!: ElementRef<HTMLInputElement>;
   
   // Session and inactivity timeouts
   readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes total session
@@ -184,6 +188,11 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
       backdrop: 'static',
       keyboard: false,
       centered: true
+    });
+    
+    // Handle modal shown event for autofocus
+    modalRef.shown.subscribe(() => {
+      this.focusCardNumberIfSelected();
     });
     
     modalRef.result.then((result) => {
@@ -705,32 +714,67 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Custom validation for login form based on selected method
+  isLoginFormValid(loginForm: any): boolean {
+    const formData = loginForm.value;
+    
+    if (this.loginMethod === 'username') {
+      return !!(formData.username && formData.password);
+    } else if (this.loginMethod === 'cardNumber') {
+      return !!(formData.cardNumber);
+    }
+    
+    return false;
+  }
+
   // Authentication method for the inline login form
   authenticateUser(loginForm: any): void {
     const formData = loginForm.value;
     
-    if (!formData.username || !formData.password) {
-      this.loginError = 'Username and password are required';
-      return;
+    // Validate required fields based on login method
+    if (this.loginMethod === 'username') {
+      if (!formData.username || !formData.password) {
+        this.loginError = 'Username and password are required';
+        return;
+      }
+    } else if (this.loginMethod === 'cardNumber') {
+      if (!formData.cardNumber) {
+        this.loginError = 'Card number is required';
+        return;
+      }
     }
     
     // Clear previous errors and set loading state
     this.loginError = '';
     this.isLoggingIn = true;
     
-    // Append @the-fi-company.com domain to username if not already included
-    const fullUsername = formData.username.includes('@') ? 
-      formData.username : 
-      `${formData.username}@the-fi-company.com`;
+    let loginCredential: string;
     
-    // Subscribe to authentication service
-    this.authService.login(fullUsername, formData.password).subscribe({
+    if (this.loginMethod === 'username') {
+      // Append @the-fi-company.com domain to username if not already included
+      loginCredential = formData.username.includes('@') ? 
+        formData.username : 
+        `${formData.username}@the-fi-company.com`;
+    } else {
+      // Use card number as is for authentication
+      loginCredential = formData.cardNumber;
+    }
+    
+    // Subscribe to authentication service based on login method
+    const authObservable = this.loginMethod === 'cardNumber' ?
+      this.authService.loginWithCardNumber(loginCredential) :
+      this.authService.login(loginCredential, formData.password);
+
+    authObservable.subscribe({
       next: (result: any) => {
         this.isLoggingIn = false;
         
         if (result && result.access_token && result.access_token !== false) {
           this.isAuthenticated = true;
-          this.currentUser = result.user || { username: formData.username };
+          this.currentUser = result.user || { 
+            username: this.loginMethod === 'username' ? formData.username : result.user?.username,
+            card_number: this.loginMethod === 'cardNumber' ? formData.cardNumber : result.user?.card_number
+          };
           this.startSessionTimer();
           this.updateLastActivity(); // Start inactivity tracking
           this.prefillUserData();
@@ -738,7 +782,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
           this.modalService.dismissAll();
         } else {
           // Handle failed authentication
-          this.loginError = result.message || 'Authentication failed. Please check your credentials.';
+          this.loginError = result.message || `Authentication failed. Please check your ${this.loginMethod === 'username' ? 'username and password' : 'card number'}.`;
         }
       },
       error: (error: any) => {
@@ -750,11 +794,50 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         } else if (error.message) {
           this.loginError = error.message;
         } else {
-          this.loginError = 'Authentication failed. Please try again.';
+          this.loginError = `Authentication failed. Please check your ${this.loginMethod === 'username' ? 'username and password' : 'card number'}.`;
         }
         
         console.error('Authentication failed:', error);
       }
     });
+  }
+
+  // Focus the card number input if card number login method is selected
+  private focusCardNumberIfSelected(): void {
+    // Use setTimeout to ensure the view has been updated
+    setTimeout(() => {
+      if (this.loginMethod === 'cardNumber' && this.cardNumberInput) {
+        this.cardNumberInput.nativeElement.focus();
+      }
+    }, 100);
+  }
+
+  // Handle login method change to focus appropriate input
+  onLoginMethodChange(): void {
+    if (this.loginMethod === 'cardNumber') {
+      this.focusCardNumberIfSelected();
+    }
+  }
+
+  // Handle Enter key press on card number input (for card scanners)
+  onCardNumberEnter(event: Event, loginForm: any): void {
+    // Cast to KeyboardEvent to access keyboard-specific properties
+    const keyboardEvent = event as KeyboardEvent;
+    
+    // Prevent default form submission behavior
+    keyboardEvent.preventDefault();
+    
+    // Get the card number value from the input
+    const cardNumberInput = keyboardEvent.target as HTMLInputElement;
+    const cardNumber = cardNumberInput.value.trim();
+    
+    // Only proceed if card number has been entered
+    if (cardNumber && cardNumber.length > 0) {
+      // Small delay to ensure the ngModel has updated
+      setTimeout(() => {
+        // Trigger the authentication process
+        this.authenticateUser(loginForm);
+      }, 100);
+    }
   }
 }
