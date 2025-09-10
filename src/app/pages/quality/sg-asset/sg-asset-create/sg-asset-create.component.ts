@@ -34,7 +34,7 @@ export class SgAssetCreateComponent {
     if (this.id) this.getData();
   }
 
-  title = "Create";
+  title = "Create SG Asset Record";
 
   form: FormGroup;
 

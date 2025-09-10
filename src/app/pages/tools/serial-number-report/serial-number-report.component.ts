@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, TemplateRef } from '@angular/core';
 import { SharedModule } from '@app/shared/shared.module';
 import { SerialNumberService, GeneratedSerialNumber, SerialNumberTemplate } from '@app/core/services/serial-number.service';
 import { ToastrService } from 'ngx-toastr';
 import { NgxBarcode6Module } from 'ngx-barcode6';
 import { AgGridModule } from 'ag-grid-angular';
-import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
+import { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-community';
+import { NgbModal, ModalDismissReasons } from '@ng-bootstrap/ng-bootstrap';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   standalone: true,
@@ -14,7 +16,10 @@ import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
   styleUrls: ['./serial-number-report.component.scss']
 })
 export class SerialNumberReportComponent implements OnInit {
-  
+
+  // Configuration flags for testing
+  private readonly USE_MOCK_DATA = true; // Set to false to use real API
+
   // Grid configuration
   columnDefs: ColDef[] = [
     {
@@ -23,7 +28,7 @@ export class SerialNumberReportComponent implements OnInit {
       width: 200,
       pinned: 'left',
       cellRenderer: (params: any) => {
-        return `<span class="font-monospace">${params.value}</span>`;
+        return `<span class="font-monospace fw-semibold text-dark">${params.value}</span>`;
       }
     },
     {
@@ -53,7 +58,7 @@ export class SerialNumberReportComponent implements OnInit {
       width: 100,
       cellRenderer: (params: any) => {
         const isUsed = params.data.is_used;
-        return isUsed 
+        return isUsed
           ? '<span class="badge bg-success">Used</span>'
           : '<span class="badge bg-warning">Available</span>';
       }
@@ -96,10 +101,10 @@ export class SerialNumberReportComponent implements OnInit {
       cellRenderer: (params: any) => {
         const serialNumber = params.data.serial_number;
         const isUsed = params.data.is_used;
-        
+
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'btn-group btn-group-sm';
-        
+
         // Barcode button
         const barcodeBtn = document.createElement('button');
         barcodeBtn.className = 'btn btn-outline-primary btn-sm';
@@ -107,7 +112,7 @@ export class SerialNumberReportComponent implements OnInit {
         barcodeBtn.title = 'Show Barcode';
         barcodeBtn.onclick = () => this.showBarcode(serialNumber);
         buttonContainer.appendChild(barcodeBtn);
-        
+
         // Copy button
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn btn-outline-secondary btn-sm';
@@ -115,7 +120,7 @@ export class SerialNumberReportComponent implements OnInit {
         copyBtn.title = 'Copy';
         copyBtn.onclick = () => this.copyToClipboard(serialNumber);
         buttonContainer.appendChild(copyBtn);
-        
+
         // Mark as used button (only if not used)
         if (!isUsed) {
           const useBtn = document.createElement('button');
@@ -125,7 +130,7 @@ export class SerialNumberReportComponent implements OnInit {
           useBtn.onclick = () => this.markAsUsed(serialNumber);
           buttonContainer.appendChild(useBtn);
         }
-        
+
         return buttonContainer;
       },
       pinned: 'right'
@@ -134,10 +139,24 @@ export class SerialNumberReportComponent implements OnInit {
 
   gridApi!: GridApi;
   serialNumbers: GeneratedSerialNumber[] = [];
+
+  gridOptions: GridOptions = {
+    columnDefs: this.columnDefs,
+    pagination: true,
+    paginationPageSize: 50,
+    animateRows: true,
+    enableCellTextSelection: true,
+    onGridReady: (params) => this.onGridReady(params)
+  };
   templates: SerialNumberTemplate[] = [];
   selectedBarcodeSerial: string = '';
   showBarcodeModal: boolean = false;
-  
+
+  // Modal properties
+  private modalService = inject(NgbModal);
+  closeResult = '';
+  addSerialForm: FormGroup;
+
   // Filters
   selectedTemplate: string = '';
   selectedUsedFor: string = '';
@@ -145,19 +164,174 @@ export class SerialNumberReportComponent implements OnInit {
   dateFrom: string = '';
   dateTo: string = '';
 
-  // Stats
-  totalCount: number = 0;
-  usedCount: number = 0;
-  availableCount: number = 0;
-
   constructor(
     private serialNumberService: SerialNumberService,
-    private toastrService: ToastrService
-  ) {}
+    private toastrService: ToastrService,
+    private fb: FormBuilder
+  ) {
+    // Initialize add serial form
+    this.addSerialForm = this.fb.group({
+      prefix: ['PRD', [Validators.required, Validators.pattern(/^[A-Z0-9]{2,5}$/)]],
+      template: ['PROD_001', Validators.required],
+      usedFor: ['product', Validators.required],
+      count: [1, [Validators.required, Validators.min(1), Validators.max(100)]]
+    });
+
+    // Watch for template changes to update prefix and usedFor
+    this.addSerialForm.get('template')?.valueChanges.subscribe(templateId => {
+      this.onTemplateChange(templateId);
+    });
+  }
 
   ngOnInit() {
-    this.loadTemplates();
-    this.loadSerialNumbers();
+    if (this.USE_MOCK_DATA) {
+      // Use mock data for testing
+      this.loadMockData();
+    } else {
+      // Use real API
+      this.loadTemplates();
+      this.loadSerialNumbers();
+    }
+  }
+
+  // Mock data for testing
+  loadMockData() {
+    // Mock templates
+    this.templates = [
+      {
+        id: 1,
+        template_id: 'PROD_001',
+        name: 'Product Serial',
+        description: 'Standard product serial number format',
+        config: { prefix: 'PRD', length: 8 },
+        is_default: true,
+        is_active: true,
+        usage_count: 150,
+        used_count: 89,
+        unused_count: 61
+      },
+      {
+        id: 2,
+        template_id: 'ASSET_001',
+        name: 'Asset Tracking',
+        description: 'Asset management serial numbers',
+        config: { prefix: 'AST', length: 10 },
+        is_default: false,
+        is_active: true,
+        usage_count: 75,
+        used_count: 23,
+        unused_count: 52
+      },
+      {
+        id: 3,
+        template_id: 'WO_001',
+        name: 'Work Order',
+        description: 'Work order tracking numbers',
+        config: { prefix: 'WO', length: 6 },
+        is_default: false,
+        is_active: true,
+        usage_count: 200,
+        used_count: 156,
+        unused_count: 44
+      },
+      {
+        id: 4,
+        template_id: 'DEMO_001',
+        name: 'Demo Units',
+        description: 'Demo and testing serial numbers',
+        config: { prefix: 'DMO', length: 7 },
+        is_default: false,
+        is_active: true,
+        usage_count: 25,
+        used_count: 8,
+        unused_count: 17
+      },
+      {
+        id: 5,
+        template_id: 'OTHER_001',
+        name: 'Other',
+        description: 'Custom serial numbers with user-defined prefix',
+        config: { prefix: '', length: 8 },
+        is_default: false,
+        is_active: true,
+        usage_count: 10,
+        used_count: 3,
+        unused_count: 7
+      }
+    ];
+
+    // Mock serial numbers with realistic data
+    this.serialNumbers = this.generateMockSerialNumbers();
+  }
+
+  generateMockSerialNumbers(): GeneratedSerialNumber[] {
+    const mockData: GeneratedSerialNumber[] = [];
+    const templates = ['PROD_001', 'ASSET_001', 'WO_001', 'DEMO_001', 'OTHER_001'];
+    const templateNames = ['Product Serial', 'Asset Tracking', 'Work Order', 'Demo Units', 'Other'];
+    const usedForOptions = ['product', 'asset', 'work_order', 'transaction', 'demo'];
+    const users = ['John Smith', 'Sarah Johnson', 'Mike Davis', 'Lisa Chen', 'David Wilson'];
+    const referenceTables = ['products', 'assets', 'work_orders', 'transactions', 'demos'];
+
+    // Generate 150 mock serial numbers
+    for (let i = 1; i <= 150; i++) {
+      const templateIndex = Math.floor(Math.random() * templates.length);
+      const template = templates[templateIndex];
+      const templateName = templateNames[templateIndex];
+      const isUsed = Math.random() < 0.6; // 60% chance of being used
+      const generatedDate = this.getRandomDate(new Date(2024, 0, 1), new Date());
+      const usedDate = isUsed ? this.getRandomDate(generatedDate, new Date()) : undefined;
+
+      // Generate serial number based on template
+      let serialNumber = '';
+      let usedFor = '';
+      switch (template) {
+        case 'PROD_001':
+          serialNumber = `PRD${String(i).padStart(5, '0')}`;
+          usedFor = 'product';
+          break;
+        case 'ASSET_001':
+          serialNumber = `AST${String(i + 1000).padStart(7, '0')}`;
+          usedFor = 'asset';
+          break;
+        case 'WO_001':
+          serialNumber = `WO${String(i + 2000).padStart(4, '0')}`;
+          usedFor = 'work_order';
+          break;
+        case 'DEMO_001':
+          serialNumber = `DMO${String(i + 500).padStart(4, '0')}`;
+          usedFor = 'demo';
+          break;
+        case 'OTHER_001':
+          // Generate random prefix for OTHER template
+          const prefixes = ['TMP', 'TST', 'QA', 'DEV', 'SPC'];
+          const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+          serialNumber = `${randomPrefix}${String(i + 3000).padStart(4, '0')}`;
+          usedFor = 'product'; // Default for other
+          break;
+      }
+
+      mockData.push({
+        id: i,
+        serial_number: serialNumber,
+        template_id: template,
+        template_name: templateName,
+        used_for: usedFor,
+        reference_id: isUsed ? `REF${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}` : '',
+        reference_table: isUsed ? referenceTables[Math.floor(Math.random() * referenceTables.length)] : '',
+        is_used: isUsed,
+        generated_by: Math.floor(Math.random() * 5) + 1,
+        generated_at: generatedDate.toISOString(),
+        used_at: usedDate?.toISOString(),
+        notes: Math.random() < 0.3 ? `Test note for ${serialNumber}` : undefined,
+        status: isUsed ? 'used' : 'available'
+      });
+    }
+
+    return mockData.sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
+  }
+
+  getRandomDate(start: Date, end: Date): Date {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
   }
 
   onGridReady(params: GridReadyEvent) {
@@ -166,39 +340,87 @@ export class SerialNumberReportComponent implements OnInit {
   }
 
   loadTemplates() {
-    this.serialNumberService.getTemplates().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.templates = response.data;
+    if (this.USE_MOCK_DATA) {
+      // Mock templates for testing - templates are already loaded in loadMockData()
+      console.log('Mock templates loaded:', this.templates.length);
+    } else {
+      // Real API call
+      this.serialNumberService.getTemplates().subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.templates = response.data;
+          }
+        },
+        error: (error) => {
+          console.error('Error loading templates:', error);
         }
-      },
-      error: (error) => {
-        console.error('Error loading templates:', error);
-      }
-    });
+      });
+    }
   }
 
   loadSerialNumbers() {
-    this.serialNumberService.getSerialHistory(1000, this.selectedTemplate, this.selectedUsedFor).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.serialNumbers = response.data;
-          this.updateStats();
-        } else {
-          this.toastrService.error('Failed to load serial numbers: ' + response.message);
+    if (this.USE_MOCK_DATA) {
+      // Mock filtering for testing
+      this.loadMockSerialNumbers();
+    } else {
+      // Real API call
+      this.serialNumberService.getSerialHistory(1000, this.selectedTemplate, this.selectedUsedFor).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.serialNumbers = response.data;
+          } else {
+            this.toastrService.error('Failed to load serial numbers: ' + response.message);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading serial numbers:', error);
+          this.toastrService.error('Error loading serial numbers');
         }
-      },
-      error: (error) => {
-        console.error('Error loading serial numbers:', error);
-        this.toastrService.error('Error loading serial numbers');
-      }
-    });
+      });
+    }
   }
 
-  updateStats() {
-    this.totalCount = this.serialNumbers.length;
-    this.usedCount = this.serialNumbers.filter(s => s.is_used).length;
-    this.availableCount = this.totalCount - this.usedCount;
+  loadMockSerialNumbers() {
+    // Start with all mock data
+    let filteredData = this.generateMockSerialNumbers();
+
+    // Apply template filter
+    if (this.selectedTemplate) {
+      filteredData = filteredData.filter(s => s.template_id === this.selectedTemplate);
+    }
+
+    // Apply used_for filter
+    if (this.selectedUsedFor) {
+      filteredData = filteredData.filter(s => s.used_for === this.selectedUsedFor);
+    }
+
+    // Apply status filter
+    if (this.selectedStatus) {
+      if (this.selectedStatus === 'used') {
+        filteredData = filteredData.filter(s => s.is_used);
+      } else if (this.selectedStatus === 'available') {
+        filteredData = filteredData.filter(s => !s.is_used);
+      }
+    }
+
+    // Apply date filters
+    if (this.dateFrom) {
+      const fromDate = new Date(this.dateFrom);
+      filteredData = filteredData.filter(s => new Date(s.generated_at) >= fromDate);
+    }
+
+    if (this.dateTo) {
+      const toDate = new Date(this.dateTo);
+      toDate.setHours(23, 59, 59, 999); // End of day
+      filteredData = filteredData.filter(s => new Date(s.generated_at) <= toDate);
+    }
+
+    this.serialNumbers = filteredData;
+
+    // Simulate API delay for realistic testing
+    setTimeout(() => {
+      console.log('Mock serial numbers loaded:', this.serialNumbers.length);
+    }, 100);
   }
 
   applyFilters() {
@@ -241,22 +463,44 @@ export class SerialNumberReportComponent implements OnInit {
   markAsUsed(serialNumber: string) {
     const referenceId = prompt('Enter reference ID:');
     const referenceTable = prompt('Enter reference table/system:');
-    
+
     if (referenceId && referenceTable) {
-      this.serialNumberService.useSerial(serialNumber, referenceId, referenceTable).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.toastrService.success('Serial number marked as used');
-            this.loadSerialNumbers();
-          } else {
-            this.toastrService.error('Failed to mark as used: ' + response.message);
+      if (this.USE_MOCK_DATA) {
+        // Mock implementation for testing
+        const serialIndex = this.serialNumbers.findIndex(s => s.serial_number === serialNumber);
+        if (serialIndex !== -1) {
+          this.serialNumbers[serialIndex] = {
+            ...this.serialNumbers[serialIndex],
+            is_used: true,
+            used_at: new Date().toISOString(),
+            reference_id: referenceId,
+            reference_table: referenceTable,
+            status: 'used'
+          };
+          this.toastrService.success('Serial number marked as used (Mock)');
+
+          // Refresh grid data
+          if (this.gridApi) {
+            this.gridApi.applyTransactionAsync({ update: [this.serialNumbers[serialIndex]] });
           }
-        },
-        error: (error) => {
-          console.error('Error marking as used:', error);
-          this.toastrService.error('Error marking serial number as used');
         }
-      });
+      } else {
+        // Real API call
+        this.serialNumberService.useSerial(serialNumber, referenceId, referenceTable).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.toastrService.success('Serial number marked as used');
+              this.loadSerialNumbers();
+            } else {
+              this.toastrService.error('Failed to mark as used: ' + response.message);
+            }
+          },
+          error: (error) => {
+            console.error('Error marking as used:', error);
+            this.toastrService.error('Error marking serial number as used');
+          }
+        });
+      }
     }
   }
 
@@ -264,7 +508,7 @@ export class SerialNumberReportComponent implements OnInit {
   actionsRenderer = (params: any) => {
     const serialNumber = params.data.serial_number;
     const isUsed = params.data.is_used;
-    
+
     return `
       <div class="btn-group btn-group-sm">
         <button class="btn btn-outline-primary btn-sm" onclick="component.showBarcode('${serialNumber}')" title="Show Barcode">
@@ -279,4 +523,137 @@ export class SerialNumberReportComponent implements OnInit {
       </div>
     `;
   };
+
+  // Modal methods
+  open(content: TemplateRef<any>) {
+    this.modalService.open(content, { ariaLabelledBy: 'modal-basic-title', size: 'lg' }).result.then(
+      (result) => {
+        this.closeResult = `Closed with: ${result}`;
+      },
+      (reason) => {
+        this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+      }
+    );
+  }
+
+  private getDismissReason(reason: any): string {
+    switch (reason) {
+      case ModalDismissReasons.ESC:
+        return 'by pressing ESC';
+      case ModalDismissReasons.BACKDROP_CLICK:
+        return 'by clicking on a backdrop';
+      default:
+        return `with: ${reason}`;
+    }
+  }
+
+  generateSerialNumbers() {
+    if (this.addSerialForm.valid) {
+      const formData = this.addSerialForm.value;
+      
+      // Get the actual prefix value (form control might be disabled)
+      const prefix = this.addSerialForm.get('prefix')?.value || formData.prefix;
+      
+      // Get usedFor from form (it's automatically set by template selection)
+      const usedFor = formData.usedFor;
+      
+      const newSerials: GeneratedSerialNumber[] = [];
+
+      for (let i = 0; i < formData.count; i++) {
+        const uniqueId = this.generateUniqueId();
+        const serialNumber = `${prefix}${uniqueId}`;
+
+        // Check if serial number already exists
+        if (this.serialNumbers.find(s => s.serial_number === serialNumber)) {
+          continue; // Skip if already exists
+        }
+
+        const newSerial: GeneratedSerialNumber = {
+          id: this.serialNumbers.length + i + 1,
+          serial_number: serialNumber,
+          template_id: formData.template,
+          template_name: this.templates.find(t => t.template_id === formData.template)?.name || 'Unknown',
+          used_for: usedFor,
+          reference_id: '',
+          reference_table: '',
+          is_used: false,
+          generated_by: 1, // Mock user ID
+          generated_at: new Date().toISOString(),
+          notes: `Generated via modal with prefix ${prefix}`,
+          status: 'available'
+        };
+
+        newSerials.push(newSerial);
+      }
+
+      if (newSerials.length > 0) {
+        this.serialNumbers = [...newSerials, ...this.serialNumbers]; // Add to beginning
+        this.toastrService.success(`Generated ${newSerials.length} serial number(s) successfully`);
+
+        // Reset form to default template
+        this.addSerialForm.reset({
+          prefix: 'PRD',
+          template: 'PROD_001',
+          usedFor: 'product',
+          count: 1
+        });
+        
+        // Re-trigger template change to set proper prefix
+        this.onTemplateChange('PROD_001');
+      } else {
+        this.toastrService.warning('No new serial numbers generated (duplicates detected)');
+      }
+    } else {
+      this.toastrService.error('Please fill in all required fields correctly');
+    }
+  }
+
+  private generateUniqueId(): string {
+    // Generate a 5-digit unique ID
+    const timestamp = Date.now().toString().slice(-5);
+    const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    return timestamp + random;
+  }
+
+  // Getter for form controls
+  get f() {
+    return this.addSerialForm.controls;
+  }
+
+  // Handle template change to update prefix and usedFor
+  onTemplateChange(templateId: string) {
+    const selectedTemplate = this.templates.find(t => t.template_id === templateId);
+    if (selectedTemplate) {
+      // Map template types to usedFor values
+      const templateToUsedFor: { [key: string]: string } = {
+        'PROD_001': 'product',
+        'ASSET_001': 'asset', 
+        'WO_001': 'work_order',
+        'DEMO_001': 'demo',
+        'OTHER_001': 'product' // Default for other
+      };
+
+      // Update usedFor based on template
+      const usedFor = templateToUsedFor[templateId] || 'product';
+      this.addSerialForm.patchValue({ usedFor });
+
+      // Update prefix based on template (except for OTHER)
+      if (templateId !== 'OTHER_001' && selectedTemplate.config?.prefix) {
+        this.addSerialForm.patchValue({ prefix: selectedTemplate.config.prefix });
+        // Make prefix read-only for predefined templates
+        this.addSerialForm.get('prefix')?.disable();
+      } else {
+        // For OTHER template, enable prefix editing
+        this.addSerialForm.get('prefix')?.enable();
+        if (templateId === 'OTHER_001') {
+          this.addSerialForm.patchValue({ prefix: '' });
+        }
+      }
+    }
+  }
+
+  // Check if selected template is "Other"
+  get isOtherTemplate(): boolean {
+    return this.addSerialForm.get('template')?.value === 'OTHER_001';
+  }
 }

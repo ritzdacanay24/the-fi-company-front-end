@@ -113,7 +113,7 @@ export class IgtFormComponent implements OnDestroy {
     eyefi_part_number: [""],
     inspector_name: [""],
     generated_IGT_asset: [""],
-    serial_number: ["", Validators.required],
+    serial_number: [null, Validators.required],
     igt_serial_number: [""],
     last_update: [""],
     active: [1],

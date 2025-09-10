@@ -1,50 +1,150 @@
-<form [formGroup]="form" autocomplete="off" [class.readonly-form]="isEditMode">
+<form [formGroup]="form" class="settings-form" autocomplete="off" [class.readonly-form]="isEditMode">
 
-  <!-- Show locked message when in edit mode -->
-  <div class="alert alert-warning" role="alert" *ngIf="isEditMode">
-    <i class="mdi mdi-lock me-2"></i>
-    <strong>Form Locked:</strong> This SG Asset has been created and cannot be edited to maintain data integrity.
-  </div>
+  <div class="body">
 
-  <div class="mb-3">
-    <label class="form-label">L&W Serial #</label>
-    <input class="form-control" type="text" formControlName="generated_SG_asset"
-      [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter L&W Serial Number" />
-    <small>If L&W serial # is blank, the serial # will automatically generate.</small>
-  </div>
-
-  <div class="mb-3">
-    <app-qad-wo-search [form_label]="'WO Number'" (notifyParent)="getWoNumber($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" [value]="f.poNumber.value" [disabled]="isEditMode"></app-qad-wo-search>
-
-    <!-- <input class="form-control" type="text" formControlName="poNumber" placeholder="Enter WO Number"
-      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" /> -->
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Property site</label>
-    <input class="form-control" type="text" formControlName="property_site" placeholder="Enter Property Site"
-      [ngClass]="{ 'is-invalid': submitted && f.property_site.errors }" />
-  </div>
-
-  <div class="mb-3">
-    <app-qad-customer-part-search [form_label]="'SG Part #'" (notifyParent)="getCustomerPartNumber($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
-      [value]="f.sgPartNumber.value" [disabled]="isEditMode"></app-qad-customer-part-search>
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Serial number</label>
-    <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
-      [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
-  </div>
-
-  <div class="mb-3">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
-        (change)="setBooleanToNumber('active')">
-      <label class="form-check-label" for="active">Active</label>
+    <!-- Show locked message when in edit mode -->
+    <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="isEditMode">
+      <div class="d-flex align-items-start">
+        <i class="mdi mdi-lock text-warning me-3 mt-1 fs-5"></i>
+        <div>
+          <h6 class="alert-heading text-warning mb-2">Form Locked</h6>
+          <p class="mb-0">This SG Asset has been created and cannot be edited to maintain data integrity.</p>
+        </div>
+      </div>
     </div>
+
+    <!-- Asset Identification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Asset Identification</h3>
+        <p class="text-muted mb-0">
+          Serial numbers and part references for this SG asset.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            L&W Serial Number
+          </label>
+          <input class="form-control" type="text" formControlName="generated_SG_asset"
+            [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" 
+            placeholder="Enter L&W Serial Number" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            If L&W serial number is blank, the serial number will automatically generate.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Device Serial Number <span class="text-danger">*</span>
+          </label>
+          <input class="form-control" type="text" formControlName="serialNumber" 
+            placeholder="Enter device serial number"
+            [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Unique device serial number for identification.
+          </div>
+          @if (submitted && f.serialNumber.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> Device serial number is required
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Work Order & Location Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Work Order & Location</h3>
+        <p class="text-muted mb-0">
+          Work order information and property site details.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <app-qad-wo-search [form_label]="'WO Number'" (notifyParent)="getWoNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" 
+            [value]="f.poNumber.value" 
+            [disabled]="isEditMode">
+          </app-qad-wo-search>
+          @if (submitted && f.poNumber.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> Work order number is required
+            </div>
+          }
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Property Site
+          </label>
+          <input class="form-control" type="text" formControlName="property_site" 
+            placeholder="Enter property site location"
+            [ngClass]="{ 'is-invalid': submitted && f.property_site.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Location where the asset will be deployed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Part Information Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Part Information</h3>
+        <p class="text-muted mb-0">
+          Part number references and specifications.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <app-qad-customer-part-search [form_label]="'SG Part Number'" (notifyParent)="getCustomerPartNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
+            [value]="f.sgPartNumber.value" 
+            [disabled]="isEditMode">
+          </app-qad-customer-part-search>
+          @if (submitted && f.sgPartNumber.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> SG part number is required
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Status Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Asset Status</h3>
+        <p class="text-muted mb-0">
+          Configure the active status of this asset.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <div class="form-check form-switch form-switch-md">
+            <input class="form-check-input" type="checkbox" id="active" formControlName="active"
+              (change)="setBooleanToNumber('active')">
+            <label class="form-check-label fw-medium" for="active">
+              <i class="mdi mdi-power me-2"></i>Active Status
+            </label>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Enable to make this asset active and available for use.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </form>

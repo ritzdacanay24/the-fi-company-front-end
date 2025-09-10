@@ -31,6 +31,7 @@ export class IgtFormPageComponent {
   // Serial number statistics
   availableSerialCount = 0;
   totalSerialCount = 0;
+  isLoadingSerialStats = true;
 
   constructor(
     private router: Router,
@@ -238,6 +239,7 @@ export class IgtFormPageComponent {
   // Serial Number Management Methods
   async loadSerialNumberStatistics(): Promise<void> {
     try {
+      this.isLoadingSerialStats = true;
       const data = await this.serialNumberService.getAll();
       // Ensure we always have an array
       let serialNumbers = [];
@@ -253,6 +255,8 @@ export class IgtFormPageComponent {
       console.error('Error loading serial number statistics:', error);
       this.totalSerialCount = 0;
       this.availableSerialCount = 0;
+    } finally {
+      this.isLoadingSerialStats = false;
     }
   }
 

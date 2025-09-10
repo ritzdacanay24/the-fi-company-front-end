@@ -30,7 +30,7 @@ export class AgsSerialEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit AGS Serial";
 
   form: FormGroup;
 
@@ -77,7 +77,8 @@ export class AgsSerialEditComponent {
   }
 
   onPrint() {
-    let row = this.form.getRawValue();
+    // Use the loaded data from server, not current form values with unsaved changes
+    let row = this.data || {};
 
     setTimeout(() => {
       let cmds = `
@@ -99,11 +100,11 @@ export class AgsSerialEditComponent {
       ^FWN
       ^CFA,25
       ^FS^FO50,135^FDPart Number^FS
-      ^FS^FO50,170^FD${row.sgPartNumber}^FS
-      ^FS^FO50,200^BY2,2.5^B3,N,42,N,N,N,A^FD${row.sgPartNumber}^FS
+      ^FS^FO50,170^FD${row.sgPartNumber || ''}^FS
+      ^FS^FO50,200^BY2,2.5^B3,N,42,N,N,N,A^FD${row.sgPartNumber || ''}^FS
       ^FS^FO50,260^FDSerial Number^FS
-      ^FS^FO50,295^FD${row.generated_SG_asset}^FS
-      ^FS^FO50,330^BY2,2.5^B3,N,42,N,N,N,A^FD${row.generated_SG_asset}^FS
+      ^FS^FO50,295^FD${row.generated_SG_asset || ''}^FS
+      ^FS^FO50,330^BY2,2.5^B3,N,42,N,N,N,A^FD${row.generated_SG_asset || ''}^FS
       ^CFA,15
       ^XZ
 `;

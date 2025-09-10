@@ -64,7 +64,6 @@ const routes: Routes = [
       import("./sg-asset/sg-asset-routing.module").then(
         (m) => m.SgAssetRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -73,7 +72,6 @@ const routes: Routes = [
       import("./ags-serial/ags-serial-routing.module").then(
         (m) => m.AgsSerialRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -119,7 +117,6 @@ const routes: Routes = [
       import("../tools/serial-number-demo/serial-number-demo.component").then(
         (m) => m.SerialNumberDemoComponent
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -129,7 +126,6 @@ const routes: Routes = [
       import("../tools/serial-number-report/serial-number-report.component").then(
         (m) => m.SerialNumberReportComponent
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
 ];

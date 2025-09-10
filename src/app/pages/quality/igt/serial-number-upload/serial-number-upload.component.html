@@ -1,0 +1,304 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-9">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            title="Back to Serial Number Manager">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-upload text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-info">Upload Serial Numbers</h2>
+            <p class="text-muted mb-0">Import serial numbers via CSV file or manual text entry</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Serial Number Upload</h6>
+              <p class="mb-2">
+                Upload serial numbers in bulk using <strong>CSV files or manual text entry</strong>. 
+                All serial numbers are validated for uniqueness and proper formatting.
+              </p>
+              <div class="row g-2 small">
+                <div class="col-md-6">
+                  <i class="mdi mdi-file-upload text-primary me-1"></i>
+                  CSV file upload with validation
+                </div>
+                <div class="col-md-6">
+                  <i class="mdi mdi-format-list-bulleted text-success me-1"></i>
+                  Manual text entry option
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-info bg-gradient text-white">
+          <h4 class="card-title mb-0 text-white">
+            <i class="mdi mdi-upload me-2"></i>Import Serial Numbers
+          </h4>
+        </div>
+        
+        <div class="card-body p-4">
+          <form class="settings-form">
+            <div class="body">
+              
+              <!-- Upload Method Selection -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Upload Method</h3>
+                  <p class="text-muted mb-0">
+                    Choose how you want to import your serial numbers.
+                  </p>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 mb-3">
+                    <div class="btn-group w-100" role="group">
+                      <input type="radio" class="btn-check" name="uploadMethod" id="csvMethod" value="csv" 
+                             [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off" checked>
+                      <label class="btn btn-outline-info" for="csvMethod">
+                        <i class="mdi mdi-file-upload me-2"></i>CSV File Upload
+                      </label>
+
+                      <input type="radio" class="btn-check" name="uploadMethod" id="manualMethod" value="manual" 
+                             [(ngModel)]="selectedUploadMethod" (ngModelChange)="onUploadMethodChange()" autocomplete="off">
+                      <label class="btn btn-outline-info" for="manualMethod">
+                        <i class="mdi mdi-format-list-bulleted me-2"></i>Manual Text Entry
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CSV Upload Section -->
+              <div class="mb-4 pb-4 border-bottom" *ngIf="selectedUploadMethod === 'csv'">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">CSV File Upload</h3>
+                  <p class="text-muted mb-0">
+                    Upload a CSV file containing serial numbers with optional category information.
+                  </p>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 mb-3">
+                    <label class="form-label">
+                      CSV File <span class="text-danger">*</span>
+                    </label>
+                    <input type="file" class="form-control" accept=".csv" (change)="onFileSelect($event)">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Upload a CSV file with serial numbers. First column should contain the serial numbers.
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                      Default Category
+                    </label>
+                    <select class="form-select" [(ngModel)]="defaultCategory">
+                      <option value="gaming">Gaming Equipment</option>
+                      <option value="peripheral">Peripheral Devices</option>
+                      <option value="system">System Components</option>
+                      <option value="other">Other Hardware</option>
+                    </select>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Category applied to serial numbers without a category column.
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                      Duplicate Strategy
+                    </label>
+                    <select class="form-select" [(ngModel)]="duplicateStrategy">
+                      <option value="skip">Skip Duplicates (Recommended)</option>
+                      <option value="replace">Replace Existing</option>
+                      <option value="error">Fail on Duplicates</option>
+                    </select>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      How to handle existing serial numbers during upload.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- File Preview -->
+                <div class="alert alert-light border p-3" *ngIf="csvPreview.length > 0">
+                  <h6 class="fw-bold text-secondary mb-2">
+                    <i class="mdi mdi-eye me-1"></i>
+                    CSV Preview ({{csvPreview.length}} rows)
+                  </h6>
+                  <div class="table-responsive" style="max-height: 200px;">
+                    <table class="table table-sm table-bordered">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Serial Number</th>
+                          <th>Category</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let row of csvPreview; let i = index">
+                          <td class="font-monospace">{{row.serial_number}}</td>
+                          <td>{{row.category}}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getStatusBadgeClass(row.status)">
+                              <i [ngClass]="getStatusIcon(row.status)" class="me-1"></i>
+                              {{getStatusText(row.status)}}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manual Entry Section -->
+              <div class="mb-4 pb-4 border-bottom" *ngIf="selectedUploadMethod === 'manual'">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Manual Text Entry</h3>
+                  <p class="text-muted mb-0">
+                    Enter serial numbers manually, one per line or separated by commas.
+                  </p>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 mb-3">
+                    <label class="form-label">
+                      Serial Numbers <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control font-monospace" rows="8" 
+                              [(ngModel)]="manualSerialNumbers" 
+                              (ngModelChange)="onManualEntryChange()"
+                              placeholder="Enter serial numbers here...&#10;Examples:&#10;SN001&#10;SN002&#10;SN003&#10;&#10;Or comma-separated: SN001, SN002, SN003">
+                    </textarea>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Enter one serial number per line, or separate multiple numbers with commas.
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                      Category
+                    </label>
+                    <select class="form-select" [(ngModel)]="manualCategory">
+                      <option value="gaming">Gaming Equipment</option>
+                      <option value="peripheral">Peripheral Devices</option>
+                      <option value="system">System Components</option>
+                      <option value="other">Other Hardware</option>
+                    </select>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Category applied to all manually entered serial numbers.
+                    </div>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                      Duplicate Strategy
+                    </label>
+                    <select class="form-select" [(ngModel)]="duplicateStrategy">
+                      <option value="skip">Skip Duplicates (Recommended)</option>
+                      <option value="replace">Replace Existing</option>
+                      <option value="error">Fail on Duplicates</option>
+                    </select>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      How to handle existing serial numbers during upload.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Manual Entry Preview -->
+                <div class="alert alert-light border p-3" *ngIf="manualPreview.length > 0">
+                  <h6 class="fw-bold text-secondary mb-2">
+                    <i class="mdi mdi-eye me-1"></i>
+                    Preview ({{manualPreview.length}} serial numbers)
+                  </h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    <span *ngFor="let item of manualPreview" 
+                          class="badge bg-light text-dark border font-monospace">
+                      {{item}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Validation Summary -->
+              <div class="mb-4" *ngIf="validationSummary">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Validation Summary</h3>
+                  <p class="text-muted mb-0">
+                    Review the validation results before uploading.
+                  </p>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-success-subtle">
+                      <div class="fs-4 fw-bold text-success">{{validationSummary.valid}}</div>
+                      <small class="text-success">Valid</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-warning-subtle">
+                      <div class="fs-4 fw-bold text-warning">{{validationSummary.duplicates}}</div>
+                      <small class="text-warning">Duplicates</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-danger-subtle">
+                      <div class="fs-4 fw-bold text-danger">{{validationSummary.errors}}</div>
+                      <small class="text-danger">Errors</small>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-primary-subtle">
+                      <div class="fs-4 fw-bold text-primary">{{validationSummary.total}}</div>
+                      <small class="text-primary">Total</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div> <!-- end body container -->
+          </form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" (click)="goBack()">
+            <i class="mdi mdi-arrow-left me-1"></i>Back to Manager
+          </button>
+          <button type="submit" class="btn btn-info ms-auto" 
+                  [disabled]="isUploading || !canUpload()"
+                  (click)="uploadSerialNumbers()">
+            @if (isUploading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Uploading...
+            } @else {
+              <i class="mdi mdi-upload me-1"></i>Upload Serial Numbers
+            }
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

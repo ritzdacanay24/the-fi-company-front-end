@@ -2,7 +2,7 @@
 <div class="standalone-ul-form">
 
     <!-- Floating Bubbles Background -->
-    <div class="bubble-container">
+    <!-- <div class="bubble-container">
         <div class="bubble bubble-1">
             <div class="bubble-logo"></div>
         </div>
@@ -23,7 +23,7 @@
             <div class="bubble-logo"></div>
         </div>
         <div class="bubble bubble-10"></div>
-    </div>
+    </div> -->
 
     <!-- Header -->
     <div class="form-header bg-primary text-white">
@@ -115,11 +115,11 @@
 
                             <!-- Action buttons -->
                             <div class="d-grid gap-3">
-                                <button class="btn btn-primary btn-lg" (click)="startNewULUsage()">
+                                <button class="btn btn-primary " (click)="startNewULUsage()">
                                     <i class="mdi mdi-plus me-2"></i>
                                     Record Another UL Usage
                                 </button>
-                                <button class="btn btn-outline-danger btn-lg" (click)="logout()">
+                                <button class="btn btn-outline-danger " (click)="logout()">
                                     <i class="mdi mdi-logout me-2"></i>
                                     Logout
                                 </button>
@@ -139,21 +139,105 @@
             <div *ngIf="!isAuthenticated" class="row justify-content-center">
                 <div class="col-md-6 col-lg-5">
                     <div class="card border-0 shadow-lg">
-                        <div class="card-body p-5 text-center">
-                            <div class="auth-icon mb-4">
-                                <div class="icon-background">
-                                    <i class="mdi mdi-shield-account text-warning" style="font-size: 4rem;"></i>
+                        <div class="card-header border-bottom-0 pb-0">
+                            <h4 class="card-title fw-bold w-100 text-center">
+                                <i class="mdi mdi-login me-2"></i>
+                                Temporary Login
+                            </h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <div class="login-icon mb-3">
+                                    <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
+                                </div>
+                                <p class="text-muted">
+                                    Enter your credentials for temporary access. You can login using your username with password, or simply scan your employee card number.
+                                    Your session will expire in 15 minutes or after 1 minute of inactivity.
+                                </p>
+                            </div>
+
+                            <div *ngIf="loginError" class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="mdi mdi-alert-circle me-2"></i>
+                                    <div class="flex-grow-1">
+                                        {{ loginError }}
+                                    </div>
+                                    <button type="button" class="btn btn-link p-0" (click)="loginError = ''">
+                                        <i class="mdi mdi-close text-muted"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <h4 class="fw-bold mb-3">Authentication Required</h4>
-                            <p class="text-muted mb-4">
-                                Please login to record UL usage. Your session will be automatically managed for
-                                security.
-                            </p>
-                            <button class="btn btn-primary btn-lg px-4" (click)="openLoginModal(loginModal)">
-                                <i class="mdi mdi-login me-2"></i>
-                                Login to Continue
-                            </button>
+
+                            <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
+                                
+                                <!-- Login Method Toggle -->
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-center">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="loginMethod" id="username" value="username" 
+                                                   [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+                                            <label class="btn btn-outline-primary" for="username">
+                                                <i class="mdi mdi-account me-1"></i>Username
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="loginMethod" id="cardNumber" value="cardNumber" 
+                                                   [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+                                            <label class="btn btn-outline-primary" for="cardNumber">
+                                                <i class="mdi mdi-credit-card me-1"></i>Card Number
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">Choose your preferred login method</small>
+                                    </div>
+                                </div>
+
+                                <!-- Username Login -->
+                                <div class="mb-3" *ngIf="loginMethod === 'username'">
+                                    <label class="form-label fw-semibold">Username</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control form-control-lg" name="username" ngModel required
+                                            placeholder="first.lastname" #usernameInput>
+                                        <span class="input-group-text">&#64;the-fi-company.com</span>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="mdi mdi-information-outline me-1"></i>
+                                        Enter your company username
+                                    </div>
+                                </div>
+
+                                <!-- Card Number Login -->
+                                <div class="mb-3" *ngIf="loginMethod === 'cardNumber'">
+                                    <label class="form-label fw-semibold">Employee Card Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="mdi mdi-credit-card"></i>
+                                        </span>
+                                        <input type="password" class="form-control form-control-lg" name="cardNumber" ngModel required
+                                            placeholder="Scan or enter your employee card number" maxlength="20" autocomplete="off"
+                                            (keydown.enter)="onCardNumberEnter($event, loginForm)" #cardNumberInput>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="mdi mdi-information-outline me-1"></i>
+                                        Scan or enter your employee ID card number (input is hidden for security). Press Enter or scan card to login.
+                                    </div>
+                                </div>
+
+                                <!-- Password field only for username login -->
+                                <div class="mb-4" *ngIf="loginMethod === 'username'">
+                                    <label class="form-label fw-semibold">Password</label>
+                                    <input type="password" class="form-control form-control-lg" name="password" ngModel required
+                                        placeholder="Enter your password">
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary" [disabled]="!isLoginFormValid(loginForm) || isLoggingIn">
+                                        <i *ngIf="isLoggingIn" class="mdi mdi-loading mdi-spin me-2"></i>
+                                        <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
+                                        {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -168,6 +252,33 @@
                             <form [formGroup]="usageForm" class="settings-form" (ngSubmit)="onSubmit()" id="usageForm">
 
                                 <div class="body">
+
+                                    <!-- Work Order Search Section -->
+                                    <div class="mb-4 pb-4 border-bottom">
+                                        <div class="mb-3">
+                                            <h3 class="h5 mb-1">Work Order Information</h3>
+                                            <p class="text-muted mb-0">
+                                                Search and select a work order number to associate with this UL usage recording.
+                                            </p>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <app-qad-wo-search
+                                                    [form_label]="'Work Order Number'"
+                                                    [placeholder]="'Search by WO Number'"
+                                                    [required]="false"
+                                                    [showLabel]="true"
+                                                    [value]="usageForm.get('work_order')?.value"
+                                                    (notifyParent)="onWorkOrderSelected($event)">
+                                                </app-qad-wo-search>
+                                                <div class="form-text">
+                                                    <i class="mdi mdi-information-outline me-1"></i>
+                                                    Optional: Link this UL usage to a specific work order for tracking purposes
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                     <!-- Category Selection Section -->
                                     <div class="mb-4 pb-4 border-bottom">
@@ -465,7 +576,7 @@
                                                     Quantity *
                                                 </label>
                                                 <input type="number" formControlName="quantity"
-                                                    class="form-control form-control-lg" min="1" placeholder="1">
+                                                    class="form-control form-control-lg" min="1" placeholder="1" tabindex="-1">
                                                 <div class="form-text">Number of units</div>
                                             </div>
                                         </div>
@@ -513,16 +624,16 @@
                                     <!-- Bulk UL Forms -->
                                     <div *ngIf="assignedULNumbers.length > 1" class="bulk-ul-forms">
                                         <div *ngFor="let ulNumber of assignedULNumbers; let i = index"
-                                            class="ul-form-card card mb-3">
-                                            <div class="card-header bg-light">
+                                            class="ul-form-section p-3 mb-3 border rounded bg-light">
+                                            <div class="mb-3">
                                                 <h6 class="mb-0 fw-semibold">
                                                     <i class="mdi mdi-numeric me-2"></i>
                                                     UL {{ ulNumber }} - Transaction {{ i + 1 }}
                                                 </h6>
                                             </div>
-                                            <div class="card-body">
+                                            <div class="form-content">
                                                 <div class="row g-3">
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-8">
                                                         <label class="form-label fw-semibold">
                                                             <i class="mdi mdi-barcode me-1"></i>
                                                             Serial Number *
@@ -534,7 +645,7 @@
                                                             placeholder="Enter device serial number" required>
                                                     </div>
 
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-4">
                                                         <label class="form-label fw-semibold">
                                                             <i class="mdi mdi-counter me-1"></i>
                                                             Quantity *
@@ -542,47 +653,9 @@
                                                         <input type="number" [(ngModel)]="bulkTransactions[i].quantity"
                                                             [ngModelOptions]="{standalone: true}"
                                                             name="bulk_quantity_{{ i }}" class="form-control" min="1"
-                                                            placeholder="1" required>
+                                                            placeholder="1" required tabindex="-1">
                                                     </div>
-
-                                                    <!-- <div class="col-md-4">
-                                                        <label class="form-label fw-semibold">
-                                                            <i class="mdi mdi-domain me-1"></i>
-                                                            Customer *
-                                                        </label>
-                                                        <input type="text" [(ngModel)]="bulkTransactions[i].customer"
-                                                            [ngModelOptions]="{standalone: true}"
-                                                            name="bulk_customer_{{ i }}" class="form-control"
-                                                            placeholder="Customer name" required>
-                                                    </div> -->
                                                 </div>
-                                                <!-- <div class="row g-3 mt-2">
-
-                                                    <div class="col-md-12">
-                                                        <label class="form-label fw-semibold">
-                                                            <i class="mdi mdi-text-subject me-1"></i>
-                                                            Description *
-                                                        </label>
-                                                        <input type="text" [(ngModel)]="bulkTransactions[i].description"
-                                                            [ngModelOptions]="{standalone: true}"
-                                                            name="bulk_description_{{ i }}" class="form-control"
-                                                            placeholder="Device description" required>
-                                                    </div>
-                                                </div> -->
-
-                                                <!-- <div class="row g-3 mt-2">
-                                                    <div class="col-12">
-                                                        <label class="form-label fw-semibold">
-                                                            <i class="mdi mdi-note-text me-1"></i>
-                                                            Notes (Optional)
-                                                        </label>
-                                                        <textarea [(ngModel)]="bulkTransactions[i].notes"
-                                                            [ngModelOptions]="{standalone: true}"
-                                                            name="bulk_notes_{{ i }}" class="form-control" rows="2"
-                                                            placeholder="Additional notes for this UL">
-                                                        </textarea>
-                                                    </div>
-                                                </div> -->
                                             </div>
                                         </div>
                                     </div>
@@ -592,15 +665,15 @@
                             </form>
                         </div>
 
-                        <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+                        <div class="form-footer bg-light border-top d-flex justify-content-between p-3">
                             <button class="btn btn-light" type="button" (click)="usageForm.reset(); assignedULNumbers = []">
                                 <i class="mdi mdi-refresh me-1"></i>Reset Form
                             </button>
-                            <button class="btn btn-success" type="submit" form="usageForm"
+                            <button class="btn btn-primary" type="submit" form="usageForm"
                                     [disabled]="!isFormValid() || isSubmitting || assignedULNumbers.length === 0">
                                 @if (isSubmitting) {
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                    {{ assignedULNumbers.length > 1 ? 'Recording Bulk Usage...' : 'Recording...' }}
+                                    {{ assignedULNumbers.length > 1 ? 'Recording...' : 'Recording...' }}
                                 } @else {
                                     <i class="mdi mdi-check me-1"></i>
                                     {{ assignedULNumbers.length > 1 ? 'Record ' + assignedULNumbers.length + ' UL Usages' : 'Record UL Usage' }}
@@ -636,7 +709,7 @@
 
                 <!-- Summary Information -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="summary-card p-3 bg-light rounded border">
                             <h6 class="fw-semibold mb-2">
                                 <i class="mdi mdi-account me-1"></i>
@@ -648,7 +721,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="summary-card p-3 bg-light rounded border">
                             <h6 class="fw-semibold mb-2">
                                 <i class="mdi mdi-tag me-1"></i>
@@ -657,6 +730,33 @@
                             <div class="small">
                                 <div><strong>Category:</strong> {{ pendingSubmissionData[0]?.category }}</div>
                                 <div><strong>Total ULs:</strong> {{ pendingSubmissionData.length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="summary-card p-3 bg-light rounded border">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="mdi mdi-briefcase me-1"></i>
+                                Work Order
+                            </h6>
+                            <div class="small">
+                                <div *ngIf="pendingSubmissionData[0]?.work_order" class="text-success">
+                                    <strong>WO #:</strong> {{ pendingSubmissionData[0]?.work_order }}
+                                </div>
+                                <div *ngIf="!pendingSubmissionData[0]?.work_order" class="text-muted">
+                                    <strong>WO #:</strong> Not specified
+                                </div>
+                                <div *ngIf="pendingSubmissionData[0]?.work_order_part" class="mt-1">
+                                    <strong>Part:</strong> {{ pendingSubmissionData[0]?.work_order_part }}
+                                </div>
+                                <div *ngIf="pendingSubmissionData[0]?.work_order_description" class="mt-1">
+                                    <strong>Description:</strong> {{ pendingSubmissionData[0]?.work_order_description }}
+                                </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        {{ pendingSubmissionData[0]?.work_order ? 'Linked to work order' : 'No work order linked' }}
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -670,8 +770,7 @@
                                 <th>UL Number</th>
                                 <th>Serial Number</th>
                                 <th>Quantity</th>
-                                <th>Customer</th>
-                                <th>Description</th>
+                                <th>WO #</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -679,8 +778,7 @@
                                 <td class="fw-semibold">{{ record.ul_number }}</td>
                                 <td>{{ record.serial_number }}</td>
                                 <td class="text-center">{{ record.quantity }}</td>
-                                <td>{{ record.customer }}</td>
-                                <td>{{ record.description }}</td>
+                                <td>{{ record.work_order }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -713,110 +811,3 @@
         </div>
     </div>
 </div>
-
-<!-- Login Modal -->
-<ng-template #loginModal let-modal>
-    <div class="modal-header border-bottom-0 pb-0">
-        <h4 class="modal-title fw-bold w-100 text-center">
-            <i class="mdi mdi-login me-2"></i>
-            Temporary Login
-        </h4>
-    </div>
-    <div class="modal-body p-4">
-        <div class="text-center mb-4">
-            <div class="login-icon mb-3">
-                <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
-            </div>
-            <p class="text-muted">
-                Enter your credentials for temporary access. You can login using your username with password, or simply scan your employee card number.
-                Your session will expire in 15 minutes or after 1 minute of inactivity.
-            </p>
-        </div>
-
-        <div *ngIf="loginError" class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="mdi mdi-alert-circle me-2"></i>
-                <div class="flex-grow-1">
-                    {{ loginError }}
-                </div>
-                <button type="button" class="btn btn-link p-0" (click)="loginError = ''">
-                    <i class="mdi mdi-close text-muted"></i>
-                </button>
-            </div>
-        </div>
-
-        <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
-            
-            <!-- Login Method Toggle -->
-            <div class="mb-4">
-                <div class="d-flex justify-content-center">
-                    <div class="btn-group" role="group">
-                        <input type="radio" class="btn-check" name="loginMethod" id="username" value="username" 
-                               [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
-                        <label class="btn btn-outline-primary" for="username">
-                            <i class="mdi mdi-account me-1"></i>Username
-                        </label>
-                        
-                        <input type="radio" class="btn-check" name="loginMethod" id="cardNumber" value="cardNumber" 
-                               [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
-                        <label class="btn btn-outline-primary" for="cardNumber">
-                            <i class="mdi mdi-credit-card me-1"></i>Card Number
-                        </label>
-                    </div>
-                </div>
-                <div class="text-center mt-2">
-                    <small class="text-muted">Choose your preferred login method</small>
-                </div>
-            </div>
-
-            <!-- Username Login -->
-            <div class="mb-3" *ngIf="loginMethod === 'username'">
-                <label class="form-label fw-semibold">Username</label>
-                <div class="input-group">
-                    <input type="text" class="form-control form-control-lg" name="username" ngModel required autofocus
-                        placeholder="riz.dacanay">
-                    <span class="input-group-text">&#64;the-fi-company.com</span>
-                </div>
-                <div class="form-text">
-                    <i class="mdi mdi-information-outline me-1"></i>
-                    Enter your company username
-                </div>
-            </div>
-
-            <!-- Card Number Login -->
-            <div class="mb-3" *ngIf="loginMethod === 'cardNumber'">
-                <label class="form-label fw-semibold">Employee Card Number</label>
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="mdi mdi-credit-card"></i>
-                    </span>
-                    <input type="password" class="form-control form-control-lg" name="cardNumber" ngModel required
-                        placeholder="Scan or enter your employee card number" maxlength="20" autocomplete="off"
-                        (keydown.enter)="onCardNumberEnter($event, loginForm)" #cardNumberInput>
-                </div>
-                <div class="form-text">
-                    <i class="mdi mdi-information-outline me-1"></i>
-                    Scan or enter your employee ID card number (input is hidden for security). Press Enter or scan card to login.
-                </div>
-            </div>
-
-            <!-- Password field only for username login -->
-            <div class="mb-4" *ngIf="loginMethod === 'username'">
-                <label class="form-label fw-semibold">Password</label>
-                <input type="password" class="form-control form-control-lg" name="password" ngModel required
-                    placeholder="Enter your password">
-            </div>
-
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg" [disabled]="!isLoginFormValid(loginForm) || isLoggingIn">
-                    <i *ngIf="isLoggingIn" class="mdi mdi-loading mdi-spin me-2"></i>
-                    <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
-                    {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
-                </button>
-                <button type="button" class="btn btn-light" [disabled]="isLoggingIn" (click)="modal.dismiss()">
-                    Cancel
-                </button>
-            </div>
-        </form>
-    </div>
-</ng-template>

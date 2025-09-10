@@ -34,7 +34,7 @@ export class AgsSerialCreateComponent {
     if (this.id) this.getData();
   }
 
-  title = "Create";
+  title = "Create AGS Serial";
 
   form: FormGroup;
 

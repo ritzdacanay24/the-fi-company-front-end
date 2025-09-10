@@ -1,182 +1,114 @@
-<div class="container-fluid pb-3" style="max-width: 1200px;" *ngIf="mode === 'create'">
-  <div class="card border-0 mb-0">
-    <!-- Header -->
-    <div class="card-header bg-primary bg-gradient text-white p-4 position-relative overflow-hidden">
-      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.08;">
-        <i class="mdi mdi-plus-circle" style="font-size: 8rem; transform: rotate(15deg);"></i>
-      </div>
-      <div class="d-flex align-items-center justify-content-between position-relative">
-        <div class="d-flex align-items-center">
-          <button class="btn btn-light rounded-pill btn-sm me-3" (click)="goBack()" title="Back to IGT List">
-            <i class="mdi mdi-arrow-left"></i>
-            <span class="d-none d-sm-inline-block ms-1">Back</span>
+<div class="container-fluid" *ngIf="mode === 'create'">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            title="Back to IGT List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
           </button>
-          <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-            style="width: 2.5rem; height: 2.5rem;">
-            <i class="mdi mdi-plus-circle fs-4 text-white"></i>
-          </span>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-plus text-white fs-4"></i>
+          </div>
           <div>
-            <h4 class="mb-1 fw-bold text-white">Create IGT Asset Record</h4>
-            <p class="mb-0 text-white-50">Initialize a new Interactive Gaming Technology asset with comprehensive tracking</p>
+            <h2 class="mb-1 text-primary">Create IGT Asset Record</h2>
+            <p class="text-muted mb-0">Initialize a new Interactive Gaming Technology asset with comprehensive tracking</p>
           </div>
         </div>
-        <div class="badge bg-light text-primary fs-6 px-3 py-2">
-          <i class="mdi mdi-quality-high me-1"></i>
-          Quality
-        </div>
-      </div>
-    </div>
-    <!-- Guidelines -->
-    <div class="card-header border-0 p-4">
-      <div class="alert alert-info border-0 rounded-3 shadow-sm py-3 px-4" role="alert">
-        <div class="row align-items-center">
-          <div class="col-auto d-flex align-items-center">
-            <i class="mdi mdi-information-outline fs-2 text-info me-3"></i>
-          </div>
-          <div class="col ps-0">
-            <h6 class="fw-semibold mb-2 text-info">Asset Creation Guidelines</h6>
-            <div class="row g-2">
-              <div class="col-md-6">
-                <div class="d-flex align-items-start">
-                  <i class="mdi mdi-auto-fix me-2 mt-1"></i>
-                  <small><strong>Auto-Generated Numbers:</strong> Asset numbers follow gaming compliance standards</small>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Creating a New IGT Asset</h6>
+              <p class="mb-2">
+                IGT assets require <strong>unique serial number tracking</strong> for gaming compliance. 
+                Once created, quality control workflows are automatically initiated.
+              </p>
+              <div class="row g-2 small">
+                <div class="col-md-6">
+                  <i class="mdi mdi-check-circle text-success me-1"></i>
+                  Auto-generated compliance numbers
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="d-flex align-items-start">
-                  <i class="mdi mdi-database-sync-outline text-success me-2"></i>
-                  <small><strong>Real-time Validation:</strong> Fields validated against QAD and customer databases</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="d-flex align-items-start">
-                  <i class="mdi mdi-cog-outline text-info me-2"></i>
-                  <small><strong>Quality Workflows:</strong> Automatic QC process initiation upon creation</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="d-flex align-items-start">
-                  <i class="mdi mdi-asterisk text-warning me-2"></i>
-                  <small><strong>Required Fields:</strong> Mandatory fields marked with asterisk (*)</small>
+                <div class="col-md-6">
+                  <i class="mdi mdi-database-sync text-info me-1"></i>
+                  Real-time validation against QAD
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Serial Number Availability Card -->
-      <div class="alert alert-success border-0 rounded-3 shadow-sm py-3 px-4 mt-3" role="alert">
-        <div class="row align-items-center">
-          <div class="col-auto d-flex align-items-center">
-            <i class="mdi mdi-barcode-scan fs-2 text-success me-3"></i>
-          </div>
-          <div class="col ps-0">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="fw-semibold mb-1 text-success">Serial Number Inventory</h6>
-                <div class="d-flex gap-4 align-items-center">
-                  <div class="d-flex align-items-center">
-                    <i class="mdi mdi-check-circle text-success me-2"></i>
-                    <span class="fw-bold text-success fs-5">{{getAvailableSerialCount()}}</span>
-                    <small class="text-muted ms-1">Available</small>
-                  </div>
-                  <div class="d-flex align-items-center">
-                    <i class="mdi mdi-database text-primary me-2"></i>
-                    <span class="fw-bold text-primary">{{getTotalSerialCount()}}</span>
-                    <small class="text-muted ms-1">Total</small>
-                  </div>
+
+        <!-- Serial Number Availability Alert -->
+        <!-- <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert" *ngIf="getAvailableSerialCount() > 0">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-barcode-scan text-success me-3 mt-1 fs-5"></i>
+            <div class="flex-grow-1">
+              <h6 class="alert-heading text-success mb-2">Serial Number Inventory</h6>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-4">
+                  <span><strong>{{getAvailableSerialCount()}}</strong> Available</span>
+                  <span><strong>{{getTotalSerialCount()}}</strong> Total</span>
                 </div>
-              </div>
-              <div class="text-end">
-                <button type="button" class="btn btn-outline-success btn-sm" (click)="goToSerialManager()" title="Manage Serial Numbers">
-                  <i class="mdi mdi-cog me-1"></i>
-                  Manage Serials
+                <button type="button" class="btn btn-outline-success btn-sm" (click)="goToSerialManager()">
+                  <i class="mdi mdi-cog me-1"></i>Manage Serials
                 </button>
               </div>
-            </div>
-            <div *ngIf="getAvailableSerialCount() < 10" class="mt-2">
-              <div class="alert alert-warning py-2 px-3 mb-0">
+              <div *ngIf="getAvailableSerialCount() < 10" class="mt-2 small text-warning">
                 <i class="mdi mdi-alert-outline me-1"></i>
-                <small><strong>Low Inventory:</strong> Consider adding more serial numbers before creating multiple assets.</small>
+                Low inventory - consider adding more serial numbers.
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-    <!-- Content -->
-    <div class="card-body p-4">
-      <!-- No Serial Numbers Warning -->
-      <div class="alert alert-danger border-0 mb-4" 
-           *ngIf="availableSerialCount === 0"
-           style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);">
-        <div class="d-flex align-items-start">
-          <i class="mdi mdi-alert-circle text-danger me-3 mt-1" style="font-size: 1.8rem;"></i>
-          <div>
-            <h5 class="alert-heading fw-bold mb-2 text-danger">
-              <i class="mdi mdi-stop-circle-outline me-1"></i>
-              Cannot Create IGT Asset
-            </h5>
-            <p class="mb-3">
-              <strong>No available serial numbers found in the system.</strong>
-              You must upload serial numbers before creating IGT assets.
-            </p>
-            <div class="d-flex gap-2 flex-wrap">
+        </div> -->
+
+        <!-- No Serial Numbers Warning -->
+        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert" *ngIf="availableSerialCount === 0">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-alert-circle text-danger me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-danger mb-2">Cannot Create IGT Asset</h6>
+              <p class="mb-3">
+                <strong>No available serial numbers found.</strong> You must upload serial numbers before creating IGT assets.
+              </p>
               <button class="btn btn-danger btn-sm" (click)="goToSerialManager()">
-                <i class="mdi mdi-upload me-1"></i>
-                Upload Serial Numbers
+                <i class="mdi mdi-upload me-1"></i>Upload Serial Numbers
               </button>
-              <small class="text-muted align-self-center">
-                <i class="mdi mdi-information-outline me-1"></i>
-                Each IGT asset requires an available serial number for tracking compliance
-              </small>
             </div>
           </div>
         </div>
       </div>
-      
-      <app-igt-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-igt-form>
-    </div>
-    <!-- Footer -->
-    <div class="card-footer bg-light p-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-3 align-items-center">
-          <span class="badge bg-success-subtle text-dark px-3 py-2">
-            <i class="mdi mdi-shield-check me-1"></i>
-            <strong>Secure Transmission</strong>
-          </span>
-          <span class="badge bg-info-subtle text-dark px-3 py-2">
-            <i class="mdi mdi-lock-outline me-1"></i>
-            End-to-end encrypted
-          </span>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-igt-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-igt-form>
         </div>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-secondary" [disabled]="isLoading" (click)="onCancel()">
-            <i class="mdi mdi-close me-1"></i>
-            Cancel
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary" 
+          <button type="submit" class="btn btn-primary ms-auto" 
                   [disabled]="isLoading || availableSerialCount === 0" 
                   (click)="onSubmit()"
                   [title]="availableSerialCount === 0 ? 'No available serial numbers. Please upload serial numbers first.' : ''">
-            <span *ngIf="isLoading">
-              <div class="spinner-border spinner-border-sm me-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Creating Record...
-            </span>
-            <span *ngIf="!isLoading && availableSerialCount > 0">
-              <i class="mdi mdi-check-circle-outline me-1"></i>
-              Create IGT Record
-            </span>
-            <span *ngIf="!isLoading && availableSerialCount === 0">
-              <i class="mdi mdi-alert me-1"></i>
-              No Serial Numbers Available
-            </span>
+            } @else if (availableSerialCount > 0) {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Create IGT Record
+            } @else {
+              <i class="mdi mdi-alert me-1"></i>No Serial Numbers Available
+            }
           </button>
         </div>
       </div>
+      
     </div>
   </div>
 </div>
@@ -184,79 +116,85 @@
 <!-- Edit Mode -->
 <div class="container-fluid" *ngIf="mode === 'edit'">
   <div class="row justify-content-center">
-    <div class="col-12 col-lg-10 col-xl-8">
-      <div class="card shadow-lg border-0">
-        <!-- Header -->
-        <div class="card-header bg-gradient-warning text-dark">
-          <div class="d-flex align-items-center">
-            <button class="btn btn-dark btn-sm me-3" (click)="goBack()">
-              <i class="mdi mdi-arrow-left me-1"></i>
-              Back to List
-            </button>
-            <div class="ms-auto text-end">
-              <h4 class="card-title mb-0 fw-bold">
-                <i class="mdi mdi-pencil me-2"></i>
-                Edit IGT Record
-              </h4>
-              <small class="opacity-75" *ngIf="id">Record ID: #{{id}}</small>
-            </div>
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-9">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            title="Back to IGT List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-warning bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-pencil text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-warning">Edit IGT Asset Record</h2>
+            <p class="text-muted mb-0" *ngIf="id">Modify existing IGT asset record #{{id}}</p>
           </div>
         </div>
-        <!-- Content Area -->
-        <div class="card-body p-4" style="min-height: 500px;">
-          <!-- Edit Information Banner -->
-          <div class="alert alert-warning border-0 mb-4" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);" *ngIf="data && id">
-            <div class="d-flex align-items-start">
-              <i class="mdi mdi-pencil-outline text-warning me-3 mt-1" style="font-size: 1.5rem;"></i>
-              <div>
-                <h6 class="alert-heading fw-semibold mb-2">Edit Mode Active</h6>
-                <ul class="mb-0 small">
-                  <li>You are currently editing IGT record #{{id}}</li>
-                  <li>All changes are tracked and audited for compliance</li>
-                  <li>Asset numbers cannot be modified once generated</li>
-                  <li>Use "Print Label" to generate updated labels after saving</li>
-                </ul>
+        
+        <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="data && id">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-pencil-outline text-warning me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-warning mb-2">Edit Mode Active</h6>
+              <p class="mb-2">
+                You are currently editing IGT record #{{id}}. All changes are <strong>tracked and audited</strong> for compliance.
+              </p>
+              <div class="row g-2 small">
+                <div class="col-md-6">
+                  <i class="mdi mdi-lock text-info me-1"></i>
+                  Asset numbers cannot be modified
+                </div>
+                <div class="col-md-6">
+                  <i class="mdi mdi-printer text-secondary me-1"></i>
+                  Use "Print Label" for updated labels
+                </div>
               </div>
-            </div>
-          </div>
-          <!-- Form Component -->
-          <app-igt-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-igt-form>
-        </div>
-        <!-- Footer -->
-        <div class="card-footer bg-light" *ngIf="data && id">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="text-muted small">
-              <i class="mdi mdi-history text-info me-1"></i>
-              Last modified: {{data?.lastUpdate | date:'medium'}}
-            </div>
-            <div class="btn-group">
-              <button class="btn btn-outline-secondary" [disabled]="isLoading" (click)="onCancel()">
-                <i class="mdi mdi-close me-1"></i>
-                Cancel
-              </button>
-              <button class="btn btn-outline-primary" [disabled]="isLoading" (click)="onPrint()">
-                <i class="mdi mdi-printer me-1"></i>
-                Print Label
-              </button>
-              <button class="btn btn-success btn-lg" [disabled]="isLoading" (click)="onSubmit()">
-                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                <i class="mdi mdi-content-save me-1" *ngIf="!isLoading"></i>
-                <span *ngIf="isLoading">Updating...</span>
-                <span *ngIf="!isLoading">Update Record</span>
-              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-warning bg-gradient text-white">
+          <h4 class="card-title mb-0 text-white">
+            <i class="mdi mdi-gamepad-variant me-2"></i>IGT Asset Information
+          </h4>
+        </div>
+        
+        <div class="card-body p-4">
+          <app-igt-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-igt-form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <div class="text-muted small me-auto align-self-center" *ngIf="data">
+            <i class="mdi mdi-history text-info me-1"></i>
+            Last modified: {{data?.lastUpdate | date:'medium'}}
+          </div>
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-outline-primary me-2" [disabled]="isLoading" (click)="onPrint()">
+            <i class="mdi mdi-printer me-1"></i>Print Label
+          </button>
+          <button type="submit" class="btn btn-success" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Updating...
+            } @else {
+              <i class="mdi mdi-content-save me-1"></i>Update Record
+            }
+          </button>
+        </div>
+      </div>
+      
     </div>
   </div>
 </div>
 
-<style>
-  .bg-info-subtle {
-    background: #e7f3fa !important;
-  }
-  .bg-success-subtle {
-    background: #e6f4ea !important;
-  }
-</style>
+

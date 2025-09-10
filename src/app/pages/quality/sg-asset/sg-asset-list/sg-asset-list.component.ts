@@ -103,6 +103,8 @@ export class SgAssetListComponent implements OnInit {
 
   isAll = false
 
+  quickFilter = '';
+
   changeIsAll() { }
 
   dateFrom = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD')
@@ -113,6 +115,14 @@ export class SgAssetListComponent implements OnInit {
     this.dateFrom = $event['dateFrom']
     this.dateTo = $event['dateTo']
     this.getData()
+  }
+
+  onQuickFilterChange(filter: string) {
+    this.gridApi?.setGridOption('quickFilterText', filter);
+  }
+
+  getActiveCount(): number {
+    return this.data?.filter(item => item.active === 1 || item.active === true)?.length || 0;
   }
 
   gridOptions: GridOptions = {

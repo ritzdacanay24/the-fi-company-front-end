@@ -282,6 +282,6 @@ export class ULLabelUploadComponent implements OnInit {
 
   // Navigation methods
   goBack(): void {
-    this.router.navigate(['../ul-management'], { relativeTo: this.activatedRoute });
+    this.router.navigate(['../labels-report'], { relativeTo: this.activatedRoute });
   }
 }

@@ -124,23 +124,6 @@ export class ULLabelsReportComponent implements OnInit {
         return params.value ? moment(params.value).format('MM/DD/YYYY') : '';
       }
     },
-    {
-      headerName: 'Actions',
-      width: 120,
-      pinned: 'right',
-      cellRenderer: (params: any) => {
-        return `
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-primary btn-sm action-btn" data-action="use" data-id="${params.data.id}">
-              <i class="mdi mdi-play"></i> Use
-            </button>
-            <button class="btn btn-outline-info btn-sm action-btn" data-action="edit" data-id="${params.data.id}">
-              <i class="mdi mdi-pencil"></i>
-            </button>
-          </div>
-        `;
-      }
-    }
   ];
 
   defaultColDef: ColDef = {
@@ -373,7 +356,7 @@ export class ULLabelsReportComponent implements OnInit {
 
   // Create new UL Label
   createULLabel(): void {
-    this.router.navigate(['ul-usage'], { relativeTo: this.activatedRoute });
+    this.router.navigate(['ul-usage']);
   }
 
   // Navigate to UL Upload

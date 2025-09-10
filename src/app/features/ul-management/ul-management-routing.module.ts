@@ -10,7 +10,7 @@ import { ULLabelUsageComponent } from './components/ul-label-usage/ul-label-usag
 const routes: Routes = [
   {
     path: '',
-    component: ULManagementComponent,
+    component: ULLabelsReportComponent,
     data: { title: 'UL Management Dashboard' }
   },
   {

@@ -30,7 +30,7 @@ export class QadService extends DataService<any> {
     return this.http.get(apiURL).toPromise()
   }
   searchWoNumber(q: string): Observable<any> {
-    let apiURL = `${url}/searchWoNumber?text=${q}`;
+    let apiURL = `https://dashboard.eye-fi.com/tasks/searchWoNumber.php?text=${q}`;
     return this.http.get(apiURL)
   }
 

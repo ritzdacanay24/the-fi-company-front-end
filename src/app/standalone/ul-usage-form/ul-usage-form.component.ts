@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { Subscription, timer } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 
 export interface ULLabel {
   id: number;
@@ -28,15 +28,16 @@ export interface ULUsage {
   date_used: Date;
   user_signature: string;
   customer: string;
+  work_order?: string; // Optional work order number for tracking
+  work_order_part?: string; // Part number from selected work order
+  work_order_description?: string; // Description from selected work order
 }
 
 export interface BulkTransaction {
   ul_number: string;
   serial_number: string;
   quantity: number;
-  customer: string;
-  description: string;
-  notes?: string;
+  work_order?: string; // Optional work order number for tracking
 }
 
 @Component({
@@ -46,79 +47,79 @@ export interface BulkTransaction {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    NgbModule
+    QadWoSearchComponent
   ],
   templateUrl: './ul-usage-form.component.html',
   styleUrls: ['./ul-usage-form.component.scss']
 })
-export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
+export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterViewInit {
   // Authentication state
   isAuthenticated = false;
   currentUser: any = null;
   sessionTimer: Subscription | null = null;
   sessionTimeRemaining = 0;
-  
+
   // UL Management
   availableULs: ULLabel[] = [];
   filteredULs: ULLabel[] = []; // ULs filtered by selected category
   usageForm: FormGroup;
-  
+
   // UL Range display
   lastUsedULs: ULLabel[] = [];
   currentUL: ULLabel | null = null;
   nextULs: ULLabel[] = [];
-  
+
   // New properties for the updated approach
   assignedULNumbers: string[] = []; // Automatically assigned UL numbers
   bulkTransactions: BulkTransaction[] = []; // For bulk mode form data
-  
+
   // Bulk helper properties
   bulkCustomer: string = '';
   bulkDescription: string = '';
-  
+
   // Bulk transaction mode (now automatic based on quantity)
   get isBulkMode(): boolean {
     return this.assignedULNumbers.length > 1;
   }
-  
+
   // Category options
   categoryOptions = [
     { value: 'New', label: 'New' },
     { value: 'Used', label: 'Used' }
   ];
-  
+
   // UI State
   isSubmitting = false;
   showSuccessMessage = false;
-  
+
   // Confirmation modal state
   showConfirmationModal = false;
   pendingSubmissionData: Partial<ULUsage>[] = [];
-  
+
   // Success state
   lastSubmittedULs: string[] = []; // Track last submitted UL numbers for display
   autoLogoutCountdown = 0; // Countdown timer for auto logout
   autoLogoutTimer: Subscription | null = null; // Timer subscription
-  
+
   // Login modal state
   loginError: string = '';
   isLoggingIn = false;
   loginMethod: 'username' | 'cardNumber' = 'cardNumber'; // Default to cardNumber login
-  
-  // ViewChild reference for card number input
+
+  // ViewChild references for login inputs
+  @ViewChild('usernameInput') usernameInput!: ElementRef<HTMLInputElement>;
   @ViewChild('cardNumberInput') cardNumberInput!: ElementRef<HTMLInputElement>;
-  
+
   // Session and inactivity timeouts
   readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes total session
   readonly INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute of inactivity
-  
+
   // Inactivity tracking
   lastActivity = Date.now();
   inactivityTimer: Subscription | null = null;
-  
+
   constructor(
     private fb: FormBuilder,
-    private modalService: NgbModal,
     private authService: AuthenticationService,
     private router: Router
   ) {
@@ -133,6 +134,13 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     this.resetBrowserTabTitle();
   }
 
+  ngAfterViewInit() {
+    // Focus the appropriate input if user is not authenticated
+    if (!this.isAuthenticated) {
+      this.focusLoginInput();
+    }
+  }
+
   ngOnDestroy() {
     this.clearSessionTimer();
     this.clearAutoLogoutTimer();
@@ -141,12 +149,16 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
   private initializeForm() {
     this.usageForm = this.fb.group({
-      category: ['', Validators.required], // Category comes first
+      id: [''], // Hidden ID field for editing existing records
+      work_order: [''], // Work order number from QAD search
+      work_order_part: [''], // Part number from selected work order
+      work_order_description: [''], // Description from selected work order
+      category: [''], // Category comes first
       ul_quantity: ['', Validators.required], // How many UL numbers they need
       serial_number: ['', [Validators.required, Validators.minLength(3)]], // For single transactions
       quantity: [1, [Validators.required, Validators.min(1)]], // For single transactions
-      customer: ['', Validators.required], // For single transactions
-      description: ['', Validators.required], // For single transactions
+      customer: [''], // For single transactions
+      description: [''], // For single transactions
       notes: [''] // For single transactions
     });
 
@@ -178,46 +190,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  openLoginModal(loginModalTemplate: any) {
-    // Clear any previous login errors
-    this.loginError = '';
-    this.isLoggingIn = false;
-    
-    const modalRef = this.modalService.open(loginModalTemplate, {
-      size: 'md',
-      backdrop: 'static',
-      keyboard: false,
-      centered: true
-    });
-    
-    // Handle modal shown event for autofocus
-    modalRef.shown.subscribe(() => {
-      this.focusCardNumberIfSelected();
-    });
-    
-    modalRef.result.then((result) => {
-      if (result === 'authenticated') {
-        this.isAuthenticated = true;
-        this.currentUser = this.authService.currentUserValue;
-        this.startSessionTimer();
-        this.prefillUserData();
-      }
-    }).catch(() => {
-      // Modal dismissed - clear any errors
-      this.loginError = '';
-      this.isLoggingIn = false;
-    });
-  }
-
-  /*
-   * ALTERNATIVE: Modal-based Login Method (Keep for potential revert)
-   * To use this instead of inline login:
-   * 1. Add NgbModal import: import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-   * 2. Add NgbModule to imports array
-   * 3. Add modalService to constructor: private modalService: NgbModal
-   * 4. Uncomment this method
-   * 5. Update authenticateUser method to call modalService.dismissAll() on success
-   */
+  // Session and authentication management
   /*
   openLoginModal(loginModalTemplate: any) {
     // Clear any previous login errors
@@ -248,13 +221,13 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
   private startSessionTimer() {
     this.sessionTimeRemaining = this.SESSION_TIMEOUT / 1000; // Convert to seconds
-    
+
     this.sessionTimer = timer(0, 1000).subscribe(() => {
       this.sessionTimeRemaining--;
-      
+
       // Update browser tab title with remaining time
       this.updateBrowserTabTitle();
-      
+
       if (this.sessionTimeRemaining <= 0) {
         this.logout();
       }
@@ -274,14 +247,14 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     if (this.isAuthenticated && this.sessionTimeRemaining > 0) {
       const timeFormatted = this.getTimeRemainingFormatted();
       const inactivityTime = this.getInactivityTimeRemainingFormatted();
-      
+
       // Show the shorter of the two timers
       const sessionMinutes = Math.floor(this.sessionTimeRemaining / 60);
       const inactivityMinutes = Math.floor((this.INACTIVITY_TIMEOUT - (Date.now() - this.lastActivity)) / 60000);
-      
+
       const criticalTime = Math.min(sessionMinutes, inactivityMinutes);
       const timeDisplay = criticalTime <= 2 ? `⚠️ ${timeFormatted}` : timeFormatted;
-      
+
       document.title = `UL Usage - ${timeDisplay} | The Fi Company`;
     } else {
       this.resetBrowserTabTitle();
@@ -294,7 +267,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
   private startAutoLogoutTimer() {
     this.autoLogoutCountdown = 20; // 20 seconds countdown
-    
+
     this.autoLogoutTimer = timer(0, 1000).subscribe(() => {
       if (this.autoLogoutCountdown > 0) {
         this.autoLogoutCountdown--;
@@ -317,7 +290,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   private setupActivityListeners() {
     // Track user activity (mouse movement, keyboard, clicks, scrolling)
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
+
     activityEvents.forEach(event => {
       document.addEventListener(event, () => this.updateLastActivity(), true);
     });
@@ -325,7 +298,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
   private updateLastActivity() {
     this.lastActivity = Date.now();
-    
+
     if (this.isAuthenticated && !this.inactivityTimer) {
       this.startInactivityTimer();
     }
@@ -334,10 +307,10 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   private startInactivityTimer() {
     this.inactivityTimer = timer(0, 1000).subscribe(() => {
       const timeSinceLastActivity = Date.now() - this.lastActivity;
-      
+
       // Update browser tab title (this will show the most critical timer)
       this.updateBrowserTabTitle();
-      
+
       if (timeSinceLastActivity >= this.INACTIVITY_TIMEOUT) {
         // User has been inactive too long - force logout immediately
         this.logoutDueToInactivity();
@@ -368,7 +341,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   private loadAvailableULs() {
     // Mock data representing UL number progression - replace with actual service call
     const allULs: ULLabel[] = [];
-    
+
     // Generate a range of UL numbers to simulate real data
     const baseNumbers = [
       { base: 73908490, prefix: '', category: 'New', description: 'New condition UL labels' },
@@ -383,7 +356,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
       for (let i = 0; i < 20; i++) {
         const ulNumber = prefix ? `${prefix}${base + i}` : `${base + i}`;
         const status = i < currentULIndex ? 'used' : 'available';
-        
+
         allULs.push({
           id: allULs.length + 1,
           ul_number: ulNumber,
@@ -408,7 +381,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
       this.organizeULsByRange([]);
       return;
     }
-    
+
     // Filter ULs by the selected category
     this.filteredULs = this.availableULs.filter(ul => ul.category === category);
     this.organizeULsByRange(this.filteredULs);
@@ -417,7 +390,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   private organizeULsByRange(allULs: ULLabel[]) {
     // Sort by numeric part to ensure proper order
     const sortedULs = allULs.sort((a, b) => a.numeric_part - b.numeric_part);
-    
+
     // Group by category/prefix for better organization
     const groupedULs = sortedULs.reduce((groups, ul) => {
       const key = ul.prefix || 'default';
@@ -441,10 +414,10 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
       // Last 5 used ULs
       const lastUsed = lastUsedIndex >= 0 ? uls.slice(Math.max(0, lastUsedIndex - 4), lastUsedIndex + 1) : [];
-      
+
       // Current UL (next to be used)
       const current = uls[currentIndex] || null;
-      
+
       // Next 10 available ULs
       const next = uls.slice(currentIndex + 1, currentIndex + 11);
 
@@ -475,20 +448,25 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         ul_number: this.assignedULNumbers[0],
         serial_number: formData.serial_number,
         quantity: formData.quantity,
-        customer: formData.customer,
-        description: formData.description,
+        work_order: formData.work_order,
+        work_order_part: formData.work_order_part,
+        work_order_description: formData.work_order_description,
         category: category,
         date_used: new Date(),
         user_signature: this.currentUser?.full_name || this.currentUser?.username
       }];
     } else {
-      // Bulk transactions
+      // Bulk transactions - all transactions use the same work order
+      const workOrder = this.usageForm.get('work_order')?.value;
+      const workOrderPart = this.usageForm.get('work_order_part')?.value;
+      const workOrderDescription = this.usageForm.get('work_order_description')?.value;
       usageRecords = this.bulkTransactions.map(transaction => ({
         ul_number: transaction.ul_number,
         serial_number: transaction.serial_number,
         quantity: transaction.quantity,
-        customer: transaction.customer,
-        description: transaction.description,
+        work_order: workOrder,
+        work_order_part: workOrderPart,
+        work_order_description: workOrderDescription,
         category: category,
         date_used: new Date(),
         user_signature: this.currentUser?.full_name || this.currentUser?.username
@@ -508,24 +486,24 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     try {
       // TODO: Call actual API service to submit usage
       console.log('Submitting UL usage:', this.pendingSubmissionData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Show success message and track submitted ULs
       this.lastSubmittedULs = [...this.assignedULNumbers]; // Store for display
       this.showSuccessMessage = true;
-      
+
       // Start auto logout countdown
       this.startAutoLogoutTimer();
-      
+
       // Reset form and clear data
       this.usageForm.reset();
       this.assignedULNumbers = [];
       this.bulkTransactions = [];
       this.pendingSubmissionData = [];
       this.initializeForm();
-      
+
       // Reload UL data to reflect usage
       this.loadAvailableULs();
 
@@ -561,6 +539,12 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     this.showSuccessMessage = false;
     this.lastSubmittedULs = [];
     this.initializeForm();
+    
+    // Reset to card number method and focus
+    this.loginMethod = 'cardNumber';
+    setTimeout(() => {
+      this.focusLoginInput();
+    }, 100);
   }
 
   extendSession() {
@@ -614,10 +598,8 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     }
 
     // For bulk transactions, check each bulk transaction
-    return this.bulkTransactions.every(transaction => 
-      transaction.serial_number.trim() !== '' && 
-      transaction.customer.trim() !== '' &&
-      transaction.description.trim() !== '' &&
+    return this.bulkTransactions.every(transaction =>
+      transaction.serial_number.trim() !== '' &&
       transaction.quantity > 0
     );
   }
@@ -637,7 +619,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
   // Assign the next available UL numbers based on quantity
   assignNextAvailableULs(quantity: number) {
     const availableULs = this.getAvailableULOptions();
-    
+
     if (availableULs.length < quantity) {
       // Not enough UL numbers available
       alert(`Only ${availableULs.length} UL numbers available for ${this.usageForm.get('category')?.value} category`);
@@ -655,9 +637,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         ul_number: ulNumber,
         serial_number: '',
         quantity: 1,
-        customer: '',
-        description: '',
-        notes: ''
+        work_order: ''
       }));
     } else {
       this.bulkTransactions = [];
@@ -666,35 +646,35 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
 
   // Bulk helper methods
   applyBulkCustomer() {
-    if (this.bulkCustomer && this.bulkTransactions.length > 0) {
-      this.bulkTransactions.forEach(transaction => {
-        transaction.customer = this.bulkCustomer;
-      });
-    }
+    // if (this.bulkCustomer && this.bulkTransactions.length > 0) {
+    //   this.bulkTransactions.forEach(transaction => {
+    //     transaction.customer = this.bulkCustomer;
+    //   });
+    // }
   }
 
   applyBulkDescription() {
-    if (this.bulkDescription && this.bulkTransactions.length > 0) {
-      this.bulkTransactions.forEach(transaction => {
-        transaction.description = this.bulkDescription;
-      });
-    }
+    // if (this.bulkDescription && this.bulkTransactions.length > 0) {
+    //   this.bulkTransactions.forEach(transaction => {
+    //     transaction.description = this.bulkDescription;
+    //   });
+    // }
   }
 
   applyAllBulkFields() {
     if (this.bulkTransactions.length > 0) {
       let applied = false;
       this.bulkTransactions.forEach(transaction => {
-        if (this.bulkCustomer) {
-          transaction.customer = this.bulkCustomer;
-          applied = true;
-        }
-        if (this.bulkDescription) {
-          transaction.description = this.bulkDescription;
-          applied = true;
-        }
+        // if (this.bulkCustomer) {
+        //   transaction.customer = this.bulkCustomer;
+        //   applied = true;
+        // }
+        // if (this.bulkDescription) {
+        //   transaction.description = this.bulkDescription;
+        //   applied = true;
+        // }
       });
-      
+
       if (applied) {
         // Optional: Show success feedback
         console.log('Bulk fields applied to all forms');
@@ -706,31 +686,29 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     this.bulkCustomer = '';
     this.bulkDescription = '';
     this.bulkTransactions.forEach(transaction => {
-      transaction.customer = '';
-      transaction.description = '';
       transaction.serial_number = '';
       transaction.quantity = 1;
-      transaction.notes = '';
+      transaction.work_order = ''
     });
   }
 
   // Custom validation for login form based on selected method
   isLoginFormValid(loginForm: any): boolean {
     const formData = loginForm.value;
-    
+
     if (this.loginMethod === 'username') {
       return !!(formData.username && formData.password);
     } else if (this.loginMethod === 'cardNumber') {
       return !!(formData.cardNumber);
     }
-    
+
     return false;
   }
 
   // Authentication method for the inline login form
   authenticateUser(loginForm: any): void {
     const formData = loginForm.value;
-    
+
     // Validate required fields based on login method
     if (this.loginMethod === 'username') {
       if (!formData.username || !formData.password) {
@@ -743,23 +721,23 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         return;
       }
     }
-    
+
     // Clear previous errors and set loading state
     this.loginError = '';
     this.isLoggingIn = true;
-    
+
     let loginCredential: string;
-    
+
     if (this.loginMethod === 'username') {
       // Append @the-fi-company.com domain to username if not already included
-      loginCredential = formData.username.includes('@') ? 
-        formData.username : 
+      loginCredential = formData.username.includes('@') ?
+        formData.username :
         `${formData.username}@the-fi-company.com`;
     } else {
       // Use card number as is for authentication
       loginCredential = formData.cardNumber;
     }
-    
+
     // Subscribe to authentication service based on login method
     const authObservable = this.loginMethod === 'cardNumber' ?
       this.authService.loginWithCardNumber(loginCredential) :
@@ -768,18 +746,17 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
     authObservable.subscribe({
       next: (result: any) => {
         this.isLoggingIn = false;
-        
+
         if (result && result.access_token && result.access_token !== false) {
           this.isAuthenticated = true;
-          this.currentUser = result.user || { 
+          this.currentUser = result.user || {
             username: this.loginMethod === 'username' ? formData.username : result.user?.username,
             card_number: this.loginMethod === 'cardNumber' ? formData.cardNumber : result.user?.card_number
           };
           this.startSessionTimer();
           this.updateLastActivity(); // Start inactivity tracking
           this.prefillUserData();
-          // Close modal on successful authentication
-          this.modalService.dismissAll();
+          // Authentication successful - form will now show
         } else {
           // Handle failed authentication
           this.loginError = result.message || `Authentication failed. Please check your ${this.loginMethod === 'username' ? 'username and password' : 'card number'}.`;
@@ -787,7 +764,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         this.isLoggingIn = false;
-        
+
         // Handle error response
         if (error.error && error.error.message) {
           this.loginError = error.error.message;
@@ -796,41 +773,41 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         } else {
           this.loginError = `Authentication failed. Please check your ${this.loginMethod === 'username' ? 'username and password' : 'card number'}.`;
         }
-        
+
         console.error('Authentication failed:', error);
       }
     });
   }
 
-  // Focus the card number input if card number login method is selected
-  private focusCardNumberIfSelected(): void {
+  // Focus the appropriate input based on login method
+  private focusLoginInput(): void {
     // Use setTimeout to ensure the view has been updated
     setTimeout(() => {
       if (this.loginMethod === 'cardNumber' && this.cardNumberInput) {
         this.cardNumberInput.nativeElement.focus();
+      } else if (this.loginMethod === 'username' && this.usernameInput) {
+        this.usernameInput.nativeElement.focus();
       }
     }, 100);
   }
 
   // Handle login method change to focus appropriate input
   onLoginMethodChange(): void {
-    if (this.loginMethod === 'cardNumber') {
-      this.focusCardNumberIfSelected();
-    }
+    this.focusLoginInput();
   }
 
   // Handle Enter key press on card number input (for card scanners)
   onCardNumberEnter(event: Event, loginForm: any): void {
     // Cast to KeyboardEvent to access keyboard-specific properties
     const keyboardEvent = event as KeyboardEvent;
-    
+
     // Prevent default form submission behavior
     keyboardEvent.preventDefault();
-    
+
     // Get the card number value from the input
     const cardNumberInput = keyboardEvent.target as HTMLInputElement;
     const cardNumber = cardNumberInput.value.trim();
-    
+
     // Only proceed if card number has been entered
     if (cardNumber && cardNumber.length > 0) {
       // Small delay to ensure the ngModel has updated
@@ -838,6 +815,35 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy {
         // Trigger the authentication process
         this.authenticateUser(loginForm);
       }, 100);
+    }
+  }
+
+  // Utility method to check if a form field is invalid
+  isFieldInvalid(fieldName: string, form: any): boolean {
+    const field = form.get(fieldName);
+    return field && field.invalid && (field.dirty || field.touched);
+  }
+
+  // Navigate back to the dashboard or previous page
+  goBack(): void {
+    this.router.navigate(['/']);
+  }
+
+  // Handle work order selection from QAD search
+  onWorkOrderSelected(workOrder: any): void {
+    if (workOrder) {
+      this.usageForm.patchValue({
+        work_order: workOrder.wo_nbr,
+        work_order_part: workOrder.wo_part || '',
+        work_order_description: workOrder.description || ''
+      });
+      console.log('Work Order Selected:', workOrder);
+    } else {
+      this.usageForm.patchValue({
+        work_order: '',
+        work_order_part: '',
+        work_order_description: ''
+      });
     }
   }
 }

@@ -91,5 +91,17 @@ export class SerialNumberService {
     return firstValueFrom(this.http.post(`${API_URL}?path=serial-numbers/release`, { serial_number: serialNumber }));
   }
 
-  
+  // Check if serial numbers already exist
+  checkExistingSerials(serialNumbers: string[]): Promise<string[]> {
+    return firstValueFrom(this.http.post<string[]>(`${API_URL}?path=serial-numbers/check-existing`, { serial_numbers: serialNumbers }));
+  }
+
+  // Bulk upload with options
+  bulkUploadWithOptions(options: {
+    serialNumbers: { serial_number: string; category: string }[];
+    duplicateStrategy: 'skip' | 'replace' | 'error';
+    category: string;
+  }): Promise<{ created: number; updated: number; errors: any[] }> {
+    return firstValueFrom(this.http.post<any>(`${API_URL}?path=serial-numbers/bulk-upload`, options));
+  }
 }

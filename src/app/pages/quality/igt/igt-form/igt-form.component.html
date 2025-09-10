@@ -1,20 +1,21 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <!-- Asset Identification Section -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light border-bottom">
-      <h6 class="card-title mb-0 text-dark">
-        <i class="mdi mdi-identifier me-2"></i>
-        Asset Identification
-      </h6>
-      <small class="text-muted mt-1 d-block">
-        Unique device serial number for this IGT asset
-      </small>
-    </div>
-    <div class="card-body">
+  <div class="body">
+
+    <!-- Asset Identification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Asset Identification</h3>
+        <p class="text-muted mb-0">
+          Serial numbers and part references for this IGT asset.
+        </p>
+      </div>
+
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label required" for="serial_number">EyeFi Serial Number</label>
+          <label class="form-label">
+            EyeFi Serial Number <span class="text-danger">*</span>
+          </label>
           <ng-select 
             id="serial_number" 
             formControlName="serial_number"
@@ -51,166 +52,124 @@
               </div>
             </ng-template>
           </ng-select>
-          
           <div class="form-text">
-            <i class="mdi mdi-barcode me-1"></i>
-            Search and select from available serial numbers in inventory
-            <span *ngIf="availableSerialNumbers.length === 0 && !isLoadingSerials" class="text-warning">
-              - No available serial numbers found
-            </span>
+            <i class="mdi mdi-information-outline me-1"></i>
+            Search and select from available serial numbers in inventory.
           </div>
-          
-          <!-- Debug info - remove this later -->
-          <div class="mt-2 p-2 bg-light border rounded" style="font-size: 12px;">
-            <strong>Debug - Serial numbers ({{ availableSerialNumbers.length }}):</strong>
-            <div class="row">
-              <div class="col-12" style="max-height: 100px; overflow-y: auto;">
-                <span *ngFor="let serial of availableSerialNumbers; let i = index" 
-                      [ngClass]="serial.isAvailable ? 'badge bg-success me-1 mb-1' : 'badge bg-warning me-1 mb-1'">
-                  {{ serial.serial_number }}
-                  <span *ngIf="!serial.isAvailable"> ({{ serial.selectedBy }})</span>
-                </span>
-              </div>
+          @if (submitted && f.serial_number.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> EyeFi serial number selection is required
             </div>
-          </div>
-          <div *ngIf="submitted && f.serial_number.errors" class="invalid-feedback d-block">
-            <i class="mdi mdi-alert-circle me-1"></i>
-            Serial number selection is required
-          </div>
+          }
         </div>
+
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="igt_serial_number">IGT Serial Number</label>
-          <input type="text" class="form-control" id="igt_serial_number" formControlName="igt_serial_number"
-            placeholder="Enter IGT serial number"
+          <label class="form-label">
+            IGT Serial Number <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control" formControlName="igt_serial_number"
+            placeholder="Enter IGT-assigned device serial number"
             [ngClass]="{ 'is-invalid': submitted && f.igt_serial_number.errors }">
           <div class="form-text">
-            <i class="mdi mdi-identifier me-1"></i>
-            IGT-assigned device serial number
+            <i class="mdi mdi-information-outline me-1"></i>
+            IGT-assigned device serial number for identification.
           </div>
-          <div *ngIf="submitted && f.igt_serial_number.errors" class="invalid-feedback d-block">
-            <i class="mdi mdi-alert-circle me-1"></i>
-            IGT serial number is required
-          </div>
+          @if (submitted && f.igt_serial_number.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> IGT serial number is required
+            </div>
+          }
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Part Information Section -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light border-bottom">
-      <h6 class="card-title mb-0 text-dark">
-        <i class="mdi mdi-package-variant me-2"></i>
-        Part Information
-      </h6>
-      <small class="text-muted mt-1 d-block">
-        Reference numbers for IGT and Eyefi parts
-      </small>
-    </div>
-    <div class="card-body">
-      <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="igt_part_number">
-            <i class="mdi mdi-magnify me-1 text-primary"></i>
+          <label class="form-label">
             IGT Part Number
           </label>
-          <input type="text" class="form-control" id="igt_part_number" formControlName="igt_part_number"
+          <input type="text" class="form-control" formControlName="igt_part_number"
             placeholder="Enter IGT part number"
             [ngClass]="{ 'is-invalid': submitted && f.igt_part_number.errors }">
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Customer IGT part number reference
+            Customer IGT part number reference.
           </div>
         </div>
+
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="eyefi_part_number">
-            <i class="mdi mdi-package me-1 text-success"></i>
+          <label class="form-label">
             Eyefi Part Number
           </label>
-          <input type="text" class="form-control" id="eyefi_part_number" formControlName="eyefi_part_number"
+          <input type="text" class="form-control" formControlName="eyefi_part_number"
             placeholder="Internal part reference"
             [ngClass]="{ 'is-invalid': submitted && f.eyefi_part_number.errors }">
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Internal inventory reference number
+            Internal inventory reference number.
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Order & Manufacturing Section -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light border-bottom">
-      <h6 class="card-title mb-0 text-dark">
-        <i class="mdi mdi-file-document-outline me-2"></i>
-        Order & Manufacturing Information
-      </h6>
-      <small class="text-muted mt-1 d-block">
-        Manufacturing and deployment details for this asset
-      </small>
-    </div>
-    <div class="card-body">
+    <!-- Manufacturing & Deployment Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Manufacturing & Deployment</h3>
+        <p class="text-muted mb-0">
+          Work order details and installation site information.
+        </p>
+      </div>
+
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="wo_number">
-            <i class="mdi mdi-file-document me-1 text-warning"></i>
+          <label class="form-label">
             Work Order Number
           </label>
-          <input type="text" class="form-control" id="wo_number" formControlName="wo_number"
+          <input type="text" class="form-control" formControlName="wo_number"
             placeholder="Enter work order number"
             [ngClass]="{ 'is-invalid': submitted && f.wo_number.errors }">
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Manufacturing work order reference
+            Manufacturing work order reference.
           </div>
         </div>
+
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="property_site">
-            <i class="mdi mdi-map-marker me-1 text-info"></i>
+          <label class="form-label">
             Property Site
           </label>
-          <input type="text" class="form-control" id="property_site" formControlName="property_site"
+          <input type="text" class="form-control" formControlName="property_site"
             placeholder="Gaming facility or casino"
             [ngClass]="{ 'is-invalid': submitted && f.property_site.errors }">
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Installation location or casino property
+            Installation location or casino property.
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Quality Control Section -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light border-bottom">
-      <h6 class="card-title mb-0 text-dark">
-        <i class="mdi mdi-clipboard-check-outline me-2"></i>
-        Quality Control
-      </h6>
-      <small class="text-muted mt-1 d-block">
-        Inspector assignment and record status
-      </small>
-    </div>
-    <div class="card-body">
+    <!-- Quality & Status Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Quality & Status</h3>
+        <p class="text-muted mb-0">
+          Quality inspector and record status settings.
+        </p>
+      </div>
+
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="inspector_name">
-            <i class="mdi mdi-account-check me-1 text-secondary"></i>
-            Inspector
+          <label class="form-label">
+            Quality Inspector
           </label>
-          <input type="text" class="form-control" id="inspector_name" formControlName="inspector_name" readonly>
+          <input type="text" class="form-control" formControlName="inspector_name" readonly>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Assigned quality control inspector
+            Assigned quality control inspector for this record.
           </div>
         </div>
+
         <div class="col-md-6 mb-3">
-          <label class="form-label" for="activeToggle">
-            <i class="mdi mdi-toggle-switch me-1 text-success"></i>
-            Record Status
-          </label>
+          <label class="form-label">Record Status</label>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="activeToggle"
               formControlName="active" (change)="setBooleanToNumber('active')">
@@ -220,37 +179,34 @@
           </div>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Enable this IGT asset record
+            Enable this IGT asset record for active use.
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Additional Information Section -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light border-bottom">
-      <h6 class="card-title mb-0 text-dark">
-        <i class="mdi mdi-note-text-outline me-2"></i>
-        Additional Information
-      </h6>
-      <small class="text-muted mt-1 d-block">
-        Notes, manual updates, or special instructions for this IGT record
-      </small>
-    </div>
-    <div class="card-body">
-      <div class="col-12 mb-3">
-        <label class="form-label" for="notes">
-          <i class="mdi mdi-note-edit me-1 text-secondary"></i>
-          Notes & Updates
-        </label>
-        <textarea class="form-control" id="notes" formControlName="notes" rows="6"
-          placeholder="Enter any additional notes, manual updates, or special instructions for this IGT record..."></textarea>
-        <div class="form-text">
-          <i class="mdi mdi-information-outline me-1"></i>
-          Document modifications, field updates, or special requirements
+    <!-- Additional Information Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Additional Information</h3>
+        <p class="text-muted mb-0">
+          Notes, manual updates, or special instructions for this IGT record.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">Notes & Updates</label>
+          <textarea class="form-control" formControlName="notes" rows="4"
+            placeholder="Enter any additional notes, manual updates, or special instructions for this IGT record..."
+            [ngClass]="{ 'is-invalid': submitted && f.notes.errors }"></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Document modifications, field updates, or special requirements for this asset.
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+  </div> <!-- end body container -->
 </form>

@@ -311,6 +311,7 @@ export class SidebarComponent implements OnInit {
       );
       this.removeActivation(activeItems);
 
+      // First try to find exact path match
       let matchingMenuItem = items.find((x: any) => {
         if (environment.production) {
           let path = x.pathname;
@@ -321,6 +322,21 @@ export class SidebarComponent implements OnInit {
           return x.pathname === pathName;
         }
       });
+
+      // If no exact match and we found an active menu item, try to find DOM element for that menu item's link
+      if (!matchingMenuItem && active && active.link) {
+        matchingMenuItem = items.find((x: any) => {
+          if (environment.production) {
+            let path = x.pathname;
+            path = path.replace("/velzon/angular/modern", "");
+            path = path.replace("/dist/web", "");
+            return path === active.link;
+          } else {
+            return x.pathname === active.link;
+          }
+        });
+      }
+
       if (matchingMenuItem) {
         this.activateParentDropdown(matchingMenuItem);
       }
@@ -330,6 +346,38 @@ export class SidebarComponent implements OnInit {
   private findMenuItem(pathname: string, menuItems: any[]): any {
     for (const menuItem of menuItems) {
       if (menuItem.link && menuItem.link === pathname) {
+        return menuItem;
+      }
+
+      // Handle wildcard routes from activatedRoutes field like '/dashboard/quality/igt/*'
+      if (menuItem.activatedRoutes && menuItem.activatedRoutes.includes('*')) {
+        // Remove the asterisk and any trailing slash before it
+        const baseRoute = menuItem.activatedRoutes.replace(/\/?\*+$/, '');
+        
+        // Check if current pathname starts with the base route
+        // Also ensure we're matching complete path segments to avoid false positives
+        if (pathname.startsWith(baseRoute) && 
+            (pathname === baseRoute || pathname.startsWith(baseRoute + '/'))) {
+          return menuItem;
+        }
+      }
+
+      // Handle wildcard routes from link field like '/dashboard/quality/igt/*'
+      if (menuItem.link && menuItem.link.includes('*')) {
+        // Remove the asterisk and any trailing slash before it
+        const baseRoute = menuItem.link.replace(/\/?\*+$/, '');
+        
+        // Check if current pathname starts with the base route
+        // Also ensure we're matching complete path segments to avoid false positives
+        if (pathname.startsWith(baseRoute) && 
+            (pathname === baseRoute || pathname.startsWith(baseRoute + '/'))) {
+          return menuItem;
+        }
+      }
+
+      // Special handling for IGT routes - treat /dashboard/quality/igt/list as parent for all IGT routes
+      if (menuItem.link === "/dashboard/quality/igt/list" && 
+          pathname.startsWith("/dashboard/quality/igt")) {
         return menuItem;
       }
 

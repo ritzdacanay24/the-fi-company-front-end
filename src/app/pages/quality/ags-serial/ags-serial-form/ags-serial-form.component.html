@@ -1,45 +1,108 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <div class="mb-3">
-    <label class="form-label">AGS Serial #</label>
-    <div class="input-group">
-      <input class="form-control" type="text" formControlName="generated_SG_asset"
-        [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter AGS Serial #" />
-      <button class="btn btn-outline-primary" type="button" (click)="openSerialNumberGenerator()">
-        <i class="mdi mdi-refresh me-1"></i>Generate
-      </button>
+  <div class="body">
+
+    <!-- Asset Identification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Asset Identification</h3>
+        <p class="text-muted mb-0">
+          Serial numbers and part references for this AGS asset.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            AGS Serial Number
+          </label>
+          <input class="form-control" type="text" formControlName="generated_SG_asset"
+            [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" 
+            placeholder="Enter AGS Serial #" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            If AGS serial # is blank, the serial # will automatically generate.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Serial Number
+          </label>
+          <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
+            [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Device serial number for identification.
+          </div>
+        </div>
+      </div>
     </div>
-    <small>If AGS serial # is blank, the serial # will automatically generate.</small>
-  </div>
 
-  <div class="mb-3">
-    <app-qad-customer-part-search [form_label]="'AGS Part #'" (notifyParent)="getCustomerPartNumber($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
-      [value]="f.sgPartNumber.value"></app-qad-customer-part-search>
-  </div>
+    <!-- Work Order & Location Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Work Order & Location</h3>
+        <p class="text-muted mb-0">
+          Manufacturing work order and part number information.
+        </p>
+      </div>
 
-  <div class="mb-3">
-    <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
-      [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" [value]="f.poNumber.value"></app-qad-wo-search>
-  </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            AGS Part Number
+          </label>
+          <app-qad-customer-part-search [form_label]="'AGS Part #'" (notifyParent)="getCustomerPartNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
+            [value]="f.sgPartNumber.value"></app-qad-customer-part-search>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Customer AGS part number reference.
+          </div>
+        </div>
 
-  <div class="mb-3">
-    <label class="form-label">Serial number</label>
-    <div class="input-group">
-      <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
-        [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
-      <button class="btn btn-outline-primary" type="button" (click)="openSerialNumberGenerator('serialNumber')">
-        <i class="mdi mdi-refresh me-1"></i>Generate
-      </button>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Work Order Number
+          </label>
+          <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
+            [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" 
+            [value]="f.poNumber.value"></app-qad-wo-search>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Manufacturing work order reference.
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="mb-3">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active"
-        (change)="setBooleanToNumber('active')">
-      <label class="form-check-label" for="active">Active</label>
+    <!-- Status & Configuration Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Status & Configuration</h3>
+        <p class="text-muted mb-0">
+          Record status settings for this AGS asset.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Record Status</label>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="activeToggle"
+              formControlName="active" (change)="setBooleanToNumber('active')">
+            <label class="form-check-label" for="activeToggle">
+              Active Record
+            </label>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Enable this AGS asset record for active use.
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
+  </div> <!-- end body container -->
 </form>
