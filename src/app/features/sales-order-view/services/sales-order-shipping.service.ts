@@ -97,11 +97,34 @@ export class SalesOrderShippingService {
       recommendations.push('Expedite shipping due to past due date');
     }
 
-    // Future Order Check  
+    // Future Order Checks
     if (order.STATUS === 'Future Order') {
       warnings.push({
         type: 'date',
-        message: 'This is a future order',
+        message: 'This is a FUTURE ORDER - not scheduled for immediate shipment',
+        impact: 'high'
+      });
+      recommendations.push('Verify authorization before shipping future order');
+    }
+
+    // Check if due date is in the future (additional future order detection)
+    const daysDifference = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+    if (daysDifference > 7) {
+      warnings.push({
+        type: 'date',
+        message: `Order due date is ${daysDifference} days in the future`,
+        impact: 'medium'
+      });
+      recommendations.push('Confirm shipping authorization for early delivery');
+    }
+
+    // Check order date vs due date for unrealistic timelines
+    const orderDate = new Date(order.SO_ORD_DATE);
+    const leadTimeActual = Math.ceil((dueDate.getTime() - orderDate.getTime()) / (1000 * 3600 * 24));
+    if (leadTimeActual > order.LEADTIME * 1.5) {
+      warnings.push({
+        type: 'date',
+        message: 'Extended lead time - verify customer requirements',
         impact: 'medium'
       });
     }

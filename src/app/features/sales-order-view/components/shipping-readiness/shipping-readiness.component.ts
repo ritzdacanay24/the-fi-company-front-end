@@ -91,14 +91,22 @@ interface ShippingReadinessRow {
 
       <!-- Search Results Section (shown when barcode is scanned) -->
       <div *ngIf="searchedOrder" class="card mb-4" [ngClass]="getSearchResultCardClass()">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center" 
+             [ngClass]="searchedOrder.status === 'blocked' ? 'bg-danger text-white border-danger' : 
+                        searchedOrder.status === 'warning' ? 'bg-warning text-dark border-warning' : 
+                        'bg-success text-white border-success'">
           <h5 class="mb-0">
             <i class="fas fa-clipboard-check me-2"></i>
             Shipping Eligibility: {{ searchedOrder.salesOrder.sales_order_line_number || searchedOrder.salesOrder.SOD_NBR + '-' + searchedOrder.salesOrder.SOD_LINE }}
           </h5>
-          <span class="badge fs-6" [ngClass]="getStatusBadgeClass(searchedOrder.status)">
-            {{ getStatusText(searchedOrder.status) }}
-          </span>
+          <div class="d-flex align-items-center">
+            <span class="badge fs-6 me-2" [ngClass]="getStatusBadgeClass(searchedOrder.status)">
+              {{ getStatusText(searchedOrder.status) }}
+            </span>
+            <span *ngIf="searchedOrder.status === 'blocked'" class="badge bg-white text-danger fs-6 fw-bold border border-danger blocked-warning">
+              🚫 SHIPPING BLOCKED
+            </span>
+          </div>
         </div>
         <div class="card-body">
           <div class="row">
@@ -124,15 +132,18 @@ interface ShippingReadinessRow {
                 </tr>
                 <tr>
                   <td class="fw-bold">Due Date:</td>
-                  <td [ngClass]="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-danger fw-bold' : ''">
+                  <td [ngClass]="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-danger fw-bold' : 
+                                 isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-primary fw-bold' : ''">
                     {{ searchedOrder.salesOrder.SOD_DUE_DATE | date:'mediumDate' }}
                     <span *ngIf="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-danger ms-2">PAST DUE</span>
+                    <span *ngIf="isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-primary ms-2">FUTURE DATE</span>
                   </td>
                 </tr>
                 <tr>
                   <td class="fw-bold">Status:</td>
                   <td>
                     <span [innerHTML]="searchedOrder.salesOrder.STATUSCLASS ? '<span class=&quot;' + searchedOrder.salesOrder.STATUSCLASS + '&quot;>' + searchedOrder.salesOrder.STATUS + '</span>' : searchedOrder.salesOrder.STATUS"></span>
+                    <span *ngIf="searchedOrder.salesOrder.STATUS === 'Future Order'" class="badge bg-primary ms-2">FUTURE ORDER</span>
                   </td>
                 </tr>
                 <tr>
@@ -259,11 +270,18 @@ interface ShippingReadinessRow {
                   <i class="fas fa-exclamation-circle me-1"></i>
                   Warnings ({{ searchedOrder.warningsCount }})
                 </h6>
-                <div *ngFor="let warning of searchedOrder.eligibility.warnings" class="alert alert-warning py-2 mb-2">
-                  <strong>{{ warning.message }}</strong>
-                  <span class="badge ms-2" [ngClass]="warning.impact === 'high' ? 'bg-danger' : warning.impact === 'medium' ? 'bg-warning' : 'bg-info'">
-                    {{ warning.impact | titlecase }} Impact
-                  </span>
+                <div *ngFor="let warning of searchedOrder.eligibility.warnings" class="mb-2">
+                  <div class="alert py-2 mb-2" 
+                       [ngClass]="warning.type === 'date' && warning.message.includes('future') ? 'alert-info' : 'alert-warning'">
+                    <strong>{{ warning.message }}</strong>
+                    <span class="badge ms-2" [ngClass]="warning.impact === 'high' ? 'bg-danger' : warning.impact === 'medium' ? 'bg-warning' : 'bg-info'">
+                      {{ warning.impact | titlecase }} Impact
+                    </span>
+                    <div *ngIf="warning.type === 'date' && warning.message.includes('FUTURE ORDER')" class="small mt-1 text-primary fw-bold">
+                      <i class="fas fa-calendar-alt me-1"></i>
+                      Verify customer authorization before early shipment
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -282,12 +300,51 @@ interface ShippingReadinessRow {
               </div>
 
               <!-- Shipping Decision -->
-              <div class="mt-4 p-3 rounded" [ngClass]="getShippingDecisionClass()">
-                <h5 class="mb-2">
-                  <i [class]="getShippingDecisionIcon()" class="me-2"></i>
-                  Shipping Decision
-                </h5>
-                <p class="mb-0 fw-bold fs-5">{{ getShippingDecisionText() }}</p>
+              <div class="mt-4 p-4 rounded border-3" [ngClass]="getShippingDecisionClass()">
+                <div class="d-flex align-items-center mb-2">
+                  <i [class]="getShippingDecisionIcon()" class="me-3" style="font-size: 2rem;"></i>
+                  <div>
+                    <h4 class="mb-1 fw-bold">Shipping Decision</h4>
+                    <p class="mb-0 fw-bold" style="font-size: 1.25rem;">{{ getShippingDecisionText() }}</p>
+                  </div>
+                </div>
+                
+                <!-- Additional warning for blocked orders -->
+                <div *ngIf="searchedOrder.status === 'blocked'" class="mt-3 p-3 bg-white text-danger border border-danger rounded">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2" style="font-size: 1.5rem;"></i>
+                    <div>
+                      <h5 class="mb-1 text-danger fw-bold">⚠️ STOP - DO NOT PROCEED WITH SHIPPING ⚠️</h5>
+                      <p class="mb-0 fw-bold">Critical issues must be resolved before this order can be shipped!</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action required for blocked orders -->
+                <div *ngIf="searchedOrder.status === 'blocked'" class="mt-3">
+                  <h6 class="text-white mb-2">
+                    <i class="fas fa-tools me-1"></i>
+                    Required Actions:
+                  </h6>
+                  <ul class="mb-0 text-white">
+                    <li *ngFor="let blocker of searchedOrder.eligibility.blockers" class="mb-1">
+                      <strong>{{ blocker }}</strong>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Warning emphasis -->
+                <div *ngIf="searchedOrder.status === 'warning'" class="mt-3">
+                  <h6 class="text-dark mb-2">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Review Required Before Shipping:
+                  </h6>
+                  <ul class="mb-0 text-dark">
+                    <li *ngFor="let warning of searchedOrder.eligibility.warnings.slice(0, 3)" class="mb-1">
+                      {{ warning.message }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -334,14 +391,52 @@ interface ShippingReadinessRow {
       font-size: 0.75rem;
     }
     
-    .ag-theme-alpine {
-      --ag-header-background-color: #f8f9fc;
-      --ag-border-color: #e3e6f0;
-    }
-    
     .status-ready { color: #28a745; }
     .status-warning { color: #ffc107; }
     .status-blocked { color: #dc3545; }
+
+    /* Enhanced blocked order styling */
+    .shipping-blocked {
+      background: linear-gradient(45deg, #dc3545, #b02a37) !important;
+      animation: pulse-danger 2s infinite;
+      border: 3px solid #721c24 !important;
+      box-shadow: 0 0 20px rgba(220, 53, 69, 0.5) !important;
+    }
+
+    .shipping-warning {
+      background: linear-gradient(45deg, #ffc107, #e0a800) !important;
+      border: 2px solid #b68900 !important;
+    }
+
+    .shipping-ready {
+      background: linear-gradient(45deg, #28a745, #20833b) !important;
+      border: 2px solid #155724 !important;
+    }
+
+    @keyframes pulse-danger {
+      0% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.5); }
+      50% { box-shadow: 0 0 30px rgba(220, 53, 69, 0.8); }
+      100% { box-shadow: 0 0 20px rgba(220, 53, 69, 0.5); }
+    }
+
+    /* High visibility blocked warning */
+    .blocked-warning {
+      animation: blink-red 1s infinite;
+      font-weight: 900 !important;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    @keyframes blink-red {
+      0% { background-color: #dc3545; }
+      50% { background-color: #a71e2a; }
+      100% { background-color: #dc3545; }
+    }
+
+    /* Enhanced blocked card styling */
+    .shipping-blocked-card {
+      box-shadow: 0 0 25px rgba(220, 53, 69, 0.6) !important;
+      animation: pulse-danger 2s infinite;
+    }
   `]
 })
 export class ShippingReadinessComponent implements OnInit {
@@ -428,6 +523,14 @@ export class ShippingReadinessComponent implements OnInit {
             userName: 'SHIPPING'
         }));
 
+        // Warning - future order
+        mockOrders.push(this.createMockOrder('SO123006', 'Future Corp', 'CTO-01234-006', 2800.00, new Date('2025-12-15'), 1, 1, { 
+            userName: 'SHIPPING',
+            status: 'Future Order',
+            futureOrder: true,
+            leadTime: 180
+        }));
+
         return of(mockOrders);
     }
 
@@ -444,7 +547,7 @@ export class ShippingReadinessComponent implements OnInit {
         return {
             SOD_NBR: orderNumber,
             SOD_DUE_DATE: dueDate.toISOString().split('T')[0],
-            LEADTIME: 14,
+            LEADTIME: options.leadTime || 14,
             SOD_PART: partNumber,
             SOD_QTY_ORD: qtyOpen,
             SOD_QTY_SHIP: 0,
@@ -460,8 +563,8 @@ export class ShippingReadinessComponent implements OnInit {
             SOD_LINE: 1,
             SO_ORD_DATE: new Date().toISOString().split('T')[0],
             SO_SHIP: "Default Address",
-            STATUS: options.pastDue ? "Past Due" : "Open",
-            STATUSCLASS: options.pastDue ? "badge badge-danger" : "badge badge-success",
+            STATUS: options.status || (options.pastDue ? "Past Due" : "Open"),
+            STATUSCLASS: options.futureOrder ? "badge badge-primary" : (options.pastDue ? "badge badge-danger" : "badge badge-success"),
             SOD_ORDER_CATEGORY: "",
             CP_CUST_PART: Math.floor(Math.random() * 100000),
             LD_QTY_OH: qtyOnHand,
@@ -688,9 +791,9 @@ export class ShippingReadinessComponent implements OnInit {
         if (!this.searchedOrder) return '';
         
         switch (this.searchedOrder.status) {
-            case 'ready': return 'border-success';
-            case 'warning': return 'border-warning';
-            case 'blocked': return 'border-danger';
+            case 'ready': return 'border-success border-3';
+            case 'warning': return 'border-warning border-3';
+            case 'blocked': return 'border-danger border-4 shipping-blocked-card';
             default: return '';
         }
     }
@@ -720,13 +823,21 @@ export class ShippingReadinessComponent implements OnInit {
         return due < today;
     }
 
+    isFutureOrder(dueDate: string): boolean {
+        if (!dueDate) return false;
+        const due = new Date(dueDate);
+        const today = new Date();
+        const daysDifference = Math.ceil((due.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        return daysDifference > 7; // Consider orders more than 7 days in the future as "future orders"
+    }
+
     getShippingDecisionClass(): string {
         if (!this.searchedOrder) return '';
         
         switch (this.searchedOrder.status) {
-            case 'ready': return 'bg-success text-white';
-            case 'warning': return 'bg-warning text-dark';
-            case 'blocked': return 'bg-danger text-white';
+            case 'ready': return 'shipping-ready text-white';
+            case 'warning': return 'shipping-warning text-dark';
+            case 'blocked': return 'shipping-blocked text-white';
             default: return 'bg-secondary text-white';
         }
     }
@@ -746,11 +857,11 @@ export class ShippingReadinessComponent implements OnInit {
         if (!this.searchedOrder) return 'Unknown Status';
         
         if (this.searchedOrder.status === 'ready') {
-            return 'APPROVED FOR SHIPPING';
+            return '✅ APPROVED FOR SHIPPING';
         } else if (this.searchedOrder.status === 'warning') {
-            return 'PROCEED WITH CAUTION - Review warnings before shipping';
+            return '⚠️ PROCEED WITH CAUTION - Review warnings before shipping';
         } else {
-            return 'DO NOT SHIP - Critical issues must be resolved';
+            return '🚫 DO NOT SHIP - CRITICAL ISSUES MUST BE RESOLVED FIRST';
         }
     }
 }
