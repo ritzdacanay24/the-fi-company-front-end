@@ -50,11 +50,8 @@ export class ULLabelUploadComponent implements OnInit {
       prefix: ['', Validators.pattern(/^[A-Z]*$/)],
       suffix: ['', Validators.pattern(/^[A-Z0-9-]*$/)],
       description: ['UL certified product', [Validators.required, Validators.minLength(5)]],
-      category: ['', Validators.required],
+      category: ['New', Validators.required],
       manufacturer: [''],
-      part_number: [''],
-      certification_date: [''],
-      expiry_date: [''],
       status: ['active', Validators.required]
     });
   }
@@ -120,24 +117,8 @@ export class ULLabelUploadComponent implements OnInit {
       this.isLoading = true;
       this.uploadProgress = 0;
 
-      // Generate UL labels from range
-      const ulLabels: Partial<ULLabel>[] = [];
-      for (let i = startNum; i <= endNum; i++) {
-        const ulNumber = `${formData.prefix}${i}${formData.suffix}`;
-        ulLabels.push({
-          ul_number: ulNumber,
-          description: formData.description,
-          category: formData.category,
-          manufacturer: formData.manufacturer || null,
-          part_number: formData.part_number || null,
-          certification_date: formData.certification_date || null,
-          expiry_date: formData.expiry_date || null,
-          status: formData.status
-        });
-      }
-
-      // Bulk upload the generated range
-      this.ulLabelService.bulkCreateULLabels(ulLabels).subscribe({
+      // Use the new range upload method
+      this.ulLabelService.createULLabelsFromRange(formData).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.success) {
@@ -146,7 +127,7 @@ export class ULLabelUploadComponent implements OnInit {
               this.toastr.warning(`${response.data.errors.length} numbers already existed and were skipped`);
             }
             this.rangeForm.reset();
-            this.rangeForm.patchValue({ status: 'active', description: 'UL certified product' });
+            this.rangeForm.patchValue({ status: 'active', description: 'UL certified product', category: 'New' });
           } else {
             this.toastr.error(response.message || 'Range upload failed');
           }

@@ -176,6 +176,15 @@ const routes: Routes = [
     canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
+  {
+    title: "Shipping Readiness",
+    path: "shipping-readiness",
+    loadComponent: () =>
+      import("../../features/sales-order-view/components/shipping-readiness/shipping-readiness.component").then(
+        (m) => m.ShippingReadinessComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({

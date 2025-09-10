@@ -62,43 +62,6 @@ export class ULLabelsReportComponent implements OnInit {
       width: 150
     },
     {
-      headerName: 'Part Number',
-      field: 'part_number',
-      sortable: true,
-      filter: true,
-      width: 140
-    },
-    {
-      headerName: 'Certification Date',
-      field: 'certification_date',
-      sortable: true,
-      filter: 'agDateColumnFilter',
-      width: 140,
-      valueFormatter: (params: any) => {
-        return params.value ? moment(params.value).format('MM/DD/YYYY') : '';
-      }
-    },
-    {
-      headerName: 'Expiry Date',
-      field: 'expiry_date',
-      sortable: true,
-      filter: 'agDateColumnFilter',
-      width: 130,
-      valueFormatter: (params: any) => {
-        return params.value ? moment(params.value).format('MM/DD/YYYY') : '';
-      },
-      cellClassRules: {
-        'text-danger': (params: any) => {
-          if (!params.value) return false;
-          return moment(params.value).isBefore(moment(), 'day');
-        },
-        'text-warning': (params: any) => {
-          if (!params.value) return false;
-          return moment(params.value).isBetween(moment(), moment().add(30, 'days'), 'day');
-        }
-      }
-    },
-    {
       headerName: 'Status',
       field: 'status',
       sortable: true,

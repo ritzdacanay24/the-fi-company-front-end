@@ -62,7 +62,40 @@ export class ULLabelService {
     if (this.useMockData) {
       return this.mockService.bulkCreateULLabels(labels);
     }
-    return this.http.post(`${this.API_URL}/bulk-create`, { labels });
+    return this.http.post(`${this.API_URL}/bulk-upload.php`, { labels });
+  }
+
+  // Create UL labels from range
+  createULLabelsFromRange(rangeData: any): Observable<any> {
+    if (this.useMockData) {
+      // Generate labels from range and use mock service
+      const labels = this.generateLabelsFromRange(rangeData);
+      return this.mockService.bulkCreateULLabels(labels);
+    }
+    return this.http.post(`${this.API_URL}/bulk-upload.php`, rangeData);
+  }
+
+  // Helper method to generate labels from range (for mock service)
+  private generateLabelsFromRange(rangeData: any): Partial<ULLabel>[] {
+    const labels: Partial<ULLabel>[] = [];
+    const startNum = parseInt(rangeData.start_number);
+    const endNum = parseInt(rangeData.end_number);
+    
+    for (let i = startNum; i <= endNum; i++) {
+      const ulNumber = `${rangeData.prefix || ''}${i}${rangeData.suffix || ''}`;
+      labels.push({
+        ul_number: ulNumber,
+        description: rangeData.description,
+        category: rangeData.category,
+        manufacturer: rangeData.manufacturer || null,
+        part_number: rangeData.part_number || null,
+        certification_date: rangeData.certification_date || null,
+        expiry_date: rangeData.expiry_date || null,
+        status: rangeData.status || 'active'
+      });
+    }
+    
+    return labels;
   }
 
   // Bulk upload UL labels

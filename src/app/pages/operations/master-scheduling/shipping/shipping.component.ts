@@ -2531,9 +2531,9 @@ export class ShippingComponent implements OnInit {
   // Open Priority Display in new window/tab
   openPriorityDisplay(): void {
     const url = this.router.serializeUrl(
-      this.router.createUrlTree(['/shipping-priority-display'])
+      this.router.createUrlTree(['/dist/web/shipping-priority-display'])
     );
-    window.open(url, '_blank', 'width=1920,height=1080,fullscreen=yes,scrollbars=no,resizable=yes');
+    window.open(url, '_blank');
   }
 
   data: any;
