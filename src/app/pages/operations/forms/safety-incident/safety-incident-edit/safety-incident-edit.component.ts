@@ -36,7 +36,7 @@ export class SafetyIncidentEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit Safety Incident";
 
   form: MyFormGroup<any>;
 
@@ -51,6 +51,10 @@ export class SafetyIncidentEditComponent {
       queryParamsHandling: "merge",
     });
   };
+
+  get isFormDisabled() {
+    return this.form?.disabled || false;
+  }
 
   data: any;
 
@@ -67,11 +71,42 @@ export class SafetyIncidentEditComponent {
       this.isLoading = true;
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
+      
+      // Lock critical fields to maintain data integrity and compliance
+      this.lockCriticalFields();
+      
       await this.getAttachments();
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
     }
+  }
+
+  /**
+   * Lock critical safety incident fields to maintain regulatory compliance
+   * and data integrity. Only administrative fields remain editable.
+   */
+  private lockCriticalFields() {
+    // Core incident data - must remain unchanged for legal/regulatory compliance
+    this.form.get("first_name")?.disable();
+    this.form.get("last_name")?.disable();
+    this.form.get("date_of_incident")?.disable();
+    this.form.get("time_of_incident")?.disable();
+    this.form.get("type_of_incident")?.disable();
+    this.form.get("type_of_incident_other")?.disable();
+    this.form.get("location_of_incident")?.disable();
+    this.form.get("location_of_incident_other")?.disable();
+    this.form.get("location_of_incident_other_other")?.disable();
+    this.form.get("description_of_incident")?.disable();
+    this.form.get("details_of_any_damage_or_personal_injury")?.disable();
+    
+    // Administrative fields remain editable:
+    // - status (investigation status can be updated)
+    // - corrective_action_owner (can be reassigned)
+    // - proposed_corrective_action (can be updated during investigation)
+    // - proposed_corrective_action_completion_date (can be adjusted)
+    // - confirmed_corrective_action_completion_date (updated when completed)
+    // - comments (administrative notes can be added)
   }
 
   viewImage(row) {
@@ -88,9 +123,13 @@ export class SafetyIncidentEditComponent {
 
     try {
       this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
+      
+      // Get form data including disabled fields for submission
+      const formData = this.form.getRawValue();
+      
+      await this.api.update(this.id, formData);
       this.isLoading = false;
-      this.toastrService.success("Successfully Updated");
+      this.toastrService.success("Safety incident updated successfully");
       this.form.markAsPristine()
       this.goBack();
     } catch (err) {

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input } from "@angular/core";
+import { ChangeDetectorRef, Component, Input, OnInit, AfterViewInit, OnDestroy } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
@@ -32,8 +32,53 @@ export class PlacardModalService {
   imports: [SharedModule, PlacardFormComponent],
   selector: "app-placard-modal",
   templateUrl: "./placard-modal.component.html",
+  styles: [`
+    .print-barcode-container {
+      padding: 10px;
+      background: white;
+      text-align: center;
+      border: 2px solid #000;
+      margin: 15px 0;
+    }
+    
+    .print-barcode-container svg {
+      display: block;
+      margin: 0 auto;
+      width: 300px;
+      height: 80px;
+    }
+    
+    .print-barcode-text {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    
+    @media print {
+      .print-barcode-container {
+        background: white !important;
+        border: 2px solid #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        page-break-inside: avoid !important;
+      }
+      
+      .print-barcode-container svg {
+        width: 300px !important;
+        height: 80px !important;
+      }
+      
+      .print-barcode-text {
+        color: #000 !important;
+        font-size: 16px !important;
+        font-weight: bold !important;
+      }
+    }
+  `]
 })
-export class PlacardModalComponent {
+export class PlacardModalComponent implements OnInit, AfterViewInit, OnDestroy {
+  private barcodeLibraryLoaded = false;
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private placardService: PlacardService,
@@ -58,6 +103,72 @@ export class PlacardModalComponent {
     this.cdr.detectChanges();
   }
 
+  ngAfterViewInit(): void {
+    // Generate barcodes after view init
+    setTimeout(() => this.generateAllBarcodes(), 1000);
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup if needed
+  }
+
+  private loadBarcodeLibrary(): void {
+    if (this.barcodeLibraryLoaded || (window as any).JsBarcode) {
+      this.barcodeLibraryLoaded = true;
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+    script.onload = () => {
+      this.barcodeLibraryLoaded = true;
+      this.generateAllBarcodes();
+    };
+    document.head.appendChild(script);
+  }
+
+  private generateAllBarcodes(): void {
+    if (!this.barcodeLibraryLoaded || !(window as any).JsBarcode) {
+      return;
+    }
+
+    // Only generate barcode for the first item (index 0)
+    if (this.totalPrints.length > 0) {
+      this.generateBarcodeForRow(this.totalPrints[0], 0);
+    }
+  }
+
+  private generateBarcodeForRow(row: any, index: number): void {
+    if (!row.eyefi_so_number || !row.line_number) {
+      return;
+    }
+
+    const barcodeValue = `${row.eyefi_so_number}-${row.line_number}`;
+    const elementId = `print-barcode-${index}`;
+    
+    setTimeout(() => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        try {
+          (window as any).JsBarcode(`#${elementId}`, barcodeValue, {
+            format: "CODE128",
+            width: 3,
+            height: 80,
+            displayValue: false,
+            margin: 10,
+            background: "#ffffff",
+            lineColor: "#000000",
+            fontSize: 0,
+            textMargin: 0,
+            quiet: 10
+          });
+        } catch (error) {
+          console.error('Error generating barcode:', error);
+        }
+      }
+    }, 100 + (index * 50)); // Stagger barcode generation
+  }
+
   totalPrints = []
 
   setFormEmitter($event) {
@@ -74,7 +185,6 @@ export class PlacardModalComponent {
       this.cdr.detectChanges();
     });
 
-
     this.form.valueChanges.subscribe(value => {
       this.totalPrints = []
       for (let i = 0; i < this.form.value.total_label_count; i++) {
@@ -84,6 +194,9 @@ export class PlacardModalComponent {
           label_count: count
         })
       }
+      
+      // Regenerate barcodes after form changes
+      setTimeout(() => this.generateAllBarcodes(), 200);
     });
   }
 
@@ -94,6 +207,7 @@ export class PlacardModalComponent {
   ngOnInit() {
     this.userData = this.tokenStorageService.getUser();
     if (this.soNumber && this.lineNumber && this.partNumber) this.getData();
+    this.loadBarcodeLibrary();
   }
 
   dismiss() {
@@ -154,6 +268,9 @@ export class PlacardModalComponent {
       }
 
       this.isLoading = false;
+      
+      // Generate barcodes after data is loaded
+      setTimeout(() => this.generateAllBarcodes(), 500);
     } catch (err) {
       this.isLoading = false;
     }
@@ -203,21 +320,60 @@ export class PlacardModalComponent {
       var printContents = document.getElementById("pickSheet").innerHTML;
       var popupWin = window.open("", "_blank", "width=1000,height=600");
       popupWin.document.open();
-      var pathCss =
-        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
+      var pathCss = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
+      var barcodeJs = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js";
+      
       popupWin.document.write(
-        '<html><head><link type="text/css" rel="stylesheet" media="screen, print" href="' +
-        pathCss +
-        '" /></head><body onload="window.print()">' +
-        printContents +
-        "</body></html>"
+        '<html><head>' +
+        '<link type="text/css" rel="stylesheet" media="screen, print" href="' + pathCss + '" />' +
+        '<script src="' + barcodeJs + '"></script>' +
+        '<style>' +
+        '.print-barcode-container { padding: 10px; background: white !important; text-align: center; border: 2px solid #000 !important; margin: 15px 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+        '.print-barcode-container svg { display: block; margin: 0 auto; width: 300px !important; height: 80px !important; }' +
+        '.print-barcode-text { font-family: monospace; font-size: 16px !important; font-weight: bold !important; margin-top: 10px; color: #000 !important; }' +
+        '</style>' +
+        '</head><body>' + printContents + '</body></html>'
       );
       popupWin.document.close();
-      popupWin.onload = function () {
-        popupWin.print();
-        popupWin.close();
+      
+      // Wait for the barcode library to load and then regenerate barcodes in the popup
+      popupWin.onload = () => {
+        setTimeout(() => {
+          // Only generate barcode for the first page (index 0)
+          if (this.totalPrints.length > 0) {
+            const row = this.totalPrints[0];
+            const index = 0;
+            if (row.eyefi_so_number && row.line_number) {
+              const barcodeValue = `${row.eyefi_so_number}-${row.line_number}`;
+              const elementId = `print-barcode-${index}`;
+              try {
+                if ((popupWin as any).JsBarcode) {
+                  (popupWin as any).JsBarcode(`#${elementId}`, barcodeValue, {
+                    format: "CODE128",
+                    width: 3,
+                    height: 80,
+                    displayValue: false,
+                    margin: 10,
+                    background: "#ffffff",
+                    lineColor: "#000000",
+                    fontSize: 0,
+                    textMargin: 0,
+                    quiet: 10
+                  });
+                }
+              } catch (error) {
+                console.error('Error generating barcode in print window:', error);
+              }
+            }
+          }
+          
+          // Print after barcodes are generated
+          setTimeout(() => {
+            popupWin.print();
+            popupWin.close();
+          }, 500);
+        }, 500);
       };
-
     }, 500);
   }
 }

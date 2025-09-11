@@ -36,6 +36,10 @@ export class AgsSerialFormComponent {
     return this.form.controls;
   }
 
+  get isFormDisabled() {
+    return this.form.disabled;
+  }
+
   form = this.fb.group({
     timeStamp: [""],
     poNumber: [null],

@@ -53,6 +53,10 @@ export class SafetyIncidentFormComponent {
     return this.form.controls;
   }
 
+  get isFormDisabled() {
+    return this.form.disabled;
+  }
+
   notifyParent($event) {
     this.form.patchValue({
       corrective_action_owner_user_id: $event?.id || null,

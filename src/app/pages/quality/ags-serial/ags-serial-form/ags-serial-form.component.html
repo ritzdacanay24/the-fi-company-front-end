@@ -1,5 +1,13 @@
 <form [formGroup]="form" class="settings-form" autocomplete="off">
 
+  <!-- Form Lock Status Alert -->
+  <div class="alert alert-info d-flex align-items-center mb-4" *ngIf="isFormDisabled">
+    <i class="mdi mdi-lock-outline me-2 fs-5"></i>
+    <div>
+      <strong>Read-Only Mode:</strong> This form is locked to prevent modifications and maintain data integrity.
+    </div>
+  </div>
+
   <div class="body">
 
     <!-- Asset Identification Section -->
@@ -55,7 +63,8 @@
           </label>
           <app-qad-customer-part-search [form_label]="'AGS Part #'" (notifyParent)="getCustomerPartNumber($event)"
             [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
-            [value]="f.sgPartNumber.value"></app-qad-customer-part-search>
+            [value]="f.sgPartNumber.value"
+            [disabled]="isFormDisabled"></app-qad-customer-part-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Customer AGS part number reference.
@@ -68,7 +77,8 @@
           </label>
           <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
             [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" 
-            [value]="f.poNumber.value"></app-qad-wo-search>
+            [value]="f.poNumber.value"
+            [disabled]="isFormDisabled"></app-qad-wo-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Manufacturing work order reference.

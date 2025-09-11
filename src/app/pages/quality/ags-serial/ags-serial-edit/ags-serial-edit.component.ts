@@ -46,14 +46,28 @@ export class AgsSerialEditComponent {
     });
   };
 
+  get isFormDisabled() {
+    return this.form?.disabled || false;
+  }
+
   data: any;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      this.form.get("generated_SG_asset").disable();
+      
+      // Lock critical fields that shouldn't be edited after creation
+      this.lockCriticalFields();
+      
       this.form.patchValue(this.data);
     } catch (err) {}
+  }
+
+  /**
+   * Disable the entire form to prevent any modifications
+   */
+  private lockCriticalFields() {
+    this.form.disable();
   }
 
   async onSubmit() {
@@ -63,7 +77,11 @@ export class AgsSerialEditComponent {
 
     try {
       this.isLoading = true;
-      await this.api.update(this.id, this.form.value);
+      
+      // Since form is disabled, get raw values for submission
+      const formData = this.form.getRawValue();
+      
+      await this.api.update(this.id, formData);
       this.isLoading = false;
       this.toastrService.success("Successfully Updated");
       this.goBack();

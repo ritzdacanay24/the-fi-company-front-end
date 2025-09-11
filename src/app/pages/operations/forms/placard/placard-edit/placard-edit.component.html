@@ -94,6 +94,18 @@
             <td>{{row?.qty}}</td>
           </tr>
         </thead>
+        
+        <!-- Sales Order Barcode Section - Show only on first page -->
+        <tr *ngIf="row?.eyefi_so_number && row?.line_number && i === 0">
+          <td colspan="2" class="text-center p-0" style="border: none;">
+            <div class="print-barcode-container">
+              <div style="font-weight: bold; margin-bottom: 10px;">SALES ORDER BARCODE</div>
+              <svg [id]="'print-barcode-' + i"></svg>
+              <div class="print-barcode-text">{{row?.eyefi_so_number}}-{{row?.line_number}}</div>
+            </div>
+          </td>
+        </tr>
+        
         <tr style="border: none;">
           <td class="text-center" colspan="2" rowspan="3" style="border: none;">
             <div>

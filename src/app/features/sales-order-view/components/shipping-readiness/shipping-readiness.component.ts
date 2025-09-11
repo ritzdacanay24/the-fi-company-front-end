@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -23,34 +23,34 @@ interface ShippingReadinessRow {
     standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-2">
       <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h2 class="mb-1">Sales Order Shipping Readiness</h2>
-          <p class="text-muted mb-0">Scan barcode to check shipping eligibility or review all orders</p>
+          <h4 class="mb-1">Sales Order Shipping Readiness</h4>
+          <p class="text-muted mb-0 small">Scan barcode to check shipping eligibility</p>
         </div>
         <div class="d-flex gap-2">
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="useMockData" [(ngModel)]="useMockData">
-            <label class="form-check-label" for="useMockData">Use Mock Data</label>
+            <label class="form-check-label small" for="useMockData">Use Mock Data</label>
           </div>
         </div>
       </div>
 
       <!-- Barcode Scanner Section -->
-      <div class="card mb-4 border-primary">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">
+      <div class="card mb-3 border-primary">
+        <div class="card-header bg-primary text-white py-2">
+          <h6 class="mb-0">
             <i class="fas fa-barcode me-2"></i>
-            Barcode Scanner - Shipping Eligibility Check
-          </h5>
+            Barcode Scanner
+          </h6>
         </div>
-        <div class="card-body">
+        <div class="card-body py-3">
           <div class="row align-items-end">
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Scan or Enter Sales Order Line Number:</label>
-              <div class="input-group input-group-lg">
+            <div class="col-md-8">
+              <label class="form-label fw-bold small">Scan Sales Order Line:</label>
+              <div class="input-group">
                 <span class="input-group-text">
                   <i class="fas fa-barcode"></i>
                 </span>
@@ -61,27 +61,31 @@ interface ShippingReadinessRow {
                   [(ngModel)]="scannedBarcode" 
                   (keyup.enter)="searchSalesOrder()"
                   (input)="onBarcodeInput()"
-                  placeholder="Scan sales order line barcode (e.g., SO123456-1)..."
-                  autocomplete="off">
+                  (blur)="onInputBlur()"
+                  placeholder="Scan barcode (e.g., SO123456-1)..."
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false">
                 <button class="btn btn-success" type="button" (click)="searchSalesOrder()" [disabled]="!scannedBarcode?.trim()">
                   <i class="fas fa-search me-1"></i>
-                  Check Eligibility
+                  Check
                 </button>
               </div>
               <small class="form-text text-muted">
                 <i class="fas fa-info-circle me-1"></i>
-                Scan the barcode on your shipping paperwork that contains the full sales order line number (SO######-#)
+                Scan the barcode from your placard (SO######-#)
               </small>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" (click)="clearSearch()">
+                <button class="btn btn-outline-secondary btn-sm" (click)="clearSearch()">
                   <i class="fas fa-times me-1"></i>
                   Clear
                 </button>
-                <button class="btn btn-outline-info" (click)="focusBarcodeInput()">
+                <button class="btn btn-outline-success btn-sm" (click)="focusBarcodeInput()">
                   <i class="fas fa-crosshairs me-1"></i>
-                  Focus Scanner
+                  📱 Ready
                 </button>
               </div>
             </div>
@@ -90,260 +94,178 @@ interface ShippingReadinessRow {
       </div>
 
       <!-- Search Results Section (shown when barcode is scanned) -->
-      <div *ngIf="searchedOrder" class="card mb-4" [ngClass]="getSearchResultCardClass()">
-        <div class="card-header d-flex justify-content-between align-items-center" 
+      <div *ngIf="searchedOrder" class="card mb-3" [ngClass]="getSearchResultCardClass()">
+        <div class="card-header d-flex justify-content-between align-items-center py-2" 
              [ngClass]="searchedOrder.status === 'blocked' ? 'bg-danger text-white border-danger' : 
                         searchedOrder.status === 'warning' ? 'bg-warning text-dark border-warning' : 
                         'bg-success text-white border-success'">
-          <h5 class="mb-0">
+          <h6 class="mb-0">
             <i class="fas fa-clipboard-check me-2"></i>
-            Shipping Eligibility: {{ searchedOrder.salesOrder.sales_order_line_number || searchedOrder.salesOrder.SOD_NBR + '-' + searchedOrder.salesOrder.SOD_LINE }}
-          </h5>
+            {{ searchedOrder.salesOrder.sales_order_line_number || searchedOrder.salesOrder.SOD_NBR + '-' + searchedOrder.salesOrder.SOD_LINE }}
+          </h6>
           <div class="d-flex align-items-center">
-            <span class="badge fs-6 me-2" [ngClass]="getStatusBadgeClass(searchedOrder.status)">
+            <span class="badge me-2" [ngClass]="getStatusBadgeClass(searchedOrder.status)">
               {{ getStatusText(searchedOrder.status) }}
             </span>
-            <span *ngIf="searchedOrder.status === 'blocked'" class="badge bg-white text-danger fs-6 fw-bold border border-danger blocked-warning">
-              🚫 SHIPPING BLOCKED
+            <span *ngIf="searchedOrder.status === 'blocked'" class="badge bg-white text-danger fw-bold border border-danger">
+              🚫 BLOCKED
             </span>
           </div>
         </div>
-        <div class="card-body">
-          <div class="row">
-            <!-- Order Details -->
-            <div class="col-md-6">
-              <h6 class="fw-bold text-primary">Order Information</h6>
-              <table class="table table-sm">
-                <tr>
-                  <td class="fw-bold">Sales Order Line:</td>
-                  <td>{{ searchedOrder.salesOrder.sales_order_line_number || searchedOrder.salesOrder.SOD_NBR + '-' + searchedOrder.salesOrder.SOD_LINE }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Customer:</td>
-                  <td>{{ searchedOrder.salesOrder.SO_CUST }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Part Number:</td>
-                  <td>{{ searchedOrder.salesOrder.SOD_PART }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Description:</td>
-                  <td>{{ searchedOrder.salesOrder.FULLDESC }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Due Date:</td>
-                  <td [ngClass]="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-danger fw-bold' : 
-                                 isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-primary fw-bold' : ''">
-                    {{ searchedOrder.salesOrder.SOD_DUE_DATE | date:'mediumDate' }}
-                    <span *ngIf="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-danger ms-2">PAST DUE</span>
-                    <span *ngIf="isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-primary ms-2">FUTURE DATE</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Status:</td>
-                  <td>
-                    <span [innerHTML]="searchedOrder.salesOrder.STATUSCLASS ? '<span class=&quot;' + searchedOrder.salesOrder.STATUSCLASS + '&quot;>' + searchedOrder.salesOrder.STATUS + '</span>' : searchedOrder.salesOrder.STATUS"></span>
-                    <span *ngIf="searchedOrder.salesOrder.STATUS === 'Future Order'" class="badge bg-primary ms-2">FUTURE ORDER</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Age (Days):</td>
-                  <td [ngClass]="searchedOrder.salesOrder.AGE > 30 ? 'text-warning fw-bold' : ''">
-                    {{ searchedOrder.salesOrder.AGE }}
-                    <span *ngIf="searchedOrder.salesOrder.AGE > 30" class="badge bg-warning ms-2">OLD ORDER</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Qty Open:</td>
-                  <td [ngClass]="searchedOrder.salesOrder.QTYOPEN <= 0 ? 'text-danger fw-bold' : ''">
-                    {{ searchedOrder.salesOrder.QTYOPEN }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Qty On Hand:</td>
-                  <td [ngClass]="searchedOrder.salesOrder.LD_QTY_OH <= 0 ? 'text-danger fw-bold' : ''">
-                    {{ searchedOrder.salesOrder.LD_QTY_OH }}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Price:</td>
-                  <td [ngClass]="searchedOrder.salesOrder.SOD_LIST_PR <= 0 ? 'text-danger fw-bold' : ''">
-                    {{ searchedOrder.salesOrder.SOD_LIST_PR | currency }}
-                    <span *ngIf="searchedOrder.salesOrder.SOD_LIST_PR <= 0" class="badge bg-danger ms-2">NO PRICING</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Work Order:</td>
-                  <td>{{ searchedOrder.salesOrder.WO_NBR }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Routing:</td>
-                  <td>{{ searchedOrder.salesOrder.PT_ROUTING }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Ship Via:</td>
-                  <td>{{ searchedOrder.salesOrder.SO_SHIPVIA }}</td>
-                </tr>
-                <tr>
-                  <td class="fw-bold">Ship To:</td>
-                  <td>{{ searchedOrder.salesOrder.SO_SHIP }}</td>
-                </tr>
-                <tr *ngIf="searchedOrder.salesOrder.SO_BOL">
-                  <td class="fw-bold">BOL:</td>
-                  <td>{{ searchedOrder.salesOrder.SO_BOL }}</td>
-                </tr>
-                <tr *ngIf="searchedOrder.salesOrder.CMT_CMMT">
-                  <td class="fw-bold">Comments:</td>
-                  <td>{{ searchedOrder.salesOrder.CMT_CMMT }}</td>
-                </tr>
-              </table>
+        <div class="card-body py-3">
+          <!-- Shipping Decision (Most Important - Show First) -->
+          <div class="row mb-3">
+            <div class="col-12">
+              <div class="p-3 rounded border-2" [ngClass]="getShippingDecisionClass()">
+                <div class="d-flex align-items-center">
+                  <i [class]="getShippingDecisionIcon()" class="me-3" style="font-size: 1.5rem;"></i>
+                  <div>
+                    <h6 class="mb-1 fw-bold">Shipping Decision</h6>
+                    <p class="mb-0 fw-bold">{{ getShippingDecisionText() }}</p>
+                  </div>
+                </div>
+                
+                <!-- Blockers for blocked orders -->
+                <div *ngIf="searchedOrder.status === 'blocked'" class="mt-2">
+                  <small class="fw-bold">Issues to resolve:</small>
+                  <ul class="mb-0 mt-1 small">
+                    <li *ngFor="let blocker of searchedOrder.eligibility.blockers.slice(0, 2)">{{ blocker }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <!-- Recent Comments Section -->
-              <div *ngIf="searchedOrder.salesOrder.recent_comments?.comments" class="mt-3">
-                <h6 class="fw-bold text-info">Recent Comments</h6>
-                <div class="alert alert-info py-2">
-                  <div class="small fw-bold">{{ searchedOrder.salesOrder.recent_comments.comment_title }}</div>
-                  <div [innerHTML]="searchedOrder.salesOrder.recent_comments.comments_html"></div>
-                  <div class="small text-muted">
-                    By {{ searchedOrder.salesOrder.recent_comments.created_by_name }} on 
-                    {{ searchedOrder.salesOrder.recent_comments.createdDate | date:'short' }}
+          <!-- Compact Details in Two Columns -->
+          <div class="row">
+            <!-- Essential Order Info -->
+            <div class="col-md-6">
+              <h6 class="fw-bold text-primary small">Order Information</h6>
+              <div class="row small">
+                <div class="col-6">
+                  <div class="mb-1"><strong>Customer:</strong></div>
+                  <div class="mb-1"><strong>Part:</strong></div>
+                  <div class="mb-1"><strong>Due Date:</strong></div>
+                  <div class="mb-1"><strong>Status:</strong></div>
+                  <div class="mb-1"><strong>Price:</strong></div>
+                  <div class="mb-1"><strong>Owner:</strong></div>
+                </div>
+                <div class="col-6">
+                  <div class="mb-1">{{ searchedOrder.salesOrder.SO_CUST }}</div>
+                  <div class="mb-1">{{ searchedOrder.salesOrder.SOD_PART }}</div>
+                  <div class="mb-1" [ngClass]="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-danger fw-bold' : 
+                                               isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE) ? 'text-primary fw-bold' : ''">
+                    {{ searchedOrder.salesOrder.SOD_DUE_DATE | date:'shortDate' }}
+                    <span *ngIf="isPastDue(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-danger badge-sm ms-1">PAST DUE</span>
+                    <span *ngIf="isFutureOrder(searchedOrder.salesOrder.SOD_DUE_DATE)" class="badge bg-primary badge-sm ms-1">FUTURE</span>
+                  </div>
+                  <div class="mb-1">{{ searchedOrder.salesOrder.STATUS }}</div>
+                  <div class="mb-1" [ngClass]="searchedOrder.salesOrder.SOD_LIST_PR <= 0 ? 'text-danger fw-bold' : ''">
+                    {{ searchedOrder.salesOrder.SOD_LIST_PR | currency }}
+                    <span *ngIf="searchedOrder.salesOrder.SOD_LIST_PR <= 0" class="badge bg-danger badge-sm ms-1">NO PRICE</span>
+                  </div>
+                  <div class="mb-1" [ngClass]="searchedOrder.salesOrder.misc?.userName !== 'SHIPPING' ? 'text-warning fw-bold' : 'text-success'">
+                    {{ searchedOrder.salesOrder.misc?.userName }}
+                    <span *ngIf="searchedOrder.salesOrder.misc?.userName !== 'SHIPPING'" class="badge bg-warning badge-sm ms-1">NOT SHIPPING</span>
                   </div>
                 </div>
               </div>
-
-              <!-- Misc Info Section -->
-              <div *ngIf="searchedOrder.salesOrder.misc" class="mt-3">
-                <h6 class="fw-bold text-secondary">Additional Information</h6>
-                <table class="table table-sm">
-                  <tr>
-                    <td class="fw-bold">Current Owner:</td>
-                    <td [ngClass]="searchedOrder.salesOrder.misc.userName !== 'SHIPPING' ? 'text-warning fw-bold' : 'text-success'">
-                      {{ searchedOrder.salesOrder.misc.userName }}
-                      <span *ngIf="searchedOrder.salesOrder.misc.userName !== 'SHIPPING'" class="badge bg-warning ms-2">NOT IN SHIPPING</span>
-                      <span *ngIf="searchedOrder.salesOrder.misc.userName === 'SHIPPING'" class="badge bg-success ms-2">AUTHORIZED</span>
-                    </td>
-                  </tr>
-                  <tr *ngIf="searchedOrder.salesOrder.misc.tj_po_number">
-                    <td class="fw-bold">TJ PO Number:</td>
-                    <td>{{ searchedOrder.salesOrder.misc.tj_po_number }}</td>
-                  </tr>
-                  <tr *ngIf="searchedOrder.salesOrder.misc.tj_due_date">
-                    <td class="fw-bold">TJ Due Date:</td>
-                    <td>{{ searchedOrder.salesOrder.misc.tj_due_date }}</td>
-                  </tr>
-                  <tr *ngIf="searchedOrder.salesOrder.misc.lateReasonCode">
-                    <td class="fw-bold">Late Reason:</td>
-                    <td class="text-warning">{{ searchedOrder.salesOrder.misc.lateReasonCode }}</td>
-                  </tr>
-                  <tr *ngIf="searchedOrder.salesOrder.misc.hot_order">
-                    <td class="fw-bold">Priority:</td>
-                    <td class="text-danger fw-bold">🔥 HOT ORDER</td>
-                  </tr>
-                  <tr>
-                    <td class="fw-bold">Last Modified:</td>
-                    <td>{{ searchedOrder.salesOrder.misc.lastModDate | date:'short' }}</td>
-                  </tr>
-                </table>
-              </div>
             </div>
             
-            <!-- Shipping Status -->
+            <!-- Issues & Warnings -->
             <div class="col-md-6">
-              <h6 class="fw-bold text-primary">Shipping Status</h6>
+              <h6 class="fw-bold text-primary small">Shipping Status</h6>
               
               <!-- Critical Issues -->
-              <div *ngIf="searchedOrder.eligibility.issues.length > 0" class="mb-3">
-                <h6 class="text-danger">
+              <div *ngIf="searchedOrder.eligibility.issues.length > 0" class="mb-2">
+                <div class="text-danger small fw-bold mb-1">
                   <i class="fas fa-exclamation-triangle me-1"></i>
                   Critical Issues ({{ searchedOrder.criticalIssues }})
-                </h6>
-                <div *ngFor="let issue of searchedOrder.eligibility.issues" class="alert alert-danger py-2 mb-2">
+                </div>
+                <div *ngFor="let issue of searchedOrder.eligibility.issues.slice(0, 2)" class="alert alert-danger py-1 mb-1 small">
                   <strong>{{ issue.message }}</strong>
-                  <div class="small">{{ issue.description }}</div>
-                  <div class="small text-muted">Resolution: {{ issue.resolution }}</div>
+                </div>
+                <div *ngIf="searchedOrder.eligibility.issues.length > 2" class="small text-muted">
+                  +{{ searchedOrder.eligibility.issues.length - 2 }} more issues...
                 </div>
               </div>
 
               <!-- Warnings -->
-              <div *ngIf="searchedOrder.eligibility.warnings.length > 0" class="mb-3">
-                <h6 class="text-warning">
+              <div *ngIf="searchedOrder.eligibility.warnings.length > 0" class="mb-2">
+                <div class="text-warning small fw-bold mb-1">
                   <i class="fas fa-exclamation-circle me-1"></i>
                   Warnings ({{ searchedOrder.warningsCount }})
-                </h6>
-                <div *ngFor="let warning of searchedOrder.eligibility.warnings" class="mb-2">
-                  <div class="alert py-2 mb-2" 
+                </div>
+                <div *ngFor="let warning of searchedOrder.eligibility.warnings.slice(0, 2)" class="mb-1">
+                  <div class="alert py-1 mb-1 small" 
                        [ngClass]="warning.type === 'date' && warning.message.includes('future') ? 'alert-info' : 'alert-warning'">
                     <strong>{{ warning.message }}</strong>
-                    <span class="badge ms-2" [ngClass]="warning.impact === 'high' ? 'bg-danger' : warning.impact === 'medium' ? 'bg-warning' : 'bg-info'">
-                      {{ warning.impact | titlecase }} Impact
+                    <span class="badge badge-sm ms-1" [ngClass]="warning.impact === 'high' ? 'bg-danger' : warning.impact === 'medium' ? 'bg-warning' : 'bg-info'">
+                      {{ warning.impact }}
                     </span>
-                    <div *ngIf="warning.type === 'date' && warning.message.includes('FUTURE ORDER')" class="small mt-1 text-primary fw-bold">
-                      <i class="fas fa-calendar-alt me-1"></i>
-                      Verify customer authorization before early shipment
-                    </div>
                   </div>
+                </div>
+                <div *ngIf="searchedOrder.eligibility.warnings.length > 2" class="small text-muted">
+                  +{{ searchedOrder.eligibility.warnings.length - 2 }} more warnings...
                 </div>
               </div>
 
-              <!-- Recommendations -->
-              <div *ngIf="searchedOrder.eligibility.recommendations.length > 0" class="mb-3">
-                <h6 class="text-info">
-                  <i class="fas fa-lightbulb me-1"></i>
-                  Recommendations
-                </h6>
-                <ul class="list-unstyled">
-                  <li *ngFor="let rec of searchedOrder.eligibility.recommendations" class="mb-1">
-                    <i class="fas fa-arrow-right text-info me-2"></i>
-                    {{ rec }}
-                  </li>
-                </ul>
+              <!-- Quick Actions -->
+              <div class="mt-2">
+                <button class="btn btn-outline-primary btn-sm me-2" (click)="showFullDetails = !showFullDetails">
+                  <i class="fas fa-eye me-1"></i>
+                  {{ showFullDetails ? 'Hide' : 'Show' }} Full Details
+                </button>
               </div>
+            </div>
+          </div>
 
-              <!-- Shipping Decision -->
-              <div class="mt-4 p-4 rounded border-3" [ngClass]="getShippingDecisionClass()">
-                <div class="d-flex align-items-center mb-2">
-                  <i [class]="getShippingDecisionIcon()" class="me-3" style="font-size: 2rem;"></i>
-                  <div>
-                    <h4 class="mb-1 fw-bold">Shipping Decision</h4>
-                    <p class="mb-0 fw-bold" style="font-size: 1.25rem;">{{ getShippingDecisionText() }}</p>
-                  </div>
-                </div>
-                
-                <!-- Additional warning for blocked orders -->
-                <div *ngIf="searchedOrder.status === 'blocked'" class="mt-3 p-3 bg-white text-danger border border-danger rounded">
-                  <div class="d-flex align-items-center">
-                    <i class="fas fa-exclamation-triangle me-2" style="font-size: 1.5rem;"></i>
-                    <div>
-                      <h5 class="mb-1 text-danger fw-bold">⚠️ STOP - DO NOT PROCEED WITH SHIPPING ⚠️</h5>
-                      <p class="mb-0 fw-bold">Critical issues must be resolved before this order can be shipped!</p>
+          <!-- Collapsible Full Details -->
+          <div *ngIf="showFullDetails" class="row mt-3 pt-3 border-top">
+            <div class="col-12">
+              <div class="accordion" id="detailsAccordion">
+                <!-- Order Details Accordion -->
+                <div class="accordion-item">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#orderDetails">
+                      Complete Order Information
+                    </button>
+                  </h2>
+                  <div id="orderDetails" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                    <div class="accordion-body py-2">
+                      <table class="table table-sm small">
+                        <tr><td class="fw-bold">Description:</td><td>{{ searchedOrder.salesOrder.FULLDESC }}</td></tr>
+                        <tr><td class="fw-bold">Age (Days):</td><td [ngClass]="searchedOrder.salesOrder.AGE > 30 ? 'text-warning fw-bold' : ''">{{ searchedOrder.salesOrder.AGE }}</td></tr>
+                        <tr><td class="fw-bold">Qty Open:</td><td>{{ searchedOrder.salesOrder.QTYOPEN }}</td></tr>
+                        <tr><td class="fw-bold">Qty On Hand:</td><td>{{ searchedOrder.salesOrder.LD_QTY_OH }}</td></tr>
+                        <tr><td class="fw-bold">Work Order:</td><td>{{ searchedOrder.salesOrder.WO_NBR }}</td></tr>
+                        <tr><td class="fw-bold">Routing:</td><td>{{ searchedOrder.salesOrder.PT_ROUTING }}</td></tr>
+                        <tr><td class="fw-bold">Ship Via:</td><td>{{ searchedOrder.salesOrder.SO_SHIPVIA }}</td></tr>
+                        <tr><td class="fw-bold">Ship To:</td><td>{{ searchedOrder.salesOrder.SO_SHIP }}</td></tr>
+                      </table>
                     </div>
                   </div>
                 </div>
 
-                <!-- Action required for blocked orders -->
-                <div *ngIf="searchedOrder.status === 'blocked'" class="mt-3">
-                  <h6 class="text-white mb-2">
-                    <i class="fas fa-tools me-1"></i>
-                    Required Actions:
-                  </h6>
-                  <ul class="mb-0 text-white">
-                    <li *ngFor="let blocker of searchedOrder.eligibility.blockers" class="mb-1">
-                      <strong>{{ blocker }}</strong>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Warning emphasis -->
-                <div *ngIf="searchedOrder.status === 'warning'" class="mt-3">
-                  <h6 class="text-dark mb-2">
-                    <i class="fas fa-exclamation-circle me-1"></i>
-                    Review Required Before Shipping:
-                  </h6>
-                  <ul class="mb-0 text-dark">
-                    <li *ngFor="let warning of searchedOrder.eligibility.warnings.slice(0, 3)" class="mb-1">
-                      {{ warning.message }}
-                    </li>
-                  </ul>
+                <!-- Comments Accordion -->
+                <div class="accordion-item" *ngIf="searchedOrder.salesOrder.recent_comments?.comments">
+                  <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#commentsDetails">
+                      Recent Comments
+                    </button>
+                  </h2>
+                  <div id="commentsDetails" class="accordion-collapse collapse" data-bs-parent="#detailsAccordion">
+                    <div class="accordion-body py-2">
+                      <div class="alert alert-info py-2 small">
+                        <div class="fw-bold">{{ searchedOrder.salesOrder.recent_comments.comment_title }}</div>
+                        <div [innerHTML]="searchedOrder.salesOrder.recent_comments.comments_html"></div>
+                        <div class="text-muted">
+                          By {{ searchedOrder.salesOrder.recent_comments.created_by_name }} on 
+                          {{ searchedOrder.salesOrder.recent_comments.createdDate | date:'short' }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -352,19 +274,17 @@ interface ShippingReadinessRow {
       </div>
 
       <!-- No Results Message -->
-      <div *ngIf="searchAttempted && !searchedOrder && !loading" class="alert alert-warning">
+      <div *ngIf="searchAttempted && !searchedOrder && !loading" class="alert alert-warning py-2">
         <i class="fas fa-search me-2"></i>
-        <strong>No Results Found</strong>
-        <p class="mb-0">Could not find sales order "{{ lastSearchedBarcode }}". Please verify the barcode and try again.</p>
+        <strong>No Results Found</strong> - Could not find "{{ lastSearchedBarcode }}". Please verify and try again.
       </div>
 
       <!-- Summary Info -->
-      <div class="row mb-4">
+      <div class="row mb-2" *ngIf="!searchedOrder">
         <div class="col-12">
-          <div class="alert alert-info">
+          <div class="alert alert-info py-2 small">
             <i class="fas fa-info-circle me-2"></i>
-            <strong>How to use:</strong> Use the barcode scanner above to check individual sales orders for shipping eligibility. 
-            Scan the barcode on your paperwork or manually enter the sales order number to get instant shipping validation.
+            <strong>How to use:</strong> Scan the barcode from your placard to check shipping eligibility instantly.
           </div>
         </div>
       </div>
@@ -391,9 +311,20 @@ interface ShippingReadinessRow {
       font-size: 0.75rem;
     }
     
+    .badge-sm {
+      font-size: 0.65rem;
+      padding: 0.2em 0.4em;
+    }
+    
     .status-ready { color: #28a745; }
     .status-warning { color: #ffc107; }
     .status-blocked { color: #dc3545; }
+
+    /* Compact table styling */
+    .table-sm td {
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+    }
 
     /* Enhanced blocked order styling */
     .shipping-blocked {
@@ -437,9 +368,24 @@ interface ShippingReadinessRow {
       box-shadow: 0 0 25px rgba(220, 53, 69, 0.6) !important;
       animation: pulse-danger 2s infinite;
     }
+
+    /* Compact responsive design */
+    @media (max-height: 800px) {
+      .container-fluid {
+        padding-top: 0.5rem;
+      }
+      
+      .card-body {
+        padding: 1rem;
+      }
+      
+      .alert {
+        padding: 0.5rem 0.75rem;
+      }
+    }
   `]
 })
-export class ShippingReadinessComponent implements OnInit {
+export class ShippingReadinessComponent implements OnInit, OnDestroy {
     @ViewChild('barcodeInput') barcodeInput!: ElementRef;
 
     loading = false;
@@ -450,6 +396,8 @@ export class ShippingReadinessComponent implements OnInit {
     searchedOrder: ShippingReadinessRow | null = null;
     searchAttempted = false;
     lastSearchedBarcode = '';
+    searchTimeout: any; // Timer for auto-search functionality
+    showFullDetails = false; // Toggle for detailed view
 
     constructor(
         private http: HttpClient,
@@ -653,6 +601,10 @@ export class ShippingReadinessComponent implements OnInit {
         // Clean up the barcode - remove any non-alphanumeric characters except hyphens
         const cleanBarcode = this.lastSearchedBarcode.replace(/[^a-zA-Z0-9\-]/g, '').toUpperCase();
 
+        // Clear the input immediately for next scan and refocus
+        this.scannedBarcode = '';
+        this.focusBarcodeInput();
+
         // Search for the specific order
         this.searchSpecificOrder(cleanBarcode);
     }
@@ -752,12 +704,31 @@ export class ShippingReadinessComponent implements OnInit {
     }
 
     onBarcodeInput() {
-        // Auto-trigger search if barcode looks complete (you can adjust this logic)
-        if (this.scannedBarcode && this.scannedBarcode.length >= 6) {
-            // Optional: Auto-search after a short delay
-            // clearTimeout(this.searchTimeout);
-            // this.searchTimeout = setTimeout(() => this.searchSalesOrder(), 500);
+        // Check if barcode looks complete and auto-trigger search
+        if (this.scannedBarcode && this.scannedBarcode.trim().length >= 8) {
+            // Auto-search for complete looking barcodes (SO###### format or longer)
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                if (this.scannedBarcode && this.scannedBarcode.trim().length >= 8) {
+                    this.searchSalesOrder();
+                }
+            }, 300); // Short delay to allow for complete barcode entry
         }
+    }
+
+    onInputBlur() {
+        // Auto-refocus the input after a short delay (unless user is clicking elsewhere)
+        setTimeout(() => {
+            // Only refocus if no other input or button has focus
+            const activeElement = document.activeElement;
+            if (!activeElement || 
+                (activeElement.tagName !== 'INPUT' && 
+                 activeElement.tagName !== 'BUTTON' && 
+                 activeElement.tagName !== 'SELECT' && 
+                 activeElement.tagName !== 'TEXTAREA')) {
+                this.focusBarcodeInput();
+            }
+        }, 100);
     }
 
     clearSearch() {
@@ -773,6 +744,17 @@ export class ShippingReadinessComponent implements OnInit {
             if (this.barcodeInput?.nativeElement) {
                 this.barcodeInput.nativeElement.focus();
                 this.barcodeInput.nativeElement.select();
+                // Add visual feedback to show the input is active
+                this.barcodeInput.nativeElement.style.borderColor = '#0d6efd';
+                this.barcodeInput.nativeElement.style.boxShadow = '0 0 0 0.25rem rgba(13, 110, 253, 0.25)';
+                
+                // Remove visual feedback after a short time
+                setTimeout(() => {
+                    if (this.barcodeInput?.nativeElement) {
+                        this.barcodeInput.nativeElement.style.borderColor = '';
+                        this.barcodeInput.nativeElement.style.boxShadow = '';
+                    }
+                }, 2000);
             }
         }, 100);
     }
@@ -862,6 +844,13 @@ export class ShippingReadinessComponent implements OnInit {
             return '⚠️ PROCEED WITH CAUTION - Review warnings before shipping';
         } else {
             return '🚫 DO NOT SHIP - CRITICAL ISSUES MUST BE RESOLVED FIRST';
+        }
+    }
+
+    ngOnDestroy() {
+        // Clean up timeout to prevent memory leaks
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
         }
     }
 }

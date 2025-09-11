@@ -207,6 +207,35 @@
           </div>
         </div>
       </div>
+      
+      <!-- Sales Order Barcode -->
+      <div class="mt-3 p-3 bg-light rounded border barcode-print-section" *ngIf="f.eyefi_so_number?.value && f.line_number?.value">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center mb-2">
+              <i class="mdi mdi-barcode text-success me-2"></i>
+              <strong class="text-body">Sales Order Barcode</strong>
+            </div>
+            <div class="text-body-secondary mb-2">
+              <strong>SO:</strong> {{f.eyefi_so_number?.value}} | <strong>Line:</strong> {{f.line_number?.value}}
+            </div>
+            <div class="text-sm text-body-secondary">
+              <strong>Scan Value:</strong> {{f.eyefi_so_number?.value}}-{{f.line_number?.value}}
+            </div>
+            <div class="small text-muted mt-1">
+              This barcode will be printed on the placard for shipping verification
+            </div>
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="barcode-container">
+              <svg [id]="'placard-barcode-' + (f.eyefi_so_number?.value || '') + '-' + (f.line_number?.value || '')"></svg>
+              <div class="small text-center mt-2 font-monospace fw-bold">
+                {{f.eyefi_so_number?.value}}-{{f.line_number?.value}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

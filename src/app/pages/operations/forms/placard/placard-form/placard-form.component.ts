@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, Output, AfterViewInit, OnDestroy } from "@angular/core";
 import {
   AbstractControl,
   FormBuilder,
@@ -30,14 +30,151 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
   ],
   selector: "app-placard-form",
   templateUrl: "./placard-form.component.html",
+  styles: [`
+    .barcode-container {
+      padding: 10px;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+    }
+    
+    .barcode-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    .barcode-print-section {
+      page-break-inside: avoid;
+    }
+    
+    @media print {
+      .barcode-container {
+        border: 2px solid #000 !important;
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        padding: 15px !important;
+        margin: 10px 0 !important;
+      }
+      
+      .barcode-container svg {
+        width: 250px !important;
+        height: 80px !important;
+        display: block !important;
+        margin: 0 auto !important;
+      }
+      
+      .barcode-print-section {
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        page-break-inside: avoid !important;
+        border: 1px solid #000 !important;
+        padding: 20px !important;
+        margin: 15px 0 !important;
+      }
+      
+      .barcode-print-section .text-body,
+      .barcode-print-section .text-body-secondary {
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .barcode-print-section .font-monospace {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        color: #000 !important;
+      }
+      
+      /* Ensure icons print as text */
+      .barcode-print-section .mdi::before {
+        content: "📦" !important;
+      }
+    }
+  `]
 })
-export class PlacardFormComponent {
+export class PlacardFormComponent implements AfterViewInit, OnDestroy {
+  private barcodeLibraryLoaded = false;
+  private formSubscription: any;
+
   constructor(
     private placardService: PlacardService
   ) { }
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
+    this.loadBarcodeLibrary();
+    
+    // Subscribe to form changes to regenerate barcode
+    this.formSubscription = this.form.valueChanges.subscribe(() => {
+      setTimeout(() => this.generateBarcode(), 100);
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // Generate barcode after view init if data is available
+    setTimeout(() => this.generateBarcode(), 500);
+  }
+
+  ngOnDestroy(): void {
+    if (this.formSubscription) {
+      this.formSubscription.unsubscribe();
+    }
+  }
+
+  private loadBarcodeLibrary(): void {
+    if (this.barcodeLibraryLoaded || (window as any).JsBarcode) {
+      this.barcodeLibraryLoaded = true;
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+    script.onload = () => {
+      this.barcodeLibraryLoaded = true;
+      this.generateBarcode();
+    };
+    document.head.appendChild(script);
+  }
+
+  private generateBarcode(): void {
+    if (!this.barcodeLibraryLoaded || !(window as any).JsBarcode) {
+      return;
+    }
+
+    const soNumber = this.f.eyefi_so_number?.value;
+    const lineNumber = this.f.line_number?.value;
+    
+    if (!soNumber || !lineNumber) {
+      return;
+    }
+
+    const barcodeValue = `${soNumber}-${lineNumber}`;
+    const elementId = `placard-barcode-${soNumber}-${lineNumber}`;
+    
+    setTimeout(() => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        try {
+          (window as any).JsBarcode(`#${elementId}`, barcodeValue, {
+            format: "CODE128",
+            width: 3,           // Increased width for better print quality
+            height: 60,         // Increased height for better scanning
+            displayValue: false,
+            margin: 8,          // More margin for cleaner printing
+            background: "#ffffff",
+            lineColor: "#000000",
+            fontSize: 0,        // Disable built-in text (we have our own)
+            textMargin: 0,
+            quiet: 10           // Quiet zone for better scanning
+          });
+        } catch (error) {
+          console.error('Error generating barcode:', error);
+        }
+      }
+    }, 100);
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
@@ -117,6 +254,9 @@ export class PlacardFormComponent {
         });
 
       this.form.enable();
+      
+      // Generate barcode after form data is loaded
+      setTimeout(() => this.generateBarcode(), 200);
     } catch (err) {
       this.form.disable();
     }

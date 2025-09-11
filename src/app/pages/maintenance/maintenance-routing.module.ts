@@ -14,11 +14,12 @@ const routes: Routes = [
         path: "user",
         loadChildren: () =>
           import("./user/user-routing.module").then((m) => m.UserRoutingModule),
-        data: { preload: true },
+        canActivate: [AccessGuard],
+        runGuardsAndResolvers: "always",
       },
       {
         path: "signatures",
-        component:SignaturesComponent,
+        component: SignaturesComponent,
         canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
@@ -54,4 +55,4 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
-export class MaintenanceRoutingModule {}
+export class MaintenanceRoutingModule { }

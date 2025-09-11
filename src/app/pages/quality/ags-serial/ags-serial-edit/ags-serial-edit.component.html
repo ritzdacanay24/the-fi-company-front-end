@@ -68,7 +68,7 @@
           <button type="button" class="btn btn-outline-info me-2" [disabled]="isLoading" (click)="onPrint()">
             <i class="mdi mdi-printer me-1"></i>Print Label
           </button>
-          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading || isFormDisabled" (click)="onSubmit()">
             @if (isLoading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Updating...

@@ -1,37 +1,97 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
 
-        <div class="input-group input-group-sm ms-3 me-3" style="min-width:200px;max-width: 200px;">
-          <select class="form-select form-select-sm" [(ngModel)]="printFormLanguage">
-            <option selected>Choose...</option>
-            <option *ngFor="let row of printFormOptions" [value]="row.value">{{row.name}}</option>
-          </select>
-          <label class="input-group-text pointer" for="inputGroupSelect02" (click)="onPrint(printFormLanguage)">Print</label>
-        </div>
-
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-      </div>
-      <div class="card-body" style="min-height:300;height: calc(100vh - 230px);overflow:auto">
-        <app-safety-incident-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
-          (setOnPrintEmitter)="onPrint = $event"></app-safety-incident-form>
-
-
-        <div class="mt-3">
-          <div class="form-group">
-            <label for="file">Upload Supporting documents (photos, reports etc)</label>
-            <input id="file" type="file" multiple class="form-control" #myInput (change)="onFileChange($event)">
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" *ngIf="goBack"
+            title="Back to Safety Incident List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-warning bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px;">
+            <i class="mdi mdi-shield-alert text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-warning">{{title}}</h2>
+            <p class="text-muted mb-0">Report safety incidents, near misses, and workplace hazards for investigation and
+              follow-up</p>
           </div>
         </div>
 
+        <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-warning me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-warning mb-2">Creating a New Safety Incident Report</h6>
+              <p class="mb-0">
+                Complete all relevant sections to ensure proper incident tracking and investigation.
+                Incident ID will be <strong>automatically assigned</strong> upon submission.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-footer d-flex d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-safety-incident-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
+            (setOnPrintEmitter)="onPrint = $event"></app-safety-incident-form>
+
+          <!-- File Upload Section -->
+          <div class="mt-4 pt-4 border-top">
+            <div class="mb-3">
+              <h3 class="h6 mb-1">Supporting Documentation</h3>
+              <p class="text-muted mb-0 small">
+                Upload photos, reports, or other relevant documents to support the incident report.
+              </p>
+            </div>
+            <div class="mb-3">
+              <label for="file" class="form-label">Upload Supporting Documents</label>
+              <input id="file" type="file" multiple class="form-control" #myInput (change)="onFileChange($event)">
+              <div class="form-text">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Accepted file types: images, PDFs, documents. Maximum 10MB per file.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <div class="me-auto">
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle me-2" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="mdi mdi-printer me-1"></i>Print Form
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <h6 class="dropdown-header">Select Language</h6>
+                </li>
+                <li *ngFor="let row of printFormOptions">
+                  <a class="dropdown-item" href="#" (click)="onPrint(row.value)">
+                    <i class="mdi mdi-translate me-2"></i>{{row.name}}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-warning" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Submitting Report...
+            } @else {
+            <i class="mdi mdi-shield-check me-1"></i>Submit Safety Report
+            }
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
 </div>

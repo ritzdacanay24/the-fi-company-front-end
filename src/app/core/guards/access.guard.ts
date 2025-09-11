@@ -23,6 +23,7 @@ export class AccessGuard {
     if (currentUser) {
       //console.log('Running CanActivate')
       //return true
+      console.log("🔗 Current URL:", state.url);
 
       let d = state.url.split("?")[0];
 
@@ -48,6 +49,7 @@ export class AccessGuard {
       //Check server if user has access to file.
       let accessCheck = res && res.page_access_id != null;
 
+      console.log("🔗 Current URL:", accessCheck);
       if (accessCheck) return true;
 
       this.router.navigate(["dashboard/access-denied"], {

@@ -152,7 +152,7 @@ export class SafetyIncidentListComponent implements OnInit {
 
   searchName = "";
 
-  title = "Safety Incident List";
+  title = "Safety Incidents";
 
   gridApi: GridApi;
 
