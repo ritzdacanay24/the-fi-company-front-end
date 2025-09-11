@@ -85,12 +85,13 @@
           }@else if(hasItems(menu)){
           <a title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="!menu.isCollapsed"
             data-bs-toggle="collapse" (click)="toggleItem(menu)" class="nav-item nav-link">
-            <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.parent_id == 0"></i>
+            <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class=""> {{ menu.label }} </span>
           </a>
           }@else{
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
             (click)="updateActive($event)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
+            <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             {{ menu.label }}
 
             <i style="position:absolute;right:10px" *ngIf="menu.showStar && !menu.showStarColor"
