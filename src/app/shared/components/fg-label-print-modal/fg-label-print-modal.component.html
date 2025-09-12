@@ -17,69 +17,144 @@
 
 <div class="modal-body" *ngIf="!isLoading">
 
-  <div class="row">
-    <div class="col mb-3">
-      <p>PO number: {{poNumber}}</p>
-      <p>Part number: {{customerPartNumber || partNumber}}</p>
-    </div>
-  </div>
+  <form class="settings-form" autocomplete="off">
+    <div class="body">
 
-  <div class="row">
-    <div class="col mb-3">
-      <label class="form-label">Customer CO#/POR#/SO#</label>
-      <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer CO#/POR#/SO#"
-        [(ngModel)]="customerCo">
-    </div>
-  </div>
+      <!-- Order Information Section -->
+      <div class="mb-4 pb-4 border-bottom">
+        <div class="mb-3">
+          <h3 class="h5 mb-1">Order Information</h3>
+          <p class="text-muted mb-0">
+            Purchase order and part number details for this label.
+          </p>
+        </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <label class="form-label">WO #</label>
-      <input type="text" class="form-control" name="customerCo" placeholder="Enter WO #" [(ngModel)]="woNumber">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label">Customer Asset Tag #</label>
-
-      <div class="input-group">
-        <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
-        <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer Asset Tag #"
-          [(ngModel)]="customerAssetTagNumber">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">PO Number</label>
+            <input type="text" class="form-control" readonly [value]="poNumber">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Purchase order number (read-only).
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Part Number</label>
+            <input type="text" class="form-control" readonly [value]="customerPartNumber || partNumber">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Customer or internal part number (read-only).
+            </div>
+          </div>
+        </div>
       </div>
 
-    </div>
+      <!-- Customer References Section -->
+      <div class="mb-4 pb-4 border-bottom">
+        <div class="mb-3">
+          <h3 class="h5 mb-1">Customer References</h3>
+          <p class="text-muted mb-0">
+            Customer order references and work order information.
+          </p>
+        </div>
 
-    <div class="col-sm mb-3">
-      <label class="form-label">Eyefi Serial Tag</label>
-      <input type="text" class="form-control" name="eyefiSerialTag" placeholder="Enter Eyefi Serial Tag"
-        [(ngModel)]="eyefiSerialTag">
-    </div>
-  </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Customer CO#/POR#/SO#</label>
+            <input type="text" class="form-control" name="customerCo" placeholder="Enter Customer CO#/POR#/SO#"
+              [(ngModel)]="customerCo">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Customer order, purchase order, or sales order number.
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">WO #</label>
+            <input type="text" class="form-control" name="woNumber" placeholder="Enter WO #" [(ngModel)]="woNumber">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Work order number for manufacturing reference.
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- Asset Identification Section -->
+      <div class="mb-4 pb-4 border-bottom">
+        <div class="mb-3">
+          <h3 class="h5 mb-1">Asset Identification</h3>
+          <p class="text-muted mb-0">
+            Serial numbers and asset tags for tracking and identification.
+          </p>
+        </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <label class="form-label">Pallet Count</label>
-      <input type="text" class="form-control" name="customerCo" placeholder="Enter Pallet Count"
-        [(ngModel)]="palletCount">
-    </div>
-  </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Customer Asset Tag #</label>
+            <div class="input-group">
+              <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
+              <input type="text" class="form-control" name="customerAssetTag" placeholder="Enter Customer Asset Tag #"
+                [(ngModel)]="customerAssetTagNumber">
+            </div>
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Customer's asset identification number. Click Search to lookup.
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Eyefi Serial Tag</label>
+            <input type="text" class="form-control" name="eyefiSerialTag" placeholder="Enter Eyefi Serial Tag"
+              [(ngModel)]="eyefiSerialTag">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Internal Eyefi serial number for tracking.
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <div class="row">
-    <div class="col">
-      <label class="form-label">Total Labels</label>
-      <input type="text" class="form-control" name="totalLabels" placeholder="Enter Total Labels"
-        [(ngModel)]="totalLabels">
-    </div>
-    <div class="col">
-      <label class="form-label">Qty Per Label</label>
-      <input type="text" class="form-control" name="qtyPerLabel" placeholder="Enter Qty Per Label"
-        [(ngModel)]="qtyPerLabel">
-    </div>
-  </div>
+      <!-- Label Configuration Section -->
+      <div class="mb-4">
+        <div class="mb-3">
+          <h3 class="h5 mb-1">Label Configuration</h3>
+          <p class="text-muted mb-0">
+            Pallet count and label quantity settings for printing.
+          </p>
+        </div>
 
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Pallet Count</label>
+            <input type="text" class="form-control" name="palletCount" placeholder="Enter Pallet Count"
+              [(ngModel)]="palletCount">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Number of pallets for this shipment.
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Total Labels</label>
+            <input type="text" class="form-control" name="totalLabels" placeholder="Enter Total Labels"
+              [(ngModel)]="totalLabels">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Total number of labels to print.
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Qty Per Label</label>
+            <input type="text" class="form-control" name="qtyPerLabel" placeholder="Enter Qty Per Label"
+              [(ngModel)]="qtyPerLabel">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Quantity of items represented per label.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- end body container -->
+  </form>
 
 </div>
 <div class="modal-footer">

@@ -30,6 +30,8 @@ export class NcrCorrectiveActionFormComponent {
 
   formData;
 
+  @Input() isFormDisabled = false;
+
   get f() {
     return this.form.controls;
   }

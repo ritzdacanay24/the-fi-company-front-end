@@ -1,26 +1,6 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
-      
-      <!-- Page Header with Context -->
-      <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div class="d-flex align-items-center">
-            <div class="bg-danger bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-              <i class="mdi mdi-alert-circle text-white fs-4"></i>
-            </div>
-            <div>
-              <h2 class="mb-1 text-danger">{{title}}</h2>
-              <p class="text-muted mb-0">Non-Conformance Record management and corrective action tracking</p>
-            </div>
-          </div>
-          <div>
-            <button type="button" (click)="onDownloadAsPdf()" class="btn btn-outline-secondary" [disabled]="isLoading">
-              <i class="mdi mdi-file-pdf-box text-danger me-2"></i> Download PDF
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
@@ -58,11 +38,16 @@
         </div>
         
         <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
-          <button type="button" class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">
-            <i class="mdi mdi-content-save me-1"></i>Update NCR
-          </button>
-          <button type="button" class="btn btn-success" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">
-            <i class="mdi mdi-check-circle-outline me-1"></i>Update & Close NCR
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" [disabled]="isLoading || this.form?.disabled" (click)="onSubmit()">
+              <i class="mdi mdi-content-save me-1"></i>Update NCR
+            </button>
+            <button type="button" class="btn btn-success" [disabled]="isLoading || this.form?.disabled" (click)="onSubmitAndClose()">
+              <i class="mdi mdi-check-circle-outline me-1"></i>Update & Close NCR
+            </button>
+          </div>
+          <button type="button" (click)="onDownloadAsPdf()" class="btn btn-outline-secondary" [disabled]="isLoading">
+            <i class="mdi mdi-file-pdf-box text-danger me-2"></i> Download PDF
           </button>
         </div>
       </div>

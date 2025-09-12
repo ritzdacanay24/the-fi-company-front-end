@@ -12,8 +12,18 @@
       </div>
 
       <div class="row">
-        <div class="col-12 mb-3">
-          <app-so-search (notifyParent)="notifyParent($event)" [value]="f.eyefi_so_number?.value"></app-so-search>
+        <div class="col-12 mb-3" *ngIf="!disabled">
+          <app-so-search (notifyParent)="notifyParent($event)" [value]="f.eyefi_so_number?.value" [disabled]="disabled"></app-so-search>
+        </div>
+        
+        <!-- Read-only display for existing records -->
+        <div class="col-12 mb-3" *ngIf="disabled && f.eyefi_so_number?.value">
+          <label class="form-label">Sales Order Number</label>
+          <input type="text" class="form-control" readonly [value]="f.eyefi_so_number?.value">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Associated sales order number (read-only).
+          </div>
         </div>
       </div>
     </div>
@@ -79,7 +89,7 @@
         <div class="col-md-6 mb-3">
           <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
             [ngClass]="{ 'is-invalid': submitted && f.eyefi_wo_number.errors }" [value]="f.eyefi_wo_number.value"
-            form_label="Eyefi WO Number"></app-qad-wo-search>
+            form_label="Eyefi WO Number" [disabled]="disabled"></app-qad-wo-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Manufacturing work order number reference.
@@ -165,7 +175,7 @@
         <div class="col-md-6 mb-3">
           <app-qad-customer-part-search [form_label]="'Customer Part Number'" (notifyParent)="getCustomerPartNumber($event)"
             [ngClass]="{ 'is-invalid': submitted && f.customer_part_number.errors }"
-            [value]="f.customer_part_number.value"></app-qad-customer-part-search>
+            [value]="f.customer_part_number.value" [disabled]="disabled"></app-qad-customer-part-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Customer's internal part number reference.
@@ -189,7 +199,8 @@
             Customer Serial Tag
           </label>
           <div class="input-group">
-            <span class="input-group-text pointer" id="basic-addon1" (click)="getSerialNumberInfo()">Search</span>
+            <span class="input-group-text pointer" [ngClass]="{'disabled': disabled}" 
+                  id="basic-addon1" (click)="!disabled && getSerialNumberInfo()">Search</span>
             <input type="text" class="form-control" name="customer_serial_tag" formControlName="customer_serial_tag"
               placeholder="Enter customer serial tag "
               [ngClass]="{ 'is-invalid': submitted && f.customer_serial_tag.errors }" />

@@ -70,22 +70,44 @@
         <div class="col-md-2 mb-3">
           <label for="acc" class="form-label">Accepted</label>
           <input type="number" class="form-control" id="acc" formControlName="acc" placeholder="0">
+          <div class="form-text">
+            <small class="text-muted">Number of parts that passed inspection.</small>
+          </div>
         </div>
         <div class="col-md-2 mb-3">
           <label for="rej" class="form-label">Rejected</label>
           <input type="number" class="form-control" id="rej" formControlName="rej" placeholder="0">
+          <div class="form-text">
+            <small class="text-muted">Number of parts that failed inspection.</small>
+          </div>
         </div>
         <div class="col-md-2 mb-3">
           <label for="sample_size" class="form-label">Sample Size</label>
           <input type="number" class="form-control" id="sample_size" formControlName="sample_size" placeholder="0">
+          <div class="form-text">
+            <small class="text-muted">Total quantity inspected (Accepted + Rejected).</small>
+          </div>
         </div>
-        <div class="col-md-3 mb-3">
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
           <label for="dept_operator" class="form-label">Department/Operator</label>
           <input type="text" class="form-control" id="dept_operator" formControlName="dept_operator" placeholder="Dept/Operator">
+          <div class="form-text">
+            <small class="text-muted">Department or operator responsible for the work when the issue was found.</small>
+          </div>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-6 mb-3">
           <label for="initiated_by" class="form-label">Initiated By</label>
-          <input type="text" class="form-control" id="initiated_by" formControlName="initiated_by" placeholder="Enter name">
+          <div class="input-group">
+            <input type="text" class="form-control" id="initiated_by" formControlName="initiated_by" placeholder="Enter name">
+            <button type="button" class="btn btn-outline-secondary" (click)="fillCurrentUser('initiated_by')"
+                    [disabled]="form.disabled"
+                    title="Use my name">
+              <i class="mdi mdi-account-plus"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -108,6 +130,9 @@
               <label class="form-check-label" [for]="'ncr_type_' + i">{{row}}</label>
             </div>
           </div>
+          <div class="form-text">
+            <small class="text-muted">Select the appropriate classification type(s) that best describe the nature of this non-conformance.</small>
+          </div>
         </div>
       </div>
 
@@ -118,11 +143,17 @@
             <option selected disabled value="null">Select complaint code</option>
             <option *ngFor="let row of complaint_codes" [value]="row.name">{{row.name}}</option>
           </select>
+          <div class="form-text">
+            <small class="text-muted">Select the code that best categorizes the type of complaint or non-conformance issue.</small>
+          </div>
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label">QIR Number</label>
           <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qir_number.value"
             [disabled]="this.form.disabled"></app-qir-search>
+          <div class="form-text">
+            <small class="text-muted">Quality Inspection Report number if this NCR is related to an existing QIR (optional).</small>
+          </div>
         </div>
       </div>
     </div>
@@ -141,6 +172,9 @@
           <label for="desc_of_defn_rej" class="form-label">Description of Deficiency/Rejection <span class="text-danger">*</span></label>
           <textarea type="text" class="form-control" id="desc_of_defn_rej" formControlName="desc_of_defn_rej"
                     placeholder="Describe the deficiency or rejection in detail..." rows="4"></textarea>
+          <div class="form-text">
+            <small class="text-muted">Include specific details about what was found, measurements if applicable, and how it deviates from specifications.</small>
+          </div>
         </div>
       </div>
     </div>
@@ -159,6 +193,9 @@
           <label for="cont_notes" class="form-label">Containment Actions</label>
           <textarea type="text" class="form-control" id="cont_notes" formControlName="cont_notes" rows="3"
                     placeholder="Describe containment actions taken..."></textarea>
+          <div class="form-text">
+            <small class="text-muted">Describe immediate actions taken to prevent further nonconforming product from being produced, shipped, or used.</small>
+          </div>
         </div>
       </div>
 
@@ -170,6 +207,22 @@
               <input type="checkbox" class="form-check-input" [formControlName]="i" [id]="'cont_type_' + i">
               <label class="form-check-label" [for]="'cont_type_' + i">{{row}}</label>
             </div>
+          </div>
+          <div class="form-text">
+            <small class="text-muted">Select the type(s) of containment action implemented (e.g., quarantine, segregation, production halt).</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Disposition Details</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="fillCurrentUserDetails('disposition')"
+                    [disabled]="form.disabled"
+                    title="Auto-fill with my information">
+              <i class="mdi mdi-account-plus me-1"></i>Use My Name
+            </button>
           </div>
         </div>
       </div>
@@ -196,6 +249,9 @@
           <label for="dspn_desc" class="form-label">Disposition/Rework/Repair Instructions</label>
           <textarea type="text" class="form-control" id="dspn_desc" formControlName="dspn_desc" rows="3"
                     placeholder="Enter disposition instructions..."></textarea>
+          <div class="form-text">
+            <small class="text-muted">Specify what should be done with the nonconforming product (e.g., rework, scrap, use-as-is, return to supplier).</small>
+          </div>
         </div>
       </div>
     </div>
@@ -214,6 +270,9 @@
           <label for="impact_assesment" class="form-label">Impact Assessment</label>
           <textarea type="text" class="form-control" id="impact_assesment" formControlName="impact_assesment" rows="3"
                     placeholder="Assess impact on other products and processes..."></textarea>
+          <div class="form-text">
+            <small class="text-muted">Evaluate whether this issue could affect other products, batches, or processes that may need review.</small>
+          </div>
         </div>
       </div>
     </div>
@@ -232,6 +291,19 @@
           <label for="icm_notes" class="form-label">Immediate Correction Made</label>
           <textarea type="text" class="form-control" id="icm_notes" formControlName="icm_notes" rows="3"
                     placeholder="Describe immediate corrections made..."></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Correction Details</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="fillCurrentUserDetails('immediate_correction')"
+                    [disabled]="form.disabled"
+                    title="Auto-fill with my information">
+              <i class="mdi mdi-account-plus me-1"></i>Use My Name
+            </button>
+          </div>
         </div>
       </div>
 
@@ -271,6 +343,19 @@
                      name="ca_action_req" [value]="row" formControlName="ca_action_req">
               <label class="form-check-label" [for]="'ca_action_req_' + row">{{row}}</label>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0">Issuance Details</label>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="fillCurrentUserDetails('issuance')"
+                    [disabled]="form.disabled"
+                    title="Auto-fill with my information">
+              <i class="mdi mdi-account-plus me-1"></i>Use My Name
+            </button>
           </div>
         </div>
       </div>

@@ -1,77 +1,201 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <div class="row">
-    <div class="col mb-3">
-      <label for="ca_cont_immed_action_taken" class="form-label">Containment/Immediate Action
-        Taken (Only need to be completed if CA is issued to Supplier)</label>
-      <textarea type="text" class="form-control" id="ca_cont_immed_action_taken"
-        formControlName="ca_cont_immed_action_taken" rows="10"
-        placeholder="Enter Containment/Immediate Action Taken (Only need to be completed if CA is issued to Supplier)"></textarea>
+  <!-- Form Lock Status Alert -->
+  <div class="alert alert-info d-flex align-items-center mb-4" *ngIf="isFormDisabled">
+    <i class="mdi mdi-lock-outline me-2 fs-5"></i>
+    <div>
+      <strong>Read-Only Mode:</strong> This form is locked to prevent modifications and maintain data integrity.
     </div>
   </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <label for="ca_root_cause" class="form-label">Root Cause (Attach additional documentation if
-        nescessary)</label>
-      <textarea type="text" class="form-control" id="ca_root_cause" formControlName="ca_root_cause" rows="10"
-        placeholder="Enter Root Cause (Attach additional documentation if nescessary)"></textarea>
-    </div>
-  </div>
+  <div class="body">
 
-  <div class="row">
-    <div class="col mb-3">
-      <label for="ca_taken_to_prevent_recurr" class="form-label">Correction Action(s) Taken to
-        Prevent Reoccurrence</label>
-      <textarea type="text" class="form-control" id="ca_taken_to_prevent_recurr"
-        formControlName="ca_taken_to_prevent_recurr" rows="10"
-        placeholder="Enter Correction Action(s) Taken to Prevent Reoccurrence">
-              </textarea>
-    </div>
-  </div>
+    <!-- Immediate Actions Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Containment & Immediate Actions</h3>
+        <p class="text-muted mb-0">
+          Immediate containment actions taken to address the non-conformance (required for supplier-issued CAs).
+        </p>
+      </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <div class="input-group-text">Planned CA Implementation Date:</div>
+      <div class="row">
+        <div class="col mb-3">
+          <label for="ca_cont_immed_action_taken" class="form-label">
+            Containment/Immediate Action Taken
+          </label>
+          <textarea type="text" class="form-control" id="ca_cont_immed_action_taken"
+            formControlName="ca_cont_immed_action_taken" rows="6"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_cont_immed_action_taken.errors }"
+            placeholder="Describe the immediate actions taken to contain the issue..."></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Only required to be completed if CA is issued to a supplier.
+          </div>
         </div>
-        <input type="date" class="form-control" id="planned_ca_impl_dt" formControlName="planned_ca_impl_dt">
       </div>
     </div>
-  </div>
 
-  <div class="row">
-    <div class="col-sm-6 mb-3">
-      <label for="ca_by" class="form-label">Corrective Action By</label>
-      <input type="text" class="form-control" id="ca_by" formControlName="ca_by"
-        placeholder="Enter Corrective Action By">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="ca_title" class="form-label">Title</label>
-      <input type="text" class="form-control" id="ca_title" formControlName="ca_title" placeholder="Enter Title">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="ca_dt" class="form-label">Date</label>
-      <input type="date" class="form-control" id="ca_dt" formControlName="ca_dt">
-    </div>
-  </div>
+    <!-- Root Cause Analysis Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Root Cause Analysis</h3>
+        <p class="text-muted mb-0">
+          Detailed analysis of the underlying cause of the non-conformance.
+        </p>
+      </div>
 
-  <div class="row">
-    <div class="col-sm-6 mb-3">
-      <label for="ca_impl_by" class="form-label">Corrective Action Implemented By</label>
-      <input type="text" class="form-control" id="ca_impl_by" formControlName="ca_impl_by"
-        placeholder="Enter Corrective Action Implemented By">
+      <div class="row">
+        <div class="col mb-3">
+          <label for="ca_root_cause" class="form-label">
+            Root Cause Analysis
+          </label>
+          <textarea type="text" class="form-control" id="ca_root_cause" formControlName="ca_root_cause" rows="6"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_root_cause.errors }"
+            placeholder="Describe the root cause analysis and findings..."></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Attach additional documentation if necessary to support the analysis.
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="col-sm mb-3">
-      <label for="ca_impl_title" class="form-label">Title</label>
-      <input type="text" class="form-control" id="ca_impl_title" formControlName="ca_impl_title"
-        placeholder="Enter Title">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="ca_impl_dt" class="form-label">Implementation Dt:</label>
-      <input type="date" class="form-control" id="ca_impl_dt" formControlName="ca_impl_dt">
-    </div>
-  </div>
 
+    <!-- Corrective Actions Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Corrective Actions</h3>
+        <p class="text-muted mb-0">
+          Specific actions taken to prevent reoccurrence of the non-conformance.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label for="ca_taken_to_prevent_recurr" class="form-label">
+            Corrective Action(s) Taken to Prevent Reoccurrence
+          </label>
+          <textarea type="text" class="form-control" id="ca_taken_to_prevent_recurr"
+            formControlName="ca_taken_to_prevent_recurr" rows="6"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_taken_to_prevent_recurr.errors }"
+            placeholder="Detail the corrective actions implemented to prevent reoccurrence..."></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Describe specific measures and process changes implemented.
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="planned_ca_impl_dt" class="form-label">
+            Planned CA Implementation Date
+          </label>
+          <input type="date" class="form-control" id="planned_ca_impl_dt" formControlName="planned_ca_impl_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.planned_ca_impl_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Target date for implementing corrective actions.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Assignment Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Action Assignment</h3>
+        <p class="text-muted mb-0">
+          Personnel responsible for developing and implementing corrective actions.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="ca_by" class="form-label">
+            Corrective Action By
+          </label>
+          <input type="text" class="form-control" id="ca_by" formControlName="ca_by"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_by.errors }"
+            placeholder="Enter person responsible">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person responsible for developing corrective actions.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="ca_title" class="form-label">
+            Title
+          </label>
+          <input type="text" class="form-control" id="ca_title" formControlName="ca_title"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_title.errors }"
+            placeholder="Enter job title">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Job title or position.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="ca_dt" class="form-label">
+            Date
+          </label>
+          <input type="date" class="form-control" id="ca_dt" formControlName="ca_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date corrective action was developed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Verification Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Implementation Verification</h3>
+        <p class="text-muted mb-0">
+          Verification of corrective action implementation and effectiveness.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="ca_impl_by" class="form-label">
+            Corrective Action Implemented By
+          </label>
+          <input type="text" class="form-control" id="ca_impl_by" formControlName="ca_impl_by"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_impl_by.errors }"
+            placeholder="Enter implementer name">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person who implemented the corrective actions.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="ca_impl_title" class="form-label">
+            Title
+          </label>
+          <input type="text" class="form-control" id="ca_impl_title" formControlName="ca_impl_title"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_impl_title.errors }"
+            placeholder="Enter job title">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Job title or position of implementer.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="ca_impl_dt" class="form-label">
+            Implementation Date
+          </label>
+          <input type="date" class="form-control" id="ca_impl_dt" formControlName="ca_impl_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.ca_impl_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Actual date corrective actions were implemented.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- end body container -->
 </form>

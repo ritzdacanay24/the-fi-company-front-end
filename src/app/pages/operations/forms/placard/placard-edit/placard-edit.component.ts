@@ -215,7 +215,7 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  title = "Edit";
+  title = "View Placard";
 
   form: MyFormGroup<IPlacardForm>;
 
@@ -224,6 +224,8 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = false;
 
   submitted = false;
+
+  isFormDisabled = false; // Add property to control form disabled state
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -248,6 +250,11 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.form.patchValue(this.data);
+      
+      // Disable the form in edit mode
+      this.isFormDisabled = true;
+      this.form.disable();
+      
       this.isLoading = false;
       
       // Generate barcodes after data is loaded

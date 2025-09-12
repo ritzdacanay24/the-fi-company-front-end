@@ -44,13 +44,13 @@ export class NcrOverviewComponent implements OnInit {
 
   @Input() id = null;
 
-  selectedViewType = "CAR Overview";
+  selectedViewType = "Corrective Action Request Overview";
 
   goBackUrl = null;
 
   data = null;
 
-  title = "CAR Overview";
+  title = "Corrective Action Request Overview";
 
   form: FormGroup;
 

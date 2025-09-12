@@ -161,4 +161,49 @@ export class NcrFormComponent {
       title: "Email successfully sent.",
     });
   }
+
+  // Fill current user name for single field
+  fillCurrentUser(fieldName: string) {
+    const currentUser = this.authenticationService.currentUserValue;
+    if (currentUser?.full_name) {
+      this.form.get(fieldName)?.patchValue(currentUser.full_name);
+    }
+  }
+
+  // Fill current user details for multiple related fields
+  fillCurrentUserDetails(section: string) {
+    const currentUser = this.authenticationService.currentUserValue;
+    const today = moment().format('YYYY-MM-DD');
+    
+    if (section === 'immediate_correction') {
+      // Auto-fill immediate correction fields
+      if (currentUser?.full_name) {
+        this.form.get('icm_dspn_by')?.patchValue(currentUser.full_name);
+      }
+      if (currentUser?.title || currentUser?.position) {
+        this.form.get('icm_dspn_title')?.patchValue(currentUser.title || currentUser.position);
+      }
+      this.form.get('icm_dspn_dt')?.patchValue(today);
+    }
+    
+    if (section === 'disposition') {
+      // Auto-fill disposition fields
+      if (currentUser?.full_name) {
+        this.form.get('cont_dspn_by')?.patchValue(currentUser.full_name);
+      }
+      if (currentUser?.title || currentUser?.position) {
+        this.form.get('cont_dspn_title')?.patchValue(currentUser.title || currentUser.position);
+      }
+      this.form.get('cont_dspn_dt')?.patchValue(today);
+    }
+    
+    if (section === 'issuance') {
+      // Auto-fill issuance fields (but NOT the due date)
+      if (currentUser?.full_name) {
+        this.form.get('iss_by')?.patchValue(currentUser.full_name);
+      }
+      this.form.get('iss_dt')?.patchValue(today);
+      // Note: ca_due_dt (due date) is intentionally NOT auto-filled
+    }
+  }
 }

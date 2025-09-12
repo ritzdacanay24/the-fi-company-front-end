@@ -1,37 +1,122 @@
-<form [formGroup]="form" autocomplete="off">
-  <div class="row">
-    <div class="col-sm-8 mb-3">
-      <label for="verif_of_ca_by" class="form-label">Verification of CA By:</label>
-      <input type="text" class="form-control" id="verif_of_ca_by" formControlName="verif_of_ca_by"
-        placeholder="Enter name">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="verif_of_ca_dt" class="form-label">Date</label>
-      <input type="date" class="form-control" id="verif_of_ca_dt" formControlName="verif_of_ca_dt">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
+
+  <!-- Form Lock Status Alert -->
+  <div class="alert alert-info d-flex align-items-center mb-4" *ngIf="isFormDisabled">
+    <i class="mdi mdi-lock-outline me-2 fs-5"></i>
+    <div>
+      <strong>Read-Only Mode:</strong> This form is locked to prevent modifications and maintain data integrity.
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm-8 mb-3">
-      <label for="eff_verif_of_ca_by" class="form-label">Effectiveness Verification of CA
-        By:</label>
-      <input type="text" class="form-control" id="eff_verif_of_ca_by" formControlName="eff_verif_of_ca_by"
-        placeholder="Enter name">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="eff_verif_of_ca_dt" class="form-label">Date</label>
-      <input type="date" class="form-control" id="eff_verif_of_ca_dt" formControlName="eff_verif_of_ca_dt">
-    </div>
-  </div>
+  <div class="body">
 
-  <div class="row">
-    <div class="col-sm-8 mb-3">
-      <label for="cmt_cls_by" class="form-label">Comments/Closure By:</label>
-      <input type="text" class="form-control" id="cmt_cls_by" formControlName="cmt_cls_by" placeholder="Enter name">
+    <!-- Corrective Action Verification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Corrective Action Verification</h3>
+        <p class="text-muted mb-0">
+          Initial verification that corrective actions have been properly implemented as planned.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 mb-3">
+          <label for="verif_of_ca_by" class="form-label">
+            Verification of CA By
+          </label>
+          <input type="text" class="form-control" id="verif_of_ca_by" formControlName="verif_of_ca_by"
+            [ngClass]="{ 'is-invalid': submitted && f.verif_of_ca_by.errors }"
+            placeholder="Enter verifier name">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person responsible for verifying corrective action implementation.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="verif_of_ca_dt" class="form-label">
+            Verification Date
+          </label>
+          <input type="date" class="form-control" id="verif_of_ca_dt" formControlName="verif_of_ca_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.verif_of_ca_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date when verification was completed.
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="col-sm mb-3">
-      <label for="cmt_cls_dt" class="form-label">Date</label>
-      <input type="date" class="form-control" id="cmt_cls_dt" formControlName="cmt_cls_dt">
+
+    <!-- Effectiveness Verification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Effectiveness Verification</h3>
+        <p class="text-muted mb-0">
+          Assessment of the effectiveness of implemented corrective actions in preventing reoccurrence.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 mb-3">
+          <label for="eff_verif_of_ca_by" class="form-label">
+            Effectiveness Verification of CA By
+          </label>
+          <input type="text" class="form-control" id="eff_verif_of_ca_by" formControlName="eff_verif_of_ca_by"
+            [ngClass]="{ 'is-invalid': submitted && f.eff_verif_of_ca_by.errors }"
+            placeholder="Enter effectiveness verifier name">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person responsible for evaluating corrective action effectiveness.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="eff_verif_of_ca_dt" class="form-label">
+            Effectiveness Verification Date
+          </label>
+          <input type="date" class="form-control" id="eff_verif_of_ca_dt" formControlName="eff_verif_of_ca_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.eff_verif_of_ca_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date when effectiveness assessment was completed.
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <!-- Comments & Closure Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Comments & Closure</h3>
+        <p class="text-muted mb-0">
+          Final comments and formal closure of the non-conformance record.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 mb-3">
+          <label for="cmt_cls_by" class="form-label">
+            Comments/Closure By
+          </label>
+          <input type="text" class="form-control" id="cmt_cls_by" formControlName="cmt_cls_by"
+            [ngClass]="{ 'is-invalid': submitted && f.cmt_cls_by.errors }"
+            placeholder="Enter name of person closing NCR">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person responsible for final comments and NCR closure.
+          </div>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="cmt_cls_dt" class="form-label">
+            Closure Date
+          </label>
+          <input type="date" class="form-control" id="cmt_cls_dt" formControlName="cmt_cls_dt"
+            [ngClass]="{ 'is-invalid': submitted && f.cmt_cls_dt.errors }">
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Official date of NCR closure and completion.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- end body container -->
 </form>

@@ -279,6 +279,7 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
+  @Input() disabled = false;
 
   get f() {
     return this.form.controls;

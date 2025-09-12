@@ -19,6 +19,7 @@ export class NcrVerificationFormComponent {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
+  @Input() isFormDisabled = false;
 
   formData;
 
