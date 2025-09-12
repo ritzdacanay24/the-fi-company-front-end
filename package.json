@@ -57,6 +57,7 @@
     "angular2-recaptcha": "^1.1.0",
     "angular2-signaturepad": "^4.0.2",
     "angularx-flatpickr": "^7.3.0",
+    "angularx-qrcode": "^20.0.0",
     "apexcharts": "^3.44.0",
     "axios": "^1.2.2",
     "bootstrap": "5.3.3",

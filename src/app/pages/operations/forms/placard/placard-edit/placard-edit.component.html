@@ -1,32 +1,84 @@
-<div class="row" *ngIf="!data && !id">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-body" style="min-height:300px">
-        Please select from list.
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-alert-circle-outline text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Placard Selected</h4>
+          <p class="text-muted mb-4">Please select a placard from the list to view and edit details.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Go to Placard List
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
-      </div>
+      
     </div>
   </div>
 </div>
 
-<div class="row" [hidden]="!data && !id">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to Placard List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-dark bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-pencil text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-dark">{{title}}</h2>
+            <p class="text-muted mb-0" *ngIf="id">Edit existing placard record #{{id}}</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-dark border-dark border-opacity-25 bg-dark bg-opacity-10" role="alert" *ngIf="data && id">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-pencil-outline text-dark me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-dark mb-2">Edit Mode Active</h6>
+              <p class="mb-2">
+                You are currently editing placard record #{{id}}. Make necessary changes and click <strong>Update</strong> to save modifications.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-placard-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-placard-form>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-placard-form #placardForm (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-placard-form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-outline-dark me-2" [disabled]="isLoading" (click)="onPrint()">
+            <i class="mdi mdi-printer me-1"></i>Print Label
+          </button>
+          <button type="submit" class="btn btn-dark ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Updating...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Update Placard
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex" *ngIf="data && id">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-light ms-auto me-3" [disabled]="isLoading" (click)="onPrint()"> Print</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()"> Update </button>
-      </div>
+      
     </div>
   </div>
 </div>
@@ -34,9 +86,40 @@
 <div id="pickSheet">
   <div  class="d-none d-print-block" style="
   page-break-after: always;" *ngFor="let row of totalPrints; let  i = index">
-    <div class="margin-bottom-10" style="margin-bottom:20px">
-      <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
-        style="width: 230px;" />
+    
+    <!-- Top Section with Logo and QR/Barcode -->
+    <div class="d-flex justify-content-between align-items-start" style="margin-bottom:20px">
+      <!-- Logo on the left -->
+      <div>
+        <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+          style="width: 230px;" />
+      </div>
+      
+      <!-- QR Code/Barcode on the right - Show only on first page -->
+      <div *ngIf="row?.eyefi_so_number && row?.line_number && i === 0" style="text-align: right;">
+        <!-- QR Code Display -->
+        <div class="print-qr-container" *ngIf="codeType === 'qr'">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER QR CODE</div>
+          <qrcode
+            [qrdata]="getSalesOrderValue(row)"
+            [width]="80"
+            [errorCorrectionLevel]="'M'"
+            [colorDark]="'#000000'"
+            [colorLight]="'#FFFFFF'"
+            [margin]="1"
+            elementType="svg"
+            [cssClass]="'print-qr-code'">
+          </qrcode>
+          <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+        </div>
+
+        <!-- Barcode Display -->
+        <div class="print-barcode-container" *ngIf="codeType === 'barcode'">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER BARCODE</div>
+          <svg [id]="'print-barcode-' + i"></svg>
+          <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+        </div>
+      </div>
     </div>
     <div class="table-responsive">
       <table class="table table-bordered" style="font-size:25px; font-weight:600;">
@@ -94,17 +177,6 @@
             <td>{{row?.qty}}</td>
           </tr>
         </thead>
-        
-        <!-- Sales Order Barcode Section - Show only on first page -->
-        <tr *ngIf="row?.eyefi_so_number && row?.line_number && i === 0">
-          <td colspan="2" class="text-center p-0" style="border: none;">
-            <div class="print-barcode-container">
-              <div style="font-weight: bold; margin-bottom: 10px;">SALES ORDER BARCODE</div>
-              <svg [id]="'print-barcode-' + i"></svg>
-              <div class="print-barcode-text">{{row?.eyefi_so_number}}-{{row?.line_number}}</div>
-            </div>
-          </td>
-        </tr>
         
         <tr style="border: none;">
           <td class="text-center" colspan="2" rowspan="3" style="border: none;">

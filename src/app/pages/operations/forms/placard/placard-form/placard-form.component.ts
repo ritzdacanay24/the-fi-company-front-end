@@ -17,6 +17,7 @@ import { PlacardService } from "@app/core/api/operations/placard/placard.service
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
 import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
+import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   standalone: true,
@@ -27,18 +28,19 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
     SoSearchComponent,
     QadWoSearchComponent,
     QadCustomerPartSearchComponent,
+    QRCodeComponent,
   ],
   selector: "app-placard-form",
   templateUrl: "./placard-form.component.html",
   styles: [`
-    .barcode-container {
+    .barcode-container, .qr-code-container {
       padding: 10px;
       background: white;
       border: 1px solid #dee2e6;
       border-radius: 4px;
     }
     
-    .barcode-container svg {
+    .barcode-container svg, .qr-code-container canvas {
       max-width: 100%;
       height: auto;
     }
@@ -97,7 +99,11 @@ import { SoSearchComponent } from "@app/shared/components/so-search/so-search.co
 })
 export class PlacardFormComponent implements AfterViewInit, OnDestroy {
   private barcodeLibraryLoaded = false;
+  private qrCodeLibraryLoaded = false;
   private formSubscription: any;
+
+  // Code type toggle - default to QR code
+  codeType: 'qr' | 'barcode' = 'qr';
 
   constructor(
     private placardService: PlacardService
@@ -106,16 +112,17 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
     this.loadBarcodeLibrary();
+    this.loadQRCodeLibrary();
     
-    // Subscribe to form changes to regenerate barcode
+    // Subscribe to form changes to regenerate codes
     this.formSubscription = this.form.valueChanges.subscribe(() => {
-      setTimeout(() => this.generateBarcode(), 100);
+      setTimeout(() => this.generateCode(), 100);
     });
   }
 
   ngAfterViewInit(): void {
-    // Generate barcode after view init if data is available
-    setTimeout(() => this.generateBarcode(), 500);
+    // Generate code after view init if data is available
+    setTimeout(() => this.generateCode(), 500);
   }
 
   ngOnDestroy(): void {
@@ -134,9 +141,101 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
     script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
     script.onload = () => {
       this.barcodeLibraryLoaded = true;
-      this.generateBarcode();
+      this.generateCode();
     };
     document.head.appendChild(script);
+  }
+
+  private loadQRCodeLibrary(): void {
+    if (this.qrCodeLibraryLoaded || (window as any).QRCode) {
+      this.qrCodeLibraryLoaded = true;
+      console.log('QR Code library already loaded');
+      return;
+    }
+
+    console.log('Loading QR Code library...');
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+    script.onload = () => {
+      this.qrCodeLibraryLoaded = true;
+      console.log('QR Code library loaded successfully');
+      this.generateCode();
+    };
+    script.onerror = () => {
+      console.error('Failed to load QR Code library');
+    };
+    document.head.appendChild(script);
+  }
+
+  private generateCode(): void {
+    console.log('Generating code, type:', this.codeType);
+    if (this.codeType === 'qr') {
+      this.generateQRCode();
+    } else {
+      this.generateBarcode();
+    }
+  }
+
+  private generateQRCode(): void {
+    console.log('generateQRCode called, library loaded:', this.qrCodeLibraryLoaded, 'QRCode available:', !!(window as any).QRCode);
+    
+    if (!this.qrCodeLibraryLoaded || !(window as any).QRCode) {
+      console.log('QR Code library not ready, skipping generation');
+      return;
+    }
+
+    const soNumber = this.f.eyefi_so_number?.value;
+    const lineNumber = this.f.line_number?.value;
+    
+    console.log('SO Number:', soNumber, 'Line Number:', lineNumber);
+    
+    if (!soNumber || !lineNumber) {
+      console.log('Missing SO or Line number, skipping QR generation');
+      return;
+    }
+
+    const qrValue = `${soNumber}-${lineNumber}`;
+    const elementId = `placard-qrcode-${soNumber}-${lineNumber}`;
+    
+    console.log('Generating QR code with value:', qrValue, 'elementId:', elementId);
+    
+    setTimeout(() => {
+      const element = document.getElementById(elementId);
+      console.log('QR Element found:', !!element);
+      
+      if (element) {
+        // Clear existing content
+        element.innerHTML = '';
+        
+        // Create canvas element
+        const canvas = document.createElement('canvas');
+        element.appendChild(canvas);
+        
+        try {
+          (window as any).QRCode.toCanvas(canvas, qrValue, {
+            width: 120,
+            height: 120,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          }, (error: any) => {
+            if (error) {
+              console.error('QR Code generation failed:', error);
+              // Fallback: show text if QR generation fails
+              element.innerHTML = `<div class="text-center p-3 border"><small>QR Code<br>${qrValue}</small></div>`;
+            } else {
+              console.log('QR Code generated successfully');
+            }
+          });
+        } catch (error) {
+          console.error('QR Code generation error:', error);
+          // Fallback: show text if QR generation fails
+          element.innerHTML = `<div class="text-center p-3 border"><small>QR Code<br>${qrValue}</small></div>`;
+        }
+      }
+    }, 100);
   }
 
   private generateBarcode(): void {
@@ -255,11 +354,16 @@ export class PlacardFormComponent implements AfterViewInit, OnDestroy {
 
       this.form.enable();
       
-      // Generate barcode after form data is loaded
-      setTimeout(() => this.generateBarcode(), 200);
+      // Generate code after form data is loaded
+      setTimeout(() => this.generateCode(), 200);
     } catch (err) {
       this.form.disable();
     }
+  }
+
+  toggleCodeType(event: any): void {
+    this.codeType = event.target.checked ? 'barcode' : 'qr';
+    setTimeout(() => this.generateCode(), 100);
   }
 
   getWorkOrderNumber($event) {

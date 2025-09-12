@@ -50,7 +50,7 @@ export class QirEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit QIR";
+  title = "Edit Quality Incident Report";
 
   form: MyFormGroup<IQirForm>;
 

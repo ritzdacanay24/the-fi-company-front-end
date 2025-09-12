@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, AfterViewInit, OnDestroy } from "@angular/core";
+import { Component, Input, OnInit, AfterViewInit, OnDestroy, ViewChild } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -8,59 +8,113 @@ import { IPlacardForm } from "../placard-form/placard-form.type";
 import { PlacardFormComponent } from "../placard-form/placard-form.component";
 import { NAVIGATION_ROUTE } from "../placard-constant";
 import { PlacardService } from "@app/core/api/operations/placard/placard.service";
+import { QRCodeComponent } from 'angularx-qrcode';
 
 @Component({
   standalone: true,
-  imports: [SharedModule, PlacardFormComponent],
+  imports: [SharedModule, PlacardFormComponent, QRCodeComponent],
   selector: "app-placard-edit",
   templateUrl: "./placard-edit.component.html",
   styles: [`
-    .print-barcode-container {
-      padding: 10px;
+    .print-barcode-container, .print-qr-container {
+      padding: 8px;
       background: white;
       text-align: center;
-      border: 2px solid #000;
-      margin: 15px 0;
+      border: 1px solid #000;
+      margin: 0;
+      display: inline-block;
     }
     
     .print-barcode-container svg {
       display: block;
       margin: 0 auto;
-      width: 300px;
-      height: 80px;
+      width: 150px;
+      height: 40px;
     }
     
-    .print-barcode-text {
+    .print-qr-container canvas,
+    .print-qr-container svg {
+      display: block;
+      margin: 0 auto;
+      width: 80px !important;
+      height: 80px !important;
+    }
+    
+    .print-qr-code {
+      display: block !important;
+      margin: 0 auto !important;
+    }
+    
+    .print-code-text {
       font-family: monospace;
-      font-size: 16px;
+      font-size: 12px;
       font-weight: bold;
-      margin-top: 10px;
+      margin-top: 6px;
     }
     
     @media print {
-      .print-barcode-container {
+      .print-barcode-container, .print-qr-container {
         background: white !important;
-        border: 2px solid #000 !important;
+        border: 1px solid #000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         page-break-inside: avoid !important;
+        padding: 8px !important;
+        margin: 0 !important;
+        display: inline-block !important;
       }
       
       .print-barcode-container svg {
-        width: 300px !important;
-        height: 80px !important;
+        width: 150px !important;
+        height: 40px !important;
       }
       
-      .print-barcode-text {
+      .print-qr-container canvas,
+      .print-qr-container svg {
+        width: 80px !important;
+        height: 80px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print-qr-container qrcode {
+        display: block !important;
+      }
+      
+      .print-qr-container qrcode canvas,
+      .print-qr-container qrcode svg {
+        display: block !important;
+        margin: 0 auto !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print-qr-code {
+        display: block !important;
+        margin: 0 auto !important;
+      }
+      
+      .print-qr-code canvas,
+      .print-qr-code svg {
+        display: block !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print-code-text {
         color: #000 !important;
-        font-size: 16px !important;
+        font-size: 12px !important;
         font-weight: bold !important;
+        margin-top: 6px !important;
       }
     }
   `]
 })
 export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
   private barcodeLibraryLoaded = false;
+  
+  @ViewChild(PlacardFormComponent) placardFormComponent!: PlacardFormComponent;
+  
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -245,9 +299,13 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
         '<link type="text/css" rel="stylesheet" media="screen, print" href="' + pathCss + '" />' +
         '<script src="' + barcodeJs + '"></script>' +
         '<style>' +
-        '.print-barcode-container { padding: 10px; background: white !important; text-align: center; border: 2px solid #000 !important; margin: 15px 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
-        '.print-barcode-container svg { display: block; margin: 0 auto; width: 300px !important; height: 80px !important; }' +
-        '.print-barcode-text { font-family: monospace; font-size: 16px !important; font-weight: bold !important; margin-top: 10px; color: #000 !important; }' +
+        '.print-barcode-container, .print-qr-container { padding: 8px; background: white !important; text-align: center; border: 1px solid #000 !important; margin: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; display: inline-block !important; }' +
+        '.print-barcode-container svg { display: block; margin: 0 auto; width: 150px !important; height: 40px !important; }' +
+        '.print-qr-container canvas, .print-qr-container svg { display: block; margin: 0 auto; width: 80px !important; height: 80px !important; }' +
+        '.print-code-text { font-family: monospace; font-size: 12px !important; font-weight: bold !important; margin-top: 6px; color: #000 !important; }' +
+        '.d-flex { display: flex !important; }' +
+        '.justify-content-between { justify-content: space-between !important; }' +
+        '.align-items-start { align-items: flex-start !important; }' +
         '</style>' +
         '</head><body>' + printContents + '</body></html>'
       );
@@ -256,8 +314,8 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
       // Wait for the barcode library to load and then regenerate barcodes in the popup
       popupWin.onload = () => {
         setTimeout(() => {
-          // Only generate barcode for the first page (index 0)
-          if (this.totalPrints.length > 0) {
+          // Only generate barcode if barcode type is selected and for the first page (index 0)
+          if (this.codeType === 'barcode' && this.totalPrints.length > 0) {
             const row = this.totalPrints[0];
             const index = 0;
             if (row.eyefi_so_number && row.line_number) {
@@ -267,15 +325,15 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
                 if ((popupWin as any).JsBarcode) {
                   (popupWin as any).JsBarcode(`#${elementId}`, barcodeValue, {
                     format: "CODE128",
-                    width: 3,
-                    height: 80,
+                    width: 2,
+                    height: 40,
                     displayValue: false,
-                    margin: 10,
+                    margin: 5,
                     background: "#ffffff",
                     lineColor: "#000000",
                     fontSize: 0,
                     textMargin: 0,
-                    quiet: 10
+                    quiet: 5
                   });
                 }
               } catch (error) {
@@ -293,5 +351,17 @@ export class PlacardEditComponent implements OnInit, AfterViewInit, OnDestroy {
         }, 500);
       };
     }, 500);
+  }
+
+  toggleCodeType(event: any): void {
+    // This method is no longer needed - code type is handled by the form component
+  }
+
+  get codeType(): 'qr' | 'barcode' {
+    return this.placardFormComponent?.codeType || 'qr';
+  }
+
+  getSalesOrderValue(row: any): string {
+    return `${row?.eyefi_so_number}-${row?.line_number}`;
   }
 }

@@ -36,7 +36,7 @@ export class QirCreateComponent {
     if (this.id) this.getData();
   }
 
-  title = "Create QIR";
+  title = "Create Quality Incident Report";
 
   form: FormGroup;
 

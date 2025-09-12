@@ -1,59 +1,145 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label  text-decoration-underline">Preliminary Investigation Date</label>
-            <input type="date" class="form-control" formControlName="preliminary_investigation">
-        </div>
-    </div>
+  <div class="body">
 
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label text-decoration-underline">QA Findings</label>
-            <textarea class="form-control" type="text" formControlName="findings" placeholder="Enter findings if any"
-                [ngClass]="{ 'is-invalid': submitted && f.findings.errors }" autosize [minRows]="5"></textarea>
+    <!-- Investigation Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Investigation Details</h3>
+        <p class="text-muted mb-0">
+          Record preliminary investigation date and initial assessment.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Preliminary Investigation Date
+          </label>
+          <input type="date" class="form-control" formControlName="preliminary_investigation" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date when preliminary investigation was conducted.
+          </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label text-decoration-underline">Fi Document Control Response</label>
-            <textarea class="form-control" type="text" formControlName="document_control_response"
-                placeholder="Enter findings if any"
-                [ngClass]="{ 'is-invalid': submitted && f.document_control_response.errors }" autosize
-                [minRows]="5"></textarea>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label text-decoration-underline">Fi Engineering Response</label>
-            <textarea class="form-control" type="text" formControlName="fs_engineering_reponse"
-                placeholder="Enter findings if any"
-                [ngClass]="{ 'is-invalid': submitted && f.fs_engineering_reponse.errors }" autosize
-                [minRows]="5"></textarea>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label text-decoration-underline">Fi Quality Team</label>
-            <textarea class="form-control" type="text" formControlName="quality_team"
-                placeholder="Enter findings if any" [ngClass]="{ 'is-invalid': submitted && f.quality_team.errors }"
-                autosize [minRows]="5"></textarea>
-        </div>
+      </div>
     </div>
 
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label  text-decoration-underline">Closure Date</label>
-            <input type="date" class="form-control" formControlName="closure_date">
+    <!-- Quality Assessment Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Quality Assessment</h3>
+        <p class="text-muted mb-0">
+          Document quality findings and assessment results.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">
+            QA Findings
+          </label>
+          <textarea class="form-control" type="text" formControlName="findings" 
+            placeholder="Enter quality assessment findings and observations"
+            [ngClass]="{ 'is-invalid': submitted && f.findings.errors }" 
+            autosize [minRows]="5"></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Document detailed findings from quality assessment investigation.
+          </div>
         </div>
+      </div>
     </div>
 
-    <div class="row">
-        <div class="col mb-3">
-            <label class="form-label  text-decoration-underline">Closure By</label>
-            <input class="form-control" type="text" formControlName="closure_by" placeholder="Closure by"
-                [ngClass]="{ 'is-invalid': submitted && f.closure_by.errors }">
+    <!-- Department Responses Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Department Responses</h3>
+        <p class="text-muted mb-0">
+          Responses and actions from relevant departments.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">
+            Fi Document Control Response
+          </label>
+          <textarea class="form-control" type="text" formControlName="document_control_response"
+            placeholder="Enter document control team response and actions"
+            [ngClass]="{ 'is-invalid': submitted && f.document_control_response.errors }" 
+            autosize [minRows]="5"></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Document control team's assessment and corrective actions.
+          </div>
         </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">
+            Fi Engineering Response
+          </label>
+          <textarea class="form-control" type="text" formControlName="fs_engineering_reponse"
+            placeholder="Enter engineering team response and technical analysis"
+            [ngClass]="{ 'is-invalid': submitted && f.fs_engineering_reponse.errors }" 
+            autosize [minRows]="5"></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Engineering team's technical analysis and recommendations.
+          </div>
+        </div>
+
+        <div class="col-12 mb-3">
+          <label class="form-label">
+            Fi Quality Team Response
+          </label>
+          <textarea class="form-control" type="text" formControlName="quality_team"
+            placeholder="Enter quality team response and action plan" 
+            [ngClass]="{ 'is-invalid': submitted && f.quality_team.errors }"
+            autosize [minRows]="5"></textarea>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Quality team's comprehensive response and action plan.
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Closure Information Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Closure Information</h3>
+        <p class="text-muted mb-0">
+          Final closure details and responsible person.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Closure Date
+          </label>
+          <input type="date" class="form-control" formControlName="closure_date" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date when the QIR was officially closed.
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Closure By
+          </label>
+          <input class="form-control" type="text" formControlName="closure_by" 
+            placeholder="Enter person responsible for closure"
+            [ngClass]="{ 'is-invalid': submitted && f.closure_by.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Person responsible for reviewing and closing the QIR.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- end body container -->
 </form>
