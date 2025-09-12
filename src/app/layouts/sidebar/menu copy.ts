@@ -909,17 +909,17 @@ export const MENU: MenuItem[] = [
     subItems: [
       {
         label: 'MENUITEMS.MAINTENANCE.USERS',
-        link: '/dashboard/maintenance/user/list',
+        link: '/maintenance/user/list',
         description: "Users"
       },
       {
         label: 'MENUITEMS.MAINTENANCE.CREATE',
-        link: '/dashboard/maintenance/user/create',
+        link: '/maintenance/user/create',
         description: "User Create"
       },
       {
         label: 'MENUITEMS.MAINTENANCE.EDIT',
-        link: '/dashboard/maintenance/user/edit',
+        link: '/maintenance/user/edit',
         description: "User Edit"
       }
     ]

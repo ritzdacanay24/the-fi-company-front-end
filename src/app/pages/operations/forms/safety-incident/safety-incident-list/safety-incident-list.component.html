@@ -26,6 +26,13 @@
           <div class="d-flex gap-2">
             <button 
               type="button" 
+              class="btn btn-success"
+              [routerLink]="['/operations/forms/safety-incident/dashboard']"
+              title="View safety metrics and dashboard">
+              <i class="mdi mdi-chart-line me-2"></i>Safety Dashboard
+            </button>
+            <button 
+              type="button" 
               class="btn btn-warning"
               [routerLink]="['/operations/forms/safety-incident/create']"
               title="Create new safety incident report">

@@ -101,6 +101,11 @@ export class UserEditFormComponent {
     this.form.get(key).patchValue(e ? 1 : 0);
   }
 
+  toggleActiveStatus() {
+    const currentValue = this.form.get('active').value;
+    this.form.get('active').patchValue(currentValue ? 0 : 1);
+  }
+
   removeImage() {
     this.form.get("image").patchValue(null);
   }

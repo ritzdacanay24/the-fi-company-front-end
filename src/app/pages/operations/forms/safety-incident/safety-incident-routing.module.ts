@@ -4,6 +4,7 @@ import { SafetyIncidentComponent } from "./safety-incident.component";
 import { SafetyIncidentListComponent } from "./safety-incident-list/safety-incident-list.component";
 import { SafetyIncidentCreateComponent } from "./safety-incident-create/safety-incident-create.component";
 import { SafetyIncidentEditComponent } from "./safety-incident-edit/safety-incident-edit.component";
+import { SafetyDashboardComponent } from "./safety-dashboard/safety-dashboard.component";
 import { CanDeactivateGuard } from "@app/core/guards/CanDeactivateGuard";
 
 const routes: Routes = [
@@ -19,6 +20,10 @@ const routes: Routes = [
       {
         path: "list",
         component: SafetyIncidentListComponent,
+      },
+      {
+        path: "dashboard",
+        component: SafetyDashboardComponent,
       },
       {
         path: "edit",
