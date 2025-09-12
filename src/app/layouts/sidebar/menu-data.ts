@@ -17,32 +17,32 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Labels",
-                link: "/dashboard/operations/labels/list",
+                link: "/operations/labels/list",
                 description: "Label Printing & Management",
                 icon: "las la-tags",
                 accessRequired: false,
             },
             {
                 label: "Shipping Schedule",
-                link: "/dashboard/operations/master-scheduling/shipping",
+                link: "/operations/master-scheduling/shipping",
                 description: "View Shipping Schedule",
                 icon: "las la-shipping-fast",
                 accessRequired: false,
             },
             {
                 label: "Create Material Request",
-                link: "/dashboard/operations/material-request/create",
+                link: "/operations/material-request/create",
                 description: "Quick Material Request",
                 icon: "las la-plus-circle",
                 accessRequired: false,
             },
             {
                 label: "Report Quality Issue",
-                link: "/dashboard/quality/qir/create",
+                link: "/quality/qir/create",
                 description: "Quick Quality Issue Report",
                 icon: "las la-exclamation-triangle",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/quality/qir/*"
+                activatedRoutes: "/quality/qir/*"
             },
         ],
     },
@@ -55,7 +55,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 4,
         label: "Order Lookup",
-        link: "/dashboard/operations/order-lookup",
+        link: "/operations/order-lookup",
         description: "Search Orders",
         icon: "las la-search",
         hideCheckBox: true,
@@ -64,7 +64,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 5,
         label: "Part Lookup",
-        link: "/dashboard/operations/part-lookup",
+        link: "/operations/part-lookup",
         description: "Search Parts",
         icon: "las la-search-plus",
         hideCheckBox: true,
@@ -73,7 +73,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 6,
         label: "WO Lookup",
-        link: "/dashboard/operations/wo-lookup",
+        link: "/operations/wo-lookup",
         description: "Work Order Search",
         icon: "las la-clipboard-list",
         hideCheckBox: true,
@@ -88,7 +88,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 8,
         label: "Shipping Schedule",
-        link: "/dashboard/operations/master-scheduling/shipping",
+        link: "/operations/master-scheduling/shipping",
         description: "Shipping Schedule",
         icon: "las la-shipping-fast",
         hideCheckBox: true,
@@ -96,7 +96,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 9,
         label: "Master Production",
-        link: "/dashboard/operations/master-scheduling/all-routing",
+        link: "/operations/master-scheduling/all-routing",
         description: "Production Planning",
         icon: "las la-industry",
         hideCheckBox: true,
@@ -104,7 +104,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 10,
         label: "Pick & Stage",
-        link: "/dashboard/operations/master-scheduling/picking-routing",
+        link: "/operations/master-scheduling/picking-routing",
         description: "Pick & Stage Schedule",
         icon: "las la-hand-paper",
         hideCheckBox: true,
@@ -112,7 +112,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 11,
         label: "Production Schedule",
-        link: "/dashboard/operations/master-scheduling/production-routing",
+        link: "/operations/master-scheduling/production-routing",
         description: "Production Schedule",
         icon: "las la-cogs",
         hideCheckBox: true,
@@ -120,7 +120,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 12,
         label: "Final/Test QC",
-        link: "/dashboard/operations/master-scheduling/qc-routing",
+        link: "/operations/master-scheduling/qc-routing",
         description: "Quality Control Schedule",
         icon: "las la-check-circle",
         hideCheckBox: true,
@@ -128,7 +128,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 13,
         label: "Cable Production",
-        link: "/dashboard/operations/master-scheduling/cables",
+        link: "/operations/master-scheduling/cables",
         description: "Cable Production Schedule",
         icon: "las la-plug",
         hideCheckBox: true,
@@ -136,12 +136,12 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 14,
         label: "Logistics",
-        link: "/dashboard/operations/logistics/calendar",
+        link: "/operations/logistics/calendar",
         description: "Logistics & Scheduling Calendar",
         icon: "las la-calendar-alt",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/logistics/*"
+        activatedRoutes: "/operations/logistics/*"
     },
     {
         id: 15,
@@ -158,25 +158,25 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Active Requests",
-                link: "/dashboard/operations/material-request/list",
+                link: "/operations/material-request/list",
                 description: "Material Request Management",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/material-request/*"
+                activatedRoutes: "/operations/material-request/*"
             },
             {
                 label: "Create Request",
-                link: "/dashboard/operations/material-request/create",
+                link: "/operations/material-request/create",
                 description: "New Material Request",
                 accessRequired: false,
             },
             {
                 label: "Validation Queue",
-                link: "/dashboard/operations/material-request/validate-list",
+                link: "/operations/material-request/validate-list",
                 description: "Requests Awaiting Validation",
             },
             {
                 label: "Picking Queue",
-                link: "/dashboard/operations/material-request/picking",
+                link: "/operations/material-request/picking",
                 description: "Ready for Picking",
             },
         ],
@@ -184,12 +184,12 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 17,
         label: "RFQ Management",
-        link: "/dashboard/operations/forms/rfq/list",
+        link: "/operations/forms/rfq/list",
         description: "Request for Quote Management",
         icon: "las la-handshake",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/forms/rfq/*"
+        activatedRoutes: "/operations/forms/rfq/*"
     },
     {
         id: 18,
@@ -200,7 +200,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 19,
         label: "Org Chart",
-        link: "/dashboard/operations/org-chart/org-chart-view",
+        link: "/operations/org-chart/org-chart-view",
         description: "Organization Chart",
         icon: "las la-sitemap",
         badge: {
@@ -213,12 +213,12 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 20,
         label: "Vehicle Management",
-        link: "/dashboard/operations/forms/vehicle/list",
+        link: "/operations/forms/vehicle/list",
         description: "Company Vehicle Records",
         icon: "las la-car",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/forms/vehicle/*"
+        activatedRoutes: "/operations/forms/vehicle/*"
     },
     {
         id: 21,
@@ -229,7 +229,7 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 22,
         label: "Labels",
-        link: "/dashboard/operations/labels/list",
+        link: "/operations/labels/list",
         description: "Label Printing & Management",
         icon: "las la-tags",
         hideCheckBox: true,
@@ -250,49 +250,49 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Graphics List",
-                link: "/dashboard/operations/graphics/list",
+                link: "/operations/graphics/list",
                 description: "Graphics management",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/graphics/*"
+                activatedRoutes: "/operations/graphics/*"
             },
             {
                 label: "Graphics Production",
-                link: "/dashboard/operations/graphics/production",
+                link: "/operations/graphics/production",
                 description: "Graphics production tracking",
             },
             {
                 label: "Graphics Demand",
-                link: "/dashboard/operations/graphics/demand",
+                link: "/operations/graphics/demand",
                 description: "Graphics demand analysis",
             },
             {
                 label: "BOM Management",
-                link: "/dashboard/operations/graphics/bom/list",
+                link: "/operations/graphics/bom/list",
                 description: "Bill of Materials",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/graphics/bom/*"
+                activatedRoutes: "/operations/graphics/bom/*"
             },
         ],
     },
     {
         id: 25,
         label: "Placards",
-        link: "/dashboard/operations/forms/placard/list",
+        link: "/operations/forms/placard/list",
         description: "Work Order Documentation",
         icon: "las la-clipboard",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/forms/placard/*"
+        activatedRoutes: "/operations/forms/placard/*"
     },
     {
         id: 26,
         label: "Shipping Request",
         icon: "las la-shipping-fast",
-        link: "/dashboard/operations/forms/shipping-request",
+        link: "/operations/forms/shipping-request",
         description: "Shipping Management",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/forms/shipping-request/*"
+        activatedRoutes: "/operations/forms/shipping-request/*"
     },
     {
         id: 27,
@@ -303,12 +303,12 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 28,
         label: "IGT Transfers",
-        link: "/dashboard/operations/forms/igt-transfer/list",
+        link: "/operations/forms/igt-transfer/list",
         description: "IGT Asset Transfer Management",
         icon: "las la-exchange-alt",
         hideCheckBox: true,
         accessRequired: false,
-        activatedRoutes: "/dashboard/operations/forms/igt-transfer/*"
+        activatedRoutes: "/operations/forms/igt-transfer/*"
     },
     {
         id: 29,
@@ -319,17 +319,17 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Shortages",
-                link: "/dashboard/operations/shortages/list",
+                link: "/operations/shortages/list",
                 description: "Material Shortages",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/shortages/*"
+                activatedRoutes: "/operations/shortages/*"
             },
             {
                 label: "Physical Count",
-                link: "/dashboard/operations/physical-inventory/tags",
+                link: "/operations/physical-inventory/tags",
                 description: "Inventory Counting",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/physical-inventory/*"
+                activatedRoutes: "/operations/physical-inventory/*"
             },
         ],
     },
@@ -342,25 +342,25 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Daily Report",
-                link: "/dashboard/operations/reports/daily-report",
+                link: "/operations/reports/daily-report",
                 description: "Daily Operations Report",
                 icon: "las la-calendar-day",
             },
             {
                 label: "Revenue Reports",
-                link: "/dashboard/operations/reports/revenue",
+                link: "/operations/reports/revenue",
                 description: "Revenue Analysis",
                 icon: "las la-dollar-sign",
             },
             {
                 label: "Revenue by Customer",
-                link: "/dashboard/operations/reports/revenue-by-customer",
+                link: "/operations/reports/revenue-by-customer",
                 description: "Customer Revenue Analysis",
                 icon: "las la-users",
             },
             {
                 label: "OTD Report",
-                link: "/dashboard/operations/reports/otd-report",
+                link: "/operations/reports/otd-report",
                 description: "On-Time Delivery Performance",
                 icon: "las la-shipping-fast",
                 badge: {
@@ -370,20 +370,20 @@ export const MENU_DATA: MenuItem[] = [
             },
             {
                 label: "WIP Report",
-                link: "/dashboard/operations/reports/wip-report",
+                link: "/operations/reports/wip-report",
                 description: "Work in Progress",
                 icon: "las la-cogs",
             },
             {
                 label: "Shipped Orders",
-                link: "/dashboard/operations/reports/shipped-orders-report",
+                link: "/operations/reports/shipped-orders-report",
                 description: "Shipped Orders Analysis",
                 icon: "las la-truck",
                 accessRequired: false,
             },
             {
                 label: "WO Variance Report",
-                link: "/dashboard/operations/reports/work-order-variance-report",
+                link: "/operations/reports/work-order-variance-report",
                 description: "Work Order Variance Analysis",
                 icon: "las la-chart-bar",
             },
@@ -394,52 +394,52 @@ export const MENU_DATA: MenuItem[] = [
                 subItems: [
                     {
                         label: "Transit Location",
-                        link: "/dashboard/operations/reports/transit-location-value-report",
+                        link: "/operations/reports/transit-location-value-report",
                         description: "Transit location report",
                     },
                     {
                         label: "Finished Goods",
-                        link: "/dashboard/operations/reports/fg-value-report",
+                        link: "/operations/reports/fg-value-report",
                         description: "Finished goods report",
                     },
                     {
                         label: "JX Report",
-                        link: "/dashboard/operations/reports/jx-value-report",
+                        link: "/operations/reports/jx-value-report",
                         description: "JX report",
                     },
                     {
                         label: "LV Raw Material",
-                        link: "/dashboard/operations/reports/las-vegas-raw-material-report",
+                        link: "/operations/reports/las-vegas-raw-material-report",
                         description: "Las vegas raw material report",
                     },
                     {
                         label: "Safety Stock",
-                        link: "/dashboard/operations/reports/safety-stock-report",
+                        link: "/operations/reports/safety-stock-report",
                         description: "Safety stock report",
                     },
                     {
                         label: "Negative Locations",
-                        link: "/dashboard/operations/reports/negative-location-report",
+                        link: "/operations/reports/negative-location-report",
                         description: "Negative location report",
                     },
                     {
                         label: "Empty Locations",
-                        link: "/dashboard/operations/reports/empty-location-report",
+                        link: "/operations/reports/empty-location-report",
                         description: "Empty location report",
                     },
                     {
                         label: "Inventory Summary",
-                        link: "/dashboard/operations/reports/inventory-report",
+                        link: "/operations/reports/inventory-report",
                         description: "Inventory report",
                     },
                     {
                         label: "One SKU Locations",
-                        link: "/dashboard/operations/reports/one-sku-location-report",
+                        link: "/operations/reports/one-sku-location-report",
                         description: "One sku location report",
                     },
                     {
                         label: "Item Consolidation",
-                        link: "/dashboard/operations/reports/item-consolidation-report",
+                        link: "/operations/reports/item-consolidation-report",
                         description: "Item consolidation report",
                     },
                 ],
@@ -462,32 +462,32 @@ export const MENU_DATA: MenuItem[] = [
             {
                 label: "Safety Incidents",
                 description: "Report and Track Safety Incidents",
-                link: "/dashboard/operations/forms/safety-incident",
+                link: "/operations/forms/safety-incident",
                 icon: "las la-exclamation-triangle",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/operations/forms/safety-incident/*"
+                activatedRoutes: "/operations/forms/safety-incident/*"
             },
             {
                 label: "Vehicle Inspections",
-                link: "/dashboard/operations/forms/vehicle-inspection",
+                link: "/operations/forms/vehicle-inspection",
                 description: "Vehicle Safety Inspections",
                 icon: "las la-car",
-                activatedRoutes: "/dashboard/operations/forms/vehicle-inspection/*"
+                activatedRoutes: "/operations/forms/vehicle-inspection/*"
             },
             {
                 label: "Forklift Inspections",
-                link: "/dashboard/operations/forms/forklift-inspection",
+                link: "/operations/forms/forklift-inspection",
                 description: "Forklift Safety Inspections",
                 icon: "las la-truck-loading",
-                activatedRoutes: "/dashboard/operations/forms/forklift-inspection/*"
+                activatedRoutes: "/operations/forms/forklift-inspection/*"
             },
             {
                 label: "Safety Training",
-                link: "/dashboard/safety/training",
+                link: "/safety/training",
                 description: "Safety Training Programs",
                 icon: "las la-graduation-cap",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/safety/training/*"
+                activatedRoutes: "/safety/training/*"
             },
         ],
     },
@@ -500,37 +500,37 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Dashboard",
-                link: "/dashboard/quality/overview/summary",
+                link: "/quality/overview/summary",
                 description: "Quality Overview",
                 icon: "las la-tachometer-alt",
             },
             {
                 label: "Returns (RMA)",
-                link: "/dashboard/quality/rma/list",
+                link: "/quality/rma/list",
                 description: "Product Returns & Authorizations",
                 icon: "las la-undo-alt",
-                activatedRoutes: "/dashboard/quality/rma/*"
+                activatedRoutes: "/quality/rma/*"
             },
             {
                 label: "Corrective Actions",
-                link: "/dashboard/quality/car/list",
+                link: "/quality/car/list",
                 description: "Track Corrective Action Requests",
                 icon: "las la-check-circle",
-                activatedRoutes: "/dashboard/quality/car/*"
+                activatedRoutes: "/quality/car/*"
             },
             {
                 label: "Material Review",
-                link: "/dashboard/quality/mrb",
+                link: "/quality/mrb",
                 description: "Non-Conforming Materials",
                 icon: "las la-clipboard-check",
-                activatedRoutes: "/dashboard/quality/mrb/*"
+                activatedRoutes: "/quality/mrb/*"
             },
             {
                 label: "Quality Issues",
-                link: "/dashboard/quality/qir",
+                link: "/quality/qir",
                 description: "Issue Reports & Tracking",
                 icon: "las la-exclamation-triangle",
-                activatedRoutes: "/dashboard/quality/qir/*"
+                activatedRoutes: "/quality/qir/*"
             },
         ],
     },
@@ -543,32 +543,32 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "Generate Serial Numbers",
-                link: "/dashboard/quality/serial-number-report",
+                link: "/quality/serial-number-report",
                 description: "View and manage quality serial numbers",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/quality/serial-number-report/*"
+                activatedRoutes: "/quality/serial-number-report/*"
             },
             {
                 label: "IGT Serial Control",
-                link: "/dashboard/quality/igt",
+                link: "/quality/igt",
                 description: "View and manage IGT serial numbers",
-                activatedRoutes: "/dashboard/quality/igt/*"
+                activatedRoutes: "/quality/igt/*"
             },
             {
                 label: "AGS Serial Control",
-                link: "/dashboard/quality/ags-serial",
-                activatedRoutes: "/dashboard/quality/ags-serial/*"
+                link: "/quality/ags-serial",
+                activatedRoutes: "/quality/ags-serial/*"
             },
             {
                 label: "SG Asset Control",
-                link: "/dashboard/quality/sg-asset/",
-                activatedRoutes: "/dashboard/quality/sg-asset/*"
+                link: "/quality/sg-asset/",
+                activatedRoutes: "/quality/sg-asset/*"
             },
             {
                 label: "UL Labels",
-                link: "/dashboard/ul-management/labels-report",
+                link: "/ul-management/labels-report",
                 accessRequired: false,
-                activatedRoutes: "/dashboard/ul-management/*"
+                activatedRoutes: "/ul-management/*"
             },
         ],
     },
@@ -581,31 +581,31 @@ export const MENU_DATA: MenuItem[] = [
         subItems: [
             {
                 label: "User Management",
-                link: "/dashboard/maintenance/user/list",
+                link: "/maintenance/user/list",
                 description: "Manage System Users",
                 icon: "las la-users",
                 accessRequired: true,
-                activatedRoutes: "/dashboard/maintenance/user/*"
+                activatedRoutes: "/maintenance/user/*"
             },
             {
                 label: "Email Notifications",
-                link: "/dashboard/maintenance/email-notification/list",
+                link: "/maintenance/email-notification/list",
                 description: "Configure Email Alerts",
                 icon: "las la-envelope",
                 accessRequired: true,
-                activatedRoutes: "/dashboard/maintenance/email-notification/*"
+                activatedRoutes: "/maintenance/email-notification/*"
             },
             {
                 label: "Scheduled Jobs",
-                link: "/dashboard/maintenance/scheduled-jobs",
+                link: "/maintenance/scheduled-jobs",
                 description: "System Background Tasks",
                 icon: "las la-clock",
                 accessRequired: true,
-                activatedRoutes: "/dashboard/maintenance/scheduled-jobs/*"
+                activatedRoutes: "/maintenance/scheduled-jobs/*"
             },
             {
                 label: "Query Builder",
-                link: "/dashboard/admin/query",
+                link: "/admin/query",
                 description: "Database Query Tool",
                 icon: "las la-database",
                 accessRequired: true,
@@ -617,17 +617,17 @@ export const MENU_DATA: MenuItem[] = [
                 subItems: [
                     {
                         label: "Create User",
-                        link: "/dashboard/maintenance/user/create",
+                        link: "/maintenance/user/create",
                         description: "Add New User",
                         accessRequired: true,
-                        activatedRoutes: "/dashboard/maintenance/user/*"
+                        activatedRoutes: "/maintenance/user/*"
                     },
                     {
                         label: "Create Email Alert",
-                        link: "/dashboard/maintenance/email-notification/create",
+                        link: "/maintenance/email-notification/create",
                         description: "Setup New Email Notification",    
                         accessRequired: true,
-                        activatedRoutes: "/dashboard/maintenance/email-notification/*"
+                        activatedRoutes: "/maintenance/email-notification/*"
                     },
                 ],
             },

@@ -460,7 +460,7 @@ export class MaterialRequestValidationImprovedComponent implements OnInit {
     }
 
     goBack() {
-        this.router.navigate(['/dashboard/operations/material-request/validate-list']);
+        this.router.navigate(['/operations/material-request/validate-list']);
     }
 
     getProgressPercentage(): number {

@@ -121,15 +121,15 @@ export class MaterialRequestCompletionComponent implements OnInit {
   }
 
   goToList() {
-    this.router.navigate(['/dashboard/operations/material-request/list']);
+    this.router.navigate(['/operations/material-request/list']);
   }
 
   createNewRequest() {
-    this.router.navigate(['/dashboard/operations/material-request/workflow']);
+    this.router.navigate(['/operations/material-request/workflow']);
   }
 
   viewDetails() {
-    this.router.navigate(['/dashboard/operations/material-request/edit'], {
+    this.router.navigate(['/operations/material-request/edit'], {
       queryParams: { id: this.requestId }
     });
   }

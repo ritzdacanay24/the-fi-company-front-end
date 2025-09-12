@@ -3,7 +3,7 @@
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-      <li class="breadcrumb-item"><a routerLink="/dashboard/operations/forms">Forms</a></li>
+      <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
       <li class="breadcrumb-item active" aria-current="page">Safety Incidents</li>
     </ol>
   </nav>
@@ -27,7 +27,7 @@
             <button 
               type="button" 
               class="btn btn-warning"
-              [routerLink]="['/dashboard/operations/forms/safety-incident/create']"
+              [routerLink]="['/operations/forms/safety-incident/create']"
               title="Create new safety incident report">
               <i class="mdi mdi-plus me-2"></i>Report Incident
             </button>
@@ -102,7 +102,7 @@
                 <button 
                   type="button" 
                   class="btn btn-warning"
-                  [routerLink]="['/dashboard/operations/forms/safety-incident/create']">
+                  [routerLink]="['/operations/forms/safety-incident/create']">
                   <i class="mdi mdi-plus me-2"></i>Report Incident
                 </button>
               </div>

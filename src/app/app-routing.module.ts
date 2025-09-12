@@ -65,76 +65,109 @@ const routes: Routes = [
     ],
   },
   { path: "", redirectTo: "menu", pathMatch: "full" },
+  // Operations routes (moved from dashboard)
   {
-    path: "dashboard",
+    path: "operations",
     component: LayoutComponent,
     canActivate: [AuthGuard],
     runGuardsAndResolvers: "always",
     children: [
-      { path: "", redirectTo: "dashboard", pathMatch: "full" },
-      { path: "dashboard", component: DashboardComponent },
-      {
-        title: "Field Service",
-        path: "field-service",
-        loadChildren: () =>
-          import("./pages/field-service/field-service-routing.module").then(
-            (m) => m.FieldServiceRoutingModule
-          ),
-      },
-      {
-        title: "Quality",
-        path: "quality",
-        loadChildren: () =>
-          import("./pages/quality/quality-routing.module").then(
-            (m) => m.QualityRoutingModule
-          ),
-      },
       {
         title: "Operations",
-        path: "operations",
+        path: "",
         loadChildren: () =>
           import("./pages/operations/operations-routing.module").then(
             (m) => m.OperationsRoutingModule
           ),
       },
+    ],
+  },
+  // Quality routes (moved from dashboard)
+  {
+    path: "quality",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Quality",
+        path: "",
+        loadChildren: () =>
+          import("./pages/quality/quality-routing.module").then(
+            (m) => m.QualityRoutingModule
+          ),
+      },
+    ],
+  },
+  // Admin routes (moved from dashboard)
+  {
+    path: "admin",
+    component: LayoutComponent,
+    canActivate: [AuthGuard, AccessGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Admin",
+        path: "",
+        loadChildren: () =>
+          import("./pages/admin/admin-routing.module").then(
+            (m) => m.AdminRoutingModule
+          ),
+      },
+    ],
+  },
+  // Maintenance routes (moved from dashboard)
+  {
+    path: "maintenance",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      { path: "", redirectTo: "overview", pathMatch: "full" },
       {
         title: "Maintenance",
-        path: "maintenance",
+        path: "",
         loadChildren: () =>
           import("./pages/maintenance/maintenance-routing.module").then(
             (m) => m.MaintenanceRoutingModule
           ),
-        runGuardsAndResolvers: "always",
       },
+    ],
+  },
+  // UL Management routes (moved from dashboard)
+  {
+    path: "ul-management",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      { path: "", redirectTo: "overview", pathMatch: "full" },
       {
         title: "UL Management",
-        path: "ul-management",
+        path: "",
         loadChildren: () =>
           import("./features/ul-management/ul-management.module").then(
             (m) => m.ULManagementModule
           ),
       },
-      {
-        title: "Admin",
-        path: "admin",
-        loadChildren: () =>
-          import("./pages/admin/admin-routing.module").then(
-            (m) => m.AdminRoutingModule
-          ),
-        canActivate: [AccessGuard],
-        runGuardsAndResolvers: "always",
-      },
-      {
-        path: "access-denied",
-        component: AccessDeniedComponent,
-      },
-      {
-        path: "in-active",
-        component: InActiveComponent,
-      },
     ],
   },
-  { path: "**", redirectTo: "dashboard", pathMatch: "full" },
+  // Utility routes
+  {
+    path: "access-denied",
+    component: AccessDeniedComponent,
+  },
+  {
+    path: "in-active",
+    component: InActiveComponent,
+  },
+  // Legacy dashboard route - redirect to menu or remove entirely
+  {
+    path: "dashboard",
+    redirectTo: "menu",
+    pathMatch: "full"
+  },
+  { path: "**", redirectTo: "menu", pathMatch: "full" },
 ];
 
 @NgModule({

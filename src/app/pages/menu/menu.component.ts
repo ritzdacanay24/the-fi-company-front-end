@@ -19,12 +19,12 @@ export class MenuComponent implements OnInit {
     {
       name: "Las Vegas",
       children: [
-        { name: "Operations Dashboard", link: "/dashboard/operations" },
-        { name: "Field Service Dashboard", link: "/dashboard/field-service" },
-        { name: "Quality Dashboard", link: "/dashboard/quality" },
+        { name: "Operations Dashboard", link: "/operations" },
+        { name: "Field Service Dashboard", link: "/field-service" },
+        { name: "Quality Dashboard", link: "/quality" },
         {
           name: "Shipping Request Form",
-          link: "/dashboard/operations/forms/shipping-request/create",
+          link: "/operations/forms/shipping-request/create",
         },
         { name: "Field Service Request Form", link: "/request" },
         {
@@ -33,14 +33,14 @@ export class MenuComponent implements OnInit {
         },
         {
           name: "Safety Incident Form",
-          link: "/dashboard/operations/forms/safety-incident/create",
+          link: "/operations/forms/safety-incident/create",
         },
         {
           name: "FS App",
           link: "https://dashboard.eye-fi.com/dist/fsm-mobile/assignments",
         },
         { name: "MRO", link: "https://mro.swstms.com/users/sign_in" },
-        { name: "Org Chart", link: "/dashboard/operations/org-chart/org-chart-view" },
+        { name: "Org Chart", link: "/operations/org-chart/org-chart-view" },
       ],
     },
     {

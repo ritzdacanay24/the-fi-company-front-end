@@ -7,7 +7,7 @@ This document outlines the new and improved Material Request Workflow that simpl
 ## Workflow Steps
 
 ### 1. Users Request Parts (`MaterialRequestWorkflowComponent`)
-- **Route**: `/dashboard/operations/material-request/workflow`
+- **Route**: `/operations/material-request/workflow`
 - **Features**:
   - Interactive step-by-step workflow interface
   - Real-time form validation
@@ -26,7 +26,7 @@ This document outlines the new and improved Material Request Workflow that simpl
 - Visual feedback for each step
 
 ### 2. Admin Validates Request (`MaterialRequestValidationImprovedComponent`)
-- **Route**: `/dashboard/operations/material-request/validation-improved`
+- **Route**: `/operations/material-request/validation-improved`
 - **Features**:
   - Individual item validation with approve/reject/review actions
   - Bulk approve functionality
@@ -44,7 +44,7 @@ This document outlines the new and improved Material Request Workflow that simpl
 - Improved error handling and messaging
 
 ### 3. Request Gets Sent to Picking (`MaterialRequestPickingImprovedComponent`)
-- **Route**: `/dashboard/operations/material-request/picking-improved`
+- **Route**: `/operations/material-request/picking-improved`
 - **Features**:
   - Dual-pane interface (queue + picking details)
   - Real-time picking progress tracking
@@ -62,7 +62,7 @@ This document outlines the new and improved Material Request Workflow that simpl
 - Enhanced print functionality
 
 ### 4. Material Request Completed (`MaterialRequestCompletionComponent`)
-- **Route**: `/dashboard/operations/material-request/completion`
+- **Route**: `/operations/material-request/completion`
 - **Features**:
   - Success animation and celebration
   - Completion metrics dashboard

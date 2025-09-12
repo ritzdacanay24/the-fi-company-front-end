@@ -258,7 +258,7 @@ interface AdminReviewItem {
                       
                       <!-- Request Number -->
                       <td>
-                        <a [routerLink]="['/dashboard/operations/material-request/validate', review.requestId]" 
+                        <a [routerLink]="['/operations/material-request/validate', review.requestId]" 
                            class="text-decoration-none">
                           {{review.requestNumber}}
                         </a>
@@ -564,7 +564,7 @@ export class MaterialRequestAdminReviewDashboardComponent implements OnInit {
   }
 
   viewRequest(requestId: number) {
-    this.router.navigate(['/dashboard/operations/material-request/validate', requestId]);
+    this.router.navigate(['/operations/material-request/validate', requestId]);
   }
 
   // Reassignment functionality

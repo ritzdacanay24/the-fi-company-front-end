@@ -69,7 +69,7 @@ export class CalendarComponent implements OnInit {
       schedule: { type: "day" },
     },
     onSelectedDateChange: (e) => {
-      this.router.navigate(["/dashboard/operations/logistics/calendar"], {
+      this.router.navigate(["/operations/logistics/calendar"], {
         queryParamsHandling: "merge",
         queryParams: {
           start: moment(e.date).format("YYYY-MM-DD"),
@@ -144,7 +144,7 @@ export class CalendarComponent implements OnInit {
 
   onEventClick(args) {
     this.previousId = args.event.id;
-    this.router.navigate(["/dashboard/operations/logistics/calendar"], {
+    this.router.navigate(["/operations/logistics/calendar"], {
       queryParamsHandling: "merge",
       queryParams: {
         previousId: args.event.id,

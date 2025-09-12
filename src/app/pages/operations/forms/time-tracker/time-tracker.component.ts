@@ -50,7 +50,7 @@ export class TimeTrackerComponent {
   }
 
   goBack() {
-    this.router.navigate(["/dashboard/operations/forms/time-tracker"], {
+    this.router.navigate(["/operations/forms/time-tracker"], {
       relativeTo: this.activatedRoute,
       queryParams: { id: null },
     });
@@ -77,7 +77,7 @@ export class TimeTrackerComponent {
     });
     this.id = data.insertId;
 
-    this.router.navigate(["/dashboard/operations/forms/time-tracker"], {
+    this.router.navigate(["/operations/forms/time-tracker"], {
       relativeTo: this.activatedRoute,
       queryParams: { id: this.id },
     });

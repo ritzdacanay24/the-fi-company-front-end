@@ -21,19 +21,19 @@ export const MENU: MenuItem[] = [
       {
         label: 'MENUITEMS.OPERATIONS.LABELS',
         label1: 'Labels',
-        link: '/dashboard/operations/labels/list',
+        link: '/operations/labels/list',
         description: "Labels"
       },
       {
         label: 'MENUITEMS.OPERATIONS.ORDER_LOOKUP',
         label1: 'Order Lookup',
-        link: '/dashboard/operations/order-lookup',
+        link: '/operations/order-lookup',
         description: "Order Lookup"
       },
       {
         label: 'MENUITEMS.OPERATIONS.PART_LOOKUP',
         label1: 'Part Lookup',
-        link: '/dashboard/operations/part-lookup',
+        link: '/operations/part-lookup',
         description: "Part Lookup"
       },
       {
@@ -43,7 +43,7 @@ export const MENU: MenuItem[] = [
           {
             label: 'MENUITEMS.OPERATIONS.LOGISTICS.CALENDAR',
             label1: 'Calendar',
-            link: '/dashboard/operations/logistics/calendar',
+            link: '/operations/logistics/calendar',
             description: "Logistics Calendar"
           }
         ]
@@ -54,37 +54,37 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.SHIPPING',
-            link: '/dashboard/operations/master-scheduling/shipping',
+            link: '/operations/master-scheduling/shipping',
             description: "Shipping"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.ALL_ROUTING',
-            link: '/dashboard/operations/master-scheduling/all-routing',
+            link: '/operations/master-scheduling/all-routing',
             description: "Master scheduling"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.PICKING_ROUTING',
-            link: '/dashboard/operations/master-scheduling/picking-routing',
+            link: '/operations/master-scheduling/picking-routing',
             description: "Picking"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.PRODUCTION_ROUTING',
-            link: '/dashboard/operations/master-scheduling/production-routing',
+            link: '/operations/master-scheduling/production-routing',
             description: "Production"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.QC_ROUTING',
-            link: '/dashboard/operations/master-scheduling/qc-routing',
+            link: '/operations/master-scheduling/qc-routing',
             description: "QC"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.KANBAN',
-            link: '/dashboard/operations/master-scheduling/kanban',
+            link: '/operations/master-scheduling/kanban',
             description: "Kanban"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MASTER_SCHEDULING.CABLES',
-            link: '/dashboard/operations/master-scheduling/cables',
+            link: '/operations/master-scheduling/cables',
             description: "Cables"
           }
         ]
@@ -95,17 +95,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.SHIPPING_REQUEST.LIST',
-            link: '/dashboard/operations/forms/shipping-request/list',
+            link: '/operations/forms/shipping-request/list',
             description: "Shipping List"
           },
           {
             label: 'MENUITEMS.OPERATIONS.SHIPPING_REQUEST.CREATE',
-            link: '/dashboard/operations/forms/shipping-request/create',
+            link: '/operations/forms/shipping-request/create',
             description: "Shipping Request Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.SHIPPING_REQUEST.EDIT',
-            link: '/dashboard/operations/forms/shipping-request/edit',
+            link: '/operations/forms/shipping-request/edit',
             description: "Shipping Request Edit"
           }
         ]
@@ -116,17 +116,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.RFQ.LIST',
-            link: '/dashboard/operations/forms/rfq/list',
+            link: '/operations/forms/rfq/list',
             description: "RFQ Request"
           },
           {
             label: 'MENUITEMS.OPERATIONS.RFQ.CREATE',
-            link: '/dashboard/operations/forms/rfq/create',
+            link: '/operations/forms/rfq/create',
             description: "RFQ Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.RFQ.EDIT',
-            link: '/dashboard/operations/forms/rfq/edit',
+            link: '/operations/forms/rfq/edit',
             description: "RFQ Edit"
           }
         ]
@@ -137,17 +137,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.VEHICLE.LIST',
-            link: '/dashboard/operations/forms/vehicle/list',
+            link: '/operations/forms/vehicle/list',
             description: "Vehicle List"
           },
           {
             label: 'MENUITEMS.OPERATIONS.VEHICLE.CREATE',
-            link: '/dashboard/operations/forms/vehicle/create',
+            link: '/operations/forms/vehicle/create',
             description: "Vehicle Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.VEHICLE.EDIT',
-            link: '/dashboard/operations/forms/vehicle/edit',
+            link: '/operations/forms/vehicle/edit',
             description: "Vehicle Edit"
           }
         ]
@@ -158,17 +158,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.PLACARD.LIST',
-            link: '/dashboard/operations/forms/placard/list',
+            link: '/operations/forms/placard/list',
             description: "Placard List"
           },
           {
             label: 'MENUITEMS.OPERATIONS.PLACARD.CREATE',
-            link: '/dashboard/operations/forms/placard/create',
+            link: '/operations/forms/placard/create',
             description: "Placard Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.PLACARD.EDIT',
-            link: '/dashboard/operations/forms/placard/edit',
+            link: '/operations/forms/placard/edit',
             description: "Placard Edit"
           }
         ]
@@ -179,17 +179,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.IGT_TRANSFER.LIST',
-            link: '/dashboard/operations/forms/igt-transfer/list',
+            link: '/operations/forms/igt-transfer/list',
             description: "IGT Transfer"
           },
           {
             label: 'MENUITEMS.OPERATIONS.IGT_TRANSFER.CREATE',
-            link: '/dashboard/operations/forms/igt-transfer/create',
+            link: '/operations/forms/igt-transfer/create',
             description: "IGT Transfer Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.IGT_TRANSFER.EDIT',
-            link: '/dashboard/operations/forms/igt-transfer/edit',
+            link: '/operations/forms/igt-transfer/edit',
             description: "IGT Transfer Edit"
           }
         ]
@@ -200,17 +200,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.SHORTAGES.LIST',
-            link: '/dashboard/operations/shortages/list',
+            link: '/operations/shortages/list',
             description: "Shortage List"
           },
           {
             label: 'MENUITEMS.OPERATIONS.SHORTAGES.CREATE',
-            link: '/dashboard/operations/shortages/create',
+            link: '/operations/shortages/create',
             description: "Shortage Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.SHORTAGES.EDIT',
-            link: '/dashboard/operations/shortages/edit',
+            link: '/operations/shortages/edit',
             description: "Shortage Edit"
           }
         ]
@@ -221,27 +221,27 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.MATERIAL_REQUEST.LIST',
-            link: '/dashboard/operations/material-request/list',
+            link: '/operations/material-request/list',
             description: "Material Request List"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MATERIAL_REQUEST.CREATE',
-            link: '/dashboard/operations/material-request/create',
+            link: '/operations/material-request/create',
             description: "Material Request Create"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MATERIAL_REQUEST.EDIT',
-            link: '/dashboard/operations/material-request/edit',
+            link: '/operations/material-request/edit',
             description: "Material Request Edit"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MATERIAL_REQUEST.VALIDATE',
-            link: '/dashboard/operations/material-request/validate-list',
+            link: '/operations/material-request/validate-list',
             description: "Material Request Validate"
           },
           {
             label: 'MENUITEMS.OPERATIONS.MATERIAL_REQUEST.PICKING',
-            link: '/dashboard/operations/material-request/picking',
+            link: '/operations/material-request/picking',
             description: "Material Request Picking"
           }
         ]
@@ -252,22 +252,22 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.DAILY_REPORT',
-            link: '/dashboard/operations/reports/daily-report',
+            link: '/operations/reports/daily-report',
             description: "Daily Report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.REVENUE',
-            link: '/dashboard/operations/reports/revenue',
+            link: '/operations/reports/revenue',
             description: "Revenue"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.REVENUE_BY_CUSTOMER',
-            link: '/dashboard/operations/reports/revenue-by-customer',
+            link: '/operations/reports/revenue-by-customer',
             description: "Revenue by customer"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.OTD_REPORT',
-            link: '/dashboard/operations/reports/otd-report',
+            link: '/operations/reports/otd-report',
             description: "OTD Report",
             badge: {
               variant:"badge bg-success",
@@ -276,67 +276,67 @@ export const MENU: MenuItem[] = [
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.WIP_REPORT',
-            link: '/dashboard/operations/reports/wip-report',
+            link: '/operations/reports/wip-report',
             description: "WIP Report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.TRANSIT_LOCATION_VALUE_REPORT',
-            link: '/dashboard/operations/reports/transit-location-value-report',
+            link: '/operations/reports/transit-location-value-report',
             description: "Transit location report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.FG_VALUE_REPORT',
-            link: '/dashboard/operations/reports/fg-value-report',
+            link: '/operations/reports/fg-value-report',
             description: "Finished goods report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.JX_VALUE_REPORT',
-            link: '/dashboard/operations/reports/jx-value-report',
+            link: '/operations/reports/jx-value-report',
             description: "JX report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.LV_RAW_MATERIAL',
-            link: '/dashboard/operations/reports/las-vegas-raw-material-report',
+            link: '/operations/reports/las-vegas-raw-material-report',
             description: "Las vegas raw material report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.SAFETY_STOCK_REPORT',
-            link: '/dashboard/operations/reports/safety-stock-report',
+            link: '/operations/reports/safety-stock-report',
             description: "Safety stock report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.SHIPPED_ORDERS',
-            link: '/dashboard/operations/reports/shipped-orders-report',
+            link: '/operations/reports/shipped-orders-report',
             description: "Shipped orders report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.NEGATIVE_LOCATION_REPORT',
-            link: '/dashboard/operations/reports/negative-location-report',
+            link: '/operations/reports/negative-location-report',
             description: "Negative location report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.EMPTY_LOCATION_REPORT',
-            link: '/dashboard/operations/reports/empty-location-report',
+            link: '/operations/reports/empty-location-report',
             description: "Empty location report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.INVENTORY_REPORT',
-            link: '/dashboard/operations/reports/inventory-report',
+            link: '/operations/reports/inventory-report',
             description: "Inventory report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.ONE_SKU_LOCATION_REPORT',
-            link: '/dashboard/operations/reports/one-sku-location-report',
+            link: '/operations/reports/one-sku-location-report',
             description: "One sku location report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.ITEM_CONSOLIDATION_REPORT',
-            link: '/dashboard/operations/reports/item-consolidation-report',
+            link: '/operations/reports/item-consolidation-report',
             description: "Item consolidation report"
           },
           {
             label: 'MENUITEMS.OPERATIONS.REPORTS.WORK_ORDER_VARIANCE',
-            link: '/dashboard/operations/reports/work-order-variance-report',
+            link: '/operations/reports/work-order-variance-report',
             description: "Work Order Variance Report"
           },
         ]
@@ -347,22 +347,22 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.OPERATIONS.GRAPHICS.LIST',
-            link: '/dashboard/operations/graphics/list',
+            link: '/operations/graphics/list',
             description: "Graphics list"
           },
           {
             label: 'MENUITEMS.OPERATIONS.GRAPHICS.EDIT',
-            link: '/dashboard/operations/graphics/edit',
+            link: '/operations/graphics/edit',
             description: "Graphics edit"
           },
           {
             label: 'MENUITEMS.OPERATIONS.GRAPHICS.PRODUCTION',
-            link: '/dashboard/operations/graphics/production',
+            link: '/operations/graphics/production',
             description: "Graphics production"
           },
           {
             label: 'MENUITEMS.OPERATIONS.GRAPHICS.DEMAND',
-            link: '/dashboard/operations/graphics/demand',
+            link: '/operations/graphics/demand',
             description: "Graphics demand"
           },
           {
@@ -371,17 +371,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.OPERATIONS.GRAPHICS.BOM.LIST',
-                link: '/dashboard/operations/graphics/bom/list',
+                link: '/operations/graphics/bom/list',
                 description: "Graphics bom list"
               },
               {
                 label: 'MENUITEMS.OPERATIONS.GRAPHICS.BOM.CREATE',
-                link: '/dashboard/operations/graphics/bom/create',
+                link: '/operations/graphics/bom/create',
                 description: "Graphics bom create"
               },
               {
                 label: 'MENUITEMS.OPERATIONS.GRAPHICS.BOM.EDIT',
-                link: '/dashboard/operations/graphics/bom/edit',
+                link: '/operations/graphics/bom/edit',
                 description: "Graphics bom edit"
               },
             ]

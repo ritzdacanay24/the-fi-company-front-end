@@ -567,6 +567,6 @@ export class MaterialRequestWorkflowComponent implements OnInit {
   }
 
   goToList() {
-    this.router.navigate(['/dashboard/operations/material-request/list']);
+    this.router.navigate(['/operations/material-request/list']);
   }
 }

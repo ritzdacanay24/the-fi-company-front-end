@@ -164,7 +164,7 @@ export class TimeTrackerListComponent implements OnInit {
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate(["/dashboard/operations/forms/time-tracker"], {
+    this.router.navigate(["/operations/forms/time-tracker"], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

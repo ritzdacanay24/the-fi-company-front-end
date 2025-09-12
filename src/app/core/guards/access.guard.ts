@@ -30,9 +30,18 @@ export class AccessGuard {
       //checks to see if user has access to component.
       let res = await this.menuService.checkUserPermission(currentUser.id, d);
 
+      console.log("🔍 Menu lookup result for", d, ":", res);
+
+      // If not found, try with /dashboard/ prefix (fallback for database migration)
+      if (!res) {
+        const dashboardUrl = "/dashboard" + d;
+        console.log("🔄 Trying fallback URL:", dashboardUrl);
+        res = await this.menuService.checkUserPermission(currentUser.id, dashboardUrl);
+        console.log("🔍 Fallback lookup result for", dashboardUrl, ":", res);
+      }
 
       if (res && res.active == 0) {
-        this.router.navigate(["dashboard/in-active"], {
+        this.router.navigate(["in-active"], {
           queryParams: {
             returnUrl: state.url,
             title: res?.label || route.routeConfig.title || d,
@@ -52,7 +61,7 @@ export class AccessGuard {
       console.log("🔗 Current URL:", accessCheck);
       if (accessCheck) return true;
 
-      this.router.navigate(["dashboard/access-denied"], {
+      this.router.navigate(["access-denied"], {
         queryParams: {
           returnUrl: state.url,
           title: res?.label || route.routeConfig.title || d,

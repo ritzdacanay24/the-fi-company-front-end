@@ -219,7 +219,7 @@ export class MaterialRequestValidateListComponent implements OnInit {
     this.id = id;
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate(
-      ["/dashboard/operations/material-request/validate-list"],
+      ["/operations/material-request/validate-list"],
       {
         queryParamsHandling: "merge",
         queryParams: {
@@ -233,7 +233,7 @@ export class MaterialRequestValidateListComponent implements OnInit {
   goBack = (refresh) => {
     this.id = null;
     this.router.navigate(
-      ["/dashboard/operations/material-request/validate-list"],
+      ["/operations/material-request/validate-list"],
       {
         queryParamsHandling: "merge",
         queryParams: {

@@ -4,7 +4,7 @@
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
-      <li class="breadcrumb-item"><a routerLink="/dashboard/operations/forms">Forms</a></li>
+      <li class="breadcrumb-item"><a routerLink="/operations/forms">Forms</a></li>
       <li class="breadcrumb-item active" aria-current="page">Shipping Requests</li>
     </ol>
   </nav>
@@ -27,7 +27,7 @@
             <button 
               type="button" 
               class="btn btn-primary"
-              [routerLink]="['/dashboard/operations/forms/shipping-request/create']"
+              [routerLink]="['/operations/forms/shipping-request/create']"
               title="Create new Shipping Request">
               <i class="las la-plus me-2"></i>Create Shipping Request
             </button>
@@ -104,7 +104,7 @@
                 <button 
                   type="button" 
                   class="btn btn-primary"
-                  [routerLink]="['/dashboard/operations/forms/shipping-request/create']">
+                  [routerLink]="['/operations/forms/shipping-request/create']">
                   <i class="las la-plus me-2"></i>Create First Shipping Request
                 </button>
               </div>

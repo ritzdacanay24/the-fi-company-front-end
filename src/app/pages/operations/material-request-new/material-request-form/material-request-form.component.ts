@@ -258,7 +258,7 @@ export class MaterialRequestFormComponent implements OnChanges {
   }
 
   viewShortageId(shortageId) {
-    this.router.navigate(["/dashboard/operations/shortages/edit"], {
+    this.router.navigate(["/operations/shortages/edit"], {
       queryParams: { id: shortageId, goBackUrl: this.router.url },
     });
   }

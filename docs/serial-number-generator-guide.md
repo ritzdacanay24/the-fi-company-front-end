@@ -204,7 +204,7 @@ this.serialNumberService.saveTemplate(template);
 
 ## Demo Page
 
-Visit `/dashboard/operations/serial-number-generator` to see the component in action with examples and integration guides.
+Visit `/operations/serial-number-generator` to see the component in action with examples and integration guides.
 
 ## Dependencies
 
