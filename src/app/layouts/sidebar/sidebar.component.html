@@ -34,6 +34,22 @@
     <div class="container-fluid">
       <div id="two-column-menu">
       </div>
+
+      <!-- Search Input - Hidden when sidebar is small -->
+      <!-- <div *ngIf="showSearch && !isSidebarSmall()" class="menu-search-container px-3 pb-3 pt-2">
+        <div class="position-relative">
+          <input
+            type="text"
+            class="form-control form-control-sm menu-search-input"
+            placeholder="Search menu..."
+            [value]="searchTerm()"
+            (input)="onSearchChange($event)"
+            #searchInput>
+          <i class="bx bx-search search-icon"></i>
+          <i *ngIf="searchTerm()" class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
+        </div>
+      </div> -->
+
       <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 70px)">
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav1">
           <li class="nav-item pointer">

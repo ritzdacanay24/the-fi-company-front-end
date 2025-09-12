@@ -1,0 +1,33 @@
+<div class="app-switcher" (clickOutside)="closeDropdown()">
+  <div class="current-app" (click)="toggleDropdown()">
+    <div class="app-info">
+      <i [class]="currentApp?.icon" class="app-icon"></i>
+      <div class="app-details">
+        <span class="app-name">{{ currentApp?.name }}</span>
+        <small class="app-description">{{ currentApp?.description }}</small>
+      </div>
+    </div>
+    <i class="las la-chevron-down toggle-icon" [class.rotated]="showDropdown"></i>
+  </div>
+
+  <div class="app-dropdown" [class.show]="showDropdown">
+    <div class="dropdown-header">
+      <h6>Switch Application</h6>
+    </div>
+    <div class="app-list">
+      <div 
+        *ngFor="let app of apps" 
+        class="app-option"
+        [class.active]="app.isActive"
+        (click)="switchApp(app)"
+      >
+        <i [class]="app.icon" class="app-icon"></i>
+        <div class="app-details">
+          <span class="app-name">{{ app.name }}</span>
+          <small class="app-description">{{ app.description }}</small>
+        </div>
+        <i *ngIf="app.isActive" class="las la-check check-icon"></i>
+      </div>
+    </div>
+  </div>
+</div>

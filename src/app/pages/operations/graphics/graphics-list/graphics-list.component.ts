@@ -78,6 +78,10 @@ export class GraphicsListComponent implements OnInit {
     });
   }
 
+  getTotalCount(): number {
+    return this.data?.length || 0;
+  }
+
   columnDefs: ColDef[] = [
     {
       field: "View",

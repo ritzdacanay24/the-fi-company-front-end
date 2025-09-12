@@ -21,6 +21,7 @@ import { HorizontalTopbarComponent } from './horizontal-topbar/horizontal-topbar
 import { TwoColumnComponent } from './two-column/two-column.component';
 import { TwoColumnSidebarComponent } from './two-column-sidebar/two-column-sidebar.component';
 import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.component';
+import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.component';
 
 
 
@@ -35,7 +36,8 @@ import { GridLayoutComponent } from '@app/shared/grid-layout/grid-layout.compone
     HorizontalComponent,
     HorizontalTopbarComponent,
     TwoColumnComponent,
-    TwoColumnSidebarComponent
+    TwoColumnSidebarComponent,
+    AppSwitcherComponent
   ],
   imports: [
     CommonModule,

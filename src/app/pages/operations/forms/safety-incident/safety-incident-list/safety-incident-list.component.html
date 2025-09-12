@@ -1,4 +1,13 @@
 <div class="container-fluid">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
+      <li class="breadcrumb-item"><a routerLink="/dashboard/operations/forms">Forms</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Safety Incidents</li>
+    </ol>
+  </nav>
+
   <div class="row justify-content-center">
     <div class="col-12">
       
@@ -72,9 +81,40 @@
           </div>
         </div>
         <div class="card-body p-0">
-          <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-            [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 220px);">
-          </ag-grid-angular>
+          <ng-container *ngIf="data?.length; else noRecords">
+            <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 220px);">
+            </ag-grid-angular>
+          </ng-container>
+
+          <ng-template #noRecords>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+              <div class="text-center" style="max-width: 500px;">
+                <div class="mb-4">
+                  <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                    <i class="mdi mdi-shield-alert text-warning" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <h4 class="text-body-emphasis mb-3">No open safety incidents found</h4>
+                <p class="text-muted mb-4">
+                  There are no open safety incidents matching your current filters or date range. Try adjusting your criteria or create a new incident report.
+                </p>
+                <button 
+                  type="button" 
+                  class="btn btn-warning"
+                  [routerLink]="['/dashboard/operations/forms/safety-incident/create']">
+                  <i class="mdi mdi-plus me-2"></i>Report Incident
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Click "SELECT" to view/edit safety incidents and manage investigation workflows</span>
+          <div class="ms-auto">
+            <small>Total: {{data?.length || 0}} safety incidents</small>
+          </div>
         </div>
       </div>
     </div>

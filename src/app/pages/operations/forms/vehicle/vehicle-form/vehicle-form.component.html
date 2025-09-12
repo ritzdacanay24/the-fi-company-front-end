@@ -1,80 +1,187 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('department')">Department</label>
-      <input type="text" class="form-control" name="department" formControlName="department"
-        placeholder="Enter department name" [ngClass]="{ 'is-invalid': submitted && f.department.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('vin')">Vin</label>
-      <input type="text" class="form-control" name="vin" formControlName="vin"
-        placeholder="Enter vin #" [ngClass]="{ 'is-invalid': submitted && f.vin.errors }" />
+  <!-- Form Lock Status Alert -->
+  <div class="alert alert-info d-flex align-items-center mb-4" *ngIf="isFormDisabled">
+    <i class="mdi mdi-lock-outline me-2 fs-5"></i>
+    <div>
+      <strong>Read-Only Mode:</strong> This form is locked to prevent modifications and maintain data integrity.
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('vehicleMake')">Vehicle Make</label>
-      <input type="text" class="form-control" name="vehicleMake" formControlName="vehicleMake"
-        placeholder="Enter make" [ngClass]="{ 'is-invalid': submitted && f.vehicleMake.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('vehicleNumber')">Vehicle Number</label>
-      <input type="text" class="form-control" name="vehicleNumber" formControlName="vehicleNumber"
-        placeholder="Enter vehicle number" [ngClass]="{ 'is-invalid': submitted && f.vehicleNumber.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('year')">Year</label>
-      <input type="text" class="form-control" name="year" formControlName="year"
-        placeholder="Enter year" [ngClass]="{ 'is-invalid': submitted && f.year.errors }" />
-    </div>
-  </div>
+  <div class="body">
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('fuelType')">Fuel Type</label>
-      <input type="text" class="form-control" name="fuelType" formControlName="fuelType"
-        placeholder="Enter fuel type" [ngClass]="{ 'is-invalid': submitted && f.fuelType.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('licensePlate')">License Plate</label>
-      <input type="text" class="form-control" name="licensePlate" formControlName="licensePlate"
-        placeholder="Enter license plate #" [ngClass]="{ 'is-invalid': submitted && f.licensePlate.errors }" />
-    </div>
-  </div>
+    <!-- Vehicle Information Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Vehicle Information</h3>
+        <p class="text-muted mb-0">
+          Basic vehicle identification and specifications.
+        </p>
+      </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('exp')">Expiration Date</label>
-      <input type="date" class="form-control" name="exp" formControlName="exp"
-        placeholder="Enter expiration date" [ngClass]="{ 'is-invalid': submitted && f.exp.errors }" />
-    </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('mileage')">Mileage</label>
-      <input type="text" class="form-control" name="mileage" formControlName="mileage"
-        placeholder="Enter mileage" [ngClass]="{ 'is-invalid': submitted && f.mileage.errors }" />
-    </div>
-  </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('vehicleMake')">Vehicle Make</label>
+          <input type="text" class="form-control" name="vehicleMake" formControlName="vehicleMake"
+            placeholder="Enter vehicle make" [ngClass]="{ 'is-invalid': submitted && f.vehicleMake.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Manufacturer name (e.g., Ford, Chevrolet, Toyota).
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('year')">Year</label>
+          <input type="text" class="form-control" name="year" formControlName="year"
+            placeholder="Enter model year" [ngClass]="{ 'is-invalid': submitted && f.year.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Vehicle model year.
+          </div>
+        </div>
+      </div>
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('lastServiceDate')">Last Service Date</label>
-      <input type="date" class="form-control" name="lastServiceDate" formControlName="lastServiceDate"
-        placeholder="Enter last service date" [ngClass]="{ 'is-invalid': submitted && f.lastServiceDate.errors }" />
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('vehicleNumber')">Vehicle Number</label>
+          <input type="text" class="form-control" name="vehicleNumber" formControlName="vehicleNumber"
+            placeholder="Enter fleet number" [ngClass]="{ 'is-invalid': submitted && f.vehicleNumber.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Internal fleet identification number.
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('fuelType')">Fuel Type</label>
+          <input type="text" class="form-control" name="fuelType" formControlName="fuelType"
+            placeholder="Enter fuel type" [ngClass]="{ 'is-invalid': submitted && f.fuelType.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Type of fuel used (Gasoline, Diesel, Electric, etc.).
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="col-sm mb-3">
-      <label class="form-label" [ngClass]="formValidator('typeOfService')">Type of Service</label>
-      <input type="text" class="form-control" name="typeOfService" formControlName="typeOfService"
-        placeholder="Enter type of service" [ngClass]="{ 'is-invalid': submitted && f.typeOfService.errors }" />
-    </div>
-  </div>
 
-  <div class="mb-3">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="active" formControlName="active">
-      <label class="form-check-label" for="active">Active</label>
-    </div>
-  </div>
+    <!-- Registration & Identification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Registration & Identification</h3>
+        <p class="text-muted mb-0">
+          Legal registration and identification numbers.
+        </p>
+      </div>
 
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('vin')">VIN Number</label>
+          <input type="text" class="form-control" name="vin" formControlName="vin"
+            placeholder="Enter VIN number" [ngClass]="{ 'is-invalid': submitted && f.vin.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            17-character Vehicle Identification Number.
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('licensePlate')">License Plate</label>
+          <input type="text" class="form-control" name="licensePlate" formControlName="licensePlate"
+            placeholder="Enter license plate number" [ngClass]="{ 'is-invalid': submitted && f.licensePlate.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Current license plate number.
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('exp')">Registration Expiration</label>
+          <input type="date" class="form-control" name="exp" formControlName="exp"
+            placeholder="Select expiration date" [ngClass]="{ 'is-invalid': submitted && f.exp.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Vehicle registration expiration date.
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('department')">Department</label>
+          <input type="text" class="form-control" name="department" formControlName="department"
+            placeholder="Enter assigned department" [ngClass]="{ 'is-invalid': submitted && f.department.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Department responsible for this vehicle.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance & Service Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Maintenance & Service</h3>
+        <p class="text-muted mb-0">
+          Current mileage and service history tracking.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('mileage')">Current Mileage</label>
+          <input type="text" class="form-control" name="mileage" formControlName="mileage"
+            placeholder="Enter current mileage" [ngClass]="{ 'is-invalid': submitted && f.mileage.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Current odometer reading.
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label" [ngClass]="formValidator('lastServiceDate')">Last Service Date</label>
+          <input type="date" class="form-control" name="lastServiceDate" formControlName="lastServiceDate"
+            placeholder="Select last service date" [ngClass]="{ 'is-invalid': submitted && f.lastServiceDate.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Date of most recent maintenance service.
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12 mb-3">
+          <label class="form-label" [ngClass]="formValidator('typeOfService')">Type of Service</label>
+          <input type="text" class="form-control" name="typeOfService" formControlName="typeOfService"
+            placeholder="Enter service description" [ngClass]="{ 'is-invalid': submitted && f.typeOfService.errors }" />
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Description of the last maintenance service performed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status & Configuration Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Status & Configuration</h3>
+        <p class="text-muted mb-0">
+          Vehicle status settings for fleet management.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Vehicle Status</label>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="activeToggle" formControlName="active">
+            <label class="form-check-label" for="activeToggle">
+              Active in Fleet
+            </label>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Enable this vehicle for active fleet operations.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- end body container -->
 </form>

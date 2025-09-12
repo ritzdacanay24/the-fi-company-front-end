@@ -256,6 +256,20 @@ export class QirListComponent implements OnInit {
     });
   }
 
+  getActiveCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => item.active === 1 || item.active === '1' || item.active === true).length;
+  }
+
+  getResolvedCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => item.active === 0 || item.active === '0' || item.active === false).length;
+  }
+
+  getCurrentDate(): Date {
+    return new Date();
+  }
+
   async getData() {
     try {
       this.gridApi?.showLoadingOverlay();

@@ -1,26 +1,81 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-      </div>
-      <div class="card-body" style="min-height:300px">
-        <app-vehicle-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-vehicle-form>
-
-        <div class="mb-3 mt-3">
-          <div class="form-group">
-            <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
-            <button (click)="this.upload()" type="button" class="btn btn-primary" *ngIf="id">Upload</button>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to Vehicle List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-dark bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-plus text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-dark">{{title}}</h2>
+            <p class="text-muted mb-0">Register a new company vehicle with comprehensive tracking and maintenance details</p>
           </div>
         </div>
+        
+        <div class="alert alert-dark border-dark border-opacity-25 bg-dark bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-dark me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-dark mb-2">Creating a New Vehicle Record</h6>
+              <p class="mb-0">
+                Complete all required fields to register this vehicle in the fleet management system. 
+                Ensure VIN and license plate information is accurate for proper identification.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-vehicle-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-vehicle-form>
+
+          <!-- File Upload Section -->
+          <div class="mb-3 mt-4 pt-4 border-top" *ngIf="id">
+            <div class="mb-3">
+              <h3 class="h5 mb-1">Vehicle Documents</h3>
+              <p class="text-muted mb-0">
+                Upload vehicle-related documents, registration, or maintenance records.
+              </p>
+            </div>
+            <div class="form-group">
+              <input (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file">
+              <div class="form-text">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Select multiple files to upload vehicle documentation.
+              </div>
+              <button (click)="this.upload()" type="button" class="btn btn-outline-dark mt-2" *ngIf="id">
+                <i class="mdi mdi-upload me-1"></i>Upload Documents
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-dark ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Creating Vehicle...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Create Vehicle
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
-      </div>
+      
     </div>
   </div>
 </div>

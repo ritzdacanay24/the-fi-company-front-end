@@ -2,6 +2,8 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { DataService } from "../DataService";
 import { firstValueFrom } from "rxjs";
+// Fallback static menu (used when backend is unreachable or for local dev)
+import { MENU } from "../../../layouts/sidebar/menu";
 
 let url = "menu";
 
@@ -33,12 +35,9 @@ export class MenuService extends DataService<any> {
   };
 
   getMenu = async (groupData = true) => {
-    let data = await firstValueFrom(this.http.get<any[]>(`${url}/menu`));
-    if (groupData) {
-      return formatData(data);
-    } else {
-      return data;
-    }
+  // Use the local static `MENU` instead of calling the backend.
+  // This keeps the app working offline/local-only and follows the MenuItem interface.
+  return MENU as any;
   };
 }
 

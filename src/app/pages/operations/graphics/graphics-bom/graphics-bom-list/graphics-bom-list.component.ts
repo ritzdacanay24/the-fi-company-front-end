@@ -84,6 +84,16 @@ export class GraphicsBomListComponent implements OnInit {
     });
   }
 
+  onCreate() {
+    this.router.navigate([NAVIGATION_ROUTE.CREATE], {
+      queryParamsHandling: "merge"
+    });
+  }
+
+  getTotalCount(): number {
+    return this.data?.length || 0;
+  }
+
   columnDefs: (ColDef | ColGroupDef)[] = [
     {
       field: "View",

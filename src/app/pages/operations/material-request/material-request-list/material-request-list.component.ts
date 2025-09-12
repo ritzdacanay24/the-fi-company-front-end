@@ -1,6 +1,6 @@
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule, FormsModule } from "@angular/forms";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
@@ -24,6 +24,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
   imports: [
     SharedModule,
     ReactiveFormsModule,
+    FormsModule,
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
@@ -269,5 +270,16 @@ export class MaterialRequestListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  // Helper methods for statistics display
+  getActiveCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => item.active === 1 || item.active === true || item.active === '1').length;
+  }
+
+  getCompletedCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => item.pickedCompletedDate && item.pickedCompletedDate !== null).length;
   }
 }

@@ -1,42 +1,108 @@
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
-                            [displayOptions]="true"></app-date-range>
-                    </div>
+<div class="container-fluid">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
+      <li class="breadcrumb-item"><a routerLink="/dashboard/operations/graphics">Graphics</a></li>
+      <li class="breadcrumb-item active" aria-current="page">BOM Management</li>
+    </ol>
+  </nav>
 
-                    <div class="form-icon">
-                        <input type="text" class="form-control form-control-icon" style="width:250px"
-                            (ngModelChange)="this.gridApi.setGridOption('quickFilterText', query);" [(ngModel)]="query"
-                            placeholder="Search">
-                        <i class="ri-search-2-line"></i>
-                    </div>
-
-                    <button class="btn btn-light ms-3" (click)="getData()"><i class="mdi mdi-refresh"></i></button>
-
-                    <div class="ms-3">
-                        <app-grid-settings [gridApi]="gridApi"
-                            [pageId]="pageId"></app-grid-settings>
-                    </div>
-
-                    <div class="ms-3">
-                        <app-grid-filters [gridApi]="gridApi"
-                            [pageId]="pageId"></app-grid-filters>
-                    </div>
-
-                    <div class="ms-auto">
-                        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
-                    </div>
-                </div>
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-format-list-bulleted text-white fs-4"></i>
             </div>
-            <div class="card-body p-0">
-                <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-                    [gridOptions]="gridOptions" style="height: calc(100vh - 170px);">
-                </ag-grid-angular>
+            <div>
+              <h2 class="mb-1 text-success">BOM Management</h2>
+              <p class="text-muted mb-0">Manage Bill of Materials for graphics production and component tracking</p>
             </div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">Total BOMs:</span>
+              <span class="badge bg-success-subtle text-success fw-bold">{{ getTotalCount() }}</span>
+            </div>
+            <button 
+              type="button" 
+              class="btn btn-success"
+              (click)="onCreate()"
+              title="Create new BOM">
+              <i class="mdi mdi-plus me-2"></i>Create BOM
+            </button>
+          </div>
         </div>
+        <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-success me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-success mb-2">BOM Overview</h6>
+              <p class="mb-0">
+                Track and manage Bill of Materials for graphics production. Monitor component requirements and assembly specifications.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon">
+              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
+                [displayOptions]="true"></app-date-range>
+            </div>
+            <div class="form-icon">
+              <input type="text" class="form-control form-control-icon" style="width:250px"
+                (ngModelChange)="this.gridApi.setGridOption('quickFilterText', query);" [(ngModel)]="query"
+                placeholder="Search BOMs...">
+              <i class="ri-search-2-line"></i>
+            </div>
+            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh data">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
+              <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <ng-container *ngIf="data?.length; else noRecords">
+            <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
+              style="width: 100%;height: calc(100vh - 300px);"
+              [rowData]="data" [columnDefs]="columnDefs">
+            </ag-grid-angular>
+          </ng-container>
+
+          <ng-template #noRecords>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+              <div class="text-center" style="max-width: 500px;">
+                <div class="mb-4">
+                  <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                    <i class="mdi mdi-format-list-bulleted text-success" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <h4 class="text-body-emphasis mb-3">No BOM records found</h4>
+                <p class="text-muted mb-4">
+                  No Bill of Materials match your current search or date range. Try adjusting your criteria.
+                </p>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Click "SELECT" to view/edit BOM details and manage component specifications</span>
+          <div class="ms-auto">
+            <small>Total: {{data?.length || 0}} BOMs</small>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>

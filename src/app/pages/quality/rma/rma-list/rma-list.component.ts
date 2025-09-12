@@ -179,6 +179,9 @@ export class RmaListComponent implements OnInit {
 
   gridApi: GridApi;
 
+  // Identifier used by grid settings/filters components
+  pageId: string = 'rma-list';
+
   data: any[];
 
   id = null;

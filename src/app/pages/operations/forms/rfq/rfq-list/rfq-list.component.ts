@@ -1,6 +1,6 @@
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule, FormsModule } from "@angular/forms";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
@@ -22,6 +22,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
   imports: [
     SharedModule,
     ReactiveFormsModule,
+    FormsModule,
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
@@ -248,5 +249,23 @@ export class RfqListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  // Helper methods for statistics display
+  getPendingCount(): number {
+    if (!this.data) return 0;
+    // Assuming RFQs are pending if they're active and don't have a completion status
+    return this.data.filter(item => 
+      (item.active === 1 || item.active === true || item.active === '1') && 
+      (!item.status || item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'open')
+    ).length;
+  }
+
+  getCompletedCount(): number {
+    if (!this.data) return 0;
+    // Assuming RFQs are completed if they have a completion status
+    return this.data.filter(item => 
+      item.status && (item.status.toLowerCase() === 'completed' || item.status.toLowerCase() === 'closed' || item.status.toLowerCase() === 'awarded')
+    ).length;
   }
 }

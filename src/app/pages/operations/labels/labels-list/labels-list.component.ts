@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
+import { FormsModule } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import {
@@ -38,6 +39,7 @@ tippy.setDefaultProps({ animation: false });
   standalone: true,
   imports: [
     SharedModule,
+    FormsModule,
     AgGridModule,
     NgSelectModule,
     GridSettingsComponent,
@@ -164,5 +166,12 @@ export class LabelsListComponent implements OnInit {
   data: any = [];
   async getData() {
     this.data = labelData;
+  }
+
+  // Helper methods for statistics display
+  getAvailableCount(): number {
+    if (!this.data) return 0;
+    // For labels, we consider all as available since they are print utilities
+    return this.data.length;
   }
 }

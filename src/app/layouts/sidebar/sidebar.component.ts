@@ -14,6 +14,8 @@ import { environment } from "src/environments/environment";
 import { FavoriteService } from "@app/core/api/favorites/favorites.service";
 import { PageAccessService } from "@app/core/api/page-access/page-access.service";
 import { MenuService } from "@app/core/api/menu/menu.service";
+import { AppSwitcherService } from "@app/services/app-switcher.service";
+import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
 
 @Component({
   selector: "app-sidebar",
@@ -30,16 +32,19 @@ export class SidebarComponent implements OnInit {
   favs = [];
 
   version = environment.VERSION;
+  // Search state used by the sidebar search input
+  showSearch: boolean = true; // toggle visibility of the search box
+  searchMenu: string = "";
 
-  searchMenu;
-
-  recentSearches = [];
+  // history / recent searches (lightweight placeholder)
+  recentSearches: string[] = [];
   constructor(
     private router: Router,
     public translate: TranslateService,
     private favoriteService: FavoriteService,
     public pageAccessService: PageAccessService,
-    public menuService: MenuService
+    public menuService: MenuService,
+    private appSwitcherService: AppSwitcherService
   ) {
     this.getMenu();
     
@@ -54,6 +59,11 @@ export class SidebarComponent implements OnInit {
           this.initActiveMenu();
         }
       }
+    });
+
+    // Subscribe to app changes and reload menu
+    this.appSwitcherService.currentApp$.subscribe(() => {
+      this.getMenu();
     });
   }
 
@@ -70,7 +80,12 @@ export class SidebarComponent implements OnInit {
   };
 
   async getMenu() {
-    this.menuItems = await this.menuService.getMenu();
+    // Determine which menu to load based on current app
+    if (this.appSwitcherService.isFieldServiceApp()) {
+      this.menuItems = FIELD_SERVICE_MENU;
+    } else {
+      this.menuItems = await this.menuService.getMenu();
+    }
     setTimeout(() => {
       this.initActiveMenu();
     }, 0);
@@ -90,6 +105,68 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     // Menu Items
     // this.menuItems = MENU;
+  }
+
+  /**
+   * Return the current search term (used by template bindings)
+   */
+  searchTerm(): string {
+    return this.searchMenu || "";
+  }
+
+  /**
+   * Handler for the search input change event
+   */
+  onSearchChange(event: any) {
+    // event may be an Event or a string depending on usage; handle both
+    const value = event && event.target ? event.target.value : event || "";
+    this.searchMenu = value;
+    // Optionally track recent searches (light-weight)
+    if (value && !this.recentSearches.includes(value)) {
+      this.recentSearches.unshift(value);
+      if (this.recentSearches.length > 10) this.recentSearches.pop();
+    }
+  }
+
+  /**
+   * Clear the current search term
+   */
+  clearSearch() {
+    this.searchMenu = "";
+  }
+
+  /**
+   * Quick viewport check used by template to hide search when sidebar is collapsed/small
+   */
+  isSidebarSmall(): boolean {
+    const size = document.documentElement.getAttribute("data-sidebar-size");
+    return size === "sm" || size === "sm-hover";
+  }
+
+  /**
+   * Return menu items filtered by the current search term.
+   * This keeps the original menuItems intact and returns a new array used by templates if desired.
+   */
+  filteredMenuItems(): MenuItem[] {
+    if (!this.searchMenu) return this.menuItems;
+    const term = this.searchMenu.toLowerCase();
+
+    const filterRec = (items: MenuItem[]): MenuItem[] => {
+      const out: MenuItem[] = [];
+      items.forEach((it) => {
+        const matchLabel = (it.label || "").toLowerCase().includes(term);
+        let matchedSubItems: any[] = [];
+        if (it.subItems && it.subItems.length) {
+          matchedSubItems = filterRec(it.subItems as MenuItem[]);
+        }
+        if (matchLabel || (matchedSubItems && matchedSubItems.length)) {
+          out.push({ ...it, subItems: matchedSubItems });
+        }
+      });
+      return out;
+    };
+
+    return filterRec(this.menuItems);
   }
 
   /***

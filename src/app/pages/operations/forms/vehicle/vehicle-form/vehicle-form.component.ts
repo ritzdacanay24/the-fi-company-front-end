@@ -29,6 +29,7 @@ export class VehicleFormComponent {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
+  @Input() isFormDisabled = false;
 
   get f() {
     return this.form.controls;

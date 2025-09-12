@@ -36,7 +36,7 @@ export class ShippingRequestEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit Shipping Request";
 
   form: MyFormGroup<IShippingRequestForm>;
 
@@ -45,6 +45,9 @@ export class ShippingRequestEditComponent {
   isLoading = false;
 
   submitted = false;
+
+  // When true child form will call form.disable() and then keep tracking enabled
+  formDisabled = false;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -61,12 +64,26 @@ export class ShippingRequestEditComponent {
       if (this.data?.sendTrackingNumberTo)
         this.data.sendTrackingNumberTo =
           this.data?.sendTrackingNumberTo?.split(",");
-      this.form.patchValue(this.data);
+      // If child form already emitted, patch it. Otherwise onFormReady will patch once form is ready.
+      if (this.form) {
+        this.form.patchValue(this.data);
+      }
+      // For edit page, disable the form except tracking number
+      this.formDisabled = !!this.id;
       await this.getAttachments();
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
     }
+  }
+
+  // Handler when child form component emits the FormGroup
+  onFormReady(f: MyFormGroup<IShippingRequestForm>) {
+    this.form = f;
+    // If data already loaded, apply it to the form
+    if (this.data) this.form.patchValue(this.data);
+    // If this is an edit, instruct child to disable the form (child handles keeping tracking editable)
+    this.formDisabled = !!this.id;
   }
 
   async onSubmit() {

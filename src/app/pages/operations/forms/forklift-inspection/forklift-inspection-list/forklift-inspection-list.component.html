@@ -1,17 +1,77 @@
-<div class="row">
-    <div class="col-lg-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center">
-                    <div class="ms-auto">
-                        <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a routerLink="/dashboard/operations">Operations</a></li>
+                    <li class="breadcrumb-item"><a routerLink="/dashboard/operations/forms">Forms</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Forklift Inspections</li>
+                </ol>
+            </nav>
+
+            <!-- Page Header with Context -->
+            <div class="mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                            <i class="las la-truck-monster text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1 text-info">Forklift Inspections</h2>
+                            <p class="text-muted mb-0">Manage scheduled forklift inspections and safety checks</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-info" [routerLink]="['/dashboard/operations/forms/forklift-inspection/create']">
+                            <i class="las la-plus me-2"></i>Create Inspection
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
-                    [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 172px);">
-                </ag-grid-angular>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header">
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <!-- preserve existing title placement for backward compatibility -->
+                        <div class="ms-auto">
+                            <h4 class="card-title mb-0 flex-grow-1"> {{title}} </h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ng-container *ngIf="data?.length; else noRecords">
+                        <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [columnDefs]="columnDefs"
+                            [gridOptions]="gridOptions" style="width: 100%;height: calc(100vh - 300px);">
+                        </ag-grid-angular>
+                    </ng-container>
+
+                    <ng-template #noRecords>
+                        <div class="d-flex flex-column align-items-center justify-content-center p-5">
+                            <div class="text-center" style="max-width: 500px;">
+                                <div class="mb-4">
+                                    <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                        <i class="las la-search text-info" style="font-size: 3rem;"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-body-emphasis mb-3">No forklift inspections found</h4>
+                                <p class="text-muted mb-4">
+                                    No scheduled inspections match your current filters or date range. Try adjusting your criteria or create a new inspection.
+                                </p>
+                                <button type="button" class="btn btn-info" [routerLink]="['/dashboard/operations/forms/forklift-inspection/create']">
+                                    <i class="las la-plus me-2"></i>Create Inspection
+                                </button>
+                            </div>
+                        </div>
+                    </ng-template>
+                </div>
+                <div class="card-footer bg-light text-muted d-flex align-items-center">
+                    <i class="las la-info-circle me-2"></i>
+                    <span>Click "SELECT" to view/edit inspections and manage maintenance workflows</span>
+                    <div class="ms-auto">
+                        <small>Total: {{data?.length || 0}} inspections</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -25,14 +25,12 @@ const routes: Routes = [
     title: "Field Service Map",
     path: "map",
     component: MapComponent,
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
     title: "User Location Map",
     path: "user-location-map",
     component: UserLocationMapComponent,
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -42,7 +40,6 @@ const routes: Routes = [
       import("./report/report-routing.module").then(
         (m) => m.ReportRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -52,7 +49,6 @@ const routes: Routes = [
       import("./maintenance/maintenance-routing.module").then(
         (m) => m.MaintenanceRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -60,7 +56,6 @@ const routes: Routes = [
     path: "jobs",
     loadChildren: () =>
       import("./job/job-routing.module").then((m) => m.JobRoutingModule),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -69,7 +64,6 @@ const routes: Routes = [
       import("./request/request-routing.module").then(
         (m) => m.RequestRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -78,7 +72,6 @@ const routes: Routes = [
       import("./ticket/ticket-routing.module").then(
         (m) => m.TicketRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -87,7 +80,6 @@ const routes: Routes = [
       import("./scheduler/scheduler-routing.module").then(
         (m) => m.SchedulerRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -96,7 +88,6 @@ const routes: Routes = [
       import(
         "./credit-card-transaction/credit-card-transaction-routing.module"
       ).then((m) => m.CreditCardTransactionRoutingModule),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -105,7 +96,6 @@ const routes: Routes = [
       import("./parts-order/parts-order-routing.module").then(
         (m) => m.PartsOrderRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -114,7 +104,6 @@ const routes: Routes = [
       import("./trip-details/trip-details-routing.module").then(
         (m) => m.TripDetailsRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -123,7 +112,6 @@ const routes: Routes = [
       import("./customer-visit/customer-visit-routing.module").then(
         (m) => m.CustomerVisitRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
 ];

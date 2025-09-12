@@ -46,6 +46,24 @@ const routes: Routes = [
     loadChildren: () =>
       import("./account/account.module").then((m) => m.AccountModule),
   },
+  // New Field Service App (standalone)
+  {
+    path: "field-service",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      { path: "", redirectTo: "overview/summary", pathMatch: "full" },
+      {
+        title: "Field Service",
+        path: "",
+        loadChildren: () =>
+          import("./pages/field-service/field-service-routing.module").then(
+            (m) => m.FieldServiceRoutingModule
+          ),
+      },
+    ],
+  },
   { path: "", redirectTo: "menu", pathMatch: "full" },
   {
     path: "dashboard",

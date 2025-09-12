@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from "@angular/core";
 import {
   AbstractControl,
   FormBuilder,
@@ -30,7 +30,10 @@ import { AutosizeModule } from "ngx-autosize";
   selector: "app-shipping-request-form",
   templateUrl: "./shipping-request-form.component.html",
 })
-export class ShippingRequestFormComponent {
+export class ShippingRequestFormComponent implements OnChanges {
+  // When true, form should be rendered read-only
+  @Input() isFormDisabled: boolean = false;
+
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
@@ -47,6 +50,23 @@ export class ShippingRequestFormComponent {
       }
       this.form.get("thridPartyAccountNumber").updateValueAndValidity();
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes["isFormDisabled"]) {
+      this.applyDisabledState();
+    }
+  }
+
+  private applyDisabledState() {
+    if (this.isFormDisabled) {
+      // Disable entire form, then enable trackingNumber so it remains editable
+      this.form.disable({ emitEvent: false });
+      // Ensure trackingNumber stays enabled when present
+      if (this.form.get("trackingNumber")) this.form.get("trackingNumber").enable({ emitEvent: false });
+    } else {
+      this.form.enable({ emitEvent: false });
+    }
   }
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();

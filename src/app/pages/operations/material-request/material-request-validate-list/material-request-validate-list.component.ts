@@ -1,6 +1,6 @@
 import { GridApi, GridOptions } from "ag-grid-community";
 import { Component, Input, OnInit } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule, FormsModule } from "@angular/forms";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { AgGridModule } from "ag-grid-angular";
 
@@ -22,8 +22,10 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
   imports: [
     SharedModule,
     ReactiveFormsModule,
+    FormsModule,
     NgSelectModule,
     AgGridModule,
+    DateRangeComponent,
     MaterialRequestValidateComponent,
   ],
   selector: "app-material-request-validate-list",
@@ -273,5 +275,16 @@ export class MaterialRequestValidateListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  // Helper methods for statistics display
+  getPendingCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => !item.validated || item.validated === '0' || item.validated === false).length;
+  }
+
+  getValidatedCount(): number {
+    if (!this.data) return 0;
+    return this.data.filter(item => item.validated && item.validated !== '0' && item.validated !== false).length;
   }
 }
