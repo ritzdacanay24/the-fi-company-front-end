@@ -1,0 +1,431 @@
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-clipboard-search-outline text-muted" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Quality Issue Report Selected</h4>
+          <p class="text-muted mb-4">Please select a Quality Issue Report from the list to view the detailed summary.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Return to QIR List
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10 col-xxl-9">
+      
+      <!-- Professional Header -->
+      <div class="mb-4">
+        <div class="card border-0 shadow-sm bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="card-body p-4">
+            <div class="row align-items-center">
+              <div class="col">
+                <div class="d-flex align-items-center text-white">
+                  <div class="me-3">
+                    <i class="mdi mdi-clipboard-check-outline" style="font-size: 2.5rem;"></i>
+                  </div>
+                  <div>
+                    <h1 class="h3 mb-1 fw-bold">Quality Issue Report</h1>
+                    <p class="mb-0 opacity-90" *ngIf="data">
+                      QIR #{{data.qir || data.id}} • {{data.customerName}} • {{data.createdDate | date:'MMM d, yyyy'}}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-auto">
+                <span class="badge fs-6 px-3 py-2 border border-white border-opacity-25" 
+                      [class.bg-success]="data?.status === 'Open'" 
+                      [class.bg-secondary]="data?.status !== 'Open'">
+                  {{data?.status || 'Unknown'}}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        
+        <!-- Main Content -->
+        <div class="col-lg-8">
+
+          <!-- Executive Summary -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+              <h5 class="mb-0 fw-semibold text-dark">Executive Summary</h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-4">
+                <div class="col-sm-6">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="mdi mdi-identifier text-primary"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <h6 class="mb-1 text-muted">QIR Number</h6>
+                      <div class="h5 mb-0 fw-bold text-primary">#{{data?.qir || data?.id}}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="mdi mdi-alert-circle text-warning"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <h6 class="mb-1 text-muted">Issue Type</h6>
+                      <div class="fw-semibold">{{data?.type1 || 'Not specified'}}</div>
+                      <small class="text-muted" *ngIf="data?.typeSub">{{data?.typeSub}}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="card border-0 shadow-sm mb-4" *ngIf="data?.first_name || data?.last_name || data?.email">
+            <div class="card-header bg-white border-bottom py-3">
+              <h5 class="mb-0 fw-semibold text-dark">Contact Information</h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="mdi mdi-account text-primary"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <h6 class="fw-semibold mb-1">{{data?.first_name}} {{data?.last_name}}</h6>
+                      <div class="text-muted">Issue Reporter</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-auto" *ngIf="data?.email">
+                  <a href="mailto:{{data?.email}}" class="btn btn-outline-primary">
+                    <i class="mdi mdi-email me-2"></i>{{data?.email}}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product & Customer Information -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+              <h5 class="mb-0 fw-semibold text-dark">Product & Customer Information</h5>
+            </div>
+            <div class="card-body p-4">
+              
+              <!-- Customer Section -->
+              <div class="mb-4">
+                <div class="row align-items-center mb-3">
+                  <div class="col">
+                    <h6 class="text-muted mb-1">Customer</h6>
+                    <div class="h5 mb-0 fw-semibold">{{data?.customerName || 'Not specified'}}</div>
+                  </div>
+                  <div class="col-auto" *ngIf="data?.casinoName">
+                    <div class="badge bg-light text-dark border px-3 py-2">
+                      <i class="mdi mdi-domain me-1"></i>{{data?.casinoName}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Product Details Grid -->
+              <div class="row g-4">
+                <div class="col-md-6" *ngIf="data?.CustomerPartNumber">
+                  <div class="border-start border-3 border-primary ps-3">
+                    <h6 class="text-muted mb-1">Customer Part Number</h6>
+                    <div class="fw-semibold">{{data?.CustomerPartNumber}}</div>
+                  </div>
+                </div>
+                <div class="col-md-6" *ngIf="data?.eyefiPartNumber">
+                  <div class="border-start border-3 border-success ps-3">
+                    <h6 class="text-muted mb-1">EyeFi Part Number</h6>
+                    <div class="fw-semibold">{{data?.eyefiPartNumber}}</div>
+                  </div>
+                </div>
+                <div class="col-md-6" *ngIf="data?.serialNumber">
+                  <div class="border-start border-3 border-info ps-3">
+                    <h6 class="text-muted mb-1">Serial Number</h6>
+                    <div class="fw-semibold font-monospace">{{data?.serialNumber}}</div>
+                  </div>
+                </div>
+                <div class="col-md-6" *ngIf="data?.qty">
+                  <div class="border-start border-3 border-warning ps-3">
+                    <h6 class="text-muted mb-1">Quantity Affected</h6>
+                    <div class="fw-semibold">{{data?.qty}} units</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stakeholder Information -->
+          <div class="card border-0 shadow-sm mb-4" *ngIf="data?.stakeholder || data?.supplierName || data?.fieldServiceSchedulerId">
+            <div class="card-header bg-white border-bottom py-3">
+              <h5 class="mb-0 fw-semibold text-dark">Additional Information</h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-4">
+                <div class="col-md-4" *ngIf="data?.stakeholder">
+                  <div class="border-start border-3 border-info ps-3">
+                    <h6 class="text-muted mb-1">Stakeholder</h6>
+                    <div class="fw-semibold">{{data?.stakeholder}}</div>
+                  </div>
+                </div>
+                <div class="col-md-4" *ngIf="data?.supplierName">
+                  <div class="border-start border-3 border-secondary ps-3">
+                    <h6 class="text-muted mb-1">Supplier</h6>
+                    <div class="fw-semibold">{{data?.supplierName}}</div>
+                  </div>
+                </div>
+                <div class="col-md-4" *ngIf="data?.fieldServiceSchedulerId">
+                  <div class="border-start border-3 border-warning ps-3">
+                    <h6 class="text-muted mb-1">Field Service ID</h6>
+                    <div class="fw-semibold">{{data?.fieldServiceSchedulerId}}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issue Analysis -->
+          <div class="card border-0 shadow-sm mb-4" *ngIf="data?.issueComment || data?.rootCauseAnalysis || data?.correctiveAction">
+            <div class="card-header bg-white border-bottom py-3">
+              <h5 class="mb-0 fw-semibold text-dark">Issue Analysis & Resolution</h5>
+            </div>
+            <div class="card-body p-4">
+
+              <!-- Issue Description -->
+              <div class="mb-4" *ngIf="data?.issueComment">
+                <div class="d-flex align-items-start mb-3">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="rounded bg-danger bg-opacity-10 p-2">
+                      <i class="mdi mdi-alert-circle text-danger"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="fw-semibold mb-2">Issue Description</h6>
+                    <div class="text-body" [innerHTML]="data?.issueComment"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Root Cause Analysis -->
+              <div class="mb-4" *ngIf="data?.rootCauseAnalysis">
+                <div class="d-flex align-items-start mb-3">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="rounded bg-warning bg-opacity-10 p-2">
+                      <i class="mdi mdi-magnify text-warning"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="fw-semibold mb-2">Root Cause Analysis</h6>
+                    <div class="text-body" [innerHTML]="data?.rootCauseAnalysis"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Corrective Action -->
+              <div class="mb-0" *ngIf="data?.correctiveAction">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="rounded bg-success bg-opacity-10 p-2">
+                      <i class="mdi mdi-check-circle text-success"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="fw-semibold mb-2">Corrective Action</h6>
+                    <div class="text-body" [innerHTML]="data?.correctiveAction"></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Supporting Documents -->
+          <div class="card border-0 shadow-sm mb-4" *ngIf="attachments?.length > 0">
+            <div class="card-header bg-white border-bottom py-3 d-flex align-items-center">
+              <h5 class="mb-0 fw-semibold text-dark">Supporting Documents</h5>
+              <span class="badge bg-primary ms-auto">{{attachments?.length}}</span>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-6" *ngFor="let row of attachments; let i = index">
+                  <div class="border rounded-3 p-3 bg-light">
+                    <div class="d-flex align-items-start">
+                      <div class="flex-shrink-0 me-3">
+                        <i class="mdi mdi-file-document text-primary" style="font-size: 1.5rem;"></i>
+                      </div>
+                      <div class="flex-grow-1 min-width-0">
+                        <h6 class="fw-semibold mb-1 text-truncate">{{row.fileName}}</h6>
+                        <p class="text-muted small mb-3">
+                          {{row.createdDate | date:'MMM d, yyyy h:mm a'}}
+                        </p>
+                        <div class="d-flex gap-2">
+                          <button class="btn btn-outline-primary btn-sm" (click)="open(i)">
+                            <i class="mdi mdi-eye me-1"></i>View
+                          </button>
+                          <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}" 
+                             target="_blank" 
+                             class="btn btn-outline-secondary btn-sm">
+                            <i class="mdi mdi-download me-1"></i>Download
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+
+          <!-- Status & Timeline -->
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+              <h6 class="mb-0 fw-semibold text-dark">Status & Timeline</h6>
+            </div>
+            <div class="card-body p-4">
+              
+              <!-- Current Status -->
+              <div class="text-center mb-4">
+                <div class="mb-3">
+                  <span class="badge fs-5 px-4 py-3" 
+                        [class.bg-success]="data?.status === 'Open'" 
+                        [class.bg-secondary]="data?.status !== 'Open'">
+                    {{data?.status || 'Unknown'}}
+                  </span>
+                </div>
+                <div class="small text-muted" *ngIf="isQirClosed">
+                  This issue has been resolved and closed
+                </div>
+                <div class="small text-muted" *ngIf="!isQirClosed">
+                  This issue is currently being investigated
+                </div>
+              </div>
+
+              <!-- Timeline -->
+              <div class="timeline">
+                <div class="timeline-item" *ngIf="data?.createdDate">
+                  <div class="timeline-marker bg-primary"></div>
+                  <div class="timeline-content">
+                    <h6 class="mb-1">Issue Reported</h6>
+                    <div class="small text-muted">{{data?.createdDate | date:'MMM d, yyyy h:mm a'}}</div>
+                  </div>
+                </div>
+                <div class="timeline-item" *ngIf="data?.statusClosed">
+                  <div class="timeline-marker bg-success"></div>
+                  <div class="timeline-content">
+                    <h6 class="mb-1">Issue Resolved</h6>
+                    <div class="small text-muted">{{data?.statusClosed | date:'MMM d, yyyy h:mm a'}}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Duration -->
+              <div class="mt-4 p-3 bg-light rounded" *ngIf="data?.createdDate && data?.statusClosed">
+                <div class="text-center">
+                  <div class="small text-muted mb-1">Resolution Time</div>
+                  <div class="fw-semibold text-success">
+                    {{getDurationBetweenDates(data?.createdDate, data?.statusClosed)}}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+              <h6 class="mb-0 fw-semibold text-dark">Actions</h6>
+            </div>
+            <div class="card-body p-4">
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">
+                  <i class="mdi mdi-arrow-left me-2"></i>Back to List
+                </button>
+                <button type="button" class="btn btn-outline-primary" (click)="onDownloadAsPdf()">
+                  <i class="mdi mdi-file-pdf me-2"></i>Export PDF
+                </button>
+                <button type="button" class="btn btn-outline-warning" (click)="openQirResponse()">
+                  <i class="mdi mdi-reply me-2"></i>QIR Response
+                </button>
+                <button type="button" class="btn btn-primary" (click)="onEdit()" *ngIf="!isQirClosed">
+                  <i class="mdi mdi-pencil me-2"></i>Edit QIR
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<style>
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -23px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+  padding-left: 0;
+}
+</style>

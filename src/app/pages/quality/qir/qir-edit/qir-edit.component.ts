@@ -71,6 +71,11 @@ export class QirEditComponent {
     });
   };
 
+  get isQirClosed(): boolean {
+    // Check if QIR status is not 'Open' (meaning it's closed)
+    return this.data?.status !== 'Open';
+  }
+
   @HostListener("window:beforeunload")
   canDeactivate() {
     if (this.form?.dirty) {
@@ -89,6 +94,17 @@ export class QirEditComponent {
       this.form.get("first_name").disable();
       this.form.get("last_name").disable();
       this.form.get("email").disable();
+
+      // Disable entire form if QIR is closed
+      if (this.isQirClosed) {
+        this.form.disable();
+      } else {
+        this.form.enable();
+        // Re-disable these fields even when form is enabled
+        this.form.get("first_name").disable();
+        this.form.get("last_name").disable();
+        this.form.get("email").disable();
+      }
 
       this.getAttachments();
     } catch (err) { }
@@ -126,6 +142,13 @@ export class QirEditComponent {
 
   onCancel() {
     this.goBack();
+  }
+
+  onView() {
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+      queryParamsHandling: "merge",
+      queryParams: { id: this.id }
+    });
   }
 
   images;

@@ -1,18 +1,60 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to RMA List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-plus text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-success">{{title}}</h2>
+            <p class="text-muted mb-0">Create a new RMA record for return merchandise authorization.</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Create New RMA</h6>
+              <p class="mb-2">
+                Fill out all required information below and click <strong>Create RMA</strong> to generate a new return merchandise authorization record.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-rma-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-rma-form>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-rma-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-rma-form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-success ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Creating...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Create RMA
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
-      </div>
+      
     </div>
   </div>
 </div>

@@ -1,0 +1,547 @@
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-clipboard-search-outline text-muted" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Quality Issue Report Selected</h4>
+          <p class="text-muted mb-4">Please select a Quality Issue Report from the list to view the detailed summary.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Return to QIR List
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12" style="max-width: 1000px;">
+      
+      <!-- Report Header -->
+      <div class="card border-0 shadow-sm mb-4 bg-primary bg-gradient">
+        <div class="card-body text-white p-4">
+          <div class="row align-items-center">
+            <div class="col">
+              <h2 class="h4 mb-1 fw-bold text-white">Quality Issue Investigation Report</h2>
+            </div>
+            <div class="col-auto">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="mdi mdi-shield-check-outline" style="font-size: 2rem;"></i>
+                </div>
+                <div class="text-end">
+                  <div class="small opacity-90">EyeFi Incorporated</div>
+                  <div class="small opacity-90">Quality Assurance</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Investigation Report Form -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          
+          <!-- Header Information -->
+          <table class="table table-borderless mb-4">
+            <tbody>
+              <tr>
+                <td class="fw-bold text-muted small" style="width: 150px;">Initiated by:</td>
+                <td class="fw-medium">{{data?.first_name}} {{data?.last_name}}</td>
+                <td class="fw-bold text-muted small" style="width: 120px;">Date Due:</td>
+                <td class="fw-medium">{{data?.dueDate ? (data?.dueDate | date:'MM/dd/yyyy') : 'Not Set'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Request Date:</td>
+                <td class="fw-medium">{{data?.createdDate | date:'MM/dd/yyyy'}}</td>
+                <td class="fw-bold text-muted small">WO/Lot:</td>
+                <td class="fw-medium">{{data?.lotNumber || 'N/A'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Stakeholder:</td>
+                <td class="fw-medium">{{data?.stakeholder}}</td>
+                <td class="fw-bold text-muted small">Priority:</td>
+                <td class="fw-medium">
+                  <span class="badge" [class.bg-danger]="data?.priority === 'High'" [class.bg-warning]="data?.priority === 'Medium'" [class.bg-success]="data?.priority === 'Low'">
+                    {{data?.priority}}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Status:</td>
+                <td class="fw-medium">
+                  <span class="badge" [class.bg-success]="data?.status === 'Open'" [class.bg-secondary]="data?.status === 'Closed'">
+                    {{data?.status}}
+                  </span>
+                </td>
+                <td class="fw-bold text-muted small">Owner:</td>
+                <td class="fw-medium">{{data?.owner || 'Not Assigned'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Created By ID:</td>
+                <td class="fw-medium">{{data?.createdBy}}</td>
+                <td class="fw-bold text-muted small">Type Sub:</td>
+                <td class="fw-medium">{{data?.typeSub}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">CAPA ID:</td>
+                <td class="fw-medium">{{data?.capaId || 'N/A'}}</td>
+                <td class="fw-bold text-muted small">NCR ID:</td>
+                <td class="fw-medium">{{data?.ncr_id || 'N/A'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Email:</td>
+                <td class="fw-medium">{{data?.email}}</td>
+                <td class="fw-bold text-muted small">CC Email:</td>
+                <td class="fw-medium">{{data?.cc_email || 'N/A'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Source:</td>
+                <td class="fw-medium">{{data?.source || 'Not Specified'}}</td>
+                <td class="fw-bold text-muted small">Confirmation Code:</td>
+                <td class="fw-medium">{{data?.confirmationCode || 'N/A'}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <hr>
+
+          <!-- Tracking & Status Information -->
+          <div class="mb-4">
+            <h6 class="fw-bold mb-3" style="color: #6c63ff;">
+              <i class="mdi mdi-clipboard-list-outline me-2"></i>Tracking & Status Information
+            </h6>
+            <table class="table table-sm table-striped">
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-muted" style="width: 200px;">Queue Status:</td>
+                  <td>{{data?.queueStatus === '0' ? 'Not In Queue' : 'In Queue'}}</td>
+                  <td class="fw-bold text-muted" style="width: 150px;">Active Status:</td>
+                  <td>{{data?.active === '1' ? 'Active' : 'Inactive'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-muted">Request Submitted:</td>
+                  <td>{{data?.requestSubmitted === '1' ? 'Yes' : 'No'}}</td>
+                  <td class="fw-bold text-muted">Approved:</td>
+                  <td>{{data?.approved === '1' ? 'Yes' : 'No'}}</td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-muted">Status Closed:</td>
+                  <td>{{data?.statusClosed || 'N/A'}}</td>
+                  <td class="fw-bold text-muted">Status Reason:</td>
+                  <td>{{data?.status_reason || 'N/A'}}</td>
+                </tr>
+                <tr *ngIf="data?.assignedTo || data?.respondBy">
+                  <td class="fw-bold text-muted">Assigned To:</td>
+                  <td>{{data?.assignedTo || 'Not Assigned'}}</td>
+                  <td class="fw-bold text-muted">Respond By:</td>
+                  <td>{{data?.respondBy ? (data?.respondBy | date:'MM/dd/yyyy') : 'Not Set'}}</td>
+                </tr>
+                <tr *ngIf="data?.assignedDate || data?.origRespondDate">
+                  <td class="fw-bold text-muted">Assigned Date:</td>
+                  <td>{{data?.assignedDate ? (data?.assignedDate | date:'MM/dd/yyyy') : 'Not Set'}}</td>
+                  <td class="fw-bold text-muted">Original Respond Date:</td>
+                  <td>{{data?.origRespondDate ? (data?.origRespondDate | date:'MM/dd/yyyy') : 'Not Set'}}</td>
+                </tr>
+                <tr *ngIf="data?.fieldServiceSchedulerId || data?.installer">
+                  <td class="fw-bold text-muted">Field Service Scheduler:</td>
+                  <td>{{data?.fieldServiceSchedulerId || 'N/A'}}</td>
+                  <td class="fw-bold text-muted">Installer:</td>
+                  <td>{{data?.installer || 'N/A'}}</td>
+                </tr>
+                <tr *ngIf="data?.cl_input_main_id && data?.cl_input_main_id !== '0'">
+                  <td class="fw-bold text-muted">CL Input Main ID:</td>
+                  <td colspan="3">{{data?.cl_input_main_id}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <hr>
+
+          <!-- Section 1: Product Specific Information -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <div class="rounded-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-weight: bold; font-size: 14px;">
+                1
+              </div>
+              <h6 class="mb-0 fw-bold">Product Specific Information</h6>
+            </div>
+            <div class="ps-5">
+              <table class="table table-sm table-striped">
+                <tbody>
+                  <tr>
+                    <td class="fw-bold text-muted" style="width: 200px;">Customer Part Number:</td>
+                    <td>{{data?.CustomerPartNumber || 'N/A'}}</td>
+                    <td class="fw-bold text-muted" style="width: 150px;">EyeFi Part Number:</td>
+                    <td>{{data?.eyefiPartNumber}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Customer Name:</td>
+                    <td>{{data?.customerName}}</td>
+                    <td class="fw-bold text-muted">Serial Number:</td>
+                    <td>{{data?.eyefiSerialNumber}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">QIR ID:</td>
+                    <td>{{data?.qir || data?.id}}</td>
+                    <td class="fw-bold text-muted">Purchase Order:</td>
+                    <td>{{data?.purchaseOrder || 'N/A'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Casino Name:</td>
+                    <td>{{data?.casinoName}}</td>
+                    <td class="fw-bold text-muted">Component Type:</td>
+                    <td>{{data?.componentType}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Platform Type:</td>
+                    <td colspan="3">{{data?.platformType}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 2: Issue Description -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <div class="rounded-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-weight: bold; font-size: 14px;">
+                2
+              </div>
+              <h6 class="mb-0 fw-bold">Issue Description</h6>
+            </div>
+            <div class="ps-5">
+              <table class="table table-sm table-striped">
+                <tbody>
+                  <tr>
+                    <td class="fw-bold text-muted" style="width: 200px;">Issue Type:</td>
+                    <td>{{data?.type1}}</td>
+                    <td class="fw-bold text-muted" style="width: 150px;">Failure Type:</td>
+                    <td>{{data?.failureType}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Location:</td>
+                    <td class="text-capitalize">{{data?.location}}</td>
+                    <td class="fw-bold text-muted">Customer Reported Date:</td>
+                    <td>{{data?.customerReportedDate | date:'MM/dd/yyyy'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Quantity Affected:</td>
+                    <td>{{data?.qtyAffected || data?.qtyAffected1 || 'Not Specified'}}</td>
+                    <td class="fw-bold text-muted">Supplier Name:</td>
+                    <td>{{data?.supplierName || 'Not Specified'}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Customer Serial Number:</td>
+                    <td>{{data?.customerSerialNumber || 'N/A'}}</td>
+                    <td class="fw-bold text-muted">Warranty Replacement:</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="data?.warranty_replacement === 'Yes'" [class.bg-danger]="data?.warranty_replacement === 'No'" [class.bg-secondary]="!data?.warranty_replacement">
+                        {{data?.warranty_replacement || 'Not Specified'}}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <div class="mt-3">
+                <label class="form-label small fw-bold text-muted">Issue Description:</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="fw-medium" [innerHTML]="data?.issue_comment_html || data?.issueComment || 'Issue description not provided'"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Selected Categories & Classifications -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <div class="rounded-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-weight: bold; font-size: 14px;">
+                3
+              </div>
+              <h6 class="mb-0 fw-bold">Selected Categories & Classifications</h6>
+            </div>
+            <div class="ps-5">
+              <table class="table table-sm table-striped">
+                <tbody>
+                  <tr>
+                    <td class="fw-bold text-muted" style="width: 200px;">Issue Type:</td>
+                    <td>
+                      <span class="badge bg-info">{{data?.type1 || 'Not Specified'}}</span>
+                    </td>
+                    <td class="fw-bold text-muted" style="width: 150px;">Issue Sub-Type:</td>
+                    <td>
+                      <span class="badge bg-info">{{data?.typeSub || 'Not Specified'}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Failure Type:</td>
+                    <td>
+                      <span class="badge bg-warning text-dark">{{data?.failureType || 'Not Specified'}}</span>
+                    </td>
+                    <td class="fw-bold text-muted">Component Type:</td>
+                    <td>
+                      <span class="badge bg-secondary">{{data?.componentType || 'Not Specified'}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Platform Type:</td>
+                    <td>
+                      <span class="badge bg-primary">{{data?.platformType || 'Not Specified'}}</span>
+                    </td>
+                    <td class="fw-bold text-muted">Stakeholder:</td>
+                    <td>
+                      <span class="badge bg-success">{{data?.stakeholder || 'Not Specified'}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Priority Level:</td>
+                    <td>
+                      <span class="badge" [class.bg-danger]="data?.priority === 'High' || data?.priority === 'Critical'" 
+                            [class.bg-warning]="data?.priority === 'Medium'" 
+                            [class.bg-success]="data?.priority === 'Low'" 
+                            [class.bg-secondary]="!data?.priority || data?.priority === 'N/A'">
+                        {{data?.priority || 'Not Set'}}
+                      </span>
+                    </td>
+                    <td class="fw-bold text-muted">Current Status:</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="data?.status === 'Open'" 
+                            [class.bg-secondary]="data?.status === 'Closed'" 
+                            [class.bg-warning]="data?.status === 'In Process'" 
+                            [class.bg-info]="data?.status === 'Awaiting Verification'"
+                            [class.bg-danger]="data?.status === 'Rejected'">
+                        {{data?.status || 'Unknown'}}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="data?.status_reason">
+                    <td class="fw-bold text-muted">Status Reason:</td>
+                    <td colspan="3">
+                      <span class="badge bg-light text-dark">{{data?.status_reason}}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <!-- Additional Classification Details -->
+              <div class="mt-3" *ngIf="data?.location || data?.warranty_replacement">
+                <label class="form-label small fw-bold text-muted">Additional Details:</label>
+                <div class="d-flex gap-2 flex-wrap">
+                  <span class="badge bg-primary text-white" *ngIf="data?.location">
+                    <i class="mdi mdi-map-marker me-1"></i>Location: {{data?.location | titlecase}}
+                  </span>
+                  <span class="badge" *ngIf="data?.warranty_replacement" 
+                        [class.bg-success]="data?.warranty_replacement === 'Yes'" 
+                        [class.bg-danger]="data?.warranty_replacement === 'No'">
+                    <i class="mdi mdi-shield-check me-1"></i>Warranty: {{data?.warranty_replacement}}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Other Comments -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <div class="rounded-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-weight: bold; font-size: 14px;">
+                4
+              </div>
+              <h6 class="mb-0 fw-bold">Other Comments</h6>
+            </div>
+            <div class="ps-5">
+              <!-- Issue Comments -->
+              <div class="mb-3" *ngIf="data?.issueComment || data?.issue_comment_html">
+                <label class="form-label small fw-bold text-muted">Issue Comments:</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="fw-medium" [innerHTML]="data?.issue_comment_html || data?.issueComment || 'No issue comments provided'"></div>
+                </div>
+              </div>
+
+              <!-- General Comments -->
+              <div class="mb-3">
+                <label class="form-label small fw-bold text-muted">Additional Comments:</label>
+                <div class="p-3 bg-light rounded border min-height-100">
+                  <div [innerHTML]="data?.qaComments || 'No additional comments provided'"></div>
+                </div>
+              </div>
+              
+              <div class="mt-4">
+                <table class="table table-sm table-striped">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Assignment Details</th>
+                      <th>Person</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngIf="data?.assignedTo || data?.createdBy">
+                      <td class="fw-bold">Assigned To:</td>
+                      <td>{{data?.assignedTo || 'Not Assigned'}}</td>
+                      <td>{{data?.assignedDate ? (data?.assignedDate | date:'MMM d, yyyy') : 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-secondary" *ngIf="!data?.assignedTo">Unassigned</span>
+                        <span class="badge bg-warning" *ngIf="data?.assignedTo && !data?.completedBy">Pending</span>
+                        <span class="badge bg-success" *ngIf="data?.completedBy">Assigned</span>
+                      </td>
+                    </tr>
+                    <tr *ngIf="data?.completedBy || data?.completedDate">
+                      <td class="fw-bold">Completed By:</td>
+                      <td>{{data?.completedBy || 'Not Completed'}}</td>
+                      <td>{{data?.completedDate ? (data?.completedDate | date:'MMM d, yyyy') : 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="data?.completedBy">Completed</span>
+                        <span class="badge bg-warning" *ngIf="!data?.completedBy">Pending</span>
+                      </td>
+                    </tr>
+                    <tr *ngIf="data?.verifiedBy || data?.verifiedDate">
+                      <td class="fw-bold">Verified By:</td>
+                      <td>{{data?.verifiedBy || 'Not Verified'}}</td>
+                      <td>{{data?.verifiedDate ? (data?.verifiedDate | date:'MMM d, yyyy') : 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="data?.verifiedBy">Verified</span>
+                        <span class="badge bg-info" *ngIf="!data?.verifiedBy">Pending Verification</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Additional Comments Section -->
+                <div class="mt-3" *ngIf="data?.qaComments">
+                  <label class="form-label small fw-bold text-muted">QA Comments:</label>
+                  <div class="p-3 bg-light rounded border">
+                    <div class="fw-medium" [innerHTML]="data?.qaComments"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supporting Documents -->
+      <div class="card border-0 shadow-sm mb-4" *ngIf="attachments?.length > 0">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0 fw-bold">
+            <i class="mdi mdi-paperclip me-2"></i>Supporting Documents ({{attachments?.length}})
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6" *ngFor="let row of attachments; let i = index">
+              <div class="border rounded p-3 bg-light">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0 me-3">
+                    <i class="mdi mdi-file-document text-primary" style="font-size: 1.5rem;"></i>
+                  </div>
+                  <div class="flex-grow-1 min-width-0">
+                    <h6 class="fw-semibold mb-1 text-truncate">{{row.fileName}}</h6>
+                    <p class="text-muted small mb-3">
+                      {{row.createdDate | date:'MMM d, yyyy h:mm a'}}
+                    </p>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-outline-primary btn-sm" (click)="open(i)">
+                        <i class="mdi mdi-eye me-1"></i>View
+                      </button>
+                      <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}" 
+                         target="_blank" 
+                         class="btn btn-outline-secondary btn-sm">
+                        <i class="mdi mdi-download me-1"></i>Download
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signature Section -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col">
+              <h6 class="fw-bold mb-1">Investigation Owner Sign and Date:</h6>
+              <div class="text-muted">
+                {{data?.completedBy || data?.verifiedBy || 'Pending assignment'}} - 
+                {{(data?.completedDate || data?.verifiedDate || data?.createdDate) | date:'MMM d, yyyy'}}
+              </div>
+            </div>
+            <div class="col-auto">
+              <div style="width: 150px; height: 60px; border: 2px solid #dee2e6; border-style: dashed;" class="d-flex align-items-center justify-content-center text-muted small">
+                Signature Area
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3" *ngIf="data?.email">
+            <div class="col">
+              <label class="form-label small fw-bold text-muted">Contact Information</label>
+              <div class="fw-medium">{{data?.email}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="row mb-4">
+        <div class="col">
+          <div class="d-flex gap-2 flex-wrap">
+            <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">
+              <i class="mdi mdi-arrow-left me-2"></i>Back to List
+            </button>
+            <button type="button" class="btn btn-outline-primary" (click)="onDownloadAsPdf()">
+              <i class="mdi mdi-file-pdf me-2"></i>Export PDF
+            </button>
+            <button type="button" class="btn btn-outline-warning" (click)="openQirResponse()">
+              <i class="mdi mdi-reply me-2"></i>QIR Response
+            </button>
+            <button type="button" class="btn btn-primary" (click)="onEdit()" *ngIf="!isQirClosed">
+              <i class="mdi mdi-pencil me-2"></i>Edit QIR
+            </button>
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="small text-muted">
+            Status: <span class="badge" [class.bg-success]="data?.status === 'Open'" [class.bg-secondary]="data?.status !== 'Open'">{{data?.status || 'Unknown'}}</span>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<style>
+.min-height-100 {
+  min-height: 100px;
+}
+
+.form-check-input:disabled {
+  opacity: 0.7;
+}
+
+.card-header {
+  border-bottom: none;
+}
+
+@media print {
+  .btn, .card-footer {
+    display: none !important;
+  }
+  
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+</style>

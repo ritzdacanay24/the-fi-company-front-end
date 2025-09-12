@@ -2,7 +2,7 @@
 <div class="container-fluid" *ngIf="!data && !id">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
-      
+
       <div class="card shadow-sm border-0">
         <div class="card-body text-center p-5" style="min-height:300px">
           <div class="mb-4">
@@ -15,7 +15,7 @@
           </button>
         </div>
       </div>
-      
+
     </div>
   </div>
 </div>
@@ -24,19 +24,16 @@
 <div class="container-fluid" [hidden]="!data && !id">
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
-      
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary me-3"
-            (click)="goBack()"
-            *ngIf="goBack"
+          <button type="button" class="btn btn-outline-secondary me-3" (click)="goBack()" *ngIf="goBack"
             title="Back to QIR List">
             <i class="mdi mdi-arrow-left me-2"></i>Back
           </button>
-          <div class="bg-danger bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+          <div class="bg-danger bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+            style="width: 60px; height: 60px;">
             <i class="mdi mdi-pencil text-white fs-4"></i>
           </div>
           <div>
@@ -44,14 +41,30 @@
             <p class="text-muted mb-0" *ngIf="data">Edit QIR #{{data.id}} - {{data.customerName}}</p>
           </div>
         </div>
-        
-        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert" *ngIf="data && id">
+
+        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert"
+          *ngIf="data && id && !isQirClosed">
           <div class="d-flex align-items-start">
             <i class="mdi mdi-pencil-outline text-danger me-3 mt-1 fs-5"></i>
             <div>
               <h6 class="alert-heading text-danger mb-2">Edit Mode Active</h6>
               <p class="mb-2">
-                You are currently editing QIR #{{data.id}}. Make necessary changes and click <strong>Update QIR</strong> to save modifications.
+                You are currently editing QIR #{{data.id}}. Make necessary changes and click <strong>Update QIR</strong>
+                to save modifications.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert"
+          *ngIf="data && id && isQirClosed">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-lock-outline text-warning me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-warning mb-2">QIR Closed - Read Only</h6>
+              <p class="mb-2">
+                This QIR #{{data.id}} is closed and cannot be modified. All fields are locked to maintain data
+                integrity.
               </p>
             </div>
           </div>
@@ -61,7 +74,8 @@
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
           <!-- QIR Form -->
-          <app-qir-form (setFormEmitter)="form = $event" [submitted]="submitted"></app-qir-form>
+          <app-qir-form (setFormEmitter)="form = $event" [submitted]="submitted"
+            [isFormDisabled]="isQirClosed"></app-qir-form>
 
           <!-- Attachments Section -->
           <div class="mb-4 pb-4 border-bottom">
@@ -84,11 +98,13 @@
                       <small class="text-muted">{{row.createdDate | date:'MMM d, y h:mm a'}}</small>
                       <div class="mt-2">
                         <small class="text-muted">
-                          Can't open? <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}" target="_blank" class="link-primary">Download directly</a>
+                          Can't open? <a href="https://dashboard.eye-fi.com/attachments/capa/{{row.fileName}}"
+                            target="_blank" class="link-primary">Download directly</a>
                         </small>
                       </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteAttachment(row.id, i)" title="Delete attachment">
+                    <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteAttachment(row.id, i)"
+                      [disabled]="isQirClosed" title="Delete attachment">
                       <i class="mdi mdi-delete"></i>
                     </button>
                   </div>
@@ -107,22 +123,34 @@
             </div>
 
             <!-- File Upload -->
-            <div class="mb-3">
+            <div class="mb-3" *ngIf="!isQirClosed">
               <label class="form-label">
                 Upload New Attachments
               </label>
-              <input #fileInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple name="file" accept="*/*">
+              <input #fileInput (change)="this.onFilechange($event)" class="form-control" type="file" id="file" multiple
+                name="file" accept="*/*">
               <div class="form-text">
                 <i class="mdi mdi-information-outline me-1"></i>
-                Select one or more files to attach to this QIR. Supported formats include documents, images, and other relevant files.
+                Select one or more files to attach to this QIR. Supported formats include documents, images, and other
+                relevant files.
+              </div>
+            </div>
+
+            <div class="mb-3" *ngIf="isQirClosed">
+              <div class="alert alert-light border-secondary border-opacity-25 d-flex align-items-center">
+                <i class="mdi mdi-lock-outline text-muted me-2"></i>
+                <span class="text-muted">File uploads are disabled because this QIR is closed.</span>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="button" class="btn btn-outline-info me-2" [disabled]="isLoading" (click)="onView()">
+            <i class="mdi mdi-eye me-1"></i>View Only
           </button>
           <button type="button" class="btn btn-outline-danger me-2" [disabled]="isLoading" (click)="openQirResponse()">
             <i class="mdi mdi-reply me-1"></i>QIR Response
@@ -130,18 +158,23 @@
           <button type="button" class="btn btn-outline-info me-2" [disabled]="isLoading" (click)="onDownloadAsPdf()">
             <i class="mdi mdi-file-pdf me-1"></i>Export PDF
           </button>
-          <button type="submit" class="btn btn-danger ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+          <button type="submit" class="btn btn-danger ms-auto" [disabled]="isLoading || isQirClosed"
+            (click)="onSubmit()" *ngIf="!isQirClosed">
             @if (isLoading) {
-              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-              Updating...
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Updating...
             } @else {
-              <i class="mdi mdi-check-circle-outline me-1"></i>Update QIR
+            <i class="mdi mdi-check-circle-outline me-1"></i>Update QIR
             }
           </button>
+          <div class="ms-auto d-flex align-items-center text-muted" *ngIf="isQirClosed">
+            <i class="mdi mdi-lock-outline me-2"></i>
+            <span>Form is locked - QIR is closed</span>
+          </div>
         </div>
       </div>
-      
     </div>
+
   </div>
 </div>
 
@@ -195,7 +228,9 @@
       </td>
     </tr>
     <tr>
-      <td colspan="3" style="height:100px;vertical-align: top;"><div [innerHtml]="data?.issueComment"></div></td>
+      <td colspan="3" style="height:100px;vertical-align: top;">
+        <div [innerHtml]="data?.issueComment"></div>
+      </td>
     </tr>
 
     <tr>
@@ -213,31 +248,41 @@
     </tr>
     <tr>
       <td class="bg-grey"><b>Preliminary Investigation Date</b></td>
-      <td class="wrap-text"><pre class="print-pre">{{ qirResponse?.preliminary_investigation }}</pre></td>
+      <td class="wrap-text">
+        <pre class="print-pre">{{ qirResponse?.preliminary_investigation }}</pre>
+      </td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>QA Findings</b></td>
     </tr>
     <tr>
-      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.findings }}</pre></td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;">
+        <pre class="print-pre">{{ qirResponse?.findings }}</pre>
+      </td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Document Control Response</b></td>
     </tr>
     <tr>
-      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.document_control_response }}</pre></td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;">
+        <pre class="print-pre">{{ qirResponse?.document_control_response }}</pre>
+      </td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Engineering Response</b></td>
     </tr>
     <tr>
-      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.fs_engineering_reponse }}</pre></td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;">
+        <pre class="print-pre">{{ qirResponse?.fs_engineering_reponse }}</pre>
+      </td>
     </tr>
     <tr>
       <td colspan="3" class="bg-grey"><b>Fi Quality Team</b></td>
     </tr>
     <tr>
-      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;"><pre class="print-pre">{{ qirResponse?.quality_team }}</pre></td>
+      <td colspan="3" class="wrap-text" style="height:50px;vertical-align: top;">
+        <pre class="print-pre">{{ qirResponse?.quality_team }}</pre>
+      </td>
     </tr>
     <tr>
       <td class="bg-grey"><b>Closure By</b></td>

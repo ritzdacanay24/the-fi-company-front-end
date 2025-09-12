@@ -20,7 +20,7 @@ import { SharedModule } from "@app/shared/shared.module";
   styleUrls: ["./rma-form.component.scss"],
 })
 export class RmaFormComponent {
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder) { }
 
   ngOnInit(): void {
     this.setFormEmitter.emit(this.form);
@@ -31,10 +31,20 @@ export class RmaFormComponent {
 
   @Input() submitted = false;
 
+  @Input() isFormDisabled: boolean = false;
+
+  @Input() isEditMode: boolean = false;
+
   formData;
 
   get f() {
     return this.form.controls;
+  }
+
+  toggleActiveState() {
+    const currentValue = this.f.active.value;
+    this.form.patchValue({ active: currentValue ? 0 : 1 });
+    this.setBooleanToNumber('active');
   }
 
   form = this.fb.group({
@@ -68,13 +78,13 @@ export class RmaFormComponent {
   async notifyParent($event) {
     try {
       this.form.patchValue({ qirNumber: $event.id });
-    } catch (err) {}
+    } catch (err) { }
   }
 
   getCustomerName($event) {
     try {
       this.form.patchValue({ customer: $event.cm_addr });
-    } catch (err) {}
+    } catch (err) { }
   }
 
   setQadPartNumber($event) {

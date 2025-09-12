@@ -476,7 +476,7 @@ export class SidebarComponent implements OnInit {
         return menuItem;
       }
 
-      // Handle wildcard routes from activatedRoutes field like '/dashboard/quality/igt/*'
+      // Handle wildcard routes from activatedRoutes field like '/quality/igt/*'
       if (menuItem.activatedRoutes && menuItem.activatedRoutes.includes('*')) {
         // Remove the asterisk and any trailing slash before it
         const baseRoute = menuItem.activatedRoutes.replace(/\/?\*+$/, '');
@@ -489,7 +489,7 @@ export class SidebarComponent implements OnInit {
         }
       }
 
-      // Handle wildcard routes from link field like '/dashboard/quality/igt/*'
+      // Handle wildcard routes from link field like '/quality/igt/*'
       if (menuItem.link && menuItem.link.includes('*')) {
         // Remove the asterisk and any trailing slash before it
         const baseRoute = menuItem.link.replace(/\/?\*+$/, '');
@@ -502,15 +502,15 @@ export class SidebarComponent implements OnInit {
         }
       }
 
-      // Special handling for IGT routes - treat /dashboard/quality/igt/list as parent for all IGT routes
-      if (menuItem.link === "/dashboard/quality/igt/list" && 
-          pathname.startsWith("/dashboard/quality/igt")) {
+      // Special handling for IGT routes - treat /quality/igt/list as parent for all IGT routes
+      if (menuItem.link === "/quality/igt/list" && 
+          pathname.startsWith("/quality/igt")) {
         return menuItem;
       }
 
       // Special handling for template-editor routes to match both /template-editor and /template-editor/:id
-      if (menuItem.link === "/dashboard/quality/template-editor" && 
-          pathname.startsWith("/dashboard/quality/template-editor")) {
+      if (menuItem.link === "/quality/template-editor" && 
+          pathname.startsWith("/quality/template-editor")) {
         return menuItem;
       }
 

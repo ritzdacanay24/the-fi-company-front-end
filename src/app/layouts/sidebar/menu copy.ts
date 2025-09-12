@@ -399,7 +399,7 @@ export const MENU: MenuItem[] = [
     subItems: [
       {
         label: 'MENUITEMS.QUALITY.OVERVIEW',
-        link: '/dashboard/quality/overview/summary',
+        link: '/quality/overview/summary',
         description: "Quality overview"
       },
       {
@@ -409,17 +409,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.QUALITY.RMA.LIST',
-            link: '/dashboard/quality/rma/list',
+            link: '/quality/rma/list',
             description: "RMA list"
           },
           {
             label: 'MENUITEMS.QUALITY.RMA.CREATE',
-            link: '/dashboard/quality/rma/create',
+            link: '/quality/rma/create',
             description: "RMA create"
           },
           {
             label: 'MENUITEMS.QUALITY.RMA.EDIT',
-            link: '/dashboard/quality/rma/edit',
+            link: '/quality/rma/edit',
             description: "RMA edit"
           },
         ]
@@ -431,17 +431,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.QUALITY.SGASSET.LIST',
-            link: '/dashboard/quality/sg-asset/list',
+            link: '/quality/sg-asset/list',
             description: "SG Asset list"
           },
           {
             label: 'MENUITEMS.QUALITY.SGASSET.CREATE',
-            link: '/dashboard/quality/sg-asset/create',
+            link: '/quality/sg-asset/create',
             description: "SG Asset create"
           },
           {
             label: 'MENUITEMS.QUALITY.SGASSET.EDIT',
-            link: '/dashboard/quality/sg-asset/edit',
+            link: '/quality/sg-asset/edit',
             description: "SG Asset edit"
           },
         ]
@@ -453,17 +453,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.QUALITY.AGSSERIAL.LIST',
-            link: '/dashboard/quality/ags-serial/list',
+            link: '/quality/ags-serial/list',
             description: "AGS serial list"
           },
           {
             label: 'MENUITEMS.QUALITY.AGSSERIAL.CREATE',
-            link: '/dashboard/quality/ags-serial/create',
+            link: '/quality/ags-serial/create',
             description: "AGS serial create"
           },
           {
             label: 'MENUITEMS.QUALITY.AGSSERIAL.EDIT',
-            link: '/dashboard/quality/ags-serial/edit',
+            link: '/quality/ags-serial/edit',
             description: "AGS serial edit"
           },
         ]
@@ -494,17 +494,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.QUALITY.NCR.LIST',
-            link: '/dashboard/quality/ncr/list',
+            link: '/quality/ncr/list',
             description: "NCR list"
           },
           {
             label: 'MENUITEMS.QUALITY.NCR.CREATE',
-            link: '/dashboard/quality/ncr/create',
+            link: '/quality/ncr/create',
             description: "NCR create"
           },
           {
             label: 'MENUITEMS.QUALITY.NCR.OVERVIEW',
-            link: '/dashboard/quality/ncr/overview',
+            link: '/quality/ncr/overview',
             description: "NCR overview"
           },
         ]
@@ -516,17 +516,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.QUALITY.QIR.LIST',
-            link: '/dashboard/quality/qir/list',
+            link: '/quality/qir/list',
             description: "QIR list"
           },
           {
             label: 'MENUITEMS.QUALITY.QIR.CREATE',
-            link: '/dashboard/quality/qir/create',
+            link: '/quality/qir/create',
             description: "QIR create"
           },
           {
             label: 'MENUITEMS.QUALITY.QIR.EDIT',
-            link: '/dashboard/quality/qir/edit',
+            link: '/quality/qir/edit',
             description: "QIR edit"
           },
           {
@@ -534,17 +534,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.QUALITY.QIR.SETTINGS.LIST',
-                link: '/dashboard/quality/qir/settings/list',
+                link: '/quality/qir/settings/list',
                 description: "QIR settings list"
               },
               {
                 label: 'MENUITEMS.QUALITY.QIR.SETTINGS.CREATE',
-                link: '/dashboard/quality/qir/settings/create',
+                link: '/quality/qir/settings/create',
                 description: "QIR settings create"
               },
               {
                 label: 'MENUITEMS.QUALITY.QIR.SETTINGS.EDIT',
-                link: '/dashboard/quality/qir/settings/edit',
+                link: '/quality/qir/settings/edit',
                 description: "QIR settings edit"
               },
             ]

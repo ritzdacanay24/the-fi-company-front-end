@@ -1,7 +1,8 @@
 export class NAVIGATION_ROUTE {
-  public static readonly CREATE = "/dashboard/quality/qir/create";
-  public static readonly LIST = "/dashboard/quality/qir/list";
-  public static readonly EDIT = "/dashboard/quality/qir/edit";
+  public static readonly CREATE = "/quality/qir/create";
+  public static readonly LIST = "/quality/qir/list";
+  public static readonly EDIT = "/quality/qir/edit";
+  public static readonly VIEW = "/quality/qir/view";
 }
 
 export class QIR {

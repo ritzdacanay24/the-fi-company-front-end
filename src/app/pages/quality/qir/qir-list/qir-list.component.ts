@@ -18,6 +18,7 @@ import {
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.component';
 
 @Component({
   standalone: true,
@@ -29,6 +30,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     DateRangeComponent,
     GridSettingsComponent,
     GridFiltersComponent,
+    QirActionsCellRendererComponent,
   ],
   selector: "app-qir-list",
   templateUrl: "./qir-list.component.html",
@@ -67,17 +69,18 @@ export class QirListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: QirActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onView: (data: any) => this.onView(data.id),
+        onEdit: (data: any) => this.onEdit(data.id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 150,
+      minWidth: 150,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -248,6 +251,17 @@ export class QirListComponent implements OnInit {
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

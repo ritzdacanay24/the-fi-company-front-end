@@ -38,7 +38,7 @@ interface SampleImage {
       <!-- Header -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center">
-          <button type="button" class="btn btn-outline-secondary me-3" [routerLink]="['/dashboard/quality/template-manager']">
+          <button type="button" class="btn btn-outline-secondary me-3" [routerLink]="['/quality/template-manager']">
             <i class="mdi mdi-arrow-left me-2"></i>
             Back to Templates
           </button>
@@ -766,7 +766,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           // this.loadTemplate(this.editingTemplate.id);
         } else {
           // For new templates, navigate to template manager
-          this.router.navigate(['/dashboard/quality/template-manager']);
+          this.router.navigate(['/quality/template-manager']);
         }
       },
       error: (error) => {
@@ -791,6 +791,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/dashboard/quality/template-manager']);
+    this.router.navigate(['/quality/template-manager']);
   }
 }

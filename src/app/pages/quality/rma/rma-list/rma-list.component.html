@@ -4,7 +4,7 @@
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item"><a routerLink="/dashboard/quality">Quality</a></li>
-      <li class="breadcrumb-item"><a routerLink="/dashboard/quality/rma">Returns</a></li>
+      <li class="breadcrumb-item"><a routerLink="/quality/rma">Returns</a></li>
       <li class="breadcrumb-item active" aria-current="page">RMA List</li>
     </ol>
   </nav>
@@ -27,7 +27,7 @@
             <button 
               type="button" 
               class="btn btn-primary"
-              [routerLink]="['/dashboard/quality/rma/create']"
+              [routerLink]="['/quality/rma/create']"
               title="Create new RMA">
               <i class="mdi mdi-plus me-2"></i>Create RMA
             </button>
@@ -90,7 +90,7 @@
                 <button 
                   type="button" 
                   class="btn btn-primary"
-                  [routerLink]="['/dashboard/quality/rma/create']">
+                  [routerLink]="['/quality/rma/create']">
                   <i class="mdi mdi-plus me-2"></i>Create RMA
                 </button>
               </div>

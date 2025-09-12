@@ -100,7 +100,6 @@ const routes: Routes = [
     path: "qir",
     loadChildren: () =>
       import("./qir/qir-routing.module").then((m) => m.QirRoutingModule),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {

@@ -480,6 +480,6 @@ export class IgtManageExistingComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/dashboard/quality/igt']);
+    this.router.navigate(['/quality/igt']);
   }
 }

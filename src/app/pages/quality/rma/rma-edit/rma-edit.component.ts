@@ -20,7 +20,7 @@ export class RmaEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: RmaService,
     private toastrService: ToastrService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe((params) => {
@@ -30,7 +30,7 @@ export class RmaEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit RMA";
 
   form: FormGroup;
 
@@ -48,13 +48,25 @@ export class RmaEditComponent {
     });
   };
 
+  get isRmaClosed(): boolean {
+    // Check if RMA status is 'Closed' or similar
+    return this.data?.status === 'Closed' || this.data?.status === 'Complete';
+  }
+
   data: any;
 
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
       this.form.patchValue(this.data);
-    } catch (err) {}
+      
+      // Disable form if RMA is closed
+      if (this.isRmaClosed) {
+        this.form.disable();
+      } else {
+        this.form.enable();
+      }
+    } catch (err) { }
   }
 
   async onSubmit() {

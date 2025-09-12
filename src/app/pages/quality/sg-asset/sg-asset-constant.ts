@@ -1,5 +1,5 @@
 export class NAVIGATION_ROUTE {
-  public static readonly CREATE = '/dashboard/quality/sg-asset/create';
-  public static readonly LIST = '/dashboard/quality/sg-asset/list';
-  public static readonly EDIT = '/dashboard/quality/sg-asset/edit';
+  public static readonly CREATE = '/quality/sg-asset/create';
+  public static readonly LIST = '/quality/sg-asset/list';
+  public static readonly EDIT = '/quality/sg-asset/edit';
 }

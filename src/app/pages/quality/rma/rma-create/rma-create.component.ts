@@ -34,7 +34,7 @@ export class RmaCreateComponent {
     if (this.id) this.getData();
   }
 
-  title = "Create";
+  title = "Create RMA";
 
   form: FormGroup;
 

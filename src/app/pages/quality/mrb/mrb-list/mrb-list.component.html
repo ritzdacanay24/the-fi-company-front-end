@@ -3,7 +3,7 @@
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item"><a routerLink="/dashboard/quality">Quality</a></li>
-      <li class="breadcrumb-item"><a routerLink="/dashboard/quality/mrb">MRB</a></li>
+      <li class="breadcrumb-item"><a routerLink="/quality/mrb">MRB</a></li>
       <li class="breadcrumb-item active" aria-current="page">MRB List</li>
     </ol>
   </nav>
@@ -26,7 +26,7 @@
             <button 
               type="button" 
               class="btn btn-success"
-              [routerLink]="['/dashboard/quality/mrb/create']"
+              [routerLink]="['/quality/mrb/create']"
               title="Create new MRB">
               <i class="mdi mdi-plus me-2"></i>Create MRB
             </button>
@@ -89,7 +89,7 @@
                 <button 
                   type="button" 
                   class="btn btn-success"
-                  [routerLink]="['/dashboard/quality/mrb/create']">
+                  [routerLink]="['/quality/mrb/create']">
                   <i class="mdi mdi-plus me-2"></i>Create MRB
                 </button>
               </div>

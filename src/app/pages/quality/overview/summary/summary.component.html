@@ -11,7 +11,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open QIR's</h4>
               <p class="card-text">QIR's that are in 'Open' status</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/dashboard/quality/qir/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
+              <a [routerLink]="['/quality/qir/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
                 class="btn btn-primary mt-3">
                 <i class="feather icon-external-link"></i> View QIR's
               </a>
@@ -29,7 +29,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open NCR's</h4>
               <p class="card-text">NCR's that are in 'Open' status</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/dashboard/quality/ncr/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
+              <a [routerLink]="['/quality/ncr/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
                 class="btn btn-primary  mt-3">
                 <i class="feather icon-external-link"></i> View NCR's
               </a>
@@ -47,7 +47,7 @@
               <h4 class="mb-2"><span class="mdi mdi-folder-open-outline"></span> Open External QIR's</h4>
               <p class="card-text">External QIR's that are in 'Open' status</p>
               <p class="card-text"><small class="text-muted">{{time}}</small></p>
-              <a [routerLink]="['/dashboard/quality/qir/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
+              <a [routerLink]="['/quality/qir/list']" [queryParams]="{selectedViewType: 'Open', isAll:true}"
                 class="btn btn-primary  mt-3">
                 <i class="feather icon-external-link"></i> View External QIR's
               </a>
@@ -68,7 +68,7 @@
             <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange"
               [displayOptions]="true"></app-date-range>
           </div>
-          <button class="btn btn-primary me-3" [routerLink]="['/dashboard/quality/qir/list']"
+          <button class="btn btn-primary me-3" [routerLink]="['/quality/qir/list']"
             [queryParams]="{selectedViewType: 'Open', isAll:true}">
             <i class="feather icon-bar-chart-2"></i> View Details
           </button>
@@ -101,7 +101,7 @@
             <app-date-range (setDateRange)="onChangeDate1($event)" [value]="dateRange1"
               [displayOptions]="true"></app-date-range>
           </div>
-          <button class="btn btn-primary me-3" [routerLink]="['/dashboard/quality/ncr/list']"
+          <button class="btn btn-primary me-3" [routerLink]="['/quality/ncr/list']"
             [queryParams]="{selectedViewType: 'Open', isAll:true}">
             <i class="feather icon-bar-chart-2"></i> View Details
           </button>

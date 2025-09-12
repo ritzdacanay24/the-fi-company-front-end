@@ -38,7 +38,7 @@ export class QirFormComponent {
   constructor(
     private fb: FormBuilder,
     private qirSettingsService: QirSettingsService
-  ) {}
+  ) { }
 
   quillConfig = {
     toolbar: {
@@ -91,6 +91,9 @@ export class QirFormComponent {
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
 
   @Input() submitted = false;
+
+  @Input() isFormDisabled: boolean = false;
+
 
   get f() {
     return this.form.controls;

@@ -162,7 +162,7 @@
           </label>
           <app-qad-customer-name-search (notifyParent)="getCustomerName($event)" [showLabel]="false"
             placeholder="Enter customer name" [ngClass]="{ 'is-invalid': submitted && f.customerName.errors }"
-            [value]="f.customerName.value" [required]="true"></app-qad-customer-name-search>
+            [value]="f.customerName.value" [required]="true" [disabled]="form.disabled"></app-qad-customer-name-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Customer associated with this quality issue.
@@ -176,7 +176,7 @@
           <app-qad-customer-part-search [form_label]="'Customer Part Number (If Available)'" [showLabel]="false"  
             (notifyParent)="getCustomerPartNumber($event)"
             [ngClass]="{ 'is-invalid': submitted && f.CustomerPartNumber.errors }" [value]="f.CustomerPartNumber.value"
-            placeholder="Enter customer part number" [editableSearchTerm]="true"></app-qad-customer-part-search>
+            placeholder="Enter customer part number" [editableSearchTerm]="true" [disabled]="form.disabled"></app-qad-customer-part-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Customer's part number reference (if available).
@@ -191,7 +191,7 @@
         <app-qad-part-search (notifyParent)="setQadPartNumber($event)" [editableSearchTerm]="true"
           [ngClass]="{ 'is-invalid': submitted && f.eyefiPartNumber.errors }" [showLabel]="false"
           [form_label]="'Eyefi Part Number (If Available)'" [placeholder]="'Enter eyefi part number'"
-          [value]="f.eyefiPartNumber.value"></app-qad-part-search>
+          [value]="f.eyefiPartNumber.value" [disabled]="form.disabled"></app-qad-part-search>
         <div class="form-text">
           <i class="mdi mdi-information-outline me-1"></i>
           Internal EyeFi part number reference (if available).
@@ -408,7 +408,7 @@
           Field Service ID
         </label>
         <app-job-search (notifyParent)="notifyParent($event)" [form_label]="'Field Service ID (If Available)'"
-          [value]="form.value.fieldServiceSchedulerId" [showLabel]="false"></app-job-search>
+          [value]="form.value.fieldServiceSchedulerId" [showLabel]="false" [disabled]="form.disabled"></app-job-search>
         <div class="form-text">
           <i class="mdi mdi-information-outline me-1"></i>
           Field service ID number if this issue relates to a service request.
