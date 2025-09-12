@@ -1,148 +1,111 @@
-<div class="row" *ngIf="!data && !id">
-    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-body text-center" style="min-height:300px; display: flex; align-items: center; justify-content: center;">
-                <div>
-                    <i class="mdi mdi-clipboard-alert text-muted mb-3" style="font-size: 4rem;"></i>
-                    <h5 class="text-muted mb-3">No Inspection Selected</h5>
-                    <p class="text-muted">Please select a vehicle inspection from the list to view or edit.</p>
-                </div>
-            </div>
-            <div class="card-footer bg-light d-flex justify-content-center">
-                <button class="btn btn-outline-primary px-4" [disabled]="isLoading" (click)="onCancel()">
-                    <i class="mdi mdi-format-list-bulleted me-2"></i>Go to List
-                </button>
-            </div>
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-truck text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Vehicle Inspection Selected</h4>
+          <p class="text-muted mb-4">Please select a vehicle inspection from the list to view and edit details.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Go to Inspection List
+          </button>
         </div>
+      </div>
+      
     </div>
+  </div>
 </div>
 
-<div class="row" [hidden]="!data && !id">
-    <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to Vehicle Inspection List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-pencil text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-primary">{{title}}</h2>
+            <p class="text-muted mb-0" *ngIf="id">Edit existing vehicle inspection record #{{id}}</p>
+          </div>
+        </div>
         
-        <!-- Enhanced Header Section -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body bg-primary position-relative overflow-hidden text-white">
-                <!-- Background Pattern -->
-                <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-                    <i class="mdi mdi-truck" style="font-size: 8rem;"></i>
-                </div>
-                
-                <div class="row align-items-center position-relative">
-                    <div class="col-auto">
-                        <button class="btn btn-light btn-sm shadow-sm rounded-pill px-3" *ngIf="goBack" (click)="goBack()">
-                            <i class="mdi mdi-arrow-left me-1"></i> Back
-                        </button>
-                    </div>
-                    <div class="col">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
-                                    <i class="mdi mdi-truck text-white" style="font-size: 1.5rem;"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h2 class="mb-1 fw-bold text-white">{{title}}</h2>
-                                <p class="mb-2 fs-6 text-white opacity-75">Review and manage vehicle inspection details</p>
-                                <div class="badge bg-white text-primary px-3 py-1 fw-medium" *ngIf="id">Inspection # {{id}}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="data && id">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-pencil-outline text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Edit Mode Active</h6>
+              <p class="mb-2">
+                You are currently editing vehicle inspection record #{{id}}. Make necessary changes and click <strong>Update</strong> to save modifications.
+              </p>
             </div>
+          </div>
         </div>
 
-        <!-- Vehicle Details Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-light border-0">
-                <h5 class="card-title mb-1 text-muted">
-                    <i class="mdi mdi-car-info me-2"></i>Vehicle Information
-                </h5>
-                <small class="text-muted">Details of the inspected vehicle</small>
+        <!-- Safety Alert for Failed Inspections -->
+        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert" *ngIf="hasFailedInspections()">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-alert-circle text-danger me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-danger mb-2">Critical Safety Alert</h6>
+              <p class="mb-2">
+                <strong>Vehicle has failed inspection items that require immediate attention.</strong> 
+                This vehicle should not be operated until all failed items are resolved and confirmed by maintenance personnel.
+              </p>
+              <div class="mt-2">
+                <small class="text-danger fw-medium">
+                  <i class="mdi mdi-shield-alert me-1"></i>
+                  Safety compliance requires resolution of all failed inspection items before vehicle operation.
+                </small>
+              </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-4 mb-3">
-                        <label class="form-label text-muted small fw-medium">Vehicle Make</label>
-                        <div class="fw-semibold text-dark">{{info?.vehicleMake || 'Not specified'}}</div>
-                    </div>
-                    <div class="col-lg-4 mb-3">
-                        <label class="form-label text-muted small fw-medium">Vehicle Number</label>
-                        <div class="fw-semibold text-dark">{{info?.vehicleNumber || 'Not specified'}}</div>
-                    </div>
-                    <div class="col-lg-4 mb-3">
-                        <label class="form-label text-muted small fw-medium">VIN</label>
-                        <div class="fw-semibold text-dark">{{info?.vin || 'Not specified'}}</div>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Main Inspection Form -->
-        <app-vehicle-inspection-form 
-            (setFormEmitter)="setFormEmitter($event)"
-            (setDetailsFormEmitter)="setDetailsFormEmitter($event)" 
-            [formValues]="formValues"
-            [submitted]="submitted" 
-            [getData]="getData" 
-            (setFormErrorsEmitter)="setFormErrorsEmitter($event)" 
-            [id]="id"
-            [isSubmitted]="true">
-        </app-vehicle-inspection-form>
-
-        <!-- Attachments Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-light border-0">
-                <h5 class="card-title mb-1 text-muted">
-                    <i class="mdi mdi-paperclip me-2"></i>Attachments
-                </h5>
-                <small class="text-muted">Supporting documents and images</small>
-            </div>
-            <div class="card-body">
-                <div *ngIf="attachments?.length === 0" class="text-center py-4">
-                    <i class="mdi mdi-file-outline text-muted mb-3" style="font-size: 3rem;"></i>
-                    <h6 class="text-muted mb-2">No Attachments Found</h6>
-                    <p class="text-muted small">No supporting documents have been uploaded for this inspection.</p>
-                </div>
-
-                <div class="row g-3" *ngIf="attachments?.length > 0">
-                    <div class="col-12" *ngFor="let row of attachments; let i = index">
-                        <div class="card border-0 shadow-sm hover-shadow" style="cursor: pointer;" (click)="viewImage(row)">
-                            <div class="card-body p-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
-                                        <i class="mdi mdi-file text-primary"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-medium text-dark">{{row.fileName}}</div>
-                                        <small class="text-muted">Click to view attachment</small>
-                                    </div>
-                                    <div class="text-muted">
-                                        <i class="mdi mdi-eye"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-vehicle-inspection-form 
+              (setFormEmitter)="setFormEmitter($event)"
+              (setDetailsFormEmitter)="setDetailsFormEmitter($event)" 
+              [formValues]="formValues"
+              [submitted]="submitted" 
+              [getData]="getData" 
+              (setFormErrorsEmitter)="setFormErrorsEmitter($event)" 
+              [id]="id"
+              [isSubmitted]="true">
+          </app-vehicle-inspection-form>
         </div>
-
-        <!-- Action Footer -->
-        <div class="card shadow-sm border-0">
-            <div class="card-footer bg-white border-0">
-                <div class="d-flex justify-content-end gap-2 p-3 bg-light rounded">
-                    <button class="btn btn-outline-secondary px-4" [disabled]="isLoading" (click)="onCancel()">
-                        <i class="mdi mdi-close me-2"></i>Cancel
-                    </button>
-                    <button class="btn btn-primary px-4" [disabled]="isLoading" (click)="onSubmit()">
-                        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        <i *ngIf="!isLoading" class="mdi mdi-content-save me-2"></i>
-                        {{isLoading ? 'Saving...' : 'Save Changes'}}
-                    </button>
-                </div>
-            </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Updating...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Update Inspection
+            }
+          </button>
         </div>
+      </div>
 
+      
     </div>
+  </div>
 </div>

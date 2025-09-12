@@ -35,7 +35,7 @@ export class IgtTransferEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit IGT Transfer";
 
   form: FormGroup;
 

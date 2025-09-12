@@ -115,4 +115,12 @@ export class ForkliftInspectionEditComponent {
   onCancel() {
     this.goBack();
   }
+
+  hasFailedInspections(): boolean {
+    if (!this.formValues?.checklist) return false;
+    
+    return this.formValues.checklist.some((section: any) => 
+      section.details?.some((item: any) => item.status === 0)
+    );
+  }
 }

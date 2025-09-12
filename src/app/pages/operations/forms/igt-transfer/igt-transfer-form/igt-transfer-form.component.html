@@ -1,143 +1,136 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <!-- Header Section -->
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-body bg-primary position-relative overflow-hidden text-white">
-      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-        <i class="mdi mdi-swap-horizontal" style="font-size: 8rem;"></i>
-      </div>
-      <div class="d-flex align-items-center justify-content-between position-relative">
-        <div class="d-flex align-items-center">
-          <div class="me-3">
-            <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex">
-              <i class="mdi mdi-swap-horizontal text-white" style="font-size: 1.5rem;"></i>
-            </div>
-          </div>
-          <div>
-            <h3 class="mb-1 fw-bold text-white">IGT Transfer Form</h3>
-            <p class="mb-0 text-white opacity-75">Inventory goods transfer between locations</p>
-          </div>
-        </div>
-        <div class="d-none d-lg-block">
-          <div class="bg-white bg-opacity-20 rounded-3 p-2 d-inline-flex border border-white border-opacity-25">
-            <img src="https://dashboard.eye-fi.com/attachments/igt.png" style="width:100px; filter: brightness(1.1);" class="img-fluid">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="body">
 
-  <!-- Sales Order Search Card -->
-  <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-body-tertiary border-0">
-      <h5 class="card-title mb-1 text-body-secondary">
-        <i class="mdi mdi-magnify me-2"></i>Sales Order Selection
-      </h5>
-      <small class="text-body-secondary">Search and select the sales order for transfer</small>
-    </div>
-    <div class="card-body">
+    <!-- Sales Order Selection Section -->
+    @if(!disableSearch){
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Sales Order Selection</h3>
+        <p class="text-muted mb-0">
+          Search and select the sales order for transfer.
+        </p>
+      </div>
+
       <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-6 mb-3">
           <label class="form-label">Sales Order Number</label>
-          <app-so-search (notifyParent)="notifyParent($event)" [value]="f.so_number?.value"
-            [disabled]="disableSearch" [appendToBody]="'body'" [showLabel]="false"></app-so-search>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Transfer Information Card -->
-  <div class="card mb-4 shadow-sm" *ngIf="f.so_number.value">
-    <div class="card-header bg-body-tertiary border-0">
-      <h5 class="card-title mb-1 text-body-secondary">
-        <i class="mdi mdi-information me-2"></i>Transfer Information
-      </h5>
-      <small class="text-body-secondary">Transfer details and reference information</small>
-    </div>
-    <div class="card-body">
-      <div class="row g-4">
-        <div class="col-lg-6">
-          <div class="info-item mb-3">
-            <label class="form-label text-body-secondary small fw-medium">Sales Order</label>
-            <div class="fw-semibold text-body">{{f.so_number.value || 'Not selected'}}</div>
-          </div>
-          <div class="info-item mb-3">
-            <label class="form-label text-body-secondary small fw-medium">Transfer Reference</label>
-            <div class="fw-semibold text-body">{{f.transfer_reference.value || 'Not available'}}</div>
-          </div>
-          <div class="info-item mb-3">
-            <label class="form-label text-body-secondary small fw-medium">Transfer Description</label>
-            <div class="fw-semibold text-body">{{f.transfer_reference_description.value || 'Not available'}}</div>
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="info-item mb-3">
-            <label class="form-label text-body-secondary small fw-medium">Transfer Date</label>
-            <div class="fw-semibold text-body">{{f.date.value || 'Not set'}}</div>
-          </div>
-          <div class="info-item mb-3">
-            <label class="form-label text-body-secondary small fw-medium">IGT Transaction</label>
-            <div class="fw-semibold text-dark">
-              <span class="badge bg-primary">311 to {{f.to_location.value || 'Location TBD'}}</span>
-            </div>
-          </div>
-          <div class="info-item mb-3" *ngIf="f.email_sent_datetime.value">
-            <label class="form-label text-body-secondary small fw-medium">Email Sent</label>
-            <div class="fw-semibold text-success">
-              <i class="mdi mdi-check-circle me-1"></i>{{f.email_sent_datetime.value}}
-            </div>
+          <app-so-search (notifyParent)="notifyParent($event)" [value]="f.so_number?.value" [disabled]="disableSearch"
+            [appendToBody]="'body'" [showLabel]="false"></app-so-search>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Enter or search for the sales order number to transfer.
           </div>
         </div>
       </div>
     </div>
-  </div>
+    }
 
-  <!-- Line Details Card -->
-  <div class="card mb-4 shadow-sm" *ngIf="getDetails.length" formGroupName="details">
-    <div class="card-header bg-body-tertiary border-0">
-      <h5 class="card-title mb-1 text-body-secondary">
-        <i class="mdi mdi-format-list-bulleted me-2"></i>Transfer Line Details
-      </h5>
-      <small class="text-body-secondary">Items and quantities being transferred</small>
+    <!-- Transfer Information Section -->
+    <div class="mb-4 pb-4 border-bottom" *ngIf="f.so_number.value">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Transfer Information</h3>
+        <p class="text-muted mb-0">
+          Transfer details and reference information.
+        </p>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label small text-muted">Sales Order</label>
+          <div class="fw-semibold">{{f.so_number.value || 'Not selected'}}</div>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label small text-muted">Transfer Date</label>
+          <div class="fw-semibold">{{f.date.value || 'Not set'}}</div>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label small text-muted">Reference</label>
+          <div class="fw-semibold">{{f.transfer_reference.value || 'Not available'}}</div>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+          <label class="form-label small text-muted">Transaction Type</label>
+          <div>
+            <span class="badge bg-primary">311 to {{f.to_location.value || 'Location TBD'}}</span>
+          </div>
+        </div>
+
+        <div class="col-md-8 col-sm-12">
+          <label class="form-label small text-muted">Description</label>
+          <div class="fw-semibold">{{f.transfer_reference_description.value || 'Not available'}}</div>
+        </div>
+
+        <div class="col-md-4 col-sm-6" *ngIf="f.email_sent_datetime.value">
+          <label class="form-label small text-muted">Email Sent</label>
+          <div class="text-success fw-semibold">
+            <i class="mdi mdi-check-circle me-1"></i>{{f.email_sent_datetime.value}}
+          </div>
+        </div>
+      </div>
+      <div class="form-text mt-2">
+        <i class="mdi mdi-information-outline me-1"></i>
+        Transfer details and reference information for tracking and processing.
+      </div>
     </div>
-    <div class="card-body p-0">
+
+    <!-- Transfer Line Details Section -->
+    <div class="mb-4" *ngIf="getDetails.length" formGroupName="details">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Transfer Line Details</h3>
+        <p class="text-muted mb-0">
+          Items and quantities being transferred between locations.
+        </p>
+      </div>
+
       <!-- Mobile-friendly layout -->
       <div class="d-block d-lg-none">
-        <div *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i" class="border-bottom p-4">
+        <div *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i"
+          class="mb-4 p-3 bg-light rounded border">
           <div class="row g-3">
             <div class="col-6">
-              <label class="form-label text-body-secondary small">SO Line #</label>
-              <div class="fw-semibold text-body">{{row.value.so_line}}</div>
+              <label class="form-label text-muted small fw-medium">SO Line #</label>
+              <div class="fw-semibold">{{row.value.so_line}}</div>
             </div>
             <div class="col-6">
-              <label class="form-label text-body-secondary small">Quantity</label>
-              <div class="fw-semibold text-body">{{row.value.qty}}</div>
+              <label class="form-label text-muted small fw-medium">Quantity</label>
+              <div class="fw-semibold">{{row.value.qty}}</div>
             </div>
             <div class="col-12">
-              <label class="form-label text-body-secondary small">Part Number</label>
+              <label class="form-label text-muted small fw-medium">Part Number</label>
               <div class="fw-semibold text-primary">{{row.value.part_number}}</div>
             </div>
             <div class="col-12">
-              <label class="form-label text-body-secondary small">Description</label>
-              <div class="text-body">{{row.value.description}}</div>
+              <label class="form-label text-muted small fw-medium">Description</label>
+              <div>{{row.value.description}}</div>
             </div>
             <div class="col-6">
-              <label class="form-label text-body-secondary small">From Location</label>
-              <div class="fw-semibold text-body">{{f.from_location?.value}}</div>
+              <label class="form-label text-muted small fw-medium">From Location</label>
+              <div class="fw-semibold">{{f.from_location?.value}}</div>
             </div>
             <div class="col-6">
-              <label class="form-label text-body-secondary small">To Location</label>
-              <div class="fw-semibold text-body">{{f.to_location?.value}}</div>
+              <label class="form-label text-muted small fw-medium">To Location</label>
+              <div class="fw-semibold">{{f.to_location?.value}}</div>
             </div>
             <div class="col-6">
               <label class="form-label required">Pallet #</label>
               <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
                 placeholder="Enter pallet number" />
+              <div class="form-text">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Pallet identification number.
+              </div>
             </div>
             <div class="col-6">
               <label class="form-label">Serial Numbers</label>
               <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
                 placeholder="Enter S/N" />
+              <div class="form-text">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Serial numbers if applicable.
+              </div>
             </div>
           </div>
         </div>
@@ -146,45 +139,75 @@
       <!-- Desktop layout -->
       <div class="d-none d-lg-block">
         <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
+          <table class="table table-hover table-bordered">
+            <thead class="table-dark">
               <tr>
-                <th>SO Line #</th>
-                <th>Part Number</th>
-                <th>Description</th>
-                <th class="text-center">Qty</th>
-                <th>From Location</th>
-                <th>To Location</th>
-                <th>Pallet #</th>
-                <th>Serial Numbers</th>
+                <th style="width: 100px;">SO Line #</th>
+                <th style="width: 300px;">Part Details</th>
+                <th class="text-center" style="width: 80px;">Qty</th>
+                <th class="text-center" style="width: 200px;">Transfer Route</th>
+                <th style="width: 300px;">Tracking Information</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="table-group-divider">
               <tr class="align-middle" *ngFor="let row of getDetails.controls; let i=index" [formGroupName]="i">
-                <td class="fw-semibold">{{row.value.so_line}}</td>
-                <td class="text-primary fw-semibold">{{row.value.part_number}}</td>
-                <td>{{row.value.description}}</td>
-                <td class="text-center fw-semibold">{{row.value.qty}}</td>
+                <td class="text-center fw-bold text-muted">{{row.value.so_line}}</td>
                 <td>
-                  <span class="badge bg-secondary">{{f.from_location?.value}}</span>
+                  <div class="fw-semibold text-primary mb-1">{{row.value.part_number}}</div>
+                  <small class="text-muted">{{row.value.description}}</small>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-info">{{row.value.qty}}</span>
+                </td>
+                <td class="text-center">
+                  <div class="d-flex justify-content-center align-items-center">
+                    <span class="badge bg-secondary rounded-pill me-2">{{f.from_location?.value}}</span>
+                    <i class="mdi mdi-arrow-right text-muted mx-1"></i>
+                    <span class="badge bg-primary rounded-pill ms-2">{{f.to_location?.value}}</span>
+                  </div>
                 </td>
                 <td>
-                  <span class="badge bg-primary">{{f.to_location?.value}}</span>
-                </td>
-                <td>
-                  <input type="text" class="form-control form-control-sm" name="pallet_count" formControlName="pallet_count"
-                    placeholder="Enter pallet #" style="min-width:140px"/>
-                </td>
-                <td>
-                  <input type="text" class="form-control form-control-sm" name="serial_numbers" formControlName="serial_numbers"
-                    placeholder="Enter serial numbers" style="min-width:160px" />
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light">
+                          <i class="mdi mdi-package-variant text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control" name="pallet_count" formControlName="pallet_count"
+                          placeholder="Pallet #" />
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light">
+                          <i class="mdi mdi-barcode text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control" name="serial_numbers" formControlName="serial_numbers"
+                          placeholder="Serial #" />
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+        <div class="row">
+          <div class="col-md-8">
+            <div class="form-text">
+              <i class="mdi mdi-information-outline me-1"></i>
+              Complete pallet numbers and serial numbers for all line items before processing transfer.
+            </div>
+          </div>
+          <div class="col-md-4 text-end">
+            <small class="text-muted">
+              <i class="mdi mdi-format-list-numbered me-1"></i>
+              {{getDetails.length}} item(s) selected
+            </small>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
+  </div> <!-- end body container -->
 </form>

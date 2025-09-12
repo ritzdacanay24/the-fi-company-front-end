@@ -1,41 +1,110 @@
 <div class="modal-header">
-    <h4 class="modal-title" id="modal-basic-title">Resolution</h4>
+    <h4 class="modal-title" id="modal-basic-title">
+        <i class="mdi mdi-wrench-outline me-2"></i>Resolve Inspection Issue
+    </h4>
     <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
 </div>
 <div class="modal-body">
-    <div class="mb-3">
-        <label for="formGroupExampleInput" class="form-label">Resolved By</label>
-        <input type="text" class="form-control" id="formGroupExampleInput" placeholder="Resolved by"
-            [(ngModel)]="formData.resolved_by">
-    </div>
-    <div class="mb-3">
-        <label for="formGroupExampleInput" class="form-label">Resolved Date</label>
-        <input type="date" class="form-control" id="formGroupExampleInput" placeholder="Resolved Date"
-            [(ngModel)]="formData.resolved_by_date">
-    </div>
-    <div class="mb-3">
-        <label for="formGroupExampleInput2" class="form-label">Notes</label>
-        <textarea type="text" class="form-control" id="formGroupExampleInput2" placeholder="notes"
-            [(ngModel)]="formData.resolved_by_notes"></textarea>
-    </div>
+    <form class="settings-form">
+        <div class="body">
 
-    <h4>Authorized Access</h4>
-    <div class="mb-3">
-        <label for="formGroupExampleInput" class="form-label">Confirmed By</label>
-        <input type="text" class="form-control" id="formGroupExampleInput" placeholder="Confirmed By"
-            [(ngModel)]="formData.resolved_confirmed_by">
-    </div>
-    <div class="mb-3">
-        <label for="formGroupExampleInput" class="form-label">Confirmed Date</label>
-        <input type="date" class="form-control" id="formGroupExampleInput" placeholder="Example input placeholder"
-            [(ngModel)]="formData.resolved_confirmed_date">
-    </div>
-    <div class="mb-3">
-        <label for="formGroupExampleInput2" class="form-label">Confirmed Notes</label>
-        <textarea type="text" class="form-control" id="formGroupExampleInput2" placeholder="notes"
-            [(ngModel)]="formData.resolved_confirmed_notes"></textarea>
-    </div>
+            <!-- Resolution Information Section -->
+            <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                    <h3 class="h5 mb-1">Resolution Information</h3>
+                    <p class="text-muted mb-0">
+                        Details of who resolved the issue and when it was completed.
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="resolved_by" class="form-label">Resolved By</label>
+                        <input type="text" class="form-control" id="resolved_by" placeholder="Enter name of person who resolved the issue"
+                            [(ngModel)]="formData.resolved_by">
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Name of the person who performed the maintenance or repair.
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="resolved_by_date" class="form-label">Resolved Date</label>
+                        <input type="date" class="form-control" id="resolved_by_date"
+                            [(ngModel)]="formData.resolved_by_date">
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Date when the issue was resolved.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="resolved_by_notes" class="form-label">Resolution Notes</label>
+                        <textarea class="form-control" id="resolved_by_notes" rows="3"
+                            placeholder="Describe what was done to resolve the issue, parts used, etc."
+                            [(ngModel)]="formData.resolved_by_notes"></textarea>
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Detailed description of the repair work performed and any parts replaced.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Authorized Confirmation Section -->
+            <div class="mb-4">
+                <div class="mb-3">
+                    <h3 class="h5 mb-1">Authorized Confirmation</h3>
+                    <p class="text-muted mb-0">
+                        Management or supervisor confirmation that the issue has been properly resolved.
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="resolved_confirmed_by" class="form-label">Confirmed By</label>
+                        <input type="text" class="form-control" id="resolved_confirmed_by" 
+                            placeholder="Enter name of supervisor or manager"
+                            [(ngModel)]="formData.resolved_confirmed_by">
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Name of supervisor or manager who confirmed the resolution.
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="resolved_confirmed_date" class="form-label">Confirmed Date</label>
+                        <input type="date" class="form-control" id="resolved_confirmed_date"
+                            [(ngModel)]="formData.resolved_confirmed_date">
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Date when the resolution was confirmed by authorized personnel.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="resolved_confirmed_notes" class="form-label">Confirmation Notes</label>
+                        <textarea class="form-control" id="resolved_confirmed_notes" rows="3"
+                            placeholder="Any additional notes or verification details from the confirming authority"
+                            [(ngModel)]="formData.resolved_confirmed_notes"></textarea>
+                        <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Additional notes from the supervisor confirming the quality and completeness of the resolution.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- end body container -->
+    </form>
 </div>
 <div class="modal-footer">
-    <button class="btn btn-primary" (click)="onSubmit()">Submit</button>
+    <button type="button" class="btn btn-outline-secondary me-2" (click)="activeModal.dismiss('Cross click')">
+        <i class="mdi mdi-close me-1"></i>Cancel
+    </button>
+    <button type="button" class="btn btn-primary" (click)="onSubmit()">
+        <i class="mdi mdi-check-circle-outline me-1"></i>Submit Resolution
+    </button>
 </div>
