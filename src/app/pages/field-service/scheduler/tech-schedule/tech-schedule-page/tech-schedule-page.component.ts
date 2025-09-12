@@ -32,7 +32,7 @@ export class TechSchedulePageComponent implements OnInit {
 
 
     onSubmittedWO() {
-        this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+        this.router.navigate(['/field-service/scheduling/tech-schedule'], {
             queryParamsHandling: 'merge',
             queryParams: {
                 submittedTickets: this.submittedTickets,
@@ -71,7 +71,7 @@ export class TechSchedulePageComponent implements OnInit {
     notifyParent($event) {
         this.id = $event?.id || null
         this.start = $event.request_date
-        this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+        this.router.navigate(['/field-service/scheduling/tech-schedule'], {
             queryParamsHandling: 'merge',
             queryParams: {
                 start: this.start,
@@ -86,7 +86,7 @@ export class TechSchedulePageComponent implements OnInit {
 
     onSelectedDateChange = (e) => {
         this.id = null
-        this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+        this.router.navigate(['/field-service/scheduling/tech-schedule'], {
             queryParamsHandling: 'merge',
             queryParams: {
                 start: e,
@@ -99,7 +99,7 @@ export class TechSchedulePageComponent implements OnInit {
 
     set(name) {
         this.currentView = name
-        this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+        this.router.navigate(['/field-service/scheduling/tech-schedule'], {
             queryParamsHandling: 'merge',
             queryParams: {
                 currentView: this.currentView
@@ -254,7 +254,7 @@ export class TechSchedulePageComponent implements OnInit {
 
     myCalendarOptions: MbscEventcalendarOptions = {
         onSelectedDateChange: (e) => {
-            this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+            this.router.navigate(['/field-service/scheduling/tech-schedule'], {
                 queryParamsHandling: 'merge',
                 queryParams: {
                     start: moment(e.date).format('YYYY-MM-DD'),

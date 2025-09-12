@@ -116,7 +116,7 @@
                     </button>
                     <div ngbDropdownMenu aria-labelledby="connectedJobsDropdown" style="min-width: 220px;">
                       <a *ngFor="let job of connectingJobs" ngbDropdownItem
-                        [routerLink]="['/dashboard/field-service/ticket/overview']" [queryParams]="{id: job.fs_id}"
+                        [routerLink]="['/field-service/ticket/overview']" [queryParams]="{id: job.fs_id}"
                         class="dropdown-item d-flex align-items-center gap-2" target="_blank">
                         <span class="badge bg-primary-subtle text-primary">#{{job.fs_id || job}}</span>
                         <span class="fw-semibold">{{job.customer || job.service_type || job}}</span>

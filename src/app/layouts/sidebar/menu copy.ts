@@ -561,22 +561,22 @@ export const MENU: MenuItem[] = [
     subItems: [
       {
         label: 'MENUITEMS.FIELDSERVICE.OVERVIEW',
-        link: '/dashboard/field-service/overview/summary',
+        link: '/field-service/overview/summary',
         description: "Field Service Overview"
       },
       {
         label: 'MENUITEMS.FIELDSERVICE.MAP',
-        link: '/dashboard/field-service/map',
+        link: '/field-service/map',
         description: "Field Service Map"
       },
       {
         label: 'MENUITEMS.FIELDSERVICE.SCHEDULING.CALENDAR',
-        link: '/dashboard/field-service/scheduling/calendar',
+        link: '/field-service/scheduling/calendar',
         description: "Field Service Calendar"
       },
       {
         label: 'MENUITEMS.FIELDSERVICE.SCHEDULING.TECHSCHEDULE',
-        link: '/dashboard/field-service/scheduling/tech-schedule',
+        link: '/field-service/scheduling/tech-schedule',
         description: "Field Service Tech Schedule"
       },
       {
@@ -586,31 +586,31 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.FIELDSERVICE.JOB.LIST',
-            link: '/dashboard/field-service/jobs/list',
+            link: '/field-service/jobs/list',
             description: "Field Service Job List"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.JOB.CREATE',
-            link: '/dashboard/field-service/jobs/create',
+            link: '/field-service/jobs/create',
             description: "Field Service Job Create"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.JOB.EDIT',
-            link: '/dashboard/field-service/jobs/edit',
+            link: '/field-service/jobs/edit',
             description: "Field Service Job Edit"
           },
           // {
           //   label: 'MENUITEMS.FIELDSERVICE.JOB.OVERVIEW',
-          //   link: '/dashboard/field-service/jobs/overview',
+          //   link: '/field-service/jobs/overview',
           // },
           {
             label: 'MENUITEMS.FIELDSERVICE.JOB.OPEN_INVOICES',
-            link: '/dashboard/field-service/jobs/job-open-invoice',
+            link: '/field-service/jobs/job-open-invoice',
             description: "Field Service Open Invoices"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.JOB.BILLING',
-            link: '/dashboard/field-service/jobs/billing',
+            link: '/field-service/jobs/billing',
             description: "Field Service Billing"
           },
         ]
@@ -622,12 +622,12 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.FIELDSERVICE.TICKET.LIST',
-            link: '/dashboard/field-service/ticket/list',
+            link: '/field-service/ticket/list',
             description: "Field Service Tickets"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.TICKET.OVERVIEW',
-            link: '/dashboard/field-service/ticket/overview',
+            link: '/field-service/ticket/overview',
             description: "Field Service Tickets Edit"
           },
         ]
@@ -639,17 +639,17 @@ export const MENU: MenuItem[] = [
         subItems: [
           {
             label: 'MENUITEMS.FIELDSERVICE.REQUEST.LIST',
-            link: '/dashboard/field-service/request/list',
+            link: '/field-service/request/list',
             description: "Field Service Request List"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.REQUEST.CREATE',
-            link: '/dashboard/field-service/request/create',
+            link: '/field-service/request/create',
             description: "Field Service Request Create"
           },
           {
             label: 'MENUITEMS.FIELDSERVICE.REQUEST.EDIT',
-            link: '/dashboard/field-service/request/edit',
+            link: '/field-service/request/edit',
             description: "Field Service Request Edit"
           },
         ]
@@ -663,55 +663,55 @@ export const MENU: MenuItem[] = [
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.JOBSBYLOCATION',
-            link: '/dashboard/field-service/reports/jobs-by-location',
+            link: '/field-service/reports/jobs-by-location',
             description: "Field Service Jobs by location report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.PLATFORMAVG',
-            link: '/dashboard/field-service/reports/platform-avg',
+            link: '/field-service/reports/platform-avg',
             description: "Field Service Platform avg report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.EXPENSEREPORT',
-            link: '/dashboard/field-service/reports/expense-report',
+            link: '/field-service/reports/expense-report',
             description: "Field Service expense report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.SERVICEREPORT',
-            link: '/dashboard/field-service/reports/service-report',
+            link: '/field-service/reports/service-report',
             description: "Field Service service report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.CUSTOMEREPORT',
-            link: '/dashboard/field-service/reports/customer-report',
+            link: '/field-service/reports/customer-report',
             description: "Field Service Customer Report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.INVOICEREPORT',
-            link: '/dashboard/field-service/reports/invoice-report',
+            link: '/field-service/reports/invoice-report',
             description: "Field Service Invoice Report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.JOBBYUSERREPORT',
-            link: '/dashboard/field-service/reports/job-by-user-report',
+            link: '/field-service/reports/job-by-user-report',
             description: "Field Service Jobs By User Report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.CONTRACTORVSTECH',
-            link: '/dashboard/field-service/reports/contractor-vs-tech-report',
+            link: '/field-service/reports/contractor-vs-tech-report',
             description: "Field Service Contract Vs Tech Report"
           },
           {
             id: 6,
             label: 'MENUITEMS.FIELDSERVICE.REPORTS.TICKETEVENTREPORT',
-            link: '/dashboard/field-service/reports/ticket-event-report',
+            link: '/field-service/reports/ticket-event-report',
             description: "Field Service Ticket Report"
           },
         ]
@@ -728,17 +728,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.JOB_STATUS.LIST',
-                link: '/dashboard/field-service/maintenance/job-status/list',
+                link: '/field-service/maintenance/job-status/list',
                 description: "Field Service Status List"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.JOB_STATUS.CREATE',
-                link: '/dashboard/field-service/maintenance/job-status/create',
+                link: '/field-service/maintenance/job-status/create',
                 description: "Field Service Status Create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.JOB_STATUS.EDIT',
-                link: '/dashboard/field-service/maintenance/job-status/edit',
+                link: '/field-service/maintenance/job-status/edit',
                 description: "Field Service Status Edit"
               },
             ]
@@ -750,17 +750,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.SERVICE_TYPE.LIST',
-                link: '/dashboard/field-service/maintenance/service-type/list',
+                link: '/field-service/maintenance/service-type/list',
                 description: "Field Service Service Type List"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.SERVICE_TYPE.CREATE',
-                link: '/dashboard/field-service/maintenance/service-type/create',
+                link: '/field-service/maintenance/service-type/create',
                 description: "Field Service Service Type Create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.SERVICE_TYPE.EDIT',
-                link: '/dashboard/field-service/maintenance/service-type/edit',
+                link: '/field-service/maintenance/service-type/edit',
                 description: "Field Service Service Type Edit"
               },
             ]
@@ -772,17 +772,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PROPERTY.LIST',
-                link: '/dashboard/field-service/maintenance/property/list',
+                link: '/field-service/maintenance/property/list',
                 description: "Field Service Property Edit"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PROPERTY.CREATE',
-                link: '/dashboard/field-service/maintenance/property/create',
+                link: '/field-service/maintenance/property/create',
                 description: "Field Service Property Create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PROPERTY.EDIT',
-                link: '/dashboard/field-service/maintenance/property/edit',
+                link: '/field-service/maintenance/property/edit',
                 description: "Field Service Property Edit"
               },
             ]
@@ -794,17 +794,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.RECEIPT_CATEGORY.LIST',
-                link: '/dashboard/field-service/maintenance/receipt-category/list',
+                link: '/field-service/maintenance/receipt-category/list',
                 description: "Field Service Receipt Category List"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.RECEIPT_CATEGORY.CREATE',
-                link: '/dashboard/field-service/maintenance/receipt-category/create',
+                link: '/field-service/maintenance/receipt-category/create',
                 description: "Field Service Receipt Category Create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.RECEIPT_CATEGORY.EDIT',
-                link: '/dashboard/field-service/maintenance/receipt-category/edit',
+                link: '/field-service/maintenance/receipt-category/edit',
                 description: "Field Service Receipt Category Edit"
               },
             ]
@@ -816,17 +816,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.TICKET_EVENT.LIST',
-                link: '/dashboard/field-service/maintenance/ticket-event/list',
+                link: '/field-service/maintenance/ticket-event/list',
                 description: "Field Service Ticket Event List"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.TICKET_EVENT.CREATE',
-                link: '/dashboard/field-service/maintenance/ticket-event/create',
+                link: '/field-service/maintenance/ticket-event/create',
                 description: "Field Service Ticket Event Create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.TICKET_EVENT.EDIT',
-                link: '/dashboard/field-service/maintenance/ticket-event/edit',
+                link: '/field-service/maintenance/ticket-event/edit',
                 description: "Field Service Ticket Event Edit"
               },
             ]
@@ -838,17 +838,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.CUSTOMER.LIST',
-                link: '/dashboard/field-service/maintenance/customer/list',
+                link: '/field-service/maintenance/customer/list',
                 description: "Field Service customer list"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.CUSTOMER.CREATE',
-                link: '/dashboard/field-service/maintenance/customer/create',
+                link: '/field-service/maintenance/customer/create',
                 description: "Field Service customer create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.CUSTOMER.EDIT',
-                link: '/dashboard/field-service/maintenance/customer/edit',
+                link: '/field-service/maintenance/customer/edit',
                 description: "Field Service customer edit"
               },
             ]
@@ -860,17 +860,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PLATFORM.LIST',
-                link: '/dashboard/field-service/maintenance/platform/list',
+                link: '/field-service/maintenance/platform/list',
                 description: "Field Service platform list"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PLATFORM.CREATE',
-                link: '/dashboard/field-service/maintenance/platform/create',
+                link: '/field-service/maintenance/platform/create',
                 description: "Field Service platform create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.PLATFORM.EDIT',
-                link: '/dashboard/field-service/maintenance/platform/edit',
+                link: '/field-service/maintenance/platform/edit',
                 description: "Field Service platform edit"
               },
             ]
@@ -882,17 +882,17 @@ export const MENU: MenuItem[] = [
             subItems: [
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.NON_BILLABLE_CODES.LIST',
-                link: '/dashboard/field-service/maintenance/non-billable-code/list',
+                link: '/field-service/maintenance/non-billable-code/list',
                 description: "Field Service billable code list"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.NON_BILLABLE_CODES.CREATE',
-                link: '/dashboard/field-service/maintenance/non-billable-code/create',
+                link: '/field-service/maintenance/non-billable-code/create',
                 description: "Field Service billable code create"
               },
               {
                 label: 'MENUITEMS.FIELDSERVICE.MAINTENANCE.NON_BILLABLE_CODES.EDIT',
-                link: '/dashboard/field-service/maintenance/non-billable-code/edit',
+                link: '/field-service/maintenance/non-billable-code/edit',
                 description: "Field Service billable code edit"
               },
             ]

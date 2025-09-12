@@ -1,248 +1,323 @@
-<form [formGroup]="form" autocomplete="off">
+<form [formGroup]="form" class="settings-form" autocomplete="off">
 
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label for="source" class="form-label">Source</label>
-      <input type="text" class="form-control" id="source" formControlName="source" placeholder="Enter source">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="po_nbr" class="form-label">P.O No.</label>
-      <input type="text" class="form-control" id="po_nbr" formControlName="po_nbr" placeholder="Enter PO Number">
-    </div>
-    <div class="col-sm mb-3">
-      <app-qad-wo-search (notifyParent)="setOrkOrderNumber($event)" [value]="f.wo_nbr.value"
-        [disabled]="this.form.disabled" [addTag]="true"></app-qad-wo-search>
-    </div>
-  </div>
+  <div class="body">
 
-  <div class="form-check form-check-inline text-center mt-1 mb-4" *ngFor="let row of ncr_types; let i = index"
-    formArrayName="ncr_type">
-    <label class="form-check-label">
-      <input type="checkbox" class="form-check-input" [formControlName]="i">
-      <i class="input-frame"></i>
-      {{row}}
-    </label>
-  </div>
+    <!-- Manufacturing Reference Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Manufacturing Reference</h3>
+        <p class="text-muted mb-0">
+          Work order, purchase order, and source information for traceability.
+        </p>
+      </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <label for="ca_due_dt" class="form-label">Complaint Code</label>
-      <select class="form-select" formControlName="complaint_code">
-        <option selected disabled value="null">--SELECT--</option>
-        <option *ngFor="let row of complaint_codes" [value]="row.name">{{row.name}}</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col mb-3">
-      <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qir_number.value"
-        [disabled]="this.form.disabled"></app-qir-search>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label for="pt_nbr" class="form-label">Part No.</label>
-      <input type="text" class="form-control" id="pt_nbr" formControlName="pt_nbr" placeholder="Enter Part Number">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="rev" class="form-label">Rev:</label>
-      <input type="text" class="form-control" id="rev" formControlName="rev" placeholder="Enter REV Number">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="initiated_by" class="form-label">Initiated By:</label>
-      <input type="text" class="form-control" id="initiated_by" formControlName="initiated_by" placeholder="Enter name">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="ret_nbr" class="form-label">Return No.</label>
-      <input type="text" class="form-control" id="ret_nbr" formControlName="ret_nbr" placeholder="Enter return number">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm mb-3">
-      <label for="acc" class="form-label">Acc.</label>
-      <input type="text" class="form-control" id="acc" formControlName="acc" placeholder="Enter acc">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="rej" class="form-label">Rej.</label>
-      <input type="text" class="form-control" id="rej" formControlName="rej" placeholder="Enter reject">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="sample_size" class="form-label">Sample Size:</label>
-      <input type="text" class="form-control" id="sample_size" formControlName="sample_size"
-        placeholder="Enter sample size">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="dept_operator" class="form-label">Dept./Operator</label>
-      <input type="text" class="form-control" id="dept_operator" formControlName="dept_operator"
-        placeholder="Enter department/Operator name">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="finished_nbr" class="form-label">Finished #</label>
-      <input type="text" class="form-control" id="finished_nbr" formControlName="finished_nbr"
-        placeholder="Enter finished number">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col mb-3">
-      <label for="desc_of_defn_rej" class="form-label">Description of Deficiency/Rejection</label>
-      <textarea type="text" class="form-control" id="desc_of_defn_rej" formControlName="desc_of_defn_rej"
-        placeholder="Enter description" rows="10"></textarea>
-    </div>
-  </div>
-
-  <div class="card-body p-3 border border-secondary mb-3">
-    <div class="row">
-      <div class="col mb-3">
-        <label for="cont_notes" class="form-label ps-2 pt-2">Containment</label>
-        <textarea type="text" class="form-control" id="cont_notes" formControlName="cont_notes" rows="10"
-          placeholder="Enter containment"></textarea>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Work Order Number <span class="text-danger">*</span></label>
+          <app-qad-wo-search (notifyParent)="setOrkOrderNumber($event)" [value]="f.wo_nbr.value"
+            [disabled]="this.form.disabled" [addTag]="true"></app-qad-wo-search>
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="po_nbr" class="form-label">Purchase Order Number</label>
+          <input type="text" class="form-control" id="po_nbr" formControlName="po_nbr" placeholder="Enter PO Number">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="source" class="form-label">Source Department</label>
+          <input type="text" class="form-control" id="source" formControlName="source" placeholder="Enter source">
+        </div>
       </div>
     </div>
 
-    <div class="form-check form-check-inline text-center mb-3" *ngFor="let row of cont_types; let i = index"
-      formArrayName="cont_type">
-      <label class="form-check-label">
-        <input type="checkbox" class="form-check-input" [formControlName]="i">
-        <i class="input-frame"></i>
-        {{row}}
-      </label>
+    <!-- Part Information Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Part Information</h3>
+        <p class="text-muted mb-0">
+          Part details, revision, and related reference numbers.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="pt_nbr" class="form-label">Part Number <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="pt_nbr" formControlName="pt_nbr" placeholder="Enter part number">
+        </div>
+        <div class="col-md-2 mb-3">
+          <label for="rev" class="form-label">Revision</label>
+          <input type="text" class="form-control" id="rev" formControlName="rev" placeholder="Rev">
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="ret_nbr" class="form-label">Return Number</label>
+          <input type="text" class="form-control" id="ret_nbr" formControlName="ret_nbr" placeholder="Return #">
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="finished_nbr" class="form-label">Finished Number</label>
+          <input type="text" class="form-control" id="finished_nbr" formControlName="finished_nbr" placeholder="Finished #">
+        </div>
+      </div>
     </div>
 
-    <div class="row">
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light">Dspn by:</div>
+    <!-- Quality Metrics Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Quality Metrics</h3>
+        <p class="text-muted mb-0">
+          Inspection quantities and responsible personnel information.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-2 mb-3">
+          <label for="acc" class="form-label">Accepted</label>
+          <input type="number" class="form-control" id="acc" formControlName="acc" placeholder="0">
+        </div>
+        <div class="col-md-2 mb-3">
+          <label for="rej" class="form-label">Rejected</label>
+          <input type="number" class="form-control" id="rej" formControlName="rej" placeholder="0">
+        </div>
+        <div class="col-md-2 mb-3">
+          <label for="sample_size" class="form-label">Sample Size</label>
+          <input type="number" class="form-control" id="sample_size" formControlName="sample_size" placeholder="0">
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="dept_operator" class="form-label">Department/Operator</label>
+          <input type="text" class="form-control" id="dept_operator" formControlName="dept_operator" placeholder="Dept/Operator">
+        </div>
+        <div class="col-md-3 mb-3">
+          <label for="initiated_by" class="form-label">Initiated By</label>
+          <input type="text" class="form-control" id="initiated_by" formControlName="initiated_by" placeholder="Enter name">
+        </div>
+      </div>
+    </div>
+
+    <!-- Classification Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Classification</h3>
+        <p class="text-muted mb-0">
+          NCR type, complaint codes, and quality inspection references.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">NCR Type</label>
+          <div class="d-flex flex-wrap gap-3 mt-2" formArrayName="ncr_type">
+            <div class="form-check" *ngFor="let row of ncr_types; let i = index">
+              <input type="checkbox" class="form-check-input" [formControlName]="i" [id]="'ncr_type_' + i">
+              <label class="form-check-label" [for]="'ncr_type_' + i">{{row}}</label>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="complaint_code" class="form-label">Complaint Code</label>
+          <select class="form-select" id="complaint_code" formControlName="complaint_code">
+            <option selected disabled value="null">Select complaint code</option>
+            <option *ngFor="let row of complaint_codes" [value]="row.name">{{row.name}}</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">QIR Number</label>
+          <app-qir-search (notifyParent)="notifyParent($event)" [value]="f.qir_number.value"
+            [disabled]="this.form.disabled"></app-qir-search>
+        </div>
+      </div>
+    </div>
+
+    <!-- Problem Description Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Problem Description</h3>
+        <p class="text-muted mb-0">
+          Detailed description of the deficiency or rejection issue.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="desc_of_defn_rej" class="form-label">Description of Deficiency/Rejection <span class="text-danger">*</span></label>
+          <textarea type="text" class="form-control" id="desc_of_defn_rej" formControlName="desc_of_defn_rej"
+                    placeholder="Describe the deficiency or rejection in detail..." rows="4"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Containment & Disposition Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Containment & Disposition</h3>
+        <p class="text-muted mb-0">
+          Containment actions taken and disposition decisions made.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="cont_notes" class="form-label">Containment Actions</label>
+          <textarea type="text" class="form-control" id="cont_notes" formControlName="cont_notes" rows="3"
+                    placeholder="Describe containment actions taken..."></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label class="form-label">Containment Type</label>
+          <div class="d-flex flex-wrap gap-3 mt-2" formArrayName="cont_type">
+            <div class="form-check" *ngFor="let row of cont_types; let i = index">
+              <input type="checkbox" class="form-check-input" [formControlName]="i" [id]="'cont_type_' + i">
+              <label class="form-check-label" [for]="'cont_type_' + i">{{row}}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="cont_dspn_by" class="form-label">Disposition By</label>
           <input type="text" class="form-control" id="cont_dspn_by" formControlName="cont_dspn_by"
-            placeholder="Enter disposition by">
+                 placeholder="Name">
         </div>
-      </div>
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light">Ttile:</div>
-          </div>
+        <div class="col-md-4 mb-3">
+          <label for="cont_dspn_title" class="form-label">Title</label>
           <input type="text" class="form-control" id="cont_dspn_title" formControlName="cont_dspn_title"
-            placeholder="Enter title">
+                 placeholder="Job title">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="cont_dspn_dt" class="form-label">Disposition Date</label>
+          <input type="date" class="form-control" id="cont_dspn_dt" formControlName="cont_dspn_dt">
         </div>
       </div>
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light">Dt:</div>
-          </div>
-          <input type="date" class="form-control" id="cont_dspn_dt" placeholder="cont_dspn_dt"
-            formControlName="cont_dspn_dt">
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="dspn_desc" class="form-label">Disposition/Rework/Repair Instructions</label>
+          <textarea type="text" class="form-control" id="dspn_desc" formControlName="dspn_desc" rows="3"
+                    placeholder="Enter disposition instructions..."></textarea>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="row">
-    <div class="col mb-3">
-      <label for="dspn_desc" class="form-label ">Disposition/Rework/Repair Instructions</label>
-      <textarea type="text" class="form-control" id="dspn_desc" formControlName="dspn_desc" rows="10"
-        placeholder="Enter Disposition/Rework/Repair Instructions"></textarea>
-    </div>
-  </div>
+    <!-- Impact Assessment Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Impact Assessment</h3>
+        <p class="text-muted mb-0">
+          Analysis of impact on other products, processes, or systems.
+        </p>
+      </div>
 
-  <div class="row">
-    <div class="col mb-4">
-      <label for="impact_assesment" class="form-label">Impact assessment of nonconformity on other
-        product(s) and/or process(es):</label>
-      <textarea type="text" class="form-control" id="impact_assesment" formControlName="impact_assesment" rows="10"
-        placeholder="Enter Impact assessment of nonconformity on other product(s) and/or process(es):"></textarea>
-    </div>
-  </div>
-
-  <div class="card-body p-3 border border-secondary mb-3">
-    <div class="row">
-      <div class="col mb-3">
-        <label for="icm_notes" class="form-label ps-2 pt-2">Immediate Correction Made</label>
-        <textarea type="text" class="form-control" id="icm_notes" formControlName="icm_notes" rows="10"
-          placeholder="Enter Immediate Correction Made"></textarea>
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="impact_assesment" class="form-label">Impact Assessment</label>
+          <textarea type="text" class="form-control" id="impact_assesment" formControlName="impact_assesment" rows="3"
+                    placeholder="Assess impact on other products and processes..."></textarea>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light border-right-0">Dspn by:</div>
-          </div>
+    <!-- Immediate Corrections Section -->
+    <div class="mb-4 pb-4 border-bottom">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Immediate Corrections</h3>
+        <p class="text-muted mb-0">
+          Details of immediate corrections already implemented.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="icm_notes" class="form-label">Immediate Correction Made</label>
+          <textarea type="text" class="form-control" id="icm_notes" formControlName="icm_notes" rows="3"
+                    placeholder="Describe immediate corrections made..."></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="icm_dspn_by" class="form-label">Corrected By</label>
           <input type="text" class="form-control" id="icm_dspn_by" formControlName="icm_dspn_by"
-            placeholder="Enter Disposition By">
+                 placeholder="Name">
         </div>
-      </div>
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light">Title:</div>
-          </div>
+        <div class="col-md-4 mb-3">
+          <label for="icm_dspn_title" class="form-label">Title</label>
           <input type="text" class="form-control" id="icm_dspn_title" formControlName="icm_dspn_title"
-            placeholder="Enter Title">
+                 placeholder="Job title">
         </div>
-      </div>
-      <div class="col-sm mb-3">
-        <div class="input-group">
-          <div class="input-group-prepend">
-            <div class="input-group-text bg-light">Dt:</div>
-          </div>
+        <div class="col-md-4 mb-3">
+          <label for="icm_dspn_dt" class="form-label">Correction Date</label>
           <input type="date" class="form-control" id="icm_dspn_dt" formControlName="icm_dspn_dt">
         </div>
       </div>
     </div>
+
+    <!-- Corrective Action Section -->
+    <div class="mb-4">
+      <div class="mb-3">
+        <h3 class="h5 mb-1">Corrective Action</h3>
+        <p class="text-muted mb-0">
+          Formal corrective action assignment and follow-up requirements.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Corrective Action Required</label>
+          <div class="mt-2">
+            <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
+              <input type="radio" class="form-check-input" [id]="'ca_action_req_' + row" 
+                     name="ca_action_req" [value]="row" formControlName="ca_action_req">
+              <label class="form-check-label" [for]="'ca_action_req_' + row">{{row}}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label for="iss_by" class="form-label">Issued By</label>
+          <input type="text" class="form-control" id="iss_by" formControlName="iss_by" placeholder="Issuer name">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="iss_dt" class="form-label">Issued Date</label>
+          <input type="date" class="form-control" id="iss_dt" formControlName="iss_dt">
+        </div>
+        <div class="col-md-4 mb-3">
+          <label for="ca_due_dt" class="form-label">Due Date</label>
+          <input type="date" class="form-control" id="ca_due_dt" formControlName="ca_due_dt">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="ca_iss_to" class="form-label">Assigned To</label>
+          <select class="form-select" id="ca_iss_to" formControlName="ca_iss_to">
+            <option selected disabled value="">Select department or person</option>
+            <option *ngFor="let row of corrective_action_issued_to" [value]="row">{{row}}</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <button class="btn btn-primary mt-4" (click)="onSendEmailToDepartment()"
+                  [disabled]="this.form.value?.ca_action_req == 'No' || !this.form.value?.ca_action_req">
+            <i class="mdi mdi-email-outline me-1"></i>
+            Send Email Notification
+          </button>
+        </div>
+      </div>
+
+      <div class="row" *ngIf="this.form.value?.ca_email_sent_date_time">
+        <div class="col-12">
+          <div class="alert alert-success">
+            <i class="mdi mdi-check-circle me-1"></i>
+            <strong>Email sent successfully</strong><br>
+            <small>Sent on: {{this.form.value?.ca_email_sent_date_time}}</small><br>
+            <small *ngIf="this.form.value?.ca_email_sent_to">Recipients: {{this.form.value?.ca_email_sent_to}}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
-
-  <h4 class="p-2 bg-light mb-3 text-center">Corrective Action</h4>
-  <div class="mb-3">
-    <label for="ca_action_req" class="form-label me-2">Corrective Action Required?</label>
-    <div class="form-check form-check-inline" *ngFor="let row of ['Yes', 'No']">
-      <label class="form-check-label">
-        <input type="radio" class="form-check-input" name="ca_action_req" id="ca_action_req" [value]="row"
-          formControlName="ca_action_req" placeholder="Enter Issued By">
-        <i class="input-frame"></i>
-        {{row}}
-      </label>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-7 mb-3">
-      <label for="iss_by" class="form-label">Issued By:</label>
-      <input type="text" class="form-control" id="iss_by" formControlName="iss_by" placeholder="Enter Issued By">
-    </div>
-    <div class="col-sm mb-3">
-      <label for="iss_dt" class="form-label">Issued Date:</label>
-      <input type="date" class="form-control" id="iss_dt" formControlName="iss_dt">
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-4 mb-3">
-      <label for="ca_iss_to" class="form-label">Corrective Action Issued To</label>
-      <select class="form-select" id="ca_iss_to" formControlName="ca_iss_to">
-        <option selected disabled value="">--SELECT--</option>
-        <option *ngFor="let row of corrective_action_issued_to">{{row}}</option>
-      </select>
-    </div>
-    <div class="col-sm mb-3">
-      <label for="ca_due_dt" class="form-label">Due Date</label>
-      <input type="date" class="form-control" id="ca_due_dt" formControlName="ca_due_dt">
-    </div>
-  </div>
-
-
-  <button class="btn btn-primary mb-3" (click)="onSendEmailToDepartment()"
-    [disabled]="this.form.value?.ca_action_req == 'No' || !this.form.value?.ca_action_req">
-    Email Corrective Action
-  </button>
-
-  <p *ngIf="this.form.value?.ca_email_sent_date_time">Email sent on {{this.form.value?.ca_email_sent_date_time}}</p>
-  <p *ngIf="this.form.value?.ca_email_sent_to">Email sent to: {{this.form.value?.ca_email_sent_to}}</p>
 </form>

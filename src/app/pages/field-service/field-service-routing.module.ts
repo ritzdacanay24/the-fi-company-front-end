@@ -18,7 +18,6 @@ const routes: Routes = [
       import("./overview/overview-routing.module").then(
         (m) => m.OverviewRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {

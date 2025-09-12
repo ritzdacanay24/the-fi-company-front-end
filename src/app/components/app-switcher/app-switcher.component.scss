@@ -5,13 +5,14 @@
   .current-app {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 10px;
     background: var(--vz-card-bg);
     border: 1px solid var(--vz-border-color);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 280px;
+    min-width: 140px;
+    margin: 0 8px;
 
     &:hover {
       background: var(--vz-light);
@@ -68,7 +69,6 @@
     position: absolute;
     top: 100%;
     left: 0;
-    right: 0;
     background: var(--vz-card-bg);
     border: 1px solid var(--vz-border-color);
     border-radius: 6px;
@@ -79,6 +79,7 @@
     transform: translateY(-10px);
     transition: all 0.2s ease;
     margin-top: 4px;
+    min-width: 280px; /* Fixed width for dropdown content */
 
     &.show {
       opacity: 1;
@@ -206,21 +207,20 @@
 @media (max-width: 768px) {
   .app-switcher {
     .current-app {
-      min-width: 240px;
-
-      .app-details {
-        .app-description {
-          display: none;
-        }
-      }
+      min-width: 120px;
+      margin: 0 4px;
     }
 
     .app-dropdown {
+      min-width: 260px; /* Slightly smaller on mobile but still wide enough for descriptions */
+
       .app-list {
         .app-option {
+          padding: 10px 12px; /* Slightly tighter on mobile */
+          
           .app-details {
             .app-description {
-              display: none;
+              font-size: 10px; /* Smaller description text on mobile */
             }
           }
         }

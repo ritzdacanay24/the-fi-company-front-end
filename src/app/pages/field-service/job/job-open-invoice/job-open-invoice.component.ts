@@ -109,7 +109,7 @@ export class JobOpenInvoiceComponent implements OnInit {
 
   billingView(fsid) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate([`/dashboard/field-service/ticket/overview`], {
+    this.router.navigate([`/field-service/ticket/overview`], {
       queryParamsHandling: "merge",
       queryParams: {
         selectedViewType:'Open',

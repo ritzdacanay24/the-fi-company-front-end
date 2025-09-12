@@ -1,0 +1,215 @@
+// Favorite star styles
+.favorite-star {
+  cursor: pointer;
+  font-size: 14px;
+  color: #6c757d;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  padding: 2px;
+  
+  &:hover {
+    opacity: 1;
+    color: #ffc107;
+    transform: scale(1.1);
+  }
+  
+  &.favorited {
+    color: #ffc107;
+    opacity: 1;
+  }
+}
+
+// Menu item styles with favorite integration
+.nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-right: 15px; // Default padding for items without stars
+  
+  // Adjust spacing only when favorite star is present
+  &.has-favorite {
+    padding-right: 35px; // Make room for favorite star
+  }
+  
+  .favorite-star {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+  }
+  
+  // Text truncation for long labels - 2 lines max with ellipsis
+  span {
+    flex: 1;
+    min-width: 0; // Allow flex item to shrink below content size
+    
+    // Multi-line ellipsis (2 lines max)
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; // Standard property for compatibility
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    line-height: 1.2em;
+    max-height: 2.4em; // 2 * line-height
+  }
+}
+
+// Badge positioning adjustment when favorite star is present
+.nav-link.has-favorite .badge {
+  margin-right: 25px; // Make room for favorite star
+}
+
+// Default badge margin for items without stars
+.nav-link:not(.has-favorite) .badge {
+  margin-right: 5px; // Normal badge margin
+}
+
+// Hide star on hover states
+.nav-item:hover .favorite-star {
+  opacity: 1;
+}
+
+// Menu Search Styles
+.menu-search-container {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+  
+  .position-relative {
+    position: relative;
+  }
+  
+  .menu-search-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding-left: 35px;
+    padding-right: 35px;
+    font-size: 13px;
+    
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+    
+    &:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  
+  .clear-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    cursor: pointer;
+    
+    &:hover {
+      color: #fff;
+    }
+  }
+}
+
+// Text truncation for menu labels - 2 lines max with ellipsis
+.menu-link span,
+.nav-link span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+  line-height: 1.2em;
+  max-height: 2.4em; // 2 * line-height
+  max-width: 180px; // Adjust based on sidebar width
+}
+
+// Different max-widths for different menu levels
+.nav-link {
+  // Top-level menu items
+  &.menu-link span {
+    max-width: 160px;
+  }
+  
+  // Sub-menu items (more indented, less space)
+  .nav-sm & span {
+    max-width: 140px;
+  }
+  
+  // Sub-sub-menu items (even more indented)
+  .extra-sub-menu & span {
+    max-width: 120px;
+  }
+}
+
+// Ensure menu titles also truncate if needed (wider since no favorite stars)
+.menu-title span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+  line-height: 1.2em;
+  max-height: 2.4em;
+  max-width: 220px; // Wider than regular menu items since no favorite stars
+}
+
+// Badge positioning should account for truncated text
+.nav-link .badge {
+  flex-shrink: 0; // Prevent badge from shrinking
+  margin-left: 5px; // Small gap from text
+}
+
+// Tooltip on hover for truncated text
+.nav-link[title] {
+  cursor: help;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .menu-link span,
+  .nav-link span {
+    max-width: 140px;
+  }
+  
+  // Menu titles get more space even on mobile
+  .menu-title span {
+    max-width: 180px;
+  }
+  
+  .nav-sm .nav-link span {
+    max-width: 120px;
+  }
+  
+  .extra-sub-menu .nav-link span {
+    max-width: 100px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .favorite-star {
+    font-size: 12px;
+    right: 5px;
+  }
+}

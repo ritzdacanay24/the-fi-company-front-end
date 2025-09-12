@@ -23,6 +23,11 @@
                     </a>
                 </div>
 
+                <!-- App Switcher - Better UX position -->
+                <div class="ms-3 header-item d-flex align-items-center">
+                    <app-switcher></app-switcher>
+                </div>
+
                 <button type="button" class="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger"
                     id="topnav-hamburger-icon" (click)="toggleMobileMenu($event)">
                     <span class="hamburger-icon">
@@ -51,11 +56,6 @@
                         </div>
                     </div>
                 </form>
-
-                <!-- App Switcher -->
-                <div class="ms-3 header-item d-none d-lg-flex">
-                    <app-switcher></app-switcher>
-                </div>
             </div>
 
             <div class="d-flex align-items-center">

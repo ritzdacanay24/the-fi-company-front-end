@@ -25,8 +25,7 @@
             AGS Serial Number
           </label>
           <input class="form-control" type="text" formControlName="generated_SG_asset"
-            [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" 
-            placeholder="Enter AGS Serial #" />
+            [ngClass]="{ 'is-invalid': submitted && f.generated_SG_asset.errors }" placeholder="Enter AGS Serial #" />
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             If AGS serial # is blank, the serial # will automatically generate.
@@ -62,8 +61,7 @@
             AGS Part Number
           </label>
           <app-qad-customer-part-search [form_label]="'AGS Part #'" (notifyParent)="getCustomerPartNumber($event)"
-            [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }"
-            [value]="f.sgPartNumber.value"
+            [ngClass]="{ 'is-invalid': submitted && f.sgPartNumber.errors }" [value]="f.sgPartNumber.value"
             [disabled]="isFormDisabled"></app-qad-customer-part-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
@@ -76,8 +74,7 @@
             Work Order Number
           </label>
           <app-qad-wo-search (notifyParent)="getWorkOrderNumber($event)"
-            [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" 
-            [value]="f.poNumber.value"
+            [ngClass]="{ 'is-invalid': submitted && f.poNumber.errors }" [value]="f.poNumber.value"
             [disabled]="isFormDisabled"></app-qad-wo-search>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
@@ -100,8 +97,8 @@
         <div class="col-md-6 mb-3">
           <label class="form-label">Record Status</label>
           <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="activeToggle"
-              formControlName="active" (change)="setBooleanToNumber('active')">
+            <input class="form-check-input" type="checkbox" id="activeToggle" formControlName="active"
+              (change)="setBooleanToNumber('active')">
             <label class="form-check-label" for="activeToggle">
               Active Record
             </label>

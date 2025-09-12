@@ -65,7 +65,7 @@ export class CalendarComponent implements OnInit {
   notifyParent($event) {
     this.id = $event?.id || null;
     this.start = $event.request_date;
-    this.router.navigate(["/dashboard/field-service/scheduling/calendar"], {
+    this.router.navigate(["/field-service/scheduling/calendar"], {
       queryParamsHandling: "merge",
       queryParams: {
         start: moment(this.start).format("YYYY-MM-DD"),
@@ -84,7 +84,7 @@ export class CalendarComponent implements OnInit {
     this.myEvents = [];
     const newEvents = [];
 
-    this.router.navigate(["/dashboard/field-service/scheduling/calendar"], {
+    this.router.navigate(["/field-service/scheduling/calendar"], {
       queryParamsHandling: "merge",
       queryParams: {
         currentView: this.currentView,
@@ -188,7 +188,7 @@ export class CalendarComponent implements OnInit {
       schedule: { type: "day" },
     },
     onSelectedDateChange: (e) => {
-      this.router.navigate(["/dashboard/field-service/scheduling/calendar"], {
+      this.router.navigate(["/field-service/scheduling/calendar"], {
         queryParamsHandling: "merge",
         queryParams: {
           start: moment(e.date).format("YYYY-MM-DD"),
@@ -353,7 +353,7 @@ export class CalendarComponent implements OnInit {
 
     // this.id = data.event.id;
     // this.previousId = data.event.id;
-    // this.router.navigate(['/dashboard/field-service/scheduling/calendar'], {
+    // this.router.navigate(['/field-service/scheduling/calendar'], {
     //   queryParamsHandling: 'merge',
     //   queryParams: {
     //     id: data.event.id,
@@ -378,7 +378,7 @@ export class CalendarComponent implements OnInit {
   goBack = () => {
     this.id = null;
     this.ticketId = null;
-    this.router.navigate(["/dashboard/field-service/scheduling/calendar"], {
+    this.router.navigate(["/field-service/scheduling/calendar"], {
       queryParamsHandling: "merge",
       queryParams: {
         id: null,

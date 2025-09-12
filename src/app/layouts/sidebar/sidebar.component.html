@@ -35,20 +35,21 @@
       <div id="two-column-menu">
       </div>
 
-      <!-- Search Input - Hidden when sidebar is small -->
-      <!-- <div *ngIf="showSearch && !isSidebarSmall()" class="menu-search-container px-3 pb-3 pt-2">
+      <!-- Search Input -->
+      <div *ngIf="showSearch && !isSidebarSmall()" class="menu-search-container px-3 pb-2 pt-2">
         <div class="position-relative">
           <input
             type="text"
             class="form-control form-control-sm menu-search-input"
-            placeholder="Search menu..."
+            placeholder="Search menu... (Ctrl+K)"
             [value]="searchTerm()"
             (input)="onSearchChange($event)"
+            (keydown.escape)="clearSearch()"
             #searchInput>
           <i class="bx bx-search search-icon"></i>
           <i *ngIf="searchTerm()" class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
         </div>
-      </div> -->
+      </div>
 
       <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 70px)">
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav1">
@@ -89,20 +90,32 @@
 
 
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav">
-          <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: menuItems }">
+          <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: filteredMenuItems() }">
           </ng-container>
+          
+          <!-- No search results found -->
+          <li class="nav-item" *ngIf="searchTerm() && !hasVisibleItems()">
+            <div class="nav-link text-center text-muted py-4">
+              <i class="bx bx-search-alt-2 fs-3 mb-2 d-block"></i>
+              <span class="small">No menu items found for "{{searchTerm()}}"</span>
+            </div>
+          </li>
         </ul>
 
         <ng-template #recursiveMenu let-menuItems>
-          <li *ngFor="let menu of menuItems;" class="pointer nav-item">
+          <li *ngFor="let menu of menuItems;" class="pointer nav-item" 
+              [style.display]="isMenuItemVisible(menu) ? 'block' : 'none'">
             @if(menu.isTitle){
           <li class="menu-title is-parent navbar-nav"><span data-key="t-menu">{{ menu.label }}</span></li>
 
           }@else if(hasItems(menu)){
-          <a title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="!menu.isCollapsed"
-            data-bs-toggle="collapse" (click)="toggleItem(menu)" class="nav-item nav-link">
+          <a title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="shouldExpandDropdown(menu)"
+            [class]="searchTerm() ? 'nav-item nav-link disabled-toggle' : 'nav-item nav-link'"
+            [attr.data-bs-toggle]="searchTerm() ? null : 'collapse'" 
+            (click)="searchTerm() ? null : toggleItem(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             <span class=""> {{ menu.label }} </span>
+            <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
           </a>
           }@else{
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
@@ -118,8 +131,9 @@
               (click)="$event.preventDefault();removeAsFavorite(menu);$event.stopPropagation()"></i>
           </a>
           }
-          <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="menu.isCollapsed">
-            <ul class="nav nav-sm flex-column" aria-expanded="!menu.isCollapsed">
+          <div class="collapse menu-dropdown" #collapse="ngbCollapse" 
+               [ngbCollapse]="!shouldExpandDropdown(menu)">
+            <ul class="nav nav-sm flex-column" [attr.aria-expanded]="shouldExpandDropdown(menu)">
               <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: menu.subItems }"></ng-container>
             </ul>
           </div>

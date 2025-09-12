@@ -1,0 +1,295 @@
+<!-- ========== App Menu ========== -->
+<div class="app-menu navbar-menu">
+  <!-- LOGO -->
+  <div class="navbar-brand-box">
+    <!-- Dark Logo-->
+    <a routerLink="/" class="logo logo-dark">
+      <span class="logo-sm">
+        <div class="avatar-xs">
+          <div class="avatar-title bg-primary-subtle rounded">
+            <span class="text-primary">RX</span>
+          </div>
+        </div>
+      </span>
+      <span class="logo-lg text-white">
+        <button type="button" class="btn material-shadow-none p-0" id="page-header-user-dropdown"
+          data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="d-flex align-items-center gap-3">
+            <img class="rounded header-profile-users" src="assets\images\app\CreoRx-Logo-Final_White-300x102.png"
+              alt="Header Avatar" height="20">
+            <span class="text-start">
+              <span class="d-block fw-medium text-white">{{title}}</span>
+              <p class="d-block text-white text-uppercase text-nowrap overflow-hidden text-truncate"
+                style="width: 145px;font-size:9px">
+                <span class="align-middle">{{subTitle}}</span>
+              </p>
+            </span>
+          </span>
+        </button>
+      </span>
+    </a>
+    <!-- Light Logo-->
+    <a routerLink="/" class="logo logo-light">
+      <span class="logo-sm">
+        <div class="avatar-xs">
+          <div class="avatar-title bg-primary rounded">
+            <span class="text-white">RX</span>
+          </div>
+        </div>
+      </span>
+      <span class="logo-lg text-white">
+        <button type="button" class="btn material-shadow-none p-0" id="page-header-user-dropdown">
+          <span class="d-flex align-items-center gap-3">
+            <img class="rounded header-profile-users" src="assets\images\app\CreoRx-Logo-Final_White-300x102.png"
+              alt="Header Avatar" height="20">
+            <span class="text-start">
+              <span class="d-block fw-medium text-white">{{title}}</span>
+              <p class="d-block text-white text-uppercase text-nowrap overflow-hidden text-truncate"
+                style="width: 145px;font-size:9px">
+                <span class="align-middle">{{subTitle}}</span>
+              </p>
+            </span>
+          </span>
+        </button>
+      </span>
+    </a>
+    <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
+      <i class="ri-record-circle-line"></i>
+    </button>
+  </div>
+
+  <div class="dropdown sidebar-user">
+    <button type="button" class="btn material-shadow-none text-center w-100" id="page-header-user-dropdown"
+      data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+
+      <div class="d-flex align-items-center justify-content-center mb-3 mt-2">
+        <img class="rounded header-profile-user" src="assets/images/users/user-dummy-img.jpg" alt="Header Avatar">
+      </div>
+
+      <span class="text-center">
+        <span class="d-block fw-medium sidebar-user-name-text text-truncate">{{client?.client?.cl_first_name}} {{client?.client?.cl_last_name}}</span>
+        <span class="d-block fs-14 sidebar-user-name-sub-text text-truncate">
+          <i class="ri ri-circle-fill fs-10 text-{{client?.mbr_status_info?.text_color}} align-middle"></i>
+          <span class="align-middle" title="{{client?.client?.mbr_status}}"> {{client?.client?.id}} |
+            {{client?.client?.mbr_status}}</span>
+        </span>
+      </span>
+    </button>
+  </div>
+
+
+
+
+  <!-- @if(lawFirm?.law_firm_logo){
+
+    <button type="button" class="btn material-shadow-none p-0" id="page-header-user-dropdown"
+    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <span class="d-flex align-items-center gap-3">
+      <img class="rounded header-profile-users"[src]="lawFirm.law_firm_logo"
+        alt="Header Avatar" height="20">
+    </span>
+  </button>
+
+  } -->
+
+  <div id="scrollbar" class="mt-1">
+    <div class="container-fluid">
+
+      <div id="two-column-menu">
+      </div>
+
+      @if(goBack){
+      <ul class="metismenue list-unstyled navbar-nav sticky-top">
+        <li class="pointer nav-item border-bottom border-bottom-menu border-2 rounded-0 pb-2 mb-2 " (click)="goBack()">
+          <a class="nav-item nav-link menu-link">
+            <i class="icon las la-angle-double-left nav-icon"></i>
+            <span class="ms-2"> <b>Back to main</b> </span>
+          </a>
+        </li>
+      </ul>
+      }
+
+      <!-- Search Input - Hidden when sidebar is small -->
+      @if(showSearch && !isSidebarSmall()){
+      <div class="menu-search-container px-3 pb-3 pt-2">
+        <div class="position-relative">
+          <input 
+            type="text" 
+            class="form-control form-control-sm menu-search-input"
+            placeholder="Search menu..."
+            [value]="searchTerm()"
+            (input)="onSearchChange($event)"
+            #searchInput>
+          <i class="bx bx-search search-icon"></i>
+          @if(searchTerm()){
+            <i class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
+          }
+        </div>
+      </div>
+      }
+
+      <ngx-simplebar class="sidebar-menu-scroll" style="height: calc(100vh - 255px)" [ngStyle]="ngStyle">
+        <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav">
+          @for(item of filteredMenuItems(); track $index){
+          @if(item.isTitle){
+          <li class="menu-title"><span data-key="t-menu" [title]="item.label | translate">{{ item.label | translate }}</span></li>
+          }@else {
+          <li class="nav-item">
+            @if(hasItems(item)){
+            <a href="javascript:void(0);" class="is-parent nav-link menu-link"
+              [ngClass]="{'has-arrow': !item.badge, 'has-dropdown': item.badge}" data-bs-toggle="collapse"
+              [attr.aria-expanded]="!item.isCollapsed" (click)="toggleItem(item)" [title]="item.label | translate">
+              <i class="{{ item.icon }} icon nav-icon" class=""></i>
+              <span class="ms-2"> {{ item.label | translate }}</span>
+              @if(item.badge){<span class="badge badge-pill {{item.badge.variant}}">{{item.badge.text
+                | translate}}</span>}
+            </a>
+
+            <div class="collapse menu-dropdown" #collapse="ngbCollapse" [(ngbCollapse)]="item.isCollapsed">
+              <ul class="nav nav-sm flex-column" aria-expanded="false">
+                @for(subitem of item.subItems; track $index){
+                <li class="nav-item">
+                  @if(hasItems(subitem)){
+                  <a class="nav-link" href="javascript:void(0);" [attr.data-parent]="subitem.parentId"
+                    data-bs-toggle="collapse" [attr.aria-expanded]="!subitem.isCollapsed" (click)="toggleItem(subitem)"
+                    [title]="subitem.label | translate">
+                    {{ subitem.label | translate}}
+                    @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                      | translate}}</span>}
+                  </a>
+
+                  <div class="collapse menu-dropdown sub-menu" #collapse="ngbCollapse"
+                    [(ngbCollapse)]="subitem.isCollapsed">
+                    <ul class="nav nav-sm flex-column" aria-expanded="false">
+                      @for(subSubitem of subitem.subItems; track $index){
+                      <li class="nav-item">
+                        @if(hasItems(subSubitem)){
+                        <a class="nav-link" href="javascript:void(0);" [attr.data-parent]="subSubitem.parentId"
+                          data-bs-toggle="collapse" [attr.aria-expanded]="!subSubitem.isCollapsed"
+                          (click)="toggleItem(subSubitem)" [title]="subSubitem.label | translate">
+                          {{ subSubitem.label | translate}}
+                          @if(subSubitem.badge){<span
+                            class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
+                            | translate}}</span>}
+                        </a>
+
+                        <div class="collapse menu-dropdown extra-sub-menu" #collapse="ngbCollapse"
+                          [(ngbCollapse)]="subSubitem.isCollapsed">
+                          <ul class="nav nav-sm flex-column" aria-expanded="false">
+                            @for(subSubitem1 of subSubitem.subItems; track $index){
+                            <li class="nav-item">
+                              <a [attr.data-parent]="subSubitem1.parentId" [routerLink]="subSubitem1.link"
+                                id="{{subSubitem1.link}}" class="nav-link" [class.has-favorite]="subSubitem1.canFavorite" 
+                                (click)="updateActive($event); onMenuItemClick(subSubitem1)" [title]="subSubitem1.label | translate">
+                                {{ subSubitem1.label | translate }}
+                                
+                                <!-- Favorite Star for Deep Sub Items -->
+                                @if(subSubitem1.canFavorite){
+                                  <i class="bx {{ isFavorited(subSubitem1) ? 'bxs-star' : 'bx-star' }} favorite-star float-end" 
+                                     [class.favorited]="isFavorited(subSubitem1)"
+                                     (click)="onToggleFavorite($event, subSubitem1)"
+                                     title="{{ isFavorited(subSubitem1) ? 'Remove from favorites' : 'Add to favorites' }}"></i>
+                                }
+                              </a>
+
+                            </li>
+                            }
+                          </ul>
+                        </div>
+                        }@else {
+                        <a [routerLink]="subSubitem.link" class="nav-link" [class.has-favorite]="subSubitem.canFavorite" [attr.data-parent]="subSubitem.parentId"
+                          id="{{subSubitem.link}}" (click)="updateActive($event); onMenuItemClick(subSubitem)" [title]="subSubitem.label | translate">
+                          {{ subSubitem.label | translate}}
+                          @if(subSubitem.badge){<span
+                            class="badge badge-pill {{subSubitem.badge.variant}}">{{subSubitem.badge.text
+                            | translate}}</span>}
+                          
+                          <!-- Favorite Star for Sub-Sub Items -->
+                          @if(subSubitem.canFavorite){
+                            <i class="bx {{ isFavorited(subSubitem) ? 'bxs-star' : 'bx-star' }} favorite-star float-end" 
+                               [class.favorited]="isFavorited(subSubitem)"
+                               (click)="onToggleFavorite($event, subSubitem)"
+                               title="{{ isFavorited(subSubitem) ? 'Remove from favorites' : 'Add to favorites' }}"></i>
+                          }
+                        </a>
+                        }
+                      </li>
+                      }
+                    </ul>
+                  </div>
+                  }@else {
+                  <a [routerLink]="subitem.isFavorite ? null : subitem.link" 
+                     [href]="subitem.isFavorite ? 'javascript:void(0)' : null"
+                     class="nav-link" [class.has-favorite]="subitem.canFavorite" [attr.data-parent]="subitem.parentId"
+                     (click)="handleSubitemClick($event, subitem)" 
+                     id="{{subitem.link}}" [title]="subitem.label | translate">
+                    {{ subitem.label | translate}}
+                    @if(subitem.badge){<span class="badge badge-pill {{subitem.badge.variant}}">{{subitem.badge.text
+                      | translate}}</span>}
+                    
+                    <!-- Favorite Star for Sub Items -->
+                    @if(subitem.canFavorite){
+                      <i class="bx {{ isFavorited(subitem) ? 'bxs-star' : 'bx-star' }} favorite-star float-end" 
+                         [class.favorited]="isFavorited(subitem)"
+                         (click)="onToggleFavorite($event, subitem)"
+                         title="{{ isFavorited(subitem) ? 'Remove from favorites' : 'Add to favorites' }}"></i>
+                    }
+                  </a>
+                  }
+                </li>
+                }
+              </ul>
+            </div>
+            }@else {
+            <a [routerLink]="item.link" class="side-nav-link-ref nav-link menu-link" [class.has-favorite]="item.canFavorite" id="{{item.link}}" 
+               (click)="onMenuItemClick(item)" [title]="item.label | translate">
+              @if(item.icon){<i class="bx {{ item.icon }} icon nav-icon" class=""></i>}
+              <span class="ms-2"> {{ item.label | translate }} </span>
+              @if(item.badge){<span class="badge {{item.badge.variant}} float-end">{{item.badge.text |
+                translate}}</span>}
+              
+              <!-- Favorite Star for Top-Level Items -->
+              @if(item.canFavorite){
+                <i class="bx {{ isFavorited(item) ? 'bxs-star' : 'bx-star' }} favorite-star float-end" 
+                   [class.favorited]="isFavorited(item)"
+                   (click)="onToggleFavorite($event, item)"
+                   title="{{ isFavorited(item) ? 'Remove from favorites' : 'Add to favorites' }}"></i>
+              }
+            </a>
+            }
+          </li>
+          }
+          }
+        </ul>
+
+
+      </ngx-simplebar>
+
+    </div>
+    <!-- Sidebar -->
+  </div>
+
+  @if(showFooter){
+  <div class="app-menu-footer mt-2" style="border-top:1px solid rgba(255, 255, 255, 0.1)">
+    <button type="button" class="btn material-shadow-none w-100" id="page-header-user-dropdown"
+      data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <span class="d-flex align-items-center gap-3 mb-2">
+        <img class="rounded header-profile-users" src="assets\images\app\CreoRx-Logo-Final_White-300x102.png"
+          alt="Header Avatar" height="20">
+      </span>
+      <span class="d-flex align-items-center gap-2">
+        <span class="text-start" style="max-width: 175px;">
+          <span class="d-block fw-medium sidebar-user-name-text text-white">Providing Nationwide Pharmacy Lien
+            Solutions.</span>
+
+        </span>
+      </span>
+    </button>
+  </div>
+  }
+  <div class="sidebar-background"></div>
+</div>
+<!-- Left Sidebar End -->
+
+<!-- Vertical Overlay-->
+<div class="vertical-overlay" (click)="SidebarHide()"></div>

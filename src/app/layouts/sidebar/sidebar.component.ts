@@ -5,6 +5,9 @@ import {
   Output,
   ViewChild,
   ElementRef,
+  HostListener,
+  signal,
+  computed,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { TranslateService } from "@ngx-translate/core";
@@ -27,14 +30,15 @@ export class SidebarComponent implements OnInit {
   toggle: any = true;
   menuItems: MenuItem[] = [];
   @ViewChild("sideMenu") sideMenu!: ElementRef;
+  @ViewChild("searchInput") searchInput!: ElementRef;
   @Output() mobileMenuButtonClicked = new EventEmitter();
   maxFavs = 5;
   favs = [];
 
   version = environment.VERSION;
-  // Search state used by the sidebar search input
+  // Search functionality using Angular signals
   showSearch: boolean = true; // toggle visibility of the search box
-  searchMenu: string = "";
+  searchTerm = signal('');
 
   // history / recent searches (lightweight placeholder)
   recentSearches: string[] = [];
@@ -102,37 +106,105 @@ export class SidebarComponent implements OnInit {
   }
 
   initalLoad = false;
+
   ngOnInit(): void {
     // Menu Items
     // this.menuItems = MENU;
   }
 
   /**
-   * Return the current search term (used by template bindings)
-   */
-  searchTerm(): string {
-    return this.searchMenu || "";
-  }
-
-  /**
    * Handler for the search input change event
    */
-  onSearchChange(event: any) {
-    // event may be an Event or a string depending on usage; handle both
-    const value = event && event.target ? event.target.value : event || "";
-    this.searchMenu = value;
-    // Optionally track recent searches (light-weight)
-    if (value && !this.recentSearches.includes(value)) {
-      this.recentSearches.unshift(value);
-      if (this.recentSearches.length > 10) this.recentSearches.pop();
-    }
+  onSearchChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.searchTerm.set(target.value);
   }
 
   /**
    * Clear the current search term
    */
-  clearSearch() {
-    this.searchMenu = "";
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
+  focusSearch(): void {
+    if (this.searchInput?.nativeElement) {
+      this.searchInput.nativeElement.focus();
+    }
+  }
+
+  // Simple getter method for filtered menu items - returns original objects
+  filteredMenuItems(): MenuItem[] {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) {
+      return this.menuItems;
+    }
+    
+    // Just return original menuItems and let template handle visibility
+    return this.menuItems;
+  }
+
+  // Method to check if menu item should be visible during search
+  isMenuItemVisible(item: MenuItem): boolean {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) {
+      return true; // Show all items when not searching
+    }
+    
+    // Check if item or any of its children match - don't modify data
+    return this.itemOrChildrenMatch(item, term);
+  }
+
+  private itemOrChildrenMatch(item: MenuItem, searchTerm: string): boolean {
+    // Skip title items
+    if (item.isTitle) return false;
+    
+    // Check if current item matches
+    const currentMatches = item.label?.toLowerCase().includes(searchTerm);
+    
+    // Check if any children match
+    let childrenMatch = false;
+    if (item.subItems && item.subItems.length > 0) {
+      childrenMatch = item.subItems.some(child => this.itemOrChildrenMatch(child, searchTerm));
+    }
+    
+    return currentMatches || childrenMatch;
+  }
+
+  // Method to determine if a dropdown should be expanded (for template use)
+  shouldExpandDropdown(item: MenuItem): boolean {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) {
+      return !item.isCollapsed; // Normal behavior when not searching
+    }
+    
+    // When searching, expand if this item has matching children
+    if (item.subItems && item.subItems.length > 0) {
+      return item.subItems.some(child => this.itemOrChildrenMatch(child, term));
+    }
+    
+    return false;
+  }
+
+  // Method to check if any items are visible during search (for "no results" message)
+  hasVisibleItems(): boolean {
+    const term = this.searchTerm().toLowerCase().trim();
+    if (!term) {
+      return true;
+    }
+    
+    return this.menuItems.some(item => this.isMenuItemVisible(item));
+  }
+
+  /**
+   * Keyboard shortcut for search (Ctrl/Cmd + K)
+   */
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardShortcut(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'k' && this.showSearch) {
+      event.preventDefault();
+      this.focusSearch();
+    }
   }
 
   /**
@@ -141,32 +213,6 @@ export class SidebarComponent implements OnInit {
   isSidebarSmall(): boolean {
     const size = document.documentElement.getAttribute("data-sidebar-size");
     return size === "sm" || size === "sm-hover";
-  }
-
-  /**
-   * Return menu items filtered by the current search term.
-   * This keeps the original menuItems intact and returns a new array used by templates if desired.
-   */
-  filteredMenuItems(): MenuItem[] {
-    if (!this.searchMenu) return this.menuItems;
-    const term = this.searchMenu.toLowerCase();
-
-    const filterRec = (items: MenuItem[]): MenuItem[] => {
-      const out: MenuItem[] = [];
-      items.forEach((it) => {
-        const matchLabel = (it.label || "").toLowerCase().includes(term);
-        let matchedSubItems: any[] = [];
-        if (it.subItems && it.subItems.length) {
-          matchedSubItems = filterRec(it.subItems as MenuItem[]);
-        }
-        if (matchLabel || (matchedSubItems && matchedSubItems.length)) {
-          out.push({ ...it, subItems: matchedSubItems });
-        }
-      });
-      return out;
-    };
-
-    return filterRec(this.menuItems);
   }
 
   /***
@@ -267,6 +313,7 @@ export class SidebarComponent implements OnInit {
 
   isCollapsed = true;
   mouseHovering(e) {
+    if (!e) return; // Add safety check
     e.showStar = true;
     e.showStarColor = false;
     this.favs.forEach((menuItem: any) => {
@@ -277,15 +324,18 @@ export class SidebarComponent implements OnInit {
   }
 
   saveAsFavorite(item) {
+    if (!item) return; // Add safety check
     item.showStarColor = true;
     this.favoriteService.onSave(item);
   }
   removeAsFavorite(item) {
+    if (!item) return; // Add safety check
     item.showStarColor = false;
     this.favoriteService.removeByLabel(item.label);
   }
 
   mouseLeft(item) {
+    if (!item) return; // Add safety check
     item.showStar = false;
     item.showStarColor = false;
   }

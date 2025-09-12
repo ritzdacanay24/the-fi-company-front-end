@@ -510,7 +510,7 @@ export class TechScheduleComponent implements OnInit {
   clearEventOverlay() {
     this.tooltip?.close();
     this.id = null;
-    // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+    // this.router.navigate(['/field-service/scheduling/tech-schedule'], {
     //   queryParamsHandling: 'merge',
     //   queryParams: {
     //     id: null,
@@ -576,7 +576,7 @@ export class TechScheduleComponent implements OnInit {
   }
 
   viewRequest(id) {
-    window.open("https://dashboard.eye-fi.com/dist/web/dashboard/field-service/request/edit?selectedViewType=Open&id=" + id, "_blank"); // Open new tab
+    window.open("https://dashboard.eye-fi.com/dist/web/field-service/request/edit?selectedViewType=Open&id=" + id, "_blank"); // Open new tab
 
   }
 
@@ -592,7 +592,7 @@ export class TechScheduleComponent implements OnInit {
 
       this.previousId = args.event.id;
 
-      // this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+      // this.router.navigate(['/field-service/scheduling/tech-schedule'], {
       //   queryParamsHandling: 'merge',
       //   queryParams: {
       //     id: args.event.id,
@@ -638,7 +638,7 @@ export class TechScheduleComponent implements OnInit {
     this.id = null;
     this.ticketId = null;
 
-    this.router.navigate(['/dashboard/field-service/scheduling/tech-schedule'], {
+    this.router.navigate(['/field-service/scheduling/tech-schedule'], {
       queryParamsHandling: 'merge',
       queryParams: {
         id: null,

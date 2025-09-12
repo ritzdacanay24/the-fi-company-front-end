@@ -108,6 +108,12 @@
 }
 .menu-search-container .clear-icon:hover { color: #fff; }
 
+/* No search results styling */
+.nav-item .nav-link.text-muted {
+	pointer-events: none;
+	opacity: 0.7;
+}
+
 /* Truncation helpers used globally in the sidebar */
 .menu-link span,
 .nav-link span {
@@ -138,5 +144,19 @@
 	.nav-sm .nav-link span { max-width: 120px; }
 	.extra-sub-menu .nav-link span { max-width: 100px; }
 	.favorite-star { font-size: 12px; right: 5px; }
+}
+
+/* Search mode styles */
+.nav-link.disabled-toggle {
+	cursor: default !important;
+	opacity: 0.8;
+}
+
+.nav-link.disabled-toggle:hover {
+	background-color: transparent !important;
+}
+
+.nav-link.disabled-toggle span {
+	color: rgba(255, 255, 255, 0.9);
 }
 

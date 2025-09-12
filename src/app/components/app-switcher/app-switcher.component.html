@@ -4,13 +4,13 @@
       <i [class]="currentApp?.icon" class="app-icon"></i>
       <div class="app-details">
         <span class="app-name">{{ currentApp?.name }}</span>
-        <small class="app-description">{{ currentApp?.description }}</small>
+        <!-- Description hidden in button for cleaner topbar look -->
       </div>
     </div>
     <i class="las la-chevron-down toggle-icon" [class.rotated]="showDropdown"></i>
   </div>
 
-  <div class="app-dropdown" [class.show]="showDropdown">
+  <div class="app-dropdown bg-light" [class.show]="showDropdown">
     <div class="dropdown-header">
       <h6>Switch Application</h6>
     </div>
