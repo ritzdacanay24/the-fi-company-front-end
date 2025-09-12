@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { getFormValidationErrors } from 'src/assets/js/util/getFormValidationErrors';
 import { NAVIGATION_ROUTE } from '../material-request-constant';
-import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { MaterialRequestFormComponent } from '../material-request-form/material-request-form.component';
 import { MaterialRequestService } from '@app/core/api/operations/material-request/material-request.service';
@@ -38,9 +38,30 @@ export class MaterialRequestEditComponent {
     if (this.id) this.getData();
   }
 
-  title = "Edit";
+  title = "Edit Material Request";
 
-  form: FormGroup;
+  form = this.fb.group({
+    main: this.fb.group({
+      active: new FormControl(1),
+      assemblyNumber: new FormControl("", Validators.required),
+      createdBy: new FormControl(null),
+      createdDate: new FormControl(null),
+      deleteReason: new FormControl(""),
+      deleteReasonBy: new FormControl(null),
+      deleteReasonDate: new FormControl(null),
+      dueDate: new FormControl(null, Validators.required),
+      info: new FormControl(""),
+      isCableRequest: new FormControl(""),
+      lineNumber: new FormControl("", Validators.required),
+      pickList: new FormControl("", Validators.required),
+      pickedCompletedDate: new FormControl(null),
+      priority: new FormControl("Low"),
+      requestor: new FormControl("", Validators.required),
+      specialInstructions: new FormControl(""),
+      validated: new FormControl(null),
+    }),
+    details: this.fb.array([]),
+  });
 
   id = null;
 
@@ -60,6 +81,10 @@ export class MaterialRequestEditComponent {
   data: any;
 
   details: FormArray;
+
+  get getDetails() {
+    return this.form.get("details") as FormArray;
+  }
 
   checkDuplicate(partNumber) {
     let items: any = this.form.get('details').value;
@@ -149,44 +174,127 @@ export class MaterialRequestEditComponent {
   }
 
   onActiveChange = async () => {
-    if (!this.form.value.main.active) {
-      const { value: text } = await SweetAlert.fire({
-        title: `MRF# ${this.id} Deletion`,
-        input: 'textarea',
-        inputPlaceholder: 'Explain why this MRF needs to be deleted.',
+    const isCurrentlyActive = this.form.get('main.active')?.value;
+    
+    if (isCurrentlyActive) {
+      // Currently active, user wants to deactivate
+      const result = await SweetAlert.fire({
+        title: `Deactivate Material Request`,
+        html: `
+          <div class="text-start">
+            <p class="mb-3">You are about to deactivate <strong>MRF# ${this.id}</strong>.</p>
+            <p class="mb-3">This action will:</p>
+            <ul class="text-muted mb-3">
+              <li>Mark the request as inactive</li>
+              <li>Prevent further processing</li>
+              <li>Maintain data for audit purposes</li>
+            </ul>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Reason for deactivation:</label>
+              <select id="deleteReason" class="form-select mb-2">
+                <option value="">Select a reason...</option>
+                <option value="Request no longer needed">Request no longer needed</option>
+                <option value="Duplicate request">Duplicate request</option>
+                <option value="Parts no longer available">Parts no longer available</option>
+                <option value="Budget constraints">Budget constraints</option>
+                <option value="Project cancelled">Project cancelled</option>
+                <option value="Incorrect information">Incorrect information</option>
+                <option value="Other">Other (specify below)</option>
+              </select>
+              <textarea id="deleteReasonDetails" class="form-control" placeholder="Additional details (optional)" rows="3"></textarea>
+            </div>
+          </div>
+        `,
         showCancelButton: true,
-        inputValidator: function (value) {
-          return !value && 'You need to write something!'
+        confirmButtonText: 'Deactivate Request',
+        cancelButtonText: 'Keep Active',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        width: '500px',
+        preConfirm: () => {
+          const reason = (document.getElementById('deleteReason') as HTMLSelectElement)?.value;
+          const details = (document.getElementById('deleteReasonDetails') as HTMLTextAreaElement)?.value;
+          
+          if (!reason) {
+            SweetAlert.fire({
+              title: 'Validation Error',
+              text: 'Please select a reason for deactivation',
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
+            return false;
+          }
+          
+          let fullReason = reason;
+          if (details.trim()) {
+            fullReason += ': ' + details.trim();
+          }
+          
+          return {
+            reason: fullReason,
+            category: reason
+          };
         }
-      })
+      });
 
-      if (text) {
-
+      if (result.isConfirmed) {
         this.form.patchValue({
           main: {
-            deleteReason: text,
+            deleteReason: result.value.reason,
             active: 0,
             deleteReasonBy: this.authenticationService.currentUserValue.id,
             deleteReasonDate: moment().format('YYYY-MM-DD HH:mm:ss')
           }
-        }, { emitEvent: false })
+        }, { emitEvent: false });
 
         try {
           this.isLoading = true;
           await this.api.update(this.id, this.form.value);
           this.isLoading = false;
-          this.toastrService.success('Successfully Deleted');
-          this.goBack();
+          this.toastrService.success('Material request has been deactivated', 'Request Deactivated');
+          // Don't navigate away - stay on the form to show the deactivated state
         } catch (err) {
           this.isLoading = false;
+          this.toastrService.error('Failed to deactivate request', 'Error');
         }
+      }
+    } else {
+      // Currently inactive, user wants to reactivate
+      const result = await SweetAlert.fire({
+        title: 'Reactivate Material Request',
+        html: `
+          <div class="text-start">
+            <p class="mb-3">You are about to reactivate <strong>MRF# ${this.id}</strong>.</p>
+            <p class="text-muted mb-0">This will make the request available for processing again.</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Reactivate',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d',
+        icon: 'question'
+      });
 
-      } else {
+      if (result.isConfirmed) {
         this.form.patchValue({
           main: {
-            active: this.form.value.main.active = !this.form.value.main.active
+            active: 1,
+            deleteReason: '',
+            deleteReasonBy: null,
+            deleteReasonDate: null
           }
-        }, { emitEvent: false })
+        }, { emitEvent: false });
+
+        try {
+          this.isLoading = true;
+          await this.api.update(this.id, this.form.value);
+          this.isLoading = false;
+          this.toastrService.success('Material request has been reactivated', 'Request Reactivated');
+        } catch (err) {
+          this.isLoading = false;
+          this.toastrService.error('Failed to reactivate request', 'Error');
+        }
       }
     }
   }

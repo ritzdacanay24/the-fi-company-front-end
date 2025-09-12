@@ -304,6 +304,40 @@ export class MaterialRequestPickingComponent implements OnInit {
       () => {}
     );
   }
+
+  /**
+   * Check if a date is overdue
+   * @param dueDate - The due date to check
+   * @returns boolean indicating if the date is overdue
+   */
+  isOverdue(dueDate: string): boolean {
+    if (!dueDate) return false;
+    const due = moment(dueDate);
+    const now = moment();
+    return now.isAfter(due);
+  }
+
+  /**
+   * Get picking urgency based on elapsed time
+   * @param timeDiff - The time difference string
+   * @returns string indicating urgency level
+   */
+  getPickingUrgency(timeDiff: string): string {
+    if (!timeDiff) return 'Normal';
+    
+    // Extract hours from the timeDiff string
+    const hoursMatch = timeDiff.match(/(\d+) hours?/);
+    const daysMatch = timeDiff.match(/(\d+) Days?/);
+    
+    let totalHours = 0;
+    if (daysMatch) totalHours += parseInt(daysMatch[1]) * 24;
+    if (hoursMatch) totalHours += parseInt(hoursMatch[1]);
+    
+    if (totalHours >= 24) return 'Critical';
+    if (totalHours >= 8) return 'High';
+    if (totalHours >= 4) return 'Medium';
+    return 'Normal';
+  }
 }
 
 function timeUntil(s, timeToStart) {

@@ -1,195 +1,394 @@
-<div *ngIf="isLoading" class="text-center m-5">
-  <div class="spinner-grow text-primary" role="status">
-    <span class="visually-hidden">Loading...</span>
-  </div>
-  <p>Loading data. Please wait..</p>
-</div>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10">
 
+      <!-- Loading State (Initial Load Only) -->
+      <div class="text-center py-5" *ngIf="isLoading && !data?.length">
+        <div class="mb-4">
+          <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <h5 class="text-muted">Loading picks...</h5>
+        <p class="text-muted mb-0">Please wait while we load your material request picks.</p>
+      </div>
 
-<div *ngIf="!isLoading && !data?.length" class="p-5 text-center text-success">
-  <p class="mb-5">All caught up. No picks found.</p>
-  <button class="btn btn-primary" (click)="getData()">Refresh</button>
-</div>
-
-
-<div class="row" *ngIf="!isLoading">
-  <div class="col-lg-12">
-    <button class="btn btn-primary mb-2" (click)="getData()" *ngIf="data?.length > 0">Refresh</button>
-    <div class="card mb-3" *ngFor="let row of data">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0 flex-grow-1">Material Request #: <b>{{row.id}}</b></h5>
-
-        <div ngbDropdown container="body">
-          <button type="button" class="btn btn btn-light dropdown-toggle" id="dropdownBasic1" ngbDropdownToggle>
-            Menu
-          </button>
-          <div ngbDropdownMenu>
-            <p class="text-center">Menu</p>
-            <div class="dropdown-divider"></div>
-            <button ngbDropdownItem (click)="sendBackToValidation(row)">Send Back To Validation</button>
-            <button ngbDropdownItem (click)="onClearPrint(row)">Clear Print</button>
+      <!-- Empty State -->
+      <div class="text-center py-5" *ngIf="!isLoading && !data?.length">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-5">
+            <div class="mb-4">
+              <i class="mdi mdi-check-all text-success" style="font-size: 4rem;"></i>
+            </div>
+            <h4 class="text-success mb-3">All Caught Up!</h4>
+            <p class="text-muted mb-4">Great job! There are no pending material request picks at this time.</p>
+            <button type="button" class="btn btn-primary" (click)="getData()">
+              <i class="mdi mdi-refresh me-1"></i>Check for New Picks
+            </button>
           </div>
         </div>
       </div>
-      <div class="card-body">
 
+      <!-- Pick Cards -->
+      <div class="row" *ngIf="data?.length > 0">
+        <div class="col-12" *ngFor="let row of data">
+          <div class="card shadow-sm border-0 mb-4 position-relative">
 
-        <div class="alert alert-warning" role="alert" *ngIf="!row.active || !row.validated">
-          <h4 class="alert-heading">Warning!</h4>
-          <p>It appears this work order was removed.</p>
-          <hr>
-          <p class="mb-0">This work order will be removed once this page is refreshed.</p>
-        </div>
+            <!-- Loading Overlay -->
+            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-90" 
+                 style="z-index: 10;" *ngIf="isLoading">
+              <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2 text-muted">Refreshing...</div>
+              </div>
+            </div>
 
-        <p style="font-size:14px;color:red" *ngIf="row.printedDate && !row.pickCompletedDate">
-          Elapsed picking time: {{row.timeDiff}}
-        </p>
-        <p>Requestor: <b>{{row.requestor}}</b></p>
-        <p>Production Line: <b>{{row.lineNumber}}</b></p>
-        <p>Pick List #: <b>{{row.pickList}}</b></p>
-        <p>Created Date: <b>{{row.createdDate}}</b></p>
-        <p>Due Date: <b>{{row.dueDate}}</b></p>
-        <p>Last Printed:
-          <b *ngIf="!row.printedDate">{{row.printedDate || 'Not Printed'}}</b>
-          <b *ngIf="row.printedDate">{{row.printedBy}} &#64; {{row.printedDate}}</b>
-        </p>
-        <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table align-middle table-bordered text-nowrap">
-            <thead>
-              <tr>
-                <th>Line #</th>
-                <th>Part Number</th>
-                <th>Description</th>
-                <th>Locations/OH Qty</th>
-                <th>Qty Required</th>
-                <th>Qty Picked</th>
-                <th>Transaction</th>
-                <th>Account Code</th>
-                <th>Comments</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of row.details">
-                <td>{{item.id}}</td>
-                <td>{{item.partNumber}}</td>
-                <td>{{item.itemDescription}}</td>
-                <td>
-                  <p *ngIf="!item.locations">No Locations Found</p>
-                  <table class="table table-sm table-bordered mb-0 pb-0" *ngIf="item.locations">
-                    <thead>
-                      <tr>
-                        <th>Location</th>
-                        <th>OH/Qty</th>
-                        <th>Lot</th>
-                        <th>Ref</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
-                        <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
-                        <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
-                        <td class="p-0 px-2">{{location.ld_lot}}</td>
-                        <td class="p-0 px-2">{{location.ld_ref}}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-                <td>{{item.qty}}</td>
-                <td>
+            <!-- Card Header -->
+            <div class="card-header bg-light border-0 d-flex align-items-center justify-content-between p-3">
+              <div class="d-flex align-items-center">
+                <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+                  style="width: 40px; height: 40px;">
+                  <i class="mdi mdi-clipboard-text text-white fs-6"></i>
+                </div>
+                <div>
+                  <h5 class="mb-1 text-primary">Material Request #{{row.id}}</h5>
+                  <small class="text-muted">
+                    <i class="mdi mdi-clock-outline me-1"></i>
+                    <span *ngIf="!row.printedDate">Not yet printed</span>
+                    <span *ngIf="row.printedDate && !row.pickCompletedDate" class="text-warning fw-semibold">
+                      In Progress
+                    </span>
+                    <span *ngIf="row.pickCompletedDate" class="text-success fw-semibold">
+                      Completed
+                    </span>
+                  </small>
+                </div>
+              </div>
 
-                  <input (click)="$any($event.target).select()" type="number" name="qtyPicked" class="form-control"
-                    placeholder="Enter Qty Picked" min="0" max="{{item.qty}}" required [(ngModel)]="item.qtyPicked"
-                    [disabled]="row.disabled" style="min-width:100px">
+              <div ngbDropdown container="body" class="d-inline-block">
+                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                        id="dropdownBasic1" ngbDropdownToggle>
+                  <i class="mdi mdi-dots-vertical"></i>
+                </button>
+                <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+                  <button ngbDropdownItem (click)="sendBackToValidation(row)">
+                    <i class="mdi mdi-arrow-left me-2"></i>Send Back To Validation
+                  </button>
+                  <button ngbDropdownItem (click)="onClearPrint(row)">
+                    <i class="mdi mdi-printer-off me-2"></i>Clear Print
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                </td>
-                <td>{{item.trType}}</td>
-                <td>{{item.ac_code}}</td>
-                <td>{{item.notes}}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+            <!-- Warning Alert -->
+            <div class="card-body p-3" *ngIf="!row.active || !row.validated">
+              <div class="alert alert-warning d-flex align-items-start" role="alert">
+                <i class="mdi mdi-alert-triangle me-3 mt-1 fs-5"></i>
+                <div>
+                  <h6 class="alert-heading">Work Order Issue</h6>
+                  <p class="mb-2">This work order appears to have been removed or deactivated.</p>
+                  <small class="text-muted">This item will be removed when the page is refreshed.</small>
+                </div>
+              </div>
+            </div>
 
-      <!--Print-->
-      <div class="d-none d-print-block" id="pickSheet-{{row.id}}">
+            <!-- Request Details -->
+            <div class="card-body p-3" *ngIf="row.active && row.validated">
+              
+              <!-- Basic Request Information Section -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Request Information</h3>
+                  <p class="text-muted mb-0">
+                    Basic details and status of this material request.
+                  </p>
+                </div>
 
-        <div class="mb-3">
-          <h4>Material Request #: <b>{{row.id}}</b></h4>
-          <p>Requestor: <b>{{row.requestor}}</b></p>
-          <p>Production Line: <b>{{row.lineNumber}}</b></p>
-          <p>Pick List #: <b>{{row.pickList}}</b></p>
-          <p>Created Date: <b>{{row.createdDate}}</b></p>
-          <p>Due Date: <b>{{row.dueDate}}</b></p>
-          <p>Last Printed:
-            <b *ngIf="!row.printedDate">{{row.printedDate || 'Not Printed'}}</b>
-            <b *ngIf="row.printedDate">{{row.printedBy}} &#64; {{row.printedDate}}</b>
-          </p>
-          <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
-        </div>
+                <div class="row g-2">
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Requestor</label>
+                    <div class="fw-semibold">{{row.requestor}}</div>
+                  </div>
 
-        <table class="table align-middle table-sm table-bordered">
-          <thead>
-            <tr class="text-center">
-              <th>Line #</th>
-              <th>Part Number</th>
-              <th>Description</th>
-              <th>Locations/OH Qty</th>
-              <th>Qty Required</th>
-              <th>Qty Picked</th>
-              <th>Transaction</th>
-              <th>Account Code</th>
-              <th>Comments</th>
-            </tr>
-          </thead>
-          <tbody class="text-center">
-            <tr *ngFor="let item of row.details">
-              <td>{{item.id}}</td>
-              <td>
-                <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="true"
-                  [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"></ngx-barcode6>
-              </td>
-              <td>{{item.itemDescription}}</td>
-              <td>
-                <p *ngIf="!item.locations">No Locations Found</p>
-                <table class="table table-sm table-bordered m-0 p-0 text-left"
-                  *ngIf="item.locations">
-                  <thead>
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Production Line</label>
+                    <div class="fw-semibold">{{row.lineNumber}}</div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Pick List Number</label>
+                    <div class="fw-semibold">{{row.pickList}}</div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Due Date</label>
+                    <div class="fw-semibold" 
+                         [ngClass]="{'text-danger': isOverdue(row.dueDate), 'text-success': !isOverdue(row.dueDate)}">
+                      {{row.dueDate | date:'MMM d, y'}}
+                      <i class="mdi mdi-clock-alert ms-1" *ngIf="isOverdue(row.dueDate)" 
+                         title="Overdue"></i>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Request Status</label>
+                    <div>
+                      <span class="badge" 
+                            [ngClass]="{'bg-warning': !row.printedDate, 'bg-primary': row.printedDate && !row.pickCompletedDate, 'bg-success': row.pickCompletedDate}">
+                        <span *ngIf="!row.printedDate">Ready to Print</span>
+                        <span *ngIf="row.printedDate && !row.pickCompletedDate">In Progress</span>
+                        <span *ngIf="row.pickCompletedDate">Completed</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6">
+                    <label class="form-label small text-muted">Created Date</label>
+                    <div class="fw-semibold">{{row.createdDate | date:'MMM d, y h:mm a'}}</div>
+                  </div>
+
+                  <div class="col-md-3 col-sm-6" *ngIf="row.printedDate">
+                    <label class="form-label small text-muted">Last Printed</label>
+                    <div class="text-success fw-semibold">
+                      <i class="mdi mdi-check-circle me-1"></i>
+                      {{row.printedBy}} &#64; {{row.printedDate | date:'MMM d, h:mm a'}}
+                    </div>
+                  </div>
+                </div>
+                <div class="form-text mt-2">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Request details and current status information for tracking and processing.
+                </div>
+              </div>
+
+              <!-- Picking Progress Section -->
+              <div class="mb-4 pb-4 border-bottom" *ngIf="row.printedDate">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Picking Progress</h3>
+                  <p class="text-muted mb-0">
+                    Current picking status and timeline information.
+                  </p>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <label class="form-label small text-muted">Printed By</label>
+                    <div class="fw-semibold text-primary">{{row.printedBy}}</div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label small text-muted">Print Time</label>
+                    <div class="fw-semibold">{{row.printedDate | date:'MMM d, y h:mm a'}}</div>
+                  </div>
+
+                  <div class="col-md-4" *ngIf="row.pickCompletedDate">
+                    <label class="form-label small text-muted">Completed</label>
+                    <div class="text-success fw-semibold">
+                      <i class="mdi mdi-check-circle me-1"></i>
+                      {{row.pickCompletedDate | date:'MMM d, y h:mm a'}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Special Instructions Section -->
+              <div class="mb-4 pb-4 border-bottom" *ngIf="row.specialInstructions">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Special Instructions</h3>
+                  <p class="text-muted mb-0">
+                    Additional instructions and notes for this request.
+                  </p>
+                </div>
+                <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10 mb-0">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-information-variant text-info me-3 mt-1 fs-5"></i>
+                    <div class="flex-grow-1">
+                      <p class="mb-0">{{row.specialInstructions}}</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-text mt-2">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Please review and follow any special instructions provided.
+                </div>
+              </div>
+
+              <!-- Material Request Items Section -->
+              <div class="mb-4" *ngIf="row.details?.length">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Request Items</h3>
+                  <p class="text-muted mb-0">
+                    Parts and materials included in this picking request.
+                  </p>
+                </div>
+                <table class="table table-hover mb-0">
+                  <thead class="bg-light">
                     <tr>
-                      <th>Location</th>
-                      <th>OH/Qty</th>
-                      <th>Lot</th>
-                      <th>Ref</th>
+                      <th class="border-0 fw-semibold">Line #</th>
+                      <th class="border-0 fw-semibold">Part Details</th>
+                      <th class="border-0 fw-semibold">Locations/OH Qty</th>
+                      <th class="border-0 fw-semibold text-center">Required</th>
+                      <th class="border-0 fw-semibold text-center">Picked</th>
+                      <th class="border-0 fw-semibold">Transaction</th>
+                      <th class="border-0 fw-semibold">Account</th>
+                      <th class="border-0 fw-semibold">Comments</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
-                      <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
-                      <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
-                      <td class="p-0 px-2">{{location.ld_lot}}</td>
-                      <td class="p-0 px-2">{{location.ld_ref}}</td>
+                    <tr *ngFor="let item of row.details" class="align-middle">
+                      <td class="fw-medium">{{item.id}}</td>
+                      <td>
+                        <div class="fw-semibold text-primary mb-1">{{item.partNumber}}</div>
+                        <small class="text-muted text-truncate d-block" style="max-width: 280px;" [title]="item.itemDescription">
+                          {{item.itemDescription}}
+                        </small>
+                      </td>
+                      <td>
+                        <div *ngIf="!item.locations" class="text-muted">
+                          <i class="mdi mdi-map-marker-off me-1"></i>No Locations Found
+                        </div>
+                        <div *ngIf="item.locations" class="table-responsive">
+                          <table class="table table-sm table-bordered mb-0">
+                            <thead class="bg-light">
+                              <tr>
+                                <th class="border-0 fw-semibold">Location</th>
+                                <th class="border-0 fw-semibold">OH/Qty</th>
+                                <th class="border-0 fw-semibold">Lot</th>
+                                <th class="border-0 fw-semibold">Ref</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngFor="let location of item.locations">
+                                <td class="fw-medium">{{location.LD_LOC}}</td>
+                                <td>{{location.LD_QTY_OH}}</td>
+                                <td>{{location.ld_lot}}</td>
+                                <td>{{location.ld_ref}}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                      <td class="text-center">
+                        <span class="badge bg-secondary">{{item.qty}}</span>
+                      </td>
+                      <td class="text-center">
+                        <input type="number" class="form-control form-control-sm text-center" placeholder="0" min="0"
+                          [max]="item.qty" [(ngModel)]="item.qtyPicked" [disabled]="row.disabled"
+                          (click)="$any($event).target.select()">
+                      </td>
+                      <td>
+                        <small class="text-muted">{{item.trType}}</small>
+                      </td>
+                      <td>
+                        <small class="text-muted">{{item.ac_code}}</small>
+                      </td>
+                      <td>
+                        <div class="text-truncate" style="max-width: 150px;" [title]="item.notes">
+                          {{item.notes || '-'}}
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
-              </td>
-              <td>{{item.qty}}</td>
-              <td></td>
-              <td>{{item.trType}}</td>
-              <td>{{item.ac_code}}</td>
-              <td>{{item.notes}}</td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+
+            <!-- Print Sheet (Hidden) -->
+            <div class="d-none d-print-block" id="pickSheet-{{row.id}}">
+              <div class="mb-3">
+                <h4>Material Request #: <b>{{row.id}}</b></h4>
+                <p>Requestor: <b>{{row.requestor}}</b></p>
+                <p>Production Line: <b>{{row.lineNumber}}</b></p>
+                <p>Pick List #: <b>{{row.pickList}}</b></p>
+                <p>Created Date: <b>{{row.createdDate}}</b></p>
+                <p>Due Date: <b>{{row.dueDate}}</b></p>
+                <p>Last Printed:
+                  <b *ngIf="!row.printedDate">{{row.printedDate || 'Not Printed'}}</b>
+                  <b *ngIf="row.printedDate">{{row.printedBy}} &#64; {{row.printedDate}}</b>
+                </p>
+                <p>Special Instructions: <b>{{row.specialInstructions}}</b></p>
+              </div>
+
+              <table class="table align-middle table-sm table-bordered">
+                <thead>
+                  <tr class="text-center">
+                    <th>Line #</th>
+                    <th>Part Number</th>
+                    <th>Description</th>
+                    <th>Locations/OH Qty</th>
+                    <th>Qty Required</th>
+                    <th>Qty Picked</th>
+                    <th>Transaction</th>
+                    <th>Account Code</th>
+                    <th>Comments</th>
+                  </tr>
+                </thead>
+                <tbody class="text-center">
+                  <tr *ngFor="let item of row.details">
+                    <td>{{item.id}}</td>
+                    <td>
+                      <ngx-barcode6 *ngIf="item.active == 1" [bc-value]="item.partNumber" [bc-display-value]="true"
+                        [bc-height]="20" [bc-width]="1" [bc-font-size]="12" [bc-margin-left]="-10"></ngx-barcode6>
+                    </td>
+                    <td>{{item.itemDescription}}</td>
+                    <td>
+                      <p *ngIf="!item.locations">No Locations Found</p>
+                      <table class="table table-sm table-bordered m-0 p-0 text-left" *ngIf="item.locations">
+                        <thead>
+                          <tr>
+                            <th>Location</th>
+                            <th>OH/Qty</th>
+                            <th>Lot</th>
+                            <th>Ref</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let location of item.locations" style="white-space: nowrap;">
+                            <td class="p-0 px-2" style="width:150px">{{location.LD_LOC}}</td>
+                            <td class="p-0 px-2">{{location.LD_QTY_OH}}</td>
+                            <td class="p-0 px-2">{{location.ld_lot}}</td>
+                            <td class="p-0 px-2">{{location.ld_ref}}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                    <td>{{item.qty}}</td>
+                    <td></td>
+                    <td>{{item.trType}}</td>
+                    <td>{{item.ac_code}}</td>
+                    <td>{{item.notes}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="card-footer bg-light border-0 d-flex align-items-center justify-content-between p-3">
+              <div class="d-flex align-items-center text-muted">
+                <i class="mdi mdi-information-outline me-2"></i>
+                <small>
+                  <span *ngIf="!row.printedDate">Print required before completing</span>
+                  <span *ngIf="row.printedDate && !row.pickCompletedDate">Ready to complete</span>
+                  <span *ngIf="row.pickCompletedDate">Pick completed</span>
+                </small>
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-outline-warning" (click)="onPrint(row)" [disabled]="row.disabled">
+                  <i class="mdi mdi-printer me-1"></i>Print
+                </button>
+                <button type="button" class="btn btn-primary" (click)="onComplete(row)"
+                  [disabled]="!row.printedDate || row.disabled">
+                  <i class="mdi mdi-check-circle me-1"></i>Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="card-footer border-top-0">
-        <button class="btn btn-warning me-2" (click)="onPrint(row)" [disabled]="row.disabled">Print</button>
-        <button class="btn btn-primary" (click)="onComplete(row)"
-          [disabled]="!row.printedDate || row.disabled">Complete</button>
-      </div>
     </div>
   </div>
 </div>

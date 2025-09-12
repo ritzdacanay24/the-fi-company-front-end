@@ -1,20 +1,29 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
-      </div>
-      <div class="card-body" style="min-height:300px">
-        <app-material-request-form [value]="value" (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
-          [addMoreItems]="addMoreItems" [onDeleteItem]="onDeleteItem"></app-material-request-form>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
 
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-material-request-form [value]="value" (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"
+            [addMoreItems]="addMoreItems" [onDeleteItem]="onDeleteItem"></app-material-request-form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-success ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Creating Request...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Create Material Request
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
-      </div>
+      
     </div>
   </div>
 </div>

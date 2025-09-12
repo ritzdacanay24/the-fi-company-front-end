@@ -36,7 +36,7 @@ export class MaterialRequestValidateComponent {
   }
 
 
-  title = "Validateddd";
+  title = "Material Request Validation";
 
   form: FormGroup;
 

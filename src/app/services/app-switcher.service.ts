@@ -26,7 +26,7 @@ export class AppSwitcherService {
       name: 'Operations Dashboard',
       description: 'Main business operations, quality, inventory, and admin functions',
       icon: 'las la-tachometer-alt',
-      baseRoute: '/dashboard',
+      baseRoute: '/operations',
       isActive: true
     },
     {

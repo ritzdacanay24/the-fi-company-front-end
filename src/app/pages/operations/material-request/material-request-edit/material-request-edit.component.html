@@ -1,56 +1,110 @@
-<div class="row" *ngIf="!data && !id">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-body" style="min-height:300px">
-        Please select from list.
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-alert-circle-outline text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Material Request Selected</h4>
+          <p class="text-muted mb-4">Please select a material request from the list to view and edit details.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Go to Material Request List
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex  d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Go to list</button>
-      </div>
+      
     </div>
   </div>
 </div>
 
-<div class="row" [hidden]="!data && !id">
-  <div class="content-grid col col-lg-12 col-xl-12 col-xxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0" *ngIf="goBack" (click)="goBack()"><i
-            class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-            <!-- <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4> -->
-            <h4 class="card-title mb-0 flex-grow-1 text-end"> MRF ID# {{id}} </h4>
-      </div>
-      <div class="card-body" style="min-height:300px">
-
-        <!-- Success Alert -->
-        <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-          role="alert" *ngIf="currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
-          <i class="ri-user-smile-line label-icon"></i><strong>Completed</strong> - This request was completed on
-          {{currentInfo?.pickedCompletedDate}}
-          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to Material Request List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-pencil text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-primary">{{title}}</h2>
+            <p class="text-muted mb-0" *ngIf="id">Edit material request #{{id}}</p>
+          </div>
+        </div>
+        
+        <!-- Status Alerts -->
+        <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert" 
+             *ngIf="currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-check-circle text-success me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-success mb-2">Request Completed</h6>
+              <p class="mb-0">
+                This material request was completed on <strong>{{currentInfo?.pickedCompletedDate}}</strong>
+              </p>
+            </div>
+          </div>
         </div>
 
-        <!-- Success Alert -->
-        <div class="alert alert-primary alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-          role="alert" *ngIf="!currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
-          <i class="ri-user-smile-line label-icon"></i><strong>In Process</strong> - This request in process
-          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert" 
+             *ngIf="!currentInfo?.pickedCompletedDate && currentInfo?.active == 1">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-clock-outline text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Request In Process</h6>
+              <p class="mb-0">
+                This material request is currently being processed
+              </p>
+            </div>
+          </div>
         </div>
 
-        <!-- Success Alert -->
-        <div class="alert alert-danger alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-          role="alert" *ngIf="currentInfo?.active == 0">
-          <i class="ri-user-smile-line label-icon"></i><strong>Deleted</strong> - This material request is no longer active
-          <button type="button" class="btn-close" data-bs-dismiss=" alert" aria-label="Close"></button>
+        <div class="alert alert-danger border-danger border-opacity-25 bg-danger bg-opacity-10" role="alert" 
+             *ngIf="currentInfo?.active == 0">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-delete-circle text-danger me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-danger mb-2">Request Inactive</h6>
+              <p class="mb-0">
+                This material request is no longer active and has been marked for deletion
+              </p>
+            </div>
+          </div>
         </div>
-        <app-material-request-form [enableEdit]="enableEdit" (setFormEmitter)="form = $event" [submitted]="submitted"
-          [onDeleteItem]="onDeleteItem" [onActiveChange]="onActiveChange" [id]="id"></app-material-request-form>
       </div>
-      <div class="card-footer d-flex " *ngIf="data && id">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary ms-auto me-2" [disabled]="isLoading" (click)="onSubmit()"
-          [disabled]="form.disabled"> Update </button>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-material-request-form [enableEdit]="enableEdit" (setFormEmitter)="form = $event" [submitted]="submitted"
+            [onDeleteItem]="onDeleteItem" [onActiveChange]="onActiveChange" [id]="id"></app-material-request-form>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading || form.disabled" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Updating...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Update Material Request
+            }
+          </button>
+        </div>
       </div>
+      
     </div>
   </div>
 </div>

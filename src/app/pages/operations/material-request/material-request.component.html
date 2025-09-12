@@ -1,1 +1,59 @@
-<router-outlet></router-outlet>
+<!-- Material Request Navigation -->
+<div class="container-fluid p-0">
+    <div class="border-bottom shadow-sm">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between py-3">
+                <!-- Dynamic Module Title -->
+                <div class="d-flex align-items-center" *ngIf="getCurrentPageInfo() as pageInfo">
+                    <div class="rounded-circle me-3 d-flex align-items-center justify-content-center"
+                        [ngClass]="pageInfo.bgClass" style="width: 42px; height: 42px;">
+                        <i [class]="pageInfo.icon + ' text-white'"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0" [ngClass]="pageInfo.textClass">{{pageInfo.title}}</h4>
+                        <small class="text-muted">{{pageInfo.description}}</small>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="ms-auto" *ngIf="getCurrentPageInfo() as pageInfo">
+                    <button type="button" class="btn btn-outline-primary" *ngIf="pageInfo.showRefresh"
+                        (click)="onRefresh()" [disabled]="isRefreshing">
+                        <i class="mdi mdi-refresh me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Horizontal Navigation Pills -->
+            <nav class="nav nav-pills gap-2 mt-3">
+                <a class="nav-link" [class.active]="isActiveRoute('list')" routerLink="./list">
+                    <i class="mdi mdi-format-list-bulleted me-2"></i>
+                    All Requests
+                </a>
+                <a class="nav-link" [class.active]="isActiveRoute('create')" routerLink="./create">
+                    <i class="mdi mdi-plus-circle me-2"></i>
+                    Create New
+                </a>
+                <a class="nav-link" [class.active]="isActiveRoute('validate-list')" routerLink="./validate-list">
+                    <i class="mdi mdi-check-circle me-2"></i>
+                    Validation
+                    <span class="badge bg-warning ms-2" *ngIf="pendingValidationCount > 0">
+                        {{pendingValidationCount}}
+                    </span>
+                </a>
+                <a class="nav-link" [class.active]="isActiveRoute('picking')" routerLink="./picking">
+                    <i class="mdi mdi-package-variant me-2"></i>
+                    Picking
+                    <span class="badge bg-info ms-2" *ngIf="pendingPickingCount > 0">
+                        {{pendingPickingCount}}
+                    </span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="pt-4">
+        <router-outlet></router-outlet>
+    </div>
+</div>
