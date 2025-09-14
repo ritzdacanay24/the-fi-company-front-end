@@ -1,0 +1,144 @@
+<div class="inspection-checklist">
+  <!-- Header -->
+  <div class="checklist-header mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" 
+             style="width: 50px; height: 50px;">
+          <i class="mdi mdi-clipboard-check text-white fs-5"></i>
+        </div>
+        <div>
+          <h4 class="mb-1 text-primary">{{config.title}}</h4>
+          <p class="text-muted mb-0" *ngIf="config.description">{{config.description}}</p>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="badge bg-{{isAllCompleted ? 'success' : 'primary'}} fs-6 px-3 py-2">
+          {{completedCount}}/{{totalCount}}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="progress mb-3" style="height: 8px;">
+      <div class="progress-bar bg-{{isAllCompleted ? 'success' : 'primary'}}" 
+           role="progressbar" 
+           [style.width.%]="progressPercentage">
+      </div>
+    </div>
+    
+    <!-- Completion Status -->
+    <div class="alert alert-success d-flex align-items-center" *ngIf="isAllCompleted" role="alert">
+      <i class="mdi mdi-check-circle me-2"></i>
+      <strong>Checklist Complete!</strong> All items have been verified.
+    </div>
+  </div>
+
+  <!-- Checklist Items -->
+  <div class="checklist-items">
+    <div class="card mb-3" 
+         *ngFor="let item of config.items; let i = index"
+         [class.border-success]="item.completed"
+         [class.bg-success-subtle]="item.completed">
+      
+      <!-- Item Header -->
+      <div class="card-header bg-transparent border-0 pb-2">
+        <div class="d-flex align-items-start">
+          <div class="form-check me-3 mt-1">
+            <input class="form-check-input" 
+                   type="checkbox" 
+                   [id]="'item-' + item.id"
+                   [(ngModel)]="item.completed"
+                   (change)="onItemToggle(item, i)"
+                   [disabled]="readonly">
+            <label class="form-check-label" [for]="'item-' + item.id"></label>
+          </div>
+          <div class="flex-grow-1">
+            <h6 class="mb-1" [class.text-decoration-line-through]="item.completed">
+              {{item.title}}
+            </h6>
+            <p class="text-muted small mb-2" *ngIf="item.description">
+              {{item.description}}
+            </p>
+            
+            <!-- Photo Requirements -->
+            <div class="badge bg-info text-dark me-2" *ngIf="item.requiresPhoto">
+              <i class="mdi mdi-camera me-1"></i>
+              {{item.photoCount || 1}} photo(s) required
+            </div>
+            
+            <div class="badge bg-success" *ngIf="item.photos?.length">
+              <i class="mdi mdi-check me-1"></i>
+              {{item.photos.length}} photo(s) uploaded
+            </div>
+          </div>
+          
+          <div class="text-success" *ngIf="item.completed">
+            <i class="mdi mdi-check-circle fs-5"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="card-body pt-0" *ngIf="item.instructions?.length">
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-info me-3 mt-1"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Instructions</h6>
+              <ul class="mb-0 small">
+                <li *ngFor="let instruction of item.instructions">{{instruction}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo Upload Section -->
+      <div class="card-body pt-0" *ngIf="item.requiresPhoto && !readonly">
+        <div class="mb-3">
+          <label class="form-label small text-muted">
+            <i class="mdi mdi-camera me-1"></i>Upload Photos
+          </label>
+          <input type="file" 
+                 class="form-control form-control-sm" 
+                 accept="image/*" 
+                 multiple
+                 capture="environment"
+                 (change)="onFileSelected($event, item, i)">
+        </div>
+      </div>
+
+      <!-- Uploaded Photos -->
+      <div class="card-body pt-0" *ngIf="item.photos?.length">
+        <div class="row g-2">
+          <div class="col-6 col-md-4 col-lg-3" *ngFor="let photo of item.photos; let photoIndex = index">
+            <div class="position-relative">
+              <img [src]="getPhotoUrl(photo)" 
+                   class="img-fluid rounded border" 
+                   style="aspect-ratio: 1; object-fit: cover; width: 100%;"
+                   [alt]="'Photo for ' + item.title">
+              
+              <!-- Remove button -->
+              <button type="button" 
+                      class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle d-flex align-items-center justify-content-center"
+                      style="width: 24px; height: 24px; padding: 0;"
+                      (click)="removePhoto(item, photoIndex, i)"
+                      *ngIf="!readonly"
+                      title="Remove photo">
+                <i class="mdi mdi-close" style="font-size: 12px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Items Message -->
+  <div class="text-center text-muted py-5" *ngIf="config.items.length === 0">
+    <i class="mdi mdi-clipboard-outline mb-3" style="font-size: 3rem;"></i>
+    <h5>No checklist items</h5>
+    <p>Configure checklist items to get started.</p>
+  </div>
+</div>

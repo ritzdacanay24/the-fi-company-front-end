@@ -56,17 +56,37 @@ export class RfqListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: "agGroupCellRenderer",
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        innerRenderer: (params: any) => {
+          const div = document.createElement('div');
+          div.className = 'd-flex gap-1';
+          
+          const viewBtn = document.createElement('button');
+          viewBtn.className = 'btn btn-outline-info btn-sm';
+          viewBtn.innerHTML = '<i class="mdi mdi-eye"></i>';
+          viewBtn.title = 'View RFQ Details';
+          viewBtn.onclick = () => this.onView(params.data.id);
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'btn btn-outline-primary btn-sm';
+          editBtn.innerHTML = '<i class="mdi mdi-pencil"></i>';
+          editBtn.title = 'Edit RFQ';
+          editBtn.onclick = () => this.onEdit(params.data.id);
+          
+          div.appendChild(viewBtn);
+          div.appendChild(editBtn);
+          
+          return div;
+        }
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 120,
+      minWidth: 120,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -207,6 +227,17 @@ export class RfqListComponent implements OnInit {
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

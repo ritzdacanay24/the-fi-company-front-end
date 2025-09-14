@@ -1,0 +1,81 @@
+.inspection-checklist {
+  .checklist-header {
+    .progress {
+      border-radius: 10px;
+      
+      .progress-bar {
+        border-radius: 10px;
+        transition: width 0.3s ease;
+      }
+    }
+  }
+
+  .checklist-items {
+    .card {
+      transition: all 0.2s ease;
+      
+      &.border-success {
+        border-width: 2px !important;
+      }
+      
+      &:hover {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+      }
+    }
+    
+    .form-check-input {
+      transform: scale(1.2);
+      
+      &:checked {
+        background-color: var(--bs-success);
+        border-color: var(--bs-success);
+      }
+    }
+  }
+
+  .photo-preview {
+    position: relative;
+    
+    img {
+      transition: transform 0.2s ease;
+      
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+    
+    .btn {
+      opacity: 0.8;
+      
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Photo grid responsive adjustments
+  @media (max-width: 576px) {
+    .row .col-6 {
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Badge styling
+  .badge {
+    font-size: 0.75em;
+    
+    .mdi {
+      font-size: 1em;
+    }
+  }
+
+  // Alert customizations
+  .alert {
+    border-radius: 0.5rem;
+    
+    .alert-heading {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+}

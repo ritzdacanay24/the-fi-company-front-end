@@ -80,6 +80,15 @@ export const MENU_DATA: MenuItem[] = [
         accessRequired: false,
     },
     {
+        id: 6.1,
+        label: "BOM Structure",
+        link: "/operations/bom/view",
+        description: "Bill of Materials Inquiry",
+        icon: "las la-sitemap",
+        hideCheckBox: true,
+        accessRequired: false,
+    },
+    {
         id: 7,
         label: "Production & Scheduling",
         isTitle: true,
@@ -379,6 +388,13 @@ export const MENU_DATA: MenuItem[] = [
                 link: "/operations/reports/shipped-orders-report",
                 description: "Shipped Orders Analysis",
                 icon: "las la-truck",
+                accessRequired: false,
+            },
+            {
+                label: "Shipped Orders (Table)",
+                link: "/reports/shipped-orders-report-v1",
+                description: "Shipped Orders - Table View",
+                icon: "las la-table",
                 accessRequired: false,
             },
             {

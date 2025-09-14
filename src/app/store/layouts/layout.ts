@@ -48,10 +48,10 @@ const SIDEBAR_COLOR = {
 
 const SIDEBAR_IMAGE = {
   NONE: "none",
-  IMAGE1 : "image-1",
-  IMAGE2 : "image-2",
-  IMAGE3 : "image-3",
-  IMAGE4 : "image-4"
+  IMAGE1 : "img-1",
+  IMAGE2 : "img-2",
+  IMAGE3 : "img-3",
+  IMAGE4 : "img-4"
 }
 
 const SIDEBAR_VISIBILITY = {

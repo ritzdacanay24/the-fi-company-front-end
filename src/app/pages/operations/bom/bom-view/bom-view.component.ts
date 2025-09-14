@@ -37,13 +37,16 @@ export class BomViewComponent implements OnInit {
   ngOnInit(): void {
     this.filterForm = this.fb.group({
       so: [""],
-      part: [""],
+      part: ["VWL-03398-400"], // Set default part number
       maxLevels: [6],
       days: [300],
       graphicsOnly: [false],
       nested: [false],
       debug: [false]
     });
+    
+    // Automatically fetch BOM data for the default part number
+    this.fetchBOM();
   }
 
   columnDefs: ColDef[] = [

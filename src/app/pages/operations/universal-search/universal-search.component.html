@@ -1,0 +1,226 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-center mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="las la-search text-white fs-4"></i>
+            </div>
+            <div class="text-center">
+              <h2 class="mb-1 text-primary">Universal Search</h2>
+              <p class="text-muted mb-0">Search orders, parts, and work orders from one location</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start justify-content-center">
+            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
+            <div class="text-center">
+              <h6 class="alert-heading text-primary mb-2">Smart Search Hub</h6>
+              <p class="mb-0">
+                Enter any <strong>sales order, part number, or work order</strong> to get live results.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Tabs Card -->
+      <div class="row justify-content-center">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            
+            <!-- Tab Navigation -->
+            <div class="card-header bg-light border-0">
+              <ul class="nav nav-tabs card-header-tabs" id="searchTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active d-flex align-items-center" 
+                          id="orders-tab" 
+                          data-bs-toggle="tab" 
+                          data-bs-target="#orders" 
+                          type="button" 
+                          role="tab">
+                    <i class="las la-shopping-cart me-2"></i>
+                    Orders
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link d-flex align-items-center" 
+                          id="parts-tab" 
+                          data-bs-toggle="tab" 
+                          data-bs-target="#parts" 
+                          type="button" 
+                          role="tab">
+                    <i class="las la-cog me-2"></i>
+                    Parts
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link d-flex align-items-center" 
+                          id="workorders-tab" 
+                          data-bs-toggle="tab" 
+                          data-bs-target="#workorders" 
+                          type="button" 
+                          role="tab">
+                    <i class="las la-clipboard-list me-2"></i>
+                    Work Orders
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="card-body p-0">
+              <div class="tab-content" id="searchTabContent">
+                
+                <!-- Orders Tab -->
+                <div class="tab-pane fade show active" id="orders" role="tabpanel">
+                  <div class="p-4">
+                    <!-- Search Input for Orders -->
+                    <div class="mb-4">
+                      <div class="position-relative">
+                        <input 
+                          type="text" 
+                          class="form-control form-control-lg" 
+                          placeholder="Search for sales orders..."
+                          [(ngModel)]="searchTerms.orders"
+                          (input)="onOrderSearch($event)">
+                        <i class="las la-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                      </div>
+                    </div>
+
+                    <!-- Order Search Component -->
+                    <app-so-search 
+                      [value]="searchTerms.orders"
+                      [minTermLength]="2"
+                      [showLabel]="false"
+                      [placeholder]="'Search sales orders...'"
+                      (notifyParent)="onOrderSelected($event)">
+                    </app-so-search>
+
+                    <!-- Order Lookup/Details -->
+                    <div *ngIf="selectedItems.order && showDetails.orders" class="mt-4">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Order Details: {{selectedItems.order}}</h5>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="clearOrderDetails()">
+                          <i class="las la-times"></i> Close
+                        </button>
+                      </div>
+                      <app-order-lookup 
+                        [salesOrderNumber]="selectedItems.order">
+                      </app-order-lookup>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Parts Tab -->
+                <div class="tab-pane fade" id="parts" role="tabpanel">
+                  <div class="p-4">
+                    <!-- Search Input for Parts -->
+                    <div class="mb-4">
+                      <div class="position-relative">
+                        <input 
+                          type="text" 
+                          class="form-control form-control-lg" 
+                          placeholder="Search for parts..."
+                          [(ngModel)]="searchTerms.parts"
+                          (input)="onPartSearch($event)">
+                        <i class="las la-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                      </div>
+                    </div>
+
+                    <!-- Part Search Component -->
+                    <app-qad-part-search 
+                      [value]="searchTerms.parts"
+                      [minTermLength]="2"
+                      [showLabel]="false"
+                      [placeholder]="'Search parts...'"
+                      (notifyParent)="onPartSelected($event)">
+                    </app-qad-part-search>
+
+                    <!-- Part Lookup/Details -->
+                    <div *ngIf="selectedItems.part && showDetails.parts" class="mt-4">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Part Details: {{selectedItems.part}}</h5>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="clearPartDetails()">
+                          <i class="las la-times"></i> Close
+                        </button>
+                      </div>
+                      <app-part-lookup 
+                        [partNumber]="selectedItems.part">
+                      </app-part-lookup>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Work Orders Tab -->
+                <div class="tab-pane fade" id="workorders" role="tabpanel">
+                  <div class="p-4">
+                    <!-- Search Input for Work Orders -->
+                    <div class="mb-4">
+                      <div class="position-relative">
+                        <input 
+                          type="text" 
+                          class="form-control form-control-lg" 
+                          placeholder="Search for work orders..."
+                          [(ngModel)]="searchTerms.workOrders"
+                          (input)="onWOSearch($event)">
+                        <i class="las la-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                      </div>
+                    </div>
+
+                    <!-- Work Order Search Component -->
+                    <app-qad-wo-search 
+                      [value]="searchTerms.workOrders"
+                      [minTermLength]="2"
+                      [showLabel]="false"
+                      [placeholder]="'Search work orders...'"
+                      (notifyParent)="onWorkOrderSelected($event)">
+                    </app-qad-wo-search>
+
+                    <!-- Work Order Lookup/Details -->
+                    <div *ngIf="selectedItems.workOrder && showDetails.workOrders" class="mt-4">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Work Order Details: {{selectedItems.workOrder}}</h5>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="clearWorkOrderDetails()">
+                          <i class="las la-times"></i> Close
+                        </button>
+                      </div>
+                      <app-wo-lookup 
+                        [wo_nbr]="selectedItems.workOrder">
+                      </app-wo-lookup>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Recent Searches Footer -->
+            <div class="card-footer bg-light border-0" *ngIf="recentSearches.length">
+              <div class="d-flex align-items-center">
+                <small class="text-muted me-3">
+                  <i class="las la-history me-1"></i>Recent searches:
+                </small>
+                <div class="d-flex flex-wrap gap-2">
+                  <span 
+                    *ngFor="let recent of recentSearches.slice(0, 5)"
+                    class="badge bg-light text-dark cursor-pointer"
+                    (click)="useRecentSearch(recent)">
+                    {{recent.term}} ({{recent.type}})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

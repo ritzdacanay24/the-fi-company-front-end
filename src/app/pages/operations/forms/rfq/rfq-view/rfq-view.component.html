@@ -1,0 +1,336 @@
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-alert-circle-outline text-warning" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No RFQ Selected</h4>
+          <p class="text-muted mb-4">Please select an RFQ from the list to view details.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Go to RFQ List
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-9">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to RFQ List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-eye text-white fs-4"></i>
+          </div>
+          <div class="flex-grow-1">
+            <h2 class="mb-1 text-info">RFQ Summary</h2>
+            <p class="text-muted mb-0" *ngIf="id">Record #{{id}} - {{data?.vendor?.company ? data.vendor.company : 'Unknown Vendor'}}</p>
+          </div>
+          <div class="ms-3">
+            <button class="btn btn-outline-primary me-2" (click)="onEdit()" [disabled]="isLoading">
+              <i class="mdi mdi-pencil me-1"></i>Edit
+            </button>
+            <button class="btn btn-outline-success" (click)="onSendEmail()" [disabled]="isLoading">
+              <i class="mdi mdi-email-send me-1"></i>Send Email
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted mt-3 mb-0">Loading RFQ details...</p>
+      </div>
+
+      <!-- Main Content Card -->
+      <div class="card shadow-sm border-0" *ngIf="!isLoading">
+        <div class="card-body p-0">
+          
+          <!-- RFQ Information Table -->
+          <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+              <tbody>
+                <!-- Email & Vendor Information -->
+                <tr class="bg-light">
+                  <td colspan="4" class="fw-bold text-primary py-3 px-4">
+                    <i class="mdi mdi-email me-2"></i>Email & Vendor Information
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark" style="width: 20%;">Vendor</td>
+                  <td class="px-4 py-2" style="width: 30%;">{{safeDisplay(data?.vendor?.company)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark" style="width: 20%;">Subject Line</td>
+                  <td class="px-4 py-2" style="width: 30%;">{{safeDisplay(data?.subjectLine)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Primary Recipients</td>
+                  <td class="px-4 py-2">
+                    <span class="badge bg-primary me-1 mb-1" *ngFor="let email of data?.emailToSendTo">{{email}}</span>
+                    <span *ngIf="!data?.emailToSendTo || data?.emailToSendTo.length === 0" class="text-muted">No recipients</span>
+                  </td>
+                  <td class="px-4 py-2 fw-semibold text-dark">CC Recipients</td>
+                  <td class="px-4 py-2">
+                    <span class="badge bg-secondary me-1 mb-1" *ngFor="let email of data?.ccEmails">{{email}}</span>
+                    <span *ngIf="!data?.ccEmails || data?.ccEmails.length === 0" class="text-muted">No CC recipients</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">BOL Recipients</td>
+                  <td class="px-4 py-2" colspan="3">
+                    <span class="badge bg-info me-1 mb-1" *ngFor="let email of data?.bolFaxEmail">{{email}}</span>
+                    <span *ngIf="!data?.bolFaxEmail || data?.bolFaxEmail.length === 0" class="text-muted">No BOL recipients</span>
+                  </td>
+                </tr>
+
+                <!-- Shipping Information -->
+                <tr class="bg-light">
+                  <td colspan="4" class="fw-bold text-primary py-3 px-4">
+                    <i class="mdi mdi-truck me-2"></i>Pickup Information
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Sales Order #</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.sod_nbr)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Shipper Name</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.shipperName)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Requestor</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.requestorName)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Phone</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.phone)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Contact Name</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.contactName)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Shipping Hours</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.shippingHours)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Ready Date/Time</td>
+                  <td class="px-4 py-2">{{data?.readyDateTime ? (data.readyDateTime | date:'medium') : 'Not specified'}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">PU Number</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.puNumber)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">PO Number</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.poNumber)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">PO Ship in Full</td>
+                  <td class="px-4 py-2">
+                    <span class="badge" [ngClass]="data?.poShippingFull === 'Yes' ? 'bg-success' : 'bg-warning'">
+                      {{safeDisplay(data?.poShippingFull)}}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Pickup Address</td>
+                  <td class="px-4 py-2" colspan="3">
+                    <div *ngIf="data?.address || data?.city || data?.state || data?.zip; else noAddress">
+                      {{data?.address}}<br *ngIf="data?.address">
+                      {{data?.city}}{{data?.city && (data?.state || data?.zip) ? ', ' : ''}}{{data?.state}} {{data?.zip}}
+                    </div>
+                    <ng-template #noAddress>
+                      <span class="text-muted">No address specified</span>
+                    </ng-template>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Appointment Required</td>
+                  <td class="px-4 py-2">
+                    <span class="badge" [ngClass]="data?.appointmentRequired === 'Yes' ? 'bg-warning' : 'bg-success'">
+                      {{safeDisplay(data?.appointmentRequired)}}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Lift Gate Required</td>
+                  <td class="px-4 py-2">
+                    <span class="badge" [ngClass]="data?.liftGateRequired === 'Yes' ? 'bg-warning' : 'bg-success'">
+                      {{safeDisplay(data?.liftGateRequired)}}
+                    </span>
+                  </td>
+                </tr>
+
+                <!-- Delivery Information -->
+                <tr class="bg-light">
+                  <td colspan="4" class="fw-bold text-primary py-3 px-4">
+                    <i class="mdi mdi-truck-delivery me-2"></i>Delivery Information
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Company Name</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.dest_companyName)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Contact Name</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.dest_contactName)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Delivery Number</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.dest_deliveryNumber)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Delivery Date</td>
+                  <td class="px-4 py-2">{{data?.dest_deliveryDate ? (data.dest_deliveryDate | date:'mediumDate') : 'Not specified'}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Phone</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.dest_phone)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Appointment Required</td>
+                  <td class="px-4 py-2">
+                    <span class="badge" [ngClass]="data?.dest_appointmentRequired === 'Yes' ? 'bg-warning' : 'bg-success'">
+                      {{safeDisplay(data?.dest_appointmentRequired)}}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Delivery Address</td>
+                  <td class="px-4 py-2" colspan="3">
+                    <div *ngIf="data?.dest_address || data?.dest_city || data?.dest_state || data?.dest_zip; else noDestAddress">
+                      {{data?.dest_address}}<br *ngIf="data?.dest_address">
+                      {{data?.dest_city}}{{data?.dest_city && (data?.dest_state || data?.dest_zip) ? ', ' : ''}}{{data?.dest_state}} {{data?.dest_zip}}
+                    </div>
+                    <ng-template #noDestAddress>
+                      <span class="text-muted">No delivery address specified</span>
+                    </ng-template>
+                  </td>
+                </tr>
+
+                <!-- Commodity Information -->
+                <tr class="bg-light">
+                  <td colspan="4" class="fw-bold text-primary py-3 px-4">
+                    <i class="mdi mdi-package-variant me-2"></i>Commodity Information
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Product Description</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.descriptionOfProduct)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Weight</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.weight)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Declared Value</td>
+                  <td class="px-4 py-2">{{data?.value ? (data.value | currency) : 'Not specified'}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Freight Class</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.freightClass)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Package Type</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.piecesQtyUoM)}}</td>
+                  <td class="px-4 py-2 fw-semibold text-dark">Quantity</td>
+                  <td class="px-4 py-2">{{safeDisplay(data?.piecesQty)}}</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2 fw-semibold text-dark">Insurance</td>
+                  <td class="px-4 py-2">
+                    <span class="badge" [ngClass]="data?.insuranceIncluded ? 'bg-success' : 'bg-secondary'">
+                      <i class="mdi mdi-shield-check me-1"></i>
+                      {{data?.insuranceIncluded ? 'Included' : 'Not Included'}}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 fw-semibold text-dark" colspan="2"></td>
+                </tr>
+                <tr *ngIf="data?.specialRequirements && data.specialRequirements !== 'Not specified'">
+                  <td class="px-4 py-2 fw-semibold text-dark">Special Requirements</td>
+                  <td class="px-4 py-2" colspan="3">{{data.specialRequirements}}</td>
+                </tr>
+
+                <!-- Pallet Information -->
+                <tr *ngIf="data?.piecesQtyUoM === 'Pallets' && data?.palletSizeInformationSendInfo?.length > 0">
+                  <td class="px-4 py-2 fw-semibold text-dark">Pallet Information</td>
+                  <td class="px-4 py-2" colspan="3">
+                    <div class="d-flex flex-wrap gap-2">
+                      <span class="badge bg-info" *ngFor="let pallet of data?.palletSizeInformationSendInfo; let i = index">
+                        Pallet {{i + 1}}: {{pallet.size}}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Line Items Section -->
+          <div *ngIf="data?.lines?.length > 0" class="border-top">
+            <div class="table-responsive">
+              <table class="table table-borderless mb-0">
+                <tbody>
+                  <tr class="bg-light">
+                    <td colspan="5" class="fw-bold text-primary py-3 px-4">
+                      <i class="mdi mdi-format-list-numbered me-2"></i>Line Items ({{data?.lines?.length}} items)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="px-4 pb-4 mt-4">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Part Number</th>
+                      <th class="text-end">Unit Price</th>
+                      <th class="text-center">Qty Shipping</th>
+                      <th class="text-center">Include in Form</th>
+                      <th class="text-end">Total Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of data?.lines">
+                      <td class="fw-medium">{{item.sod_part}}</td>
+                      <td class="text-end">{{item.sod_list_pr | currency}}</td>
+                      <td class="text-center">{{item.qty ? item.qty : 0}}</td>
+                      <td class="text-center">
+                        <span class="badge" [ngClass]="item.addItemsList ? 'bg-success' : 'bg-secondary'">
+                          <i class="mdi" [ngClass]="item.addItemsList ? 'mdi-check' : 'mdi-close'"></i>
+                          {{item.addItemsList ? 'Yes' : 'No'}}
+                        </span>
+                      </td>
+                      <td class="text-end">{{(item.sod_list_pr * (item.qty ? item.qty : 0)) | currency}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Line Items Message -->
+          <div *ngIf="!data?.lines || data?.lines?.length === 0" class="border-top p-4 text-center bg-light">
+            <i class="mdi mdi-package-variant-closed text-muted fs-1 mb-3"></i>
+            <h5 class="text-muted">No Line Items</h5>
+            <p class="text-muted mb-0">No parts or line items have been added to this RFQ.</p>
+          </div>
+          
+        </div>
+        
+        <!-- Card Footer -->
+        <div class="card-footer bg-light border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Close
+          </button>
+          <div class="ms-auto">
+            <button type="button" class="btn btn-outline-info me-2" (click)="onSendEmail()" [disabled]="isLoading">
+              <i class="mdi mdi-email-send me-1"></i>Send Email
+            </button>
+            <button type="button" class="btn btn-primary" (click)="onEdit()" [disabled]="isLoading">
+              <i class="mdi mdi-pencil me-1"></i>Edit RFQ
+            </button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

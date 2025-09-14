@@ -69,6 +69,11 @@ export class RfqFormComponent {
    */
   palletInputCount: number = 1;
 
+  /**
+   * Form lock status - determines if form is read-only
+   */
+  @Input() isFormDisabled: boolean = false;
+
   constructor(private fb: FormBuilder) {}
 
   // convenience getter for easy access to form fields

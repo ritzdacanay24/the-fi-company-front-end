@@ -1,4 +1,4 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, OnDestroy, HostListener } from "@angular/core";
 import { SharedModule } from "@app/shared/shared.module";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -23,7 +23,7 @@ function _json_parse(data) {
   selector: "app-rfq-edit",
   templateUrl: "./rfq-edit.component.html",
 })
-export class RfqEditComponent {
+export class RfqEditComponent implements OnDestroy {
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -37,10 +37,25 @@ export class RfqEditComponent {
       this.id = params["id"];
     });
 
-    if (this.id) this.getData();
+    if (this.id) {
+      this.getData();
+      this.acquireRecordLock();
+    }
   }
 
-  title = "Edit";
+  ngOnDestroy(): void {
+    this.releaseRecordLock();
+  }
+
+  @HostListener("window:beforeunload")
+  canDeactivate() {
+    if (this.form?.dirty) {
+      return confirm("You have unsaved changes. Discard and leave?");
+    }
+    return true;
+  }
+
+  title = "Edit RFQ";
 
   form: FormGroup;
 
@@ -49,6 +64,12 @@ export class RfqEditComponent {
   isLoading = false;
 
   submitted = false;
+
+  // Record locking properties
+  isRecordLocked = false;
+  lockedBy = null;
+  lockAcquiredAt = null;
+  lockCheckInterval: any = null;
 
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
@@ -104,8 +125,13 @@ export class RfqEditComponent {
       }
 
       this.data = data;
-
       this.form.patchValue(this.data);
+      
+      // Apply form lock if record is locked by another user
+      if (this.isRecordLocked) {
+        this.lockForm();
+      }
+      
       this.isLoading = false;
     } catch (err) {
       this.isLoading = false;
@@ -126,6 +152,12 @@ export class RfqEditComponent {
   }
 
   async onSubmit() {
+    // Check if record is locked by another user
+    if (this.isRecordLocked) {
+      this.toastrService.error("Cannot save changes. Record is locked by another user.", "Record Locked");
+      return;
+    }
+
     this.submitted = true;
 
     if (this.form.invalid) {
@@ -148,6 +180,12 @@ export class RfqEditComponent {
   }
 
   onCancel() {
+    if (this.form?.dirty && !confirm("You have unsaved changes. Discard and leave?")) {
+      return;
+    }
+    
+    // Release the record lock before leaving
+    this.releaseRecordLock();
     this.goBack();
   }
 
@@ -213,5 +251,150 @@ export class RfqEditComponent {
         } catch (err) {}
       }
     });
+  }
+
+  // ==============================================
+  // Record Locking Methods
+  // ==============================================
+
+  /**
+   * Acquire a record lock to prevent concurrent editing
+   */
+  private async acquireRecordLock(): Promise<void> {
+    try {
+      // Try to acquire lock (will be implemented in backend API)
+      const lockResult = await this.tryAcquireLock();
+      
+      if (lockResult.success) {
+        this.isRecordLocked = false;
+        this.lockAcquiredAt = new Date();
+        
+        // Set up periodic lock refresh (every 30 seconds)
+        this.lockCheckInterval = setInterval(() => {
+          this.refreshLock();
+        }, 30000);
+        
+      } else {
+        this.isRecordLocked = true;
+        this.lockedBy = lockResult.lockedBy;
+        this.lockForm();
+        
+        this.toastrService.warning(
+          `This RFQ is currently being edited by ${lockResult.lockedBy}. You can view the record but cannot make changes.`,
+          'Record Locked',
+          { timeOut: 0, extendedTimeOut: 0 }
+        );
+      }
+    } catch (error) {
+      console.warn('Could not acquire record lock:', error);
+      // Continue in read-only mode if lock service is unavailable
+      this.isRecordLocked = true;
+      this.lockForm();
+    }
+  }
+
+  /**
+   * Try to acquire lock (placeholder for backend implementation)
+   */
+  private async tryAcquireLock(): Promise<{success: boolean, lockedBy?: string}> {
+    // TODO: Replace with actual API call when backend is implemented
+    // For now, simulate lock acquisition (always succeeds)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 100);
+    });
+  }
+
+  /**
+   * Refresh the record lock to maintain ownership
+   */
+  private async refreshLock(): Promise<void> {
+    if (!this.isRecordLocked && this.id) {
+      try {
+        const refreshResult = await this.tryRefreshLock();
+        if (!refreshResult.success) {
+          this.handleLockLost();
+        }
+      } catch (error) {
+        console.warn('Could not refresh record lock:', error);
+        this.handleLockLost();
+      }
+    }
+  }
+
+  /**
+   * Try to refresh lock (placeholder for backend implementation)
+   */
+  private async tryRefreshLock(): Promise<{success: boolean}> {
+    // TODO: Replace with actual API call when backend is implemented
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 100);
+    });
+  }
+
+  /**
+   * Handle when record lock is lost
+   */
+  private handleLockLost(): void {
+    this.isRecordLocked = true;
+    this.lockForm();
+    
+    SweetAlert.fire({
+      title: 'Record Lock Lost',
+      text: 'Another user has started editing this RFQ. Your changes cannot be saved.',
+      icon: 'warning',
+      confirmButtonText: 'Refresh Page',
+      allowOutsideClick: false
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+
+  /**
+   * Release the record lock
+   */
+  private async releaseRecordLock(): Promise<void> {
+    if (this.lockCheckInterval) {
+      clearInterval(this.lockCheckInterval);
+    }
+    
+    if (!this.isRecordLocked && this.id) {
+      try {
+        await this.tryReleaseLock();
+      } catch (error) {
+        console.warn('Could not release record lock:', error);
+      }
+    }
+  }
+
+  /**
+   * Try to release lock (placeholder for backend implementation)
+   */
+  private async tryReleaseLock(): Promise<void> {
+    // TODO: Replace with actual API call when backend is implemented
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 100);
+    });
+  }
+
+  /**
+   * Lock the form to prevent editing
+   */
+  private lockForm(): void {
+    if (this.form) {
+      this.form.disable();
+    }
+  }
+
+  /**
+   * Check if user can edit the record
+   */
+  get canEdit(): boolean {
+    return !this.isRecordLocked;
   }
 }

@@ -5,6 +5,7 @@ import { OverviewComponent } from "./overview/overview.component";
 import { OrderLookupPageComponent } from "./order-lookup-page/order-lookup-page.component";
 import { PartLookupPageComponent } from "./part-lookup-page/part-lookup-page.component";
 import { WoLookupPageComponent } from "./wo-lookup-page/wo-lookup-page.component";
+import { UniversalSearchComponent } from "./universal-search/universal-search.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { LocationLookupComponent } from "./location-lookup/location-lookup.component";
 
@@ -18,6 +19,12 @@ const routes: Routes = [
     title: "Overview",
     path: "overview",
     component: OverviewComponent,
+  },
+  {
+    title: "Universal Search",
+    path: "universal-search",
+    component: UniversalSearchComponent,
+    runGuardsAndResolvers: "always",
   },
   {
     title: "Order Lookup",

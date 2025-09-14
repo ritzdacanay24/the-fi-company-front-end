@@ -4,6 +4,7 @@ import { RfqComponent } from "./rfq.component";
 import { RfqListComponent } from "./rfq-list/rfq-list.component";
 import { RfqCreateComponent } from "./rfq-create/rfq-create.component";
 import { RfqEditComponent } from "./rfq-edit/rfq-edit.component";
+import { RfqViewComponent } from "./rfq-view/rfq-view.component";
 
 const routes: Routes = [
   {
@@ -18,6 +19,10 @@ const routes: Routes = [
       {
         path: "list",
         component: RfqListComponent,
+      },
+      {
+        path: "view",
+        component: RfqViewComponent,
       },
       {
         path: "edit",

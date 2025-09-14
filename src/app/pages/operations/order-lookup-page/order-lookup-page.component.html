@@ -1,20 +1,25 @@
 <div class="container" *ngIf="!hasDataEmitter">
-    <div class="row justify-content-md-center">
-        <div class="col col-lg-6">
-            <div class="card card-body text-center">
-                <div class="avatar-sm mx-auto mb-3 mt-3">
-                    <div class="avatar-title bg-info-subtle text-info rounded">
-                        <i class="h2 bx bx bx-search mt-2   ms-1"></i>
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bx bx-search text-white fs-3"></i>
+                        </div>
+                        <h3 class="mb-2">Order Lookup</h3>
+                        <p class="text-muted">Search for sales order information</p>
                     </div>
-                </div>
-                <h2 class="card-title2 text-sm-center">Order Lookup</h2>
-                <div class="my-4">
-                    <app-so-search [appendToBody]="'body'" (notifyParent)="notifyParent($event)"
-                        [value]="salesOrderNumber" [autoFocus]="true" [showLabel]="false"></app-so-search>
-                </div>
+                    
+                    <div class="mb-4">
+                        <app-so-search [appendToBody]="'body'" (notifyParent)="notifyParent($event)"
+                            [value]="salesOrderNumber" [autoFocus]="true" [showLabel]="false"></app-so-search>
+                    </div>
 
-                <div class="text-center" *ngIf="salesOrderNumber && isLoading">
-                    <p>Gathering data for SO number "{{salesOrderNumber}}"</p>
+                    <div *ngIf="salesOrderNumber && isLoading" class="text-muted">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading order {{salesOrderNumber}}...
+                    </div>
                 </div>
             </div>
         </div>
@@ -23,14 +28,12 @@
 
 <div class="container-fluid">
     <div class="row" *ngIf="hasDataEmitter">
-        <div class="col mb-3">
-            <div style="width:350px">
-                <app-so-search (notifyParent)="notifyParent($event)" [value]="salesOrderNumber"
-                    [showLabel]="false"></app-so-search>
-            </div>
+        <div class="col-md-6 mb-3">
+            <app-so-search (notifyParent)="notifyParent($event)" [value]="salesOrderNumber"
+                [showLabel]="false"></app-so-search>
         </div>
-        <div class="col mb-3 text-end align-middle d-none d-lg-block">
-            <h5>Order Lookup</h5>
+        <div class="col-md-6 mb-3 d-flex align-items-center justify-content-md-end">
+            <h4 class="mb-0 text-primary">Order Lookup</h4>
         </div>
     </div>
 

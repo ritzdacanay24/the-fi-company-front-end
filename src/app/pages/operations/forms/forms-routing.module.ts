@@ -67,7 +67,6 @@ const routes: Routes = [
         path: "rfq",
         loadChildren: () =>
           import("./rfq/rfq-routing.module").then((m) => m.RfqRoutingModule),
-        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
       {
