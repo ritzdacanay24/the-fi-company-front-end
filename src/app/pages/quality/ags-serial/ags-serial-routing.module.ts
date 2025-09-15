@@ -4,6 +4,7 @@ import { AgsSerialComponent } from "./ags-serial.component";
 import { AgsSerialListComponent } from "./ags-serial-list/ags-serial-list.component";
 import { AgsSerialEditComponent } from "./ags-serial-edit/ags-serial-edit.component";
 import { AgsSerialCreateComponent } from "./ags-serial-create/ags-serial-create.component";
+import { AgsSerialViewComponent } from "./ags-serial-view/ags-serial-view.component";
 
 const routes: Routes = [
   {
@@ -26,6 +27,10 @@ const routes: Routes = [
       {
         path: "create",
         component: AgsSerialCreateComponent,
+      },
+      {
+        path: ":id/view",
+        component: AgsSerialViewComponent,
       },
     ],
   },

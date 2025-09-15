@@ -7,7 +7,7 @@ import { AgGridModule } from 'ag-grid-angular'
 import { ActivatedRoute, Router } from '@angular/router'
 import moment from 'moment'
 import { SgAssetService } from '@app/core/api/quality/sg-asset.service'
-import { NAVIGATION_ROUTE } from '../sg-asset-constant'
+import { NAVIGATION_ROUTE, NAVIGATION_ROUTE_ID_TEMPLATE } from '../sg-asset-constant'
 import { DateRangeComponent } from '@app/shared/components/date-range/date-range.component'
 import { SharedModule } from '@app/shared/shared.module'
 import { highlightRowView, autoSizeColumns } from 'src/assets/js/util'
@@ -20,8 +20,7 @@ import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    AgGridModule,
-    DateRangeComponent
+    AgGridModule
   ],
   selector: 'app-sg-asset-list',
   templateUrl: './sg-asset-list.component.html',
@@ -51,15 +50,45 @@ export class SgAssetListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View", headerName: "View", filter: "agMultiColumnFilter",
+      headerName: "Actions",
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      lockPosition: 'left',
+      cellRenderer: 'agGroupCellRenderer',
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: 'SELECT'
+        innerRenderer: (params: any) => {
+          return `
+            <div class="d-flex justify-content-center align-items-center gap-2">
+              <button class="btn btn-outline-primary btn-sm view-btn" data-id="${params.data.id}" title="View Details">
+                <i class="mdi mdi-eye"></i>
+              </button>
+              <button class="btn btn-outline-secondary btn-sm edit-btn" data-id="${params.data.id}" title="Edit Record">
+                <i class="mdi mdi-pencil"></i>
+              </button>
+            </div>
+          `;
+        },
+        suppressCount: true
       },
-      maxWidth: 115,
-      minWidth: 115
+      onCellClicked: (event: any) => {
+        const target = event.event?.target;
+        if (!target) return;
+        
+        const viewBtn = target.closest('.view-btn');
+        const editBtn = target.closest('.edit-btn');
+        
+        if (viewBtn) {
+          const id = viewBtn.getAttribute('data-id');
+          this.onView(id);
+        } else if (editBtn) {
+          const id = editBtn.getAttribute('data-id');
+          this.onEdit(id);
+        }
+      },
+      maxWidth: 130,
+      minWidth: 130,
+      sortable: false,
+      filter: false,
+      suppressMenu: true
     },
     { field: 'id', headerName: 'ID', filter: 'agMultiColumnFilter' },
     { field: 'generated_SG_asset', headerName: 'Asset Number', filter: 'agMultiColumnFilter' },
@@ -159,6 +188,16 @@ export class SgAssetListComponent implements OnInit {
       queryParamsHandling: 'merge',
       queryParams: {
         id: id,
+        gridParams
+      }
+    });
+  }
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW, id], {
+      queryParamsHandling: 'merge',
+      queryParams: {
         gridParams
       }
     });

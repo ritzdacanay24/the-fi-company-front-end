@@ -2,6 +2,25 @@
   <div class="row justify-content-center">
     <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
       
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              <i class="mdi mdi-home-outline me-1"></i>Quality
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              AGS Serial
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create New Record
+          </li>
+        </ol>
+      </nav>
+      
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center mb-3">

@@ -29,7 +29,6 @@ const routes: Routes = [
           import("./shipping-request/shipping-request-routing.module").then(
             (m) => m.ShippingRequestRoutingModule
           ),
-        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
       {

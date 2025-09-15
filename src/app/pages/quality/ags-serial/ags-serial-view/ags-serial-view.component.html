@@ -1,0 +1,207 @@
+<div *ngIf="!data && !id" class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
+  <div class="text-center">
+    <div class="mb-4">
+      <i class="mdi mdi-barcode-scan text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+    </div>
+    <h4 class="text-muted mb-3">No AGS Serial Selected</h4>
+    <p class="text-muted mb-4">Select a record from the list to view details</p>
+    <button class="btn btn-primary px-4" (click)="onCancel()">
+      <i class="mdi mdi-arrow-left me-2"></i>Back to List
+    </button>
+  </div>
+</div>
+
+<div *ngIf="data || id" class="container-fluid px-4 py-3">
+  
+  <!-- Breadcrumb -->
+  <div class="row">
+    <div class="col-12 col-xl-8 mx-auto">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              <i class="mdi mdi-home-outline me-1"></i>Quality
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              AGS Serial
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            View Record #{{id}}
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <div class="row">
+    <div class="col-12 col-xl-8 mx-auto">
+      <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center">
+          <button class="btn btn-outline-secondary me-3" (click)="onCancel()" title="Back to AGS Serial List">
+            <i class="mdi mdi-arrow-left me-1"></i>Back to List
+          </button>
+          <div>
+            <h2 class="mb-1 fw-bold">AGS Serial Details</h2>
+            <div class="text-muted">
+              Record #{{id}}
+              <span *ngIf="data?.generated_SG_asset" class="ms-2">
+                • {{data.generated_SG_asset}}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary px-4" (click)="onCancel()" title="Back to AGS Serial List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <button class="btn btn-primary px-4" (click)="onEdit()" [disabled]="isLoading">
+            <i class="mdi mdi-pencil me-2"></i>Edit Record
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center py-5">
+    <div class="text-center">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="text-muted">Loading record details...</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading" class="row">
+    <div class="col-12 col-xl-8 mx-auto">
+      
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+          <!-- AGS Serial Section -->
+          <div class="row align-items-center mb-4 p-3 bg-primary bg-opacity-10 rounded">
+            <div class="col">
+              <div class="d-flex align-items-center">
+                <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                  <i class="mdi mdi-barcode text-white"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="mb-1 fw-semibold text-primary">AGS Serial Number</h5>
+                  <div class="d-flex align-items-center">
+                    <span class="fs-4 fw-bold me-3">{{data?.generated_SG_asset || 'Not Generated'}}</span>
+                    <button *ngIf="data?.generated_SG_asset" 
+                            class="btn btn-outline-primary btn-sm" 
+                            (click)="copyAgsSerial()"
+                            title="Copy to clipboard">
+                      <i class="mdi mdi-content-copy me-1"></i>Copy
+                    </button>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <span class="badge fs-6 px-3 py-2" [class]="data?.active ? 'bg-success' : 'bg-secondary'">
+                    {{data?.active ? 'Active' : 'Inactive'}}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Details Grid -->
+          <div class="row g-4">
+            
+            <!-- Asset Information -->
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-3 fw-semibold">
+                  <i class="mdi mdi-tag me-2"></i>Asset Information
+                </h6>
+                <div class="mb-3">
+                  <small class="text-muted d-block">Serial Number</small>
+                  <div class="fw-medium">{{data?.serialNumber || 'Not specified'}}</div>
+                </div>
+                <div class="mb-0">
+                  <small class="text-muted d-block">Part Number</small>
+                  <div class="fw-medium">{{data?.sgPartNumber || 'Not specified'}}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Work Order Information -->
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-3 fw-semibold">
+                  <i class="mdi mdi-clipboard-text me-2"></i>Work Order
+                </h6>
+                <div class="mb-3">
+                  <small class="text-muted d-block">Work Order Number</small>
+                  <div class="fw-medium">{{data?.poNumber || 'Not specified'}}</div>
+                </div>
+                <div class="mb-0">
+                  <small class="text-muted d-block">Property Site</small>
+                  <div class="fw-medium">{{data?.property_site || 'Not specified'}}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quality Information -->
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-3 fw-semibold">
+                  <i class="mdi mdi-account-check me-2"></i>Quality Control
+                </h6>
+                <div class="mb-3">
+                  <small class="text-muted d-block">Inspector Name</small>
+                  <div class="fw-medium">{{data?.inspectorName || 'Not assigned'}}</div>
+                </div>
+                <div class="mb-0">
+                  <small class="text-muted d-block">Last Update</small>
+                  <div class="fw-medium">{{(data?.lastUpdate | date:'medium') || 'No updates'}}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline Information -->
+            <div class="col-md-6">
+              <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-3 fw-semibold">
+                  <i class="mdi mdi-clock me-2"></i>Timeline
+                </h6>
+                <div class="mb-3">
+                  <small class="text-muted d-block">Created Date</small>
+                  <div class="fw-medium">{{(data?.timeStamp | date:'medium') || 'Unknown'}}</div>
+                </div>
+                <div class="mb-0">
+                  <small class="text-muted d-block">Record Status</small>
+                  <div class="fw-medium">
+                    <span class="badge" [class]="data?.active ? 'bg-success' : 'bg-secondary'">
+                      {{data?.active ? 'Active Record' : 'Inactive Record'}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Notes Section -->
+          <div *ngIf="data?.manualUpdate" class="mt-4 pt-4 border-top">
+            <h6 class="text-muted mb-3 fw-semibold">
+              <i class="mdi mdi-note-text me-2"></i>Additional Notes
+            </h6>
+            <div class="bg-light rounded p-3">
+              <div class="text-break">{{data.manualUpdate}}</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

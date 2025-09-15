@@ -62,17 +62,33 @@ export class ShippingRequestListComponent implements OnInit {
 
   columnDefs: (ColDef | ColGroupDef)[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
-      cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+      cellRenderer: (params: any) => {
+        return `
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary view-btn" title="View Details">
+              <i class="mdi mdi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary edit-btn" title="Edit">
+              <i class="mdi mdi-pencil"></i>
+            </button>
+          </div>
+        `;
       },
-      maxWidth: 115,
-      minWidth: 115,
+      onCellClicked: (params: any) => {
+        const target = params.event.target;
+        if (target.closest('.view-btn')) {
+          this.onView(params.data.id);
+        } else if (target.closest('.edit-btn')) {
+          this.onEdit(params.data.id);
+        }
+      },
+      maxWidth: 120,
+      minWidth: 120,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -273,6 +289,17 @@ export class ShippingRequestListComponent implements OnInit {
       },
     });
   };
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        gridParams,
+        id: id,
+      },
+    });
+  }
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);

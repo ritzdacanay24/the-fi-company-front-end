@@ -135,68 +135,112 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
-              (change)="setBooleanToNumber('isEmployee')">
-            <label class="form-check-label" for="isEmployee">Is Employee</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Mark as internal employee versus contractor or external user.
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
-              (change)="setBooleanToNumber('enableTwostep')">
-            <label class="form-check-label" for="enableTwostep">Enable Two Factor Authentication (Email)</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Require email verification code for enhanced account security.
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="orgChartPlaceHolder" formControlName="orgChartPlaceHolder"
-              (change)="setBooleanToNumber('orgChartPlaceHolder')">
-            <label class="form-check-label" for="orgChartPlaceHolder">Department Placeholder</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Display as department placeholder in org chart for structural planning.
+      <!-- Is Employee Row -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div>
+              Is Employee
+              <div class="form-text mt-1">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Mark as internal employee versus contractor or external user.
+              </div>
+            </div>
+            <div class="ms-3">
+              <div class="form-check form-switch form-switch-md">
+                <input class="form-check-input" type="checkbox" id="isEmployee" formControlName="isEmployee"
+                  (change)="setBooleanToNumber('isEmployee')">
+                <label class="form-check-label" for="isEmployee"></label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="showImage" formControlName="showImage"
-              (change)="setBooleanToNumber('showImage')">
-            <label class="form-check-label" for="showImage">Show image in org chart</label>
-          </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Display user photo in organizational chart views for better identification.
+      <!-- Two Factor Authentication Row -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div>
+              Enable Two Factor Authentication (Email)
+              <div class="form-text mt-1">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Require email verification code for enhanced account security.
+              </div>
+            </div>
+            <div class="ms-3">
+              <div class="form-check form-switch form-switch-md">
+                <input class="form-check-input" type="checkbox" id="enableTwostep" formControlName="enableTwostep"
+                  (change)="setBooleanToNumber('enableTwostep')">
+                <label class="form-check-label" for="enableTwostep"></label>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="col-md-6 mb-3">
-          <div class="form-check form-switch form-switch-md">
-            <input class="form-check-input" type="checkbox" id="openPosition" formControlName="openPosition"
-              (change)="setBooleanToNumber('openPosition')">
-            <label class="form-check-label" for="openPosition">Open Position</label>
+      <!-- Department Placeholder Row -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div>
+              Department Placeholder
+              <div class="form-text mt-1">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Display as department placeholder in org chart for structural planning.
+              </div>
+            </div>
+            <div class="ms-3">
+              <div class="form-check form-switch form-switch-md">
+                <input class="form-check-input" type="checkbox" id="orgChartPlaceHolder" formControlName="orgChartPlaceHolder"
+                  (change)="setBooleanToNumber('orgChartPlaceHolder')">
+                <label class="form-check-label" for="orgChartPlaceHolder"></label>
+              </div>
+            </div>
           </div>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Mark as an unfilled position in the org chart for recruitment tracking.
+        </div>
+      </div>
+
+      <!-- Show Image in Org Chart Row -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div>
+              Show image in org chart
+              <div class="form-text mt-1">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Display user photo in organizational chart views for better identification.
+              </div>
+            </div>
+            <div class="ms-3">
+              <div class="form-check form-switch form-switch-md">
+                <input class="form-check-input" type="checkbox" id="showImage" formControlName="showImage"
+                  (change)="setBooleanToNumber('showImage')">
+                <label class="form-check-label" for="showImage"></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open Position Row -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+            <div>
+              Open Position
+              <div class="form-text mt-1">
+                <i class="mdi mdi-information-outline me-1"></i>
+                Mark as an unfilled position in the org chart for recruitment tracking.
+              </div>
+            </div>
+            <div class="ms-3">
+              <div class="form-check form-switch form-switch-md">
+                <input class="form-check-input" type="checkbox" id="openPosition" formControlName="openPosition"
+                  (change)="setBooleanToNumber('openPosition')">
+                <label class="form-check-label" for="openPosition"></label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

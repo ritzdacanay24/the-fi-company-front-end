@@ -105,12 +105,17 @@ export class SerialNumberReportComponent implements OnInit {
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'btn-group btn-group-sm';
 
+        // Store component reference
+        const self = this;
+
         // Barcode button
         const barcodeBtn = document.createElement('button');
         barcodeBtn.className = 'btn btn-outline-primary btn-sm';
         barcodeBtn.innerHTML = '<i class="mdi mdi-barcode"></i>';
         barcodeBtn.title = 'Show Barcode';
-        barcodeBtn.onclick = () => this.showBarcode(serialNumber);
+        barcodeBtn.addEventListener('click', function() {
+          self.showBarcode(serialNumber);
+        });
         buttonContainer.appendChild(barcodeBtn);
 
         // Copy button
@@ -118,7 +123,9 @@ export class SerialNumberReportComponent implements OnInit {
         copyBtn.className = 'btn btn-outline-secondary btn-sm';
         copyBtn.innerHTML = '<i class="mdi mdi-content-copy"></i>';
         copyBtn.title = 'Copy';
-        copyBtn.onclick = () => this.copyToClipboard(serialNumber);
+        copyBtn.addEventListener('click', function() {
+          self.copyToClipboard(serialNumber);
+        });
         buttonContainer.appendChild(copyBtn);
 
         // Mark as used button (only if not used)
@@ -127,7 +134,9 @@ export class SerialNumberReportComponent implements OnInit {
           useBtn.className = 'btn btn-outline-success btn-sm';
           useBtn.innerHTML = '<i class="mdi mdi-check"></i>';
           useBtn.title = 'Mark as Used';
-          useBtn.onclick = () => this.markAsUsed(serialNumber);
+          useBtn.addEventListener('click', function() {
+            self.markAsUsed(serialNumber);
+          });
           buttonContainer.appendChild(useBtn);
         }
 

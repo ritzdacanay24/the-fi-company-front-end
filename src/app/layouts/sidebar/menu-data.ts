@@ -577,7 +577,7 @@ export const MENU_DATA: MenuItem[] = [
             },
             {
                 label: "SG Asset Control",
-                link: "/quality/sg-asset/",
+                link: "/quality/sg-asset/list",
                 activatedRoutes: "/quality/sg-asset/*"
             },
             {
