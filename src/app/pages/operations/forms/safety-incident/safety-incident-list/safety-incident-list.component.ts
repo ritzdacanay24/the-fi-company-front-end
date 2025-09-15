@@ -18,6 +18,7 @@ import { SafetyIncidentService } from "@app/core/api/operations/safety-incident/
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { SafetyIncidentActionsCellRendererComponent } from "../safety-incident-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -61,17 +62,18 @@ export class SafetyIncidentListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: SafetyIncidentActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onView: (data: any) => this.onView(data.id),
+        onEdit: (data: any) => this.onEdit(data.id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 120,
+      minWidth: 120,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -204,6 +206,17 @@ export class SafetyIncidentListComponent implements OnInit {
       },
     });
   };
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
