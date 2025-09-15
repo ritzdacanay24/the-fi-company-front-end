@@ -28,12 +28,6 @@ const routes: Routes = [
     component: ReportsComponent,
     children: [
       {
-        path: '',
-        title: "WIP Report",
-        redirectTo: 'wip-report',
-        pathMatch: 'full'
-      },
-      {
         title: "Inventory Report",
         path: 'inventory-report',
         component: InventoryReportComponent

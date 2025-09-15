@@ -53,12 +53,12 @@
 
       <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 113px)">
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav1">
-          <li class="nav-item pointer">
+          <!-- <li class="nav-item pointer">
             <a class="is-parent nav-link menu-link" [routerLink]="'/'">
               <i class="las la-home icon nav-icon"></i>
               <span class=""> Main Menu</span>
             </a>
-          </li>
+          </li> -->
 
           <li class="nav-item" *ngIf="favs?.length" style="word-break: break-all;">
             <a [attr.aria-expanded]="!isCollapsed" (click)="collapse.toggle();toggleItemFavorite()"
@@ -109,7 +109,7 @@
           <li class="menu-title is-parent navbar-nav"><span data-key="t-menu">{{ menu.label }}</span></li>
 
           }@else if(hasItems(menu)){
-          <a title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="shouldExpandDropdown(menu)"
+          <a *ngIf="!searchTerm()" title="{{menu.label}}" data-target="#nav{{menu.link}}" [attr.aria-expanded]="shouldExpandDropdown(menu)"
             [class]="searchTerm() ? 'nav-item nav-link disabled-toggle' : 'nav-item nav-link'"
             [attr.data-bs-toggle]="searchTerm() ? null : 'collapse'" 
             (click)="searchTerm() ? null : toggleItem(menu)">

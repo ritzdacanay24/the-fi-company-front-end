@@ -48,7 +48,6 @@ const routes: Routes = [
           import("./placard/placard-routing.module").then(
             (m) => m.PlacardRoutingModule
           ),
-        canActivate: [AccessGuard],
         runGuardsAndResolvers: "always",
       },
       {

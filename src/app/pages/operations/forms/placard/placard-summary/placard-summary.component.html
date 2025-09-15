@@ -1,0 +1,267 @@
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-card-text-outline text-info" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Placard Selected</h4>
+          <p class="text-muted mb-4">Please select a placard from the list to view the detailed work order summary.</p>
+          <button class="btn btn-primary" (click)="goBack()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Return to Placard List
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+        <div class="text-center">
+          <div class="spinner-border text-info mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted">Loading placard details...</p>
+        </div>
+      </div>
+
+      <!-- Page Header with Context -->
+      <div class="mb-4" *ngIf="!isLoading">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            title="Back to Placard List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-info bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-card-text-outline text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-info">Work Order Placard</h2>
+            <p class="text-muted mb-0" *ngIf="id">Summary view for placard record #{{id}}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Data Card -->
+      <div class="card shadow-sm border-0" *ngIf="!isLoading && data">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 text-white">
+            <i class="mdi mdi-clipboard-text me-2"></i>Placard Information
+          </h5>
+        </div>
+        
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <tbody>
+                <tr>
+                  <th class="bg-light text-dark" style="width: 250px; font-weight: 600;">ID</th>
+                  <td class="fw-bold text-primary">{{data.id}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Line Number</th>
+                  <td>{{data.line_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Customer Name</th>
+                  <td>{{data.customer_name}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Eye-Fi W.O. Number</th>
+                  <td>{{data.eyefi_wo_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">P.O. Number</th>
+                  <td>{{data.po_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Eye-Fi S.O. Number</th>
+                  <td>{{data.eyefi_so_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Customer CO/POR/SO</th>
+                  <td>{{data.customer_co_por_so}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Description</th>
+                  <td>{{data.description}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Eye-Fi Part Number</th>
+                  <td>{{data.eyefi_part_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Customer Part Number</th>
+                  <td>{{data.customer_part_number}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Location</th>
+                  <td>{{data.location}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Eye-Fi Serial Tag</th>
+                  <td>{{data.eyefi_serial_tag}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Customer Serial Tag</th>
+                  <td>{{data.customer_serial_tag}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Quantity</th>
+                  <td>{{data.qty}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">UOM</th>
+                  <td>{{data.uom}}</td>
+                </tr>
+                <tr>
+                  <th class="bg-light text-dark" style="font-weight: 600;">Created Date</th>
+                  <td>{{data.created_date}}</td>
+                </tr>
+                <tr *ngIf="data.hasOwnProperty('active')">
+                  <th class="bg-light text-dark" style="font-weight: 600;">Status</th>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadge(data.active)">
+                      {{getStatusText(data.active)}}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+          <div class="text-muted">
+            <i class="mdi mdi-information-outline me-2"></i>
+            Raw data display from backend
+          </div>
+          <div>
+            <button type="button" class="btn btn-outline-secondary me-2" (click)="goBack()">
+              <i class="mdi mdi-arrow-left me-1"></i>Back to List
+            </button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Print Template - Exact copy from placard-edit component -->
+<div id="pickSheet">
+  <div class="d-none d-print-block" style="page-break-after: always;" *ngFor="let row of totalPrints; let i = index">
+    
+    <!-- Top Section with Logo and QR/Barcode -->
+    <div class="d-flex justify-content-between align-items-start" style="margin-bottom:20px">
+      <!-- Logo on the left -->
+      <div>
+        <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+          style="width: 230px;" />
+      </div>
+      
+      <!-- QR Code/Barcode on the right - Show only on first page -->
+      <div *ngIf="row?.eyefi_so_number && row?.line_number && i === 0" style="text-align: right;">
+        <!-- QR Code Display -->
+        <div class="print-qr-container" *ngIf="codeType === 'qr'">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER QR CODE</div>
+          <qrcode
+            [qrdata]="getSalesOrderValue(row)"
+            [width]="80"
+            [errorCorrectionLevel]="'M'"
+            [colorDark]="'#000000'"
+            [colorLight]="'#FFFFFF'"
+            [margin]="1"
+            elementType="svg"
+            [cssClass]="'print-qr-code'">
+          </qrcode>
+          <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+        </div>
+
+        <!-- Barcode Display -->
+        <div class="print-barcode-container" *ngIf="codeType === 'barcode'">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER BARCODE</div>
+          <svg [id]="'print-barcode-' + i"></svg>
+          <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered" style="font-size:25px; font-weight:600;">
+        <thead>
+          <tr>
+            <td style="width:43%">Created on</td>
+            <td>{{row?.created_date}}</td>
+          </tr>
+          <tr>
+            <td style="width:43%">Customer</td>
+            <td>{{row?.customer_name}}</td>
+          </tr>
+          <tr>
+            <td>Eye-Fi W.O.#</td>
+            <td>{{row?.eyefi_wo_number}}</td>
+          </tr>
+          <tr>
+            <td>P.O. #</td>
+            <td>{{row?.po_number}}</td>
+          </tr>
+          <tr>
+            <td>Eye-Fi S.O.#</td>
+            <td>{{row?.eyefi_so_number}}</td>
+          </tr>
+          <tr>
+            <td>Customer CO#/POR#/SO#</td>
+            <td>{{row?.customer_co_por_so}}</td>
+          </tr>
+          <tr>
+            <td>Description</td>
+            <td>{{row?.description}}</td>
+          </tr>
+          <tr>
+            <td>Eye-Fi P/N</td>
+            <td>{{row?.eyefi_part_number}}</td>
+          </tr>
+          <tr>
+            <td>Customer P/N</td>
+            <td>{{row?.customer_part_number}}</td>
+          </tr>
+          <tr>
+            <td>Location</td>
+            <td>{{row?.location}}</td>
+          </tr>
+          <tr>
+            <td>EyeFi Serial Tag #(s)</td>
+            <td>{{row?.eyefi_serial_tag}}</td>
+          </tr>
+          <tr>
+            <td>Customer Serial Tag #(s)</td>
+            <td>{{row?.customer_serial_tag}}</td>
+          </tr>
+          <tr>
+            <td>Qty</td>
+            <td>{{row?.qty}}</td>
+          </tr>
+        </thead>
+        
+        <tr style="border: none;">
+          <td class="text-center" colspan="2" rowspan="3" style="border: none;">
+            <div>
+              {{row?.label_count}} of {{row?.total_label_count}} {{row?.uom}}
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>

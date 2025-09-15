@@ -65,7 +65,6 @@ const routes: Routes = [
       import("./reports/reports-routing.module").then(
         (m) => m.ReportsRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {

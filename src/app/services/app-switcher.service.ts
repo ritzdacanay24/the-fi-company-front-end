@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router } from '@angular/router';
 
-export type AppType = 'main' | 'field-service';
+export type AppType = 'main' | 'field-service' | 'admin';
 
 export interface AppInfo {
   id: AppType;
@@ -36,6 +36,14 @@ export class AppSwitcherService {
       icon: 'las la-tools',
       baseRoute: '/field-service',
       isActive: false
+    },
+    {
+      id: 'admin',
+      name: 'Administration',
+      description: 'System administration, user management, and configuration settings',
+      icon: 'las la-user-shield',
+      baseRoute: '/admin',
+      isActive: false
     }
   ];
 
@@ -49,6 +57,9 @@ export class AppSwitcherService {
     if (currentUrl.startsWith('/field-service')) {
       this.currentAppSubject.next('field-service');
       this.updateActiveApp('field-service');
+    } else if (currentUrl.startsWith('/admin') || currentUrl.startsWith('/maintenance')) {
+      this.currentAppSubject.next('admin');
+      this.updateActiveApp('admin');
     } else {
       this.currentAppSubject.next('main');
       this.updateActiveApp('main');
@@ -90,6 +101,10 @@ export class AppSwitcherService {
 
   isFieldServiceApp(): boolean {
     return this.getCurrentApp() === 'field-service';
+  }
+
+  isAdminApp(): boolean {
+    return this.getCurrentApp() === 'admin';
   }
 
   getAppTitle(): string {

@@ -2,18 +2,6 @@
     <div class="col-12 col-xl-12">
         
         <!-- API Mode Banner - Development Only -->
-        <div *ngIf="isDevelopmentMode" class="alert alert-info alert-dismissible mb-3" role="alert">
-            <i class="mdi mdi-information me-2"></i>
-            <strong>Development Mode:</strong> 
-            <span *ngIf="apiService.getCurrentMode() === 'MOCK'">
-                🧪 Using <strong>MOCK DATA</strong> for shipping priorities. Changes will not be saved to the database.
-            </span>
-            <span *ngIf="apiService.getCurrentMode() === 'REAL'">
-                🌐 Using <strong>REAL API</strong> for shipping priorities. Changes will be saved to the database.
-            </span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
         <!-- Priority Management Help -->
         <!-- <div class="alert alert-light border mb-3" role="alert">
             <div class="d-flex align-items-start">
@@ -76,37 +64,6 @@
                     Priority Display
                 </button>
                 
-                <!-- Development Tools - Development Only -->
-                <div *ngIf="isDevelopmentMode" class="btn-group ms-2" role="group">
-                    <button class="btn btn-outline-info" (click)="refreshMockData()" title="Refresh Mock Priority Data">
-                        <i class="mdi mdi-database-refresh"></i>
-                        Mock Data
-                    </button>
-                    
-                    <button class="btn btn-outline-success" (click)="testMockPriorities()" title="Test Priority System with Sample Data">
-                        <i class="mdi mdi-flask"></i>
-                        Test Mock
-                    </button>
-                </div>
-                
-                <!-- API Mode Switch - Development Only -->
-                <div *ngIf="isDevelopmentMode" class="btn-group ms-2" role="group">
-                    <button class="btn btn-outline-warning" (click)="switchToMockMode()" title="Switch to Mock Data Mode">
-                        <i class="mdi mdi-test-tube"></i>
-                        Mock Mode
-                    </button>
-                    
-                    <button class="btn btn-outline-primary" (click)="switchToRealAPI()" title="Switch to Real API Mode">
-                        <i class="mdi mdi-server"></i>
-                        Real API
-                    </button>
-                    
-                    <button class="btn btn-outline-secondary" (click)="getCurrentAPIMode()" title="Check Current API Mode">
-                        <i class="mdi mdi-information"></i>
-                        Mode?
-                    </button>
-                </div>
-
                 <div class="ms-3">
                     <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi"
                         [pageId]="pageId" [value]="gridViewId" (emitGrid)="emitGrid($event)"></app-grid-settings>

@@ -4,6 +4,7 @@ import { PlacardComponent } from "./placard.component";
 import { PlacardListComponent } from "./placard-list/placard-list.component";
 import { PlacardCreateComponent } from "./placard-create/placard-create.component";
 import { PlacardEditComponent } from "./placard-edit/placard-edit.component";
+import { PlacardSummaryComponent } from "./placard-summary/placard-summary.component";
 
 const routes: Routes = [
   {
@@ -26,6 +27,10 @@ const routes: Routes = [
       {
         path: "create",
         component: PlacardCreateComponent,
+      },
+      {
+        path: "summary",
+        component: PlacardSummaryComponent,
       },
     ],
   },

@@ -19,6 +19,7 @@ import { PageAccessService } from "@app/core/api/page-access/page-access.service
 import { MenuService } from "@app/core/api/menu/menu.service";
 import { AppSwitcherService } from "@app/services/app-switcher.service";
 import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
+import { ADMIN_MENU } from "./admin-menu-data";
 
 @Component({
   selector: "app-sidebar",
@@ -87,6 +88,8 @@ export class SidebarComponent implements OnInit {
     // Determine which menu to load based on current app
     if (this.appSwitcherService.isFieldServiceApp()) {
       this.menuItems = FIELD_SERVICE_MENU;
+    } else if (this.appSwitcherService.isAdminApp()) {
+      this.menuItems = ADMIN_MENU;
     } else {
       this.menuItems = await this.menuService.getMenu();
     }

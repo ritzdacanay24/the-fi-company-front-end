@@ -2,50 +2,50 @@ import { act } from "@ngrx/effects";
 import { MenuItem } from "./menu.model";
 
 export const MENU_DATA: MenuItem[] = [
-    {
-        id: 1,
-        label: "Menu",
-        isTitle: true,
-        hideCheckBox: true,
-    },
-    {
-        id: 2,
-        label: "Quick Actions",
-        icon: "las la-bolt",
-        isCollapsed: true,
-        hideCheckBox: true,
-        subItems: [
-            {
-                label: "Labels",
-                link: "/operations/labels/list",
-                description: "Label Printing & Management",
-                icon: "las la-tags",
-                accessRequired: false,
-            },
-            {
-                label: "Shipping Schedule",
-                link: "/operations/master-scheduling/shipping",
-                description: "View Shipping Schedule",
-                icon: "las la-shipping-fast",
-                accessRequired: false,
-            },
-            {
-                label: "Create Material Request",
-                link: "/operations/material-request/create",
-                description: "Quick Material Request",
-                icon: "las la-plus-circle",
-                accessRequired: false,
-            },
-            {
-                label: "Report Quality Issue",
-                link: "/quality/qir/create",
-                description: "Quick Quality Issue Report",
-                icon: "las la-exclamation-triangle",
-                accessRequired: false,
-                activatedRoutes: "/quality/qir/*"
-            },
-        ],
-    },
+    // {
+    //     id: 1,
+    //     label: "Menu",
+    //     isTitle: true,
+    //     hideCheckBox: true,
+    // },
+    // {
+    //     id: 2,
+    //     label: "Quick Actions",
+    //     icon: "las la-bolt",
+    //     isCollapsed: true,
+    //     hideCheckBox: true,
+    //     subItems: [
+    //         {
+    //             label: "Labels",
+    //             link: "/operations/labels/list",
+    //             description: "Label Printing & Management",
+    //             icon: "las la-tags",
+    //             accessRequired: false,
+    //         },
+    //         {
+    //             label: "Shipping Schedule",
+    //             link: "/operations/master-scheduling/shipping",
+    //             description: "View Shipping Schedule",
+    //             icon: "las la-shipping-fast",
+    //             accessRequired: false,
+    //         },
+    //         {
+    //             label: "Create Material Request",
+    //             link: "/operations/material-request/create",
+    //             description: "Quick Material Request",
+    //             icon: "las la-plus-circle",
+    //             accessRequired: false,
+    //         },
+    //         {
+    //             label: "Report Quality Issue",
+    //             link: "/quality/qir/create",
+    //             description: "Quick Quality Issue Report",
+    //             icon: "las la-exclamation-triangle",
+    //             accessRequired: false,
+    //             activatedRoutes: "/quality/qir/*"
+    //         },
+    //     ],
+    // },
     {
         id: 3,
         label: "Lookups & Search",
@@ -134,14 +134,14 @@ export const MENU_DATA: MenuItem[] = [
         icon: "las la-check-circle",
         hideCheckBox: true,
     },
-    {
-        id: 13,
-        label: "Cable Production",
-        link: "/operations/master-scheduling/cables",
-        description: "Cable Production Schedule",
-        icon: "las la-plug",
-        hideCheckBox: true,
-    },
+    // {
+    //     id: 13,
+    //     label: "Cable Production",
+    //     link: "/operations/master-scheduling/cables",
+    //     description: "Cable Production Schedule",
+    //     icon: "las la-plug",
+    //     hideCheckBox: true,
+    // },
     {
         id: 14,
         label: "Logistics",
@@ -345,122 +345,12 @@ export const MENU_DATA: MenuItem[] = [
     {
         id: 30,
         label: "Reports & Analytics",
+        link: "/operations/reports",
+        description: "Comprehensive reporting suite for operations insights",
         icon: "las la-chart-line",
-        isCollapsed: true,
         hideCheckBox: true,
-        subItems: [
-            {
-                label: "Daily Report",
-                link: "/operations/reports/daily-report",
-                description: "Daily Operations Report",
-                icon: "las la-calendar-day",
-            },
-            {
-                label: "Revenue Reports",
-                link: "/operations/reports/revenue",
-                description: "Revenue Analysis",
-                icon: "las la-dollar-sign",
-            },
-            {
-                label: "Revenue by Customer",
-                link: "/operations/reports/revenue-by-customer",
-                description: "Customer Revenue Analysis",
-                icon: "las la-users",
-            },
-            {
-                label: "OTD Report",
-                link: "/operations/reports/otd-report",
-                description: "On-Time Delivery Performance",
-                icon: "las la-shipping-fast",
-                badge: {
-                    variant: "badge bg-success",
-                    text: "New",
-                },
-            },
-            {
-                label: "WIP Report",
-                link: "/operations/reports/wip-report",
-                description: "Work in Progress",
-                icon: "las la-cogs",
-            },
-            {
-                label: "Shipped Orders",
-                link: "/operations/reports/shipped-orders-report",
-                description: "Shipped Orders Analysis",
-                icon: "las la-truck",
-                accessRequired: false,
-            },
-            {
-                label: "Shipped Orders (Table)",
-                link: "/reports/shipped-orders-report-v1",
-                description: "Shipped Orders - Table View",
-                icon: "las la-table",
-                accessRequired: false,
-            },
-            {
-                label: "WO Variance Report",
-                link: "/operations/reports/work-order-variance-report",
-                description: "Work Order Variance Analysis",
-                icon: "las la-chart-bar",
-            },
-            {
-                label: "Inventory Reports",
-                icon: "las la-boxes",
-                isCollapsed: true,
-                subItems: [
-                    {
-                        label: "Transit Location",
-                        link: "/operations/reports/transit-location-value-report",
-                        description: "Transit location report",
-                    },
-                    {
-                        label: "Finished Goods",
-                        link: "/operations/reports/fg-value-report",
-                        description: "Finished goods report",
-                    },
-                    {
-                        label: "JX Report",
-                        link: "/operations/reports/jx-value-report",
-                        description: "JX report",
-                    },
-                    {
-                        label: "LV Raw Material",
-                        link: "/operations/reports/las-vegas-raw-material-report",
-                        description: "Las vegas raw material report",
-                    },
-                    {
-                        label: "Safety Stock",
-                        link: "/operations/reports/safety-stock-report",
-                        description: "Safety stock report",
-                    },
-                    {
-                        label: "Negative Locations",
-                        link: "/operations/reports/negative-location-report",
-                        description: "Negative location report",
-                    },
-                    {
-                        label: "Empty Locations",
-                        link: "/operations/reports/empty-location-report",
-                        description: "Empty location report",
-                    },
-                    {
-                        label: "Inventory Summary",
-                        link: "/operations/reports/inventory-report",
-                        description: "Inventory report",
-                    },
-                    {
-                        label: "One SKU Locations",
-                        link: "/operations/reports/one-sku-location-report",
-                        description: "One sku location report",
-                    },
-                    {
-                        label: "Item Consolidation",
-                        link: "/operations/reports/item-consolidation-report",
-                        description: "Item consolidation report",
-                    },
-                ],
-            },
-        ],
+        accessRequired: false,
+        activatedRoutes: "/operations/reports/*"
     },
     {
         id: 31,
@@ -497,14 +387,14 @@ export const MENU_DATA: MenuItem[] = [
                 icon: "las la-truck-loading",
                 activatedRoutes: "/operations/forms/forklift-inspection/*"
             },
-            {
-                label: "Safety Training",
-                link: "/safety/training",
-                description: "Safety Training Programs",
-                icon: "las la-graduation-cap",
-                accessRequired: false,
-                activatedRoutes: "/safety/training/*"
-            },
+            // {
+            //     label: "Safety Training",
+            //     link: "/safety/training",
+            //     description: "Safety Training Programs",
+            //     icon: "las la-graduation-cap",
+            //     accessRequired: false,
+            //     activatedRoutes: "/safety/training/*"
+            // },
         ],
     },
     {
@@ -514,12 +404,6 @@ export const MENU_DATA: MenuItem[] = [
         isCollapsed: true,
         hideCheckBox: true,
         subItems: [
-            {
-                label: "Dashboard",
-                link: "/quality/overview/summary",
-                description: "Quality Overview",
-                icon: "las la-tachometer-alt",
-            },
             {
                 label: "Returns (RMA)",
                 link: "/quality/rma/list",
@@ -585,67 +469,6 @@ export const MENU_DATA: MenuItem[] = [
                 link: "/ul-management/labels-report",
                 accessRequired: false,
                 activatedRoutes: "/ul-management/*"
-            },
-        ],
-    },
-    {
-        id: 35,
-        label: "Admin",
-        icon: "las la-user-shield",
-        isCollapsed: true,
-        hideCheckBox: true,
-        subItems: [
-            {
-                label: "User Management",
-                link: "/maintenance/user/list",
-                description: "Manage System Users",
-                icon: "las la-users",
-                accessRequired: true,
-                activatedRoutes: "/maintenance/user/*"
-            },
-            {
-                label: "Email Notifications",
-                link: "/maintenance/email-notification/list",
-                description: "Configure Email Alerts",
-                icon: "las la-envelope",
-                accessRequired: true,
-                activatedRoutes: "/maintenance/email-notification/*"
-            },
-            {
-                label: "Scheduled Jobs",
-                link: "/maintenance/scheduled-jobs",
-                description: "System Background Tasks",
-                icon: "las la-clock",
-                accessRequired: true,
-                activatedRoutes: "/maintenance/scheduled-jobs/*"
-            },
-            {
-                label: "Query Builder",
-                link: "/admin/query",
-                description: "Database Query Tool",
-                icon: "las la-database",
-                accessRequired: true,
-            },
-            {
-                label: "Advanced Settings",
-                icon: "las la-cogs",
-                isCollapsed: true,
-                subItems: [
-                    {
-                        label: "Create User",
-                        link: "/maintenance/user/create",
-                        description: "Add New User",
-                        accessRequired: true,
-                        activatedRoutes: "/maintenance/user/*"
-                    },
-                    {
-                        label: "Create Email Alert",
-                        link: "/maintenance/email-notification/create",
-                        description: "Setup New Email Notification",    
-                        accessRequired: true,
-                        activatedRoutes: "/maintenance/email-notification/*"
-                    },
-                ],
             },
         ],
     },

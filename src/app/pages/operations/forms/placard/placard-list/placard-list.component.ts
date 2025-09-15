@@ -16,6 +16,7 @@ import { NAVIGATION_ROUTE } from "../placard-constant";
 import { DateRangeComponent } from "@app/shared/components/date-range/date-range.component";
 import { PlacardService } from "@app/core/api/operations/placard/placard.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { PlacardActionsCellRendererComponent } from "../placard-actions-cell-renderer/placard-actions-cell-renderer.component";
 
 @Component({
   standalone: true,
@@ -26,6 +27,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
+    PlacardActionsCellRendererComponent,
   ],
   selector: "app-placard-list",
   templateUrl: "./placard-list.component.html",
@@ -56,17 +58,18 @@ export class PlacardListComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
-      field: "View",
-      headerName: "View",
-      filter: "agMultiColumnFilter",
+      field: "Actions",
+      headerName: "Actions",
+      filter: false,
+      sortable: false,
       pinned: "left",
-      cellRenderer: LinkRendererV2Component,
+      cellRenderer: PlacardActionsCellRendererComponent,
       cellRendererParams: {
-        onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        onView: (id: any) => this.onView(id),
+        onEdit: (id: any) => this.onEdit(id),
       },
-      maxWidth: 115,
-      minWidth: 115,
+      maxWidth: 120,
+      minWidth: 120,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
     {
@@ -237,6 +240,17 @@ export class PlacardListComponent implements OnInit {
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
     this.router.navigate([NAVIGATION_ROUTE.EDIT], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.SUMMARY], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,
