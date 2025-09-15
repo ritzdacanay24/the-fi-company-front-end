@@ -52,14 +52,26 @@ export class ShippingRequestViewComponent implements OnInit {
     // Process and clean the raw data
     const processedData = { ...rawData };
 
-    // Parse sendTrackingNumberTo if it's a JSON string
+    // Convert trackingNumber to string if it's a number
+    if (typeof processedData.trackingNumber === 'number') {
+      processedData.trackingNumber = processedData.trackingNumber.toString();
+    }
+
+    // Parse sendTrackingNumberTo if it's a JSON string, otherwise convert single email to array
     if (rawData.sendTrackingNumberTo && typeof rawData.sendTrackingNumberTo === 'string') {
       try {
+        // Try to parse as JSON first
         processedData.sendTrackingNumberTo = JSON.parse(rawData.sendTrackingNumberTo);
       } catch (e) {
-        console.warn('Failed to parse sendTrackingNumberTo:', e);
-        processedData.sendTrackingNumberTo = [];
+        // If JSON parsing fails, treat as single email and convert to array
+        if (rawData.sendTrackingNumberTo.includes('@')) {
+          processedData.sendTrackingNumberTo = [rawData.sendTrackingNumberTo];
+        } else {
+          processedData.sendTrackingNumberTo = [];
+        }
       }
+    } else if (!processedData.sendTrackingNumberTo) {
+      processedData.sendTrackingNumberTo = [];
     }
 
     // Clean up "N/A" values and replace with null
@@ -193,10 +205,16 @@ export class ShippingRequestViewComponent implements OnInit {
 
   // Helper method to check if tracking number is valid
   isTrackingNumberValid(): boolean {
-    return this.data?.trackingNumber && 
-           this.data.trackingNumber !== 'N/A' && 
-           this.data.trackingNumber !== 'Not specified' &&
-           this.data.trackingNumber.length > 3;
+    if (!this.data?.trackingNumber) return false;
+    
+    const trackingNumber = this.data.trackingNumber.toString().trim();
+    
+    return trackingNumber && 
+           trackingNumber !== 'N/A' && 
+           trackingNumber !== 'Not specified' &&
+           trackingNumber !== '' &&
+           trackingNumber !== '0' &&
+           trackingNumber.length > 3;
   }
 
   // Helper method to get tracking URL (basic implementation)

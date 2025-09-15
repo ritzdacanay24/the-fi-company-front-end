@@ -69,7 +69,7 @@ export class ShippingRequestListComponent implements OnInit {
       pinned: "left",
       cellRenderer: (params: any) => {
         return `
-          <div class="d-flex gap-1">
+          <div class="d-flex justify-content-center align-items-center gap-2 h-100">
             <button class="btn btn-sm btn-outline-primary view-btn" title="View Details">
               <i class="mdi mdi-eye"></i>
             </button>
