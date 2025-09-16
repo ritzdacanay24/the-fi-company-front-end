@@ -42,8 +42,6 @@ tippy.setDefaultProps({ animation: false });
     FormsModule,
     AgGridModule,
     NgSelectModule,
-    GridSettingsComponent,
-    GridFiltersComponent,
   ],
   selector: "app-labels-list",
   templateUrl: "./labels-list.component.html",

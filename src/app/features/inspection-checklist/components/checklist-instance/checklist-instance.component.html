@@ -1,0 +1,499 @@
+<div class="checklist-instance" *ngIf="!isLoading">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="instance-info">
+      <h2>
+        <i class="fas fa-clipboard-check"></i>
+        {{ template?.name }}
+      </h2>
+      <div class="instance-meta">
+        <span class="meta-item">
+          <i class="fas fa-folder"></i>
+          {{ template?.category | titlecase }}
+        </span>
+        <span class="meta-item">
+          <i class="fas fa-tag"></i>
+          {{ template?.type | titlecase }}
+        </span>
+        <span class="meta-item">
+          <i class="fas fa-clock"></i>
+          {{ instance?.startedDate | date:'short' }}
+        </span>
+        <span class="meta-item" *ngIf="instance?.assignedTo">
+          <i class="fas fa-user"></i>
+          {{ instance.assignedTo }}
+        </span>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-info">
+        <span class="progress-text">
+          {{ completedItems }} of {{ totalItems }} completed
+        </span>
+        <span class="progress-percentage">
+          {{ progressPercentage.toFixed(0) }}%
+        </span>
+      </div>
+      <div class="progress-bar-wrapper">
+        <div class="progress">
+          <div 
+            class="progress-bar bg-success" 
+            role="progressbar" 
+            [style.width.%]="progressPercentage">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Controls -->
+  <div class="navigation-section">
+    <div class="nav-buttons">
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary"
+        (click)="goToPreviousItem()"
+        [disabled]="currentItemIndex === 0">
+        <i class="fas fa-chevron-left"></i>
+        Previous
+      </button>
+
+      <div class="item-selector">
+        <span class="current-item">
+          Item {{ currentItemIndex + 1 }} of {{ totalItems }}
+        </span>
+        <button 
+          type="button" 
+          class="btn btn-outline-info btn-sm"
+          (click)="showAllItems = !showAllItems">
+          <i class="fas fa-list"></i>
+          {{ showAllItems ? 'Hide' : 'Show' }} All
+        </button>
+      </div>
+
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary"
+        (click)="goToNextItem()"
+        [disabled]="currentItemIndex >= totalItems - 1">
+        Next
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Item Overview -->
+    <div class="items-overview" *ngIf="showAllItems && instance">
+      <div class="items-grid">
+        <div 
+          *ngFor="let item of instance.items; let i = index"
+          class="item-overview-card"
+          [class.active]="i === currentItemIndex"
+          [class.completed]="item.status === 'completed'"
+          [class.skipped]="item.status === 'skipped'"
+          (click)="goToItem(i)">
+          <div class="item-number">{{ i + 1 }}</div>
+          <div class="item-info">
+            <div class="item-title">{{ template?.items[i]?.title }}</div>
+            <div class="item-status">
+              <span class="badge" [ngClass]="getStatusBadgeClass(item.status)">
+                {{ item.status | titlecase }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Item Section -->
+  <div class="current-item-section" *ngIf="getCurrentItem() && getCurrentTemplateItem()">
+    <div class="card">
+      <div class="card-header">
+        <div class="item-header-info">
+          <h4>
+            <span class="item-number">{{ currentItemIndex + 1 }}</span>
+            {{ getCurrentTemplateItem()?.title }}
+          </h4>
+          <div class="item-badges">
+            <span *ngIf="getCurrentTemplateItem()?.required" class="badge badge-warning">
+              Required
+            </span>
+            <span class="badge badge-info">
+              {{ getCurrentTemplateItem()?.type | titlecase }}
+            </span>
+            <span class="badge" [ngClass]="getStatusBadgeClass(getCurrentItem()!.status)">
+              {{ getCurrentItem()!.status | titlecase }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Item Description -->
+        <div class="item-description" *ngIf="getCurrentTemplateItem()?.description">
+          <p>{{ getCurrentTemplateItem()?.description }}</p>
+        </div>
+
+        <!-- Sample Photo (for photo type items) -->
+        <div class="sample-photo-section" 
+             *ngIf="getCurrentTemplateItem()?.type === 'photo' && getCurrentTemplateItem()?.samplePhotoUrl">
+          <h6>Reference Photo:</h6>
+          <img 
+            [src]="getCurrentTemplateItem()?.samplePhotoUrl" 
+            class="sample-photo"
+            alt="Reference photo">
+        </div>
+
+        <!-- Input Form -->
+        <form [formGroup]="itemForm" class="item-form">
+          <!-- Check/Verify Type -->
+          <div *ngIf="getCurrentTemplateItem()?.type === 'check'" class="form-group">
+            <label class="form-label">Status</label>
+            <div class="form-check-group">
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="radio" 
+                  formControlName="value" 
+                  value="true"
+                  id="check-yes">
+                <label class="form-check-label" for="check-yes">
+                  <i class="fas fa-check text-success"></i>
+                  Yes / Pass
+                </label>
+              </div>
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="radio" 
+                  formControlName="value" 
+                  value="false"
+                  id="check-no">
+                <label class="form-check-label" for="check-no">
+                  <i class="fas fa-times text-danger"></i>
+                  No / Fail
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Input Type -->
+          <div *ngIf="getCurrentTemplateItem()?.type === 'text'" class="form-group">
+            <label class="form-label">Value</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              formControlName="value"
+              placeholder="Enter text value">
+          </div>
+
+          <!-- Number Input Type -->
+          <div *ngIf="getCurrentTemplateItem()?.type === 'number'" class="form-group">
+            <label class="form-label">Value</label>
+            <input 
+              type="number" 
+              class="form-control" 
+              formControlName="value"
+              placeholder="Enter numeric value">
+          </div>
+
+          <!-- Measurement Type -->
+          <div *ngIf="getCurrentTemplateItem()?.type === 'measure'" class="form-group">
+            <label class="form-label">
+              Measurement 
+              <span *ngIf="getCurrentTemplateItem()?.unit">({{ getCurrentTemplateItem()?.unit }})</span>
+            </label>
+            <div class="measurement-input">
+              <input 
+                type="number" 
+                class="form-control" 
+                formControlName="value"
+                [min]="getCurrentTemplateItem()?.minValue"
+                [max]="getCurrentTemplateItem()?.maxValue"
+                step="0.01"
+                placeholder="Enter measurement">
+              <div class="measurement-info" *ngIf="getCurrentTemplateItem()?.minValue !== undefined">
+                <small class="text-muted">
+                  Range: {{ getCurrentTemplateItem()?.minValue }} - {{ getCurrentTemplateItem()?.maxValue }}
+                  <span *ngIf="getCurrentTemplateItem()?.targetValue">
+                    (Target: {{ getCurrentTemplateItem()?.targetValue }})
+                  </span>
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Photo Type -->
+          <div *ngIf="getCurrentTemplateItem()?.type === 'photo'" class="form-group">
+            <label class="form-label">Photos</label>
+            
+            <!-- Photo Actions -->
+            <div class="photo-actions">
+              <button 
+                type="button" 
+                class="btn btn-primary btn-sm"
+                (click)="openPhotoCapture(getCurrentItem()!)">
+                <i class="fas fa-camera"></i>
+                Take Photo
+              </button>
+              
+              <input 
+                #fileInput
+                type="file" 
+                class="d-none"
+                accept="image/*"
+                (change)="onFileSelect($event, getCurrentItem()!)">
+              
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                (click)="fileInput.click()">
+                <i class="fas fa-upload"></i>
+                Upload Photo
+              </button>
+            </div>
+
+            <!-- Existing Photos -->
+            <div class="photos-grid" *ngIf="getCurrentItem()?.photos && getCurrentItem()!.photos!.length > 0">
+              <div *ngFor="let photo of getCurrentItem()!.photos" class="photo-item">
+                <img [src]="photo.url" class="photo-thumbnail" [alt]="photo.fileName">
+                <div class="photo-overlay">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-danger"
+                    (click)="deletePhoto(getCurrentItem()!, photo)"
+                    title="Delete Photo">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <div class="photo-info">
+                  <small>{{ photo.fileName }}</small>
+                  <div *ngIf="photo.qualityScore" class="quality-score">
+                    Quality: {{ photo.qualityScore }}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending Photos -->
+            <div class="pending-photos" *ngIf="pendingPhotos.get(getCurrentItem()!.id)?.length">
+              <div *ngFor="let upload of pendingPhotos.get(getCurrentItem()!.id)" class="pending-photo">
+                <img [src]="upload.preview" class="photo-thumbnail" alt="Uploading...">
+                <div class="upload-overlay" *ngIf="upload.uploading">
+                  <div class="spinner-border spinner-border-sm" role="status"></div>
+                  <div class="upload-progress">{{ upload.progress }}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group">
+            <label class="form-label">Notes (Optional)</label>
+            <textarea 
+              class="form-control" 
+              formControlName="notes"
+              rows="3"
+              placeholder="Add any additional notes or observations..."></textarea>
+          </div>
+        </form>
+
+        <!-- Action Buttons -->
+        <div class="item-actions">
+          <button 
+            type="button" 
+            class="btn btn-success"
+            (click)="completeCurrentItem()"
+            [disabled]="isSaving || getCurrentItem()?.status === 'completed'">
+            <i class="fas fa-check"></i>
+            {{ isSaving ? 'Saving...' : 'Complete Item' }}
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-warning"
+            (click)="skipCurrentItem()"
+            [disabled]="isSaving || getCurrentItem()?.status === 'skipped'">
+            <i class="fas fa-forward"></i>
+            Skip Item
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary"
+            (click)="saveCurrentItem()"
+            [disabled]="isSaving">
+            <i class="fas fa-save"></i>
+            Save Progress
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submission Section -->
+  <div class="submission-section" *ngIf="progressPercentage === 100">
+    <div class="card border-success">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-flag-checkered"></i>
+          Ready for Submission
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="card-text">
+          All required items have been completed. You can now submit this inspection checklist.
+        </p>
+        <button 
+          type="button" 
+          class="btn btn-success btn-lg"
+          (click)="submitInstance()"
+          [disabled]="!canSubmitInstance()">
+          <i class="fas fa-paper-plane"></i>
+          Submit Checklist
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="text-center py-5">
+    <div class="spinner-border spinner-border-lg" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+    <p class="mt-3">Loading inspection checklist...</p>
+  </div>
+</div>
+
+<!-- Photo Capture Modal -->
+<div class="modal fade show" 
+     *ngIf="showPhotoCapture" 
+     style="display: block; background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-camera"></i>
+          Capture Photo
+        </h5>
+        <button 
+          type="button" 
+          class="close"
+          (click)="closePhotoCapture()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="camera-container">
+          <video 
+            id="cameraVideo" 
+            autoplay 
+            playsinline 
+            class="camera-video">
+          </video>
+          <canvas 
+            id="photoCanvas" 
+            class="d-none">
+          </canvas>
+        </div>
+        <div class="camera-controls">
+          <button 
+            type="button" 
+            class="btn btn-primary"
+            (click)="startCamera()">
+            <i class="fas fa-video"></i>
+            Start Camera
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-success"
+            (click)="capturePhoto()">
+            <i class="fas fa-camera"></i>
+            Capture
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="closePhotoCapture()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Signature Modal -->
+<div class="modal fade show" 
+     *ngIf="showSignature" 
+     style="display: block; background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-signature"></i>
+          Digital Signature
+        </h5>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="signatureForm">
+          <div class="form-group">
+            <label>Please provide your digital signature to complete the submission:</label>
+            <div class="signature-pad">
+              <canvas 
+                #signaturePad 
+                class="signature-canvas"
+                width="400" 
+                height="200">
+              </canvas>
+            </div>
+            <div class="signature-actions">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary btn-sm"
+                (click)="clearSignature()">
+                <i class="fas fa-eraser"></i>
+                Clear
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                (click)="saveSignature()">
+                <i class="fas fa-save"></i>
+                Save Signature
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Final Notes (Optional)</label>
+            <textarea 
+              class="form-control" 
+              formControlName="notes"
+              rows="3"
+              placeholder="Any final notes or comments..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="btn btn-secondary"
+          (click)="showSignature = false">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-success"
+          (click)="finalizeSubmission()"
+          [disabled]="signatureForm.invalid || isSubmitting">
+          <i class="fas fa-paper-plane"></i>
+          {{ isSubmitting ? 'Submitting...' : 'Submit Checklist' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,623 @@
+<div class="checklist-template-manager">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="title-area">
+      <h2>
+        <i class="fas fa-clipboard-check"></i>
+        Inspection Checklist Templates
+      </h2>
+      <p class="subtitle">Create and manage inspection checklist templates with photo verification</p>
+    </div>
+    
+    <div class="action-buttons">
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        (click)="createNewTemplate()"
+        [disabled]="isLoading">
+        <i class="fas fa-plus"></i>
+        Create Template
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="filters-section" *ngIf="!showTemplateForm">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="searchInput">Search Templates</label>
+          <div class="input-group">
+            <input
+              id="searchInput"
+              type="text"
+              class="form-control"
+              placeholder="Search by name, category, or type..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+              [disabled]="isLoading">
+            <div class="input-group-append">
+              <span class="input-group-text">
+                <i class="fas fa-search"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="form-group">
+          <label for="categoryFilter">Category</label>
+          <select
+            id="categoryFilter"
+            class="form-control"
+            [(ngModel)]="selectedCategory"
+            (change)="onFilterChange()"
+            [disabled]="isLoading">
+            <option value="">All Categories</option>
+            <option value="quality">Quality Control</option>
+            <option value="safety">Safety</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="assembly">Assembly</option>
+            <option value="packaging">Packaging</option>
+            <option value="shipping">Shipping</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="form-group">
+          <label for="typeFilter">Type</label>
+          <select
+            id="typeFilter"
+            class="form-control"
+            [(ngModel)]="selectedType"
+            (change)="onFilterChange()"
+            [disabled]="isLoading">
+            <option value="">All Types</option>
+            <option value="visual">Visual Inspection</option>
+            <option value="dimensional">Dimensional Check</option>
+            <option value="functional">Functional Test</option>
+            <option value="documentation">Documentation</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="col-md-2">
+        <div class="form-group">
+          <label for="statusFilter">Status</label>
+          <select
+            id="statusFilter"
+            class="form-control"
+            [(ngModel)]="selectedStatus"
+            (change)="onFilterChange()"
+            [disabled]="isLoading">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Form -->
+  <div class="template-form-section" *ngIf="showTemplateForm">
+    <div class="card">
+      <div class="card-header">
+        <h4>
+          <i class="fas fa-edit"></i>
+          {{ isEditing ? 'Edit Template' : 'Create New Template' }}
+        </h4>
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary btn-sm"
+          (click)="cancelEdit()">
+          <i class="fas fa-times"></i>
+          Cancel
+        </button>
+      </div>
+      
+      <div class="card-body">
+        <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
+          <!-- Basic Information -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="templateName">Template Name *</label>
+                <input
+                  id="templateName"
+                  type="text"
+                  class="form-control"
+                  formControlName="name"
+                  placeholder="Enter template name"
+                  [class.is-invalid]="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">
+                <div class="invalid-feedback" *ngIf="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">
+                  Template name is required
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="templateCategory">Category *</label>
+                <select
+                  id="templateCategory"
+                  class="form-control"
+                  formControlName="category"
+                  [class.is-invalid]="templateForm.get('category')?.invalid && templateForm.get('category')?.touched">
+                  <option value="">Select Category</option>
+                  <option value="quality">Quality Control</option>
+                  <option value="safety">Safety</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="assembly">Assembly</option>
+                  <option value="packaging">Packaging</option>
+                  <option value="shipping">Shipping</option>
+                </select>
+                <div class="invalid-feedback" *ngIf="templateForm.get('category')?.invalid && templateForm.get('category')?.touched">
+                  Category is required
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="templateType">Type *</label>
+                <select
+                  id="templateType"
+                  class="form-control"
+                  formControlName="type"
+                  [class.is-invalid]="templateForm.get('type')?.invalid && templateForm.get('type')?.touched">
+                  <option value="">Select Type</option>
+                  <option value="visual">Visual Inspection</option>
+                  <option value="dimensional">Dimensional Check</option>
+                  <option value="functional">Functional Test</option>
+                  <option value="documentation">Documentation</option>
+                </select>
+                <div class="invalid-feedback" *ngIf="templateForm.get('type')?.invalid && templateForm.get('type')?.touched">
+                  Type is required
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description and Version -->
+          <div class="row">
+            <div class="col-md-9">
+              <div class="form-group">
+                <label for="templateDescription">Description</label>
+                <textarea
+                  id="templateDescription"
+                  class="form-control"
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Enter template description"></textarea>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="templateVersion">Version</label>
+                <input
+                  id="templateVersion"
+                  type="text"
+                  class="form-control"
+                  formControlName="version"
+                  placeholder="1.0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Checklist Items -->
+          <div class="checklist-items-section">
+            <div class="section-header">
+              <h5>
+                <i class="fas fa-list"></i>
+                Checklist Items
+              </h5>
+              <button 
+                type="button" 
+                class="btn btn-outline-primary btn-sm"
+                (click)="addChecklistItem()">
+                <i class="fas fa-plus"></i>
+                Add Item
+              </button>
+            </div>
+
+            <div formArrayName="items" class="checklist-items">
+              <div *ngFor="let item of checklistItems.controls; let i = index" 
+                   [formGroupName]="i" 
+                   class="checklist-item">
+                <div class="item-header">
+                  <span class="item-number">{{ i + 1 }}</span>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-danger btn-sm"
+                    (click)="removeChecklistItem(i)"
+                    [disabled]="checklistItems.length <= 1">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+
+                <div class="item-content">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>Item Title *</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          formControlName="title"
+                          placeholder="Enter checklist item title"
+                          [class.is-invalid]="item.get('title')?.invalid && item.get('title')?.touched">
+                        <div class="invalid-feedback" *ngIf="item.get('title')?.invalid && item.get('title')?.touched">
+                          Title is required
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                      <div class="form-group">
+                        <label>Type</label>
+                        <select class="form-control" formControlName="type">
+                          <option value="check">Check/Verify</option>
+                          <option value="measure">Measurement</option>
+                          <option value="photo">Photo Required</option>
+                          <option value="text">Text Input</option>
+                          <option value="number">Number Input</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                      <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div class="form-check">
+                          <input
+                            type="checkbox"
+                            class="form-check-input"
+                            formControlName="required"
+                            [id]="'required-' + i">
+                          <label class="form-check-label" [for]="'required-' + i">
+                            Required Item
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label>Description</label>
+                        <textarea
+                          class="form-control"
+                          formControlName="description"
+                          rows="2"
+                          placeholder="Enter item description or instructions"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Photo Requirements (show only for photo type) -->
+                  <div *ngIf="item.get('type')?.value === 'photo'" class="photo-requirements">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>Sample Photo URL</label>
+                          <input
+                            type="url"
+                            class="form-control"
+                            formControlName="samplePhotoUrl"
+                            placeholder="https://example.com/sample.jpg">
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>Min Quality Score</label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            formControlName="minQualityScore"
+                            min="0"
+                            max="100"
+                            value="70">
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>&nbsp;</label>
+                          <div class="form-check">
+                            <input
+                              type="checkbox"
+                              class="form-check-input"
+                              formControlName="requiresSampleMatch"
+                              [id]="'sampleMatch-' + i">
+                            <label class="form-check-label" [for]="'sampleMatch-' + i">
+                              Requires Sample Match
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Measurement Specifications (show only for measure type) -->
+                  <div *ngIf="item.get('type')?.value === 'measure'" class="measurement-specs">
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>Unit</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            formControlName="unit"
+                            placeholder="mm, inches, etc.">
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>Min Value</label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            formControlName="minValue"
+                            step="0.01">
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>Max Value</label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            formControlName="maxValue"
+                            step="0.01">
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label>Target Value</label>
+                          <input
+                            type="number"
+                            class="form-control"
+                            formControlName="targetValue"
+                            step="0.01">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button 
+              type="submit" 
+              class="btn btn-primary"
+              [disabled]="templateForm.invalid || isLoading">
+              <i class="fas fa-save"></i>
+              {{ isEditing ? 'Update Template' : 'Create Template' }}
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              (click)="cancelEdit()">
+              Cancel
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-outline-info"
+              (click)="previewTemplate()"
+              [disabled]="templateForm.invalid">
+              <i class="fas fa-eye"></i>
+              Preview
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates List -->
+  <div class="templates-list-section" *ngIf="!showTemplateForm">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-4">
+      <div class="spinner-border" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <p class="mt-2">Loading templates...</p>
+    </div>
+
+    <!-- Templates Grid -->
+    <div *ngIf="!isLoading && filteredTemplates.length > 0" class="templates-grid">
+      <div class="row">
+        <div *ngFor="let template of filteredTemplates" class="col-md-4 mb-4">
+          <div class="template-card">
+            <div class="card h-100">
+              <div class="card-header">
+                <div class="template-title">
+                  <h6>{{ template.name }}</h6>
+                  <span class="badge" [ngClass]="getStatusBadgeClass(template.status)">
+                    {{ template.status | titlecase }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <p class="template-description">{{ template.description || 'No description provided' }}</p>
+                
+                <div class="template-meta">
+                  <div class="meta-item">
+                    <i class="fas fa-folder"></i>
+                    <span>{{ template.category | titlecase }}</span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-tag"></i>
+                    <span>{{ template.type | titlecase }}</span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-list"></i>
+                    <span>{{ template.items.length }} items</span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-code-branch"></i>
+                    <span>v{{ template.version }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card-footer">
+                <div class="template-actions">
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-primary btn-sm"
+                    (click)="editTemplate(template)"
+                    title="Edit Template">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-info btn-sm"
+                    (click)="duplicateTemplate(template)"
+                    title="Duplicate Template">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-success btn-sm"
+                    (click)="viewTemplate(template)"
+                    title="View Template">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-danger btn-sm"
+                    (click)="deleteTemplate(template)"
+                    title="Delete Template">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                
+                <div class="template-date">
+                  <small class="text-muted">
+                    Created: {{ template.createdDate | date:'short' }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && filteredTemplates.length === 0" class="empty-state">
+      <div class="text-center py-5">
+        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+        <h4>No Templates Found</h4>
+        <p class="text-muted">
+          {{ searchTerm || selectedCategory || selectedType ? 
+             'No templates match your current filters.' : 
+             'Get started by creating your first inspection checklist template.' }}
+        </p>
+        <button 
+          type="button" 
+          class="btn btn-primary"
+          (click)="createNewTemplate()">
+          <i class="fas fa-plus"></i>
+          Create Your First Template
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Preview Modal -->
+  <div class="modal fade" id="templatePreviewModal" tabindex="-1" role="dialog" *ngIf="previewTemplate">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-eye"></i>
+            Template Preview: {{ previewingTemplate?.name }}
+          </h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="template-info">
+            <div class="row">
+              <div class="col-md-6">
+                <strong>Category:</strong> {{ previewingTemplate?.category | titlecase }}
+              </div>
+              <div class="col-md-6">
+                <strong>Type:</strong> {{ previewingTemplate?.type | titlecase }}
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-md-12">
+                <strong>Description:</strong> {{ previewingTemplate?.description || 'No description' }}
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="preview-items">
+            <h6>Checklist Items ({{ previewingTemplate?.items.length }})</h6>
+            <div *ngFor="let item of previewingTemplate?.items; let i = index" class="preview-item">
+              <div class="item-header">
+                <span class="item-number">{{ i + 1 }}</span>
+                <span class="item-title">{{ item.title }}</span>
+                <span class="badge badge-info">{{ item.type | titlecase }}</span>
+                <span *ngIf="item.required" class="badge badge-warning">Required</span>
+              </div>
+              
+              <div *ngIf="item.description" class="item-description">
+                {{ item.description }}
+              </div>
+              
+              <div *ngIf="item.type === 'photo' && item.samplePhotoUrl" class="sample-photo">
+                <small class="text-muted">Sample Photo:</small>
+                <img [src]="item.samplePhotoUrl" class="sample-image" alt="Sample">
+              </div>
+              
+              <div *ngIf="item.type === 'measure'" class="measurement-info">
+                <small class="text-muted">
+                  Range: {{ item.minValue }} - {{ item.maxValue }} {{ item.unit }}
+                  <span *ngIf="item.targetValue"> (Target: {{ item.targetValue }})</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" (click)="editTemplate(previewingTemplate!)">
+            <i class="fas fa-edit"></i>
+            Edit Template
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

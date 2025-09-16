@@ -14,6 +14,8 @@ import { highlightRowView, autoSizeColumns } from "src/assets/js/util";
 import moment from "moment";
 import { TimeTrackerService } from "@app/core/api/time-tracker/time-tracker.service";
 import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link-renderer-v2/link-renderer-v2.component";
+import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
+import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 
 @Component({
   standalone: true,
@@ -22,6 +24,8 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
     ReactiveFormsModule,
     NgSelectModule,
     AgGridModule,
+    GridSettingsComponent,
+    GridFiltersComponent,
   ],
   selector: "app-time-tracker-list",
   templateUrl: "./time-tracker-list.component.html",
@@ -119,6 +123,16 @@ export class TimeTrackerListComponent implements OnInit {
 
   isAll = false;
 
+  pageId = "time-tracker-list";
+
+  getActiveCount(): number {
+    return this.data?.filter(item => !item.completed_date)?.length || 0;
+  }
+
+  getCompletedCount(): number {
+    return this.data?.filter(item => item.completed_date)?.length || 0;
+  }
+
   changeIsAll() {}
 
   dateFrom = moment()
@@ -164,7 +178,7 @@ export class TimeTrackerListComponent implements OnInit {
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);
-    this.router.navigate(["/operations/forms/time-tracker"], {
+    this.router.navigate(["/operations/forms/time-tracker", id], {
       queryParamsHandling: "merge",
       queryParams: {
         id: id,

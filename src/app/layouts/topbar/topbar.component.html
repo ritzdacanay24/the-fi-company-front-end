@@ -67,30 +67,13 @@
                     </button>
                 </div>
 
-                <div class="header-item d-none d-sm-flex">
-                    <div class="dropdown header-item " ngbDropdown>
-                        <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown"
-                            aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
-                            <span class="d-flex align-items-center">
-                                <button type="button"
-                                    class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode">
-                                    <i class='bx bx-moon fs-22'></i>
-                                    <i class='bx bx-sun fs-22'></i>
-                                </button>
-                            </span>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                            <!-- item-->
-                            <a class="dropdown-item pointer" (click)="changeMode('dark')">
-                                <i class="bx bx-moon text-muted fs-16 align-middle me-1"></i>
-                                <span class="align-middle">Dark</span>
-                            </a>
-                            <a class="dropdown-item pointer" (click)="changeMode('light', true)">
-                                <i class="bx bx-sun text-muted fs-16 align-middle me-1"></i>
-                                <span class="align-middle">Light</span>
-                            </a>
-                        </div>
-                    </div>
+                
+                <div class="ms-1 header-item d-none d-sm-flex">
+                    <button type="button"
+                        class="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle light-dark-mode">
+                        <i class='bx bx-moon fs-22' (click)="changeMode('dark')"></i>
+                        <i class='bx bx-sun fs-22' (click)="changeMode('light')"></i>
+                    </button>
                 </div>
 
 

@@ -29,7 +29,6 @@ import { JobConnectionService } from '@app/core/api/field-service/job-connection
     SerialComponent,
     AttachmentComponent,
     CrashKitComponent,
-    QirComponent,
     WorkOrderComponent,
     NgbDropdownModule,
     BillingComponent,

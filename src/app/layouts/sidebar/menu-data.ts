@@ -210,6 +210,15 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 22,
+        label: "Time Sessions",
+        link: "/operations/forms/time-tracker",
+        description: "View all time tracking sessions",
+        icon: "las la-history",
+        accessRequired: false,
+        activatedRoutes: "/operations/forms/time-tracker/*"
+    },
+    {
+        id: 23,
         label: "Labels",
         link: "/operations/labels/list",
         description: "Label Printing & Management",
@@ -218,13 +227,13 @@ export const MENU_DATA: MenuItem[] = [
         accessRequired: false,
     },
     {
-        id: 23,
+        id: 24,
         label: "Operations & Production",
         isTitle: true,
         hideCheckBox: true,
     },
     {
-        id: 24,
+        id: 25,
         label: "Graphics & BOM",
         icon: "las la-image",
         isCollapsed: true,
@@ -257,7 +266,7 @@ export const MENU_DATA: MenuItem[] = [
         ],
     },
     {
-        id: 25,
+        id: 26,
         label: "Placards",
         link: "/operations/forms/placard/list",
         description: "Work Order Documentation",
@@ -267,7 +276,7 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/forms/placard/*"
     },
     {
-        id: 26,
+        id: 27,
         label: "Shipping Request",
         icon: "las la-shipping-fast",
         link: "/operations/forms/shipping-request",
@@ -277,13 +286,13 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/forms/shipping-request/*"
     },
     {
-        id: 27,
+        id: 28,
         label: "Materials & Inventory",
         isTitle: true,
         hideCheckBox: true,
     },
     {
-        id: 28,
+        id: 29,
         label: "IGT Transfers",
         link: "/operations/forms/igt-transfer/list",
         description: "IGT Asset Transfer Management",
@@ -293,7 +302,7 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/forms/igt-transfer/*"
     },
     {
-        id: 29,
+        id: 30,
         label: "Inventory & Materials",
         icon: "las la-boxes",
         isCollapsed: true,
@@ -316,7 +325,7 @@ export const MENU_DATA: MenuItem[] = [
         ],
     },
     {
-        id: 30,
+        id: 31,
         label: "Reports & Analytics",
         link: "/operations/reports",
         description: "Comprehensive reporting suite for operations insights",
@@ -326,13 +335,13 @@ export const MENU_DATA: MenuItem[] = [
         activatedRoutes: "/operations/reports/*"
     },
     {
-        id: 31,
+        id: 32,
         label: "Quality & Compliance",
         isTitle: true,
         hideCheckBox: true,
     },
     {
-        id: 32,
+        id: 33,
         label: "Safety",
         icon: "las la-shield-alt",
         isCollapsed: true,
@@ -371,7 +380,7 @@ export const MENU_DATA: MenuItem[] = [
         ],
     },
     {
-        id: 33,
+        id: 34,
         label: "Quality",
         icon: "las la-tools",
         isCollapsed: true,
@@ -405,10 +414,17 @@ export const MENU_DATA: MenuItem[] = [
                 icon: "las la-exclamation-triangle",
                 activatedRoutes: "/quality/qir/*"
             },
+            {
+                label: "Inspection Checklists",
+                link: "/inspection/dashboard",
+                description: "Inspection Checklist Management",
+                icon: "las la-clipboard-list",
+                activatedRoutes: "/inspection/*"
+            },
         ],
     },
     {
-        id: 34,
+        id: 35,
         label: "Serial Numbers",
         icon: "las la-barcode",
         isCollapsed: true,

@@ -2,8 +2,6 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { FormsComponent } from "./forms.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
-import { TimeTrackerComponent } from "./time-tracker/time-tracker.component";
-import { TimeTrackerListComponent } from "./time-tracker-list/time-tracker-list.component";
 
 const routes: Routes = [
   {
@@ -11,15 +9,12 @@ const routes: Routes = [
     component: FormsComponent,
     children: [
       {
-        title: "Time Tracker",
+        title: "Time Tracking",
         path: "time-tracker",
-        component: TimeTrackerComponent,
-        runGuardsAndResolvers: "always",
-      },
-      {
-        title: "Time Tracker List",
-        path: "time-tracker-list",
-        component: TimeTrackerListComponent,
+        loadChildren: () =>
+          import("./time-tracker/time-tracker-routing.module").then(
+            (m) => m.TimeTrackerRoutingModule
+          ),
         runGuardsAndResolvers: "always",
       },
       {

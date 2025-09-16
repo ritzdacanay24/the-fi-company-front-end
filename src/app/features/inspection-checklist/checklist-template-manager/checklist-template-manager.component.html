@@ -1,0 +1,302 @@
+<div class="template-manager">
+  <div class="manager-header">
+    <h1>Checklist Template Manager</h1>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="createNewTemplate()">
+        <i class="fas fa-plus"></i> New Template
+      </button>
+      <button class="btn btn-secondary" (click)="goToDashboard()">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <div class="manager-content">
+    <!-- Templates List -->
+    <div class="templates-section">
+      <div class="section-header">
+        <h2>Templates</h2>
+        <div class="template-filters">
+          <select [(ngModel)]="selectedCategory" (change)="filterTemplates()">
+            <option value="">All Categories</option>
+            <option *ngFor="let category of categories" [value]="category[0]">{{ category[1] }}</option>
+          </select>
+          <select [(ngModel)]="selectedType" (change)="filterTemplates()">
+            <option value="">All Types</option>
+            <option *ngFor="let type of templateTypes" [value]="type[0]">{{ type[1] }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="templates-list" *ngIf="filteredTemplates.length > 0; else noTemplates">
+        <div *ngFor="let template of filteredTemplates" 
+             class="template-item" 
+             [class.selected]="selectedTemplate?.id === template.id"
+             (click)="selectTemplate(template)">
+          <div class="template-info">
+            <h3>{{ template.name }}</h3>
+            <p>{{ template.description }}</p>
+            <div class="template-meta">
+              <span class="category">{{ template.category | titlecase }}</span>
+              <span class="type">{{ template.type | titlecase }}</span>
+              <span class="items-count">{{ template.items.length }} items</span>
+              <span class="estimated-time">{{ template.estimatedTime }}min</span>
+            </div>
+          </div>
+          <div class="template-actions">
+            <button class="btn btn-sm btn-outline" (click)="editTemplate(template); $event.stopPropagation()">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline" (click)="duplicateTemplate(template); $event.stopPropagation()">
+              <i class="fas fa-copy"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteTemplate(template); $event.stopPropagation()">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noTemplates>
+        <div class="empty-state">
+          <i class="fas fa-clipboard-list"></i>
+          <h3>No Templates Found</h3>
+          <p>Create your first checklist template to get started.</p>
+          <button class="btn btn-primary" (click)="createNewTemplate()">Create Template</button>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Template Editor -->
+    <div class="editor-section" *ngIf="isEditing || isCreating">
+      <div class="editor-header">
+        <h2>{{ isCreating ? 'Create New Template' : 'Edit Template' }}</h2>
+        <div class="editor-actions">
+          <button class="btn btn-success" (click)="saveTemplate()" [disabled]="templateForm.invalid">
+            <i class="fas fa-save"></i> Save
+          </button>
+          <button class="btn btn-secondary" (click)="cancelEdit()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="templateForm" class="template-form">
+        <!-- Basic Info -->
+        <div class="form-section">
+          <h3>Basic Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Template Name *</label>
+              <input type="text" id="name" formControlName="name" class="form-control" placeholder="Enter template name">
+            </div>
+            <div class="form-group">
+              <label for="version">Version</label>
+              <input type="text" id="version" formControlName="version" class="form-control" placeholder="1.0">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" formControlName="description" class="form-control" rows="3" 
+                      placeholder="Describe what this template is used for"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="category">Category *</label>
+              <select id="category" formControlName="category" class="form-control">
+                <option value="">Select category</option>
+                <option *ngFor="let category of categories" [value]="category[0]">{{ category[1] }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="type">Type *</label>
+              <select id="type" formControlName="type" class="form-control">
+                <option value="">Select type</option>
+                <option *ngFor="let type of templateTypes" [value]="type[0]">{{ type[1] }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="estimatedTime">Estimated Time (minutes)</label>
+              <input type="number" id="estimatedTime" formControlName="estimatedTime" class="form-control" min="1">
+            </div>
+            <div class="form-group">
+              <label for="status">Status</label>
+              <select id="status" formControlName="status" class="form-control">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3>Checklist Items</h3>
+            <button type="button" class="btn btn-outline" (click)="addItem()">
+              <i class="fas fa-plus"></i> Add Item
+            </button>
+          </div>
+
+          <div formArrayName="items" class="items-list">
+            <div *ngFor="let itemForm of itemsFormArray.controls; let i = index" 
+                 [formGroupName]="i" 
+                 class="item-form">
+              <div class="item-header">
+                <h4>Item {{ i + 1 }}</h4>
+                <div class="item-actions">
+                  <button type="button" class="btn btn-sm btn-outline" (click)="moveItemUp(i)" [disabled]="i === 0">
+                    <i class="fas fa-arrow-up"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" (click)="moveItemDown(i)" [disabled]="i === itemsFormArray.length - 1">
+                    <i class="fas fa-arrow-down"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="removeItem(i)" [disabled]="itemsFormArray.length <= 1">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Title *</label>
+                  <input type="text" formControlName="title" class="form-control" placeholder="Item title">
+                </div>
+                <div class="form-group">
+                  <label>Type *</label>
+                  <select formControlName="type" class="form-control">
+                    <option value="check">Check/Verify</option>
+                    <option value="photo">Photo Required</option>
+                    <option value="measure">Measurement</option>
+                    <option value="input">Text Input</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Description</label>
+                <textarea formControlName="description" class="form-control" rows="2" 
+                          placeholder="Detailed description of what needs to be done"></textarea>
+              </div>
+
+              <!-- Type-specific fields -->
+              <div *ngIf="itemForm.get('type')?.value === 'photo'" class="type-specific-fields">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Sample Photo URL</label>
+                    <input type="url" formControlName="samplePhotoUrl" class="form-control" 
+                           placeholder="URL to reference photo">
+                  </div>
+                  <div class="form-group">
+                    <label>Min Quality Score</label>
+                    <input type="number" formControlName="minQualityScore" class="form-control" min="0" max="100">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="requiresSampleMatch">
+                    Requires sample match
+                  </label>
+                </div>
+              </div>
+
+              <div *ngIf="itemForm.get('type')?.value === 'measure'" class="type-specific-fields">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" formControlName="unit" class="form-control" placeholder="mm, inches, etc.">
+                  </div>
+                  <div class="form-group">
+                    <label>Target Value</label>
+                    <input type="number" formControlName="targetValue" class="form-control" step="0.01">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Min Value</label>
+                    <input type="number" formControlName="minValue" class="form-control" step="0.01">
+                  </div>
+                  <div class="form-group">
+                    <label>Max Value</label>
+                    <input type="number" formControlName="maxValue" class="form-control" step="0.01">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" formControlName="required">
+                  Required item
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Template Preview -->
+    <div class="preview-section" *ngIf="selectedTemplate && !isEditing && !isCreating">
+      <div class="preview-header">
+        <h2>Template Preview</h2>
+        <div class="preview-actions">
+          <button class="btn btn-primary" (click)="editTemplate(selectedTemplate)">
+            <i class="fas fa-edit"></i> Edit
+          </button>
+          <button class="btn btn-outline" (click)="duplicateTemplate(selectedTemplate)">
+            <i class="fas fa-copy"></i> Duplicate
+          </button>
+        </div>
+      </div>
+
+      <div class="template-details">
+        <div class="detail-section">
+          <h3>{{ selectedTemplate.name }}</h3>
+          <p>{{ selectedTemplate.description }}</p>
+          
+          <div class="template-metadata">
+            <div class="metadata-item">
+              <strong>Category:</strong> {{ selectedTemplate.category | titlecase }}
+            </div>
+            <div class="metadata-item">
+              <strong>Type:</strong> {{ selectedTemplate.type | titlecase }}
+            </div>
+            <div class="metadata-item">
+              <strong>Version:</strong> {{ selectedTemplate.version }}
+            </div>
+            <div class="metadata-item">
+              <strong>Estimated Time:</strong> {{ selectedTemplate.estimatedTime }} minutes
+            </div>
+            <div class="metadata-item">
+              <strong>Status:</strong> {{ selectedTemplate.status | titlecase }}
+            </div>
+          </div>
+        </div>
+
+        <div class="items-preview">
+          <h4>Checklist Items ({{ selectedTemplate.items.length }})</h4>
+          <div class="items-list">
+            <div *ngFor="let item of selectedTemplate.items; let i = index" class="preview-item">
+              <div class="item-number">{{ i + 1 }}</div>
+              <div class="item-content">
+                <h5>{{ item.title }}</h5>
+                <p>{{ item.description }}</p>
+                <div class="item-tags">
+                  <span class="tag type-tag">{{ item.type | titlecase }}</span>
+                  <span class="tag required-tag" *ngIf="item.required">Required</span>
+                  <span class="tag unit-tag" *ngIf="item.unit">{{ item.unit }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

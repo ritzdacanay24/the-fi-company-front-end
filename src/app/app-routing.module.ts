@@ -134,6 +134,23 @@ const routes: Routes = [
       },
     ],
   },
+  // Inspection Checklist routes
+  {
+    path: "inspection",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      {
+        title: "Inspection Checklist",
+        path: "",
+        loadChildren: () =>
+          import("./features/inspection-checklist/inspection-checklist.module").then(
+            (m) => m.InspectionChecklistModule
+          ),
+      },
+    ],
+  },
   // UL Management routes (moved from dashboard)
   {
     path: "ul-management",

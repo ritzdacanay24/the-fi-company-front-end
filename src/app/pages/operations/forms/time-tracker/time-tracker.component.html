@@ -1,110 +1,459 @@
-<!-- Modern Mobile-First Time Tracker -->
-<div class="mobile-time-tracker">
+<!-- Simple Time Tracker -->
+<div class="container-fluid p-4">
   
-  <!-- Start Screen -->
-  <div *ngIf="!id" class="start-screen">
-    <!-- Top Navigation -->
-    <div class="mobile-nav">
-      <div class="nav-content">
-        <h1 class="nav-title">Time Tracker</h1>
-      </div>
-    </div>
-
-    <!-- Hero Section -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <div class="timer-visual">
-          <div class="timer-circle">
-            <i class="mdi mdi-timer mdi-48px"></i>
-          </div>
-        </div>
-        <h2 class="hero-title">Start Your Work Session</h2>
-        <p class="hero-subtitle">Track your productivity with ease</p>
-      </div>
-    </div>
-
-    <!-- Quick Start Form -->
-    <div class="quick-start-section">
-      <div class="form-container">
-        <div class="input-group-modern">
-          <div class="input-wrapper">
-            <i class="mdi mdi-briefcase input-icon"></i>
+  <!-- Start New Session -->
+  <div *ngIf="!id" class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body text-center p-5">
+          <h3 class="mb-4">Time Tracker</h3>
+          
+          <div class="mb-4">
             <input 
-              class="modern-input" 
-              [(ngModel)]="name" 
               type="text" 
+              class="form-control form-control-lg text-center" 
+              [(ngModel)]="name" 
               placeholder="What are you working on?"
-              maxlength="50">
-            <div class="input-line"></div>
+              maxlength="100">
           </div>
-          <div class="char-counter">{{ name?.length || 0 }}/50</div>
+          
+          <button 
+            class="btn btn-primary btn-lg px-5"
+            (click)="onCreate()"
+            [disabled]="!name?.trim()">
+            Start Timer
+          </button>
         </div>
-        
-        <button 
-          class="start-button" 
-          (click)="start()" 
-          [disabled]="!name?.trim()"
-          [class.disabled]="!name?.trim()">
-          <div class="button-content">
-            <i class="mdi mdi-play button-icon"></i>
-            <span class="button-text">Start Session</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Session -->
+  <div *ngIf="id" class="row justify-content-center">
+    <div class="col-md-8">
+      
+      <!-- Session Header -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">{{ data?.title }}</h4>
+            <button class="btn btn-outline-danger btn-sm" (click)="onDeleteMain()">
+              Delete Session
+            </button>
           </div>
-          <div class="button-ripple"></div>
-        </button>
+          <small class="text-muted">Started {{ data?.created_date | date:'MMM d, h:mm a' }}</small>
+        </div>
+      </div>
+
+      <!-- Time Entries -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Time Entries</h5>
+          <button 
+            class="btn btn-primary btn-sm" 
+            (click)="openBottom(content)"
+            [disabled]="data?.completed_date">
+            Add Entry
+          </button>
+        </div>
+        <div class="card-body">
+          
+          <!-- Empty State -->
+          <div *ngIf="!times?.length" class="text-center py-4">
+            <p class="text-muted">No time entries yet</p>
+            <button 
+              class="btn btn-outline-primary"
+              (click)="openBottom(content)"
+              [disabled]="data?.completed_date">
+              Add First Entry
+            </button>
+          </div>
+
+          <!-- Entry List -->
+          <div *ngFor="let entry of times; let i = index" class="border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ entry.title }}</strong>
+                <div class="small text-muted">
+                  {{ entry.start_time | date:'h:mm a' }} - 
+                  {{ entry.end_time ? (entry.end_time | date:'h:mm a') : 'Active' }}
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary">{{ getTotalTime(entry.start_time, entry.end_time) }}</span>
+                <button 
+                  class="btn btn-outline-secondary btn-sm"
+                  (click)="edit(content, entry)"
+                  [disabled]="data?.completed_date">
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Time -->
+          <div *ngIf="times?.length" class="border-top pt-3 mt-3">
+            <div class="d-flex justify-content-between">
+              <strong>Total Time:</strong>
+              <strong>{{ getTotalSessionTime() }}</strong>
+            </div>
+          </div>
+
+          <!-- Complete Session -->
+          <div *ngIf="times?.length && !data?.completed_date" class="text-center mt-4">
+            <button class="btn btn-success" (click)="finish()">
+              Complete Session
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Simple Modal -->
+<ng-template #content let-offcanvas>
+  <div class="modal-header">
+    <h4 class="modal-title">{{ edit_id ? 'Edit Entry' : 'Add Entry' }}</h4>
+    <button type="button" class="btn-close" (click)="offcanvas.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body">
+    <form>
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          [(ngModel)]="name" 
+          name="taskName"
+          placeholder="What did you work on?"
+          maxlength="100">
+      </div>
+
+      <div class="row">
+        <div class="col-6">
+          <label class="form-label">Start Time</label>
+          <input 
+            type="datetime-local" 
+            class="form-control" 
+            [(ngModel)]="start_time" 
+            name="startTime">
+        </div>
+        <div class="col-6">
+          <label class="form-label">End Time</label>
+          <input 
+            type="datetime-local" 
+            class="form-control" 
+            [(ngModel)]="end_time" 
+            name="endTime">
+        </div>
+      </div>
+
+      <div *ngIf="start_time && end_time" class="mt-3 p-3 bg-light rounded">
+        <strong>Duration: {{ getTotalTime(start_time, end_time) }}</strong>
+      </div>
+    </form>
+  </div>
+  
+  <div class="modal-footer">
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="offcanvas.close({name, start_time, end_time})">
+      {{ edit_id ? 'Update' : 'Save' }}
+    </button>
+    <button 
+      *ngIf="edit_id"
+      type="button" 
+      class="btn btn-danger" 
+      (click)="onDelete()">
+      Delete
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-secondary" 
+      (click)="offcanvas.dismiss()">
+      Cancel
+    </button>
+  </div>
+</ng-template>
+
+<!-- Professional Time Tracker (When no ID) -->
+<div *ngIf="!id" class="vh-100 bg-gradient-primary d-flex align-items-center">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-lg rounded-4">
+          <div class="card-body p-5">
+            <!-- Header Section -->
+            <div class="text-center mb-4">
+              <div class="bg-primary bg-gradient rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                <i class="mdi mdi-clock-time-four text-white fs-1"></i>
+              </div>
+              <h2 class="fw-bold text-primary mb-2">Professional Time Tracker</h2>
+              <p class="text-muted">Track work sessions, projects, and optimize productivity</p>
+            </div>
+
+            <!-- Productivity Tip -->
+            <div class="alert alert-light border-primary mb-4">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-lightbulb text-warning me-3 mt-1"></i>
+                <div>
+                  <small class="text-muted">Productivity Tip</small>
+                  <div class="small">{{ getRandomTip() }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Project Selection -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="mdi mdi-folder-outline text-info me-2"></i>
+                Project
+              </label>
+              <select class="form-select" [(ngModel)]="selectedProject">
+                <option value="">Select a project...</option>
+                <option *ngFor="let project of projects" [value]="project.name">
+                  {{ project.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Quick Templates by Category -->
+            <div class="mb-4" *ngIf="getQuickTemplates().length > 0">
+              <label class="form-label fw-bold mb-3">
+                <i class="mdi mdi-lightning-bolt text-warning me-2"></i>
+                Quick Start Activities
+              </label>
+              <div ngbAccordion>
+                <div ngbAccordionItem *ngFor="let category of getQuickTemplates(); let i = index" [collapsed]="true">
+                  <h2 ngbAccordionHeader>
+                    <button ngbAccordionButton class="py-2">
+                      <i [class]="category.icon" [style.color]="category.color" class="me-2"></i>
+                      <small class="fw-semibold">{{ category.category }}</small>
+                    </button>
+                  </h2>
+                  <div ngbAccordionCollapse>
+                    <div ngbAccordionBody>
+                      <ng-template>
+                        <div class="d-flex flex-wrap gap-1">
+                          <button 
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            (click)="selectTemplate(template)"
+                            *ngFor="let template of category.activities">
+                            {{ template }}
+                          </button>
+                        </div>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Task Input -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="mdi mdi-text-box text-success me-2"></i>
+                Work Description
+              </label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="mdi mdi-briefcase text-primary"></i>
+                </span>
+                <input 
+                  class="form-control border-start-0 bg-light" 
+                  [(ngModel)]="name" 
+                  type="text" 
+                  placeholder="What are you working on today..."
+                  maxlength="100"
+                  (input)="onTaskInputChange($event)">
+                <!-- Clear button -->
+                <button *ngIf="name?.length > 0" 
+                        class="btn btn-outline-secondary border-start-0" 
+                        type="button"
+                        (click)="clearInput()">
+                  <i class="mdi mdi-close"></i>
+                </button>
+              </div>
+              <div class="form-text d-flex justify-content-between">
+                <span class="text-muted">Describe your work session</span>
+                <span class="text-muted">{{ name?.length || 0 }}/100</span>
+              </div>
+            </div>
+
+            <!-- Tags Input -->
+            <div class="mb-4" *ngIf="name?.trim()">
+              <label class="form-label fw-bold">
+                <i class="mdi mdi-tag-multiple text-info me-2"></i>
+                Tags (Optional)
+              </label>
+              <div class="mb-2">
+                <div class="input-group">
+                  <input 
+                    class="form-control" 
+                    [(ngModel)]="currentTag" 
+                    type="text" 
+                    placeholder="Add tag..."
+                    (keyup.enter)="addTag(currentTag)">
+                  <button class="btn btn-outline-primary" 
+                          type="button"
+                          (click)="addTag(currentTag)"
+                          [disabled]="!currentTag?.trim()">
+                    Add
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Current Tags -->
+              <div class="d-flex flex-wrap gap-1 mb-2" *ngIf="tags.length > 0">
+                <span class="badge bg-primary" *ngFor="let tag of tags">
+                  {{ tag }}
+                  <i class="mdi mdi-close ms-1" 
+                     style="cursor: pointer;" 
+                     (click)="removeTag(tag)"></i>
+                </span>
+              </div>
+              
+              <!-- Common Tags -->
+              <div class="d-flex flex-wrap gap-1">
+                <small class="text-muted me-2">Quick tags:</small>
+                <button 
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  (click)="addCommonTag(tag)"
+                  *ngFor="let tag of commonTags.slice(0, 5)">
+                  {{ tag }}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Start/Stop Button -->
+            <button 
+              class="btn btn-lg w-100 rounded-3 mb-3" 
+              [class.btn-primary]="!isTimerRunning"
+              [class.btn-danger]="isTimerRunning"
+              (click)="isTimerRunning ? stopTimer() : start()" 
+              [disabled]="!isTimerRunning && !name?.trim()">
+              <div class="d-flex align-items-center justify-content-center">
+                <i class="me-2" 
+                   [class.mdi-play]="!isTimerRunning"
+                   [class.mdi-stop]="isTimerRunning"></i>
+                <span>{{ isTimerRunning ? 'Stop Tracking' : 'Start Tracking' }}</span>
+                <!-- Estimated time when not running, elapsed time when running -->
+                <span class="badge bg-light ms-2" 
+                      [class.text-primary]="!isTimerRunning"
+                      [class.text-danger]="isTimerRunning"
+                      *ngIf="!isTimerRunning && getEstimatedTime()">
+                  ~{{ getEstimatedTime() }}
+                </span>
+                <span class="badge bg-light text-danger ms-2" 
+                      *ngIf="isTimerRunning && getElapsedTime()">
+                  {{ getElapsedTime() }}
+                </span>
+              </div>
+            </button>
+            
+            <!-- Quick timer buttons -->
+            <div class="row g-2">
+              <div class="col-6">
+                <button class="btn btn-outline-success btn-sm w-100" 
+                        (click)="startFocusedWork()" 
+                        *ngIf="name?.trim()">
+                  <i class="mdi mdi-brain d-block mb-1"></i>
+                  <small>Focus Work</small>
+                </button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-outline-warning btn-sm w-100" 
+                        (click)="startQuickTask()" 
+                        *ngIf="name?.trim()">
+                  <i class="mdi mdi-lightning-bolt d-block mb-1"></i>
+                  <small>Quick Task</small>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Recent Activity -->
-    <div *ngIf="completed?.length > 0" class="recent-activity">
-      <div class="section-header">
-        <h3>Recent Sessions</h3>
-        <span class="session-count">{{ completed.length }}</span>
-      </div>
-      <div class="activity-list">
-        <div class="activity-item" *ngFor="let session of completed | slice:0:4">
-          <div class="activity-icon">
-            <i class="mdi mdi-check-circle"></i>
-          </div>
-          <div class="activity-content">
-            <h4 class="activity-title">{{ session.time_tracker_title }}</h4>
-            <div class="activity-meta">
-              <span class="entry-count">{{ session.times?.length || 0 }} entries</span>
-              <span class="duration">{{ getSessionTotalTime(session) }}</span>
-            </div>
-          </div>
-          <div class="activity-arrow">
+    <div *ngIf="completed?.length > 0" class="container py-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="h5 mb-0 fw-bold text-dark">Recent Work Sessions</h3>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary rounded-pill">{{ completed.length }}</span>
+          <button class="btn btn-link btn-sm text-decoration-none p-0" (click)="viewAllSessions()">
+            <span class="me-1">View All</span>
             <i class="mdi mdi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="row g-3">
+        <div class="col-12" *ngFor="let session of completed | slice:0:4">
+          <div class="card border-0 shadow-sm h-100" 
+               style="cursor: pointer; transition: all 0.2s ease;"
+               (click)="viewSession(session)">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-start">
+                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                     style="width: 40px; height: 40px; min-width: 40px;">
+                  <i class="mdi mdi-check text-white"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="card-title h6 mb-1 fw-semibold">{{ session.time_tracker_title }}</h5>
+                  <div class="d-flex flex-wrap gap-2 mb-2">
+                    <span class="badge bg-light text-dark">{{ session.times?.length || 0 }} stops</span>
+                    <span class="badge bg-light text-dark">{{ getSessionTotalTime(session) }}</span>
+                    <span class="badge bg-light text-dark">{{ session.created_date | date:'MMM d' }}</span>
+                  </div>
+                  <!-- Driver efficiency indicator -->
+                  <div class="d-flex align-items-center" *ngIf="getProductivityScore(session)">
+                    <div class="progress me-2" style="width: 60px; height: 4px;">
+                      <div class="progress-bar bg-success" 
+                           [style.width.%]="getProductivityScore(session)"></div>
+                    </div>
+                    <small class="text-success fw-medium">{{ getProductivityScore(session) }}% efficient</small>
+                  </div>
+                </div>
+                <i class="mdi mdi-chevron-right text-muted"></i>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Bottom Safe Area -->
-    <div class="safe-area-bottom"></div>
+    <div style="height: 120px;"></div>
   </div>
 
   <!-- Active Session -->
-  <div *ngIf="id" class="active-session-screen">
+  <div *ngIf="id" class="min-vh-100 bg-light">
     
-    <!-- Mobile Header -->
-    <div class="session-header">
-      <div class="header-content">
-        <div class="session-info">
-          <h1 class="session-title">{{ data?.title }}</h1>
-          <div class="session-meta">
-            <span class="created-by">
-              <i class="mdi mdi-account-circle"></i>
-              {{ data?.created_by_name }}
-            </span>
-            <span class="created-date">
-              <i class="mdi mdi-calendar"></i>
-              {{ data?.created_date | date:'MMM d, y' }}
-            </span>
+    <!-- Header -->
+    <div class="bg-primary text-white sticky-top shadow">
+      <div class="container py-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="flex-grow-1">
+            <h1 class="h5 mb-1 fw-bold">{{ data?.title }}</h1>
+            <div class="d-flex align-items-center gap-3 small opacity-75">
+              <span>
+                <i class="mdi mdi-account-circle me-1"></i>
+                {{ data?.created_by_name }}
+              </span>
+              <span>
+                <i class="mdi mdi-calendar me-1"></i>
+                {{ data?.created_date | date:'MMM d, y' }}
+              </span>
+            </div>
           </div>
-        </div>
-        <div class="header-actions">
           <button 
-            class="action-btn delete-btn" 
+            class="btn btn-outline-light btn-sm" 
             (click)="onDeleteMain()"
             *ngIf="!data?.completed_date">
             <i class="mdi mdi-delete"></i>
@@ -114,183 +463,367 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card primary">
-          <div class="stat-icon">
-            <i class="mdi mdi-format-list-numbered"></i>
+    <!-- Driver Performance Stats -->
+    <div class="bg-white border-bottom shadow-sm">
+      <div class="container py-3">
+        <div class="row g-3">
+          <!-- Stops Count -->
+          <div class="col-4">
+            <div class="card h-100 border-primary">
+              <div class="card-body text-center p-3">
+                <div class="text-primary mb-2">
+                  <i class="mdi mdi-map-marker fs-3"></i>
+                </div>
+                <div class="h4 mb-0 fw-bold text-primary">{{ times.length }}</div>
+                <small class="text-muted">Stops</small>
+                <!-- Trend indicator -->
+                <div class="mt-1" *ngIf="getEntryTrend()">
+                  <i class="mdi small" 
+                     [class.mdi-trending-up]="getEntryTrend() > 0" 
+                     [class.mdi-trending-down]="getEntryTrend() < 0"
+                     [class.text-success]="getEntryTrend() > 0"
+                     [class.text-danger]="getEntryTrend() < 0"></i>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ times.length }}</div>
-            <div class="stat-label">Entries</div>
+          
+          <!-- Total Drive Time -->
+          <div class="col-4">
+            <div class="card h-100 border-success">
+              <div class="card-body text-center p-3">
+                <div class="text-success mb-2">
+                  <i class="mdi mdi-clock fs-3"></i>
+                </div>
+                <div class="h4 mb-0 fw-bold text-success">{{ getTotalSessionTime() }}</div>
+                <small class="text-muted">Drive Time</small>
+                <!-- Average per stop -->
+                <div class="mt-1" *ngIf="times.length > 0">
+                  <small class="text-muted">{{ getAverageTimePerEntry() }} avg</small>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div class="stat-card success">
-          <div class="stat-icon">
-            <i class="mdi mdi-clock"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-number">{{ getTotalSessionTime() }}</div>
-            <div class="stat-label">Total Time</div>
-          </div>
-        </div>
-        
-        <div class="stat-card" [class.warning]="!data?.completed_date" [class.success]="data?.completed_date">
-          <div class="stat-icon">
-            <i class="mdi" [class.mdi-clock-outline]="!data?.completed_date" [class.mdi-check-circle]="data?.completed_date"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-status">{{ data?.completed_date ? 'Done' : 'Active' }}</div>
-            <div class="stat-label">Status</div>
+          
+          <!-- Route Status -->
+          <div class="col-4">
+            <div class="card h-100" 
+                 [class.border-warning]="!data?.completed_date" 
+                 [class.border-success]="data?.completed_date">
+              <div class="card-body text-center p-3">
+                <div class="mb-2" 
+                     [class.text-warning]="!data?.completed_date" 
+                     [class.text-success]="data?.completed_date">
+                  <i class="mdi fs-3" 
+                     [class.mdi-truck]="!data?.completed_date" 
+                     [class.mdi-check-circle]="data?.completed_date"></i>
+                </div>
+                <div class="h6 mb-0 fw-bold" 
+                     [class.text-warning]="!data?.completed_date" 
+                     [class.text-success]="data?.completed_date">
+                  {{ data?.completed_date ? 'Complete' : 'On Route' }}
+                </div>
+                <small class="text-muted">Status</small>
+                <!-- Live timer for active routes -->
+                <div class="mt-1" *ngIf="!data?.completed_date && getSessionStartTime()">
+                  <small class="text-primary fw-medium">{{ getElapsedTime() }}</small>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Time Entries -->
-    <div class="entries-section">
-      <div class="section-header">
-        <h3>Time Entries</h3>
-        <div class="entries-count">{{ times.length }}</div>
+    <!-- Route History -->
+    <div class="container py-4">
+      <!-- Section Header -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="h5 mb-0 fw-bold">Route History</h3>
+          <small class="text-muted">Your stops and activities today</small>
+        </div>
+        <div class="badge bg-primary rounded-pill">{{ times.length }} stops</div>
+      </div>
+      
+      <!-- Driver Performance Insights -->
+      <div *ngIf="times.length > 2" class="row g-3 mb-4">
+        <div class="col-4">
+          <div class="card border-0 bg-light">
+            <div class="card-body text-center p-3">
+              <div class="text-success mb-2">
+                <i class="mdi mdi-speedometer fs-4"></i>
+              </div>
+              <div class="fw-bold text-success">{{ times.length > 5 ? 'Excellent' : 'Good' }}</div>
+              <small class="text-muted">Efficiency</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-4">
+          <div class="card border-0 bg-light">
+            <div class="card-body text-center p-3">
+              <div class="text-info mb-2">
+                <i class="mdi mdi-map-marker-path fs-4"></i>
+              </div>
+              <div class="fw-bold text-info">{{ times.length * 15 }}%</div>
+              <small class="text-muted">Route Score</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-4">
+          <div class="card border-0 bg-light">
+            <div class="card-body text-center p-3">
+              <div class="text-primary mb-2">
+                <i class="mdi mdi-clock-start fs-4"></i>
+              </div>
+              <div class="fw-bold text-primary">{{ times[0]?.start_time | date:'h:mm a' }}</div>
+              <small class="text-muted">First Stop</small>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Empty State -->
-      <div *ngIf="!times.length" class="empty-entries">
-        <div class="empty-icon">
-          <i class="mdi mdi-clock-plus-outline"></i>
+      <div *ngIf="!times.length" class="text-center py-5">
+        <div class="mb-4">
+          <i class="mdi mdi-truck-plus text-muted" style="font-size: 4rem;"></i>
         </div>
-        <h4>No entries yet</h4>
-        <p>Tap "Add Entry" to start logging your time</p>
+        <h4 class="h5 mb-3">No stops logged yet</h4>
+        <p class="text-muted mb-4">Start tracking your route by adding your first stop</p>
+        <div class="row g-3 justify-content-center">
+          <div class="col-12 col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                  <div class="text-primary me-3">
+                    <i class="mdi mdi-map-marker-radius fs-5"></i>
+                  </div>
+                  <div>
+                    <div class="fw-medium">Log each stop location</div>
+                    <small class="text-muted">Track pickups and deliveries</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                  <div class="text-success me-3">
+                    <i class="mdi mdi-timer-outline fs-5"></i>
+                  </div>
+                  <div>
+                    <div class="fw-medium">Track drive time</div>
+                    <small class="text-muted">Monitor efficiency and fuel costs</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Entry List -->
-      <div *ngIf="times.length" class="entries-list">
+      <!-- Route Stops List -->
+      <div *ngIf="times.length" class="row g-3">
         <div 
-          class="entry-card" 
-          *ngFor="let entry of times; let i = index"
-          (click)="!data?.completed_date && edit(content, entry)"
-          [class.clickable]="!data?.completed_date">
-          
-          <div class="entry-header">
-            <div class="entry-number">#{{ i + 1 }}</div>
-            <div class="entry-duration">
-              {{ getTotalTime(entry.start_time, entry.end_time) }}
-            </div>
-          </div>
-          
-          <div class="entry-content">
-            <h4 class="entry-title">{{ entry.title }}</h4>
-            <div class="entry-time-range">
-              <div class="time-start">
-                <i class="mdi mdi-play-circle-outline"></i>
-                <span>{{ entry.start_time | date:'h:mm a' }}</span>
+          class="col-12" 
+          *ngFor="let entry of times; let i = index">
+          <div 
+            class="card h-100 border-0 shadow-sm" 
+            [class.border-warning]="!entry.end_time"
+            [class.bg-light]="entry.end_time"
+            (click)="!data?.completed_date && edit(content, entry)"
+            [style.cursor]="!data?.completed_date ? 'pointer' : 'default'">
+            
+            <div class="card-body p-3">
+              <!-- Entry Header -->
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                       style="width: 24px; height: 24px; font-size: 0.75rem;">
+                    {{ i + 1 }}
+                  </div>
+                  <div>
+                    <span 
+                      class="badge" 
+                      [class.bg-warning]="!entry.end_time"
+                      [class.bg-success]="entry.end_time"
+                      [class.text-dark]="!entry.end_time">
+                      {{ entry.end_time ? 'Complete' : 'On Route' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold text-primary">
+                    {{ getTotalTime(entry.start_time, entry.end_time) }}
+                  </div>
+                </div>
               </div>
-              <div class="time-separator">
-                <i class="mdi mdi-arrow-right"></i>
+              
+              <!-- Entry Content -->
+              <h5 class="card-title h6 mb-2">{{ entry.title }}</h5>
+              
+              <!-- Time Range -->
+              <div class="d-flex align-items-center gap-3 mb-2 small text-muted">
+                <div class="d-flex align-items-center gap-1">
+                  <i class="mdi mdi-play-circle-outline text-success"></i>
+                  <span>{{ entry.start_time | date:'h:mm a' }}</span>
+                </div>
+                <div>
+                  <i class="mdi mdi-arrow-right"></i>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <i class="mdi" 
+                     [class.mdi-stop-circle-outline]="entry.end_time" 
+                     [class.mdi-clock-outline]="!entry.end_time"
+                     [class.text-danger]="entry.end_time"
+                     [class.text-warning]="!entry.end_time"></i>
+                  <span>{{ entry.end_time ? (entry.end_time | date:'h:mm a') : 'Ongoing' }}</span>
+                </div>
               </div>
-              <div class="time-end">
-                <i class="mdi mdi-stop-circle-outline"></i>
-                <span>{{ entry.end_time | date:'h:mm a' }}</span>
+              
+              <!-- Entry Meta -->
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="small text-muted">
+                  <i class="mdi mdi-calendar-outline me-1"></i>
+                  {{ entry.start_time | date:'EEEE, MMM d' }}
+                </div>
+                <div *ngIf="entry.productivity_score" class="small">
+                  <span class="badge bg-info text-dark">
+                    <i class="mdi mdi-speedometer me-1"></i>
+                    {{ entry.productivity_score }}% efficient
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Edit Button -->
+              <div *ngIf="!data?.completed_date" class="position-absolute top-0 end-0 p-2">
+                <button 
+                  class="btn btn-outline-secondary btn-sm border-0"
+                  (click)="edit(content, entry); $event.stopPropagation()"
+                  title="Edit Stop">
+                  <i class="mdi mdi-pencil"></i>
+                </button>
               </div>
             </div>
-            <div class="entry-date">
-              {{ entry.start_time | date:'EEEE, MMM d' }}
-            </div>
-          </div>
-          
-          <div class="entry-action" *ngIf="!data?.completed_date">
-            <i class="mdi mdi-pencil"></i>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Floating Action Buttons -->
-    <div class="floating-actions">
-      <button 
-        *ngIf="times.length > 0"
-        class="fab secondary" 
-        (click)="finish()" 
-        [disabled]="data?.completed_date"
-        title="Complete Session">
-        <i class="mdi mdi-check"></i>
-      </button>
-      
-      <button 
-        class="fab primary" 
-        (click)="openBottom(content)"
-        [disabled]="data?.completed_date"
-        title="Add Time Entry">
-        <i class="mdi mdi-plus"></i>
-      </button>
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
+      <div class="d-flex flex-column gap-2">
+        <button 
+          *ngIf="times.length > 0"
+          class="btn btn-success rounded-circle shadow" 
+          style="width: 56px; height: 56px;"
+          (click)="finish()" 
+          [disabled]="data?.completed_date"
+          title="Complete Route">
+          <i class="mdi mdi-check fs-5"></i>
+        </button>
+        
+        <button 
+          class="btn btn-primary rounded-circle shadow" 
+          style="width: 56px; height: 56px;"
+          (click)="openBottom(content)"
+          [disabled]="data?.completed_date"
+          title="Add Stop">
+          <i class="mdi mdi-plus fs-5"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Bottom Safe Area -->
-    <div class="safe-area-bottom"></div>
+    <div style="height: 80px;"></div>
   </div>
 
   <!-- Enhanced Modal -->
   <ng-template #content let-offcanvas>
-    <div class="modern-modal">
-      <div class="modal-header">
-        <div class="modal-handle"></div>
-        <div class="modal-title-section">
-          <h2 class="modal-title">
-            {{ edit_id ? 'Edit Entry' : 'Add Time Entry' }}
-          </h2>
-          <p class="modal-subtitle">
-            {{ edit_id ? 'Update your time entry details' : 'Log your work time' }}
+    <div class="modal-content border-0 shadow">
+      <!-- Modal Header -->
+      <div class="modal-header bg-primary text-white">
+        <div class="w-100">
+          <div class="d-flex justify-content-center mb-2">
+            <div class="bg-white rounded-pill" style="width: 40px; height: 4px;"></div>
+          </div>
+          <h4 class="modal-title mb-1">
+            {{ edit_id ? 'Edit Stop' : 'Add Route Stop' }}
+          </h4>
+          <p class="mb-0 opacity-75 small">
+            {{ edit_id ? 'Update your stop details' : 'Log your pickup or delivery' }}
           </p>
         </div>
-        <button class="modal-close" (click)="offcanvas.dismiss()">
-          <i class="mdi mdi-close"></i>
-        </button>
+        <button type="button" class="btn-close btn-close-white" (click)="offcanvas.dismiss()"></button>
       </div>
       
-      <div class="modal-body">
-        <form class="entry-form">
+      <!-- Modal Body -->
+      <div class="modal-body p-4">
+        <form>
           
-          <!-- Task Input -->
-          <div class="form-group">
-            <label class="form-label">
-              <i class="mdi mdi-text"></i>
-              Task Description
+          <!-- Quick Activity Templates -->
+          <div class="mb-4" *ngIf="!edit_id">
+            <label class="form-label fw-bold">
+              <i class="mdi mdi-lightning-bolt text-warning me-2"></i>
+              Quick Activities
             </label>
-            <div class="input-wrapper">
+            <div class="d-flex flex-wrap gap-2">
+              <button 
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                (click)="name = template"
+                *ngFor="let template of ['Driving to Location', 'Customer Pickup', 'Delivery', 'Package Sorting', 'Fuel Stop', 'Route Planning']">
+                {{ template }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Activity Description -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">
+              <i class="mdi mdi-text-box text-primary me-2"></i>
+              Activity Description
+            </label>
+            <div class="position-relative">
               <input 
-                class="form-input" 
+                class="form-control form-control-lg" 
                 [(ngModel)]="name" 
                 name="taskName"
                 type="text" 
-                placeholder="Describe what you worked on..."
+                placeholder="e.g., Delivered packages to Main St..."
                 maxlength="100"
                 autofocus>
-              <div class="char-count">{{ name?.length || 0 }}/100</div>
+              <small class="position-absolute top-0 end-0 mt-2 me-3 text-muted">
+                {{ name?.length || 0 }}/100
+              </small>
             </div>
           </div>
 
           <!-- Time Inputs -->
-          <div class="time-inputs">
-            <div class="form-group">
-              <label class="form-label">
-                <i class="mdi mdi-clock-start"></i>
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label class="form-label fw-bold">
+                <i class="mdi mdi-play-circle text-success me-2"></i>
                 Start Time
               </label>
               <input 
-                class="form-input time-input" 
+                class="form-control" 
                 [(ngModel)]="start_time" 
                 name="startTime"
                 type="datetime-local">
             </div>
             
-            <div class="form-group">
-              <label class="form-label">
-                <i class="mdi mdi-clock-end"></i>
+            <div class="col-6">
+              <label class="form-label fw-bold">
+                <i class="mdi mdi-stop-circle text-danger me-2"></i>
                 End Time
               </label>
               <input 
-                class="form-input time-input" 
+                class="form-control" 
                 [(ngModel)]="end_time" 
                 name="endTime"
                 type="datetime-local">
@@ -298,39 +831,43 @@
           </div>
 
           <!-- Duration Display -->
-          <div *ngIf="start_time && end_time" class="duration-display">
-            <div class="duration-card">
-              <div class="duration-icon">
-                <i class="mdi mdi-timer"></i>
-              </div>
-              <div class="duration-info">
-                <div class="duration-label">Total Duration</div>
-                <div class="duration-value">{{ getTotalTime(start_time, end_time) }}</div>
+          <div *ngIf="start_time && end_time" class="mb-4">
+            <div class="card bg-light border-0">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                  <div class="text-info me-3">
+                    <i class="mdi mdi-timer fs-4"></i>
+                  </div>
+                  <div>
+                    <div class="small text-muted">Total Duration</div>
+                    <div class="h5 mb-0 text-info fw-bold">{{ getTotalTime(start_time, end_time) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Action Buttons -->
-          <div class="form-actions">
+          <div class="d-grid gap-2">
             <button 
               type="button" 
-              class="btn btn-primary" 
+              class="btn btn-primary btn-lg" 
               (click)="offcanvas.close({name, start_time, end_time})">
-              <i class="mdi mdi-check"></i>
-              {{ edit_id ? 'Update' : 'Save' }} Entry
+              <i class="mdi mdi-check me-2"></i>
+              {{ edit_id ? 'Update' : 'Save' }} Stop
             </button>
             
-            <div class="secondary-actions" *ngIf="edit_id">
+            <div class="d-flex gap-2" *ngIf="edit_id">
               <button 
                 type="button" 
-                class="btn btn-danger" 
+                class="btn btn-danger flex-fill" 
                 (click)="onDelete()">
-                <i class="mdi mdi-delete"></i>
+                <i class="mdi mdi-delete me-2"></i>
                 Delete
               </button>
               <button 
                 type="button" 
-                class="btn btn-secondary" 
+                class="btn btn-secondary flex-fill" 
                 (click)="offcanvas.dismiss()">
                 Cancel
               </button>
@@ -339,7 +876,7 @@
             <button 
               *ngIf="!edit_id"
               type="button" 
-              class="btn btn-secondary" 
+              class="btn btn-outline-secondary" 
               (click)="offcanvas.dismiss()">
               Cancel
             </button>
@@ -348,4 +885,3 @@
       </div>
     </div>
   </ng-template>
-</div>

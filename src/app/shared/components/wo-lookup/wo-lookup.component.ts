@@ -16,7 +16,7 @@ import { currencyFormatter } from "src/assets/js/util";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, LoadingComponent, SoSearchComponent],
+  imports: [SharedModule, AgGridModule, LoadingComponent],
   selector: "app-wo-lookup",
   templateUrl: `./wo-lookup.component.html`,
   styleUrls: ['./wo-lookup.component.scss'],

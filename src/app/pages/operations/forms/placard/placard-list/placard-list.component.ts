@@ -27,7 +27,6 @@ import { PlacardActionsCellRendererComponent } from "../placard-actions-cell-ren
     NgSelectModule,
     AgGridModule,
     DateRangeComponent,
-    PlacardActionsCellRendererComponent,
   ],
   selector: "app-placard-list",
   templateUrl: "./placard-list.component.html",
