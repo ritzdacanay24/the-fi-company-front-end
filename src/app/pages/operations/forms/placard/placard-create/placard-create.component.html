@@ -1,19 +1,80 @@
-<div class="row">
-  <div class="content-grid col-sm-12 col-md-12 col-lg-12 col-xl-12 col-xxl-10 col-xxxl-12">
-    <div class="card">
-      <div class="card-header d-flex align-items-center">
-        <button class="btn btn-light btn-sm shadow-none bg-light rounded border-0 me-2 me-auto" *ngIf="goBack"
-          (click)="goBack()"><i class="mdi mdi-arrow-left pointer text-muted"></i> Back</button>
-        <h4 class="card-title mb-0 flex-grow-1 text-end"> {{title}} </h4>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              <i class="mdi mdi-home-outline me-1"></i>Operations
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); onCancel()">
+              Placard Management
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create New Placard
+          </li>
+        </ol>
+      </nav>
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="goBack()"
+            *ngIf="goBack"
+            title="Back to Placard List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-plus text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-primary">{{title}}</h2>
+            <p class="text-body-secondary mb-0">Create a new work order placard with comprehensive tracking information</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Creating a New Placard</h6>
+              <p class="mb-0">
+                Complete all required fields to generate a work order placard. 
+                Ensure accurate <strong>customer information</strong> and <strong>part details</strong> for proper tracking and processing.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body" style="min-height:300px">
-        <app-placard-form (setFormEmitter)="setFormEmitter($event)"
-          [submitted]="submitted"></app-placard-form>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <app-placard-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-placard-form>
+        </div>
+        
+        <div class="card-footer bg-body-tertiary border-top d-flex p-3">
+          <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Cancel
+          </button>
+          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Creating Placard...
+            } @else {
+              <i class="mdi mdi-check-circle-outline me-1"></i>Create Placard
+            }
+          </button>
+        </div>
       </div>
-      <div class="card-footer d-flex d-flex justify-content-between">
-        <button class="btn btn-light" [disabled]="isLoading" (click)="onCancel()">Cancel</button>
-        <button class="btn btn-primary" [disabled]="isLoading" (click)="onSubmit()">Submit</button>
-      </div>
+      
     </div>
   </div>
 </div>

@@ -19,7 +19,7 @@ import { currencyFormatter } from "src/assets/js/util";
   imports: [SharedModule, AgGridModule, LoadingComponent, SoSearchComponent],
   selector: "app-wo-lookup",
   templateUrl: `./wo-lookup.component.html`,
-  styleUrls: [],
+  styleUrls: ['./wo-lookup.component.scss'],
 })
 export class WoLookupComponent {
   transactions: any = [];
@@ -31,6 +31,7 @@ export class WoLookupComponent {
   ) {}
 
   @Input() public wo_nbr: string = "";
+  @Input() public triggerSearch: boolean = false;
   @Output() setData: EventEmitter<any> = new EventEmitter();
   @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
@@ -45,12 +46,18 @@ export class WoLookupComponent {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["wo_nbr"]) {
       this.wo_nbr = changes["wo_nbr"].currentValue;
-      if (this.wo_nbr) this.getData();
+      // Don't automatically search on input changes
+      // The parent will control when to search via triggerSearch
+    }
+
+    if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.wo_nbr) {
+      this.getData();
     }
 
     if (changes["comment"] && changes["comment"].currentValue) {
       this.viewComment(changes["comment"].currentValue, null);
       this.wo_nbr = changes["comment"].currentValue.split("-")[0];
+      // Only search for comments, not regular input changes
       this.getData();
     }
   }
@@ -253,15 +260,21 @@ export class WoLookupComponent {
                 100
               ).toFixed(2)
             : 0;
+        
+        // Emit the actual data, not the function reference
+        this.setData.emit(this.data);
       },
       (error) => {
         this.isLoading = false;
         this.isLoadingEmitter.emit(this.isLoading);
+        // Emit error or empty data
+        this.setData.emit(null);
       }
     );
   };
   ngOnInit() {
-    this.setData.emit(this.getData);
+    // Don't emit the function reference, the parent doesn't need this
+    // this.setData.emit(this.getData);
   }
 
   dismiss() {}

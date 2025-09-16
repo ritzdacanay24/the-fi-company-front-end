@@ -11,7 +11,8 @@ declare var JsBarcode: any;
   standalone: true,
   imports: [SharedModule, QRCodeComponent],
   selector: 'app-placard-summary',
-  templateUrl: './placard-summary.component.html'
+  templateUrl: './placard-summary.component.html',
+  styleUrls: ['./placard-summary.component.scss']
 })
 export class PlacardSummaryComponent implements OnInit, AfterViewInit {
   

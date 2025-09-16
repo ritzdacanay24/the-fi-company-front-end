@@ -8,6 +8,7 @@ import { WoLookupPageComponent } from "./wo-lookup-page/wo-lookup-page.component
 import { UniversalSearchComponent } from "./universal-search/universal-search.component";
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { LocationLookupComponent } from "./location-lookup/location-lookup.component";
+import { UniversalLookupComponent } from "@app/shared/components/universal-lookup/universal-lookup.component";
 
 const routes: Routes = [
   {
@@ -22,8 +23,8 @@ const routes: Routes = [
   },
   {
     title: "Universal Search",
-    path: "universal-search",
-    component: UniversalSearchComponent,
+    path: "universal-lookup",
+    component: UniversalLookupComponent,
     runGuardsAndResolvers: "always",
   },
   {
@@ -96,7 +97,6 @@ const routes: Routes = [
       import("./material-request/material-request-routing.module").then(
         (m) => m.MaterialRequestRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {
@@ -150,7 +150,6 @@ const routes: Routes = [
       import("./org-chart/org-chart-routing.module").then(
         (m) => m.OrgChartRoutingModule
       ),
-    canActivate: [AccessGuard],
     runGuardsAndResolvers: "always",
   },
   {

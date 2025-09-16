@@ -7,6 +7,7 @@ import { MaterialRequestEditComponent } from "./material-request-edit/material-r
 import { MaterialRequestCreateComponent } from "./material-request-create/material-request-create.component";
 import { MaterialRequestPickingComponent } from "./material-request-picking/material-request-picking.component";
 import { MaterialRequestValidateListComponent } from "./material-request-validate-list/material-request-validate-list.component";
+import { MaterialRequestViewComponent } from "./material-request-view/material-request-view.component";
 
 const routes: Routes = [
   {
@@ -22,6 +23,11 @@ const routes: Routes = [
         title: "List MR",
         path: "list",
         component: MaterialRequestListComponent,
+      },
+      {
+        title: "View MR",
+        path: "view",
+        component: MaterialRequestViewComponent,
       },
       {
         title: "Edit MR",

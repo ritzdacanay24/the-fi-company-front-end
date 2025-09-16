@@ -1,0 +1,155 @@
+.label-card {
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    border-color: var(--bs-primary);
+    
+    .label-icon {
+      transform: scale(1.1);
+      background: var(--bs-primary) !important;
+      
+      i {
+        color: white !important;
+      }
+    }
+  }
+  
+  &.card-selected {
+    border-color: var(--bs-primary);
+    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.05) 0%, rgba(var(--bs-primary-rgb), 0.02) 100%);
+  }
+  
+  &.card-favorite {
+    border-left: 4px solid #ffc107;
+    
+    &:hover {
+      border-color: #ffc107;
+    }
+  }
+  
+  .card-title {
+    font-weight: 600;
+    color: var(--bs-dark);
+  }
+}
+
+// Favorite star button styling
+.btn-link {
+  border: none !important;
+  
+  &:hover {
+    background: none !important;
+    
+    i {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Favorite badge positioning
+.position-absolute.top-0.start-0 {
+  .badge {
+    border-radius: 0 8px 8px 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+}
+
+// Label preview image container
+.label-preview {
+  min-height: 120px;
+  
+  img {
+    transition: all 0.2s ease;
+    border: 1px solid #e9ecef;
+    
+    &:hover {
+      transform: scale(1.02);
+      border-color: var(--bs-primary);
+    }
+  }
+}
+
+.label-specs {
+  min-height: 40px;
+}
+
+.label-icon {
+  transition: all 0.2s ease;
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .label-card {
+    .btn-sm {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .card-body {
+      padding: 1rem !important;
+    }
+  }
+  
+  .label-preview {
+    min-height: 100px;
+    
+    img {
+      max-height: 100px !important;
+    }
+  }
+}
+
+// Print queue floating panel
+.position-fixed.bottom-0 {
+  z-index: 1050;
+  
+  .card {
+    animation: slideUp 0.3s ease-out;
+    border-radius: 12px;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+// Enhanced search section
+.form-icon {
+  position: relative;
+  
+  .form-control-icon {
+    transition: all 0.2s ease;
+    
+    &:focus {
+      border-color: var(--bs-primary);
+      box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+  }
+}
+
+// Category badges
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+// Status indicators
+.position-absolute.top-0.end-0 {
+  .badge {
+    border-radius: 0 0 0 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+}

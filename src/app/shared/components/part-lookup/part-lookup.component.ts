@@ -29,6 +29,8 @@ export class PartLookupComponent {
   isLoading = false;
   itemInfo: any;
 
+  @Input() partNumber: string;
+  @Input() public triggerSearch: boolean = false;
   @Output() setData: EventEmitter<any> = new EventEmitter();
   @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
@@ -42,11 +44,13 @@ export class PartLookupComponent {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["partNumber"]) {
       this.partNumber = changes["partNumber"].currentValue;
-      if (this.partNumber) this.getData();
+      // Don't automatically search on input changes
+    }
+
+    if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.partNumber) {
+      this.getData();
     }
   }
-
-  @Input() partNumber: string;
 
   locationcolumnDefs: ColDef[] = [
     { field: "LD_LOC", headerName: "Location", filter: "agTextColumnFilter" },
@@ -454,23 +458,129 @@ export class PartLookupComponent {
       this.isLoading = false;
       this.isLoadingEmitter.emit(this.isLoading);
       this.hasDataEmitter.emit(data.itemInfo);
+      
+      // Emit the actual data object, not the function
+      this.setData.emit(data);
     } catch (err) {
       this.isLoading = false;
       this.isLoadingEmitter.emit(this.isLoading);
+      // Emit error or empty data
+      this.setData.emit(null);
     }
   };
   ngOnInit() {
-    if (this.isItemNumberInvalid()) {
-      this.dismiss();
-    } else {
-      this.getData();
-      this.setData.emit(this.getData);
-    }
+    // Don't auto-search on init unless explicitly triggered
+    // if (this.isItemNumberInvalid()) {
+    //   this.dismiss();
+    // } else {
+    //   this.getData();
+    // }
 
-    this.getDataEmitter.emit(this.getData);
+    // Don't emit function reference
+    // this.getDataEmitter.emit(this.getData);
   }
 
   public dismiss() {}
 
   public close() {}
+
+  // Helper methods for status badge styling
+  getWorkOrderStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'F':
+      case 'FIRM':
+        return 'bg-success';
+      case 'C':
+      case 'CLOSED':
+        return 'bg-secondary';
+      case 'H':
+      case 'HOLD':
+        return 'bg-warning';
+      case 'X':
+      case 'CANCELLED':
+        return 'bg-danger';
+      default:
+        return 'bg-info';
+    }
+  }
+
+  getWorkOrderStatusText(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'F':
+        return 'Firm';
+      case 'C':
+        return 'Closed';
+      case 'H':
+        return 'Hold';
+      case 'X':
+        return 'Cancelled';
+      default:
+        return status || 'Unknown';
+    }
+  }
+
+  getOrderStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'OPEN':
+      case 'CONFIRMED':
+        return 'bg-success';
+      case 'SHIPPED':
+      case 'COMPLETED':
+        return 'bg-primary';
+      case 'CANCELLED':
+        return 'bg-danger';
+      case 'ON HOLD':
+        return 'bg-warning';
+      default:
+        return 'bg-info';
+    }
+  }
+
+  getPurchaseOrderStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'OPEN':
+      case 'CONFIRMED':
+        return 'bg-success';
+      case 'RECEIVED':
+      case 'CLOSED':
+        return 'bg-primary';
+      case 'CANCELLED':
+        return 'bg-danger';
+      case 'PARTIAL':
+        return 'bg-warning';
+      default:
+        return 'bg-info';
+    }
+  }
+
+  getShortageStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'OPEN':
+      case 'PENDING':
+        return 'bg-danger';
+      case 'PARTIAL':
+        return 'bg-warning';
+      case 'FILLED':
+      case 'COMPLETED':
+        return 'bg-success';
+      case 'CANCELLED':
+        return 'bg-secondary';
+      default:
+        return 'bg-info';
+    }
+  }
+
+  getPriorityClass(priority: string): string {
+    switch (priority?.toUpperCase()) {
+      case 'HIGH':
+      case 'URGENT':
+        return 'bg-danger';
+      case 'MEDIUM':
+        return 'bg-warning';
+      case 'LOW':
+        return 'bg-success';
+      default:
+        return 'bg-info';
+    }
+  }
 }

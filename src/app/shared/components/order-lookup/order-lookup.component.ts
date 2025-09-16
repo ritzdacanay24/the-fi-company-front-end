@@ -9,14 +9,13 @@ import { SalesOrderInfoService } from "@app/core/api/sales-order/sales-order-inf
 import { AgGridModule } from "ag-grid-angular";
 import { SharedModule } from "@app/shared/shared.module";
 import { LoadingComponent } from "@app/shared/loading/loading.component";
-import { SoSearchComponent } from "@app/shared/components/so-search/so-search.component";
 import { CommentsRendererComponent } from "@app/shared/ag-grid/comments-renderer/comments-renderer.component";
 import { CommentsModalService } from "../comments/comments-modal.service";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 
 @Component({
   standalone: true,
-  imports: [SharedModule, AgGridModule, LoadingComponent, SoSearchComponent],
+  imports: [SharedModule, AgGridModule, LoadingComponent],
   selector: "app-order-lookup",
   templateUrl: `./order-lookup.component.html`,
   styleUrls: [],
@@ -31,6 +30,7 @@ export class OrderLookupComponent {
   ) {}
 
   @Input() public salesOrderNumber: string = "";
+  @Input() public triggerSearch: boolean = false;
   @Output() setData: EventEmitter<any> = new EventEmitter();
   @Output() isLoadingEmitter: EventEmitter<any> = new EventEmitter();
   @Output() hasDataEmitter: EventEmitter<any> = new EventEmitter();
@@ -45,7 +45,11 @@ export class OrderLookupComponent {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["salesOrderNumber"]) {
       this.salesOrderNumber = changes["salesOrderNumber"].currentValue;
-      if (this.salesOrderNumber) this.getData();
+      // Don't automatically search on input changes
+    }
+
+    if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.salesOrderNumber) {
+      this.getData();
     }
 
     if (changes["comment"] && changes["comment"].currentValue) {
@@ -375,15 +379,35 @@ export class OrderLookupComponent {
           this.isLoading = false;
           this.isLoadingEmitter.emit(this.isLoading);
           this.hasDataEmitter.emit(this.data?.main?.SO_NBR !== "");
+          
+          // Emit the actual data, not the function reference
+          this.setData.emit(this.data);
         },
         (error) => {
           this.isLoading = false;
           this.isLoadingEmitter.emit(this.isLoading);
+          // Emit error or empty data
+          this.setData.emit(null);
         }
       );
   };
   ngOnInit() {
-    this.setData.emit(this.getData);
+    // Don't emit the function reference
+    // this.setData.emit(this.getData);
+  }
+
+  getActivityTooltip(comments: any): string {
+    if (!comments) return 'No activity available';
+    
+    const date = comments.byDate || comments.createdDate || 'Unknown date';
+    const user = comments.created_by_name || 'Unknown user';
+    const content = comments.comments_html || comments.comments || 'No content';
+    
+    // Strip HTML tags for tooltip and limit length
+    const strippedContent = content.replace(/<[^>]*>/g, '').substring(0, 200);
+    const truncatedContent = strippedContent.length > 200 ? strippedContent + '...' : strippedContent;
+    
+    return `${user} - ${date}\n${truncatedContent}`;
   }
 
   dismiss() {}

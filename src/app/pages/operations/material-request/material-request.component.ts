@@ -35,6 +35,14 @@ export class MaterialRequestComponent implements OnInit {
       textClass: 'text-primary',
       showRefresh: true
     },
+    'view': {
+      title: 'View Material Request',
+      description: 'View detailed information about a material request',
+      icon: 'mdi mdi-eye',
+      bgClass: 'bg-info bg-gradient',
+      textClass: 'text-info',
+      showRefresh: false
+    },
     'create': {
       title: 'Create Material Request',
       description: 'Create a new material request for production needs',

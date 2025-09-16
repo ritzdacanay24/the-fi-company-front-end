@@ -68,8 +68,21 @@ export class MaterialRequestListComponent implements OnInit {
       pinned: "left",
       cellRenderer: LinkRendererV2Component,
       cellRendererParams: {
+        onClick: (e: any) => this.onView(e.rowData.id),
+        value: "VIEW",
+      },
+      maxWidth: 115,
+      minWidth: 115,
+    },
+    {
+      field: "Edit",
+      headerName: "Edit",
+      filter: "agMultiColumnFilter",
+      pinned: "left",
+      cellRenderer: LinkRendererV2Component,
+      cellRendererParams: {
         onClick: (e: any) => this.onEdit(e.rowData.id),
-        value: "SELECT",
+        value: "EDIT",
       },
       maxWidth: 115,
       minWidth: 115,
@@ -225,6 +238,17 @@ export class MaterialRequestListComponent implements OnInit {
       },
     });
   };
+
+  onView(id) {
+    let gridParams = _compressToEncodedURIComponent(this.gridApi);
+    this.router.navigate([NAVIGATION_ROUTE.VIEW], {
+      queryParamsHandling: "merge",
+      queryParams: {
+        id: id,
+        gridParams,
+      },
+    });
+  }
 
   onEdit(id) {
     let gridParams = _compressToEncodedURIComponent(this.gridApi);

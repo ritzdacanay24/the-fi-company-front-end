@@ -1,106 +1,432 @@
-    <div class="modal-body" *ngIf="isLoading">
+<!-- Loading State -->
+<div *ngIf="isLoading" class="d-flex justify-content-center align-items-center py-4">
     <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 </div>
 
-<div *ngIf="!isLoading && itemInfo && itemInfo.pt_part">
-    <div class="row">
-        <div class="col-sm">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h4 class="card-title mb-0 flex-grow-1">Part Information </h4>
+<!-- No Results Message -->
+<div *ngIf="!isLoading && !itemInfo?.pt_part" class="text-center py-4">
+    <div class="text-muted">
+        <i class="mdi mdi-file-search-outline fs-2 d-block mb-2"></i>
+        <h6 class="text-muted">Part Not Found</h6>
+        <p class="small mb-0">The requested part could not be located.</p>
+    </div>
+</div>
+
+<!-- Part Summary -->
+<div *ngIf="!isLoading && itemInfo && itemInfo.pt_part" class="part-summary">
+    
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-primary text-white rounded">
+                <div class="d-flex align-items-center text-white">
+                    <i class="mdi mdi-package-variant fs-4 me-3"></i>
+                    <div>
+                        <h5 class="mb-0 text-white">{{itemInfo.pt_part}}</h5>
+                        <small class="opacity-75">Part Number</small>
                     </div>
                 </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                        <li class="list-group-item border-0 p-1">Part #: {{itemInfo.pt_part}}</li>
-                        <li class="list-group-item border-0 p-1">Desc: {{itemInfo.pt_desc1}} {{itemInfo.pt_desc2}}</li>
-                        <li class="list-group-item border-0 p-1">Part Price: {{itemInfo.PT_PRICE | currency}}</li>
-                        <li class="list-group-item border-0 p-1">PM Code: {{itemInfo.pt_pm_code}}</li>
-                    </ul>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark">{{total}} On Hand</span>
                 </div>
             </div>
         </div>
-        <div class="col-sm">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <h4 class="card-title mb-0 flex-grow-1">Item Summary </h4>
+    </div>
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Part Info</h6>
+                <div class="small">
+                    <div><strong>Part #:</strong> {{itemInfo.pt_part}}</div>
+                    <div><strong>Description:</strong> {{itemInfo.FULLDESC || (itemInfo.pt_desc1 + ' ' + itemInfo.pt_desc2)}}</div>
+                    <div><strong>Price:</strong> {{itemInfo.PT_PRICE | currency}}</div>
+                    <div><strong>PM Code:</strong> 
+                        <span class="badge bg-info">{{itemInfo.pt_pm_code}}</span>
+                    </div>
+                    <div><strong>Status:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': itemInfo.pt_status === 'ACTIVE',
+                            'bg-secondary': itemInfo.pt_status !== 'ACTIVE'
+                        }">{{itemInfo.pt_status}}</span>
                     </div>
                 </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                        <li class="list-group-item border-0 p-1">Total On Hand: {{total}}</li>
-                        <li class="list-group-item border-0 p-1">Order Demand: {{totalDemand}}</li>
-                        <li class="list-group-item border-0 p-1">Work Order Demand: {{workOrderSum}}</li>
-                        <li class="list-group-item border-0 p-1">Value On Hand: {{total*itemInfo.PT_PRICE | currency}}
-                        </li>
-                    </ul>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Inventory</h6>
+                <div class="small">
+                    <div><strong>On Hand:</strong> {{total}}</div>
+                    <div><strong>Order Demand:</strong> {{totalDemand}}</div>
+                    <div><strong>WO Demand:</strong> {{workOrderSum}}</div>
+                    <div><strong>Available:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': (total - totalDemand - workOrderSum) > 0,
+                            'bg-warning text-dark': (total - totalDemand - workOrderSum) === 0,
+                            'bg-danger': (total - totalDemand - workOrderSum) < 0
+                        }">{{total - totalDemand - workOrderSum}}</span>
+                    </div>
+                    <div><strong>Unit of Measure:</strong> {{itemInfo.pt_um}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Demand</h6>
+                <div class="small">
+                    <div><strong>Sales Orders:</strong> {{totalDemand}}</div>
+                    <div><strong>Work Orders:</strong> {{workOrderSum}}</div>
+                    <div><strong>Total Demand:</strong> {{totalDemand + workOrderSum}}</div>
+                    <div><strong>Demand %:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-danger': ((totalDemand + workOrderSum) / total * 100) > 80,
+                            'bg-warning text-dark': ((totalDemand + workOrderSum) / total * 100) > 50 && ((totalDemand + workOrderSum) / total * 100) <= 80,
+                            'bg-success': ((totalDemand + workOrderSum) / total * 100) <= 50
+                        }">{{total > 0 ? ((totalDemand + workOrderSum) / total * 100 | number:'1.0-0') : 0}}%</span>
+                    </div>
+                    <div><strong>ABC Class:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': itemInfo.pt_abc === 'A',
+                            'bg-warning text-dark': itemInfo.pt_abc === 'B',
+                            'bg-info': itemInfo.pt_abc === 'C'
+                        }">{{itemInfo.pt_abc}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Financial & Details</h6>
+                <div class="small">
+                    <div><strong>Unit Price:</strong> {{itemInfo.PT_PRICE | currency}}</div>
+                    <div><strong>Value on Hand:</strong> {{total * itemInfo.PT_PRICE | currency}}</div>
+                    <div><strong>Demand Value:</strong> {{(totalDemand + workOrderSum) * itemInfo.PT_PRICE | currency}}</div>
+                    <div><strong>Available Value:</strong> {{(total - totalDemand - workOrderSum) * itemInfo.PT_PRICE | currency}}</div>
+                    <div><strong>Part Type:</strong> {{itemInfo.pt_part_type}}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex align-items-center justify-content-between">
-                <h4 class="card-title mb-0 flex-grow-1">Location Details </h4>
-                <button class="btn btn-primary btn-sm" (click)='printLocationDetails()'
-                    *ngIf="locationDet.length > 0">Print</button>
+    <!-- Location Details Table -->
+    <div class="row mb-3" *ngIf="locationDet.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Location Details ({{locationDet.length}} locations)</h6>
+                    <button class="btn btn-outline-primary btn-sm" (click)='printLocationDetails()'>
+                        <i class="mdi mdi-printer me-1"></i>Print
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Location</th>
+                                <th>On Hand</th>
+                                <th>Allocated</th>
+                                <th>Available</th>
+                                <th>Lot #</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of locationDet">
+                                <td><strong>{{row.LD_LOC?.trim()}}</strong></td>
+                                <td class="text-end">{{row.LD_QTY_OH}}</td>
+                                <td class="text-end">{{row.LD_QTY_ALL}}</td>
+                                <td class="text-end">{{row.AVAILABLE || (row.LD_QTY_OH - row.LD_QTY_ALL)}}</td>
+                                <td>{{row.LD_LOT || '-'}}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': row.LD_STATUS === 'ACTINV' || row.LD_STATUS === 'A',
+                                        'bg-secondary': row.LD_STATUS !== 'ACTINV' && row.LD_STATUS !== 'A'
+                                    }">
+                                        {{row.LD_STATUS === 'ACTINV' ? 'Active' : row.LD_STATUS}}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <div class="card-body p-0">
-            <ag-grid-angular *ngIf="locationDet.length > 0" class="ag-theme-quartz no-border w-100"
-                [gridOptions]="gridOptions" [rowData]="locationDet">
-            </ag-grid-angular>
-        </div>
-        <div class="card-body" *ngIf="locationDet.length == 0">
-            <h5 *ngIf="!isLoading" class="text-danger">No location info found.</h5>
+    </div>
+
+    <!-- No Location Data State -->
+    <div class="row mb-3" *ngIf="locationDet.length == 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Location Details</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-map-marker-off fs-2 d-block mb-2"></i>
+                        <h6 class="text-muted">No Location Data</h6>
+                        <p class="small mb-0">No location information is available for this part.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header ">
-            <h4 class="card-title mb-0 flex-grow-1">Work Order Details</h4>
-        </div>
-        <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="woResults.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="woResults"
-                [gridOptions]="gridOptions3">
-            </ag-grid-angular>
-        </div>
-        <div class="card-body " *ngIf="woResults.length == 0">
-            <h5 *ngIf="!isLoading" class="text-danger">No work order info found.</h5>
+    <!-- Work Order Details Table -->
+    <div class="row mb-3" *ngIf="woResults?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Work Order Details ({{woResults.length}} orders)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>WO Number</th>
+                                <th>Qty Ordered</th>
+                                <th>Qty Completed</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of woResults">
+                                <td><strong>{{row.wr_nbr}}</strong></td>
+                                <td class="text-end">{{row.WR_QTY_ORD}}</td>
+                                <td class="text-end">{{row.WR_QTY_COMP}}</td>
+                                <td>{{row.WR_DUE | date:'shortDate'}}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': row.WR_STATUS === 'C',
+                                        'bg-warning text-dark': row.WR_STATUS === 'R',
+                                        'bg-info': row.WR_STATUS === 'O',
+                                        'bg-secondary': row.WR_STATUS === 'P',
+                                        'bg-primary': row.WR_STATUS === 'F'
+                                    }">
+                                        {{getWorkOrderStatusText(row.WR_STATUS) || row.WR_STATUS}}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header ">
-            <h4 class="card-title mb-0 flex-grow-1">Order Demand Details</h4>
-        </div>
-        <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="demand?.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="demand"
-                [gridOptions]="gridOptions4" style="height: calc(100vh - 300px);">
-            </ag-grid-angular>
-        </div>
-        <div class="card-body " *ngIf="demand?.length == 0">
-            <h5 *ngIf="!isLoading" class="text-danger">No order info found.</h5>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header ">
-            <h4 class="card-title mb-0 flex-grow-1">Purchase Order Details</h4>
-        </div>
-        <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="poResults.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="poResults"
-                [gridOptions]="gridOptions2">
-            </ag-grid-angular>
-        </div>
-        <div class="card-body " *ngIf="poResults.length == 0">
-            <h5 *ngIf="!isLoading" class="text-danger">No purchase order info found.</h5>
+    <!-- No Work Orders State -->
+    <div class="row mb-3" *ngIf="!woResults?.length">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Work Order Details</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-wrench-outline fs-2 d-block mb-2"></i>
+                        <h6 class="text-muted">No Work Orders</h6>
+                        <p class="small mb-0">No work order information is available for this part.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Order Demand Details Table -->
+    <div class="row mb-3" *ngIf="demand?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Order Demand Details ({{demand.length}} orders)</h6>
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="sticky-top">
+                            <tr class="table-light">
+                                <th>SO Number</th>
+                                <th>Due Date</th>
+                                <th>Ordered</th>
+                                <th>Picked</th>
+                                <th>Shipped</th>
+                                <th>Open Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of demand">
+                                <td><strong>{{row.sod_nbr}}</strong></td>
+                                <td>{{row.SOD_DUE_DATE | date:'shortDate'}}</td>
+                                <td class="text-end">{{row.TOTALORDERED}}</td>
+                                <td class="text-end">{{row.TOTALPICKED}}</td>
+                                <td class="text-end">{{row.TOTALSHIPPED}}</td>
+                                <td class="text-end">{{row.OPENBALANCE}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Order Demand State -->
+    <div class="row mb-3" *ngIf="!demand?.length">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Order Demand Details</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-package-variant-closed fs-2 d-block mb-2"></i>
+                        <h6 class="text-muted">No Order Demand</h6>
+                        <p class="small mb-0">No order demand information is available for this part.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Order Details Table -->
+    <div class="row mb-3" *ngIf="poResults?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Purchase Order Details ({{poResults.length}} orders)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>PO Number</th>
+                                <th>Vendor</th>
+                                <th>Ordered Date</th>
+                                <th>Due Date</th>
+                                <th>Ordered Qty</th>
+                                <th>Ship Via</th>
+                                <th>Buyer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of poResults">
+                                <td><strong>{{row.pod_nbr}}</strong></td>
+                                <td>{{row.po_vend}}</td>
+                                <td>{{row.po_ord_date | date:'shortDate'}}</td>
+                                <td>{{row.pod_due_date | date:'shortDate'}}</td>
+                                <td class="text-end">{{row.pod_qty_ord}}</td>
+                                <td>{{row.po_shipvia}}</td>
+                                <td>{{row.po_buyer}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Purchase Orders State -->
+    <div class="row mb-3" *ngIf="!poResults?.length">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Purchase Order Details</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-cart-outline fs-2 d-block mb-2"></i>
+                        <h6 class="text-muted">No Purchase Orders</h6>
+                        <p class="small mb-0">No purchase order information is available for this part.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Open Shortage Request Details Table -->
+    <div class="row mb-3" *ngIf="shortages?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Open Shortage Requests ({{shortages.length}} requests)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Request ID</th>
+                                <th>Part Number</th>
+                                <th>Qty Requested</th>
+                                <th>Qty Filled</th>
+                                <th>Request Date</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of shortages">
+                                <td><strong>{{row.request_id}}</strong></td>
+                                <td>{{row.pt_part}}</td>
+                                <td class="text-end">{{row.qty_requested}}</td>
+                                <td class="text-end">{{row.qty_filled || 0}}</td>
+                                <td>{{row.request_date | date:'shortDate'}}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="getPriorityClass(row.priority)">
+                                        {{row.priority}}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge" [ngClass]="getShortageStatusClass(row.status)">
+                                        {{row.status}}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Shortage Requests State -->
+    <div class="row mb-3" *ngIf="!shortages?.length">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Open Shortage Requests</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-check-circle fs-2 d-block mb-2 text-success"></i>
+                        <h6 class="text-success">No Outstanding Shortages</h6>
+                        <p class="small mb-0">No open shortage requests found for this part.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="row" *ngIf="locationDet?.length > 0 || woResults?.length > 0 || demand?.length > 0 || poResults?.length > 0">
+        <div class="col-md-6" *ngIf="locationDet?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Location Summary</h6>
+                <div class="small">
+                    <div><strong>Total Locations:</strong> {{locationDet.length}}</div>
+                    <div><strong>Total On Hand:</strong> {{total}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" *ngIf="woResults?.length > 0 || demand?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Activity Summary</h6>
+                <div class="small">
+                    <div><strong>Work Orders:</strong> {{woResults.length}}</div>
+                    <div><strong>Sales Orders:</strong> {{demand.length}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Section (Hidden) -->
     <div class="print d-none d-print-block" id="print">
         <h4>Part #: {{partNumber}}</h4>
         <h3>Description: {{itemInfo?.pt_desc1}} {{itemInfo?.pt_desc12}}</h3>
@@ -126,17 +452,4 @@
         </table>
     </div>
 
-    <div class="card">
-        <div class="card-header ">
-            <h4 class="card-title mb-0 flex-grow-1">Open Shortage Request Details</h4>
-        </div>
-        <div class="card-body  p-0">
-            <ag-grid-angular *ngIf="shortages?.length > 0" class="ag-theme-quartz no-border w-100" [rowData]="shortages"
-                [gridOptions]="gridOptions5">
-            </ag-grid-angular>
-        </div>
-        <div class="card-body " *ngIf="shortages?.length == 0">
-            <h5 *ngIf="!isLoading" class="text-danger">No open shortage requests found.</h5>
-        </div>
-    </div>
 </div>

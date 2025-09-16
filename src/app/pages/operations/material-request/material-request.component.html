@@ -1,59 +1,356 @@
-<!-- Material Request Navigation -->
-<div class="container-fluid p-0">
-    <div class="border-bottom shadow-sm pb-2">
-        <div class="container-fluid px-4">
-            <div class="d-flex align-items-center justify-content-between py-3">
-                <!-- Dynamic Module Title -->
-                <div class="d-flex align-items-center" *ngIf="getCurrentPageInfo() as pageInfo">
-                    <div class="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                        [ngClass]="pageInfo.bgClass" style="width: 42px; height: 42px;">
-                        <i [class]="pageInfo.icon + ' text-white'"></i>
-                    </div>
-                    <div>
-                        <h4 class="mb-0" [ngClass]="pageInfo.textClass">{{pageInfo.title}}</h4>
-                        <small class="text-muted">{{pageInfo.description}}</small>
-                    </div>
-                </div>
+<!-- Material Request Header Section -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card mt-n4 mp-n5 mx-n4 rounded-0 shadow-none">
+      <div class="bg-light-subtle bg-gradient position-relative">
+        <!-- Background Pattern -->
+        <div class="position-absolute" style="top: -88px; right: -11px; opacity: 0.03;">
+          <i class="mdi mdi-clipboard-list" style="font-size: 18rem; transform: rotate(15deg);"></i>
+        </div>
 
-                <!-- Action Buttons -->
-                <div class="ms-auto" *ngIf="getCurrentPageInfo() as pageInfo">
-                    <button type="button" class="btn btn-outline-primary" *ngIf="pageInfo.showRefresh"
-                        (click)="onRefresh()" [disabled]="isRefreshing">
-                        <i class="mdi mdi-refresh me-1"></i>Refresh
-                    </button>
+        <div class="card-body bg-light-subtle pb-3 mb-4 position-relative" style="margin-bottom: -8rem;">
+          <div class="row align-items-center">
+            <!-- Avatar -->
+            <div class="col-auto ms-2">
+              <div class="position-relative">
+                <div class="avatar-lg mb-md-0 mb-3 position-relative">
+                  <div
+                    class="avatar-title bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-2 shadow-lg border border-white border-2 position-relative overflow-hidden"
+                    style="width: 4rem; height: 4rem; font-family: 'Inter', 'Segoe UI', sans-serif;">
+                    <!-- Subtle background pattern -->
+                    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25">
+                      <div class="d-flex align-items-center justify-content-center h-100 opacity-50">
+                        <i class="mdi mdi-package-variant" style="font-size: 4rem;"></i>
+                      </div>
+                    </div>
+                    <!-- Material Request initials -->
+                    <span class="position-relative z-1" style="letter-spacing: 0.05em;">
+                      MR
+                    </span>
+                  </div>
                 </div>
+              </div>
             </div>
 
-            <!-- Horizontal Navigation Pills -->
-            <nav class="nav nav-pills gap-2 mt-3">
-                <a class="nav-link" [class.active]="isActiveRoute('list')" routerLink="./list">
-                    <i class="mdi mdi-format-list-bulleted me-2"></i>
-                    All Requests
-                </a>
-                <a class="nav-link" [class.active]="isActiveRoute('create')" routerLink="./create">
-                    <i class="mdi mdi-plus-circle me-2"></i>
-                    Create New
-                </a>
-                <a class="nav-link" [class.active]="isActiveRoute('validate-list')" routerLink="./validate-list">
-                    <i class="mdi mdi-check-circle me-2"></i>
-                    Validation
-                    <span class="badge bg-warning ms-2" *ngIf="pendingValidationCount > 0">
-                        {{pendingValidationCount}}
-                    </span>
-                </a>
-                <a class="nav-link" [class.active]="isActiveRoute('picking')" routerLink="./picking">
-                    <i class="mdi mdi-package-variant me-2"></i>
-                    Picking
-                    <span class="badge bg-info ms-2" *ngIf="pendingPickingCount > 0">
-                        {{pendingPickingCount}}
-                    </span>
-                </a>
-            </nav>
-        </div>
-    </div>
+            <!-- Main Content -->
+            <div class="col">
+              <div class="d-flex align-items-center mb-2" *ngIf="getCurrentPageInfo() as pageInfo">
+                <h3 class="fw-bold mb-0 me-3 text-light" style="font-family: 'Inter', 'Segoe UI', sans-serif; 
+                           letter-spacing: -0.02em; 
+                           font-weight: 700; 
+                           text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                           font-size: 1.4rem;">
+                  {{pageInfo.title}}
+                </h3>
+                <div class="d-flex align-items-center">
+                  <div class="badge bg-success px-3 py-1 position-relative" style="
+                            font-weight: 600; 
+                            letter-spacing: 0.05em; 
+                            font-size: 0.7rem;
+                            text-transform: uppercase;
+                            border-radius: 16px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span class="position-absolute top-0 start-0 w-100 h-100 opacity-10 rounded-pill"></span>
+                    <span class="position-relative">ACTIVE</span>
+                  </div>
+                </div>
+              </div>
 
-    <!-- Content Area -->
-    <div class="pt-4">
-        <router-outlet></router-outlet>
+              <!-- Professional subtitle with module info -->
+              <div class="mb-2" style="font-family: 'Inter', 'Segoe UI', sans-serif;" *ngIf="getCurrentPageInfo() as pageInfo">
+                <span class="text-muted" style="font-size: 0.85rem; font-weight: 500;">
+                  {{pageInfo.description}}
+                </span>
+              </div>
+
+              <div class="hstack gap-3 flex-wrap mb-1" style="font-family: 'Inter', 'Segoe UI', sans-serif;">
+                <div style="font-weight: 400; font-size: 0.85rem;">
+                  <i class="mdi mdi-check-circle me-1 text-success"></i>
+                  <span class="fw-semibold">Pending Validation: </span>
+                  <span class="fw-normal">{{pendingValidationCount || 0}}</span>
+                </div>
+                <div class="vr" style="height: 1rem;"></div>
+                <div style="font-weight: 400; font-size: 0.85rem;">
+                  <i class="mdi mdi-package-variant me-1 text-info"></i>
+                  <span class="fw-semibold">Pending Picking: </span>
+                  <span class="fw-normal">{{pendingPickingCount || 0}}</span>
+                </div>
+              </div>
+            </div>
+            <!-- End Main Content -->
+
+            <!-- Status Panel -->
+            <div class="col-auto" style="min-width: 230px; font-family: 'Inter', 'Segoe UI', sans-serif;">
+              <!-- Action Buttons -->
+              <div class="mb-3 text-end" *ngIf="getCurrentPageInfo() as pageInfo">
+                <button type="button" class="btn btn-outline-primary btn-sm" *ngIf="pageInfo.showRefresh"
+                  (click)="onRefresh()" [disabled]="isRefreshing" style="border-width: 1.5px;">
+                  <i class="mdi mdi-refresh me-1"></i>Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
+
+<!-- Navigation Tabs -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card rounded-0 shadow-none border-top-0 mb-0 mt-n7 mx-n4" style="margin-top: -3.5rem;">
+      <div class="card-body p-0">
+        <div class="nav-container position-relative">
+          <!-- Horizontal Navigation Pills -->
+          <div class="nav-scroll-container">
+            <nav class="nav nav-tabs nav-tabs-custom border-bottom-0 bg-light d-flex flex-nowrap" role="tablist"
+              style="min-width: max-content;">
+              
+              <a class="nav-link d-flex align-items-center" [class.active]="isActiveRoute('list')" 
+                 routerLink="./list" style="min-width: 160px;">
+                <div class="d-flex align-items-center">
+                  <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 1.75rem; height: 1.75rem;">
+                    <i class="mdi mdi-format-list-bulleted text-primary" style="font-size: 0.9rem;"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-nowrap" style="font-size: 0.9rem;">All Requests</div>
+                    <small class="text-muted d-block text-nowrap" style="font-size: 0.7rem;">View & Manage</small>
+                  </div>
+                </div>
+              </a>
+
+              <a class="nav-link d-flex align-items-center" [class.active]="isActiveRoute('create')" 
+                 routerLink="./create" style="min-width: 160px;">
+                <div class="d-flex align-items-center">
+                  <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 1.75rem; height: 1.75rem;">
+                    <i class="mdi mdi-plus-circle text-success" style="font-size: 0.9rem;"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-nowrap" style="font-size: 0.9rem;">Create New</div>
+                    <small class="text-muted d-block text-nowrap" style="font-size: 0.7rem;">New Request</small>
+                  </div>
+                </div>
+              </a>
+
+              <a class="nav-link d-flex align-items-center" [class.active]="isActiveRoute('validate-list')" 
+                 routerLink="./validate-list" style="min-width: 160px;">
+                <div class="d-flex align-items-center">
+                  <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 1.75rem; height: 1.75rem;">
+                    <i class="mdi mdi-check-circle text-warning" style="font-size: 0.9rem;"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-nowrap" style="font-size: 0.9rem;">
+                      Validation
+                      <span class="badge bg-warning ms-1" *ngIf="pendingValidationCount > 0" style="font-size: 0.6rem;">
+                        {{pendingValidationCount}}
+                      </span>
+                    </div>
+                    <small class="text-muted d-block text-nowrap" style="font-size: 0.7rem;">Review & Approve</small>
+                  </div>
+                </div>
+              </a>
+
+              <a class="nav-link d-flex align-items-center" [class.active]="isActiveRoute('picking')" 
+                 routerLink="./picking" style="min-width: 160px;">
+                <div class="d-flex align-items-center">
+                  <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="width: 1.75rem; height: 1.75rem;">
+                    <i class="mdi mdi-package-variant text-info" style="font-size: 0.9rem;"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-nowrap" style="font-size: 0.9rem;">
+                      Picking
+                      <span class="badge bg-info ms-1" *ngIf="pendingPickingCount > 0" style="font-size: 0.6rem;">
+                        {{pendingPickingCount}}
+                      </span>
+                    </div>
+                    <small class="text-muted d-block text-nowrap" style="font-size: 0.7rem;">Warehouse Tasks</small>
+                  </div>
+                </div>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Content Area -->
+<div class="row">
+  <div class="col-lg-12">
+    <div class="pt-4">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Modern Tab Styling - Full Width with Icons on Left */
+  .nav-tabs-custom {
+    display: flex !important;
+    overflow: visible !important;
+  }
+
+  .nav-tabs-custom .nav-item {
+    flex: 1 1 auto;
+  }
+
+  .nav-tabs-custom .nav-link {
+    border: none;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    width: 100%;
+  }
+
+  .nav-tabs-custom .nav-link:hover {
+    border-color: transparent;
+    background-color: var(--bs-primary-bg-subtle);
+    border-bottom-color: var(--bs-primary-border-subtle);
+  }
+
+  .nav-tabs-custom .nav-link.active {
+    background-color: var(--bs-body-bg);
+    border-color: transparent;
+    border-bottom-color: var(--bs-primary);
+    color: var(--bs-primary);
+    font-weight: 600;
+  }
+
+  .nav-tabs-custom .nav-link.active .bg-primary,
+  .nav-tabs-custom .nav-link.active .bg-success,
+  .nav-tabs-custom .nav-link.active .bg-warning,
+  .nav-tabs-custom .nav-link.active .bg-secondary,
+  .nav-tabs-custom .nav-link.active .bg-danger,
+  .nav-tabs-custom .nav-link.active .bg-info,
+  .nav-tabs-custom .nav-link.active .bg-dark {
+    background-color: var(--bs-primary) !important;
+    opacity: 0.1 !important;
+  }
+
+  .nav-tabs-custom .nav-link.active i {
+    color: var(--bs-primary) !important;
+  }
+
+  /* Navigation Container Styles */
+  .nav-container {
+    position: relative;
+    background: var(--bs-secondary-bg);
+  }
+
+  .nav-scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .nav-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Responsive tabs */
+  @media (max-width: 991.98px) {
+    .nav-tabs-custom .nav-link {
+      min-width: 120px;
+    }
+
+    .nav-tabs-custom .nav-link small {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .nav-tabs-custom .nav-link {
+      min-height: 50px;
+    }
+
+    .nav-tabs-custom .nav-link .rounded-circle {
+      width: 1.25rem !important;
+      height: 1.25rem !important;
+    }
+
+    .nav-tabs-custom .nav-link i {
+      font-size: 0.8rem !important;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .nav-tabs-custom .nav-link {
+      min-height: 45px;
+    }
+
+    .nav-tabs-custom .nav-link small {
+      display: none;
+    }
+
+    .nav-tabs-custom .nav-link .fw-semibold {
+      font-size: 0.8rem !important;
+    }
+
+    .nav-tabs-custom .nav-link .rounded-circle {
+      width: 1.1rem !important;
+      height: 1.1rem !important;
+    }
+
+    .nav-tabs-custom .nav-link i {
+      font-size: 0.75rem !important;
+    }
+  }
+
+  /* Header styling to match ticket overview */
+  .client-header {
+    height: 2rem;
+  }
+
+  .avatar-title {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  /* Badge styling */
+  .badge {
+    font-size: 0.6rem;
+  }
+
+  /* Responsive adjustments for header */
+  @media (max-width: 768px) {
+    .avatar-title {
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      font-size: 1.5rem !important;
+    }
+
+    .card-body {
+    }
+
+    h3 {
+      font-size: 1.1rem !important;
+    }
+
+    .hstack {
+      flex-direction: column !important;
+      align-items: start !important;
+      gap: 0.5rem !important;
+    }
+
+    .vr {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .col-auto {
+      min-width: auto !important;
+    }
+
+    .hstack > div {
+      font-size: 0.8rem;
+    }
+  }
+</style>

@@ -1,0 +1,189 @@
+<!-- Universal Lookup Page -->
+<div class="container-fluid">
+    <!-- Simple Search Section -->
+    <div class="row justify-content-center py-4">
+        <div class="col-lg-8 col-xl-6">
+            <!-- Page Header -->
+            <div class="text-center mb-4">
+                <h2 class="fw-bold mb-2">Universal Lookup</h2>
+                <p class="text-muted mb-0">Search across Sales Orders, Work Orders, Parts, and BOM Structures</p>
+            </div>
+
+            <!-- Search Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form class="row g-3">
+                        <!-- Search Type Dropdown -->
+                        <div class="col-md-4">
+                            <label for="searchType" class="form-label fw-semibold">Search Type</label>
+                            <select id="searchType" class="form-select" [(ngModel)]="selectedSearchType"
+                                name="searchType" (change)="onSearchTypeChange(selectedSearchType)">
+                                <option *ngFor="let searchType of searchTypes" [value]="searchType.value">
+                                    {{searchType.label}}
+                                </option>
+                            </select>
+                            <!-- <div *ngIf="isAutoDetected" class="form-text text-success">
+                <i class="mdi mdi-auto-fix me-1"></i>Auto-detected search type
+              </div> -->
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="col-md-6">
+                            <label for="searchInput" class="form-label fw-semibold">
+                                Search Query
+                            </label>
+                            <input id="searchInput" type="text" class="form-control" [(ngModel)]="searchQuery"
+                                name="searchQuery" (input)="onSearchQueryChange()" (paste)="onPasteDetection($event)"
+                                (keypress)="onKeyPress($event)"
+                                placeholder="Enter SO132321, WO12345, part number, etc..." [disabled]="isSearching">
+                        </div>
+
+                        <!-- Search Button -->
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary w-100" (click)="onSearch()"
+                                [disabled]="!searchQuery.trim() || isSearching">
+                                <span *ngIf="!isSearching">
+                                    <i class="mdi mdi-magnify me-1"></i>Search
+                                </span>
+                                <span *ngIf="isSearching">
+                                    <i class="mdi mdi-magnify me-1"></i>Search...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Clear Button -->
+                    <div class="text-center mt-3" *ngIf="hasSearched">
+                        <button class="btn btn-outline-secondary btn-sm" (click)="clearSearch()">
+                            <i class="mdi mdi-refresh me-1"></i>Clear & Search Again
+                        </button>
+                    </div>
+
+                    <!-- Ambiguous Query Selection -->
+                    <div *ngIf="showAmbiguousSelection" class="mt-4">
+                        <div class="alert alert-info border-0">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="mdi mdi-auto-fix text-primary fs-5 me-2"></i>
+                                <h6 class="mb-0 fw-bold">AI Search Detection</h6>
+                            </div>
+                            <div class="fw-bold mb-2">Query: "{{ambiguousQuery}}"</div>
+                            <small>This could be either a Part Number or BOM Structure. Please select the search
+                                type:</small>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-info w-100 py-3"
+                                    (click)="onAmbiguousSelection('part-number')">
+                                    <div class="text-center">
+                                        <i class="mdi mdi-cog fs-4 mb-2"></i>
+                                        <div class="fw-bold">Part Number</div>
+                                        <small class="text-muted">Search part inventory & details</small>
+                                    </div>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-success w-100 py-3"
+                                    (click)="onAmbiguousSelection('bom-structure')">
+                                    <div class="text-center">
+                                        <i class="mdi mdi-file-tree fs-4 mb-2"></i>
+                                        <div class="fw-bold">BOM Structure</div>
+                                        <small class="text-muted">Search BOM hierarchy</small>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-secondary btn-sm" (click)="onAmbiguousCancel()">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Search Results Section -->
+    <div class="row justify-content-center" *ngIf="shouldShowResults">
+
+        <!-- Sales Order Results -->
+        <ng-container *ngIf="selectedSearchType === 'sales-order'">
+            <div class="col-lg-10">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <div class="d-flex align-items-center">
+                            <i class="mdi mdi-package-variant text-primary fs-5 me-2"></i>
+                            <h5 class="mb-0 fw-bold">Sales Order: {{searchQuery}}</h5>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <app-order-lookup [salesOrderNumber]="searchQuery" [triggerSearch]="triggerSearch"
+                            (setData)="onOrderDataReceived($event)" (isLoadingEmitter)="onLoadingStateChanged($event)">
+                        </app-order-lookup>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+        <ng-container *ngIf="selectedSearchType === 'work-order'">
+            <div class="col-lg-10">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <div class="d-flex align-items-center">
+                            <i class="mdi mdi-wrench text-warning fs-5 me-2"></i>
+                            <h5 class="mb-0 fw-bold">Work Order: {{searchQuery}}</h5>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <app-wo-lookup [wo_nbr]="searchQuery" [triggerSearch]="triggerSearch"
+                            (setData)="onWorkOrderDataReceived($event)"
+                            (isLoadingEmitter)="onLoadingStateChanged($event)">
+                        </app-wo-lookup>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+
+        <ng-container *ngIf="selectedSearchType === 'part-number'">
+            <div class="col-lg-10">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <div class="d-flex align-items-center">
+                            <i class="mdi mdi-cog text-info fs-5 me-2"></i>
+                            <h5 class="mb-0 fw-bold">Part Number: {{searchQuery}}</h5>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <app-part-lookup [partNumber]="searchQuery" [triggerSearch]="triggerSearch"
+                            (setData)="onPartDataReceived($event)" (isLoadingEmitter)="onLoadingStateChanged($event)">
+                        </app-part-lookup>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+        <ng-container *ngIf="selectedSearchType === 'bom-structure'">
+            <div class="col-lg-12">
+                <app-bom-view [searchPartNumber]="searchQuery" (dataLoaded)="onBomDataReceived($event)"
+                    (loadingStateChanged)="onLoadingStateChanged($event)">
+                </app-bom-view>
+            </div>
+        </ng-container>
+
+    </div>
+
+    <!-- Welcome State -->
+    <div class="row justify-content-center" *ngIf="!shouldShowResults">
+        <div class="col-lg-6 text-center py-4">
+            <i class="mdi mdi-magnify text-muted mb-3" style="font-size: 4rem;"></i>
+            <h4 class="text-muted mb-3">Ready to Search</h4>
+            <p class="text-muted">
+                Select a search type and enter your query above to get started.
+            </p>
+        </div>
+    </div>
+</div>

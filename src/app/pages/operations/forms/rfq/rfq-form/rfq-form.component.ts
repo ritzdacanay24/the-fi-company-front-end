@@ -8,8 +8,7 @@ import {
 } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
 import { NgSelectModule } from "@ng-select/ng-select";
-import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
-import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
+
 import { TagInputModule } from "ngx-chips";
 import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
 import { must_be_email } from "src/assets/js/util";
@@ -49,10 +48,7 @@ export function onFormatDataBeforeEmail(data) {
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    QadWoSearchComponent,
-    QadCustomerPartSearchComponent,
     NgbModule,
-    NgSelectModule,
     TagInputModule,
   ],
   selector: "app-rfq-form",

@@ -1,0 +1,127 @@
+// Placard Summary Component Styles
+
+.info-item {
+  margin-bottom: 1rem;
+  
+  .info-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+  }
+  
+  .info-value {
+    font-size: 1rem;
+    word-wrap: break-word;
+    
+    &:empty::after {
+      content: "—";
+      font-style: italic;
+    }
+  }
+}
+
+// Card styling enhancements
+.card {
+  transition: all 0.2s ease-in-out;
+  
+//   &:hover {
+//     transform: translateY(-2px);
+//     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+//   }
+  
+  .card-header {
+    h5 {
+      font-weight: 600;
+      
+      i {
+        font-size: 1.25rem;
+      }
+    }
+  }
+}
+
+// Status badge enhancements
+.badge {
+  &.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+  }
+  
+  &.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+    color: #000 !important;
+  }
+  
+  &.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
+  }
+}
+
+// Color utilities for icons
+.text-purple {
+  color: #6f42c1 !important;
+}
+
+// Quantity display enhancement
+.display-6 {
+  line-height: 1.2;
+}
+
+// Alert banner styling
+.alert {
+  border-left: 4px solid;
+  
+  &.alert-info {
+    border-left-color: #0dcaf0;
+  }
+}
+
+// Print styles
+@media print {
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  
+  .btn,
+  .alert {
+    display: none !important;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .display-6 {
+    font-size: 2rem;
+  }
+  
+  .info-item {
+    margin-bottom: 0.75rem;
+  }
+  
+  .card-header h5 {
+    font-size: 1rem;
+  }
+}
+
+// Loading animation
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
+}
+
+// Custom spacing for specific sections
+.row.g-4 > * {
+  margin-bottom: 1.5rem;
+}
+
+// Enhancement for empty state
+.card-body .text-center {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}

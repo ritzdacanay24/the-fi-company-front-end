@@ -1,0 +1,158 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Page Header -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-sitemap text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Organization Chart</h2>
+              <p class="text-body-secondary mb-0">Simple hierarchical view of company structure</p>
+            </div>
+          </div>
+          
+          <!-- Controls -->
+          <div class="d-flex gap-2 align-items-center">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="compactMode" [(ngModel)]="compactMode" (change)="toggleCompactMode()">
+              <label class="form-check-label" for="compactMode">Compact View</label>
+            </div>
+            
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="expandAll()">
+              <i class="mdi mdi-arrow-expand-all me-1"></i>Expand All
+            </button>
+            
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="collapseAll()">
+              <i class="mdi mdi-arrow-collapse-all me-1"></i>Collapse All
+            </button>
+            
+            <button type="button" class="btn btn-primary btn-sm" (click)="refreshData()">
+              <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="row mb-4">
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="mdi mdi-account-search"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Search employees..." 
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+              #searchInput>
+            <button class="btn btn-outline-secondary" type="button" (click)="clearSearch(); searchInput.value = ''">
+              <i class="mdi mdi-close"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-body-secondary">Loading organization structure...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error" class="alert alert-danger" role="alert">
+        <i class="mdi mdi-alert-circle me-2"></i>
+        <strong>Error:</strong> {{error}}
+        <button type="button" class="btn btn-sm btn-outline-danger ms-3" (click)="refreshData()">
+          <i class="mdi mdi-refresh me-1"></i>Retry
+        </button>
+      </div>
+
+      <!-- Org Chart Container -->
+      <div *ngIf="!isLoading && !error" class="org-chart-container">
+        <div class="org-chart" [ngClass]="{'compact-mode': compactMode}">
+          
+          <!-- Root Level -->
+          <div *ngFor="let root of rootEmployees" class="org-tree">
+            <ng-container [ngTemplateOutlet]="employeeNode" [ngTemplateOutletContext]="{employee: root, level: 0}"></ng-container>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- No Results -->
+      <div *ngIf="!isLoading && !error && filteredEmployees.length === 0" class="text-center py-5">
+        <i class="mdi mdi-account-off text-muted mb-3" style="font-size: 4rem;"></i>
+        <h4 class="text-muted">No employees found</h4>
+        <p class="text-body-secondary">Try adjusting your search criteria or refresh the data.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Employee Node Template -->
+<ng-template #employeeNode let-employee="employee" let-level="level">
+  <div class="employee-node" [ngClass]="{'highlighted': employee.isHighlighted}">
+    
+    <!-- Employee Card -->
+    <div class="employee-card" [style.border-left-color]="getEmployeeColor(employee)" (click)="selectEmployee(employee)">
+      
+      <!-- Employee Avatar & Info -->
+      <div class="d-flex align-items-center">
+        <div class="employee-avatar me-3">
+          <img 
+            [src]="employee.imageUrl || 'assets/images/default-user.png'" 
+            [alt]="employee.name"
+            class="rounded-circle"
+            onerror="this.src='assets/images/default-user.png'">
+          <div class="status-indicator" [ngClass]="getStatusClass(employee)"></div>
+        </div>
+        
+        <div class="flex-grow-1">
+          <h6 class="employee-name mb-1">{{employee.name}}</h6>
+          <p class="employee-title mb-1">{{employee.title || 'No title specified'}}</p>
+          <div class="employee-meta">
+            <span class="badge" [ngClass]="getEmployeeTypeBadge(employee)">
+              {{getEmployeeTypeText(employee)}}
+            </span>
+            <span class="text-body-secondary ms-2" *ngIf="employee.hire_date">
+              <i class="mdi mdi-calendar-clock me-1"></i>
+              {{getHireDateText(employee.hire_date)}}
+            </span>
+          </div>
+        </div>
+
+        <!-- Subordinate Count -->
+        <div class="subordinate-info" *ngIf="employee.subordinates && employee.subordinates.length > 0">
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline-primary" 
+            (click)="$event.stopPropagation(); toggleExpand(employee)"
+            [title]="employee.isExpanded ? 'Collapse' : 'Expand'">
+            <i class="mdi" [ngClass]="employee.isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></i>
+            <span class="ms-1">{{employee.subordinates.length}}</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Subordinates -->
+    <div class="subordinates" *ngIf="employee.subordinates && employee.subordinates.length > 0 && employee.isExpanded">
+      <div class="subordinate-tree">
+        <div *ngFor="let subordinate of employee.subordinates; trackBy: trackByEmployeeId" class="subordinate-branch">
+          <ng-container [ngTemplateOutlet]="employeeNode" [ngTemplateOutletContext]="{employee: subordinate, level: level + 1}"></ng-container>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</ng-template>

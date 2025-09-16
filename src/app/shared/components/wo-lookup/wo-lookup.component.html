@@ -1,157 +1,248 @@
-<div class="modal-body" *ngIf="isLoading">
+<!-- Loading State -->
+<div *ngIf="isLoading" class="d-flex justify-content-center align-items-center py-4">
     <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 </div>
 
-<div style="width: 100%; min-height: calc(100vh - 550px);" *ngIf="!isLoading && data && data.orderFound">
-    <h4 *ngIf="!isLoading && !data.orderFound" class="text-center p-3">Sorry, no record found.</h4>
-
-    <div class="row">
-        <div class="col-lg-12">
-
-            <!-- Primary Alert -->
-            <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-                role="alert" *ngIf="data?.lineOverall == 100">
-                <i class="ri-check-double-line label-icon"></i><strong>WO Complete!</strong>
-            </div>
-
-            <!-- Primary Alert -->
-            <div class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-                role="alert" *ngIf="data?.lineOverall != 100">
-                <i class="ri-information-line label-icon"></i><strong>Line Information!</strong> - &nbsp;
-                According to the system, this order is about
-                {{data?.lineOverall | number : '1.2-2'}}% complete.
-            </div>
-
-        </div>
+<!-- No Results Message -->
+<div *ngIf="!isLoading && !data?.orderFound" class="text-center py-4">
+    <div class="text-muted">
+        <i class="mdi mdi-file-search-outline fs-2 d-block mb-2"></i>
+        <h6 class="text-muted">Work Order Not Found</h6>
+        <p class="small mb-0">The requested work order could not be located.</p>
     </div>
+</div>
 
-    <div *ngIf="data && data.orderFound" id="print">
-        <div class="row">
-            <div class="col-lg-4 col-print-6 rid-margin float-left">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Order Information
+<!-- Work Order Summary -->
+<div *ngIf="!isLoading && data && data.orderFound" class="wo-summary">
+    
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-primary text-white rounded">
+                <div class="d-flex align-items-center text-white">
+                    <i class="mdi mdi-wrench fs-4 me-3"></i>
+                    <div>
+                        <h5 class="mb-0 text-white">{{data.main.wo_nbr}}</h5>
+                        <small class="opacity-75">Work Order</small>
                     </div>
-                    <ul class="list-group list-group-flush ">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WO Number</span>
-                            {{data.main.wo_nbr}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Part Number</span>
-                            {{data.main.wo_part}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ordered Date</span>
-                            {{data.main.wo_ord_date}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Need Date</span>
-                            {{data.main.wo_need_date}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Release Date</span>
-                            {{data?.main.wo_rel_date}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Remarks</span>
-                            {{data.main.wo_rmks}}
-                        </li>
-                    </ul>
                 </div>
-            </div>
-            <div class="col-lg-4 d-print-none">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Additional Information
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Routing</span>
-                            {{data.main.wo_routing}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WO/SO Job</span>
-                            {{data.main.wo_so_job}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Status</span>
-                            {{data.main.wo_status}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WO BOM Code</span>
-                            {{data.main.wo_bom_code}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WIP Total</span>
-                            {{data.main.wo_wip_tot | currency}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Close Date</span>
-                            {{data.main.wo_stat_close_date}}
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-lg-4 col-print-6">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Order Summary
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ordered Qty</span>
-                            {{data.main.wo_qty_ord}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Completed Qty</span>
-                            {{data.main.wo_qty_comp}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WO Qty Changed</span>
-                            {{data.main.wo_qty_chg}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Qty Rejected</span>
-                            {{data.main.wo_qty_rjct}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Total Lines</span>
-                            {{data.details.length}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>WO Unit Cost</span>
-                            {{data.main.wo_unit_cost | currency}}
-                        </li>
-                    </ul>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark">{{data?.lineOverall | number : '1.0-0'}}% Complete</span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row" *ngIf="data && data.orderFound">
-        <div class="col-lg-12">
-            <div class="card overflow-hidden d-flex justify-content-between">
-                <div class="card-header font-weight-bolder">
-                    Line Details
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Order Info</h6>
+                <div class="small">
+                    <div><strong>Part:</strong> {{data.main.wo_part}}</div>
+                    <div><strong>Description:</strong> {{data.main.wo_desc}}</div>
+                    <div><strong>Customer:</strong> {{data.main.wo_cust}}</div>
+                    <div><strong>Site:</strong> {{data.main.wo_site}}</div>
+                    <div><strong>Status:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': data.main.wo_status === 'C',
+                            'bg-warning text-dark': data.main.wo_status === 'R', 
+                            'bg-info': data.main.wo_status === 'O',
+                            'bg-secondary': data.main.wo_status === 'P'
+                        }"> {{data.main.wo_status}}</span>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <ag-grid-angular *ngIf="data?.details" style="width: 100%;height:500px"
-                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data?.details">
-                    </ag-grid-angular>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Quantities</h6>
+                <div class="small">
+                    <div><strong>Ordered:</strong> {{data.main.wo_qty_ord | number:'1.0-2'}}</div>
+                    <div><strong>Completed:</strong> {{data.main.wo_qty_comp | number:'1.0-2'}}</div>
+                    <div><strong>Type:</strong> {{data.main.wo_type}}</div>
+                    <div><strong>Priority:</strong> {{data.main.wo_priority}}</div>
+                    <div><strong>% Complete:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': data.lineOverall >= 100,
+                            'bg-warning text-dark': data.lineOverall >= 50 && data.lineOverall < 100,
+                            'bg-danger': data.lineOverall < 50
+                        }"> {{data.lineOverall | number:'1.0-0'}}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Dates</h6>
+                <div class="small">
+                    <div><strong>Order Date:</strong> {{data.main.wo_ord_date | date:'short'}}</div>
+                    <div><strong>Need Date:</strong> {{data.main.wo_need_date | date:'short'}}</div>
+                    <div><strong>Due Date:</strong> {{data.main.wo_due_date | date:'short'}}</div>
+                    <div><strong>Start Date:</strong> {{data.main.wo_start_date | date:'short'}}</div>
+                    <div><strong>Release Date:</strong> {{data?.main.wo_rel_date | date:'short'}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Financial</h6>
+                <div class="small">
+                    <div><strong>Unit Cost:</strong> {{data.main.wo_unit_cost | currency:'USD':'symbol':'1.2-2'}}</div>
+                    <div><strong>Material Cost:</strong> {{data.main.wo_mtl_cost | currency:'USD':'symbol':'1.2-2'}}</div>
+                    <div><strong>Labor Cost:</strong> {{data.main.wo_lbr_cost | currency:'USD':'symbol':'1.2-2'}}</div>
+                    <div><strong>Total Cost:</strong> {{data.main.wo_tot_cost | currency:'USD':'symbol':'1.2-2'}}</div>
+                    <div><strong>WIP Total:</strong> {{data.main.wo_wip_tot | currency:'USD':'symbol':'1.2-2'}}</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row" *ngIf="data && data.orderFound">
-        <div class="col">
-            <div class="card shadow-md">
-                <div class="card-header font-weight-bolder">
-                    Routing Details
+
+    <!-- Additional Details Row -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Additional Information</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="small"><strong>Routing:</strong> {{data.main.wo_routing}}</div>
+                        <div class="small"><strong>SO Job:</strong> {{data.main.wo_so_job}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>Project:</strong> {{data.main.wo_project}}</div>
+                        <div class="small"><strong>Reference:</strong> {{data.main.wo_ref}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>Planner/Buyer:</strong> {{data.main.wo_buyer}}</div>
+                        <div class="small"><strong>Request ID:</strong> {{data.main.wo_req_id}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>User Field 1:</strong> {{data.main.wo_user1}}</div>
+                        <div class="small"><strong>User Field 2:</strong> {{data.main.wo_user2}}</div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
-                    <ag-grid-angular *ngIf="data?.routing" style="width: 100%;height:500px"
-                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions1" [rowData]="data?.routing">
-                    </ag-grid-angular>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Details Table -->
+    <div class="row mb-3" *ngIf="data?.details?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Line Details ({{data.details.length}} items)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th class="text-center" style="width: 60px;">Line</th>
+                                <th class="text-center" style="width: 50px;">Op</th>
+                                <th style="width: 140px;">Part Number</th>
+                                <th class="text-center" style="width: 80px;">Location</th>
+                                <th class="text-end" style="width: 90px;">Qty Required</th>
+                                <th class="text-end" style="width: 90px;">Qty Picked</th>
+                                <th class="text-end" style="width: 90px;">Qty Issued</th>
+                                <th class="text-end" style="width: 100px;">Std Cost</th>
+                                <th class="text-end" style="width: 100px;">Total Std</th>
+                                <th class="text-center" style="width: 90px;">Status %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let detail of data.details">
+                                <td class="text-center">{{detail.wod_line}}</td>
+                                <td class="text-center">{{detail.wod_op}}</td>
+                                <td><strong>{{detail.wod_part}}</strong></td>
+                                <td class="text-center">{{detail.wod_loc}}</td>
+                                <td class="text-end">{{(detail.WOD_QTY_REQ || detail.wod_qty_req || detail.wod_qty_ord || 0) | number:'1.0-2'}}</td>
+                                <td class="text-end">{{(detail.WOD_QTY_PICK || detail.wod_qty_pick || 0) | number:'1.0-2'}}</td>
+                                <td class="text-end">{{(detail.WOD_QTY_ISS || detail.wod_qty_iss || detail.wod_qty_comp || 0) | number:'1.0-2'}}</td>
+                                <td class="text-end">{{(detail.wod_std_cost || 0) | currency:'USD':'symbol':'1.2-2'}}</td>
+                                <td class="text-end">{{(detail.wod_tot_std || 0) | currency:'USD':'symbol':'1.2-2'}}</td>
+                                <td class="text-center">
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': (detail.LINESTATUS || detail.lineStatus || 0) >= 100,
+                                        'bg-warning text-dark': (detail.LINESTATUS || detail.lineStatus || 0) >= 50 && (detail.LINESTATUS || detail.lineStatus || 0) < 100,
+                                        'bg-danger': (detail.LINESTATUS || detail.lineStatus || 0) < 50
+                                    }">{{(detail.LINESTATUS || detail.lineStatus || 0) | number:'1.0-0'}}%</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routing Details Table -->
+    <div class="row mb-3" *ngIf="data?.routing?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Routing Operations ({{data.routing.length}} steps)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Op</th>
+                                <th>Operation Description</th>
+                                <th>Work Center</th>
+                                <th>Queue</th>
+                                <th>Status</th>
+                                <th class="text-end">Qty Ordered</th>
+                                <th class="text-end">Qty Complete</th>
+                                <th class="text-end">Qty WIP</th>
+                                <th class="text-end">Setup Time</th>
+                                <th class="text-end">Run Time</th>
+                                <th>Due Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let route of data.routing">
+                                <td><strong>{{route.wor_op || route.WR_OP || route.wr_op}}</strong></td>
+                                <td class="small">{{route.wor_op_desc || route.operation_desc || route.wr_desc}}</td>
+                                <td>{{route.wor_wc || route.work_center || route.wr_wkctr}}</td>
+                                <td>{{route.wr_queue}}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': route.wr_status === 'C',
+                                        'bg-warning text-dark': route.wr_status === 'R',
+                                        'bg-info': route.wr_status === 'O',
+                                        'bg-secondary': route.wr_status === 'P'
+                                    }">{{route.wr_status}}</span>
+                                </td>
+                                <td class="text-end">{{route.wr_qty_ord | number:'1.0-2'}}</td>
+                                <td class="text-end">{{route.wr_qty_comp | number:'1.0-2'}}</td>
+                                <td class="text-end">{{route.wr_qty_wip | number:'1.0-2'}}</td>
+                                <td class="text-end">{{route.wor_setup || route.setup_time || route.wr_setup}}</td>
+                                <td class="text-end">{{route.wor_run || route.run_time || route.wr_run}}</td>
+                                <td>{{route.wr_due | date:'short'}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="row" *ngIf="data?.details?.length > 0 || data?.routing?.length > 0">
+        <div class="col-md-6" *ngIf="data?.details?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Line Summary</h6>
+                <div class="small">
+                    <div><strong>Total Lines:</strong> {{data.details.length}}</div>
+                    <div><strong>Components:</strong> Various parts and materials</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" *ngIf="data?.routing?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Routing Summary</h6>
+                <div class="small">
+                    <div><strong>Total Steps:</strong> {{data.routing.length}}</div>
+                    <div><strong>Process Type:</strong> Manufacturing routing</div>
                 </div>
             </div>
         </div>

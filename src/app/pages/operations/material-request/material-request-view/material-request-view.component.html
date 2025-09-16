@@ -1,0 +1,459 @@
+<div class="container-fluid" *ngIf="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-7">
+      
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <i class="mdi mdi-clipboard-list text-primary" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No Material Request Selected</h4>
+          <p class="text-muted mb-4">Please select a Material Request from the list to view the detailed summary.</p>
+          <button class="btn btn-primary" (click)="onCancel()">
+            <i class="mdi mdi-format-list-bulleted me-2"></i>Return to Material Request List
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" [hidden]="!data && !id">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="onCancel()"
+            title="Back to Material Request List">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-clipboard-list text-white fs-4"></i>
+          </div>
+          <div>
+            <h2 class="mb-1 text-primary">Material Request Details</h2>
+            <p class="text-muted mb-0" *ngIf="id">View Material Request details for record #{{id}}</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="data && id">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Material Request View Mode</h6>
+              <p class="mb-2">
+                You are viewing Material Request #{{getRequestNumberDisplay()}}. Status: <strong>{{getStatus()}}</strong>. 
+                <span *ngIf="getStatus() !== 'Completed'">Use the Edit button to modify this request.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="d-flex justify-content-center align-items-center py-5">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted">Loading request details...</p>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0" *ngIf="!isLoading">
+        <div class="card-body p-4">
+          
+          <!-- Header Information -->
+          <table class="table table-borderless mb-4">
+            <tbody>
+              <tr>
+                <td class="fw-bold text-muted small" style="width: 150px;">Request ID:</td>
+                <td class="fw-medium">{{data?.id}}</td>
+                <td class="fw-bold text-muted small" style="width: 120px;">Status:</td>
+                <td class="fw-medium">
+                  <span class="badge" [class]="getStatusBadgeClass()">
+                    {{getStatus()}}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Created Date:</td>
+                <td class="fw-medium">{{(data?.createdDate | date:'MM/dd/yyyy h:mm a') || 'Unknown'}}</td>
+                <td class="fw-bold text-muted small">Due Date:</td>
+                <td class="fw-medium">{{(data?.dueDate | date:'MM/dd/yyyy') || 'Not Set'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Requestor:</td>
+                <td class="fw-medium">{{safeDisplay(data?.requestor)}}</td>
+                <td class="fw-bold text-muted small">Priority:</td>
+                <td class="fw-medium">
+                  <span class="badge" [class]="getPriorityBadgeClass()" *ngIf="data?.priority">
+                    {{data.priority}}
+                  </span>
+                  <span *ngIf="!data?.priority">Not Set</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Assembly Number:</td>
+                <td class="fw-medium">{{safeDisplay(data?.assemblyNumber)}}</td>
+                <td class="fw-bold text-muted small">Line Number:</td>
+                <td class="fw-medium">{{safeDisplay(data?.lineNumber)}}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Pick List:</td>
+                <td class="fw-medium">{{safeDisplay(data?.pickList)}}</td>
+                <td class="fw-bold text-muted small">Queue Status:</td>
+                <td class="fw-medium">
+                  <span class="badge" [ngClass]="getQueueStatusBadgeClass()">
+                    {{safeDisplay(data?.queue_status, 'Pending')}}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-muted small">Validated:</td>
+                <td class="fw-medium">{{(data?.validated | date:'MM/dd/yyyy h:mm a') || 'Not validated'}}</td>
+                <td class="fw-bold text-muted small">Pick Completed:</td>
+                <td class="fw-medium">{{(data?.pickedCompletedDate | date:'MM/dd/yyyy h:mm a') || 'Not completed'}}</td>
+              </tr>
+              <tr *ngIf="data?.specialInstructions">
+                <td class="fw-bold text-muted small">Special Instructions:</td>
+                <td colspan="3" class="fw-medium">{{data.specialInstructions}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <hr>
+          
+          <!-- Section 1: Material Request Line Items -->
+          <div class="mb-4" *ngIf="details && details.length > 0">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <i class="mdi mdi-format-list-bulleted me-3 fs-5"></i>
+              <h6 class="mb-0 fw-bold">Material Request Line Items</h6>
+            </div>
+            <div class="ps-5">
+              <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50px;">#</th>
+                      <th>Part Number</th>
+                      <th>Description</th>
+                      <th style="width: 80px;">Qty Req</th>
+                      <th style="width: 80px;">Qty Picked</th>
+                      <th style="width: 100px;">Unit Cost</th>
+                      <th style="width: 100px;">Total Cost</th>
+                      <th style="width: 100px;">Available</th>
+                      <th style="width: 120px;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of details; let i = index">
+                      <td class="text-muted">{{i + 1}}</td>
+                      <td class="fw-medium">{{safeDisplay(item?.partNumber)}}</td>
+                      <td>{{safeDisplay(item?.description)}}</td>
+                      <td class="text-end">{{(item?.qty) | number:'1.0-2'}}</td>
+                      <td class="text-end">
+                        <span [class]="item?.qtyPicked ? 'text-success fw-medium' : 'text-muted'">
+                          {{(item?.qtyPicked || 0) | number:'1.0-2'}}
+                        </span>
+                      </td>
+                      <td class="text-end">{{(item?.cost) | currency}}</td>
+                      <td class="text-end">
+                        <span class="fw-medium text-success">
+                          {{((item?.qty || 0) * (item?.cost || 0)) | currency}}
+                        </span>
+                      </td>
+                      <td class="text-end">
+                        <span class="text-info">{{(item?.availableQty) | number}}</span>
+                      </td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="item?.qtyPicked && item?.printedDate">
+                          <i class="mdi mdi-check me-1"></i>Picked
+                        </span>
+                        <span class="badge bg-warning" *ngIf="item?.qtyPicked && !item?.printedDate">
+                          <i class="mdi mdi-clock me-1"></i>Ready
+                        </span>
+                        <span class="badge bg-info" *ngIf="!item?.qtyPicked && item?.validationStatus === 'pending'">
+                          <i class="mdi mdi-help me-1"></i>Validating
+                        </span>
+                        <span class="badge bg-secondary" *ngIf="!item?.qtyPicked && !item?.validationStatus">
+                          <i class="mdi mdi-pause me-1"></i>Pending
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot class="table-light">
+                    <tr>
+                      <td colspan="6" class="text-end fw-bold">Total Request Value:</td>
+                      <td class="text-end fw-bold text-success">
+                        {{getRequestTotalValue() | currency}}
+                      </td>
+                      <td colspan="2"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              
+              <!-- Picking Summary -->
+              <div class="row mt-3" *ngIf="details && details.length > 0">
+                <div class="col-md-6">
+                  <div class="small text-muted">
+                    <strong>Picking Summary:</strong>
+                    <div class="mt-1">
+                      Items Picked: {{getPickedItemsCount()}} of {{details.length}}
+                    </div>
+                    <div *ngIf="getLastPickedInfo()">
+                      Last Picked: {{getLastPickedInfo()}}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small text-muted">
+                    <strong>Validation Summary:</strong>
+                    <div class="mt-1">
+                      Pending Validation: {{getPendingValidationCount()}} items
+                    </div>
+                    <div *ngIf="getValidationErrors()">
+                      Items with Errors: {{getValidationErrors()}} items
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Request Details -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <i class="mdi mdi-clipboard-text me-3 fs-5"></i>
+              <h6 class="mb-0 fw-bold">Request Details</h6>
+            </div>
+            <div class="ps-5">
+              <table class="table table-sm table-striped">
+                <tbody>
+                  <tr>
+                    <td class="fw-bold text-muted" style="width: 200px;">Request Type:</td>
+                    <td>{{safeDisplay(data?.requestType || data?.request_type, 'Standard Request')}}</td>
+                    <td class="fw-bold text-muted" style="width: 150px;">Urgency Level:</td>
+                    <td>
+                      <span class="badge" [class]="getPriorityBadgeClass()" *ngIf="data?.priority">
+                        {{data.priority}}
+                      </span>
+                      <span *ngIf="!data?.priority">Normal</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Request Category:</td>
+                    <td>{{safeDisplay(data?.category || data?.request_category, 'Production')}}</td>
+                    <td class="fw-bold text-muted">Request Source:</td>
+                    <td>{{safeDisplay(data?.source || data?.request_source, 'Manual')}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Delivery Method:</td>
+                    <td>{{safeDisplay(data?.deliveryMethod || data?.delivery_method, 'Pick-up')}}</td>
+                    <td class="fw-bold text-muted">Special Instructions:</td>
+                    <td>{{safeDisplay(data?.specialInstructions || data?.special_instructions, 'None')}}</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <div class="mt-3" *ngIf="data?.notes || data?.reason || data?.comments">
+                <label class="form-label small fw-bold text-muted">Request Justification/Notes:</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="fw-medium">{{data?.notes || data?.reason || data?.comments || 'No additional notes provided'}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Approval & Processing -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <i class="mdi mdi-progress-check me-3 fs-5"></i>
+              <h6 class="mb-0 fw-bold">Approval & Processing Status</h6>
+            </div>
+            <div class="ps-5">
+              <table class="table table-sm table-striped">
+                <tbody>
+                  <tr>
+                    <td class="fw-bold text-muted" style="width: 200px;">Current Status:</td>
+                    <td>
+                      <span class="badge" [class]="getStatusBadgeClass()">
+                        {{getStatus()}}
+                      </span>
+                    </td>
+                    <td class="fw-bold text-muted" style="width: 150px;">Approval Status:</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="data?.approvedBy || data?.approved_by" [class.bg-warning]="!(data?.approvedBy || data?.approved_by)">
+                        {{(data?.approvedBy || data?.approved_by) ? 'Approved' : 'Pending Approval'}}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Processing Stage:</td>
+                    <td>{{safeDisplay(data?.processingStage || data?.processing_stage, 'Initial')}}</td>
+                    <td class="fw-bold text-muted">Assigned To:</td>
+                    <td>{{safeDisplay(data?.assignedTo || data?.assigned_to, 'Unassigned')}}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold text-muted">Estimated Completion:</td>
+                    <td>{{(data?.estimatedCompletion || data?.estimated_completion | date:'MM/dd/yyyy') || 'Not estimated'}}</td>
+                    <td class="fw-bold text-muted">Actual Completion:</td>
+                    <td>{{(data?.completedDate || data?.completed_date | date:'MM/dd/yyyy') || 'Not completed'}}</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <div class="mt-4">
+                <table class="table table-sm table-striped">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Process Step</th>
+                      <th>Person</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="fw-bold">Request Submitted:</td>
+                      <td>{{safeDisplay(data?.requestedBy || data?.requested_by)}}</td>
+                      <td>{{(data?.requestDate || data?.created_at | date:'MMM d, yyyy') || 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success">Completed</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold">Approval:</td>
+                      <td>{{safeDisplay(data?.approvedBy || data?.approved_by, 'Pending')}}</td>
+                      <td>{{(data?.approvedDate || data?.approved_date | date:'MMM d, yyyy') || 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="data?.approvedBy || data?.approved_by">Approved</span>
+                        <span class="badge bg-warning" *ngIf="!(data?.approvedBy || data?.approved_by)">Pending</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold">Processing:</td>
+                      <td>{{safeDisplay(data?.processedBy || data?.processed_by, 'Not Started')}}</td>
+                      <td>{{(data?.processedDate || data?.processed_date | date:'MMM d, yyyy') || 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="data?.processedBy || data?.processed_by">Processed</span>
+                        <span class="badge bg-info" *ngIf="!(data?.processedBy || data?.processed_by) && (data?.approvedBy || data?.approved_by)">Ready to Process</span>
+                        <span class="badge bg-secondary" *ngIf="!(data?.processedBy || data?.processed_by) && !(data?.approvedBy || data?.approved_by)">Waiting for Approval</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold">Completion:</td>
+                      <td>{{safeDisplay(data?.completedBy || data?.completed_by, 'Not Completed')}}</td>
+                      <td>{{(data?.completedDate || data?.completed_date | date:'MMM d, yyyy') || 'N/A'}}</td>
+                      <td>
+                        <span class="badge bg-success" *ngIf="data?.completedBy || data?.completed_by">Completed</span>
+                        <span class="badge bg-warning" *ngIf="!(data?.completedBy || data?.completed_by)">Pending</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Additional Information -->
+          <div class="mb-4" *ngIf="data?.notes || data?.comments || data?.reason || data?.attachments">
+            <div class="d-flex align-items-center mb-3" style="color: #6c63ff;">
+              <i class="mdi mdi-information me-3 fs-5"></i>
+              <h6 class="mb-0 fw-bold">Additional Information</h6>
+            </div>
+            <div class="ps-5">
+              <!-- Notes and Comments -->
+              <div class="mb-3" *ngIf="data?.notes || data?.comments || data?.reason">
+                <label class="form-label small fw-bold text-muted">Notes & Comments:</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="fw-medium">{{data?.notes || data?.comments || data?.reason || 'No additional information provided'}}</div>
+                </div>
+              </div>
+
+              <!-- Additional fields if available -->
+              <div class="mt-3" *ngIf="data?.internalNotes || data?.processingNotes">
+                <label class="form-label small fw-bold text-muted">Internal Processing Notes:</label>
+                <div class="p-3 bg-light rounded border min-height-100">
+                  <div>{{data?.internalNotes || data?.processingNotes || 'No internal notes'}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-footer bg-light border-top d-flex p-3" *ngIf="data && id">
+          <button type="button" class="btn btn-outline-secondary me-2" (click)="onCancel()">
+            <i class="mdi mdi-arrow-left me-1"></i>Back to List
+          </button>
+          <button type="button" class="btn btn-outline-primary me-2" (click)="printRecord()">
+            <i class="mdi mdi-printer me-1"></i>Print Request
+          </button>
+          <button type="button" class="btn btn-outline-info me-2" (click)="shareRecord()">
+            <i class="mdi mdi-share me-1"></i>Share Request
+          </button>
+          <button type="button" class="btn btn-primary ms-auto" (click)="onEdit()" *ngIf="getStatus() !== 'Completed'">
+            <i class="mdi mdi-pencil me-1"></i>Edit Request
+          </button>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="card shadow-sm border-0 mb-4" *ngIf="!isLoading">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col">
+              <h6 class="fw-bold mb-1">Request Owner Contact Information:</h6>
+              <div class="text-muted">
+                {{safeDisplay(data?.requestor)}} - 
+                {{(data?.createdDate) | date:'MMM d, yyyy'}}
+              </div>
+            </div>
+            <div class="col-auto" *ngIf="data?.email || data?.phone">
+              <div class="d-flex flex-column gap-1">
+                <div *ngIf="data?.email" class="small">
+                  <i class="mdi mdi-email me-1"></i>{{data.email}}
+                </div>
+                <div *ngIf="data?.phone" class="small">
+                  <i class="mdi mdi-phone me-1"></i>{{data.phone}}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<style>
+.min-height-100 {
+  min-height: 100px;
+}
+
+.form-check-input:disabled {
+  opacity: 0.7;
+}
+
+.card-header {
+  border-bottom: none;
+}
+
+@media print {
+  .btn, .card-footer {
+    display: none !important;
+  }
+  
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+</style>

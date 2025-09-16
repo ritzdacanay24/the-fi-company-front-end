@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { FormBuilder, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { SharedModule } from "@app/shared/shared.module";
@@ -13,8 +13,12 @@ import { auto } from "@popperjs/core";
   standalone: true,
   imports: [SharedModule, ReactiveFormsModule, AgGridModule],
 })
-export class BomViewComponent implements OnInit {
+export class BomViewComponent implements OnInit, OnChanges {
   constructor(private http: HttpClient, private fb: FormBuilder) { }
+
+  @Input() searchPartNumber: string = '';
+  @Output() dataLoaded = new EventEmitter<any>();
+  @Output() loadingStateChanged = new EventEmitter<boolean>();
 
   bomData: any[] = [];
   private allBomData: any[] = []; // Store complete dataset
@@ -37,7 +41,7 @@ export class BomViewComponent implements OnInit {
   ngOnInit(): void {
     this.filterForm = this.fb.group({
       so: [""],
-      part: ["VWL-03398-400"], // Set default part number
+      part: [this.searchPartNumber || "VWL-03398-400"], // Use input part number or default
       maxLevels: [6],
       days: [300],
       graphicsOnly: [false],
@@ -45,8 +49,22 @@ export class BomViewComponent implements OnInit {
       debug: [false]
     });
     
-    // Automatically fetch BOM data for the default part number
-    this.fetchBOM();
+    // Automatically fetch BOM data if we have a part number
+    if (this.searchPartNumber || !this.searchPartNumber) {
+      this.fetchBOM();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['searchPartNumber'] && changes['searchPartNumber'].currentValue) {
+      // Update the form with the new part number
+      if (this.filterForm) {
+        this.filterForm.patchValue({
+          part: changes['searchPartNumber'].currentValue
+        });
+        this.fetchBOM();
+      }
+    }
   }
 
   columnDefs: ColDef[] = [
@@ -612,6 +630,7 @@ export class BomViewComponent implements OnInit {
 
   fetchBOM() {
     this.loading = true;
+    this.loadingStateChanged.emit(true);
     this.error = "";
     const formValues = this.filterForm.value;
 
@@ -645,6 +664,8 @@ export class BomViewComponent implements OnInit {
         this.allBomData = processedData;
         this.bomData = processedData;
         this.loading = false;
+        this.loadingStateChanged.emit(false);
+        this.dataLoaded.emit(processedData);
         this.showFilters = false; // Collapse filter after search
 
         // Enhanced debugging - group by part and parent to see structure
@@ -714,6 +735,7 @@ export class BomViewComponent implements OnInit {
       error: (err) => {
         this.error = "Failed to load BOM data.";
         this.loading = false;
+        this.loadingStateChanged.emit(false);
         this.showUserToast(this.error, true);
       },
     });

@@ -1,26 +1,42 @@
 <div class="container-fluid" *ngIf="showDashboard">
-  <div class="row">
-    <div class="col-12">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-11 col-xl-10 col-xxl-10">
       
       <!-- Page Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 class="mb-1 text-dark">
-            <i class="mdi mdi-chart-line me-2 text-primary"></i>Reports & Analytics
-          </h2>
-          <p class="text-muted mb-0">Comprehensive reporting suite for operations insights and analysis</p>
+      <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-chart-line text-white fs-4"></i>
+          </div>
+          <div class="flex-grow-1">
+            <h2 class="mb-1 text-primary">Reports & Analytics</h2>
+            <p class="text-muted mb-0">Comprehensive reporting suite for operations insights and analysis</p>
+          </div>
+          <div class="d-flex align-items-center">
+            <div class="input-group" style="width: 300px;">
+              <span class="input-group-text bg-white border-end-0">
+                <i class="mdi mdi-magnify text-muted"></i>
+              </span>
+              <input 
+                type="text" 
+                class="form-control border-start-0" 
+                placeholder="Search reports..."
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="filterReports()">
+            </div>
+          </div>
         </div>
-        <div class="d-flex align-items-center">
-          <div class="input-group" style="width: 300px;">
-            <span class="input-group-text bg-white border-end-0">
-              <i class="mdi mdi-magnify text-muted"></i>
-            </span>
-            <input 
-              type="text" 
-              class="form-control border-start-0" 
-              placeholder="Search reports..."
-              [(ngModel)]="searchTerm"
-              (ngModelChange)="filterReports()">
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Reports Dashboard</h6>
+              <p class="mb-0">
+                Browse through categorized reports or use the search function to find specific analytics. 
+                <strong>Star your favorite reports</strong> for quick access.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -182,17 +198,65 @@
 
 <!-- Individual Report View with Back Button -->
 <div class="container-fluid" *ngIf="!showDashboard">
-  <div class="row">
-    <div class="col-12">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-12 col-xl-12 col-xxl-12">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); backToDashboard()">
+              <i class="mdi mdi-chart-line me-1"></i>Reports & Analytics
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {{getCurrentReportTitle()}}
+          </li>
+        </ol>
+      </nav>
+      
+      <!-- Page Header with Context -->
       <div class="mb-4">
-        <button 
-          type="button" 
-          class="btn btn-outline-secondary"
-          (click)="backToDashboard()"
-          title="Back to Reports Dashboard">
-          <i class="mdi mdi-arrow-left me-2"></i>Back to Reports
-        </button>
+        <div class="d-flex align-items-center mb-3">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary me-3"
+            (click)="backToDashboard()"
+            title="Back to Reports Dashboard">
+            <i class="mdi mdi-arrow-left me-2"></i>Back
+          </button>
+          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="mdi mdi-chart-bar text-white fs-4"></i>
+          </div>
+          <div class="flex-grow-1">
+            <h2 class="mb-1 text-primary">{{getCurrentReportTitle()}}</h2>
+            <p class="text-muted mb-0">Comprehensive data analysis and insights</p>
+          </div>
+          <div class="d-flex align-items-center">
+            <button 
+              type="button" 
+              class="btn btn-outline-warning btn-sm"
+              (click)="toggleFavorite(currentReportPath)"
+              [title]="isReportFavorited(currentReportPath) ? 'Remove from Favorites' : 'Add to Favorites'">
+              <i [class]="isReportFavorited(currentReportPath) ? 'mdi mdi-star text-warning' : 'mdi mdi-star-outline'"></i>
+              {{isReportFavorited(currentReportPath) ? 'Favorited' : 'Add to Favorites'}}
+            </button>
+          </div>
+        </div>
+        
+        <!-- <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="isReportFavorited(currentReportPath)">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-star text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Favorite Report</h6>
+              <p class="mb-0">
+                This report is saved to your favorites for quick access from the reports dashboard.
+              </p>
+            </div>
+          </div>
+        </div> -->
       </div>
+      
     </div>
   </div>
 </div>

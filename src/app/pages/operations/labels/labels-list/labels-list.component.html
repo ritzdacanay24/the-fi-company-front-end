@@ -6,116 +6,217 @@
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="d-flex align-items-center">
-            <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-              <i class="mdi mdi-label text-white fs-4"></i>
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-printer text-white fs-4"></i>
             </div>
             <div>
-              <h2 class="mb-1 text-success">Label Printing & Management</h2>
-              <p class="text-muted mb-0">Generate and print various labels for parts, customers, locations, and assets</p>
+              <h2 class="mb-1 text-primary">Zebra Label Printing</h2>
+              <p class="text-muted mb-0">Select and print labels directly to your Zebra printer</p>
             </div>
-          </div>
-          <div class="d-flex gap-2">
-            <button 
-              type="button" 
-              class="btn btn-outline-info"
-              title="View label templates">
-              <i class="mdi mdi-view-grid me-2"></i>Templates
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-success"
-              title="Quick print labels">
-              <i class="mdi mdi-printer me-2"></i>Quick Print
-            </button>
           </div>
         </div>
         
-        <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert">
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
           <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-success me-3 mt-1 fs-5"></i>
+            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
             <div>
-              <h6 class="alert-heading text-success mb-2">Label System Overview</h6>
+              <h6 class="alert-heading text-primary mb-2">Quick Print Access</h6>
               <p class="mb-0">
-                Access various label printing utilities including <strong>part information</strong>, 
-                customer labels, location labels, kit labels, and specialized asset labels.
+                Click on any label type below to instantly configure and print. 
+                All labels are optimized for <strong>Zebra thermal printers</strong>.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card shadow-sm border-0">
-        <div class="card-header">
-          <div class="d-flex align-items-center">
-            <div class="form-icon me-3">
-              <input type="search" class="form-control form-control-icon" style="width:300px"
-                (ngModelChange)="this.gridApi?.setGridOption('quickFilterText', $event);" [value]="searchName" [(ngModel)]="searchName"
-                placeholder="Search labels by name, type, or category...">
-              <i class="mdi mdi-magnify"></i>
-            </div>
-            <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh label list">
-              <i class="mdi mdi-refresh me-1"></i>Refresh
-            </button>
-            <div class="ms-auto">
-              <div class="d-flex align-items-center">
-                <div class="me-4 d-flex gap-4 small text-muted">
-                  <span>
-                    <i class="mdi mdi-label-multiple text-info me-1"></i>
-                    <strong>{{data?.length || 0}}</strong> Label Types
-                  </span>
-                  <span>
-                    <i class="mdi mdi-printer text-success me-1"></i>
-                    <strong>{{getAvailableCount()}}</strong> Available
-                  </span>
-                </div>
-                <div class="ms-3">
-                  <app-grid-settings [gridApi]="gridApi" [pageId]="pageId"></app-grid-settings>
-                </div>
-                <div class="ms-3">
-                  <app-grid-filters [gridApi]="gridApi" [pageId]="pageId"></app-grid-filters>
-                </div>
+      <!-- Search and Filters -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="form-icon">
+                <input type="search" class="form-control form-control-icon" 
+                  (ngModelChange)="filterLabels($event)" [value]="searchName" [(ngModel)]="searchName"
+                  placeholder="Search labels by name, type, or category...">
+                <i class="mdi mdi-magnify"></i>
               </div>
             </div>
-          </div>
-        </div>
-        
-        <div class="card-body p-0">
-          <ng-container *ngIf="data?.length; else noRecords">
-            <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
-              style="width: 100%;height: calc(100vh - 300px);" [rowData]="data" [columnDefs]="columnDefs">
-            </ag-grid-angular>
-          </ng-container>
-          <ng-template #noRecords>
-            <div class="d-flex flex-column align-items-center justify-content-center p-5">
-              <div class="text-center" style="max-width: 500px;">
-                <div class="mb-4">
-                  <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
-                    <i class="mdi mdi-label-outline text-success" style="font-size: 3rem;"></i>
-                  </div>
+            <div class="col-md-6">
+              <div class="d-flex align-items-center justify-content-md-end gap-3">
+                <!-- Favorites Filter -->
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" 
+                         [(ngModel)]="showFavoritesOnly" 
+                         (change)="applyFilters()"
+                         id="favoritesFilter">
+                  <label class="form-check-label text-muted small" for="favoritesFilter">
+                    <i class="mdi mdi-star text-warning me-1"></i>Favorites Only
+                  </label>
                 </div>
-                <h4 class="text-body-emphasis mb-3">No Label Types Found</h4>
-                <p class="text-muted mb-4">
-                  No label templates match your current search. Try adjusting your search terms or check system configuration.
-                </p>
-                <button 
-                  type="button" 
-                  class="btn btn-success"
-                  (click)="getData()">
-                  <i class="mdi mdi-refresh me-2"></i>Refresh Labels
+                <div class="d-flex gap-4 small text-muted">
+                  <span>
+                    <i class="mdi mdi-label-multiple text-info me-1"></i>
+                    <strong>{{filteredData?.length || 0}}</strong> Label Types
+                  </span>
+                  <span>
+                    <i class="mdi mdi-star text-warning me-1"></i>
+                    <strong>{{getFavoritesCount()}}</strong> Favorites
+                  </span>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" (click)="getData()" title="Refresh">
+                  <i class="mdi mdi-refresh"></i>
                 </button>
               </div>
             </div>
-          </ng-template>
-        </div>
-        
-        <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-information me-2"></i>
-          <span>Click "SELECT" to access label printing utilities and configure print settings</span>
-          <div class="ms-auto">
-            <small>Total: {{data?.length || 0}} label types available</small>
           </div>
         </div>
       </div>
+
+      <!-- Label Cards Grid -->
+      <div class="row g-4" *ngIf="filteredData?.length; else noRecords">
+        <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let label of filteredData; trackBy: trackByFn">
+          <div class="card label-card h-100 border-0 shadow-sm" 
+               [class.card-selected]="selectedLabels.has(label.id)"
+               [class.card-favorite]="isFavorite(label.id)"
+               (click)="toggleLabelSelection(label)">
+            <div class="card-body p-4">
+              <!-- Favorite Badge -->
+              <div class="position-absolute top-0 start-0 m-2" *ngIf="isFavorite(label.id)">
+                <span class="badge bg-warning">
+                  <i class="mdi mdi-star"></i> Favorite
+                </span>
+              </div>
+              <!-- Label Icon and Category -->
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="label-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" 
+                     style="width: 48px; height: 48px;">
+                  <i [class]="getLabelIcon(label.labelName)" class="text-primary fs-5"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-light text-dark">{{getLabelCategory(label.labelName)}}</span>
+                  <!-- Favorite Star -->
+                  <button class="btn btn-sm btn-link p-0" 
+                          (click)="toggleFavorite(label); $event.stopPropagation()"
+                          [title]="isFavorite(label.id) ? 'Remove from favorites' : 'Add to favorites'">
+                    <i [class]="isFavorite(label.id) ? 'mdi mdi-star text-warning' : 'mdi mdi-star-outline text-muted'" 
+                       style="font-size: 1.1rem;"></i>
+                  </button>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" 
+                           [checked]="selectedLabels.has(label.id)"
+                           (click)="$event.stopPropagation()"
+                           (change)="toggleLabelSelection(label)">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Label Details -->
+              <h5 class="card-title mb-2">{{label.labelName}}</h5>
+              <p class="text-muted small mb-3" *ngIf="label.description">
+                {{label.description}}
+              </p>
+
+              <!-- Label Preview Image - Only show if image exists and loads -->
+              <div class="label-preview mb-3" *ngIf="label.labelImage && !isImageHidden(label.id)">
+                <img [src]="label.labelImage" 
+                     [alt]="label.labelName"
+                     class="img-fluid rounded border"
+                     style="width: 100%; max-height: 120px; object-fit: contain; background: #f8f9fa;"
+                     (error)="onImageError($event, label.id)"
+                     (load)="onImageLoad(label.id)">
+              </div>
+
+              <!-- Label Specifications -->
+              <div class="label-specs mb-3">
+                <div class="row g-2 small">
+                  <div class="col-6" *ngIf="label.labelSize">
+                    <div class="d-flex align-items-center text-muted">
+                      <i class="mdi mdi-resize me-1"></i>
+                      {{label.labelSize}}
+                    </div>
+                  </div>
+                  <div class="col-6" *ngIf="label.orientation">
+                    <div class="d-flex align-items-center text-muted">
+                      <i class="mdi mdi-rotate-3d me-1"></i>
+                      {{label.orientation}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Actions -->
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm flex-fill" 
+                        (click)="printLabel(label); $event.stopPropagation()">
+                  <i class="mdi mdi-printer me-1"></i>Print Now
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" 
+                        (click)="previewLabel(label); $event.stopPropagation()"
+                        title="Preview">
+                  <i class="mdi mdi-eye"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" 
+                        (click)="configureLabel(label); $event.stopPropagation()"
+                        title="Configure">
+                  <i class="mdi mdi-cog"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Label Status Indicator -->
+            <div class="position-absolute top-0 end-0 m-2" *ngIf="label.status">
+              <span [class]="getStatusBadgeClass(label.status)" class="badge">
+                {{label.status}}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Actions Panel (when labels selected) -->
+      <div class="position-fixed bottom-0 start-50 translate-middle-x mb-4" 
+           *ngIf="selectedLabels.size > 0"
+           style="z-index: 1050;">
+        <div class="card shadow-lg border-0">
+          <div class="card-body py-3 px-4">
+            <div class="d-flex align-items-center gap-3">
+              <span class="text-muted">
+                <strong>{{selectedLabels.size}}</strong> label{{selectedLabels.size > 1 ? 's' : ''}} selected
+              </span>
+              <div class="vr"></div>
+              <button class="btn btn-primary btn-sm" (click)="printSelectedLabels()">
+                <i class="mdi mdi-printer me-1"></i>Print Selected
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="clearSelection()">
+                <i class="mdi mdi-close me-1"></i>Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No Records Template -->
+      <ng-template #noRecords>
+        <div class="text-center py-5">
+          <div class="mb-4">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                 style="width: 120px; height: 120px;">
+              <i class="mdi mdi-printer-off text-primary" style="font-size: 3rem;"></i>
+            </div>
+          </div>
+          <h4 class="text-body-emphasis mb-3">No Labels Found</h4>
+          <p class="text-muted mb-4">
+            {{searchName ? 'No labels match your search criteria.' : 'No label templates are currently available.'}}
+          </p>
+          <button class="btn btn-primary" (click)="getData()" *ngIf="!searchName">
+            <i class="mdi mdi-refresh me-2"></i>Refresh Labels
+          </button>
+          <button class="btn btn-outline-secondary" (click)="clearSearch()" *ngIf="searchName">
+            <i class="mdi mdi-close me-2"></i>Clear Search
+          </button>
+        </div>
+      </ng-template>
       
     </div>
   </div>

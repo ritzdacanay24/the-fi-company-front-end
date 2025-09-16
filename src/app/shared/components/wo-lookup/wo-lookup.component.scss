@@ -1,0 +1,39 @@
+/* WO Lookup Component - Simplified ERP Style */
+
+.wo-summary {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Badge utilities */
+.badge-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Table styling */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .wo-summary .col-md-4 {
+    margin-bottom: 0.75rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+}

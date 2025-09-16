@@ -47,6 +47,7 @@ tippy.setDefaultProps({ animation: false });
   ],
   selector: "app-labels-list",
   templateUrl: "./labels-list.component.html",
+  styleUrls: ["./labels-list.component.scss"]
 })
 export class LabelsListComponent implements OnInit {
   pageId = "/list-labels";
@@ -164,14 +165,221 @@ export class LabelsListComponent implements OnInit {
   };
 
   data: any = [];
+  filteredData: any = [];
+  selectedLabels = new Set<string>();
+  hiddenImages = new Set<string>(); // Track images that failed to load
+  favoriteLabels = new Set<string>(); // Track favorite labels
+  showFavoritesOnly = false; // Filter to show only favorites
+
   async getData() {
     this.data = labelData;
+    this.loadFavorites(); // Load saved favorites from localStorage
+    this.applyFilters(); // Apply current filters
+    this.hiddenImages.clear(); // Reset hidden images when refreshing data
+  }
+
+  // Filter labels based on search and favorites
+  filterLabels(searchTerm: string) {
+    this.searchName = searchTerm;
+    this.applyFilters();
+  }
+
+  // Apply all filters (search + favorites)
+  applyFilters() {
+    let filtered = [...this.data];
+
+    // Apply search filter
+    if (this.searchName) {
+      const term = this.searchName.toLowerCase();
+      filtered = filtered.filter((label: any) => 
+        label.labelName?.toLowerCase().includes(term) ||
+        label.labelSize?.toLowerCase().includes(term) ||
+        label.orientation?.toLowerCase().includes(term) ||
+        label.service?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply favorites filter
+    if (this.showFavoritesOnly) {
+      filtered = filtered.filter((label: any) => this.favoriteLabels.has(label.id.toString()));
+    }
+
+    this.filteredData = filtered;
+  }
+
+  // Favorites management
+  toggleFavorite(label: any) {
+    const labelId = label.id.toString();
+    if (this.favoriteLabels.has(labelId)) {
+      this.favoriteLabels.delete(labelId);
+    } else {
+      this.favoriteLabels.add(labelId);
+    }
+    this.saveFavorites();
+    this.applyFilters(); // Reapply filters in case we're showing favorites only
+  }
+
+  isFavorite(labelId: any): boolean {
+    return this.favoriteLabels.has(labelId.toString());
+  }
+
+  getFavoritesCount(): number {
+    return this.favoriteLabels.size;
+  }
+
+  // Save favorites to localStorage
+  saveFavorites() {
+    const favoritesArray = Array.from(this.favoriteLabels);
+    localStorage.setItem('label-favorites', JSON.stringify(favoritesArray));
+  }
+
+  // Load favorites from localStorage
+  loadFavorites() {
+    const saved = localStorage.getItem('label-favorites');
+    if (saved) {
+      try {
+        const favoritesArray = JSON.parse(saved);
+        this.favoriteLabels = new Set(favoritesArray);
+      } catch (error) {
+        console.warn('Failed to load favorites from localStorage', error);
+        this.favoriteLabels = new Set();
+      }
+    }
+  }
+
+  // Handle image loading errors
+  onImageError(event: any, labelId: string) {
+    // Hide the image by adding to hidden set
+    this.hiddenImages.add(labelId);
+  }
+
+  // Handle successful image load
+  onImageLoad(labelId: string) {
+    // Remove from hidden set if it was there
+    this.hiddenImages.delete(labelId);
+  }
+
+  // Check if image should be hidden
+  isImageHidden(labelId: string): boolean {
+    return this.hiddenImages.has(labelId);
+  }
+
+  // Clear search
+  clearSearch() {
+    this.searchName = '';
+    this.applyFilters();
+  }
+
+  // Label selection methods
+  toggleLabelSelection(label: any) {
+    if (this.selectedLabels.has(label.id)) {
+      this.selectedLabels.delete(label.id);
+    } else {
+      this.selectedLabels.add(label.id);
+    }
+  }
+
+  clearSelection() {
+    this.selectedLabels.clear();
+  }
+
+  // Print methods
+  printLabel(label: any) {
+    // Use existing view method to open the appropriate modal
+    this.view(label);
+  }
+
+  printSelectedLabels() {
+    // Print all selected labels
+    const selectedLabels = this.filteredData.filter((label: any) => 
+      this.selectedLabels.has(label.id)
+    );
+    
+    selectedLabels.forEach((label: any) => {
+      this.view(label);
+    });
+    
+    this.clearSelection();
+  }
+
+  // Preview label
+  previewLabel(label: any) {
+    // For now, just show the modal - could add a preview mode later
+    this.view(label);
+  }
+
+  // Configure label
+  configureLabel(label: any) {
+    // For now, just show the modal - could add configuration mode later
+    this.view(label);
+  }
+
+  // Get category based on label name
+  getLabelCategory(labelName: string): string {
+    if (!labelName) return 'General';
+    
+    const name = labelName.toLowerCase();
+    
+    if (name.includes('customer')) return 'Customer';
+    if (name.includes('part')) return 'Part Info';
+    if (name.includes('location')) return 'Location';
+    if (name.includes('kit')) return 'Kit';
+    if (name.includes('ags') || name.includes('asset')) return 'Asset';
+    if (name.includes('work order') || name.includes('issue')) return 'Work Order';
+    if (name.includes('serial') || name.includes('sn')) return 'Serial Number';
+    if (name.includes('continuity')) return 'Continuity';
+    if (name.includes('total')) return 'Total';
+    if (name.includes('aristocrat')) return 'Gaming';
+    if (name.includes('bill') || name.includes('hold')) return 'Shipping';
+    if (name.includes('finished') || name.includes('goods')) return 'Inventory';
+    if (name.includes('do not touch') || name.includes('led')) return 'Warning';
+    
+    return 'General';
+  }
+
+  // Get icon based on label name/type
+  getLabelIcon(labelName: string): string {
+    if (!labelName) return 'mdi mdi-label';
+    
+    const name = labelName.toLowerCase();
+    
+    if (name.includes('customer')) return 'mdi mdi-account';
+    if (name.includes('part')) return 'mdi mdi-package-variant';
+    if (name.includes('location')) return 'mdi mdi-map-marker';
+    if (name.includes('kit')) return 'mdi mdi-package';
+    if (name.includes('ags') || name.includes('asset')) return 'mdi mdi-briefcase';
+    if (name.includes('work order') || name.includes('issue')) return 'mdi mdi-clipboard-text';
+    if (name.includes('serial') || name.includes('sn')) return 'mdi mdi-numeric';
+    if (name.includes('continuity')) return 'mdi mdi-connection';
+    if (name.includes('total')) return 'mdi mdi-calculator';
+    if (name.includes('aristocrat')) return 'mdi mdi-crown';
+    if (name.includes('bill') || name.includes('hold')) return 'mdi mdi-pause-circle';
+    if (name.includes('finished') || name.includes('goods')) return 'mdi mdi-package-variant-closed';
+    if (name.includes('do not touch') || name.includes('led')) return 'mdi mdi-alert-circle';
+    
+    return 'mdi mdi-label';
+  }
+
+  // Get status badge class
+  getStatusBadgeClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'active': 'badge bg-success',
+      'inactive': 'badge bg-secondary',
+      'deprecated': 'badge bg-warning'
+    };
+    
+    return statusMap[status] || 'badge bg-primary';
+  }
+
+  // Track by function for ngFor
+  trackByFn(index: number, item: any): any {
+    return item.id || index;
   }
 
   // Helper methods for statistics display
   getAvailableCount(): number {
-    if (!this.data) return 0;
+    if (!this.filteredData) return 0;
     // For labels, we consider all as available since they are print utilities
-    return this.data.length;
+    return this.filteredData.length;
   }
 }

@@ -1,0 +1,129 @@
+/* Enhanced Calendar Styles */
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .calendar-header {
+    .row > div {
+      margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+    
+    .calendar-stats {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+}
+
+/* Keyboard shortcut styling */
+kbd {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.75rem;
+  color: #495057;
+}
+
+/* Event filters */
+.form-check-inline {
+  margin-right: 1rem;
+}
+
+/* Calendar container improvements */
+.calendar-container {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* Statistics badges */
+.stats-badge {
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Print styles */
+@media print {
+  .card-header,
+  .card-body.bg-light {
+    display: none !important;
+  }
+  
+  .calendar-container {
+    box-shadow: none;
+    border: 1px solid #dee2e6;
+  }
+}
+
+/* Accessibility improvements */
+.btn:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Loading state */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Event styling enhancements */
+::ng-deep {
+  .mbsc-event {
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .mbsc-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  .strike-class {
+    opacity: 0.6;
+    text-decoration: line-through;
+  }
+  
+  /* Calendar day cells with hover effect */
+  .mbsc-calendar-cell,
+  .mbsc-calendar-day,
+  .mbsc-calendar-month-day,
+  .mbsc-schedule-time,
+  .mbsc-schedule-item {
+    position: relative;
+    transition: background-color 0.2s ease;
+  }
+  
+  /* General hover effect for clickable calendar areas */
+  .mbsc-calendar-cell:hover,
+  .mbsc-calendar-day:hover,
+  .mbsc-calendar-month-day:hover,
+  .mbsc-schedule-time:hover {
+    background-color: rgba(102, 126, 234, 0.08) !important;
+    cursor: pointer;
+  }
+  
+  /* Today styling */
+  .mbsc-calendar-today {
+    background: var(--bs-primary) !important;
+    color: white !important;
+    font-weight: 600;
+  }
+}

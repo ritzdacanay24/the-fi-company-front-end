@@ -1,221 +1,330 @@
-<div class="modal-body" *ngIf="isLoading">
+<!-- Loading State -->
+<div *ngIf="isLoading" class="d-flex justify-content-center align-items-center py-4">
     <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 </div>
 
+<!-- No Results Message -->
+<div *ngIf="!isLoading && !data?.orderFound" class="text-center py-4">
+    <div class="text-muted">
+        <i class="mdi mdi-file-search-outline fs-2 d-block mb-2"></i>
+        <h6 class="text-muted">Sales Order Not Found</h6>
+        <p class="small mb-0">The requested sales order could not be located.</p>
+    </div>
+</div>
 
-
-<div style="width: 100%; min-height: calc(100vh - 550px);" *ngIf="!isLoading && data && data.orderFound">
-    <h4 *ngIf="!isLoading && !data.orderFound" class="text-center p-3">Sorry, no record found.</h4>
-
-    <div class="row">
-        <div class="col-lg-12">
-
-            <!-- Primary Alert -->
-            <div class="alert alert-success alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-                role="alert" *ngIf="data?.lineOverall == 100">
-                <i class="ri-check-double-line label-icon"></i><strong>Shipment Complete!</strong> - &nbsp;
-                According to the system, this order shipped complete on
-                {{data?.main.SO_SHIP_DATE}}.
+<!-- Sales Order Summary -->
+<div *ngIf="!isLoading && data && data.orderFound" class="so-summary">
+    
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-primary text-white rounded">
+                <div class="d-flex align-items-center text-white">
+                    <i class="mdi mdi-package-variant fs-4 me-3"></i>
+                    <div>
+                        <h5 class="mb-0 text-white">{{data.main.SO_NBR}}</h5>
+                        <small class="opacity-75">Sales Order</small>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark">{{data?.lineOverall | number : '1.0-0'}}% Complete</span>
+                </div>
             </div>
-
-            <!-- Primary Alert -->
-            <div class="alert alert-warning alert-dismissible material-shadow alert-label-icon label-arrow fade show"
-                role="alert" *ngIf="data?.lineOverall != 100">
-                <i class="ri-information-line label-icon"></i><strong>Line Information!</strong> - &nbsp;
-                According to the system, this order is about
-                {{data?.lineOverall | number : '1.2-2'}}% complete.
-            </div>
-
         </div>
     </div>
 
-    <div *ngIf="data && data.orderFound" id="print">
-        <div class="row">
-            <div class="col-lg-4 col-print-6 rid-margin float-left">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Order Information
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Order Info</h6>
+                <div class="small">
+                    <div><strong>Order Number:</strong> {{data.main.SO_NBR}}</div>
+                    <div><strong>PO Number:</strong> {{data.main.SO_PO}}</div>
+                    <div><strong>Customer:</strong> {{data.address.ad_name}}</div>
+                    <div><strong>Customer Code:</strong> {{data.address.ad_ref}}</div>
+                    <div><strong>Ship Via:</strong> 
+                        <span class="badge bg-info">{{data.main.SO_SHIPVIA?.trim()}}</span>
                     </div>
-                    <ul class="list-group list-group-flush ">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>So Number</span>
-                            {{data.main.SO_NBR}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Due Date</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Quantities</h6>
+                <div class="small">
+                    <div><strong>Ordered:</strong> {{data.ordered}}</div>
+                    <div><strong>Shipped:</strong> {{data.shipped}}</div>
+                    <div><strong>Picked:</strong> {{data.picked}}</div>
+                    <div><strong>Invoiced:</strong> {{data.inv}}</div>
+                    <div><strong>% Complete:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': data.lineOverall >= 100,
+                            'bg-warning text-dark': data.lineOverall >= 50 && data.lineOverall < 100,
+                            'bg-danger': data.lineOverall < 50
+                        }">{{data.lineOverall | number:'1.0-0'}}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Dates</h6>
+                <div class="small">
+                    <div><strong>Order Date:</strong> {{data.main.SO_ORD_DATE}}</div>
+                    <div><strong>Due Date:</strong> 
+                        <span [ngClass]="{'text-danger': data.main.AGE > 0, 'text-success': data.main.AGE <= 0}">
                             {{data.main.SO_DUE_DATE}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ordered Date</span>
-                            {{data.main.SO_ORD_DATE}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Required Date</span>
-                            {{data.main.SO_REQ_DATE}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Last Shipped On</span>
-                            {{data?.lastShipDate?.abs_shp_date || 'No Ship Date'}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ship Via</span>
-                            {{data.main.SO_SHIPVIA}}
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-lg-4 d-print-none">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Address Information
+                            <span *ngIf="data.main.AGE > 0" class="badge bg-danger-subtle text-danger ms-1">{{data.main.AGE}} days overdue</span>
+                        </span>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Name</span>
-                            {{data.address.ad_name}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ship To</span>
-                            {{data.address.ad_addr}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Address</span>
-                            {{data.address.ad_line2}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>State</span>
-                            {{data.address.ad_state}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Zip</span>
-                            {{data.address.ad_zip}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Customer</span>
-                            {{data.address.ad_ref}}
-                        </li>
-                    </ul>
+                    <div><strong>Ship Date:</strong> {{data?.main.SO_SHIP_DATE}}</div>
+                    <div><strong>Last Shipped:</strong> {{data?.lastShipDate?.abs_shp_date}}</div>
                 </div>
             </div>
-            <div class="col-lg-4 col-print-6">
-                <div class="card overflow-hidden">
-                    <div class="card-header font-weight-bolder">
-                        Order Summary
+        </div>
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <h6 class="text-muted mb-2">Financial</h6>
+                <div class="small">
+                    <div><strong>Order Value:</strong> {{data.price | currency}}</div>
+                    <div><strong>Total Lines:</strong> {{data.lines}}</div>
+                    <div><strong>Status:</strong> 
+                        <span class="badge" [ngClass]="{
+                            'bg-success': data.lineOverall === 100, 
+                            'bg-warning': data.lineOverall > 0 && data.lineOverall < 100, 
+                            'bg-danger': data.lineOverall === 0
+                        }">
+                            {{data.lineOverall === 100 ? 'Complete' : data.lineOverall > 0 ? 'In Progress' : 'Pending'}}
+                        </span>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Ordered Qty</span>
-                            {{data.ordered}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Picked Qty</span>
-                            {{data.picked}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Shipped Qty</span>
-                            {{data.shipped}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Invoiced Qty</span>
-                            {{data.inv}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Total Lines</span>
-                            {{data.lines}}
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0">
-                            <span>Price</span>
-                            {{data.price | currency}}
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="row d-none d-print-block">
-            <div class="col-lg-12">
-                <table class="table" style="padding-bottom:20px">
-                    <thead>
-                        <tr>
-                            <th>Due Date</th>
-                            <th>Cust PO#</th>
-                            <th>Line</th>
-                            <th>Part</th>
-                            <th>Cust Part</th>
-                            <th>CO#</th>
-                            <th>Ordered</th>
-                            <th>Shipped</th>
-                            <th>Shipped Date</th>
-                            <th>Last Comment</th>
-                            <th>% Complete</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let row of data.mainDetails">
-                            <td style="white-space: nowrap;">{{row.sod_due_date}}</td>
-                            <td>{{row.sod_contr_id}}</td>
-                            <td>{{row.sod_line}}</td>
-                            <td>{{row.sod_part}}</td>
-                            <td>{{row.sod_custpart}}</td>
-                            <td>{{row.sod_order_category}}</td>
-                            <td>{{row.sod_qty_ord}}</td>
-                            <td>{{row.sod_qty_ship}}</td>
-                            <td style="white-space: nowrap;">{{row.ABS_SHP_DATE}}</td>
-                            <td>
-                                {{row.COMMENTSMAXHTML}}
-                            </td>
-                            <td>{{row.PERCENT | number : '1.2-2'}}%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="row" *ngIf="data && data.orderFound">
-        <div class="col-lg-12">
-            <div class="card overflow-hidden d-flex justify-content-between">
-                <div class="card-header font-weight-bolder">
-                    Line Details
-                    <span class="text-end">Overall {{data.lineOverall | number : '1.2-2'}}% completed</span>
-                </div>
-                <div class="card-body p-0">
-                    <ag-grid-angular *ngIf="data?.mainDetails" style="width: 100%;height:500px"
-                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions" [rowData]="data?.mainDetails">
-                    </ag-grid-angular>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row" *ngIf="data && data.orderFound">
-        <div class="col">
-            <div class="card shadow-md">
-                <div class="card-header font-weight-bolder">
-                    Ship Details
-                </div>
-                <div class="card-body p-0">
-                    <ag-grid-angular *ngIf="data?.ship" style="width: 100%;height:500px"
-                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions1" [rowData]="data?.ship">
-                    </ag-grid-angular>
+
+    <!-- Additional Details Row -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Shipping Information</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="small"><strong>Company:</strong> {{data.address.ad_name}}</div>
+                        <div class="small"><strong>Address:</strong> {{data.address.ad_addr}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>City:</strong> {{data.address.ad_city}}</div>
+                        <div class="small"><strong>State:</strong> {{data.address.ad_state}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>ZIP Code:</strong> {{data.address.ad_zip}}</div>
+                        <div class="small"><strong>Country:</strong> {{data.address.ad_country}}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small"><strong>Ship Via:</strong> {{data.main.SO_SHIPVIA?.trim()}}</div>
+                        <div class="small" *ngIf="data.address.ad_line2"><strong>Address 2:</strong> {{data.address.ad_line2}}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row" *ngIf="transactions?.length == 0">
-        <div class="col mb-3">
-            <button (click)="!loadingIndicatorTransactions && getTransactions()" type="button"
-                class="btn btn-primary">{{loadingIndicatorTransactions ? 'Loading...': 'View Transactions'}}</button>
+
+    <!-- Line Details Table -->
+    <div class="row mb-3" *ngIf="data?.mainDetails?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Line Details ({{data.mainDetails.length}} items)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Line</th>
+                                <th>Part Number</th>
+                                <th>Customer Part</th>
+                                <th>Category</th>
+                                <th>Due Date</th>
+                                <th>Required Date</th>
+                                <th>Qty Ordered</th>
+                                <th>Qty Shipped</th>
+                                <th>Ship Date</th>
+                                <th>Status %</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of data.mainDetails">
+                                <td><strong>{{item.sod_line}}</strong></td>
+                                <td><strong>{{item.sod_part}}</strong></td>
+                                <td class="small text-muted">{{item.sod_custpart}}</td>
+                                <td class="small">{{item.sod_order_category}}</td>
+                                <td>{{item.sod_due_date}}</td>
+                                <td>{{item.sod_req_date}}</td>
+                                <td class="text-end">{{item.sod_qty_ord}}</td>
+                                <td class="text-end">{{item.sod_qty_ship}}</td>
+                                <td>{{item.ABS_SHP_DATE}}</td>
+                                <td class="text-center">
+                                    <span class="badge" [ngClass]="{
+                                        'bg-success': item.PERCENT >= 100,
+                                        'bg-warning text-dark': item.PERCENT >= 50 && item.PERCENT < 100,
+                                        'bg-danger': item.PERCENT < 50
+                                    }">{{item.PERCENT | number:'1.0-0'}}%</span>
+                                </td>
+                                <td class="small">{{item.recent_comments?.created_by_name || 'No recent activity'}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="row" *ngIf="transactions?.length > 0">
-        <div class="col">
-            <div class="card overflow-hidden">
-                <div class="card-header font-weight-bolder">
-                    Order Transactions
+
+    <!-- Shipping Details Table -->
+    <div class="row mb-3" *ngIf="data?.ship?.length > 0">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Shipping Details ({{data.ship.length}} shipments)</h6>
                 </div>
-                <div class="card-body p-0">
-                    <ag-grid-angular *ngIf="transactions" style="width: 100%;height:500px"
-                        class="ag-theme-quartz no-border" [gridOptions]="gridOptions2" [rowData]="transactions">
-                    </ag-grid-angular>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr class="table-light">
+                                <th>Ship Date</th>
+                                <th>Line</th>
+                                <th>Item</th>
+                                <th>Ship To</th>
+                                <th>Quantity</th>
+                                <th>Invoice</th>
+                                <th>Tracking</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let shipment of data.ship">
+                                <td><strong>{{shipment.abs_shp_date}}</strong></td>
+                                <td>{{shipment.abs_line}}</td>
+                                <td>{{shipment.abs_item}}</td>
+                                <td>{{shipment.abs_shipto}}</td>
+                                <td class="text-end">{{shipment.abs_ship_qty}}</td>
+                                <td>{{shipment.abs_inv_nbr}}</td>
+                                <td>{{shipment.abs_par_id || 'N/A'}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Shipments State -->
+    <div class="row mb-3" *ngIf="!data?.ship?.length">
+        <div class="col-12">
+            <div class="border rounded">
+                <div class="bg-light p-2 border-bottom">
+                    <h6 class="mb-0">Shipping Details</h6>
+                </div>
+                <div class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="mdi mdi-truck-delivery fs-2 d-block mb-2"></i>
+                        <h6 class="text-muted">No Shipments Yet</h6>
+                        <p class="small mb-0">This order has not been shipped yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="row" *ngIf="data?.mainDetails?.length > 0 || data?.ship?.length > 0">
+        <div class="col-md-6" *ngIf="data?.mainDetails?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Order Summary</h6>
+                <div class="small">
+                    <div><strong>Total Lines:</strong> {{data.mainDetails.length}}</div>
+                    <div><strong>Overall Progress:</strong> {{data.lineOverall | number:'1.0-0'}}%</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" *ngIf="data?.ship?.length > 0">
+            <div class="border rounded p-3">
+                <h6 class="text-muted mb-2">Shipping Summary</h6>
+                <div class="small">
+                    <div><strong>Total Shipments:</strong> {{data.ship.length}}</div>
+                    <div><strong>Items Shipped:</strong> {{data.shipped}} of {{data.ordered}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print-only table -->
+<!-- Print-only table -->
+<div class="d-none d-print-block">
+    <div class="col-lg-12">
+        <table class="table" style="padding-bottom:20px">
+            <thead>
+                <tr>
+                    <th>Due Date</th>
+                    <th>Cust PO#</th>
+                    <th>Line</th>
+                    <th>Part</th>
+                    <th>Cust Part</th>
+                    <th>CO#</th>
+                    <th>Ordered</th>
+                    <th>Shipped</th>
+                    <th>Shipped Date</th>
+                    <th>Last Comment</th>
+                    <th>% Complete</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let row of data.mainDetails">
+                    <td style="white-space: nowrap;">{{row.sod_due_date}}</td>
+                    <td>{{row.sod_contr_id}}</td>
+                    <td>{{row.sod_line}}</td>
+                    <td>{{row.sod_part}}</td>
+                    <td>{{row.sod_custpart}}</td>
+                    <td>{{row.sod_order_category}}</td>
+                    <td>{{row.sod_qty_ord}}</td>
+                    <td>{{row.sod_qty_ship}}</td>
+                    <td style="white-space: nowrap;">{{row.ABS_SHP_DATE}}</td>
+                    <td>{{row.COMMENTSMAXHTML}}</td>
+                    <td>{{row.PERCENT | number : '1.2-2'}}%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Transactions Section -->
+<div class="row" *ngIf="transactions?.length == 0">
+    <div class="col mb-3 mt-3">
+        <div class="border rounded p-3 text-center">
+            <h6 class="text-muted mb-2">Transaction History</h6>
+            <button (click)="!loadingIndicatorTransactions && getTransactions()" 
+                    type="button"
+                    class="btn btn-outline-primary"
+                    [disabled]="loadingIndicatorTransactions">
+                <span *ngIf="loadingIndicatorTransactions" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <i class="mdi mdi-history me-2" *ngIf="!loadingIndicatorTransactions"></i>
+                {{loadingIndicatorTransactions ? 'Loading...' : 'View Transaction History'}}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3" *ngIf="transactions?.length > 0">
+    <div class="col-12">
+        <div class="border rounded">
+            <div class="bg-light p-2 border-bottom">
+                <h6 class="mb-0">Transaction History ({{transactions.length}} transactions)</h6>
+            </div>
+            <div class="p-0">
+                <ag-grid-angular *ngIf="transactions" style="width: 100%;height:500px"
+                    class="ag-theme-quartz no-border" [gridOptions]="gridOptions2" [rowData]="transactions">
+                </ag-grid-angular>
             </div>
         </div>
     </div>
