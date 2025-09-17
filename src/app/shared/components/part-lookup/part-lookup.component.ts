@@ -44,12 +44,12 @@ export class PartLookupComponent {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["partNumber"]) {
       this.partNumber = changes["partNumber"].currentValue;
-      // Don't automatically search on input changes
-    }
-
-    if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.partNumber) {
       this.getData();
     }
+
+    // if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.partNumber) {
+    //   this.getData();
+    // }
   }
 
   locationcolumnDefs: ColDef[] = [
@@ -376,7 +376,7 @@ export class PartLookupComponent {
     private api: ItemService,
     public salesOrderInfoModalService: SalesOrderInfoModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService
-  ) {}
+  ) { }
 
   @Input() public typeOfItemSearch: string;
 
@@ -458,7 +458,7 @@ export class PartLookupComponent {
       this.isLoading = false;
       this.isLoadingEmitter.emit(this.isLoading);
       this.hasDataEmitter.emit(data.itemInfo);
-      
+
       // Emit the actual data object, not the function
       this.setData.emit(data);
     } catch (err) {
@@ -480,9 +480,9 @@ export class PartLookupComponent {
     // this.getDataEmitter.emit(this.getData);
   }
 
-  public dismiss() {}
+  public dismiss() { }
 
-  public close() {}
+  public close() { }
 
   // Helper methods for status badge styling
   getWorkOrderStatusClass(status: string): string {

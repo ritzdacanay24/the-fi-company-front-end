@@ -75,6 +75,14 @@ export const MENU_DATA: MenuItem[] = [
         icon: "las la-shipping-fast",
         hideCheckBox: true,
     },
+    // {
+    //     id: 801,
+    //     label: "Shipping Analytics",
+    //     link: "/operations/shipping-analytics",
+    //     description: "Shipping Performance Analytics & Insights",
+    //     icon: "las la-chart-area",
+    //     hideCheckBox: true,
+    // },
     {
         id: 9,
         label: "Master Production",

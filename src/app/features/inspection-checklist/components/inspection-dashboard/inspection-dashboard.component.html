@@ -1,20 +1,20 @@
-<div class="inspection-dashboard">
+<div class="container-fluid py-4">
   <!-- Header Section -->
-  <div class="header-section">
-    <div class="dashboard-title">
-      <h1>
-        <i class="fas fa-tachometer-alt"></i>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2 mb-1 text-dark fw-bold">
+        <i class="fas fa-tachometer-alt text-primary me-2"></i>
         Inspection Dashboard
       </h1>
-      <p class="subtitle">Manage inspection checklists and monitor progress</p>
+      <p class="text-muted mb-0">Manage inspection checklists and monitor progress</p>
     </div>
     
-    <div class="header-actions">
+    <div class="d-flex gap-2">
       <button 
         type="button" 
-        class="btn btn-primary"
+        class="btn btn-primary btn-lg px-4"
         (click)="createNewTemplate()">
-        <i class="fas fa-plus"></i>
+        <i class="fas fa-plus me-2"></i>
         New Template
       </button>
       
@@ -23,63 +23,97 @@
         class="btn btn-outline-secondary"
         (click)="refreshData()"
         [disabled]="isLoading">
-        <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+        <i class="fas fa-sync-alt me-2" [class.fa-spin]="isLoading"></i>
         Refresh
       </button>
     </div>
   </div>
 
   <!-- Stats Cards -->
-  <div class="stats-section">
-    <div class="row">
-      <div class="col-md-3 col-sm-6 mb-4">
-        <div class="stat-card templates">
-          <div class="stat-icon">
-            <i class="fas fa-clipboard-list"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ stats.totalTemplates }}</h3>
-            <p>Total Templates</p>
-            <small class="stat-detail">{{ stats.activeTemplates }} active</small>
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-3 col-sm-6 mb-4">
-        <div class="stat-card instances">
-          <div class="stat-icon">
-            <i class="fas fa-tasks"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ stats.totalInstances }}</h3>
-            <p>Total Inspections</p>
-            <small class="stat-detail">{{ stats.completedInstances }} completed</small>
+  <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                <i class="fas fa-clipboard-list text-primary fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h3 class="fs-2 fw-bold mb-1 text-dark">{{ stats.totalTemplates }}</h3>
+              <p class="mb-1 fw-medium text-muted">Total Templates</p>
+              <small class="text-success">
+                <i class="fas fa-check-circle me-1"></i>
+                {{ stats.activeTemplates }} active
+              </small>
+            </div>
           </div>
         </div>
       </div>
-      
-      <div class="col-md-3 col-sm-6 mb-4">
-        <div class="stat-card pending">
-          <div class="stat-icon">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ stats.pendingInstances }}</h3>
-            <p>Pending</p>
-            <small class="stat-detail">Require attention</small>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                <i class="fas fa-tasks text-info fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h3 class="fs-2 fw-bold mb-1 text-dark">{{ stats.totalInstances }}</h3>
+              <p class="mb-1 fw-medium text-muted">Total Inspections</p>
+              <small class="text-warning">
+                <i class="fas fa-clock me-1"></i>
+                {{ stats.pendingInstances }} pending
+              </small>
+            </div>
           </div>
         </div>
       </div>
-      
-      <div class="col-md-3 col-sm-6 mb-4">
-        <div class="stat-card completion">
-          <div class="stat-icon">
-            <i class="fas fa-stopwatch"></i>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                <i class="fas fa-check-double text-success fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h3 class="fs-2 fw-bold mb-1 text-dark">{{ stats.completedInstances }}</h3>
+              <p class="mb-1 fw-medium text-muted">Completed</p>
+              <small class="text-success">
+                <i class="fas fa-arrow-up me-1"></i>
+                {{ getCompletionRate() }}% rate
+              </small>
+            </div>
           </div>
-          <div class="stat-content">
-            <h3>{{ formatDuration(stats.averageCompletionTime) }}</h3>
-            <p>Avg. Time</p>
-            <small class="stat-detail">Per inspection</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                <i class="fas fa-stopwatch text-warning fs-4"></i>
+              </div>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h3 class="fs-2 fw-bold mb-1 text-dark">{{ stats.averageCompletionTime }}</h3>
+              <p class="mb-1 fw-medium text-muted">Avg. Time (min)</p>
+              <small class="text-muted">
+                <i class="fas fa-chart-line me-1"></i>
+                per inspection
+              </small>
+            </div>
           </div>
         </div>
       </div>
@@ -87,60 +121,61 @@
   </div>
 
   <!-- Search and Filters -->
-  <div class="filters-section">
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label for="searchInput">Search</label>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-medium text-dark">Search</label>
           <div class="input-group">
-            <input
-              id="searchInput"
-              type="text"
-              class="form-control"
-              placeholder="Search templates, categories, or users..."
+            <span class="input-group-text bg-light border-end-0">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control border-start-0 ps-0"
+              placeholder="Search templates or inspections..."
               [(ngModel)]="searchTerm"
-              (input)="onSearchChange()">
-            <div class="input-group-append">
-              <span class="input-group-text">
-                <i class="fas fa-search"></i>
-              </span>
-            </div>
+              (input)="filterData()">
           </div>
         </div>
-      </div>
-      
-      <div class="col-md-3">
-        <div class="form-group">
-          <label for="periodSelect">Time Period</label>
-          <select
-            id="periodSelect"
-            class="form-control"
-            [(ngModel)]="selectedPeriod"
-            (change)="onPeriodChange()">
-            <option value="1">Last 1 day</option>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
+
+        <div class="col-md-3">
+          <label class="form-label fw-medium text-dark">Status Filter</label>
+          <select 
+            class="form-select"
+            [(ngModel)]="selectedStatus"
+            (change)="filterData()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="in-progress">In Progress</option>
+            <option value="pending">Pending</option>
+            <option value="draft">Draft</option>
           </select>
         </div>
-      </div>
-      
-      <div class="col-md-3">
-        <div class="form-group">
-          <label>&nbsp;</label>
-          <div class="quick-actions">
+
+        <div class="col-md-3">
+          <label class="form-label fw-medium text-dark">Date Range</label>
+          <select 
+            class="form-select"
+            [(ngModel)]="selectedPeriod"
+            (change)="onPeriodChange()">
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-medium text-dark">&nbsp;</label>
+          <div class="d-grid">
             <button 
               type="button" 
-              class="btn btn-outline-info btn-sm"
-              (click)="viewReports()">
-              <i class="fas fa-chart-bar"></i>
-              Reports
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-outline-success btn-sm"
+              class="btn btn-outline-primary"
               (click)="exportData()">
-              <i class="fas fa-download"></i>
+              <i class="fas fa-download me-2"></i>
               Export
             </button>
           </div>
@@ -150,178 +185,93 @@
   </div>
 
   <!-- Main Content -->
-  <div class="main-content" *ngIf="!isLoading">
-    <div class="row">
-      <!-- Templates Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="content-card">
-          <div class="card-header">
-            <h5>
-              <i class="fas fa-clipboard-list"></i>
-              Templates
-              <span class="badge badge-primary">{{ filteredTemplates.length }}</span>
+  <div class="row g-4">
+    <!-- Templates Section -->
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom-0 pb-0">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+              <i class="fas fa-clipboard-list text-primary me-2"></i>
+              Recent Templates
             </h5>
             <button 
               type="button" 
-              class="btn btn-outline-primary btn-sm"
+              class="btn btn-sm btn-outline-primary"
               (click)="manageTemplates()">
-              <i class="fas fa-cog"></i>
-              Manage All
-            </button>
-          </div>
-          
-          <div class="card-body">
-            <div class="templates-list">
-              <div *ngFor="let template of filteredTemplates.slice(0, 5)" 
-                   class="template-item"
-                   (click)="viewTemplate(template)">
-                <div class="template-info">
-                  <div class="template-name">{{ template.name }}</div>
-                  <div class="template-meta">
-                    <span class="badge" [ngClass]="getStatusBadgeClass(template.status)">
-                      {{ template.status | titlecase }}
-                    </span>
-                    <span class="meta-text">{{ template.category | titlecase }}</span>
-                    <span class="meta-text">{{ template.items.length }} items</span>
-                    <span class="meta-text">{{ getTemplateUsageCount(template) }} uses</span>
-                  </div>
-                </div>
-                
-                <div class="template-actions">
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-success btn-sm"
-                    (click)="startInspection(template); $event.stopPropagation()"
-                    title="Start Inspection">
-                    <i class="fas fa-play"></i>
-                  </button>
-                  
-                  <div class="dropdown">
-                    <button 
-                      type="button" 
-                      class="btn btn-outline-secondary btn-sm dropdown-toggle"
-                      data-toggle="dropdown"
-                      (click)="$event.stopPropagation()">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                      <a class="dropdown-item" (click)="editTemplate(template)">
-                        <i class="fas fa-edit"></i> Edit
-                      </a>
-                      <a class="dropdown-item" (click)="duplicateTemplate(template, $event)">
-                        <i class="fas fa-copy"></i> Duplicate
-                      </a>
-                      <div class="dropdown-divider"></div>
-                      <a class="dropdown-item text-danger" (click)="deleteTemplate(template, $event)">
-                        <i class="fas fa-trash"></i> Delete
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div *ngIf="filteredTemplates.length === 0" class="empty-state">
-                <i class="fas fa-clipboard-list fa-2x text-muted"></i>
-                <p class="text-muted mt-2">No templates found</p>
-                <button 
-                  type="button" 
-                  class="btn btn-primary btn-sm"
-                  (click)="createNewTemplate()">
-                  Create First Template
-                </button>
-              </div>
-              
-              <div *ngIf="filteredTemplates.length > 5" class="show-more">
-                <button 
-                  type="button" 
-                  class="btn btn-outline-primary btn-sm"
-                  (click)="manageTemplates()">
-                  View All {{ filteredTemplates.length }} Templates
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Inspections Section -->
-      <div class="col-lg-6 mb-4">
-        <div class="content-card">
-          <div class="card-header">
-            <h5>
-              <i class="fas fa-history"></i>
-              Recent Inspections
-              <span class="badge badge-info">{{ filteredInstances.length }}</span>
-            </h5>
-            <button 
-              type="button" 
-              class="btn btn-outline-info btn-sm"
-              (click)="viewAllInstances()">
-              <i class="fas fa-list"></i>
               View All
             </button>
           </div>
-          
-          <div class="card-body">
-            <div class="instances-list">
-              <div *ngFor="let instance of filteredInstances.slice(0, 5)" 
-                   class="instance-item"
-                   (click)="viewInstance(instance)">
-                <div class="instance-info">
-                  <div class="instance-name">{{ instance.template.name }}</div>
-                  <div class="instance-meta">
-                    <span class="badge" [ngClass]="getStatusBadgeClass(instance.status)">
-                      {{ instance.status | titlecase }}
+        </div>
+        <div class="card-body">
+          <div *ngIf="isLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <div *ngIf="!isLoading && filteredTemplates.length === 0" class="text-center py-4">
+            <i class="fas fa-clipboard-list text-muted fs-1 mb-3"></i>
+            <h6 class="text-muted">No templates found</h6>
+            <p class="text-muted small mb-3">Create your first inspection template to get started</p>
+            <button 
+              type="button" 
+              class="btn btn-primary btn-sm"
+              (click)="createNewTemplate()">
+              <i class="fas fa-plus me-2"></i>
+              Create Template
+            </button>
+          </div>
+
+          <div *ngIf="!isLoading && filteredTemplates.length > 0">
+            <div 
+              *ngFor="let template of filteredTemplates | slice:0:5" 
+              class="border-bottom py-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1 fw-medium text-dark">{{ template.name }}</h6>
+                  <p class="mb-1 text-muted small">{{ template.description }}</p>
+                  <div class="d-flex align-items-center gap-3">
+                    <span 
+                      class="badge rounded-pill"
+                      [ngClass]="getStatusBadgeClass(template.status)">
+                      {{ template.status | titlecase }}
                     </span>
-                    <span class="meta-text">{{ instance.assignedTo }}</span>
-                    <span class="meta-text">{{ instance.startedDate | date:'short' }}</span>
-                  </div>
-                  
-                  <div class="progress-bar-container" *ngIf="instance.status === 'in-progress'">
-                    <div class="progress">
-                      <div 
-                        class="progress-bar bg-info" 
-                        [style.width.%]="getProgressPercentage(instance)">
-                      </div>
-                    </div>
-                    <small class="progress-text">{{ getProgressPercentage(instance).toFixed(0) }}% complete</small>
+                    <small class="text-muted">
+                      <i class="fas fa-tasks me-1"></i>
+                      {{ template.items?.length || 0 }} items
+                    </small>
+                    <small class="text-muted">
+                      <i class="fas fa-calendar me-1"></i>
+                      {{ template.createdDate | date:'mediumDate' }}
+                    </small>
                   </div>
                 </div>
-                
-                <div class="instance-actions">
+                <div class="dropdown">
                   <button 
-                    *ngIf="instance.status === 'in-progress'"
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                     type="button" 
-                    class="btn btn-outline-primary btn-sm"
-                    (click)="continueInspection(instance); $event.stopPropagation()"
-                    title="Continue Inspection">
-                    <i class="fas fa-play"></i>
-                    Continue
+                    data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i>
                   </button>
-                  
-                  <button 
-                    type="button" 
-                    class="btn btn-outline-secondary btn-sm"
-                    (click)="viewInstance(instance); $event.stopPropagation()"
-                    title="View Details">
-                    <i class="fas fa-eye"></i>
-                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="viewTemplate(template); $event.preventDefault()">
+                        <i class="fas fa-eye me-2"></i>View
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="editTemplate(template); $event.preventDefault()">
+                        <i class="fas fa-edit me-2"></i>Edit
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="startInspection(template); $event.preventDefault()">
+                        <i class="fas fa-play me-2"></i>Start Inspection
+                      </a>
+                    </li>
+                  </ul>
                 </div>
-              </div>
-              
-              <div *ngIf="filteredInstances.length === 0" class="empty-state">
-                <i class="fas fa-history fa-2x text-muted"></i>
-                <p class="text-muted mt-2">No recent inspections</p>
-                <p class="text-muted">Start an inspection from a template above</p>
-              </div>
-              
-              <div *ngIf="filteredInstances.length > 5" class="show-more">
-                <button 
-                  type="button" 
-                  class="btn btn-outline-info btn-sm"
-                  (click)="viewAllInstances()">
-                  View All {{ filteredInstances.length }} Inspections
-                </button>
               </div>
             </div>
           </div>
@@ -329,56 +279,86 @@
       </div>
     </div>
 
-    <!-- Quick Start Section -->
-    <div class="row">
-      <div class="col-12">
-        <div class="content-card quick-start">
-          <div class="card-header">
-            <h5>
-              <i class="fas fa-rocket"></i>
-              Quick Start
+    <!-- Instances Section -->
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom-0 pb-0">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+              <i class="fas fa-tasks text-info me-2"></i>
+              Recent Inspections
             </h5>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-outline-info"
+              (click)="viewAllInstances()">
+              View All
+            </button>
           </div>
-          
-          <div class="card-body">
-            <div class="quick-start-actions">
-              <div class="quick-action" (click)="createNewTemplate()">
-                <div class="action-icon">
-                  <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="card-body">
+          <div *ngIf="isLoading" class="text-center py-4">
+            <div class="spinner-border text-info" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <div *ngIf="!isLoading && filteredInstances.length === 0" class="text-center py-4">
+            <i class="fas fa-tasks text-muted fs-1 mb-3"></i>
+            <h6 class="text-muted">No inspections found</h6>
+            <p class="text-muted small mb-3">Start your first inspection from a template</p>
+            <button 
+              type="button" 
+              class="btn btn-info btn-sm"
+              (click)="manageTemplates()">
+              <i class="fas fa-clipboard-list me-2"></i>
+              Browse Templates
+            </button>
+          </div>
+
+          <div *ngIf="!isLoading && filteredInstances.length > 0">
+            <div 
+              *ngFor="let instance of filteredInstances | slice:0:5" 
+              class="border-bottom py-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1 fw-medium text-dark">{{ instance.templateName }}</h6>
+                  <p class="mb-1 text-muted small">Inspector: {{ instance.assignedToName || instance.assignedTo }}</p>
+                  <div class="d-flex align-items-center gap-3">
+                    <span 
+                      class="badge rounded-pill"
+                      [ngClass]="getStatusBadgeClass(instance.status)">
+                      {{ instance.status | titlecase }}
+                    </span>
+                    <small class="text-muted">
+                      <i class="fas fa-percentage me-1"></i>
+                      {{ getInstanceProgress(instance) }}% complete
+                    </small>
+                    <small class="text-muted">
+                      <i class="fas fa-calendar me-1"></i>
+                      {{ instance.startedDate | date:'mediumDate' }}
+                    </small>
+                  </div>
                 </div>
-                <div class="action-content">
-                  <h6>Create Template</h6>
-                  <p>Build a new inspection checklist template</p>
-                </div>
-              </div>
-              
-              <div class="quick-action" (click)="manageTemplates()">
-                <div class="action-icon">
-                  <i class="fas fa-cogs"></i>
-                </div>
-                <div class="action-content">
-                  <h6>Manage Templates</h6>
-                  <p>View and edit existing templates</p>
-                </div>
-              </div>
-              
-              <div class="quick-action" (click)="viewAllInstances()">
-                <div class="action-icon">
-                  <i class="fas fa-clipboard-check"></i>
-                </div>
-                <div class="action-content">
-                  <h6>View Inspections</h6>
-                  <p>Check all inspection instances</p>
-                </div>
-              </div>
-              
-              <div class="quick-action" (click)="viewReports()">
-                <div class="action-icon">
-                  <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="action-content">
-                  <h6>View Reports</h6>
-                  <p>Analyze inspection data and trends</p>
+                <div class="dropdown">
+                  <button 
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                    type="button" 
+                    data-bs-toggle="dropdown">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="#" (click)="viewInstance(instance); $event.preventDefault()">
+                        <i class="fas fa-eye me-2"></i>View
+                      </a>
+                    </li>
+                    <li *ngIf="instance.status === 'in-progress' || instance.status === 'pending'">
+                      <a class="dropdown-item" href="#" (click)="continueInspection(instance); $event.preventDefault()">
+                        <i class="fas fa-play me-2"></i>Continue
+                      </a>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -388,13 +368,54 @@
     </div>
   </div>
 
-  <!-- Loading State -->
-  <div class="loading-state" *ngIf="isLoading">
-    <div class="text-center py-5">
-      <div class="spinner-border spinner-border-lg" role="status">
-        <span class="sr-only">Loading...</span>
+  <!-- Quick Actions Footer -->
+  <div class="row g-3 mt-4">
+    <div class="col-md-4">
+      <div class="card border-0 bg-primary bg-opacity-10 h-100">
+        <div class="card-body text-center">
+          <i class="fas fa-chart-bar text-primary fs-1 mb-3"></i>
+          <h6 class="fw-bold text-dark mb-2">View Reports</h6>
+          <p class="text-muted small mb-3">Analyze inspection data and trends</p>
+          <button 
+            type="button" 
+            class="btn btn-primary btn-sm"
+            (click)="viewReports()">
+            Open Reports
+          </button>
+        </div>
       </div>
-      <p class="mt-3">Loading dashboard data...</p>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 bg-info bg-opacity-10 h-100">
+        <div class="card-body text-center">
+          <i class="fas fa-cogs text-info fs-1 mb-3"></i>
+          <h6 class="fw-bold text-dark mb-2">Manage Templates</h6>
+          <p class="text-muted small mb-3">Create and edit inspection templates</p>
+          <button 
+            type="button" 
+            class="btn btn-info btn-sm"
+            (click)="manageTemplates()">
+            Manage Templates
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 bg-success bg-opacity-10 h-100">
+        <div class="card-body text-center">
+          <i class="fas fa-tasks text-success fs-1 mb-3"></i>
+          <h6 class="fw-bold text-dark mb-2">All Inspections</h6>
+          <p class="text-muted small mb-3">View and manage all inspections</p>
+          <button 
+            type="button" 
+            class="btn btn-success btn-sm"
+            (click)="viewAllInstances()">
+            View All
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

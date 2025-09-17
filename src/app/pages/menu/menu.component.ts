@@ -1,6 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
+import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { environment } from "@environments/environment";
 
 @Component({
@@ -11,7 +12,11 @@ import { environment } from "@environments/environment";
   styleUrls: [],
 })
 export class MenuComponent implements OnInit {
-  constructor(public route: ActivatedRoute, public router: Router) {}
+  constructor(
+    public route: ActivatedRoute, 
+    public router: Router,
+    private pathUtils: PathUtilsService
+  ) {}
 
   ngOnInit(): void {}
 
@@ -22,6 +27,7 @@ export class MenuComponent implements OnInit {
         { name: "Operations Dashboard", link: "/operations" },
         { name: "Field Service Dashboard", link: "/field-service" },
         { name: "Quality Dashboard", link: "/quality" },
+        { name: "Shipping Analytics Dashboard", link: "/operations/shipping-analytics" },
         {
           name: "Shipping Request Form",
           link: "/operations/forms/shipping-request/create",
@@ -58,11 +64,12 @@ export class MenuComponent implements OnInit {
     } else {
       let link = row.link;
       if (environment.production) {
-        link = "/dist/web" + row.link;
+        link = this.pathUtils.buildUrl(row.link);
+      } else {
+        link = row.link;
       }
 
-      const url = this.router.serializeUrl(this.router.createUrlTree([link]));
-      window.open(url, "_blank");
+      window.open(link, "_blank");
     }
   }
 }

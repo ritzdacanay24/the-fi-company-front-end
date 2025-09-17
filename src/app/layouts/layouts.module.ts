@@ -2,6 +2,7 @@ import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { NgbDropdownModule, NgbNavModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { SimplebarAngularModule } from 'simplebar-angular';
@@ -50,6 +51,7 @@ import { AppSwitcherComponent } from '@app/components/app-switcher/app-switcher.
     NgbCollapseModule,
     ReactiveFormsModule,
     NgbTooltipModule,
+    DragDropModule,
     GridLayoutComponent
   ],
   providers: [LanguageService],

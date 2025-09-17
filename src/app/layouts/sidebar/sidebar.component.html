@@ -41,7 +41,7 @@
           <input
             type="text"
             class="form-control form-control-sm menu-search-input"
-            placeholder="Search menu... (Ctrl+K)"
+            placeholder="Search menu... (includes hidden items)"
             [value]="searchTerm()"
             (input)="onSearchChange($event)"
             (keydown.escape)="clearSearch()"
@@ -88,6 +88,13 @@
           </li>
         </ul>
 
+        <!-- Menu Configuration Button -->
+        <div class="px-3 pb-2" *ngIf="!isSidebarSmall()">
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100" (click)="openConfigModal()">
+            <i class="bx bx-cog me-1"></i>
+            <span>Configure Menu</span>
+          </button>
+        </div>
 
         <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav">
           <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: filteredMenuItems() }">
@@ -103,7 +110,7 @@
         </ul>
 
         <ng-template #recursiveMenu let-menuItems>
-          <li *ngFor="let menu of menuItems;" class="pointer nav-item" 
+          <li *ngFor="let menu of menuItems; trackBy: trackMenuItem" class="pointer nav-item" 
               [style.display]="isMenuItemVisible(menu) ? 'block' : 'none'">
             @if(menu.isTitle){
           <li class="menu-title is-parent navbar-nav"><span data-key="t-menu">{{ menu.label }}</span></li>
@@ -119,14 +126,25 @@
           </a>
           }@else{
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
-            (click)="updateActive($event)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
+            (click)="updateActive($event); handleHiddenItemClick(menu)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
             {{ menu.label }}
 
+            <!-- Search result indicator -->
+            <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>
+            
+            <!-- Hidden item indicator during search -->
+            <span *ngIf="menu.isTemporarilyShown" class="badge bg-warning ms-2 small" 
+                  title="This item is normally hidden. Click to permanently show it.">
+              Hidden
+            </span>
+
+            <!-- Show star on hover for non-favorited items -->
             <i style="position:absolute;right:10px" *ngIf="menu.showStar && !menu.showStarColor"
               class="las la-star text-end icon nav-icon"
               (click)="$event.preventDefault();saveAsFavorite(menu);$event.stopPropagation()"></i>
-            <i style="position:absolute;right:10px" *ngIf="menu.showStar && menu.showStarColor"
+            <!-- Always show star for favorited items -->
+            <i style="position:absolute;right:10px" *ngIf="menu.showStarColor"
               class="las la-star text-end icon nav-icon text-warning"
               (click)="$event.preventDefault();removeAsFavorite(menu);$event.stopPropagation()"></i>
           </a>
@@ -269,3 +287,233 @@
 <!-- Left Sidebar End -->
 <!-- Vertical Overlay-->
 <div class="vertical-overlay" (click)="SidebarHide()"></div>
+
+<!-- Menu Configuration Modal Template -->
+<ng-template #configModalTemplate let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="bx bx-cog me-2"></i>
+      Configure Sidebar Menu 
+      <small class="text-muted">({{currentMenuType}} menu)</small>
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <!-- Information Notice -->
+    <div class="alert alert-info d-flex align-items-start mb-3" role="alert">
+      <i class="bx bx-info-circle me-2 mt-1"></i>
+      <div>
+        <strong>Browser Storage Notice:</strong> 
+        Menu configuration is saved locally in your browser. Settings will be preserved across sessions but won't sync to other devices or browsers.
+        <small class="d-block text-muted mt-1">
+          <i class="bx bx-desktop me-1"></i>
+          This device only • Clear browser data will reset settings
+        </small>
+      </div>
+    </div>
+    
+    <div class="row">
+      <!-- Visible Menu Items -->
+      <div class="col-md-8">
+        <h6 class="mb-3">
+          <i class="bx bx-menu me-1"></i>
+          Visible Menu Items
+          <small class="text-muted">(drag to reorder)</small>
+        </h6>
+        <div class="list-group" 
+             cdkDropList 
+             (cdkDropListDropped)="onMenuItemDrop($event)">
+          @for(item of visibleConfigItems(); track item.link || item.id; let i = $index) {
+            <div class="list-group-item"
+                 cdkDrag>
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <div class="drag-handle me-2 text-muted" 
+                       cdkDragHandle 
+                       style="cursor: move;">
+                    <i class="bx bx-dots-vertical-rounded"></i>
+                  </div>
+                  <i class="{{item.icon}} me-2"></i>
+                  <div class="flex-grow-1">
+                    <div class="fw-medium">{{item.label}}</div>
+                    <small class="text-muted" *ngIf="item.description">{{item.description}}</small>
+                  </div>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary" 
+                          [disabled]="i === 0" 
+                          (click)="moveMenuItemUp(i)"
+                          title="Move up">
+                    <i class="bx bx-chevron-up"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" 
+                          [disabled]="i === visibleConfigItems().length - 1" 
+                          (click)="moveMenuItemDown(i)"
+                          title="Move down">
+                    <i class="bx bx-chevron-down"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-danger" 
+                          (click)="toggleMenuItemVisibility(item.id)"
+                          title="Hide item">
+                    <i class="bx bx-hide"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Sub-items section -->
+              @if(item.subItems && item.subItems.length > 0) {
+                <div class="mt-2 ps-4 border-start border-2 border-light">
+                  <div class="small text-muted mb-2">
+                    <i class="bx bx-subdirectory-right me-1"></i>
+                    Sub-items:
+                  </div>
+                  @for(subItem of item.subItems; track subItem.link || subItem.id) {
+                    <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" 
+                         [class.bg-light]="!subItem.isHidden"
+                         [class.bg-secondary]="subItem.isHidden"
+                         [class.text-white]="subItem.isHidden">
+                      <div class="d-flex align-items-center">
+                        <i class="{{subItem.icon}} me-2 small"></i>
+                        <div>
+                          <div class="small">{{subItem.label}}</div>
+                          <small class="text-muted" *ngIf="subItem.description" [class.text-light]="subItem.isHidden">{{subItem.description}}</small>
+                        </div>
+                      </div>
+                      <button type="button" 
+                              class="btn btn-xs"
+                              [class.btn-outline-danger]="!subItem.isHidden"
+                              [class.btn-outline-success]="subItem.isHidden"
+                              (click)="toggleSubItemVisibility(item.id, subItem.link)"
+                              [title]="subItem.isHidden ? 'Show sub-item' : 'Hide sub-item'">
+                        <i class="bx small" [class.bx-hide]="!subItem.isHidden" [class.bx-show]="subItem.isHidden"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      
+      <!-- Hidden Menu Items -->
+      <div class="col-md-4">
+        <h6 class="mb-3">
+          <i class="bx bx-hide me-1"></i>
+          Hidden Items
+        </h6>
+        @if(hiddenConfigItems().length === 0) {
+          <div class="text-center text-muted py-4">
+            <i class="bx bx-check-circle fs-3 mb-2 d-block"></i>
+            <span class="small">All items are visible</span>
+          </div>
+        } @else {
+          <div class="list-group">
+            @for(item of hiddenConfigItems(); track item.link || item.id) {
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <i class="{{item.icon}} me-2 text-muted"></i>
+                  <div>
+                    <div class="text-muted">{{item.label}}</div>
+                    <small class="text-muted" *ngIf="item.description">{{item.description}}</small>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success" 
+                        (click)="restoreHiddenItem(item.id)"
+                        title="Show item">
+                  <i class="bx bx-show"></i>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Favorites Management Section -->
+    <hr class="my-4">
+    <div class="row">
+      <div class="col-12">
+        <h6 class="mb-3">
+          <i class="bx bx-star me-1"></i>
+          Favorites Management
+          <small class="text-muted">({{getFavoritesList().length}} favorites)</small>
+        </h6>
+        
+        @if(getFavoritesList().length === 0) {
+          <div class="text-center text-muted py-4">
+            <i class="bx bx-star fs-3 mb-2 d-block"></i>
+            <span class="small">No favorites saved yet</span>
+            <div class="small text-muted mt-1">Star menu items in the sidebar to add them here</div>
+          </div>
+        } @else {
+          <div class="row">
+            <!-- Current Favorites List -->
+            <div class="col-md-8">
+              <div class="list-group">
+                @for(favorite of getFavoritesList(); track favorite.path; let i = $index) {
+                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                      <i class="{{favorite.icon}} me-2 text-warning"></i>
+                      <div>
+                        <div class="fw-medium">{{favorite.label}}</div>
+                        <small class="text-muted" *ngIf="favorite.description">{{favorite.description}}</small>
+                        <small class="text-muted d-block">{{favorite.path}}</small>
+                      </div>
+                    </div>
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-danger" 
+                            (click)="removeFavoriteByIndex(i)"
+                            title="Remove from favorites">
+                      <i class="bx bx-trash"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+            
+            <!-- Favorites Actions -->
+            <div class="col-md-4">
+              <div class="card bg-light border-0">
+                <div class="card-body p-3">
+                  <h6 class="card-title">
+                    <i class="bx bx-cog me-1"></i>
+                    Actions
+                  </h6>
+                  <div class="d-grid gap-2">
+                    <button type="button" 
+                            class="btn btn-outline-danger btn-sm" 
+                            (click)="clearAllFavorites()"
+                            [disabled]="getFavoritesList().length === 0">
+                      <i class="bx bx-trash me-1"></i>
+                      Clear All Favorites
+                    </button>
+                    <small class="text-muted mt-1">
+                      <i class="bx bx-info-circle me-1"></i>
+                      Tip: Star items in the sidebar to add them to favorites
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="d-flex justify-content-between w-100">
+      <div>
+        <button type="button" class="btn btn-outline-warning" (click)="resetToDefault()">
+          <i class="bx bx-reset me-1"></i>
+          Reset Menu to Default
+        </button>
+      </div>
+      <div>
+        <button type="button" class="btn btn-secondary" (click)="modal.close()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -46,6 +46,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         link: "/field-service/jobs/list",
         description: "Service Jobs",
         hideCheckBox: true,
+        activatedRoutes: "/field-service/jobs/*",
     },
     {
         id: 7,
@@ -54,6 +55,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         link: "/field-service/ticket/list", 
         description: "Service Tickets",
         hideCheckBox: true,
+        activatedRoutes: "/field-service/ticket/*",
     },
     {
         id: 8,
@@ -62,6 +64,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         link: "/field-service/trip-details/list",
         description: "Trip Management",
         hideCheckBox: true,
+        activatedRoutes: "/field-service/trip-details/*",
     },
     {
         id: 9,
@@ -70,6 +73,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         link: "/field-service/parts-order/list",
         description: "Parts Ordering",
         hideCheckBox: true,
+        activatedRoutes: "/field-service/parts-order/*",
     },
     {
         id: 10,
@@ -78,6 +82,7 @@ export const FIELD_SERVICE_MENU_DATA: MenuItem[] = [
         link: "/field-service/request/list",
         description: "Service Requests",
         hideCheckBox: true,
+        activatedRoutes: "/field-service/request/*",
     },
     {
         id: 11,

@@ -4,7 +4,7 @@
   </div>
   <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="dismiss()" aria-label="Close"></button>
 </div>
-<div class="modal-body bg-light">
+<div class="modal-body">
   <app-order-lookup [salesOrderNumber]="salesOrderNumber" (setData)="getData = $event"></app-order-lookup>
 </div>
 <div class="modal-footer border-top">

@@ -128,7 +128,7 @@
                 <div class="mb-2" *ngIf="row1.error || row1.allErrors?.length">
                   <span class="badge bg-danger" *ngIf="row1.error">Required</span>
                   <div *ngFor="let item of row1.allErrors" class="mt-1">
-                    <a href="https://dashboard.eye-fi.com/dist/web/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" 
+                    <a [href]="getVehicleInspectionEditUrl(item.checklist_id)" 
                        target="_blank" class="badge bg-warning text-decoration-none">
                       <i class="mdi mdi-alert-circle me-1"></i>Unresolved Issue
                     </a>
@@ -226,7 +226,7 @@
                             <i class="mdi mdi-alert-circle me-1"></i>Required
                           </span>
                           <div *ngFor="let item of row1.allErrors" class="mt-1">
-                            <a href="https://dashboard.eye-fi.com/dist/web/operations/forms/vehicle-inspection/edit?id={{item.checklist_id}}" 
+                            <a [href]="getVehicleInspectionEditUrl(item.checklist_id)" 
                                target="_blank" class="badge bg-warning text-decoration-none">
                               <i class="mdi mdi-alert-circle me-1"></i>Unresolved Issue
                             </a>

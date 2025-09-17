@@ -1,6 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { FormBuilder, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { Location } from '@angular/common';
 import { SharedModule } from "@app/shared/shared.module";
 import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
@@ -14,7 +15,7 @@ import { auto } from "@popperjs/core";
   imports: [SharedModule, ReactiveFormsModule, AgGridModule],
 })
 export class BomViewComponent implements OnInit, OnChanges {
-  constructor(private http: HttpClient, private fb: FormBuilder) { }
+  constructor(private http: HttpClient, private fb: FormBuilder, private location: Location) { }
 
   @Input() searchPartNumber: string = '';
   @Output() dataLoaded = new EventEmitter<any>();
@@ -1093,6 +1094,11 @@ export class BomViewComponent implements OnInit, OnChanges {
         this.gridApi.sizeColumnsToFit();
       }
     }, 200);
+  }
+
+  // Navigate back to previous page
+  goBack(): void {
+    this.location.back();
   }
 
   // Handle AG Grid row selection event

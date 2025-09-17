@@ -1,4 +1,4 @@
-<div class="container-fluid">
+<div class="container-fluid p-3">
   <div class="row justify-content-center">
     <div class="col-12">
       
@@ -15,8 +15,12 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" routerLink="../dashboard" title="Back to Dashboard">
-              <i class="mdi mdi-arrow-left me-2"></i>Back to Dashboard
+            <button class="btn btn-outline-primary" routerLink="/product-structure-inquiry">
+              <i class="mdi me-2" [ngClass]="isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'"></i>
+              {{ isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}
+            </button>
+            <button class="btn btn-outline-secondary" (click)="goBack()" title="Go Back">
+              <i class="mdi mdi-arrow-left me-2"></i>Go Back
             </button>
           </div>
         </div>

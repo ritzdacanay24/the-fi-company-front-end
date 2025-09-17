@@ -1,0 +1,640 @@
+<div class="shipping-analytics-container">
+  <!-- Ke    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-success">
+            <i class="las la-user-check"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.assignedOrders}}</h3>
+          <p class="metric-label mb-0">Assigned Orders</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-warning">
+            <i class="las la-user-times"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.unassignedOrders}}</h3>
+          <p class="metric-label mb-0">Unassigned</p>
+        </div>
+      </div>
+    </div>ashboard -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="las la-shipping-fast me-2"></i>
+            Shipping Analytics Dashboard
+          </h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Performance Indicators -->
+  <div class="row mb-4">
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-primary">
+            <i class="las la-list-ol"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.totalOrders}}</h3>
+          <p class="metric-label mb-0">Total Orders</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-danger">
+            <i class="las la-exclamation-triangle"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.pastDueOrders}}</h3>
+          <p class="metric-label mb-0">Past Due</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-success">
+            <i class="las la-percentage"></i>
+          </div>
+          <h3 class="metric-value">{{formatPercentage(metrics.onTimeDeliveryRate)}}</h3>
+          <p class="metric-label mb-0">On-Time Rate</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-info">
+            <i class="las la-users"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.teamWorkload.length}}</h3>
+          <p class="metric-label mb-0">Team Members</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-warning">
+            <i class="las la-clock"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.averageLeadTime.toFixed(0)}}</h3>
+          <p class="metric-label mb-0">Avg Lead Time</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-secondary">
+            <i class="las la-star"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.priorityOrdersCount}}</h3>
+          <p class="metric-label mb-0">Priority Orders</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-danger">
+            <i class="las la-dollar-sign"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.ordersWithoutCost}}</h3>
+          <p class="metric-label mb-0">Missing Cost</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+      <div class="card metric-card h-100">
+        <div class="card-body text-center">
+          <div class="metric-icon bg-warning">
+            <i class="las la-tags"></i>
+          </div>
+          <h3 class="metric-value">{{metrics.ordersWithoutListPrice}}</h3>
+          <p class="metric-label mb-0">Missing List Price</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights and Alerts -->
+  <div class="row mb-4" *ngIf="insights.length > 0">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-lightbulb me-2"></i>
+            Productivity Insights & Alerts
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-lg-6 mb-3" *ngFor="let insight of insights">
+              <div class="alert alert-{{insight.type}} d-flex align-items-start" role="alert">
+                <i class="{{getInsightIcon(insight.type)}} fs-4 me-3 mt-1"></i>
+                <div class="flex-grow-1">
+                  <h6 class="alert-heading mb-1">{{insight.title}}</h6>
+                  <p class="mb-1">{{insight.message}}</p>
+                  <small *ngIf="insight.action">
+                    <strong>Action:</strong> {{insight.action}}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🚨 BREAK ROOM & MANAGEMENT DASHBOARD - CREATIVE CHARTS 🚨 -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="alert alert-info text-center">
+        <h4 class="mb-0">📊 <strong>LIVE OPERATIONS DASHBOARD</strong> - Perfect for Break Room TV & Management Overview 📊</h4>
+        <small>Real-time insights that matter to everyone</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 1: URGENT ALERTS & TEAM CHAMPIONS -->
+  <div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100 border-danger">
+        <div class="card-header bg-danger text-white">
+          <h6 class="mb-0">
+            <i class="las la-exclamation-triangle me-2"></i>
+            🚨 URGENT SHIPPING ALERTS 🚨
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="urgentShippingChart.series"
+            [chart]="urgentShippingChart.chart"
+            [labels]="urgentShippingChart.labels"
+            [colors]="urgentShippingChart.colors"
+            [title]="urgentShippingChart.title"
+            [dataLabels]="urgentShippingChart.dataLabels"
+            [plotOptions]="urgentShippingChart.plotOptions"
+            [legend]="urgentShippingChart.legend">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100 border-primary">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0">
+            <i class="las la-trophy me-2"></i>
+            🏆 TEAM CHAMPIONS 🏆
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="teamPerformanceChart.series"
+            [chart]="teamPerformanceChart.chart"
+            [plotOptions]="teamPerformanceChart.plotOptions"
+            [dataLabels]="teamPerformanceChart.dataLabels"
+            [xaxis]="teamPerformanceChart.xaxis"
+            [yaxis]="teamPerformanceChart.yaxis"
+            [title]="teamPerformanceChart.title"
+            [colors]="teamPerformanceChart.colors"
+            [grid]="teamPerformanceChart.grid">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: DAILY WINS & REVENUE PROTECTION -->
+  <div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100 border-success">
+        <div class="card-header bg-success text-white">
+          <h6 class="mb-0">
+            <i class="las la-medal me-2"></i>
+            🎉 TODAY'S WINS 🎉
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="dailyWinsChart.series"
+            [chart]="dailyWinsChart.chart"
+            [plotOptions]="dailyWinsChart.plotOptions"
+            [dataLabels]="dailyWinsChart.dataLabels"
+            [xaxis]="dailyWinsChart.xaxis"
+            [title]="dailyWinsChart.title"
+            [colors]="dailyWinsChart.colors"
+            [grid]="dailyWinsChart.grid">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100 border-info">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0">
+            <i class="las la-shield-alt me-2"></i>
+            💵 REVENUE PROTECTION 💵
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="revenueProtectionChart.series"
+            [chart]="revenueProtectionChart.chart"
+            [plotOptions]="revenueProtectionChart.plotOptions"
+            [dataLabels]="revenueProtectionChart.dataLabels"
+            [xaxis]="revenueProtectionChart.xaxis"
+            [yaxis]="revenueProtectionChart.yaxis"
+            [title]="revenueProtectionChart.title"
+            [colors]="revenueProtectionChart.colors">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: SHIPPING TIMELINE -->
+  <div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+      <div class="card h-100 border-warning">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="las la-clock me-2"></i>
+            ⏰ SHIPPING TIMELINE - What Needs Attention When ⏰
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="shippingUrgencyChart.series"
+            [chart]="shippingUrgencyChart.chart"
+            [labels]="shippingUrgencyChart.labels"
+            [colors]="shippingUrgencyChart.colors"
+            [title]="shippingUrgencyChart.title"
+            [dataLabels]="shippingUrgencyChart.dataLabels"
+            [plotOptions]="shippingUrgencyChart.plotOptions"
+            [legend]="shippingUrgencyChart.legend">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+      <div class="card h-100">
+        <div class="card-header bg-secondary text-white">
+          <h6 class="mb-0">
+            <i class="las la-bullseye me-2"></i>
+            🎯 QUICK ACTIONS
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-danger btn-sm" *ngIf="metrics.ordersWithoutCost > 0">
+              <i class="las la-dollar-sign me-1"></i>
+              Fix {{metrics.ordersWithoutCost}} Missing Costs
+            </button>
+            <button class="btn btn-outline-warning btn-sm" *ngIf="metrics.ordersWithoutListPrice > 0">
+              <i class="las la-tags me-1"></i>
+              Add {{metrics.ordersWithoutListPrice}} List Prices
+            </button>
+            <button class="btn btn-outline-info btn-sm" *ngIf="metrics.unassignedOrders > 0">
+              <i class="las la-user-plus me-1"></i>
+              Assign {{metrics.unassignedOrders}} Orders
+            </button>
+            <button class="btn btn-outline-success btn-sm" *ngIf="metrics.pastDueOrders === 0 && metrics.ordersWithoutCost === 0">
+              <i class="las la-check-circle me-1"></i>
+              All Systems Green! 🎉
+            </button>
+          </div>
+          <hr>
+          <div class="text-center">
+            <h5 class="text-muted mb-1">Team Performance</h5>
+            <h3 class="text-primary">{{(metrics.assignedOrders / metrics.totalOrders * 100).toFixed(0)}}%</h3>
+            <small class="text-muted">Orders Assigned</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1: Status and Priority -->
+  <div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-chart-pie me-2"></i>
+            Order Status Distribution
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="orderStatusChart.series"
+            [chart]="orderStatusChart.chart"
+            [labels]="orderStatusChart.labels"
+            [colors]="orderStatusChart.colors"
+            [title]="orderStatusChart.title"
+            [dataLabels]="orderStatusChart.dataLabels"
+            [tooltip]="orderStatusChart.tooltip"
+            [legend]="orderStatusChart.legend"
+            [plotOptions]="orderStatusChart.plotOptions">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-sort-numeric-up me-2"></i>
+            Shipping Priority Distribution
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="priorityChart.series"
+            [chart]="priorityChart.chart"
+            [labels]="priorityChart.labels"
+            [colors]="priorityChart.colors"
+            [title]="priorityChart.title"
+            [dataLabels]="priorityChart.dataLabels"
+            [tooltip]="priorityChart.tooltip">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: Lead Time and Aging -->
+  <div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-hourglass-half me-2"></i>
+            Lead Time Analysis
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="leadTimeChart.series"
+            [chart]="leadTimeChart.chart"
+            [xaxis]="leadTimeChart.xaxis"
+            [title]="leadTimeChart.title"
+            [colors]="leadTimeChart.colors"
+            [dataLabels]="leadTimeChart.dataLabels"
+            [tooltip]="leadTimeChart.tooltip">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-calendar-times me-2"></i>
+            Order Aging Analysis
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="agingAnalysisChart.series"
+            [chart]="agingAnalysisChart.chart"
+            [xaxis]="agingAnalysisChart.xaxis"
+            [title]="agingAnalysisChart.title"
+            [colors]="agingAnalysisChart.colors"
+            [fill]="agingAnalysisChart.fill"
+            [dataLabels]="agingAnalysisChart.dataLabels"
+            [tooltip]="agingAnalysisChart.tooltip">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 3: Team Workload and Assignment Overview -->
+  <div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-user-friends me-2"></i>
+            Team Workload Distribution
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="customerValueChart.series"
+            [chart]="customerValueChart.chart"
+            [xaxis]="customerValueChart.xaxis"
+            [title]="customerValueChart.title"
+            [colors]="customerValueChart.colors"
+            [dataLabels]="customerValueChart.dataLabels"
+            [tooltip]="customerValueChart.tooltip">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-tasks me-2"></i>
+            Task Assignment Overview
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="financialOverviewChart.series"
+            [chart]="financialOverviewChart.chart"
+            [labels]="financialOverviewChart.labels"
+            [title]="financialOverviewChart.title"
+            [colors]="financialOverviewChart.colors"
+            [dataLabels]="financialOverviewChart.dataLabels"
+            [tooltip]="financialOverviewChart.tooltip"
+            [legend]="financialOverviewChart.legend"
+            [plotOptions]="financialOverviewChart.plotOptions">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 4: Trends -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="las la-chart-line me-2"></i>
+            Team Performance Trends
+          </h6>
+        </div>
+        <div class="card-body">
+          <apx-chart
+            [series]="trendsChart.series"
+            [chart]="trendsChart.chart"
+            [xaxis]="trendsChart.xaxis"
+            [yaxis]="trendsChart.yaxis"
+            [title]="trendsChart.title"
+            [colors]="trendsChart.colors"
+            [dataLabels]="trendsChart.dataLabels"
+            [plotOptions]="trendsChart.plotOptions">
+          </apx-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Items Summary -->
+  <div class="row">
+    <div class="col-lg-6 mb-3">
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="las la-tasks me-2"></i>
+            Immediate Action Items
+          </h6>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2" *ngIf="metrics.pastDueOrders > 0">
+              <i class="las la-exclamation-triangle text-danger me-2"></i>
+              Review and expedite {{metrics.pastDueOrders}} past due orders
+            </li>
+            <li class="mb-2" *ngIf="metrics.unassignedOrders > 0">
+              <i class="las la-user-slash text-warning me-2"></i>
+              Assign {{metrics.unassignedOrders}} unassigned orders to team members
+            </li>
+            <li class="mb-2" *ngIf="metrics.ordersWithoutCost > 0">
+              <i class="las la-dollar-sign text-danger me-2"></i>
+              Update cost information for {{metrics.ordersWithoutCost}} orders
+            </li>
+            <li class="mb-2" *ngIf="metrics.ordersWithoutListPrice > 0">
+              <i class="las la-tags text-warning me-2"></i>
+              Add list prices for {{metrics.ordersWithoutListPrice}} orders
+            </li>
+            <li class="mb-2" *ngIf="metrics.priorityDroppedOrders > 0">
+              <i class="las la-arrow-down text-info me-2"></i>
+              Review {{metrics.priorityDroppedOrders}} priority change(s)
+            </li>
+            <li class="mb-2" *ngIf="metrics.priorityOrdersCount > 0">
+              <i class="las la-star text-warning me-2"></i>
+              Monitor {{metrics.priorityOrdersCount}} priority orders for optimal sequencing
+            </li>
+            <li class="mb-2" *ngIf="metrics.averageLeadTime > 60">
+              <i class="las la-clock text-info me-2"></i>
+              Investigate lead time optimization opportunities
+            </li>
+            <li class="mb-2" *ngIf="metrics.onTimeDeliveryRate < 90">
+              <i class="las la-percentage text-secondary me-2"></i>
+              Improve on-time delivery rate from {{formatPercentage(metrics.onTimeDeliveryRate)}}
+            </li>
+            <li *ngIf="metrics.pastDueOrders === 0 && metrics.onTimeDeliveryRate >= 95 && metrics.unassignedOrders === 0 && metrics.ordersWithoutCost === 0 && metrics.ordersWithoutListPrice === 0">
+              <i class="las la-check-circle text-success me-2"></i>
+              Excellent performance! All orders assigned, priced, and on track
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0">
+            <i class="las la-users me-2"></i>
+            Team Assignment Summary
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 border-end">
+              <h4 class="text-primary mb-1">{{formatPercentage(metrics.onTimeDeliveryRate)}}</h4>
+              <small class="text-muted">On-Time Delivery</small>
+            </div>
+            <div class="col-6">
+              <h4 class="text-success mb-1">{{metrics.assignedOrders}}/{{metrics.totalOrders}}</h4>
+              <small class="text-muted">Assignment Rate</small>
+            </div>
+          </div>
+          <hr>
+          <div class="row text-center">
+            <div class="col-6 border-end">
+              <h5 class="text-warning mb-1">{{metrics.averageAge.toFixed(0)}} days</h5>
+              <small class="text-muted">Average Age</small>
+            </div>
+            <div class="col-6">
+              <h5 class="text-info mb-1">{{metrics.averageLeadTime.toFixed(0)}} days</h5>
+              <small class="text-muted">Average Lead Time</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Quality Overview -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="las la-clipboard-check me-2"></i>
+            Operational Quality Overview
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-lg-3 col-6 border-end">
+              <h4 class="mb-1" [class]="metrics.ordersWithoutCost > 0 ? 'text-danger' : 'text-success'">
+                {{metrics.ordersWithoutCost}}
+              </h4>
+              <small class="text-muted">Missing Cost Info</small>
+            </div>
+            <div class="col-lg-3 col-6 border-end">
+              <h4 class="mb-1" [class]="metrics.ordersWithoutListPrice > 0 ? 'text-warning' : 'text-success'">
+                {{metrics.ordersWithoutListPrice}}
+              </h4>
+              <small class="text-muted">Missing List Price</small>
+            </div>
+            <div class="col-lg-3 col-6 border-end">
+              <h4 class="mb-1" [class]="metrics.priorityDroppedOrders > 0 ? 'text-info' : 'text-success'">
+                {{metrics.priorityDroppedOrders}}
+              </h4>
+              <small class="text-muted">Priority Changes</small>
+            </div>
+            <div class="col-lg-3 col-6">
+              <h4 class="mb-1" [class]="(metrics.ordersWithoutCost + metrics.ordersWithoutListPrice) === 0 ? 'text-success' : 'text-danger'">
+                {{((metrics.totalOrders - metrics.ordersWithoutCost - metrics.ordersWithoutListPrice) / metrics.totalOrders * 100).toFixed(1)}}%
+              </h4>
+              <small class="text-muted">Data Completeness</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

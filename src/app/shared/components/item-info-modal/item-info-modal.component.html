@@ -12,7 +12,7 @@
     <app-loading [isLoading]="isLoading" [showBorder]="false"></app-loading>
 </div>
 
-<div class="modal-body bg-light" *ngIf="!isLoading">
+<div class="modal-body" *ngIf="!isLoading">
     <app-part-lookup [partNumber]="partNumber" (isLoadingEmitter)="isLoadingEmitter($event)"
         (hasDataEmitter)="hasDataEmitter = $event;" (getDataEmitter)="getData = $event"></app-part-lookup>
 </div>

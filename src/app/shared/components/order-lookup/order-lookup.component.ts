@@ -46,6 +46,7 @@ export class OrderLookupComponent {
     if (changes["salesOrderNumber"]) {
       this.salesOrderNumber = changes["salesOrderNumber"].currentValue;
       // Don't automatically search on input changes
+      this.getData();
     }
 
     if (changes["triggerSearch"] && changes["triggerSearch"].currentValue && this.salesOrderNumber) {

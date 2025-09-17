@@ -15,4 +15,10 @@ export interface MenuItem {
   accessRequired?: boolean;
   hideCheckBox?: boolean;
   activatedRoutes?: string;
+  
+  // Configuration properties
+  visible?: boolean;
+  order?: number;
+  isTemporarilyShown?: boolean;
+  searchHighlight?: boolean;
 }

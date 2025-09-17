@@ -8,9 +8,12 @@ import {
   HostListener,
   signal,
   computed,
+  TemplateRef,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { TranslateService } from "@ngx-translate/core";
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
+import { NgbModal, NgbModalRef } from "@ng-bootstrap/ng-bootstrap";
 
 import { MenuItem } from "./menu.model";
 import { environment } from "src/environments/environment";
@@ -18,6 +21,7 @@ import { FavoriteService } from "@app/core/api/favorites/favorites.service";
 import { PageAccessService } from "@app/core/api/page-access/page-access.service";
 import { MenuService } from "@app/core/api/menu/menu.service";
 import { AppSwitcherService } from "@app/services/app-switcher.service";
+import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { FIELD_SERVICE_MENU } from "./field-service-menu-data";
 import { ADMIN_MENU } from "./admin-menu-data";
 
@@ -43,13 +47,33 @@ export class SidebarComponent implements OnInit {
 
   // history / recent searches (lightweight placeholder)
   recentSearches: string[] = [];
+  
+  // Configuration modal properties
+  configModalRef: NgbModalRef | null = null;
+  @ViewChild('configModalTemplate') configModalTemplate!: TemplateRef<any>;
+  configMenuItems = signal([]);
+  originalMenuItems: MenuItem[] = []; // Store original items
+  currentMenuType: string = 'main'; // Track current menu type
+  
+  // Computed properties for modal display
+  visibleConfigItems = computed(() => 
+    this.configMenuItems()
+      .filter(item => item.visible)
+      .sort((a, b) => a.order - b.order)
+  );
+  
+  hiddenConfigItems = computed(() => 
+    this.configMenuItems().filter(item => !item.visible)
+  );
   constructor(
     private router: Router,
     public translate: TranslateService,
     private favoriteService: FavoriteService,
     public pageAccessService: PageAccessService,
     public menuService: MenuService,
-    private appSwitcherService: AppSwitcherService
+    private appSwitcherService: AppSwitcherService,
+    private pathUtils: PathUtilsService,
+    private modalService: NgbModal
   ) {
     this.getMenu();
     
@@ -61,6 +85,7 @@ export class SidebarComponent implements OnInit {
     this.router.events.subscribe((event: any) => {
       if (document.documentElement.getAttribute("data-layout") != "twocolumn") {
         if (event instanceof NavigationEnd) {
+          this.checkAndShowHiddenItemForCurrentRoute(event.url);
           this.initActiveMenu();
         }
       }
@@ -87,12 +112,23 @@ export class SidebarComponent implements OnInit {
   async getMenu() {
     // Determine which menu to load based on current app
     if (this.appSwitcherService.isFieldServiceApp()) {
-      this.menuItems = FIELD_SERVICE_MENU;
+      this.currentMenuType = 'field-service';
+      this.originalMenuItems = [...FIELD_SERVICE_MENU];
+      this.menuItems = [...FIELD_SERVICE_MENU];
     } else if (this.appSwitcherService.isAdminApp()) {
-      this.menuItems = ADMIN_MENU;
+      this.currentMenuType = 'admin';
+      this.originalMenuItems = [...ADMIN_MENU];
+      this.menuItems = [...ADMIN_MENU];
     } else {
-      this.menuItems = await this.menuService.getMenu();
+      this.currentMenuType = 'main';
+      const menuData = await this.menuService.getMenu();
+      this.originalMenuItems = [...menuData];
+      this.menuItems = [...menuData];
     }
+    
+    // Apply user configuration after loading menu
+    this.applyMenuConfiguration();
+    
     setTimeout(() => {
       this.initActiveMenu();
     }, 0);
@@ -140,11 +176,21 @@ export class SidebarComponent implements OnInit {
   filteredMenuItems(): MenuItem[] {
     const term = this.searchTerm().toLowerCase().trim();
     if (!term) {
-      return this.menuItems;
+      return this.menuItems; // Normal filtered items when not searching
     }
     
-    // Just return original menuItems and let template handle visibility
-    return this.menuItems;
+    // When searching, include hidden items with special indicators
+    const config = this.getMenuConfiguration();
+    const searchResults = this.originalMenuItems.filter(item => {
+      if (item.isTitle) return false;
+      return this.itemOrChildrenMatch(item, term);
+    }).map(item => ({
+      ...item,
+      isTemporarilyShown: config.hiddenItems.includes(item.id), // Mark as temporarily shown
+      searchHighlight: true // Mark as search result
+    }));
+    
+    return searchResults;
   }
 
   // Method to check if menu item should be visible during search
@@ -428,7 +474,12 @@ export class SidebarComponent implements OnInit {
     if (environment.production) {
       // Modify pathName for production build
       pathName = pathName.replace("/velzon/angular/modern", "");
-      pathName = pathName.replace("/dist/web", "");
+      
+      // Use PathUtilsService to handle dynamic base paths
+      const basePath = this.pathUtils.getBasePath();
+      if (basePath && pathName.startsWith(basePath)) {
+        pathName = pathName.replace(basePath, "");
+      }
     }
 
     const active = this.findMenuItem(pathName, this.menuItems);
@@ -443,27 +494,15 @@ export class SidebarComponent implements OnInit {
 
       // First try to find exact path match
       let matchingMenuItem = items.find((x: any) => {
-        if (environment.production) {
-          let path = x.pathname;
-          path = path.replace("/velzon/angular/modern", "");
-          path = path.replace("/dist/web", "");
-          return path === pathName;
-        } else {
-          return x.pathname === pathName;
-        }
+        const normalizedPath = this.normalizePath(x.pathname);
+        return normalizedPath === pathName;
       });
 
       // If no exact match and we found an active menu item, try to find DOM element for that menu item's link
       if (!matchingMenuItem && active && active.link) {
         matchingMenuItem = items.find((x: any) => {
-          if (environment.production) {
-            let path = x.pathname;
-            path = path.replace("/velzon/angular/modern", "");
-            path = path.replace("/dist/web", "");
-            return path === active.link;
-          } else {
-            return x.pathname === active.link;
-          }
+          const normalizedPath = this.normalizePath(x.pathname);
+          return normalizedPath === active.link;
         });
       }
 
@@ -552,11 +591,414 @@ export class SidebarComponent implements OnInit {
     }
   }
 
+  // Configuration Modal Methods
+  openConfigModal() {
+    this.loadMenuConfiguration();
+    console.log('Config Modal opened for menu type:', this.currentMenuType);
+    console.log('Config Items:', this.configMenuItems());
+    console.log('Visible Items:', this.visibleConfigItems());
+    console.log('Hidden Items:', this.hiddenConfigItems());
+    
+    this.configModalRef = this.modalService.open(this.configModalTemplate, {
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false
+    });
+  }
+
+  closeConfigModal() {
+    if (this.configModalRef) {
+      this.configModalRef.close();
+      this.configModalRef = null;
+    }
+  }
+
+  loadMenuConfiguration() {
+    const config = this.getMenuConfiguration();
+    const allItems = [...this.originalMenuItems]; // Use original items instead of filtered ones
+    
+    // Ensure items have IDs
+    allItems.forEach((item, index) => {
+      if (!item.id) {
+        item.id = index + 1000; // Start from 1000 to avoid conflicts
+      }
+    });
+    
+    // Create configurable items list with visibility status
+    const configItems = allItems.map((item, index) => {
+      const configItem = {
+        ...item,
+        visible: !config.hiddenItems.includes(item.id),
+        order: config.order.length > 0 ? 
+          (config.order.indexOf(item.id) !== -1 ? config.order.indexOf(item.id) : index) : 
+          index
+      };
+      
+      // Handle sub-items visibility
+      if (item.subItems && config.hiddenSubItems) {
+        configItem.subItems = item.subItems.map(subItem => ({
+          ...subItem,
+          isHidden: config.hiddenSubItems.includes(subItem.link)
+        }));
+      }
+      
+      return configItem;
+    });
+
+    // Sort by order
+    configItems.sort((a, b) => a.order - b.order);
+
+    // Set all items in configMenuItems
+    this.configMenuItems.set(configItems);
+    console.log(`[${this.currentMenuType}] Loaded config items:`, configItems);
+    console.log(`[${this.currentMenuType}] Hidden items:`, configItems.filter(item => !item.visible));
+  }
+
+  toggleMenuItemVisibility(itemId: number) {
+    console.log(`[${this.currentMenuType}] Toggling visibility for item ID:`, itemId);
+    const config = this.getMenuConfiguration();
+    console.log(`[${this.currentMenuType}] Current config before toggle:`, config);
+    const hiddenIndex = config.hiddenItems.indexOf(itemId);
+    
+    if (hiddenIndex > -1) {
+      // Show item
+      config.hiddenItems.splice(hiddenIndex, 1);
+      console.log(`[${this.currentMenuType}] Showing item, updated hidden items:`, config.hiddenItems);
+    } else {
+      // Hide item
+      config.hiddenItems.push(itemId);
+      console.log(`[${this.currentMenuType}] Hiding item, updated hidden items:`, config.hiddenItems);
+    }
+    
+    this.saveMenuConfiguration(config);
+    
+    // Update the configMenuItems in place instead of reloading everything
+    const currentItems = [...this.configMenuItems()];
+    const itemIndex = currentItems.findIndex(item => item.id === itemId);
+    
+    if (itemIndex !== -1) {
+      currentItems[itemIndex] = {
+        ...currentItems[itemIndex],
+        visible: !config.hiddenItems.includes(itemId)
+      };
+      this.configMenuItems.set(currentItems);
+      console.log(`[${this.currentMenuType}] Updated config items:`, currentItems);
+      console.log(`[${this.currentMenuType}] Hidden items now:`, this.hiddenConfigItems());
+    }
+    
+    this.applyMenuConfiguration();
+  }
+
+  toggleSubItemVisibility(parentId: number, subItemLink: string) {
+    console.log(`[${this.currentMenuType}] Toggling sub-item visibility for parent ID: ${parentId}, sub-item link: ${subItemLink}`);
+    const config = this.getMenuConfiguration();
+    
+    // Initialize hiddenSubItems if it doesn't exist
+    if (!config.hiddenSubItems) {
+      config.hiddenSubItems = [];
+    }
+    
+    const hiddenIndex = config.hiddenSubItems.indexOf(subItemLink);
+    
+    if (hiddenIndex > -1) {
+      // Show sub-item
+      config.hiddenSubItems.splice(hiddenIndex, 1);
+      console.log(`[${this.currentMenuType}] Showing sub-item, updated hidden sub-items:`, config.hiddenSubItems);
+    } else {
+      // Hide sub-item
+      config.hiddenSubItems.push(subItemLink);
+      console.log(`[${this.currentMenuType}] Hiding sub-item, updated hidden sub-items:`, config.hiddenSubItems);
+    }
+    
+    this.saveMenuConfiguration(config);
+    
+    // Update the configMenuItems to reflect sub-item visibility changes
+    const currentItems = [...this.configMenuItems()];
+    const parentIndex = currentItems.findIndex(item => item.id === parentId);
+    
+    if (parentIndex !== -1 && currentItems[parentIndex].subItems) {
+      const updatedSubItems = currentItems[parentIndex].subItems!.map(subItem => ({
+        ...subItem,
+        isHidden: config.hiddenSubItems.includes(subItem.link)
+      }));
+      
+      currentItems[parentIndex] = {
+        ...currentItems[parentIndex],
+        subItems: updatedSubItems
+      };
+      
+      this.configMenuItems.set(currentItems);
+      console.log(`[${this.currentMenuType}] Updated sub-items for parent ${parentId}:`, updatedSubItems);
+    }
+    
+    this.applyMenuConfiguration();
+  }
+
+  moveMenuItemUp(index: number) {
+    const visibleItems = [...this.visibleConfigItems()];
+    if (index > 0) {
+      // Swap items in visible list
+      [visibleItems[index], visibleItems[index - 1]] = [visibleItems[index - 1], visibleItems[index]];
+      
+      // Update order values in the full config items list
+      const allItems = [...this.configMenuItems()];
+      visibleItems.forEach((item, newIndex) => {
+        const itemIndex = allItems.findIndex(configItem => configItem.id === item.id);
+        if (itemIndex !== -1) {
+          allItems[itemIndex].order = newIndex;
+        }
+      });
+      
+      // Update the signal
+      this.configMenuItems.set(allItems);
+      
+      // Save the new order
+      this.saveCurrentOrder();
+    }
+  }
+
+  moveMenuItemDown(index: number) {
+    const visibleItems = [...this.visibleConfigItems()];
+    if (index < visibleItems.length - 1) {
+      // Swap items in visible list
+      [visibleItems[index], visibleItems[index + 1]] = [visibleItems[index + 1], visibleItems[index]];
+      
+      // Update order values in the full config items list
+      const allItems = [...this.configMenuItems()];
+      visibleItems.forEach((item, newIndex) => {
+        const itemIndex = allItems.findIndex(configItem => configItem.id === item.id);
+        if (itemIndex !== -1) {
+          allItems[itemIndex].order = newIndex;
+        }
+      });
+      
+      // Update the signal
+      this.configMenuItems.set(allItems);
+      
+      // Save the new order
+      this.saveCurrentOrder();
+    }
+  }
+
+  private saveCurrentOrder() {
+    const config = this.getMenuConfiguration();
+    const sortedItems = [...this.configMenuItems()].sort((a, b) => a.order - b.order);
+    config.order = sortedItems.map(item => item.id);
+    this.saveMenuConfiguration(config);
+    this.applyMenuConfiguration();
+    console.log(`[${this.currentMenuType}] Saved new order:`, config.order);
+  }
+
+  // Drag and drop handler
+  onMenuItemDrop(event: CdkDragDrop<any[]>) {
+    const visibleItems = [...this.visibleConfigItems()];
+    
+    // Reorder the visible items array
+    moveItemInArray(visibleItems, event.previousIndex, event.currentIndex);
+    
+    // Update the order values in the full config items list
+    const allItems = [...this.configMenuItems()];
+    visibleItems.forEach((item, newIndex) => {
+      const itemIndex = allItems.findIndex(configItem => configItem.id === item.id);
+      if (itemIndex !== -1) {
+        allItems[itemIndex].order = newIndex;
+      }
+    });
+
+    // Update the signal
+    this.configMenuItems.set(allItems);
+    
+    // Save the new order
+    this.saveCurrentOrder();
+  }
+
+  restoreHiddenItem(itemId: number) {
+    this.toggleMenuItemVisibility(itemId);
+  }
+
+  resetToDefault() {
+    const configKey = `sidebar-menu-config-${this.currentMenuType}`;
+    localStorage.removeItem(configKey);
+    this.loadMenuConfiguration();
+    this.applyMenuConfiguration();
+  }
+
+  // Test method to hide the first item for debugging
+  testHideItem() {
+    const visibleItems = this.visibleConfigItems();
+    if (visibleItems.length > 0) {
+      const firstItem = visibleItems[0];
+      console.log('Hiding item:', firstItem);
+      this.toggleMenuItemVisibility(firstItem.id);
+    }
+  }
+
+  // Favorites management methods for configuration modal
+  clearAllFavorites() {
+    if (confirm('Are you sure you want to remove all favorites? This action cannot be undone.')) {
+      this.favoriteService.clearAll();
+    }
+  }
+
+  removeFavoriteByIndex(index: number) {
+    this.favoriteService.removeByIndex(index);
+  }
+
+  getFavoritesList() {
+    return this.favoriteService.getFavorites();
+  }
+
+  addMenuItemToFavorites(menuItem: MenuItem) {
+    if (menuItem.link) {
+      const favoriteItem = {
+        label: menuItem.label,
+        path: menuItem.link,
+        icon: menuItem.icon || 'ri-star-line',
+        description: menuItem.description
+      };
+      this.favoriteService.onSave(favoriteItem);
+    }
+  }
+
+  // Check if current route matches a hidden menu item and auto-show it
+  private checkAndShowHiddenItemForCurrentRoute(currentUrl: string) {
+    const config = this.getMenuConfiguration();
+    if (config.hiddenItems.length === 0) return;
+
+    // Find any hidden item that matches the current route
+    const hiddenItem = this.originalMenuItems.find(item => {
+      if (!config.hiddenItems.includes(item.id)) return false;
+      
+      // Check if current URL matches this item's link or activatedRoutes
+      if (item.link && this.isRouteMatch(currentUrl, item.link)) {
+        return true;
+      }
+      
+      if (item.activatedRoutes && this.isRouteMatch(currentUrl, item.activatedRoutes)) {
+        return true;
+      }
+      
+      // Check sub-items as well
+      if (item.subItems) {
+        return item.subItems.some(subItem => {
+          if (subItem.link && this.isRouteMatch(currentUrl, subItem.link)) return true;
+          if (subItem.activatedRoutes && this.isRouteMatch(currentUrl, subItem.activatedRoutes)) return true;
+          return false;
+        });
+      }
+      
+      return false;
+    });
+
+    if (hiddenItem) {
+      console.log(`[${this.currentMenuType}] Auto-showing hidden menu item for route:`, currentUrl, hiddenItem);
+      // Auto-show the hidden item
+      this.toggleMenuItemVisibility(hiddenItem.id);
+      
+      // Show a toast notification to inform the user
+      this.showAutoShowNotification(hiddenItem);
+    }
+  }
+
+  private isRouteMatch(currentUrl: string, routePattern: string): boolean {
+    // Handle wildcard routes like "/operations/reports/*"
+    if (routePattern.includes('*')) {
+      const baseRoute = routePattern.replace('/*', '');
+      return currentUrl.startsWith(baseRoute);
+    }
+    
+    // Exact match
+    return currentUrl === routePattern || currentUrl.startsWith(routePattern + '/');
+  }
+
+  private showAutoShowNotification(item: any) {
+    // You can implement a toast notification here
+    // For now, just console log
+    console.log(`Menu item "${item.label}" was automatically shown because you navigated to it.`);
+    
+    // You could also add a temporary highlight or badge to the menu item
+    // Or show a dismissible alert in the UI
+  }
+
+  // Handle clicking on a hidden item during search
+  handleHiddenItemClick(menu: any) {
+    if (menu.isTemporarilyShown) {
+      console.log(`[${this.currentMenuType}] Permanently showing hidden item:`, menu.label);
+      // Permanently show the hidden item
+      this.toggleMenuItemVisibility(menu.id);
+    }
+  }
+
+  private getMenuConfiguration() {
+    const configKey = `sidebar-menu-config-${this.currentMenuType}`;
+    const saved = localStorage.getItem(configKey);
+    return saved ? JSON.parse(saved) : { hiddenItems: [], hiddenSubItems: [], order: [] };
+  }
+
+  private saveMenuConfiguration(config: any) {
+    const configKey = `sidebar-menu-config-${this.currentMenuType}`;
+    localStorage.setItem(configKey, JSON.stringify(config));
+  }
+
+  private applyMenuConfiguration() {
+    const config = this.getMenuConfiguration();
+    const filteredItems = this.originalMenuItems.filter(item => !config.hiddenItems.includes(item.id));
+    
+    // Apply sub-item hiding
+    const processedItems = filteredItems.map(item => {
+      if (item.subItems && config.hiddenSubItems && config.hiddenSubItems.length > 0) {
+        const visibleSubItems = item.subItems.filter(subItem => !config.hiddenSubItems.includes(subItem.link));
+        return {
+          ...item,
+          subItems: visibleSubItems
+        };
+      }
+      return item;
+    });
+    
+    if (config.order.length > 0) {
+      processedItems.sort((a, b) => {
+        const aOrder = config.order.indexOf(a.id);
+        const bOrder = config.order.indexOf(b.id);
+        return (aOrder === -1 ? 999 : aOrder) - (bOrder === -1 ? 999 : bOrder);
+      });
+    }
+    
+    // Update the displayed menu items (this affects the actual sidebar display)
+    this.menuItems = processedItems;
+  }
+
   /**
    * SidebarHide modal
    * @param content modal content
    */
   SidebarHide() {
     document.body.classList.remove("vertical-sidebar-enable");
+  }
+
+  /**
+   * Normalize path by removing base paths for comparison
+   */
+  private normalizePath(pathname: string): string {
+    if (environment.production) {
+      let path = pathname;
+      // Remove common base paths
+      path = path.replace("/velzon/angular/modern", "");
+      
+      // Use PathUtilsService to handle dynamic base paths
+      const basePath = this.pathUtils.getBasePath();
+      if (basePath && path.startsWith(basePath)) {
+        path = path.replace(basePath, "");
+      }
+      
+      return path;
+    } else {
+      return pathname;
+    }
+  }
+
+  // TrackBy function for menu items to avoid NG0955 duplicate key errors
+  trackMenuItem(index: number, item: MenuItem): any {
+    return item.link || item.id || index;
   }
 }

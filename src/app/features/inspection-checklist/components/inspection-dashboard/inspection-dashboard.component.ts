@@ -47,6 +47,7 @@ export class InspectionDashboardComponent implements OnInit, OnDestroy {
   isLoading = false;
   selectedPeriod = '7'; // days
   searchTerm = '';
+  selectedStatus = '';
 
   // Filtered data
   filteredTemplates: ChecklistTemplate[] = [];
@@ -121,7 +122,18 @@ export class InspectionDashboardComponent implements OnInit, OnDestroy {
     return totalTime / completedInstances.length / (1000 * 60); // Convert to minutes
   }
 
-  private filterData(): void {
+  getCompletionRate(): number {
+    if (this.stats.totalInstances === 0) return 0;
+    return Math.round((this.stats.completedInstances / this.stats.totalInstances) * 100);
+  }
+
+  getInstanceProgress(instance: ChecklistInstance): number {
+    if (!instance.items || instance.items.length === 0) return 0;
+    const completedItems = instance.items.filter(item => item.completed).length;
+    return Math.round((completedItems / instance.items.length) * 100);
+  }
+
+  filterData(): void {
     // Filter templates
     this.filteredTemplates = this.templates.filter(template =>
       template.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||

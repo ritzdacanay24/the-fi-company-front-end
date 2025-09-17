@@ -9,6 +9,7 @@ import { TicketOverviewComponent } from '../../ticket/ticket-overview/ticket-ove
 import { JobOverviewComponent } from '../../job/job-overview/job-overview.component';
 import { JobModalService } from '../../job/job-modal-edit/job-modal.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { PathUtilsService } from '@app/core/services/path-utils.service';
 import { RootReducerState } from '@app/store';
 import { Store } from '@ngrx/store';
 import { EventModalService } from '../event/event-modal/event-modal.component';
@@ -54,7 +55,8 @@ export class TechScheduleComponent implements OnInit {
     private eventModalService: EventModalService,
     private eventMenuModalService: EventMenuModalService,
     private eventModalCreateService: EventModalCreateService,
-    private jobModalEditService: JobModalService
+    private jobModalEditService: JobModalService,
+    private pathUtils: PathUtilsService
   ) { }
 
   ngAfterContentChecked() {
@@ -576,8 +578,8 @@ export class TechScheduleComponent implements OnInit {
   }
 
   viewRequest(id) {
-    window.open("https://dashboard.eye-fi.com/dist/web/field-service/request/edit?selectedViewType=Open&id=" + id, "_blank"); // Open new tab
-
+    const url = this.pathUtils.createExternalUrl(['/field-service/request/edit'], { selectedViewType: 'Open', id: id });
+    window.open(url, "_blank");
   }
 
   previousId

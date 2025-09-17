@@ -190,6 +190,15 @@ const routes: Routes = [
       ),
     runGuardsAndResolvers: "always",
   },
+  {
+    title: "Shipping Analytics Dashboard",
+    path: "shipping-analytics",
+    loadComponent: () =>
+      import("../../components/shipping-dashboard/shipping-dashboard.component").then(
+        (m) => m.ShippingDashboardComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
 ];
 
 @NgModule({

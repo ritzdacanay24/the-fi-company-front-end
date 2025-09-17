@@ -9,6 +9,7 @@ import { AgGridModule } from "ag-grid-angular";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
+import { PathUtilsService } from "@app/core/services/path-utils.service";
 import moment from "moment";
 import {
   agGridDateFilter,
@@ -163,7 +164,8 @@ export class ShippingComponent implements OnInit {
     private authenticationService: AuthenticationService,
     private partsOrderModalService: PartsOrderModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
-    private bomViewModalService: BomViewModalService
+    private bomViewModalService: BomViewModalService,
+    private pathUtils: PathUtilsService
 
   ) {
     this.websocketService = websocketService;
@@ -2530,9 +2532,7 @@ export class ShippingComponent implements OnInit {
 
   // Open Priority Display in new window/tab
   openPriorityDisplay(): void {
-    const url = this.router.serializeUrl(
-      this.router.createUrlTree(['/dist/web/shipping-priority-display'])
-    );
+    const url = this.pathUtils.createExternalUrl(['/shipping-priority-display']);
     window.open(url, '_blank');
   }
 
@@ -2547,7 +2547,7 @@ export class ShippingComponent implements OnInit {
         this.loadPriorities()
       ]);
 
-      this.data = shippingData;
+      this.data = shippingData; 
       this.statusCount = this.calculateStatus();
 
       // Merge priority data with shipping data

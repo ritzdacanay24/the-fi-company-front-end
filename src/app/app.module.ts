@@ -1,6 +1,7 @@
 import { FormsModule } from "@angular/forms";
 import { NgModule } from "@angular/core";
 import { BrowserModule } from "@angular/platform-browser";
+import { APP_BASE_HREF } from "@angular/common";
 // routing
 import { AppRoutingModule } from "./app-routing.module";
 
@@ -94,6 +95,20 @@ export function createTranslateLoader(http: HttpClient): any {
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiPrefixInterceptor, multi: true },
+    { 
+      provide: APP_BASE_HREF, 
+      useFactory: () => {
+        if (environment.production) {
+          // Determine base href based on current deployment
+          const currentPath = window.location.pathname;
+          if (currentPath.includes('/dist/web-v')) {
+            return currentPath.match(/\/dist\/web-v\d+/)?.[0] || '/dist/web';
+          }
+          return '/dist/web';
+        }
+        return '/';
+      }
+    },
     CanDeactivateGuard,
     AccessGuard,
     Deactivate,

@@ -12,6 +12,7 @@ import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { formValues } from "./formData";
 import { SharedModule } from "@app/shared/shared.module";
 import { VehicleService } from "@app/core/api/operations/vehicle/vehicle.service";
+import { PathUtilsService } from "@app/core/services/path-utils.service";
 import { AutosizeModule } from "ngx-autosize";
 import { VehicleInspectionResolveModalService } from "./vehicle-inspection-resolve-modal/vehicle-inspection-resolve-modal.component";
 
@@ -112,7 +113,8 @@ export class VehicleInspectionFormComponent implements OnInit {
     private router: Router,
     private fb: FormBuilder,
     private vehicleService: VehicleService,
-    private vehicleInspectionResolveModalService: VehicleInspectionResolveModalService
+    private vehicleInspectionResolveModalService: VehicleInspectionResolveModalService,
+    private pathUtils: PathUtilsService
   ) { }
 
   vehicleList = [];
@@ -183,5 +185,12 @@ export class VehicleInspectionFormComponent implements OnInit {
     this.vehicleInspectionResolveModalService.open(data).result.then((res) => {
       this.getData();
     });
+  }
+
+  /**
+   * Generate URL for vehicle inspection edit page using PathUtilsService
+   */
+  getVehicleInspectionEditUrl(checklistId: string): string {
+    return this.pathUtils.createExternalUrl(['/operations/forms/vehicle-inspection/edit'], { id: checklistId });
   }
 }

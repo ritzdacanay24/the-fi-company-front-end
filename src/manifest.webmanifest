@@ -1,16 +1,17 @@
 {
-  "name": "dashboard",
-  "short_name": "dashboard",
-  "theme_color": "#2e3230",
-  "background_color": "#2e3230",
+  "name": "The Fi Company Dashboard",
+  "short_name": "Fi Dashboard",
+  "theme_color": "#2271b1",
+  "background_color": "#ffffff",
   "display": "standalone",
-  "display_override": ["tabbed"],
-  "permissions": ["tabs"],
-  "id": "/dist/web/",
+  "display_override": ["tabbed", "standalone"],
+  "id": "/",
+  "scope": "/",
+  "start_url": "/",
   "related_applications": [
     {
       "platform": "webapp",
-      "url": "https://dashboard.eye-fi.com/dist/web/manifest.webmanifest"
+      "url": "https://dashboard.eye-fi.com/manifest.webmanifest"
     }
   ],
   "url_handlers": [
@@ -21,11 +22,8 @@
       "origin": "https://dashboard.eye-fi.com/dist/web"
     }
   ],
-  "background": {
-    "scripts": ["assets/js/background.js"]
-  },
-  "scope": ".",
-  "start_url": "./dashboard",
+  "scope": "/",
+  "start_url": "/",
   "icons": [
     {
       "src": "assets/icons/android-icon-72x72.png",
