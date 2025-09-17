@@ -21,8 +21,18 @@
               Show All
             </label>
           </div>
-          <h4 class="card-title mb-0 ms-auto">Requests
-          </h4>
+          
+          <h4 class="card-title mb-0 ms-auto">Requests</h4>
+          
+          <div class="ms-3">
+            <button 
+              type="button" 
+              class="btn btn-primary"
+              [routerLink]="['/field-service/request/create']"
+              title="Create new service request">
+              <i class="mdi mdi-plus me-2"></i>Create Request
+            </button>
+          </div>
 
         </div>
       </div>
@@ -120,15 +130,4 @@
       </div>
     </div>
   </div>
-</div>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h4 class="mb-1">Service Requests</h4>
-    <p class="text-muted mb-0">Manage field service requests for installation, maintenance, and technical support
-    </p>
-  </div>
-  <button class="btn btn-primary" (click)="onCreate()">
-    <i class="mdi mdi-plus me-2"></i>Create Request
-  </button>
 </div>

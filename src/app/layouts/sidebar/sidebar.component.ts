@@ -519,15 +519,20 @@ export class SidebarComponent implements OnInit {
       }
 
       // Handle wildcard routes from activatedRoutes field like '/quality/igt/*'
-      if (menuItem.activatedRoutes && menuItem.activatedRoutes.includes('*')) {
-        // Remove the asterisk and any trailing slash before it
-        const baseRoute = menuItem.activatedRoutes.replace(/\/?\*+$/, '');
-        
-        // Check if current pathname starts with the base route
-        // Also ensure we're matching complete path segments to avoid false positives
-        if (pathname.startsWith(baseRoute) && 
-            (pathname === baseRoute || pathname.startsWith(baseRoute + '/'))) {
-          return menuItem;
+      if (menuItem.activatedRoutes) {
+        const routes = Array.isArray(menuItem.activatedRoutes) ? menuItem.activatedRoutes : [menuItem.activatedRoutes];
+        for (const route of routes) {
+          if (route.includes('*')) {
+            // Remove the asterisk and any trailing slash before it
+            const baseRoute = route.replace(/\/?\*+$/, '');
+            
+            // Check if current pathname starts with the base route
+            // Also ensure we're matching complete path segments to avoid false positives
+            if (pathname.startsWith(baseRoute) && 
+                (pathname === baseRoute || pathname.startsWith(baseRoute + '/'))) {
+              return menuItem;
+            }
+          }
         }
       }
 
@@ -900,15 +905,19 @@ export class SidebarComponent implements OnInit {
     }
   }
 
-  private isRouteMatch(currentUrl: string, routePattern: string): boolean {
-    // Handle wildcard routes like "/operations/reports/*"
-    if (routePattern.includes('*')) {
-      const baseRoute = routePattern.replace('/*', '');
-      return currentUrl.startsWith(baseRoute);
-    }
+  private isRouteMatch(currentUrl: string, routePattern: string | string[]): boolean {
+    const patterns = Array.isArray(routePattern) ? routePattern : [routePattern];
     
-    // Exact match
-    return currentUrl === routePattern || currentUrl.startsWith(routePattern + '/');
+    return patterns.some(pattern => {
+      // Handle wildcard routes like "/operations/reports/*"
+      if (pattern.includes('*')) {
+        const baseRoute = pattern.replace('/*', '');
+        return currentUrl.startsWith(baseRoute);
+      }
+      
+      // Exact match
+      return currentUrl === pattern || currentUrl.startsWith(pattern + '/');
+    });
   }
 
   private showAutoShowNotification(item: any) {

@@ -14,7 +14,7 @@ export interface MenuItem {
   description?: string;
   accessRequired?: boolean;
   hideCheckBox?: boolean;
-  activatedRoutes?: string;
+  activatedRoutes?: string | string[];
   
   // Configuration properties
   visible?: boolean;

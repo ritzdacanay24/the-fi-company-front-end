@@ -4,7 +4,9 @@
   "theme_color": "#2271b1",
   "background_color": "#ffffff",
   "display": "standalone",
-  "display_override": ["tabbed", "standalone"],
+  "display_override": ["tabbed", "minimal-ui", "standalone"],
+  "categories": ["productivity", "business"],
+  "prefer_related_applications": true,
   "id": "/",
   "scope": "/",
   "start_url": "/",
@@ -22,8 +24,6 @@
       "origin": "https://dashboard.eye-fi.com/dist/web"
     }
   ],
-  "scope": "/",
-  "start_url": "/",
   "icons": [
     {
       "src": "assets/icons/android-icon-72x72.png",

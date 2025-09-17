@@ -10,7 +10,7 @@
           alt="" height="22">
       </span>
       <span class="logo-lg text-white">
-        The Fi Company <small style="font-size:10px" class="text-muted"><i>{{version}}</i></small>
+        The Fi Company <small style="font-size:10px" class="text-white-50"><i>{{version}}</i></small>
       </span>
     </a>
     <!-- Light Logo-->
@@ -21,7 +21,7 @@
           alt="" height="22">
       </span>
       <span class="logo-lg text-white">
-        The Fi Company <small style="font-size:10px" class="text-muted"><i>{{version}}</i></small>
+        The Fi Company <small style="font-size:10px" class="text-white-50"><i>{{version}}</i></small>
       </span>
     </a>
     <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover"
@@ -37,22 +37,31 @@
 
       <!-- Search Input -->
       <div *ngIf="showSearch && !isSidebarSmall()" class="menu-search-container px-3 pb-2 pt-2">
-        <div class="position-relative">
-          <input
-            type="text"
-            class="form-control form-control-sm menu-search-input"
-            placeholder="Search menu... (includes hidden items)"
-            [value]="searchTerm()"
-            (input)="onSearchChange($event)"
-            (keydown.escape)="clearSearch()"
-            #searchInput>
-          <i class="bx bx-search search-icon"></i>
-          <i *ngIf="searchTerm()" class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
+        <div class="d-flex align-items-center gap-2">
+          <div class="position-relative flex-grow-1">
+            <input
+              type="text"
+              class="form-control form-control-sm menu-search-input"
+              placeholder="Search menu... (includes hidden items)"
+              [value]="searchTerm()"
+              (input)="onSearchChange($event)"
+              (keydown.escape)="clearSearch()"
+              #searchInput>
+            <i class="bx bx-search search-icon"></i>
+            <i *ngIf="searchTerm()" class="bx bx-x clear-icon" (click)="clearSearch()" title="Clear search"></i>
+          </div>
+          <button type="button" 
+                  class="btn btn-sm btn-warning d-flex align-items-center justify-content-center p-1" 
+                  (click)="openConfigModal()" 
+                  title="Configure Menu"
+                  style="width: 28px; height: 28px;">
+            <i class="bx bx-cog"></i>
+          </button>
         </div>
       </div>
 
       <ngx-simplebar class="sidebar-menu-scroll" style="max-height: calc(100vh - 113px)">
-        <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav1">
+        <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav1">
           <!-- <li class="nav-item pointer">
             <a class="is-parent nav-link menu-link" [routerLink]="'/'">
               <i class="las la-home icon nav-icon"></i>
@@ -70,7 +79,7 @@
               <ul class="nav nav-sm flex-column" [attr.aria-expanded]="!isCollapsed">
 
                 <li (mouseenter)="mouseHovering(subitem)" (mouseleave)="mouseLeft(subitem);t.close()"
-                  class="pointer nav-item list-group-item d-flex justify-content-between align-items-start"
+                  class="pointer nav-item d-flex justify-content-between align-items-start"
                   *ngFor="let subitem of favs" [routerLink]="subitem.link" (click)="updateActiveFavorite($event);"
                   placement="end" [ngbTooltip]="subitem.link" container="body" [autoClose]="true" #t="ngbTooltip">
                   <a class="nav-link w-100" style="height:auto;">
@@ -79,7 +88,7 @@
                       <!-- <p style="font-size:10px;">{{ subitem.link}}</p> -->
                     </div>
                     <i style="position:absolute;right:10px"
-                      class="las la-minus-circle text-end icon nav-icon text-danger" *ngIf="subitem.showStar"
+                      class="las la-star text-end icon nav-icon text-warning"
                       (click)="$event.preventDefault();removeAsFavorite(subitem);$event.stopPropagation()"></i>
                   </a>
                 </li>
@@ -88,15 +97,7 @@
           </li>
         </ul>
 
-        <!-- Menu Configuration Button -->
-        <div class="px-3 pb-2" *ngIf="!isSidebarSmall()">
-          <button type="button" class="btn btn-sm btn-outline-secondary w-100" (click)="openConfigModal()">
-            <i class="bx bx-cog me-1"></i>
-            <span>Configure Menu</span>
-          </button>
-        </div>
-
-        <ul class="metismenu list-unstyled navbar-nav mt-2" id="navbar-nav">
+        <ul class="metismenu list-unstyled navbar-nav" id="navbar-nav">
           <ng-container *ngTemplateOutlet="recursiveMenu; context:{ $implicit: filteredMenuItems() }">
           </ng-container>
           
@@ -324,7 +325,7 @@
              cdkDropList 
              (cdkDropListDropped)="onMenuItemDrop($event)">
           @for(item of visibleConfigItems(); track item.link || item.id; let i = $index) {
-            <div class="list-group-item"
+            <div class="list-group-item list-group-item-action"
                  cdkDrag>
               <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center flex-grow-1">
@@ -410,7 +411,7 @@
         } @else {
           <div class="list-group">
             @for(item of hiddenConfigItems(); track item.link || item.id) {
-              <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                   <i class="{{item.icon}} me-2 text-muted"></i>
                   <div>
@@ -452,7 +453,7 @@
             <div class="col-md-8">
               <div class="list-group">
                 @for(favorite of getFavoritesList(); track favorite.path; let i = $index) {
-                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                       <i class="{{favorite.icon}} me-2 text-warning"></i>
                       <div>

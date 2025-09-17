@@ -1,10 +1,41 @@
+/* Override sidebar text colors to be whiter */
+:host {
+	--vz-vertical-menu-item-color: rgba(255, 255, 255, 0.95);
+	--vz-vertical-menu-sub-item-color: rgba(255, 255, 255, 0.9);
+	--vz-vertical-menu-title-color: rgba(255, 255, 255, 0.8);
+	--vz-vertical-menu-item-hover-color: #ffffff;
+	--vz-vertical-menu-sub-item-hover-color: #ffffff;
+}
+
+/* Speed up all transitions */
+.navbar-menu,
+.main-content,
+.navbar-brand-box,
+.nav-link,
+.nav-sm .nav-link:before {
+	transition: all 0.05s ease-out !important;
+}
+
+/* Force white text colors for all menu elements */
+.navbar-menu .navbar-nav .nav-link,
+.navbar-menu .navbar-nav .nav-sm .nav-link,
+.navbar-menu .navbar-nav .menu-title span,
+.menu-title span {
+	color: rgba(255, 255, 255, 0.90) !important;
+}
+
+.navbar-menu .navbar-nav .nav-link:hover,
+.navbar-menu .navbar-nav .nav-sm .nav-link:hover {
+	color: #ffffff !important;
+}
+
 /* Favorite star styles */
 .favorite-star {
 	cursor: pointer;
 	font-size: 14px;
-	color: #6c757d;
-	opacity: 0.7;
-	transition: all 0.2s ease;
+	color: #adb5bd;
+	opacity: 0.8;
+	transition: all 0.05s ease;
 	margin-left: auto;
 	padding: 2px;
 }
@@ -105,7 +136,7 @@
 	color: rgba(255, 255, 255, 0.6);
 	font-size: 16px;
 	cursor: pointer;
-	transition: color 0.2s ease;
+	transition: color 0.05s ease;
 }
 .menu-search-container .clear-icon:hover { color: #fff; }
 
@@ -172,13 +203,24 @@
 }
 
 .list-group-item {
-	border: 1px solid #dee2e6;
+	border: 1px solid var(--bs-border-color);
 	margin-bottom: 2px;
 	border-radius: 0.375rem;
+	transition: all 0.05s ease-in-out;
 }
 
-.list-group-item:hover {
-	background-color: #f8f9fa;
+/* CDK Drag specific adjustments - let Bootstrap handle hover states */
+.cdk-drop-list .list-group-item {
+	cursor: grab;
+	
+	&:active {
+		cursor: grabbing;
+	}
+	
+	&.cdk-drag-disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
 }
 
 .modal-backdrop {
@@ -219,11 +261,11 @@
 }
 
 .cdk-drag-animating {
-	transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+	transition: transform 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .cdk-drop-list-dragging .list-group-item:not(.cdk-drag-placeholder) {
-	transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+	transition: transform 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .cdk-drag-handle {
