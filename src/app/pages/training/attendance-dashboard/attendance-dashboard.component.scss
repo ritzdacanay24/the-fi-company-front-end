@@ -1,0 +1,353 @@
+.attendance-dashboard {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 80px);
+
+  .dashboard-header {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    h2 {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      @media (max-width: 768px) {
+        width: 100%;
+        justify-content: stretch;
+        margin-top: 1rem;
+
+        .btn {
+          flex: 1;
+        }
+      }
+    }
+
+    @media (max-width: 768px) {
+      .d-flex {
+        flex-direction: column;
+      }
+    }
+  }
+
+  .dashboard-content {
+    .card {
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+        color: #495057;
+
+        h6 {
+          color: #2c3e50;
+        }
+      }
+
+      .card-body {
+        padding: 1.5rem;
+      }
+    }
+
+    .session-status {
+      .badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+      }
+    }
+
+    .completion-metrics {
+      .h4 {
+        font-weight: 700;
+        font-size: 2rem;
+      }
+    }
+  }
+
+  // Quick Stats Cards
+  .stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  // Department Stats
+  .department-stats {
+    .department-stat-item {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #007bff;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .progress {
+        margin: 0.5rem 0;
+      }
+    }
+  }
+
+  // Controls
+  .controls-row {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .view-filters,
+    .sort-options {
+      .btn-group {
+        .btn {
+          border-radius: 6px;
+          
+          &:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            margin-right: -1px;
+          }
+
+          &:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+
+          &.active {
+            z-index: 1;
+          }
+        }
+      }
+    }
+
+    @media (max-width: 768px) {
+      .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .view-filters,
+      .sort-options {
+        .btn-group {
+          width: 100%;
+
+          .btn {
+            flex: 1;
+          }
+        }
+      }
+    }
+  }
+
+  // Tables
+  .table-responsive {
+    .table {
+      .employee-info {
+        .fw-medium {
+          color: #2c3e50;
+        }
+      }
+
+      .time-info {
+        white-space: nowrap;
+      }
+
+      .badge {
+        &.bg-light {
+          border: 1px solid #dee2e6;
+        }
+      }
+
+      tbody tr:hover {
+        background-color: #f8f9fa;
+      }
+    }
+  }
+
+  // Status Colors
+  .text-success { color: #28a745 !important; }
+  .text-warning { color: #ffc107 !important; }
+  .text-danger { color: #dc3545 !important; }
+  .text-primary { color: #007bff !important; }
+
+  .bg-success { background-color: #28a745 !important; }
+  .bg-warning { background-color: #ffc107 !important; }
+  .bg-danger { background-color: #dc3545 !important; }
+  .bg-primary { background-color: #007bff !important; }
+
+  // Auto-refresh indicator
+  .auto-refresh-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    z-index: 1000;
+  }
+
+  // Loading States
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  // Empty State
+  .text-center {
+    &.py-5 {
+      padding: 3rem 1rem !important;
+      
+      .fa-3x {
+        opacity: 0.5;
+      }
+
+      h5 {
+        color: #6c757d;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        max-width: 400px;
+        margin: 0 auto 2rem;
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .dashboard-header {
+      padding: 1.5rem;
+    }
+
+    .stat-card {
+      margin-bottom: 1rem;
+
+      .stat-value {
+        font-size: 2rem;
+      }
+    }
+
+    .table-responsive {
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    padding: 0.5rem;
+
+    .dashboard-header {
+      padding: 1rem;
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .card-body {
+      padding: 1rem !important;
+    }
+
+    .stat-card {
+      padding: 1rem;
+
+      .stat-value {
+        font-size: 1.75rem;
+      }
+    }
+  }
+
+  // Print Styles
+  @media print {
+    .header-actions,
+    .controls-row,
+    .auto-refresh-indicator {
+      display: none !important;
+    }
+
+    .dashboard-header {
+      box-shadow: none;
+      border: 1px solid #dee2e6;
+    }
+
+    .card {
+      box-shadow: none;
+      border: 1px solid #dee2e6;
+      break-inside: avoid;
+    }
+
+    .table {
+      font-size: 0.875rem;
+    }
+  }
+
+  // Dark mode support (if implemented)
+  @media (prefers-color-scheme: dark) {
+    background-color: #1a1a1a;
+
+    .dashboard-header,
+    .card,
+    .stat-card,
+    .controls-row {
+      background-color: #2d2d2d;
+      color: #ffffff;
+    }
+
+    .card-header {
+      background-color: #3d3d3d;
+    }
+
+    .department-stat-item {
+      background-color: #3d3d3d;
+    }
+
+    .table {
+      color: #ffffff;
+
+      tbody tr:hover {
+        background-color: #3d3d3d;
+      }
+    }
+
+    .table-light {
+      background-color: #3d3d3d;
+      color: #ffffff;
+    }
+  }
+}

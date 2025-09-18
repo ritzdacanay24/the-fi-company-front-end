@@ -26,10 +26,42 @@
 <div id="pickSheet">
     <div class="d-none d-print-block" style="
     page-break-after: always;" *ngFor="let row of totalPrints; let  i = index">
-        <div class="margin-bottom-10" style="margin-bottom:20px">
-            <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
-                style="width: 230px;" />
+        
+        <!-- Top Section with Logo and Barcode - Match placard-edit layout -->
+        <div class="d-flex justify-content-between align-items-start" style="margin-bottom:20px">
+            <!-- Logo on the left -->
+            <div>
+                <img src="https://dashboard.eye-fi.com/attachments/images/fi-company-blue-transparent.png"
+                    style="width: 230px;" />
+            </div>
+            
+            <!-- QR Code/Barcode on the right - Show only on first page -->
+            <div *ngIf="row?.eyefi_so_number && row?.line_number && i === 0" style="text-align: right;">
+                <!-- QR Code Display -->
+                <div class="print-qr-container" *ngIf="codeType === 'qr'">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER QR CODE</div>
+                    <qrcode
+                        [qrdata]="getSalesOrderValue(row)"
+                        [width]="80"
+                        [errorCorrectionLevel]="'M'"
+                        [colorDark]="'#000000'"
+                        [colorLight]="'#FFFFFF'"
+                        [margin]="1"
+                        elementType="svg"
+                        [cssClass]="'print-qr-code'">
+                    </qrcode>
+                    <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+                </div>
+
+                <!-- Barcode Display -->
+                <div class="print-barcode-container" *ngIf="codeType === 'barcode'">
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">SALES ORDER BARCODE</div>
+                    <svg [id]="'print-barcode-' + i"></svg>
+                    <div class="print-code-text">{{getSalesOrderValue(row)}}</div>
+                </div>
+            </div>
         </div>
+        
         <div class="table-responsive">
             <table class="table table-bordered" style="font-size:25px; font-weight:600;">
                 <thead>
@@ -86,17 +118,6 @@
                         <td>{{row?.qty}}</td>
                     </tr>
                 </thead>
-                
-                <!-- Sales Order Barcode Section - Show only on first page -->
-                <tr *ngIf="row?.eyefi_so_number && row?.line_number && i === 0">
-                    <td colspan="2" class="text-center p-0" style="border: none;">
-                        <div class="print-barcode-container">
-                            <div style="font-weight: bold; margin-bottom: 10px;">SALES ORDER BARCODE</div>
-                            <svg [id]="'print-barcode-' + i"></svg>
-                            <div class="print-barcode-text">{{row?.eyefi_so_number}}-{{row?.line_number}}</div>
-                        </div>
-                    </td>
-                </tr>
                 
                 <tr style="border: none;">
                     <td class="text-center" colspan="2" rowspan="3" style="border: none;">

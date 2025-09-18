@@ -1,0 +1,369 @@
+<div class="training-setup-container">
+  <!-- Header -->
+  <div class="header-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1 fw-bold text-primary">{{ isEditMode ? 'Edit Training Session' : 'Create Training Session' }}</h2>
+        <p class="text-muted mb-0">{{ isEditMode ? 'Update training session details and attendees' : 'Set up a new training session and assign expected attendees' }}</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-secondary btn-sm" (click)="goToSessions()" [disabled]="isSaving">
+          <i class="mdi mdi-arrow-left"></i>
+          Back to Sessions
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading employee data...</p>
+  </div>
+
+  <!-- Main Form -->
+  <div *ngIf="!isLoading">
+    <form [formGroup]="trainingForm" (ngSubmit)="onSubmit()">
+      <div class="row">
+        <!-- Left Column - Training Details -->
+        <div class="col-lg-8">
+          <div class="training-details-card">
+            <h4 class="mb-4">
+              <i class="mdi mdi-school me-2"></i>
+              Training Details
+            </h4>
+
+            <!-- Training Title -->
+            <div class="mb-3">
+              <label for="title" class="form-label">Training Title *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="title"
+                formControlName="title"
+                [class.is-invalid]="isFieldInvalid('title')"
+                placeholder="e.g., Forklift Safety Training">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+                {{ getFieldError('title') }}
+              </div>
+            </div>
+
+            <!-- Purpose -->
+            <div class="mb-3">
+              <label for="purpose" class="form-label">Purpose *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="purpose"
+                formControlName="purpose"
+                [class.is-invalid]="isFieldInvalid('purpose')"
+                placeholder="e.g., Safety compliance, Skills development, Certification">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('purpose')">
+                {{ getFieldError('purpose') }}
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label for="description" class="form-label">Description *</label>
+              <textarea 
+                class="form-control" 
+                id="description"
+                formControlName="description"
+                [class.is-invalid]="isFieldInvalid('description')"
+                rows="3"
+                placeholder="Detailed description of the training content and objectives..."></textarea>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+                {{ getFieldError('description') }}
+              </div>
+            </div>
+
+            <!-- Date & Time Row -->
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="date" class="form-label">Date *</label>
+                  <input 
+                    type="date" 
+                    class="form-control" 
+                    id="date"
+                    formControlName="date"
+                    [class.is-invalid]="isFieldInvalid('date')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('date')">
+                    {{ getFieldError('date') }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="startTime" class="form-label">Start Time *</label>
+                  <input 
+                    type="time" 
+                    class="form-control" 
+                    id="startTime"
+                    formControlName="startTime"
+                    [class.is-invalid]="isFieldInvalid('startTime')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('startTime')">
+                    {{ getFieldError('startTime') }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="endTime" class="form-label">End Time *</label>
+                  <input 
+                    type="time" 
+                    class="form-control" 
+                    id="endTime"
+                    formControlName="endTime"
+                    [class.is-invalid]="isFieldInvalid('endTime')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('endTime')">
+                    {{ getFieldError('endTime') }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label class="form-label">Duration</label>
+                  <div class="form-control-plaintext">
+                    <strong>{{ calculateDuration() }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Location & Facilitator Row -->
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="location" class="form-label">Location *</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="location"
+                    formControlName="location"
+                    [class.is-invalid]="isFieldInvalid('location')"
+                    placeholder="e.g., Training Room A, Conference Room B">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('location')">
+                    {{ getFieldError('location') }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="facilitatorName" class="form-label">Facilitator Name *</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="facilitatorName"
+                    formControlName="facilitatorName"
+                    [class.is-invalid]="isFieldInvalid('facilitatorName')"
+                    placeholder="e.g., John Smith">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('facilitatorName')">
+                    {{ getFieldError('facilitatorName') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Quick Actions -->
+        <div class="col-lg-4">
+          <div class="quick-actions-card">
+            <h5 class="mb-3">
+              <i class="mdi mdi-lightning-bolt me-2"></i>
+              Quick Actions
+            </h5>
+            
+            <!-- Quick Templates -->
+            <div class="mb-3">
+              <label class="form-label">Training Templates</label>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" 
+                        (click)="trainingForm.patchValue({
+                          title: 'Forklift Safety Training',
+                          purpose: 'Safety compliance and certification',
+                          description: 'Comprehensive forklift operation and safety training including pre-operation inspection, safe driving practices, and OSHA compliance requirements.'
+                        })">
+                  <i class="mdi mdi-forklift"></i> Forklift Safety
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        (click)="trainingForm.patchValue({
+                          title: 'Workplace Safety Orientation',
+                          purpose: 'Safety awareness and accident prevention',
+                          description: 'General workplace safety training covering hazard identification, emergency procedures, and personal protective equipment usage.'
+                        })">
+                  <i class="mdi mdi-hard-hat"></i> Safety Orientation
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        (click)="trainingForm.patchValue({
+                          title: 'Quality Management Training',
+                          purpose: 'Quality standards and procedures',
+                          description: 'Training on quality management systems, inspection procedures, and continuous improvement processes.'
+                        })">
+                  <i class="mdi mdi-quality-high"></i> Quality Management
+                </button>
+              </div>
+            </div>
+
+            <!-- Training Stats Preview -->
+            <div class="training-preview" *ngIf="selectedEmployees.length > 0">
+              <h6>Training Preview</h6>
+              <div class="stat-item">
+                <span class="stat-label">Expected Attendees:</span>
+                <span class="stat-value">{{ selectedEmployees.length }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Duration:</span>
+                <span class="stat-value">{{ calculateDuration() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendee Selection Section -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="attendee-selection-card">
+            <h4 class="mb-4">
+              <i class="mdi mdi-account-group me-2"></i>
+              Expected Attendees
+              <span class="badge bg-primary ms-2">{{ selectedEmployees.length }} selected</span>
+            </h4>
+
+            <!-- Employee Search -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <div class="employee-search-section">
+                  <label for="employeeSearch" class="form-label">Search Employees</label>
+                  <div class="position-relative">
+                    <input 
+                      type="text" 
+                      class="form-control" 
+                      id="employeeSearch"
+                      [(ngModel)]="employeeSearchTerm"
+                      (input)="onEmployeeSearch(getEventTargetValue($event))"
+                      [ngModelOptions]="{standalone: true}"
+                      placeholder="Search by name, position, department, or badge number..."
+                      autocomplete="off">
+                    <i class="mdi mdi-magnify search-icon"></i>
+                    
+                    <!-- Search Dropdown -->
+                    <div class="employee-dropdown" *ngIf="showEmployeeDropdown && filteredEmployees.length > 0">
+                      <div 
+                        *ngFor="let employee of filteredEmployees.slice(0, 10)" 
+                        class="employee-dropdown-item"
+                        (click)="selectEmployee(employee)"
+                        [class.disabled]="isEmployeeSelected(employee.id)">
+                        <div class="employee-avatar">
+                          {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+                        </div>
+                        <div class="employee-info">
+                          <div class="employee-name">{{ employee.firstName }} {{ employee.lastName }}</div>
+                          <div class="employee-details">{{ employee.position }} • {{ employee.department }}</div>
+                        </div>
+                        <div class="employee-badge">{{ employee.badgeNumber || 'No Badge' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bulk Selection -->
+              <div class="col-md-6">
+                <div class="bulk-selection-section">
+                  <label class="form-label">Bulk Selection</label>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="selectAllEmployees()">
+                      <i class="mdi mdi-account-multiple"></i> All Employees
+                    </button>
+                    <div class="dropdown">
+                      <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                              data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="mdi mdi-office-building"></i> By Department
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li *ngFor="let dept of getUniqueDepartments()">
+                          <a class="dropdown-item" href="#" (click)="selectByDepartment(dept); $event.preventDefault()">
+                            {{ dept }}
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="clearAllEmployees()">
+                      <i class="mdi mdi-close"></i> Clear All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Attendees -->
+            <div class="selected-attendees-section">
+              <h6>Selected Attendees ({{ selectedEmployees.length }})</h6>
+              
+              <div *ngIf="selectedEmployees.length === 0" class="text-muted text-center py-4">
+                <i class="mdi mdi-account-plus-outline" style="font-size: 3rem;"></i>
+                <p>No attendees selected yet. Search and select employees above.</p>
+              </div>
+
+              <div class="attendees-grid" *ngIf="selectedEmployees.length > 0">
+                <div *ngFor="let employee of selectedEmployees" class="selected-attendee-item">
+                  <div class="attendee-avatar">
+                    {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+                  </div>
+                  <div class="attendee-info">
+                    <div class="attendee-name">{{ employee.firstName }} {{ employee.lastName }}</div>
+                    <div class="attendee-details">{{ employee.position }} • {{ employee.department }}</div>
+                  </div>
+                  <div class="attendee-badge">{{ employee.badgeNumber }}</div>
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeEmployee(employee.id)">
+                    <i class="mdi mdi-close"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Section -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="submit-section">
+            <!-- Success/Error Messages -->
+            <div class="alert alert-success" *ngIf="showSuccessMessage" role="alert">
+              <i class="mdi mdi-check-circle me-2"></i>
+              {{ messageText }}
+              <button *ngIf="createdSession" type="button" class="btn btn-sm btn-success ms-3" (click)="goToSignOff()">
+                <i class="mdi mdi-card-account-details"></i>
+                Go to Sign-Off Page
+              </button>
+            </div>
+            
+            <div class="alert alert-danger" *ngIf="showErrorMessage" role="alert">
+              <i class="mdi mdi-alert-circle me-2"></i>
+              {{ messageText }}
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="d-flex gap-3 justify-content-end">
+              <button type="button" class="btn btn-secondary" (click)="goToSessions()" [disabled]="isSaving">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="isSaving || trainingForm.invalid || selectedEmployees.length === 0">
+                <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isSaving"></i>
+                <i class="mdi mdi-check me-2" *ngIf="!isSaving"></i>
+                {{ isSaving ? (isEditMode ? 'Updating Training...' : 'Creating Training...') : (isEditMode ? 'Update Training Session' : 'Create Training Session') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

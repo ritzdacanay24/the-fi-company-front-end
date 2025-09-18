@@ -1,7 +1,7 @@
-<div class="safety-dashboard">
+<div class="safety-dashboard" [class.display-mode]="isDisplayMode" [class.p-4]="isDisplayMode">
   <div class="container-fluid">
     
-    <!-- Header Section -->
+      <!-- Header Section -->
     <div class="row mb-4">
       <div class="col-12">
         <div class="dashboard-header text-center py-4 px-3" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 15px;">
@@ -15,41 +15,84 @@
             </div>
           </div>
           
-          <!-- Key Metrics Row -->
+          <!-- Display Mode Button - Only show when not in display mode -->
+          <div class="mb-3" *ngIf="showDisplayButton && !isDisplayMode">
+            <a [href]="'/safety-dashboard-display'" target="_blank" class="btn btn-light btn-lg shadow">
+              <i class="mdi mdi-monitor me-2"></i>
+              Open Display Mode
+            </a>
+          </div>          <!-- Key Metrics Row -->
           <div class="row text-center mt-4">
-            <div class="col-md-3">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow">
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold" [ngClass]="getDaysSinceColor()">
                   {{metrics.daysSinceLastIncident}}
                 </div>
                 <div class="metric-label text-muted">Days Since Last Incident</div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow">
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+                <div class="metric-value display-6 fw-bold text-success">
+                  {{metrics.longestSafetyStreak}}
+                </div>
+                <div class="metric-label text-muted">Record to Beat (Days)</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold text-primary">
                   {{metrics.totalIncidents}}
                 </div>
                 <div class="metric-label text-muted">Total Incidents This Year</div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow">
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
                 <div class="metric-value display-6 fw-bold text-info">
                   {{metrics.averageResolutionDays}}
                 </div>
                 <div class="metric-label text-muted">Avg. Resolution Days</div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow">
-                <div class="d-flex align-items-center justify-content-center">
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
                   <span class="metric-value display-6 fw-bold" [ngClass]="getPerformanceColor()">
                     {{Math.abs(metrics.improvementPercentage).toFixed(1)}}%
                   </span>
                   <i class="mdi ms-2 fs-3" [ngClass]="getPerformanceIcon() + ' ' + getPerformanceColor()"></i>
                 </div>
                 <div class="metric-label text-muted">Monthly Performance</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-lg-2">
+              <div class="metric-card bg-white rounded-lg p-3 mx-2 shadow h-100 text-center d-flex flex-column justify-content-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                  <i class="mdi mdi-trophy text-warning me-2" style="font-size: 1.5rem;"></i>
+                  <span class="metric-value fs-4 fw-bold" [ngClass]="metrics.daysSinceLastIncident >= metrics.longestSafetyStreak ? 'text-success' : 'text-muted'">
+                    {{metrics.daysSinceLastIncident >= metrics.longestSafetyStreak ? 'NEW RECORD!' : 'In Progress'}}
+                  </span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress mb-2" style="height: 8px;">
+                  <div class="progress-bar" 
+                       [class]="metrics.daysSinceLastIncident >= metrics.longestSafetyStreak ? 'bg-success progress-bar-striped progress-bar-animated' : 'bg-primary'"
+                       role="progressbar" 
+                       [style.width.%]="Math.min((metrics.daysSinceLastIncident / metrics.longestSafetyStreak) * 100, 100)"
+                       [attr.aria-valuenow]="metrics.daysSinceLastIncident"
+                       [attr.aria-valuemin]="0"
+                       [attr.aria-valuemax]="metrics.longestSafetyStreak">
+                  </div>
+                </div>
+                
+                <!-- Progress Text -->
+                <div class="small text-muted mb-1">
+                  {{metrics.daysSinceLastIncident}} / {{metrics.longestSafetyStreak}} days
+                </div>
+                
+                <div class="metric-label text-muted">Safety Challenge</div>
               </div>
             </div>
           </div>
@@ -83,7 +126,7 @@
       <!-- Status Chart -->
       <div class="col-lg-4 mb-4">
         <div class="card shadow-sm h-100">
-          <div class="card-body">
+          <div class="card-body d-flex align-items-center justify-content-center">
             <apx-chart
               [series]="statusChart.series"
               [chart]="statusChart.chart"
@@ -226,7 +269,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="row mt-4">
+    <div class="row mt-4" *ngIf="!isDisplayMode">
       <div class="col-12">
         <div class="text-center text-muted">
           <div class="d-flex align-items-center justify-content-between">
@@ -235,13 +278,41 @@
               Last updated: {{lastUpdated | date:'short'}}
             </div>
             <div>
-              <button class="btn btn-outline-primary btn-sm" (click)="refresh()">
+              <button class="btn btn-outline-secondary btn-sm me-2" 
+                      (click)="openDisplayMode()" 
+                      style="z-index: 1000; position: relative; pointer-events: auto;">
+                <i class="mdi mdi-fullscreen me-1"></i>Display Mode
+              </button>
+              <button class="btn btn-outline-primary btn-sm" 
+                      (click)="refresh()" 
+                      style="z-index: 1000; position: relative; pointer-events: auto;">
                 <i class="mdi mdi-refresh me-1"></i>Refresh
               </button>
             </div>
             <div>
               <i class="mdi mdi-shield-check me-1 text-success"></i>
               Safety First - Always
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display Mode Footer - Show last updated only -->
+    <div class="row mt-4" *ngIf="isDisplayMode">
+      <div class="col-12">
+        <div class="text-center text-muted">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <i class="mdi mdi-update me-1"></i>
+              Last updated: {{lastUpdated | date:'short'}}
+            </div>
+            <div>
+              <i class="mdi mdi-shield-check me-1 text-success"></i>
+              Safety First - Always
+            </div>
+            <div>
+              <small class="text-muted">Auto-refresh: Daily</small>
             </div>
           </div>
         </div>

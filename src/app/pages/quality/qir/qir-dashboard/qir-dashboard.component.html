@@ -1,0 +1,348 @@
+<div class="qir-dashboard" [class.display-mode]="isDisplayMode">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1 fw-bold text-primary">QIR Analytics Dashboard</h2>
+      <p class="text-muted mb-0">
+        Quality Issue Reports - Last updated: {{ lastUpdated | date:'medium' }}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <button 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="refresh()" 
+        [disabled]="isLoading">
+        <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
+        Refresh
+      </button>
+      <button 
+        *ngIf="showDisplayButton"
+        class="btn btn-primary btn-sm" 
+        (click)="openDisplayMode()">
+        <i class="mdi mdi-fullscreen"></i>
+        Display Mode
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading QIR data...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading">
+    <!-- Key Metrics Row - Zendesk Style -->
+    <div class="row g-4 mb-5">
+      <!-- Days Since Last QIR -->
+      <div class="col-lg-3 col-md-6">
+        <div class="kpi-card h-100">
+          <div class="kpi-value" [ngClass]="getDaysSinceColor()">
+            {{metrics.daysSinceLastQir}}
+          </div>
+          <div class="kpi-label">Days Since Last QIR</div>
+          <div class="kpi-change text-muted">
+            <i class="mdi mdi-calendar-clock me-1"></i>
+            Last incident tracking
+          </div>
+        </div>
+      </div>
+
+      <!-- Total QIRs -->
+      <div class="col-lg-3 col-md-6">
+        <div class="kpi-card h-100">
+          <div class="kpi-value text-danger">
+            {{metrics.totalQirs}}
+          </div>
+          <div class="kpi-label">Total QIRs</div>
+          <div class="kpi-change">
+            <span class="text-danger">
+              <i class="mdi mdi-arrow-up me-1"></i>
+              {{metrics.currentMonthQirs}} this month
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Average Resolution Time -->
+      <div class="col-lg-3 col-md-6">
+        <div class="kpi-card h-100">
+          <div class="kpi-value text-warning">
+            {{metrics.averageResolutionDays}}<span class="kpi-unit">d</span>
+          </div>
+          <div class="kpi-label">Avg. Resolution Time</div>
+          <div class="kpi-change text-muted">
+            <i class="mdi mdi-clock-outline me-1"></i>
+            Days to resolve
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Performance -->
+      <div class="col-lg-3 col-md-6">
+        <div class="kpi-card h-100">
+          <div class="kpi-value" [ngClass]="getPerformanceColor()">
+            {{Math.abs(metrics.improvementPercentage).toFixed(1)}}<span class="kpi-unit">%</span>
+          </div>
+          <div class="kpi-label">Monthly Performance</div>
+          <div class="kpi-change" [ngClass]="getPerformanceColor()">
+            <i class="mdi me-1" [ngClass]="getPerformanceIcon()"></i>
+            {{metrics.improvementPercentage > 0 ? 'Improvement' : 'Decline'}} vs last month
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary KPIs Row -->
+    <div class="row g-4 mb-5">
+      <!-- Current Month QIRs -->
+      <div class="col-lg-4">
+        <div class="secondary-kpi-card h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="secondary-kpi-value text-primary">{{metrics.currentMonthQirs}}</div>
+              <div class="secondary-kpi-label">This Month</div>
+            </div>
+            <div class="secondary-kpi-icon">
+              <i class="mdi mdi-calendar-month text-primary"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quality Impact -->
+      <div class="col-lg-4">
+        <div class="secondary-kpi-card h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="secondary-kpi-value text-warning">{{metrics.qtyAffectedTotal}}</div>
+              <div class="secondary-kpi-label">Units Affected</div>
+            </div>
+            <div class="secondary-kpi-icon">
+              <i class="mdi mdi-package-variant text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open QIRs -->
+      <div class="col-lg-4">
+        <div class="secondary-kpi-card h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="secondary-kpi-value text-info">
+                {{getOpenQirsCount()}}
+              </div>
+              <div class="secondary-kpi-label">Open Issues</div>
+            </div>
+            <div class="secondary-kpi-icon">
+              <i class="mdi mdi-alert-circle text-info"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4">
+      <!-- Monthly Trend Chart -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <apx-chart *ngIf="monthlyTrendChart.series"
+              [series]="monthlyTrendChart.series"
+              [chart]="monthlyTrendChart.chart"
+              [xaxis]="monthlyTrendChart.xaxis"
+              [yaxis]="monthlyTrendChart.yaxis"
+              [stroke]="monthlyTrendChart.stroke"
+              [markers]="monthlyTrendChart.markers"
+              [colors]="monthlyTrendChart.colors"
+              [grid]="monthlyTrendChart.grid"
+              [tooltip]="monthlyTrendChart.tooltip"
+              [legend]="monthlyTrendChart.legend"
+              [title]="monthlyTrendChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failure Type Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="failureTypeChart.series"
+              [series]="failureTypeChart.series"
+              [chart]="failureTypeChart.chart"
+              [labels]="failureTypeChart.labels"
+              [colors]="failureTypeChart.colors"
+              [plotOptions]="failureTypeChart.plotOptions"
+              [legend]="failureTypeChart.legend"
+              [title]="failureTypeChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="statusChart.series"
+              [series]="statusChart.series"
+              [chart]="statusChart.chart"
+              [labels]="statusChart.labels"
+              [colors]="statusChart.colors"
+              [legend]="statusChart.legend"
+              [title]="statusChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Component Type Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="componentTypeChart.series"
+              [series]="componentTypeChart.series"
+              [chart]="componentTypeChart.chart"
+              [xaxis]="componentTypeChart.xaxis"
+              [yaxis]="componentTypeChart.yaxis"
+              [colors]="componentTypeChart.colors"
+              [plotOptions]="componentTypeChart.plotOptions"
+              [title]="componentTypeChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="priorityChart.series"
+              [series]="priorityChart.series"
+              [chart]="priorityChart.chart"
+              [xaxis]="priorityChart.xaxis"
+              [yaxis]="priorityChart.yaxis"
+              [colors]="priorityChart.colors"
+              [plotOptions]="priorityChart.plotOptions"
+              [title]="priorityChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Chart -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <apx-chart *ngIf="customerChart.series"
+              [series]="customerChart.series"
+              [chart]="customerChart.chart"
+              [xaxis]="customerChart.xaxis"
+              [yaxis]="customerChart.yaxis"
+              [colors]="customerChart.colors"
+              [plotOptions]="customerChart.plotOptions"
+              [title]="customerChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pareto Chart -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <apx-chart *ngIf="paretoChart.series"
+              [series]="paretoChart.series"
+              [chart]="paretoChart.chart"
+              [xaxis]="paretoChart.xaxis"
+              [yaxis]="paretoChart.yaxis"
+              [stroke]="paretoChart.stroke"
+              [plotOptions]="paretoChart.plotOptions"
+              [colors]="paretoChart.colors"
+              [fill]="paretoChart.fill"
+              [labels]="paretoChart.labels"
+              [markers]="paretoChart.markers"
+              [tooltip]="paretoChart.tooltip"
+              [title]="paretoChart.title"
+              [legend]="paretoChart.legend">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stakeholder Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="stakeholderChart.series"
+              [series]="stakeholderChart.series"
+              [chart]="stakeholderChart.chart"
+              [xaxis]="stakeholderChart.xaxis"
+              [yaxis]="stakeholderChart.yaxis"
+              [colors]="stakeholderChart.colors"
+              [plotOptions]="stakeholderChart.plotOptions"
+              [title]="stakeholderChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supplier Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="supplierChart.series"
+              [series]="supplierChart.series"
+              [chart]="supplierChart.chart"
+              [xaxis]="supplierChart.xaxis"
+              [yaxis]="supplierChart.yaxis"
+              [colors]="supplierChart.colors"
+              [plotOptions]="supplierChart.plotOptions"
+              [title]="supplierChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Created By Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="createdByChart.series"
+              [series]="createdByChart.series"
+              [chart]="createdByChart.chart"
+              [labels]="createdByChart.labels"
+              [colors]="createdByChart.colors"
+              [plotOptions]="createdByChart.plotOptions"
+              [legend]="createdByChart.legend"
+              [title]="createdByChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform Type Chart -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <apx-chart *ngIf="platformTypeChart.series"
+              [series]="platformTypeChart.series"
+              [chart]="platformTypeChart.chart"
+              [xaxis]="platformTypeChart.xaxis"
+              [yaxis]="platformTypeChart.yaxis"
+              [colors]="platformTypeChart.colors"
+              [plotOptions]="platformTypeChart.plotOptions"
+              [title]="platformTypeChart.title">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

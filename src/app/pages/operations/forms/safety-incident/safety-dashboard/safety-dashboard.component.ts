@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { SafetyIncidentService } from '@app/core/api/operations/safety-incident/safety-incident.service';
 import {
@@ -48,6 +48,7 @@ interface SafetyMetrics {
   locations: { location: string; count: number }[];
   closedVsOpen: { status: string; count: number }[];
   daysSinceLastIncident: number;
+  longestSafetyStreak: number;
   averageResolutionDays: number;
   currentMonthIncidents: number;
   lastMonthIncidents: number;
@@ -64,7 +65,11 @@ interface SafetyMetrics {
   templateUrl: './safety-dashboard.component.html',
   styleUrls: ['./safety-dashboard.component.scss']
 })
-export class SafetyDashboardComponent implements OnInit {
+export class SafetyDashboardComponent implements OnInit, OnDestroy {
+  
+  @Input() isDisplayMode: boolean = false;
+  @Input() showDisplayButton: boolean = true;
+  @Input() autoRefreshInterval: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   
   public Math = Math; // Expose Math to template
   
@@ -83,6 +88,7 @@ export class SafetyDashboardComponent implements OnInit {
     locations: [],
     closedVsOpen: [],
     daysSinceLastIncident: 0,
+    longestSafetyStreak: 0,
     averageResolutionDays: 0,
     currentMonthIncidents: 0,
     lastMonthIncidents: 0,
@@ -95,14 +101,44 @@ export class SafetyDashboardComponent implements OnInit {
   public isLoading = true;
   public lastUpdated = new Date();
   private data: any[] = [];
+  private refreshInterval: any;
+  private timestampInterval: any;
 
-  constructor(private safetyService: SafetyIncidentService, private router: Router) {}
+  constructor(
+    private safetyService: SafetyIncidentService, 
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   async ngOnInit() {
+    // Check if this is display mode from route
+    this.route.url.subscribe(segments => {
+      this.isDisplayMode = segments.some(segment => segment.path === 'safety-dashboard-display');
+      this.showDisplayButton = !this.isDisplayMode;
+    });
+
     await this.loadSafetyData();
-    setInterval(() => {
+    
+    // Set up timestamp update interval
+    this.timestampInterval = setInterval(() => {
       this.lastUpdated = new Date();
     }, 60000); // Update timestamp every minute
+
+    // Set up auto-refresh for display mode
+    if (this.isDisplayMode || this.autoRefreshInterval > 0) {
+      this.refreshInterval = setInterval(() => {
+        this.loadSafetyData();
+      }, this.autoRefreshInterval);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    if (this.timestampInterval) {
+      clearInterval(this.timestampInterval);
+    }
   }
 
   private async loadSafetyData() {
@@ -123,17 +159,28 @@ export class SafetyDashboardComponent implements OnInit {
     // Calculate metrics
     this.metrics.totalIncidents = data.length;
     
-    // Days since last incident
-    const latestIncident = data.sort((a, b) => 
-      new Date(b.date_of_incident).getTime() - new Date(a.date_of_incident).getTime()
-    )[0];
+    // Days since last incident and longest safety streak
+    const sortedIncidents = data.sort((a, b) => 
+      new Date(a.date_of_incident).getTime() - new Date(b.date_of_incident).getTime()
+    );
     
-    if (latestIncident) {
+    if (sortedIncidents.length > 0) {
+      // Days since last incident
+      const latestIncident = sortedIncidents[sortedIncidents.length - 1];
       const lastIncidentDate = new Date(latestIncident.date_of_incident);
       const today = new Date();
       this.metrics.daysSinceLastIncident = Math.floor(
         (today.getTime() - lastIncidentDate.getTime()) / (1000 * 60 * 60 * 24)
       );
+
+      // Calculate longest safety streak (historical record to beat)
+      this.metrics.longestSafetyStreak = this.calculateLongestSafetyStreak(sortedIncidents);
+    } else {
+      // No incidents means we're still on our first streak
+      // Assume company started 1 year ago for current streak calculation
+      this.metrics.daysSinceLastIncident = 365; 
+      // No historical record to beat yet
+      this.metrics.longestSafetyStreak = 0;
     }
 
     // Monthly trend (last 12 months)
@@ -268,25 +315,36 @@ export class SafetyDashboardComponent implements OnInit {
   }
 
   private setupMonthlyTrendChart() {
+    const incidentData = this.metrics.monthlyTrend.map(m => m.count);
+    const average = incidentData.reduce((sum, count) => sum + count, 0) / incidentData.length;
+    const averageData = new Array(incidentData.length).fill(Math.round(average * 10) / 10);
+
     this.monthlyTrendChart = {
-      series: [{
-        name: 'Incidents',
-        data: this.metrics.monthlyTrend.map(m => m.count)
-      }],
+      series: [
+        {
+          name: 'Incidents',
+          data: incidentData
+        },
+        {
+          name: 'Average',
+          data: averageData
+        }
+      ],
       chart: {
         type: 'line',
         height: 350,
         toolbar: { show: false },
         background: 'transparent'
       },
-      colors: ['#28a745'],
+      colors: ['#28a745', '#dc3545'],
       stroke: {
         curve: 'smooth',
-        width: 4
+        width: [4, 2],
+        dashArray: [0, 5]
       },
       markers: {
-        size: 6,
-        colors: ['#28a745'],
+        size: [6, 0],
+        colors: ['#28a745', '#dc3545'],
         strokeColors: '#fff',
         strokeWidth: 2
       },
@@ -318,7 +376,14 @@ export class SafetyDashboardComponent implements OnInit {
         strokeDashArray: 5
       },
       tooltip: {
-        theme: 'dark'
+        theme: 'dark',
+        shared: true,
+        intersect: false
+      },
+      legend: {
+        show: true,
+        position: 'top',
+        horizontalAlign: 'right'
       },
       title: {
         text: 'Monthly Incident Trend',
@@ -447,6 +512,25 @@ export class SafetyDashboardComponent implements OnInit {
 
   public refresh() {
     this.loadSafetyData();
+  }
+
+  public openDisplayMode() {
+    console.log('Display mode button clicked!'); // Debug log
+    try {
+      // Try to open in new window/tab first
+      const newWindow = window.open('/safety-dashboard-display', '_blank', 'width=1920,height=1080,scrollbars=yes,resizable=yes');
+      
+      // Fallback if popup blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+        console.log('Popup blocked, using router navigation');
+        // Navigate in current window
+        this.router.navigate(['/safety-dashboard-display']);
+      }
+    } catch (error) {
+      console.error('Error opening display mode:', error);
+      // Fallback navigation
+      this.router.navigate(['/safety-dashboard-display']);
+    }
   }
 
   public getPerformanceColor(): string {
@@ -745,5 +829,46 @@ export class SafetyDashboardComponent implements OnInit {
         borderColor: '#e7e7e7'
       }
     };
+  }
+
+  private calculateLongestSafetyStreak(sortedIncidents: any[]): number {
+    if (sortedIncidents.length === 0) {
+      // No incidents means we don't have a historical record to beat yet
+      // Return 0 so current streak becomes the record
+      return 0;
+    }
+
+    if (sortedIncidents.length === 1) {
+      // Only one incident, the record would be the days before that first incident
+      // Assume company started operations some reasonable time before (e.g., 90 days)
+      const incidentDate = new Date(sortedIncidents[0].date_of_incident);
+      const assumedStart = new Date(incidentDate);
+      assumedStart.setDate(assumedStart.getDate() - 90); // 90 days before first incident
+      const daysBeforeFirstIncident = Math.floor((incidentDate.getTime() - assumedStart.getTime()) / (1000 * 60 * 60 * 24));
+      return daysBeforeFirstIncident;
+    }
+
+    let maxStreak = 0;
+    
+    // Check streak before first incident (assume company started 90 days before first incident)
+    const firstIncidentDate = new Date(sortedIncidents[0].date_of_incident);
+    const assumedCompanyStart = new Date(firstIncidentDate);
+    assumedCompanyStart.setDate(assumedCompanyStart.getDate() - 90);
+    const initialStreak = Math.floor((firstIncidentDate.getTime() - assumedCompanyStart.getTime()) / (1000 * 60 * 60 * 24));
+    maxStreak = Math.max(maxStreak, initialStreak);
+
+    // Check streaks between incidents (this is the key part - gaps between accidents)
+    for (let i = 0; i < sortedIncidents.length - 1; i++) {
+      const currentIncidentDate = new Date(sortedIncidents[i].date_of_incident);
+      const nextIncidentDate = new Date(sortedIncidents[i + 1].date_of_incident);
+      
+      const streakDays = Math.floor((nextIncidentDate.getTime() - currentIncidentDate.getTime()) / (1000 * 60 * 60 * 24));
+      maxStreak = Math.max(maxStreak, streakDays);
+    }
+
+    // Do NOT include current streak in the record - that's what we're trying to beat!
+    // The record is the longest COMPLETED streak between past incidents
+
+    return maxStreak;
   }
 }

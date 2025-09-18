@@ -5,6 +5,7 @@ import { QirComponent } from "./qir.component";
 import { QirEditComponent } from "./qir-edit/qir-edit.component";
 import { QirCreateComponent } from "./qir-create/qir-create.component";
 import { QirViewComponent } from "./qir-view/qir-view.component";
+import { QirDashboardComponent } from "./qir-dashboard/qir-dashboard.component";
 import { CanDeactivateGuard } from "@app/core/guards/CanDeactivateGuard";
 import { AccessGuard } from "@app/core/guards/access.guard";
 
@@ -35,6 +36,10 @@ const routes: Routes = [
       {
         path: "view",
         component: QirViewComponent,
+      },
+      {
+        path: "dashboard",
+        component: QirDashboardComponent,
       },
     ],
   },

@@ -1,0 +1,341 @@
+<div class="training-sessions-list-container">
+  <!-- Header -->
+  <div class="header-section mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-1 fw-bold text-primary">Training Sessions Management</h2>
+        <p class="text-muted mb-0">Manage all training sessions - past, present, and future</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" (click)="refresh()" [disabled]="isLoading">
+          <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
+          Refresh
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="goToLiveSessions()">
+          <i class="mdi mdi-eye"></i>
+          Live View
+        </button>
+        <button class="btn btn-primary btn-sm" (click)="createNewSession()">
+          <i class="mdi mdi-plus"></i>
+          New Session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="filters-section mb-4">
+    <form [formGroup]="searchForm" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          formControlName="searchTerm"
+          placeholder="Search by title, description, facilitator, or location...">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Status</label>
+        <select class="form-select" formControlName="status">
+          <option value="all">All Statuses</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Date Range</label>
+        <select class="form-select" formControlName="dateRange">
+          <option value="all">All Dates</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="future">Future</option>
+          <option value="past">Past</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Facilitator</label>
+        <select class="form-select" formControlName="facilitator">
+          <option value="all">All Facilitators</option>
+          <option *ngFor="let facilitator of facilitators" [value]="facilitator">
+            {{ facilitator }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary" 
+          (click)="searchForm.reset(); applyFilters()"
+          title="Clear Filters">
+          <i class="mdi mdi-filter-remove"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  <div class="bulk-actions-bar mb-3" *ngIf="showBulkActions">
+    <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+      <span class="text-muted">
+        {{ selectedSessions.length }} session(s) selected
+      </span>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-danger" (click)="bulkDelete()" [disabled]="isProcessing">
+          <i class="mdi mdi-delete"></i>
+          Delete Selected
+        </button>
+        <button class="btn btn-sm btn-outline-primary" (click)="exportSessions()">
+          <i class="mdi mdi-download"></i>
+          Export Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && allSessions.length === 0" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading training sessions...</p>
+  </div>
+
+  <!-- Sessions Table -->
+  <div *ngIf="!isLoading || allSessions.length > 0" class="table-section">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 40px;">
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="checkbox" 
+                  [checked]="isAllSelected"
+                  [indeterminate]="isPartiallySelected"
+                  (change)="toggleSelectAll()">
+              </div>
+            </th>
+            <th (click)="sort('title')" class="sortable">
+              Title
+              <i class="mdi ms-1" [class]="getSortIcon('title')"></i>
+            </th>
+            <th (click)="sort('date')" class="sortable">
+              Date & Time
+              <i class="mdi ms-1" [class]="getSortIcon('date')"></i>
+            </th>
+            <th (click)="sort('facilitatorName')" class="sortable">
+              Facilitator
+              <i class="mdi ms-1" [class]="getSortIcon('facilitatorName')"></i>
+            </th>
+            <th (click)="sort('location')" class="sortable">
+              Location
+              <i class="mdi ms-1" [class]="getSortIcon('location')"></i>
+            </th>
+            <th (click)="sort('status')" class="sortable">
+              Status
+              <i class="mdi ms-1" [class]="getSortIcon('status')"></i>
+            </th>
+            <th style="width: 120px;">Expected</th>
+            <th style="width: 200px;" class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let session of paginatedSessions; trackBy: trackBySessionId">
+            <td>
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="checkbox" 
+                  [checked]="isSelected(session.id)"
+                  (change)="toggleSessionSelection(session.id)">
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold">{{ session.title }}</div>
+              <small class="text-muted" *ngIf="session.description">
+                {{ session.description | slice:0:50 }}{{ session.description.length > 50 ? '...' : '' }}
+              </small>
+            </td>
+            <td>
+              <div>{{ formatDate(session.date) }}</div>
+              <small class="text-muted">
+                {{ formatTime(session.startTime) }} - {{ formatTime(session.endTime) }}
+              </small>
+              <div class="mt-1" *ngIf="getDaysUntilSession(session) >= 0">
+                <small class="badge bg-info">{{ getDaysUntilSession(session) === 0 ? 'Today' : getDaysUntilSession(session) + ' days' }}</small>
+              </div>
+            </td>
+            <td>{{ session.facilitatorName }}</td>
+            <td>{{ session.location }}</td>
+            <td>
+              <span [class]="getStatusClass(session.status)">
+                {{ getStatusDisplayText(session.status) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="fw-semibold">{{ session.expectedCount || 0 }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-1 justify-content-center">
+                <button 
+                  class="btn btn-sm btn-outline-primary" 
+                  (click)="viewSessionDetails(session)"
+                  title="View Details">
+                  <i class="mdi mdi-eye"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-secondary" 
+                  (click)="editSession(session)"
+                  [disabled]="!canEditSession(session)"
+                  title="Edit Session">
+                  <i class="mdi mdi-pencil"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-info" 
+                  (click)="duplicateSession(session)"
+                  title="Duplicate Session">
+                  <i class="mdi mdi-content-copy"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-success" 
+                  (click)="goToSignOff(session)"
+                  *ngIf="session.status === 'in-progress'"
+                  title="Badge Sign-Off">
+                  <i class="mdi mdi-id-card"></i>
+                </button>
+                <button 
+                  class="btn btn-sm btn-outline-danger" 
+                  (click)="confirmDeleteSession(session)"
+                  [disabled]="!canDeleteSession(session)"
+                  title="Delete Session">
+                  <i class="mdi mdi-delete"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results -->
+    <div *ngIf="filteredSessions.length === 0 && !isLoading" class="text-center py-4">
+      <div class="text-muted">
+        <i class="mdi mdi-magnify" style="font-size: 2rem;"></i>
+        <h5 class="mt-2">No sessions found</h5>
+        <p>Try adjusting your search criteria or create a new session.</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section mt-4" *ngIf="totalPages > 1">
+      <nav aria-label="Sessions pagination">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <button class="page-link" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+              <i class="mdi mdi-chevron-left"></i>
+            </button>
+          </li>
+          
+          <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" 
+              [class.active]="currentPage === i + 1"
+              [class.d-none]="totalPages > 10 && Math.abs((i + 1) - currentPage) > 2 && (i + 1) !== 1 && (i + 1) !== totalPages">
+            <button class="page-link" (click)="goToPage(i + 1)">
+              {{ i + 1 }}
+            </button>
+          </li>
+          
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <button class="page-link" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+              <i class="mdi mdi-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="text-center text-muted mt-2">
+        Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredSessions.length) }} 
+        of {{ filteredSessions.length }} sessions
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Count Summary -->
+  <div class="summary-section mt-4" *ngIf="allSessions.length > 0">
+    <div class="row text-center">
+      <div class="col-md-3">
+        <div class="card border-primary">
+          <div class="card-body">
+            <h5 class="text-primary">{{ getSessionCountByStatus('scheduled') }}</h5>
+            <small class="text-muted">Scheduled</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-success">
+          <div class="card-body">
+            <h5 class="text-success">{{ getSessionCountByStatus('in-progress') }}</h5>
+            <small class="text-muted">In Progress</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-secondary">
+          <div class="card-body">
+            <h5 class="text-secondary">{{ getSessionCountByStatus('completed') }}</h5>
+            <small class="text-muted">Completed</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-danger">
+          <div class="card-body">
+            <h5 class="text-danger">{{ getSessionCountByStatus('cancelled') }}</h5>
+            <small class="text-muted">Cancelled</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" 
+     tabindex="-1" *ngIf="showDeleteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+      </div>
+      <div class="modal-body" *ngIf="sessionToDelete">
+        <p>Are you sure you want to delete the following training session?</p>
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title">{{ sessionToDelete.title }}</h6>
+            <p class="card-text">
+              <strong>Date:</strong> {{ formatDateTime(sessionToDelete) }}<br>
+              <strong>Facilitator:</strong> {{ sessionToDelete.facilitatorName }}<br>
+              <strong>Location:</strong> {{ sessionToDelete.location }}
+            </p>
+          </div>
+        </div>
+        <div class="alert alert-warning mt-3">
+          <i class="mdi mdi-alert-triangle"></i>
+          This action cannot be undone.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="deleteSession()" [disabled]="isProcessing">
+          <span *ngIf="isProcessing" class="spinner-border spinner-border-sm me-2"></span>
+          Delete Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal"></div>

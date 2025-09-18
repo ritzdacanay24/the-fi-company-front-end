@@ -1,0 +1,358 @@
+<div class="attendance-dashboard">
+  <!-- Header -->
+  <div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h2 class="mb-0">Attendance Dashboard</h2>
+        <div class="text-muted mt-1" *ngIf="session">
+          {{ session.title }} - {{ formatDate(session.date) }}
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          class="btn btn-outline-secondary me-2" 
+          (click)="refresh()"
+          [disabled]="isLoading">
+          <i class="fas fa-sync" [class.fa-spin]="isLoading"></i>
+          Refresh
+        </button>
+        
+        <button 
+          class="btn btn-outline-primary me-2" 
+          (click)="exportAttendanceSheet()"
+          *ngIf="session">
+          <i class="fas fa-download"></i>
+          Export
+        </button>
+        
+        <button 
+          class="btn btn-primary" 
+          (click)="goToSignOff()"
+          *ngIf="isSessionActive()">
+          <i class="fas fa-id-card"></i>
+          Sign Off
+        </button>
+        
+        <button 
+          class="btn btn-secondary" 
+          (click)="goToSessions()">
+          <i class="fas fa-arrow-left"></i>
+          Back to Sessions
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !session" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="mt-2">Loading session data...</div>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="session" class="dashboard-content">
+    
+    <!-- Session Info Card -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h5 class="card-title mb-1">{{ session.title }}</h5>
+            <div class="text-muted">
+              <i class="fas fa-clock me-1"></i>
+              {{ formatTime(session.date + 'T' + session.startTime) }} - 
+              {{ formatTime(session.date + 'T' + session.endTime) }}
+            </div>
+            <div class="text-muted">
+              <i class="fas fa-map-marker-alt me-1"></i>
+              {{ session.location }}
+            </div>
+            <div class="text-muted" *ngIf="session.description">
+              <i class="fas fa-info-circle me-1"></i>
+              {{ session.description }}
+            </div>
+          </div>
+          
+          <div class="col-md-6 text-md-end">
+            <div class="session-status mb-2">
+              <span [class]="getStatusClass()">{{ getSessionStatus() }}</span>
+            </div>
+            
+            <div class="completion-metrics">
+              <div class="h4 mb-0" [class]="getCompletionRateColor()">
+                {{ getCompletionRate() }}%
+              </div>
+              <small class="text-muted">Completion Rate</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4" *ngIf="metrics">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-value text-primary">{{ metrics.totalExpected }}</div>
+          <div class="stat-label">Expected</div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-value text-success">{{ metrics.completedCount }}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-value text-warning">{{ metrics.totalExpected - metrics.completedCount }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="stat-value" [class]="getCompletionRateColor()">
+            {{ getCompletionRate() }}%
+          </div>
+          <div class="stat-label">Attendance Rate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-row mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <!-- View Filters -->
+        <div class="view-filters">
+          <div class="btn-group" role="group">
+            <input 
+              type="radio" 
+              class="btn-check" 
+              id="view-all" 
+              name="view" 
+              (change)="toggleView('all')"
+              [checked]="!showCompletedOnly && !showPendingOnly">
+            <label class="btn btn-outline-secondary" for="view-all">
+              All ({{ (completedAttendees.length + pendingAttendees.length) }})
+            </label>
+
+            <input 
+              type="radio" 
+              class="btn-check" 
+              id="view-completed" 
+              name="view" 
+              (change)="toggleView('completed')"
+              [checked]="showCompletedOnly">
+            <label class="btn btn-outline-success" for="view-completed">
+              Completed ({{ completedAttendees.length }})
+            </label>
+
+            <input 
+              type="radio" 
+              class="btn-check" 
+              id="view-pending" 
+              name="view" 
+              (change)="toggleView('pending')"
+              [checked]="showPendingOnly">
+            <label class="btn btn-outline-warning" for="view-pending">
+              Pending ({{ pendingAttendees.length }})
+            </label>
+          </div>
+        </div>
+
+        <!-- Sort Options -->
+        <div class="sort-options">
+          <div class="btn-group" role="group">
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              [class.active]="sortBy === 'name'"
+              (click)="setSortBy('name')">
+              Name
+              <i 
+                class="fas fa-sort-alpha-down ms-1" 
+                *ngIf="sortBy === 'name' && sortDirection === 'asc'"></i>
+              <i 
+                class="fas fa-sort-alpha-up ms-1" 
+                *ngIf="sortBy === 'name' && sortDirection === 'desc'"></i>
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              [class.active]="sortBy === 'time'"
+              (click)="setSortBy('time')"
+              *ngIf="!showPendingOnly">
+              Time
+              <i 
+                class="fas fa-sort-numeric-down ms-1" 
+                *ngIf="sortBy === 'time' && sortDirection === 'asc'"></i>
+              <i 
+                class="fas fa-sort-numeric-up ms-1" 
+                *ngIf="sortBy === 'time' && sortDirection === 'desc'"></i>
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              [class.active]="sortBy === 'department'"
+              (click)="setSortBy('department')">
+              Department
+              <i 
+                class="fas fa-sort-alpha-down ms-1" 
+                *ngIf="sortBy === 'department' && sortDirection === 'asc'"></i>
+              <i 
+                class="fas fa-sort-alpha-up ms-1" 
+                *ngIf="sortBy === 'department' && sortDirection === 'desc'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed Attendees -->
+    <div class="card mb-4" *ngIf="getFilteredCompletedAttendees().length > 0">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          Completed Sign-offs
+        </h6>
+        <span class="badge bg-success">{{ completedAttendees.length }}</span>
+      </div>
+      
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Badge ID</th>
+                <th>Sign-off Time</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendance of getFilteredCompletedAttendees()">
+                <td>
+                  <div class="employee-info">
+                    <div class="fw-medium">
+                      {{ attendance.employee.firstName }} {{ attendance.employee.lastName }}
+                    </div>
+                    <small class="text-muted">{{ attendance.employee.title }}</small>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">
+                    {{ attendance.employee.department }}
+                  </span>
+                </td>
+                <td>
+                  <code class="small">{{ attendance.employee.badgeId }}</code>
+                </td>
+                <td>
+                  <div class="time-info">
+                    <div>{{ formatTime(attendance.signInTime) }}</div>
+                    <small class="text-muted">
+                      {{ formatDate(attendance.signInTime) }}
+                    </small>
+                  </div>
+                </td>
+                <td>
+                  <span 
+                    class="badge"
+                    [class.bg-success]="attendance.attendanceDuration >= session.durationMinutes"
+                    [class.bg-warning]="attendance.attendanceDuration < session.durationMinutes">
+                    {{ attendance.attendanceDuration }} min
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Attendees -->
+    <div class="card" *ngIf="getFilteredPendingAttendees().length > 0">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+          <i class="fas fa-clock text-warning me-2"></i>
+          Pending Sign-offs
+        </h6>
+        <span class="badge bg-warning">{{ pendingAttendees.length }}</span>
+      </div>
+      
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Badge ID</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let employee of getFilteredPendingAttendees()">
+                <td>
+                  <div class="employee-info">
+                    <div class="fw-medium">
+                      {{ employee.firstName }} {{ employee.lastName }}
+                    </div>
+                    <small class="text-muted">{{ employee.title }}</small>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">
+                    {{ employee.department }}
+                  </span>
+                </td>
+                <td>
+                  <code class="small">{{ employee.badgeId }}</code>
+                </td>
+                <td>
+                  <span class="badge bg-warning">
+                    <i class="fas fa-clock me-1"></i>
+                    Pending
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div 
+      class="text-center py-5"
+      *ngIf="!isLoading && completedAttendees.length === 0 && pendingAttendees.length === 0">
+      <i class="fas fa-users fa-3x text-muted mb-3"></i>
+      <h5>No Attendees Found</h5>
+      <p class="text-muted">
+        No attendees have been assigned to this training session yet.
+      </p>
+      <button class="btn btn-primary" (click)="goToSessions()">
+        Manage Sessions
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Auto-refresh indicator -->
+  <div class="auto-refresh-indicator" *ngIf="isSessionActive()">
+    <small class="text-muted">
+      <i class="fas fa-sync fa-spin me-1"></i>
+      Auto-refreshing every {{ getRefreshInterval() }} seconds
+    </small>
+  </div>
+
+</div>

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input, OnInit, AfterViewInit, OnDestroy } from "@angular/core";
+import { ChangeDetectorRef, Component, Input, OnInit, AfterViewInit, OnDestroy, ViewChild } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { Injectable } from "@angular/core";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
@@ -9,6 +9,7 @@ import moment from "moment";
 import { TokenStorageService } from "@app/core/services/token-storage.service";
 import { getFormValidationErrors } from "src/assets/js/util/getFormValidationErrors";
 import { ToastrService } from "ngx-toastr";
+import { QRCodeComponent } from 'angularx-qrcode';
 
 @Injectable({
   providedIn: "root",
@@ -29,7 +30,7 @@ export class PlacardModalService {
 
 @Component({
   standalone: true,
-  imports: [SharedModule, PlacardFormComponent],
+  imports: [SharedModule, PlacardFormComponent, QRCodeComponent],
   selector: "app-placard-modal",
   templateUrl: "./placard-modal.component.html",
   styles: [`
@@ -38,7 +39,7 @@ export class PlacardModalService {
       background: white;
       text-align: center;
       border: 2px solid #000;
-      margin: 15px 0;
+      margin: 10px 0;
     }
     
     .print-barcode-container svg {
@@ -65,8 +66,8 @@ export class PlacardModalService {
       }
       
       .print-barcode-container svg {
-        width: 300px !important;
-        height: 80px !important;
+        width: 200px !important;
+        height: 50px !important;
       }
       
       .print-barcode-text {
@@ -79,6 +80,9 @@ export class PlacardModalService {
 })
 export class PlacardModalComponent implements OnInit, AfterViewInit, OnDestroy {
   private barcodeLibraryLoaded = false;
+  
+  @ViewChild(PlacardFormComponent) placardFormComponent!: PlacardFormComponent;
+  
   constructor(
     private ngbActiveModal: NgbActiveModal,
     private placardService: PlacardService,
@@ -98,6 +102,21 @@ export class PlacardModalComponent implements OnInit, AfterViewInit, OnDestroy {
   form: any;
 
   id;
+
+  get codeType(): string {
+    return this.placardFormComponent?.codeType || 'qr';
+  }
+
+  getSalesOrderValue(row?: any): string {
+    if (row) {
+      return `${row?.eyefi_so_number}-${row?.line_number}`;
+    }
+    if (this.totalPrints && this.totalPrints.length > 0) {
+      const firstRow = this.totalPrints[0];
+      return `${firstRow?.eyefi_so_number}-${firstRow?.line_number}`;
+    }
+    return `${this.soNumber}-${this.lineNumber}`;
+  }
 
   ngAfterViewChecked() {
     this.cdr.detectChanges();

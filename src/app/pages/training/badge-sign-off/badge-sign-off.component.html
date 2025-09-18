@@ -1,0 +1,232 @@
+<div class="badge-signoff-container">
+  <!-- Header -->
+  <div class="header-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1 fw-bold text-success">Training Complete - Sign Off</h2>
+        <p class="text-muted mb-0" *ngIf="session">
+          {{ session.title }} - {{ session.date | date:'mediumDate' }}
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" (click)="refresh()" [disabled]="isLoading">
+          <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
+          Refresh
+        </button>
+        <button class="btn btn-outline-primary btn-sm" (click)="goToAttendanceDashboard()">
+          <i class="mdi mdi-chart-line"></i>
+          Dashboard
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="goToSessions()">
+          <i class="mdi mdi-arrow-left"></i>
+          Back to Sessions
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !session" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading training session...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="session" class="main-content">
+    <!-- Training Session Info -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <div class="session-info-card">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h4 class="mb-0">{{ session.title }}</h4>
+            <div class="status-badge">
+              <span 
+                class="badge"
+                [class.bg-warning]="session.status === 'scheduled'"
+                [class.bg-success]="session.status === 'in-progress'"
+                [class.bg-secondary]="session.status === 'completed'"
+                [class.bg-danger]="session.status === 'cancelled'">
+                {{ getStatusDisplayText(session.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="info-item">
+                <strong>Purpose:</strong>
+                <span>{{ session.purpose }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Date & Duration:</strong>
+                <span>{{ session.date | date:'mediumDate' }}</span>
+                <span class="ms-2">{{ session.startTime }} - {{ session.endTime }}</span>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="info-item">
+                <strong>Location:</strong>
+                <span>{{ session.location }}</span>
+              </div>
+              <div class="info-item">
+                <strong>Facilitator:</strong>
+                <span>{{ session.facilitatorName }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="info-item mt-2" *ngIf="session.description">
+            <strong>Description:</strong>
+            <span>{{ session.description }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Stats -->
+      <div class="col-md-4">
+        <div class="stats-card">
+          <div class="stat-item">
+            <div class="stat-value text-success">{{ metrics?.totalPresent || 0 }}</div>
+            <div class="stat-label">Present</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value text-primary">{{ metrics?.totalExpected || 0 }}</div>
+            <div class="stat-label">Expected</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value text-info">{{ getAttendanceRate() | number:'1.0-1' }}%</div>
+            <div class="stat-label">Attendance Rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badge Scanning Section -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="badge-scan-card">
+          <h5 class="mb-3">
+            <i class="mdi mdi-card-account-details me-2"></i>
+            Scan Badge to Complete Training
+          </h5>
+          
+          <!-- Badge Input -->
+          <div class="badge-input-section">
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">
+                <i class="mdi mdi-barcode-scan"></i>
+              </span>
+              <input 
+                #badgeInput
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="badgeNumber"
+                (keyup.enter)="onBadgeScanned()"
+                placeholder="Scan or enter badge number"
+                [disabled]="isLoading"
+                autocomplete="off">
+              <button 
+                class="btn btn-primary" 
+                type="button" 
+                (click)="onBadgeScanned()"
+                [disabled]="isLoading || !badgeNumber.trim()">
+                <i class="mdi mdi-check" *ngIf="!isLoading"></i>
+                <i class="mdi mdi-loading mdi-spin" *ngIf="isLoading"></i>
+                Complete Training
+              </button>
+            </div>
+          </div>
+
+          <!-- Session Status -->
+          <div class="session-status mt-3">
+            <div class="badge" [ngClass]="isSessionActive() ? 'bg-success' : 'bg-warning'">
+              <i class="mdi" [ngClass]="isSessionActive() ? 'mdi-check-circle' : 'mdi-clock'"></i>
+              {{ isSessionActive() ? 'Session Active' : 'Session Scheduled' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Sign-offs -->
+      <div class="col-md-6">
+        <div class="recent-signoffs-card">
+          <h5 class="mb-3">
+            <i class="mdi mdi-clock-outline me-2"></i>
+            Recent Sign-offs
+          </h5>
+          
+          <div *ngIf="recentSignOffs.length === 0" class="text-muted text-center py-3">
+            No Sign-offs yet
+          </div>
+          
+          <div *ngFor="let attendance of recentSignOffs" class="recent-signoff-item">
+            <div class="d-flex align-items-center">
+              <div class="signoff-avatar">
+                {{ attendance.employee.firstName.charAt(0) }}{{ attendance.employee.lastName.charAt(0) }}
+              </div>
+              <div class="signoff-info flex-grow-1">
+                <div class="signoff-name">
+                  {{ attendance.employee.firstName }} {{ attendance.employee.lastName }}
+                </div>
+                <div class="signoff-details">
+                  {{ attendance.employee.position }} • {{ formatTime(attendance.signoffTime) }}
+                </div>
+              </div>
+              <div class="signoff-status">
+                <i class="mdi mdi-check-circle text-success"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div class="row" *ngIf="showSuccessMessage || showErrorMessage">
+      <div class="col-12">
+        <div class="alert" [ngClass]="{'alert-success': showSuccessMessage, 'alert-danger': showErrorMessage}" role="alert">
+          <i class="mdi" [ngClass]="{'mdi-check-circle': showSuccessMessage, 'mdi-alert-circle': showErrorMessage}"></i>
+          {{ messageText }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Expected Attendees Section -->
+    <div class="row">
+      <div class="col-12">
+        <div class="attendees-card">
+          <h5 class="mb-3">
+            <i class="mdi mdi-account-group me-2"></i>
+            Expected Attendees ({{ session.expectedAttendees.length }})
+          </h5>
+          
+          <div class="attendees-grid">
+            <div 
+              *ngFor="let attendee of session.expectedAttendees" 
+              class="attendee-item"
+              [ngClass]="getCompletionStatusClass(attendee.employee)">
+              <div class="attendee-avatar">
+                {{ attendee.employee.firstName.charAt(0) }}{{ attendee.employee.lastName.charAt(0) }}
+              </div>
+              <div class="attendee-info">
+                <div class="attendee-name">
+                  {{ attendee.employee.firstName }} {{ attendee.employee.lastName }}
+                </div>
+                <div class="attendee-position">
+                  {{ attendee.employee.position }}
+                </div>
+              </div>
+              <div class="attendee-status">
+                <i class="mdi" 
+                   [ngClass]="{
+                     'mdi-check-circle text-success': getCompletionStatusClass(attendee.employee) === 'status-completed',
+                     'mdi-clock text-warning': getCompletionStatusClass(attendee.employee) === 'status-pending'
+                   }"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

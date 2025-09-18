@@ -129,7 +129,7 @@
           <a [attr.data-parent]="menu.parent_id" [routerLink]="menu.link" class="nav-link"
             (click)="updateActive($event); handleHiddenItemClick(menu)" (mouseenter)="mouseHovering(menu)" (mouseleave)="mouseLeft(menu)">
             <i class="{{ menu.icon }} icon nav-icon" *ngIf="menu.icon && menu.id"></i>
-            {{ menu.label }}
+            <span class="">{{ menu.label }}</span>
 
             <!-- Search result indicator -->
             <i *ngIf="searchTerm()" class="bx bx-search-alt-2 ms-2 text-muted small" title="Search result"></i>

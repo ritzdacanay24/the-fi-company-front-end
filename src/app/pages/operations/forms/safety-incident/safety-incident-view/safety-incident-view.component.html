@@ -54,34 +54,16 @@
         </div>
 
         <!-- Incident Summary Alert -->
-        <div class="alert border-0 shadow-sm mb-4" [ngClass]="{
-          'alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25': getSeverityBadgeClass(processedData?.type_of_incident) === 'bg-danger',
-          'alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25': getSeverityBadgeClass(processedData?.type_of_incident) === 'bg-warning',
-          'alert-info bg-info bg-opacity-10 border-info border-opacity-25': getSeverityBadgeClass(processedData?.type_of_incident) === 'bg-info',
-          'alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25': getSeverityBadgeClass(processedData?.type_of_incident) === 'bg-primary',
-          'alert-secondary bg-secondary bg-opacity-10 border-secondary border-opacity-25': getSeverityBadgeClass(processedData?.type_of_incident) === 'bg-secondary'
-        }" *ngIf="processedData && processedData.id">
+        <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 border-0 shadow-sm mb-4" *ngIf="processedData && processedData.id">
           <div class="d-flex align-items-start">
-            <i class="mdi mdi-shield-alert fs-4 me-3 mt-1" [ngClass]="{
-              'text-danger': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-danger',
-              'text-warning': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-warning',
-              'text-info': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-info',
-              'text-primary': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-primary',
-              'text-secondary': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-secondary'
-            }"></i>
+            <i class="mdi mdi-shield-alert fs-4 me-3 mt-1 text-warning"></i>
             <div>
-              <h6 class="alert-heading mb-2" [ngClass]="{
-                'text-danger': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-danger',
-                'text-warning': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-warning',
-                'text-info': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-info',
-                'text-primary': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-primary',
-                'text-secondary': getSeverityBadgeClass(processedData.type_of_incident) === 'bg-secondary'
-              }">Safety Incident #{{processedData.id}} - {{processedData.type_of_incident}}</h6>
+              <h6 class="alert-heading mb-2 text-warning">Safety Incident #{{processedData.id}} - {{processedData.type_of_incident}}</h6>
               <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
                 <span class="badge" [ngClass]="getStatusBadgeClass(data?.status)">
                   {{processedData.status}}
                 </span>
-                <span class="badge" [ngClass]="getSeverityBadgeClass(processedData.type_of_incident)">
+                <span class="badge bg-warning">
                   {{processedData.type_of_incident}}
                 </span>
               </div>
@@ -106,7 +88,7 @@
             <!-- Basic Information -->
             <div class="col-md-12 mb-4">
               <h5 class="mb-3">
-                <i class="mdi mdi-information me-2 text-primary"></i>Incident Summary
+                <i class="mdi mdi-information me-2 text-warning"></i>Incident Summary
               </h5>
               <div class="row">
                 <div class="col-md-3">
@@ -157,12 +139,12 @@
             <div class="col-md-12" *ngIf="attachments && attachments.length > 0">
               <h6 class="mb-2">Supporting Documentation:</h6>
               <div *ngFor="let attachment of attachments" class="d-flex align-items-center p-2 border rounded mb-2">
-                <i class="mdi mdi-file-document me-2 text-primary"></i>
+                <i class="mdi mdi-file-document me-2 text-warning"></i>
                 <div class="flex-grow-1" style="overflow:hidden; text-overflow: ellipsis;">
                   <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
                   <small class="text-muted">{{attachment.fileSizeConv}}</small>
                 </div>
-                <a [href]="attachment.url" target="_blank" class="btn btn-sm btn-outline-primary">
+                <a [href]="attachment.url" target="_blank" class="btn btn-sm btn-outline-warning">
                   <i class="mdi mdi-download"></i>
                 </a>
               </div>

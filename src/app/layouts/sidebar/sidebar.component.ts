@@ -581,18 +581,17 @@ export class SidebarComponent implements OnInit {
   }
 
   /**
-   * Toggle the menu bar when having mobile screen
+   * Toggle between collapsed sidebar (sm-hover) and full sidebar (null)
    */
   toggleMobileMenu(event: any) {
     var sidebarsize =
       document.documentElement.getAttribute("data-sidebar-size");
-    if (sidebarsize == "sm-hover-active") {
-      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
+    if (sidebarsize == "sm-hover") {
+      // If currently collapsed, expand to full menu
+      document.documentElement.removeAttribute("data-sidebar-size");
     } else {
-      document.documentElement.setAttribute(
-        "data-sidebar-size",
-        "sm-hover-active"
-      );
+      // If currently full or any other state, collapse to hover mode
+      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
     }
   }
 

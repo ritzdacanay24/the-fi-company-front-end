@@ -14,6 +14,7 @@ import { RequestPublicComponent } from "./pages/public/request-public/request-pu
 import { QirCreatePublicComponent } from "./pages/quality/qir/qir-create-public/qir-create-public.component";
 import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-usage-form.component";
 import { StandaloneShippingPriorityDisplayComponent } from "./standalone/shipping-priority-display/shipping-priority-display.component";
+import { SafetyDashboardComponent } from "./pages/operations/forms/safety-incident/safety-dashboard/safety-dashboard.component";
 
 import { FlagBasedPreloadingStrategy } from "./shared/providers/preload";
 import { MenuComponent } from "./pages/menu/menu.component";
@@ -40,6 +41,16 @@ const routes: Routes = [
     path: "shipping-priority-display", 
     component: StandaloneShippingPriorityDisplayComponent,
     title: "Shipping Priority Display"
+  },
+  { 
+    path: "safety-dashboard-display", 
+    component: SafetyDashboardComponent,
+    title: "Safety Dashboard Display"
+  },
+  { 
+    path: "qir-dashboard-display", 
+    loadComponent: () => import("./standalone/qir-dashboard-display/qir-dashboard-display.component").then(c => c.QirDashboardDisplayComponent),
+    title: "QIR Dashboard Display"
   },
   {
     path: "auth",
@@ -165,6 +176,24 @@ const routes: Routes = [
         loadChildren: () =>
           import("./features/ul-management/ul-management.module").then(
             (m) => m.ULManagementModule
+          ),
+      },
+    ],
+  },
+  // Training Management routes
+  {
+    path: "training",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      { path: "", redirectTo: "sessions", pathMatch: "full" },
+      {
+        title: "Training Management",
+        path: "",
+        loadChildren: () =>
+          import("./pages/training/training-routing.module").then(
+            (m) => m.TrainingRoutingModule
           ),
       },
     ],

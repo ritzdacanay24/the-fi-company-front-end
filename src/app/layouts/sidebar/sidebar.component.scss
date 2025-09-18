@@ -7,6 +7,46 @@
 	--vz-vertical-menu-sub-item-hover-color: #ffffff;
 }
 
+/* Ensure entire sidebar expands on hover for sm-hover mode */
+html[data-sidebar-size="sm-hover"] {
+	.navbar-menu {
+		/* Ensure the hover area covers the entire sidebar */
+		&:hover {
+			/* Force expansion of entire sidebar */
+			width: var(--vz-vertical-menu-width) !important;
+			
+			/* Show ALL text elements across the entire sidebar */
+			.navbar-nav {
+				.nav-link span,
+				.menu-title span,
+				.badge {
+					display: inline-block !important;
+				}
+				
+				/* Ensure dropdown menus can show */
+				.menu-dropdown {
+					display: block !important;
+				}
+			}
+			
+			/* Show logo text */
+			.logo {
+				span.logo-lg {
+					display: inline-block !important;
+				}
+				span.logo-sm {
+					display: none !important;
+				}
+			}
+			
+			/* Show brand box text alignment */
+			.navbar-brand-box {
+				text-align: left !important;
+			}
+		}
+	}
+}
+
 /* Speed up all transitions */
 .navbar-menu,
 .main-content,

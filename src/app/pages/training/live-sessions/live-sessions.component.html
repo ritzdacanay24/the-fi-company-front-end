@@ -1,0 +1,266 @@
+<div class="live-sessions-container">
+    <!-- Header -->
+    <div class="header-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="mb-1 fw-bold text-primary">Live Training Sessions</h3>
+                <small class="text-muted">Join active sessions or view upcoming • {{ currentTime | date:'short' }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" (click)="refreshSessions()" [disabled]="isLoading">
+                    <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
+                    Refresh
+                </button>
+                <button class="btn btn-secondary btn-sm" routerLink="../setup">
+                    <i class="mdi mdi-cog"></i>
+                    Manage Sessions
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" routerLink="../manage">
+                    <i class="mdi mdi-view-list"></i>
+                    All Sessions
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading && liveSessions.length === 0 && upcomingSessions.length === 0" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">Loading training sessions...</p>
+</div>
+
+<!-- Upcoming Sessions (Starting Soon) -->
+<div *ngIf="upcomingSessions.length > 0" class="upcoming-sessions-section mb-5">
+    <div class="section-header mb-3">
+        <h4 class="text-warning mb-0">
+            <i class="mdi mdi-clock-outline text-warning me-2"></i>
+            Starting Soon ({{ upcomingSessions.length }})
+        </h4>
+        <p class="text-muted small mb-0">Sessions starting within the next 4 hours - prepare to join!</p>
+    </div>
+
+    <div class="row">
+        <div *ngFor="let session of upcomingSessions" class="col-lg-6 col-xl-4 mb-3">
+            <div class="training-session-card upcoming-session">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold">{{ session.title }}</h6>
+                                <small class="opacity-75">{{ session.facilitatorName }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-light text-warning fw-bold">SOON</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <p class="text-muted small mb-2">{{ session.description }}</p>
+                            <div class="session-details">
+                                <div class="detail-item">
+                                    <i class="mdi mdi-calendar-outline text-muted me-1"></i>
+                                    <span>{{ formatDate(session.date) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="mdi mdi-clock-outline text-muted me-1"></i>
+                                    <span>{{ formatTime(session.startTime) }} - {{ formatTime(session.endTime) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="mdi mdi-map-marker-outline text-muted me-1"></i>
+                                    <span>{{ session.location }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="mdi mdi-timer-sand text-warning me-1"></i>
+                                    <span class="text-warning fw-bold">{{ getTimeUntilStart(session) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="attendance-info mb-3">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <div class="stat-number text-muted">{{ getExpectedCount(session) }}</div>
+                                        <div class="stat-label">Expected</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <div class="stat-number text-muted">{{ getSessionDuration(session) }}</div>
+                                        <div class="stat-label">Duration</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <!-- Trainer Controls (if user has trainer permissions) -->
+                        <div class="trainer-controls mb-2" *ngIf="isTrainer">
+                            <div class="d-flex gap-2 mb-2">
+                                <button *ngIf="session.status === 'scheduled' && canStartSession(session)"
+                                    class="btn btn-sm btn-primary" (click)="startSession(session)"
+                                    [disabled]="isProcessing">
+                                    <i class="mdi mdi-play"></i>
+                                    Start Early
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" (click)="viewAttendanceSheet(session)">
+                                    <i class="mdi mdi-clipboard-list"></i>
+                                    Attendance
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" (click)="editSession(session)">
+                                    <i class="mdi mdi-pencil"></i>
+                                    Edit
+                                </button>
+                            </div>
+                            <hr class="my-2">
+                        </div>
+
+                        <!-- User Controls -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-warning flex-fill" disabled>
+                                <i class="mdi mdi-clock-outline"></i>
+                                Not Started Yet
+                            </button>
+                            <button class="btn btn-outline-secondary" (click)="viewSessionDetails(session)">
+                                <i class="mdi mdi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Sessions -->
+<div *ngIf="liveSessions.length > 0" class="live-sessions-section mb-5">
+    <div class="section-header mb-3">
+        <h4 class="text-success mb-0">
+            <i class="mdi mdi-circle text-success me-2" style="font-size: 12px;"></i>
+            Live Sessions ({{ liveSessions.length }})
+        </h4>
+        <p class="text-muted small mb-0">Sessions currently in progress - join now!</p>
+    </div>
+
+    <div class="row">
+        <div *ngFor="let session of liveSessions" class="col-lg-6 col-xl-4 mb-3">
+            <div class="training-session-card live-session">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold">{{ session.title }}</h6>
+                                <small class="opacity-75">{{ session.facilitatorName }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-light text-success fw-bold">LIVE</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <p class="text-muted small mb-2">{{ session.description }}</p>
+                            <div class="session-details">
+                                <div class="detail-item">
+                                    <i class="mdi mdi-clock-outline text-muted me-1"></i>
+                                    <span>{{ formatTime(session.startTime) }} - {{ formatTime(session.endTime) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="mdi mdi-map-marker-outline text-muted me-1"></i>
+                                    <span>{{ session.location }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="mdi mdi-timelapse text-success me-1"></i>
+                                    <span class="text-success fw-bold">{{ getTimeRemaining(session) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="attendance-info mb-3">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <div class="stat-number text-primary">{{ getCompletedCount(session) }}</div>
+                                        <div class="stat-label">Signed In</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-item">
+                                        <div class="stat-number text-muted">{{ getExpectedCount(session) }}</div>
+                                        <div class="stat-label">Expected</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <!-- Trainer Controls (if user has trainer permissions) -->
+                        <div class="trainer-controls mb-2" *ngIf="isTrainer">
+                            <div class="d-flex gap-2 mb-2">
+                                <button *ngIf="session.status === 'scheduled'" class="btn btn-sm btn-primary"
+                                    (click)="startSession(session)" [disabled]="isProcessing">
+                                    <i class="mdi mdi-play"></i>
+                                    Start Session
+                                </button>
+                                <button *ngIf="session.status === 'in-progress'" class="btn btn-sm btn-warning"
+                                    (click)="endSession(session)" [disabled]="isProcessing">
+                                    <i class="mdi mdi-stop"></i>
+                                    End Session
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" (click)="viewAttendanceSheet(session)">
+                                    <i class="mdi mdi-clipboard-list"></i>
+                                    Attendance
+                                </button>
+                            </div>
+                            <hr class="my-2">
+                        </div>
+
+                        <!-- User Controls -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success flex-fill" (click)="joinSession(session)">
+                                <i class="mdi mdi-account-check"></i>
+                                Join & Sign Off
+                            </button>
+                            <button class="btn btn-outline-secondary" (click)="viewSessionDetails(session)">
+                                <i class="mdi mdi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- No Sessions State -->
+<div *ngIf="!isLoading && liveSessions.length === 0 && upcomingSessions.length === 0" class="no-sessions-state">
+    <div class="text-center py-5">
+        <div class="empty-state-icon mb-3">
+            <i class="mdi mdi-school text-muted" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="text-muted mb-2">No Active Training Sessions</h4>
+        <p class="text-muted mb-4">There are no live or upcoming training sessions at this time.</p>
+        <div class="d-flex gap-2 justify-content-center">
+            <button class="btn btn-outline-primary" routerLink="">
+                <i class="mdi mdi-view-list"></i>
+                View All Sessions
+            </button>
+            <button class="btn btn-primary" routerLink="../setup">
+                <i class="mdi mdi-plus"></i>
+                Create New Session
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh indicator -->
+<div class="auto-refresh-indicator">
+    <small class="text-muted">
+        <i class="mdi mdi-autorenew me-1"></i>
+        Auto-refreshes every 2 minutes
+    </small>
+</div>
