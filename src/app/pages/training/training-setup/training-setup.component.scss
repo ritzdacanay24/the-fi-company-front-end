@@ -45,8 +45,8 @@
         }
 
         .employee-avatar {
-          width: 32px;
-          height: 32px;
+          width: 40px;
+          height: 40px;
           background: #007bff;
           color: white;
           border-radius: 50%;
@@ -55,7 +55,10 @@
           justify-content: center;
           font-weight: bold;
           margin-right: 0.75rem;
-          font-size: 0.75rem;
+          font-size: 0.875rem;
+          flex-shrink: 0; /* Prevent the avatar from shrinking */
+          text-align: center;
+          line-height: 1;
         }
 
         .employee-info {
@@ -111,8 +114,8 @@
   background-color: #f8f9fa;
   
   .attendee-avatar {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     background: #28a745;
     color: white;
     border-radius: 50%;
@@ -121,7 +124,10 @@
     justify-content: center;
     font-weight: bold;
     margin-right: 0.75rem;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    flex-shrink: 0; /* Prevent the avatar from shrinking */
+    text-align: center;
+    line-height: 1;
   }
   
   .attendee-info {

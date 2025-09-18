@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
 import { TrainingService } from '../services/training.service';
 import { TrainingSession } from '../models/training.model';
@@ -8,7 +8,7 @@ import { TrainingSession } from '../models/training.model';
 @Component({
   selector: 'app-live-sessions',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './live-sessions.component.html',
   styleUrls: ['./live-sessions.component.scss']
 })

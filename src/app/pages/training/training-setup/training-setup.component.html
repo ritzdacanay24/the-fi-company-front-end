@@ -211,15 +211,19 @@
                         </div>
                       </div>
                     </div>
-                    <div class="col-md-2">
-                      <div class="mb-3">
+                    <div class="col-md-5">
+                      <div class="mb-3 text-end">
                         <label class="form-label">Duration</label>
                         <div class="form-control-plaintext">
                           <strong>{{ calculateDuration() }}</strong>
                         </div>
                       </div>
                     </div>
-                    <div class="col-md-3">
+                  </div>
+
+                  <!-- Facilitator Name -->
+                  <div class="row">
+                    <div class="col-md-6">
                       <div class="mb-3">
                         <label for="location" class="form-label">Location *</label>
                         <input type="text" class="form-control" id="location" formControlName="location"
@@ -230,10 +234,6 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- Facilitator Name -->
-                  <div class="row">
                     <div class="col-md-6">
                       <div class="mb-3">
                         <label for="facilitatorName" class="form-label">Facilitator Name *</label>
@@ -278,14 +278,14 @@
                                 class="employee-dropdown-item" (click)="selectEmployee(employee)"
                                 [class.disabled]="isEmployeeSelected(employee.id)">
                                 <div class="employee-avatar">
-                                  {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+                                  {{ (employee.firstName || '?').charAt(0) }}{{ (employee.lastName || '?').charAt(0) }}
                                 </div>
                                 <div class="employee-info">
-                                  <div class="employee-name">{{ employee.firstName }} {{ employee.lastName }}</div>
-                                  <div class="employee-details">{{ employee.position }} • {{ employee.department }}
+                                  <div class="employee-name">{{ employee.firstName || 'Unknown' }} {{ employee.lastName || 'Name' }}</div>
+                                  <div class="employee-details">{{ employee.position || 'No Position' }} • {{ employee.department || 'No Department' }}
                                   </div>
                                 </div>
-                                <div class="employee-badge">{{ employee.badgeNumber || 'No Badge' }}</div>
+                                <!-- <div class="employee-badge">{{ employee.badgeNumber || 'No Badge' }}</div> -->
                               </div>
                             </div>
                           </div>
@@ -328,20 +328,20 @@
                       <h6>Selected Attendees ({{ selectedEmployees.length }})</h6>
 
                       <div *ngIf="selectedEmployees.length === 0" class="text-muted text-center py-4">
-                        <i class="mdi mdi-account-plus-outline" style="font-size: 3rem;"></i>
+                        <i class="mdi mdi-account-group-outline text-muted" style="font-size: 3rem;"></i>
                         <p>No attendees selected yet. Search and select employees above.</p>
                       </div>
 
                       <div class="attendees-grid" *ngIf="selectedEmployees.length > 0">
                         <div *ngFor="let employee of selectedEmployees" class="selected-attendee-item">
                           <div class="attendee-avatar">
-                            {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+                            {{ (employee.firstName || '?').charAt(0) }}{{ (employee.lastName || '?').charAt(0) }}
                           </div>
                           <div class="attendee-info">
-                            <div class="attendee-name">{{ employee.firstName }} {{ employee.lastName }}</div>
-                            <div class="attendee-details">{{ employee.position }} • {{ employee.department }}</div>
+                            <div class="attendee-name">{{ employee.firstName || 'Unknown' }} {{ employee.lastName || 'Name' }}</div>
+                            <div class="attendee-details">{{ employee.position || 'No Position' }} • {{ employee.department || 'No Department' }}</div>
                           </div>
-                          <div class="attendee-badge">{{ employee.badgeNumber }}</div>
+                          <!-- <div class="attendee-badge">{{ employee.badgeNumber }}</div> -->
                           <button type="button" class="btn btn-outline-danger btn-sm"
                             (click)="removeEmployee(employee.id)">
                             <i class="mdi mdi-close"></i>
