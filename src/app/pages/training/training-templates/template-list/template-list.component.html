@@ -1,0 +1,241 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+              <i class="mdi mdi-home-outline me-1"></i>Training
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Training Templates
+          </li>
+        </ol>
+      </nav>
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-file-document-multiple text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Training Templates</h2>
+              <p class="text-muted mb-0">Create and manage reusable training session templates</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button 
+              type="button" 
+              class="btn btn-primary"
+              (click)="createNewTemplate()"
+              title="Create new training template">
+              <i class="mdi mdi-plus me-2"></i>Create Template
+            </button>
+          </div>
+        </div>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Training Templates Overview</h6>
+              <p class="mb-0">
+                Templates provide <strong>consistent training structures</strong> that can be reused across multiple sessions. 
+                Create, edit, and organize templates by category for efficient training management.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="flex-grow-1" style="min-width: 250px;">
+              <input 
+                type="text" 
+                class="form-control" 
+                [(ngModel)]="searchTerm"
+                (input)="onSearch()"
+                placeholder="Search templates by title, description, or tags...">
+            </div>
+            
+            <select class="form-select" [(ngModel)]="selectedCategory" (change)="onCategoryChange()" style="width: 180px;">
+              <option value="all">All Categories</option>
+              <option *ngFor="let category of categories" [value]="category.name">
+                {{ category.name }}
+              </option>
+            </select>
+            
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="activeFilter" 
+                     [(ngModel)]="showActiveOnly" (change)="onActiveFilterChange()">
+              <label class="form-check-label" for="activeFilter">Active Only</label>
+            </div>
+            
+            <div class="ms-auto">
+              <div class="d-flex align-items-center">
+                <div class="me-4 d-flex gap-4 small text-muted">
+                  <span>
+                    <i class="mdi mdi-database text-info me-1"></i>
+                    <strong>{{filteredTemplates?.length || 0}}</strong> Templates
+                  </span>
+                  <span>
+                    <i class="mdi mdi-filter text-primary me-1"></i>
+                    <strong>{{selectedCategory === 'all' ? 'All' : selectedCategory}}</strong> Category
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-0">
+          <ng-container *ngIf="filteredTemplates?.length; else noRecords">
+            <div class="row p-4">
+              <div class="col-xl-4 col-lg-6 col-md-6 mb-4" *ngFor="let template of filteredTemplates">
+                <div class="card h-100 border-0 shadow-sm template-card">
+                  <div class="card-header bg-light border-bottom-0 pb-0">
+                    <div class="d-flex align-items-start justify-content-between">
+                      <div class="flex-grow-1">
+                        <h6 class="card-title mb-1 fw-bold">{{ template.name }}</h6>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                          <span class="badge rounded-pill bg-primary text-white">
+                            Category {{ template.categoryId || 'General' }}
+                          </span>
+                          <span class="badge" 
+                                [class]="'bg-' + (template.isActive ? 'success' : 'secondary')">
+                            {{ template.isActive ? 'Active' : 'Inactive' }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                          <i class="mdi mdi-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li>
+                            <a class="dropdown-item" href="#" (click)="useTemplate(template); $event.preventDefault()">
+                              <i class="mdi mdi-play me-2"></i>Use Template
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="#" (click)="editTemplate(template); $event.preventDefault()">
+                              <i class="mdi mdi-pencil me-2"></i>Edit
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item" href="#" (click)="duplicateTemplate(template); $event.preventDefault()">
+                              <i class="mdi mdi-content-copy me-2"></i>Duplicate
+                            </a>
+                          </li>
+                          <li><hr class="dropdown-divider"></li>
+                          <li>
+                            <a class="dropdown-item" href="#" (click)="toggleTemplateStatus(template); $event.preventDefault()">
+                              <i class="mdi mdi-{{ template.isActive ? 'pause' : 'play' }} me-2"></i>
+                              {{ template.isActive ? 'Deactivate' : 'Activate' }}
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item text-danger" href="#" (click)="deleteTemplate(template); $event.preventDefault()">
+                              <i class="mdi mdi-delete me-2"></i>Delete
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="card-body pt-2">
+                    <p class="card-text text-muted small mb-3">{{ template.descriptionTemplate || 'No description provided' }}</p>
+                    
+                    <!-- Template Stats -->
+                    <div class="row g-2 mb-3">
+                      <div class="col-6">
+                        <div class="d-flex align-items-center">
+                          <i class="mdi mdi-clock-outline text-muted me-2"></i>
+                          <span class="small">{{ template.defaultDurationMinutes }} min</span>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="d-flex align-items-center">
+                          <i class="mdi mdi-map-marker-outline text-muted me-2"></i>
+                          <span class="small">{{ template.defaultLocation || 'Location TBD' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Purpose -->
+                    <div class="mb-3">
+                      <strong class="small text-muted">Purpose:</strong>
+                      <div class="small">{{ template.purposeTemplate || 'No purpose specified' }}</div>
+                    </div>
+                  </div>
+                  
+                  <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted">
+                        Created {{ template.createdDate | date:'MMM d, y' }}
+                      </small>
+                      <div class="d-flex gap-1">
+                        <button 
+                          class="btn btn-sm btn-primary"
+                          (click)="useTemplate(template)"
+                          title="Use this template">
+                          <i class="mdi mdi-play me-1"></i>Use
+                        </button>
+                        <button 
+                          class="btn btn-sm btn-outline-primary"
+                          (click)="editTemplate(template)"
+                          title="Edit template">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          
+          <ng-template #noRecords>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+              <div class="text-center" style="max-width: 500px;">
+                <div class="mb-4">
+                  <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                    <i class="mdi mdi-file-document-plus text-primary" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <h4 class="text-body-emphasis mb-3">No Training Templates Found</h4>
+                <p class="text-muted mb-4">
+                  No templates match your current filters or you haven't created any templates yet. Start by creating your first training template.
+                </p>
+                <button 
+                  type="button" 
+                  class="btn btn-primary"
+                  (click)="createNewTemplate()">
+                  <i class="mdi mdi-plus me-2"></i>Create First Template
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+        
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Click "Use" to create a training session from a template, or "Edit" to modify the template</span>
+          <div class="ms-auto">
+            <small>Total: {{filteredTemplates?.length || 0}} templates</small>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

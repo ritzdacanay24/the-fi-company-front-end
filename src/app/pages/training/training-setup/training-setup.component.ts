@@ -4,10 +4,14 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { TrainingService } from '../services/training.service';
+import { TrainingTemplateService } from '../services/training-template.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 import { 
   Employee, 
   CreateTrainingSessionRequest,
-  TrainingSession 
+  TrainingSession,
+  TrainingTemplate,
+  TrainingTemplateCategory
 } from '../models/training.model';
 
 @Component({
@@ -35,6 +39,11 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
   employeeSearchTerm = '';
   showEmployeeDropdown = false;
   
+  // Template management
+  availableTemplates: TrainingTemplate[] = [];
+  templateCategories: TrainingTemplateCategory[] = [];
+  selectedTemplate: TrainingTemplate | null = null;
+  
   // Form state
   showSuccessMessage = false;
   showErrorMessage = false;
@@ -47,7 +56,9 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private trainingService: TrainingService
+    private trainingService: TrainingService,
+    private templateService: TrainingTemplateService,
+    private authService: AuthenticationService
   ) {
     this.trainingForm = this.createForm();
   }
@@ -61,10 +72,21 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       this.loadExistingSession();
     } else {
       this.setDefaultValues();
+      
+      // Check for template ID passed via query parameters
+      const templateId = this.route.snapshot.queryParamMap.get('templateId');
+      if (templateId) {
+        this.loadAndUseTemplate(Number(templateId));
+      }
     }
     
     this.loadEmployees();
     this.setupEmployeeSearch();
+    
+    // Load templates for new sessions
+    if (!this.isEditMode) {
+      this.loadTemplates();
+    }
   }
 
   ngOnDestroy(): void {
@@ -82,8 +104,31 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       startTime: ['', [Validators.required]],
       endTime: ['', [Validators.required]],
       location: ['', [Validators.required]],
-      facilitatorName: ['', [Validators.required]]
+      facilitatorName: [this.getCurrentUserName(), [Validators.required]]
     });
+  }
+
+  private getCurrentUserName(): string {
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser) {
+      // Try different possible user name fields
+      if (currentUser.firstName && currentUser.lastName) {
+        return `${currentUser.firstName} ${currentUser.lastName}`;
+      }
+      if (currentUser.first_name && currentUser.last_name) {
+        return `${currentUser.first_name} ${currentUser.last_name}`;
+      }
+      if (currentUser.username) {
+        return currentUser.username;
+      }
+      if (currentUser.email) {
+        return currentUser.email;
+      }
+      if (currentUser.name) {
+        return currentUser.name;
+      }
+    }
+    return ''; // Fallback to empty string if no user data available
   }
 
   private setDefaultValues(): void {
@@ -407,6 +452,100 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       return this.trainingService.calculateDuration(startTime, endTime);
     }
     return '';
+  }
+
+  // Template methods
+  loadTemplates(): void {
+    this.templateService.getActiveTemplates().subscribe({
+      next: (templates) => {
+        this.availableTemplates = templates;
+      },
+      error: (error) => {
+        console.error('Error loading templates:', error);
+      }
+    });
+
+    this.templateService.getCategories().subscribe({
+      next: (categories) => {
+        this.templateCategories = categories;
+      },
+      error: (error) => {
+        console.error('Error loading template categories:', error);
+      }
+    });
+  }
+
+  loadAndUseTemplate(templateId: number): void {
+    this.templateService.getTemplate(templateId).subscribe({
+      next: (template) => {
+        this.useTemplate(template);
+      },
+      error: (error) => {
+        console.error('Error loading template:', error);
+      }
+    });
+  }
+
+  useTemplate(template: TrainingTemplate): void {
+    this.selectedTemplate = template;
+    
+    // Pre-fill form with template data
+    this.trainingForm.patchValue({
+      title: template.titleTemplate || template.name,
+      description: template.descriptionTemplate || '',
+      purpose: template.purposeTemplate || '',
+      location: template.defaultLocation || ''
+    });
+
+    // Set duration if provided
+    if (template.defaultDurationMinutes) {
+      // Calculate end time based on start time and duration
+      const startTime = this.trainingForm.get('startTime')?.value;
+      if (startTime) {
+        const endTime = this.addMinutesToTime(startTime, template.defaultDurationMinutes);
+        this.trainingForm.patchValue({ endTime });
+      }
+    }
+
+    console.log('Using template:', template.name);
+  }
+
+  private addMinutesToTime(timeString: string, minutes: number): string {
+    const [hours, mins] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, mins, 0, 0);
+    date.setMinutes(date.getMinutes() + minutes);
+    
+    const newHours = date.getHours().toString().padStart(2, '0');
+    const newMins = date.getMinutes().toString().padStart(2, '0');
+    return `${newHours}:${newMins}`;
+  }
+
+  startFromScratch(): void {
+    this.selectedTemplate = null;
+    // Form is already initialized, just clear any template-filled data if needed
+    console.log('Starting from scratch');
+  }
+
+  goToTemplates(): void {
+    this.router.navigate(['/training/templates']);
+  }
+
+  getCategoryColor(categoryName: string): string {
+    const category = this.templateCategories.find(c => c.name === categoryName);
+    return category?.color || '#6c757d';
+  }
+
+  formatDuration(minutes: number): string {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
   }
 
   // Template helper methods

@@ -94,3 +94,35 @@ export interface UpdateAttendanceRequest {
   badgeNumber: string;
   notes?: string;
 }
+
+export interface TrainingTemplate {
+  id?: number;
+  name: string; // Maps to 'name' in database
+  titleTemplate: string; // Maps to 'title_template' in database
+  descriptionTemplate?: string; // Maps to 'description_template' in database
+  purposeTemplate?: string; // Maps to 'purpose_template' in database
+  defaultDurationMinutes: number; // Maps to 'default_duration_minutes' in database
+  defaultLocation?: string; // Maps to 'default_location' in database
+  categoryId?: number; // Maps to 'category_id' in database
+  isActive: boolean; // Maps to 'is_active' in database
+  createdBy: number; // Maps to 'created_by' in database
+  createdDate: string; // Maps to 'created_date' in database
+  
+  // Additional computed/display properties (not in database)
+  category?: string; // Category name for display (from join)
+}
+
+export interface TrainingTemplateCategory {
+  id: number;
+  name: string;
+  description?: string;
+  color?: string; // For UI display purposes
+  isActive?: boolean;
+}
+
+export interface TemplateUsageStats {
+  templateId: number;
+  usageCount: number;
+  lastUsedDate: string;
+  popularityRank: number;
+}

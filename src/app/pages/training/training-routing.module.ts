@@ -36,6 +36,21 @@ const routes: Routes = [
         title: 'Training Attendance'
       },
       {
+        path: 'templates',
+        loadComponent: () => import('./training-templates/template-list/template-list.component').then(m => m.TemplateListComponent),
+        title: 'Training Templates'
+      },
+      {
+        path: 'templates/create',
+        loadComponent: () => import('./training-templates/template-form/template-form.component').then(m => m.TemplateFormComponent),
+        title: 'Create Training Template'
+      },
+      {
+        path: 'templates/edit/:id',
+        loadComponent: () => import('./training-templates/template-form/template-form.component').then(m => m.TemplateFormComponent),
+        title: 'Edit Training Template'
+      },
+      {
         path: '',
         redirectTo: 'live',
         pathMatch: 'full'
