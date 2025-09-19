@@ -59,6 +59,12 @@ export class TemplateListComponent implements OnInit {
   }
 
   applyFilters(): void {
+    console.log('Applying filters...');
+    console.log('Search term:', this.searchTerm);
+    console.log('Selected category:', this.selectedCategory);
+    console.log('Show active only:', this.showActiveOnly);
+    console.log('Total templates:', this.templates.length);
+    
     let filtered = this.templates;
 
     // Filter by search term
@@ -69,18 +75,22 @@ export class TemplateListComponent implements OnInit {
         (template.descriptionTemplate && template.descriptionTemplate.toLowerCase().includes(term)) ||
         (template.purposeTemplate && template.purposeTemplate.toLowerCase().includes(term))
       );
+      console.log('After search filter:', filtered.length);
     }
 
     // Filter by category
     if (this.selectedCategory !== 'all') {
-      filtered = filtered.filter(template => template.categoryId?.toString() === this.selectedCategory);
+      filtered = filtered.filter(template => template.category === this.selectedCategory);
+      console.log('After category filter:', filtered.length);
     }
 
     // Filter by active status
     if (this.showActiveOnly) {
       filtered = filtered.filter(template => template.isActive);
+      console.log('After active filter:', filtered.length);
     }
 
+    console.log('Final filtered templates:', filtered.length);
     this.filteredTemplates = filtered;
   }
 
@@ -184,5 +194,9 @@ export class TemplateListComponent implements OnInit {
     if (usageCount >= 10) return 'Popular';
     if (usageCount >= 5) return 'Moderate Use';
     return 'New';
+  }
+
+  goBack(): void {
+    this.router.navigate(['/training/live']);
   }
 }

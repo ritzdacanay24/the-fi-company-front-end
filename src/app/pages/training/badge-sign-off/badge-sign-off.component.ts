@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { TrainingService } from '../services/training.service';
 import { 
   TrainingSession, 
@@ -21,6 +22,7 @@ import {
 })
 export class BadgeSignOffComponent implements OnInit, OnDestroy {
   @ViewChild('badgeInput', { static: true }) badgeInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('confirmationModal', { static: true }) confirmationModal!: TemplateRef<any>;
   
   session: TrainingSession | null = null;
   completedAttendees: TrainingAttendance[] = [];
@@ -32,6 +34,11 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   lastScanResult: BadgeScanResult | null = null;
   recentSignOffs: TrainingAttendance[] = [];
   
+  // Confirmation dialog state
+  selectedEmployee: Employee | null = null;
+  pendingBadgeNumber = '';
+  modalRef: NgbModalRef | null = null;
+  
   // Auto-refresh
   private refreshSubscription?: Subscription;
   private readonly REFRESH_INTERVAL = 10000; // 10 seconds
@@ -40,6 +47,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   showSuccessMessage = false;
   showErrorMessage = false;
   messageText = '';
+  
+  private modalService = inject(NgbModal);
   
   constructor(
     private route: ActivatedRoute,
@@ -118,26 +127,109 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
     }
 
     this.isLoading = true;
-    this.lastScanResult = null;
+    this.pendingBadgeNumber = this.badgeNumber.trim();
 
-    this.trainingService.scanBadge(this.session.id, this.badgeNumber.trim()).subscribe({
+    // First, lookup the employee by badge number
+    this.trainingService.getEmployeeByBadge(this.pendingBadgeNumber).subscribe({
+      next: (employee) => {
+        if (employee) {
+          this.selectedEmployee = employee;
+          this.badgeNumber = '';
+          this.isLoading = false;
+          this.showConfirmationModal();
+        } else {
+          this.showMessage('Badge number not found. Please try again.', 'error');
+          this.badgeNumber = '';
+          this.isLoading = false;
+          this.focusBadgeInput();
+        }
+      },
+      error: (error) => {
+        console.error('Error looking up employee:', error);
+        this.showMessage('Error looking up employee. Please try again.', 'error');
+        this.badgeNumber = '';
+        this.isLoading = false;
+        this.focusBadgeInput();
+      }
+    });
+  }
+
+  confirmTrainingCompletion(): void {
+    if (!this.selectedEmployee || !this.session || !this.pendingBadgeNumber) {
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.trainingService.scanBadge(this.session.id, this.pendingBadgeNumber).subscribe({
       next: (result) => {
         this.lastScanResult = result;
         this.handleScanResult(result);
-        this.badgeNumber = '';
-        this.focusBadgeInput();
+        this.hideConfirmationModal();
         this.loadCompletions();
         this.loadMetrics();
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error scanning badge:', error);
-        this.showMessage('Error scanning badge. Please try again.', 'error');
-        this.badgeNumber = '';
-        this.focusBadgeInput();
+        console.error('Error completing training:', error);
+        this.showMessage('Error completing training. Please try again.', 'error');
+        this.hideConfirmationModal();
         this.isLoading = false;
       }
     });
+  }
+
+  private showConfirmationModal(): void {
+    this.modalRef = this.modalService.open(this.confirmationModal, {
+      centered: true,
+      backdrop: 'static',
+      keyboard: false
+    });
+
+    this.modalRef.result.then(
+      () => {
+        // Modal closed with result
+        this.resetConfirmationState();
+      },
+      () => {
+        // Modal dismissed
+        this.resetConfirmationState();
+        this.focusBadgeInput();
+      }
+    );
+  }
+
+  private hideConfirmationModal(): void {
+    if (this.modalRef) {
+      this.modalRef.close();
+      this.modalRef = null;
+    }
+  }
+
+  private resetConfirmationState(): void {
+    this.selectedEmployee = null;
+    this.pendingBadgeNumber = '';
+  }
+
+  getEmployeePhotoUrl(employee: Employee): string | null {
+    if (!employee) return null;
+    
+    // Check for image field first (from users table)
+    if (employee.image && employee.image !== 'https://dashboard.eye-fi.com/attachments/images/employees/default-user.png') {
+      return employee.image;
+    }
+    
+    // Check for photoUrl as alternative
+    if (employee.photoUrl && employee.photoUrl !== 'https://dashboard.eye-fi.com/attachments/images/employees/default-user.png') {
+      return employee.photoUrl;
+    }
+    
+    return null; // Will show initials instead
+  }
+
+  onImageError(event: any): void {
+    // Hide the image and show initials instead if image fails to load
+    event.target.style.display = 'none';
   }
 
   private handleScanResult(result: BadgeScanResult): void {

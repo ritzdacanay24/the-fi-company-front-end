@@ -16,8 +16,12 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   selectedTemplate: ChecklistTemplate | null = null;
   selectedCategory = '';
   selectedType = '';
+  selectedStatus = '';
+  searchTerm = '';
   isEditing = false;
   isCreating = false;
+  isLoading = false;
+  showTemplateForm = false;
   
   templateForm: FormGroup;
   categories = Object.entries(CHECKLIST_CATEGORIES);
@@ -111,7 +115,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
         ]
       }
     ];
-    this.filteredTemplates = [...this.templates];
+    this.filterTemplates();
   }
 
   selectTemplate(template: ChecklistTemplate) {
@@ -128,6 +132,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     this.addItem(); // Add one default item
     this.isCreating = true;
     this.isEditing = true;
+    this.showTemplateForm = true;
   }
 
   editTemplate(template?: ChecklistTemplate) {
@@ -137,6 +142,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     }
     this.isEditing = true;
     this.isCreating = false;
+    this.showTemplateForm = true;
   }
 
   populateForm(template: ChecklistTemplate) {
@@ -283,6 +289,10 @@ export class ChecklistTemplateManagerComponent implements OnInit {
       this.selectedTemplate = template;
       this.isEditing = false;
       this.isCreating = false;
+      this.showTemplateForm = false;
+      
+      // Filter templates after saving
+      this.filterTemplates();
       
       // In real implementation, save to backend
       console.log('Template saved:', template);
@@ -294,6 +304,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   cancelEdit() {
     this.isEditing = false;
     this.isCreating = false;
+    this.showTemplateForm = false;
     
     if (this.selectedTemplate) {
       this.populateForm(this.selectedTemplate);
@@ -352,15 +363,6 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     });
   }
 
-  // Filter and navigation methods
-  filterTemplates(): void {
-    this.filteredTemplates = this.templates.filter(template => {
-      const categoryMatch = !this.selectedCategory || template.category === this.selectedCategory;
-      const typeMatch = !this.selectedType || template.type === this.selectedType;
-      return categoryMatch && typeMatch;
-    });
-  }
-
   goToDashboard(): void {
     // Navigation logic - would typically use Router
     console.log('Navigate to dashboard');
@@ -382,6 +384,38 @@ export class ChecklistTemplateManagerComponent implements OnInit {
       const item = items.at(index);
       items.removeAt(index);
       items.insert(index + 1, item);
+    }
+  }
+
+  // Search and filter methods
+  onSearchChange(): void {
+    this.filterTemplates();
+  }
+
+  onFilterChange(): void {
+    this.filterTemplates();
+  }
+
+  filterTemplates(): void {
+    this.filteredTemplates = this.templates.filter(template => {
+      const matchesSearch = !this.searchTerm || 
+        template.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        template.description.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        template.category.toLowerCase().includes(this.searchTerm.toLowerCase());
+      
+      const matchesCategory = !this.selectedCategory || template.category === this.selectedCategory;
+      const matchesType = !this.selectedType || template.type === this.selectedType;
+      const matchesStatus = !this.selectedStatus || template.status === this.selectedStatus;
+      
+      return matchesSearch && matchesCategory && matchesType && matchesStatus;
+    });
+  }
+
+  // Preview functionality
+  previewTemplate(): void {
+    if (this.templateForm.valid) {
+      // Could open a modal or navigate to preview page
+      console.log('Preview template:', this.templateForm.value);
     }
   }
 }

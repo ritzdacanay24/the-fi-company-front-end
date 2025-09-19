@@ -84,7 +84,7 @@ class BadgeScanAPI {
         $employeeQuery = "
             SELECT * FROM db.users 
             WHERE (card_number = ? OR card_number = ? OR card_number = ?) 
-            AND is_active = 1
+            AND active = 1
             LIMIT 1
         ";
         
@@ -116,9 +116,6 @@ class BadgeScanAPI {
         $session = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$session) {
-            // Log session not found
-            $this->logScanAttempt($sessionId, $badgeNumber, 'SESSION_NOT_FOUND', $_SERVER['REMOTE_ADDR'] ?? null, $employee['id'] ?? null);
-            
             $this->sendResponse(404, [
                 'success' => false,
                 'message' => 'Training session not found or not active',
@@ -149,9 +146,6 @@ class BadgeScanAPI {
         $existingAttendance = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($existingAttendance) {
-            // Log already signed in attempt
-            $this->logScanAttempt($sessionId, $badgeNumber, 'ALREADY_SIGNED_IN', $_SERVER['REMOTE_ADDR'] ?? null, $employee['id']);
-            
             $this->sendResponse(200, [
                 'success' => false,
                 'message' => $employee['first_name'] . ' ' . $employee['last_name'] . ' is already signed in for this training session',
@@ -173,9 +167,6 @@ class BadgeScanAPI {
         $thirtyMinutesBefore->modify('-30 minutes');
         
         if ($signInTime < $thirtyMinutesBefore) {
-            // Log too early attempt
-            $this->logScanAttempt($sessionId, $badgeNumber, 'TOO_EARLY', $_SERVER['REMOTE_ADDR'] ?? null, $employee['id']);
-            
             $this->sendResponse(400, [
                 'success' => false,
                 'message' => 'Training session sign-in opens 30 minutes before scheduled start time',
@@ -241,7 +232,7 @@ class BadgeScanAPI {
             $badgeNumber,
             $_SERVER['REMOTE_ADDR'] ?? null,
             $deviceInfo,
-            $isLateArrival ? 1 : 0,  // Convert boolean to integer
+            $isLateArrival,
             $notes
         ]);
         

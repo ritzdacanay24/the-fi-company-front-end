@@ -1,50 +1,93 @@
-<div class="badge-signoff-container">
-  <!-- Header -->
-  <div class="header-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h2 class="mb-1 fw-bold text-success">Training Complete - Sign Off</h2>
-        <p class="text-muted mb-0" *ngIf="session">
-          {{ session.title }} - {{ session.date | date:'mediumDate' }}
-        </p>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary btn-sm" (click)="refresh()" [disabled]="isLoading">
-          <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
-          Refresh
-        </button>
-        <button class="btn btn-outline-primary btn-sm" (click)="goToAttendanceDashboard()">
-          <i class="mdi mdi-chart-line"></i>
-          Dashboard
-        </button>
-        <button class="btn btn-secondary btn-sm" (click)="goToSessions()">
-          <i class="mdi mdi-arrow-left"></i>
-          Back to Sessions
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-8">
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading && !session" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    <p class="mt-2 text-muted">Loading training session...</p>
-  </div>
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); goToSessions()">
+              <i class="mdi mdi-home-outline me-1"></i>Training
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault(); goToSessions()">
+              Training Sessions
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Badge Sign-Off
+          </li>
+        </ol>
+      </nav>
 
-  <!-- Main Content -->
-  <div *ngIf="session" class="main-content">
-    <!-- Training Session Info -->
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <div class="session-info-card">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <h4 class="mb-0">{{ session.title }}</h4>
-            <div class="status-badge">
-              <span 
-                class="badge"
-                [class.bg-warning]="session.status === 'scheduled'"
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-outline-secondary me-3" (click)="goToSessions()"
+              title="Back to Training Sessions">
+              <i class="mdi mdi-arrow-left me-2"></i>Back
+            </button>
+            <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-check-circle text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-success">Training Complete - Badge Sign Off</h2>
+              <p class="text-muted mb-0" *ngIf="session">
+                {{ session.title }} - {{ session.date | date:'mediumDate' }}
+              </p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" (click)="refresh()" [disabled]="isLoading">
+              <i class="mdi mdi-refresh" [class.mdi-spin]="isLoading"></i>
+              Refresh
+            </button>
+            <button class="btn btn-outline-primary" (click)="goToAttendanceDashboard()">
+              <i class="mdi mdi-chart-line me-2"></i>Dashboard
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert"
+          *ngIf="session">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-check-circle-outline text-success me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-success mb-2">Training Session Complete</h6>
+              <p class="mb-0">
+                Scan employee badges to <strong>complete training records</strong> and generate completion certificates.
+                Each scan will mark the training as completed for the respective employee.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading && !session" class="card shadow-sm border-0">
+        <div class="card-body text-center p-5" style="min-height:300px">
+          <div class="mb-4">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <h4 class="text-muted mb-3">Loading Training Session</h4>
+          <p class="text-muted mb-0">Please wait while we load the training session details...</p>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <ng-container *ngIf="session">
+        <!-- Unified Training Sign-Off Card -->
+        <div class="card shadow-sm border-0">
+          <!-- Session Header -->
+          <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">{{ session.title }}</h5>
+              <span class="badge" [class.bg-warning]="session.status === 'scheduled'"
                 [class.bg-success]="session.status === 'in-progress'"
                 [class.bg-secondary]="session.status === 'completed'"
                 [class.bg-danger]="session.status === 'cancelled'">
@@ -52,181 +95,249 @@
               </span>
             </div>
           </div>
-          <div class="row">
-            <div class="col-sm-6">
-              <div class="info-item">
-                <strong>Purpose:</strong>
-                <span>{{ session.purpose }}</span>
-              </div>
-              <div class="info-item">
-                <strong>Date & Duration:</strong>
-                <span>{{ session.date | date:'mediumDate' }}</span>
-                <span class="ms-2">{{ session.startTime }} - {{ session.endTime }}</span>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="info-item">
-                <strong>Location:</strong>
-                <span>{{ session.location }}</span>
-              </div>
-              <div class="info-item">
-                <strong>Facilitator:</strong>
-                <span>{{ session.facilitatorName }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="info-item mt-2" *ngIf="session.description">
-            <strong>Description:</strong>
-            <span>{{ session.description }}</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Quick Stats -->
-      <div class="col-md-4">
-        <div class="stats-card">
-          <div class="stat-item">
-            <div class="stat-value text-success">{{ metrics?.totalPresent || 0 }}</div>
-            <div class="stat-label">Present</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value text-primary">{{ metrics?.totalExpected || 0 }}</div>
-            <div class="stat-label">Expected</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value text-info">{{ getAttendanceRate() | number:'1.0-1' }}%</div>
-            <div class="stat-label">Attendance Rate</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Badge Scanning Section -->
-    <div class="row mb-4">
-      <div class="col-md-6">
-        <div class="badge-scan-card">
-          <h5 class="mb-3">
-            <i class="mdi mdi-card-account-details me-2"></i>
-            Scan Badge to Complete Training
-          </h5>
-          
-          <!-- Badge Input -->
-          <div class="badge-input-section">
-            <div class="input-group input-group-lg">
-              <span class="input-group-text">
-                <i class="mdi mdi-barcode-scan"></i>
-              </span>
-              <input 
-                #badgeInput
-                type="text" 
-                class="form-control" 
-                [(ngModel)]="badgeNumber"
-                (keyup.enter)="onBadgeScanned()"
-                placeholder="Scan or enter badge number"
-                [disabled]="isLoading"
-                autocomplete="off">
-              <button 
-                class="btn btn-primary" 
-                type="button" 
-                (click)="onBadgeScanned()"
-                [disabled]="isLoading || !badgeNumber.trim()">
-                <i class="mdi mdi-check" *ngIf="!isLoading"></i>
-                <i class="mdi mdi-loading mdi-spin" *ngIf="isLoading"></i>
-                Complete Training
-              </button>
-            </div>
-          </div>
-
-          <!-- Session Status -->
-          <div class="session-status mt-3">
-            <div class="badge" [ngClass]="isSessionActive() ? 'bg-success' : 'bg-warning'">
-              <i class="mdi" [ngClass]="isSessionActive() ? 'mdi-check-circle' : 'mdi-clock'"></i>
-              {{ isSessionActive() ? 'Session Active' : 'Session Scheduled' }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Sign-offs -->
-      <div class="col-md-6">
-        <div class="recent-signoffs-card">
-          <h5 class="mb-3">
-            <i class="mdi mdi-clock-outline me-2"></i>
-            Recent Sign-offs
-          </h5>
-          
-          <div *ngIf="recentSignOffs.length === 0" class="text-muted text-center py-3">
-            No Sign-offs yet
-          </div>
-          
-          <div *ngFor="let attendance of recentSignOffs" class="recent-signoff-item">
-            <div class="d-flex align-items-center">
-              <div class="signoff-avatar">
-                {{ attendance.employee.firstName.charAt(0) }}{{ attendance.employee.lastName.charAt(0) }}
-              </div>
-              <div class="signoff-info flex-grow-1">
-                <div class="signoff-name">
-                  {{ attendance.employee.firstName }} {{ attendance.employee.lastName }}
+          <div class="card-body">
+            <!-- Session Details & Attendance Summary -->
+            <div class="row mb-4">
+              <div class="col-md-8">
+                <h6 class="text-muted mb-3">Session Details</h6>
+                <div class="row">
+                  <div class="col-sm-6">
+                    <div class="mb-3">
+                      <strong class="text-muted d-block">Purpose:</strong>
+                      <span>{{ session.purpose }}</span>
+                    </div>
+                    <div class="mb-3">
+                      <strong class="text-muted d-block">Date & Duration:</strong>
+                      <span>{{ session.date | date:'mediumDate' }}</span>
+                      <span class="ms-2" *ngIf="session.startTime && session.endTime">{{ session.startTime }} - {{ session.endTime }}</span>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="mb-3">
+                      <strong class="text-muted d-block">Location:</strong>
+                      <span>{{ session.location || 'Not specified' }}</span>
+                    </div>
+                    <div class="mb-3">
+                      <strong class="text-muted d-block">Facilitator:</strong>
+                      <span>{{ session.facilitatorName || 'Not assigned' }}</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="signoff-details">
-                  {{ attendance.employee.position }} • {{ formatTime(attendance.signoffTime) }}
+                <div class="mb-0" *ngIf="session.description">
+                  <strong class="text-muted d-block">Description:</strong>
+                  <span>{{ session.description }}</span>
                 </div>
               </div>
-              <div class="signoff-status">
-                <i class="mdi mdi-check-circle text-success"></i>
+              <div class="col-md-4">
+                <h6 class="text-muted mb-3">Attendance Summary</h6>
+                <div class="row text-center">
+                  <div class="col-4">
+                    <div class="h3 text-success mb-1">{{ metrics?.totalPresent || 0 }}</div>
+                    <div class="small text-muted">Present</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="h3 text-primary mb-1">{{ metrics?.totalExpected || 0 }}</div>
+                    <div class="small text-muted">Expected</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="h3 text-info mb-1">{{ getAttendanceRate() | number:'1.0-1' }}%</div>
+                    <div class="small text-muted">Rate</div>
+                  </div>
+                </div>
+                <div class="text-center mt-3">
+                  <div class="badge" [ngClass]="isSessionActive() ? 'bg-success' : 'bg-warning'">
+                    <i class="mdi" [ngClass]="isSessionActive() ? 'mdi-check-circle' : 'mdi-clock'"></i>
+                    {{ isSessionActive() ? 'Session Active' : 'Session Scheduled' }}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Success/Error Messages -->
-    <div class="row" *ngIf="showSuccessMessage || showErrorMessage">
-      <div class="col-12">
-        <div class="alert" [ngClass]="{'alert-success': showSuccessMessage, 'alert-danger': showErrorMessage}" role="alert">
-          <i class="mdi" [ngClass]="{'mdi-check-circle': showSuccessMessage, 'mdi-alert-circle': showErrorMessage}"></i>
-          {{ messageText }}
-        </div>
-      </div>
-    </div>
+            <hr>
 
-    <!-- Expected Attendees Section -->
-    <div class="row">
-      <div class="col-12">
-        <div class="attendees-card">
-          <h5 class="mb-3">
-            <i class="mdi mdi-account-group me-2"></i>
-            Expected Attendees ({{ session.expectedAttendees.length }})
-          </h5>
-          
-          <div class="attendees-grid">
-            <div 
-              *ngFor="let attendee of session.expectedAttendees" 
-              class="attendee-item"
-              [ngClass]="getCompletionStatusClass(attendee.employee)">
-              <div class="attendee-avatar">
-                {{ attendee.employee.firstName.charAt(0) }}{{ attendee.employee.lastName.charAt(0) }}
-              </div>
-              <div class="attendee-info">
-                <div class="attendee-name">
-                  {{ attendee.employee.firstName }} {{ attendee.employee.lastName }}
+            <!-- Prominent Badge Scanning Section -->
+            <div class="text-center mb-4">
+              <div class="bg-primary bg-gradient rounded-3 p-4 mx-auto" style="max-width: 600px;">
+                <div class="text-white mb-3">
+                  <i class="mdi mdi-card-account-details display-6"></i>
+                  <h4 class="mt-2 mb-1 text-white">Scan Badge to Complete Training</h4>
+                  <p class="mb-0 opacity-75">Scan or enter employee badge number below</p>
                 </div>
-                <div class="attendee-position">
-                  {{ attendee.employee.position }}
+                
+                <div class="input-group input-group-lg">
+                  <span class="input-group-text bg-white">
+                    <i class="mdi mdi-barcode-scan text-primary"></i>
+                  </span>
+                  <input #badgeInput type="password" class="form-control" [(ngModel)]="badgeNumber"
+                    (keyup.enter)="onBadgeScanned()" placeholder="Scan or enter badge number" [disabled]="isLoading"
+                    autocomplete="off" style="font-size: 1.1rem;">
+                  <button class="btn btn-success btn-lg px-4" type="button" (click)="onBadgeScanned()"
+                    [disabled]="isLoading || !badgeNumber.trim()">
+                    <i class="mdi mdi-check me-2" *ngIf="!isLoading"></i>
+                    <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isLoading"></i>
+                    Complete Training
+                  </button>
+                </div>
+                
+                <div class="mt-3">
+                  <span class="badge" 
+                    [ngClass]="isSessionActive() ? 'bg-success bg-opacity-25 text-success border border-success' : 'bg-warning bg-opacity-25 text-warning border border-warning'">
+                    <i class="mdi me-1" [ngClass]="isSessionActive() ? 'mdi-check-circle' : 'mdi-clock'"></i>
+                    {{ isSessionActive() ? 'Session Active - Ready for Sign-offs' : 'Session Scheduled' }}
+                  </span>
                 </div>
               </div>
-              <div class="attendee-status">
-                <i class="mdi" 
-                   [ngClass]="{
+            </div>
+
+            <!-- Success/Error Messages -->
+            <div *ngIf="showSuccessMessage || showErrorMessage" class="mb-4">
+              <div class="alert" [ngClass]="{'alert-success': showSuccessMessage, 'alert-danger': showErrorMessage}"
+                role="alert">
+                <i class="mdi"
+                  [ngClass]="{'mdi-check-circle': showSuccessMessage, 'mdi-alert-circle': showErrorMessage}"></i>
+                {{ messageText }}
+              </div>
+            </div>
+
+            <hr>
+
+            <!-- Recent Sign-offs (Moved Below) -->
+            <div class="row mb-4" *ngIf="recentSignOffs.length > 0">
+              <div class="col-12">
+                <h6 class="text-muted mb-3">
+                  <i class="mdi mdi-clock-outline me-2"></i>
+                  Recent Sign-offs ({{ recentSignOffs.length }})
+                </h6>
+                <div class="row g-2">
+                  <div *ngFor="let attendance of recentSignOffs; let i = index" class="col-md-6" [class.d-none]="i >= 4">
+                    <div class="d-flex align-items-center p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
+                      <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center text-white fw-bold"
+                        style="width: 36px; height: 36px; font-size: 14px;">
+                        {{ attendance.employee.firstName.charAt(0) }}{{ attendance.employee.lastName.charAt(0) }}
+                      </div>
+                      <div class="flex-grow-1">
+                        <div class="fw-medium">
+                          {{ attendance.employee.firstName }} {{ attendance.employee.lastName }}
+                        </div>
+                        <div class="text-muted small">
+                          {{ attendance.employee.position }} • {{ formatTime(attendance.signoffTime) }}
+                        </div>
+                      </div>
+                      <div>
+                        <i class="mdi mdi-check-circle text-success fs-5"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-center mt-2" *ngIf="recentSignOffs.length > 4">
+                  <small class="text-muted">Showing latest 4 of {{ recentSignOffs.length }} sign-offs</small>
+                </div>
+              </div>
+            </div>
+
+            <hr>
+
+            <!-- Expected Attendees Section -->
+            <div>
+              <h6 class="text-muted mb-3">
+                <i class="mdi mdi-account-group me-2"></i>
+                Expected Attendees ({{ session.expectedAttendees.length }})
+              </h6>
+              <div class="row g-3">
+                <div *ngFor="let attendee of session.expectedAttendees" class="col-md-6 col-lg-4">
+                  <div class="d-flex align-items-center p-3 border rounded"
+                    [ngClass]="getCompletionStatusClass(attendee.employee) === 'status-completed' ? 'border-success bg-success bg-opacity-10' : 'border-warning bg-warning bg-opacity-10'">
+                    <div class="rounded-circle me-3 d-flex align-items-center justify-content-center text-white fw-bold"
+                      style="width: 36px; height: 36px; font-size: 13px;"
+                      [ngClass]="getCompletionStatusClass(attendee.employee) === 'status-completed' ? 'bg-success' : 'bg-warning'">
+                      {{ attendee.employee.firstName.charAt(0) }}{{ attendee.employee.lastName.charAt(0) }}
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="fw-medium">
+                        {{ attendee.employee.firstName }} {{ attendee.employee.lastName }}
+                      </div>
+                      <div class="text-muted small">
+                        {{ attendee.employee.position }}
+                      </div>
+                    </div>
+                    <div>
+                      <i class="mdi" [ngClass]="{
                      'mdi-check-circle text-success': getCompletionStatusClass(attendee.employee) === 'status-completed',
                      'mdi-clock text-warning': getCompletionStatusClass(attendee.employee) === 'status-pending'
                    }"></i>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>
+
+<!-- Confirmation Modal Template -->
+<ng-template #confirmationModal let-modal>
+  <div class="modal-header border-0 pb-0">
+    <h4 class="modal-title">Confirm Training Completion</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body text-center py-4">
+    <!-- Employee Photo/Avatar -->
+    <div class="mb-4">
+      <div class="mx-auto position-relative" style="width: 120px; height: 120px;" *ngIf="selectedEmployee">
+        <!-- Employee Photo -->
+        <img *ngIf="getEmployeePhotoUrl(selectedEmployee)" 
+          [src]="getEmployeePhotoUrl(selectedEmployee)" 
+          [alt]="selectedEmployee.firstName + ' ' + selectedEmployee.lastName"
+          class="rounded-circle w-100 h-100 border border-3 border-primary" 
+          style="object-fit: cover;"
+          (error)="onImageError($event)">
+        
+        <!-- Fallback Avatar with Initials -->
+        <div *ngIf="!getEmployeePhotoUrl(selectedEmployee)" 
+          class="bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center text-white fw-bold w-100 h-100 border border-3 border-primary"
+          style="font-size: 2.5rem;">
+          {{ selectedEmployee.firstName?.charAt(0) }}{{ selectedEmployee.lastName?.charAt(0) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Details -->
+    <div class="mb-4" *ngIf="selectedEmployee">
+      <h4 class="mb-2">{{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}</h4>
+      <p class="text-muted mb-1">{{ selectedEmployee.position }}</p>
+      <p class="text-muted mb-0">Badge: {{ selectedEmployee.badgeNumber }}</p>
+    </div>
+
+    <!-- Training Session Info -->
+    <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25" *ngIf="session">
+      <div class="d-flex align-items-center justify-content-center">
+        <i class="mdi mdi-information-outline me-2"></i>
+        <div>
+          <strong>Training Session:</strong> {{ session.title }}<br>
+          <small class="text-muted">{{ session.date | date:'mediumDate' }}</small>
+        </div>
+      </div>
+    </div>
+
+    <p class="mb-0">
+      <strong>Confirm that this employee has completed the training session?</strong><br>
+      <small class="text-muted">This action will mark the training as completed and cannot be undone.</small>
+    </p>
+  </div>
+  
+  <div class="modal-footer border-0 pt-0">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">
+      <i class="mdi mdi-close me-2"></i>Cancel
+    </button>
+    <button type="button" class="btn btn-success" (click)="confirmTrainingCompletion()" [disabled]="isLoading">
+      <i class="mdi mdi-check-circle me-2" *ngIf="!isLoading"></i>
+      <i class="mdi mdi-loading mdi-spin me-2" *ngIf="isLoading"></i>
+      Confirm Completion
+    </button>
+  </div>
+</ng-template>

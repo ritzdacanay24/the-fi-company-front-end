@@ -1,64 +1,106 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { TrainingTemplate, TrainingTemplateCategory } from '../models/training.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TrainingTemplateService {
-  private apiUrl = '/api/training/templates';
+  private apiUrl = 'training';
 
   constructor(private http: HttpClient) {}
 
+  // Transform API response from snake_case to camelCase
+  private transformTemplate(apiTemplate: any): TrainingTemplate {
+    return {
+      id: parseInt(apiTemplate.id),
+      name: apiTemplate.name,
+      titleTemplate: apiTemplate.title_template,
+      descriptionTemplate: apiTemplate.description_template,
+      purposeTemplate: apiTemplate.purpose_template,
+      defaultDurationMinutes: parseInt(apiTemplate.default_duration_minutes),
+      defaultLocation: apiTemplate.default_location,
+      categoryId: parseInt(apiTemplate.category_id),
+      isActive: apiTemplate.is_active === '1' || apiTemplate.is_active === true,
+      createdBy: parseInt(apiTemplate.created_by),
+      createdDate: apiTemplate.created_date,
+      category: apiTemplate.category_name
+    };
+  }
+
+  // Transform template for API request from camelCase to snake_case
+  private transformTemplateForApi(template: TrainingTemplate): any {
+    return {
+      name: template.name,
+      title_template: template.titleTemplate,
+      description_template: template.descriptionTemplate,
+      purpose_template: template.purposeTemplate,
+      default_duration_minutes: template.defaultDurationMinutes,
+      default_location: template.defaultLocation,
+      category_id: template.categoryId,
+      is_active: template.isActive ? 1 : 0,
+      created_by: template.createdBy
+    };
+  }
+
   getTemplates(): Observable<TrainingTemplate[]> {
-    // For now, return mock data - replace with actual API call
-    return of(this.getMockTemplates());
+    return this.http.get<any[]>(`${this.apiUrl}/index.php?path=templates`).pipe(
+      map(apiTemplates => apiTemplates.map(apiTemplate => this.transformTemplate(apiTemplate)))
+    );
   }
 
   getActiveTemplates(): Observable<TrainingTemplate[]> {
-    // Return only active templates
-    const allTemplates = this.getMockTemplates();
-    const activeTemplates = allTemplates.filter(template => template.isActive);
-    return of(activeTemplates);
+    return this.http.get<any[]>(`${this.apiUrl}/index.php?path=templates&active=true`).pipe(
+      map(apiTemplates => apiTemplates.map(apiTemplate => this.transformTemplate(apiTemplate)))
+    );
   }
 
   getTemplate(id: number): Observable<TrainingTemplate> {
-    // return this.http.get<TrainingTemplate>(`${this.apiUrl}/${id}`);
-    const templates = this.getMockTemplates();
-    const template = templates.find(t => t.id === id);
-    return of(template!);
+    console.log('Service: Getting template with ID:', id);
+    return this.http.get<any>(`${this.apiUrl}/index.php?path=templates&id=${id}`).pipe(
+      map(response => {
+        console.log('Service: Raw API response for getTemplate:', response);
+        
+        // Handle case where API returns an array with one item
+        if (Array.isArray(response) && response.length > 0) {
+          console.log('Service: Response is array, taking first item');
+          return this.transformTemplate(response[0]);
+        }
+        
+        // Handle case where API returns a single object
+        if (response && !Array.isArray(response)) {
+          console.log('Service: Response is single object');
+          return this.transformTemplate(response);
+        }
+        
+        // If no data found, throw error
+        throw new Error('Template not found');
+      })
+    );
   }
 
   createTemplate(template: TrainingTemplate): Observable<TrainingTemplate> {
-    // return this.http.post<TrainingTemplate>(this.apiUrl, template);
-    const newTemplate = {
-      ...template,
-      id: Math.floor(Math.random() * 1000) + 100,
-      createdDate: new Date().toISOString(),
-      updatedDate: new Date().toISOString(),
-      usageCount: 0
-    };
-    return of(newTemplate);
+    const apiTemplate = this.transformTemplateForApi(template);
+    return this.http.post<any>(`${this.apiUrl}/index.php?path=templates`, apiTemplate).pipe(
+      map(response => this.transformTemplate(response))
+    );
   }
 
   updateTemplate(id: string | number, template: TrainingTemplate): Observable<TrainingTemplate> {
-    // return this.http.put<TrainingTemplate>(`${this.apiUrl}/${id}`, template);
-    return of({
-      ...template,
-      id: typeof id === 'string' ? parseInt(id) : id,
-      updatedDate: new Date().toISOString()
-    });
+    const apiTemplate = this.transformTemplateForApi(template);
+    return this.http.put<any>(`${this.apiUrl}/index.php?path=templates&id=${id}`, apiTemplate).pipe(
+      map(response => this.transformTemplate(response))
+    );
   }
 
   deleteTemplate(id: number): Observable<void> {
-    // return this.http.delete<void>(`${this.apiUrl}/${id}`);
-    return of(void 0);
+    return this.http.delete<void>(`${this.apiUrl}/index.php?path=templates&id=${id}`);
   }
 
   getCategories(): Observable<TrainingTemplateCategory[]> {
-    // For now, return mock data - replace with actual API call
-    return of(this.getMockCategories());
+    return this.http.get<TrainingTemplateCategory[]>(`${this.apiUrl}/index.php?path=templates/categories`);
   }
 
   private getMockTemplates(): TrainingTemplate[] {

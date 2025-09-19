@@ -122,7 +122,11 @@ class TrainingAPI {
                 $this->getCategories();
                 break;
             case 'templates':
-                $this->getTemplates();
+                if (isset($_GET['id'])) {
+                    $this->getTemplate($_GET['id']);
+                } else {
+                    $this->getTemplates();
+                }
                 break;
             default:
                 $this->sendResponse(404, ['error' => 'Endpoint not found']);
@@ -155,6 +159,12 @@ class TrainingAPI {
             case 'badge-scan':
                 $this->processBadgeScan($input);
                 break;
+            case 'debug-sessions':
+                $this->debugSessions();
+                break;
+            case 'templates':
+                $this->createTemplate($input);
+                break;
             default:
                 $this->sendResponse(404, ['error' => 'Endpoint not found']);
         }
@@ -172,7 +182,8 @@ class TrainingAPI {
                 title as position,
                 title,
                 department,
-                email
+                email,
+                image
             FROM db.users 
             WHERE active = 1
             AND (
@@ -201,7 +212,8 @@ class TrainingAPI {
                 'position' => $employee['position'],
                 'title' => $employee['title'],
                 'department' => $employee['department'],
-                'email' => $employee['email']
+                'email' => $employee['email'],
+            'image' => $employee['image']
             ];
         }, $employees);
         
@@ -219,7 +231,8 @@ class TrainingAPI {
                 title as position,
                 title,
                 department,
-                email
+                email,
+                image
             FROM db.users 
             WHERE card_number = ? AND active = 1
         ";
@@ -242,7 +255,8 @@ class TrainingAPI {
             'position' => $employee['position'],
             'title' => $employee['title'],
             'department' => $employee['department'],
-            'email' => $employee['email']
+            'email' => $employee['email'],
+            'image' => $employee['image']
         ];
         
         $this->sendResponse(200, $formattedEmployee);
@@ -281,6 +295,12 @@ class TrainingAPI {
             } else if (isset($pathParts[1])) {
                 $this->updateSession($pathParts[1], $input);
             }
+        } else if ($pathParts[0] === 'templates') {
+            if (isset($_GET['id'])) {
+                $this->updateTemplate($_GET['id'], $input);
+            } else {
+                $this->sendResponse(400, ['error' => 'Template ID is required for update']);
+            }
         } else {
             $this->sendResponse(404, ['error' => 'Endpoint not found']);
         }
@@ -294,6 +314,12 @@ class TrainingAPI {
                 $this->deleteSession($pathParts[1]);
             } else if (isset($pathParts[1]) && $pathParts[1] === 'expected-attendees' && isset($_GET['sessionId']) && isset($_GET['employeeId'])) {
                 $this->removeExpectedAttendee($_GET['sessionId'], $_GET['employeeId']);
+            }
+        } else if ($pathParts[0] === 'templates') {
+            if (isset($_GET['id'])) {
+                $this->deleteTemplate($_GET['id']);
+            } else {
+                $this->sendResponse(400, ['error' => 'Template ID is required for deletion']);
             }
         } else if ($pathParts[0] === 'attendance' && isset($_GET['id'])) {
             $this->removeAttendance($_GET['id']);
@@ -884,6 +910,9 @@ class TrainingAPI {
     
     // Badge Scanning
     private function processBadgeScan($data) {
+        // Log incoming request for debugging
+        error_log("Badge scan request: " . json_encode($data));
+        
         // Validate required fields
         if (!isset($data['sessionId']) || !isset($data['badgeNumber'])) {
             $this->sendResponse(400, ['error' => 'Missing sessionId or badgeNumber']);
@@ -893,14 +922,18 @@ class TrainingAPI {
         $sessionId = $data['sessionId'];
         $badgeNumber = $data['badgeNumber'];
         
+        // Log session and badge being processed
+        error_log("Processing badge scan - SessionID: $sessionId, BadgeNumber: $badgeNumber");
+        
         // Find employee by badge number
-        $employeeQuery = "SELECT * FROM db.users WHERE card_number = ? AND is_active = 1";
+        $employeeQuery = "SELECT * FROM db.users WHERE card_number = ? AND active = 1";
         $stmt = $this->db->prepare($employeeQuery);
         $stmt->execute([$badgeNumber]);
         $employee = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$employee) {
             // Log the failed scan attempt
+            error_log("Employee not found for badge: $badgeNumber");
             $this->logScanAttempt($sessionId, $badgeNumber, 'BADGE_NOT_FOUND', $_SERVER['REMOTE_ADDR'] ?? null);
             
             $this->sendResponse(404, [
@@ -911,12 +944,16 @@ class TrainingAPI {
             ]);
             return;
         }
+        
+        error_log("Employee found: " . $employee['first'] . " " . $employee['last'] . " (ID: " . $employee['id'] . ")");
 
         // Verify session exists and is active
-        $sessionQuery = "SELECT * FROM training_sessions WHERE id = ? AND status IN ('scheduled', 'in-progress')";
+        $sessionQuery = "SELECT * FROM training_sessions WHERE id = ?";
         $stmt = $this->db->prepare($sessionQuery);
         $stmt->execute([$sessionId]);
         $session = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        error_log("Session query result for ID $sessionId: " . json_encode($session));
         
         if (!$session) {
             // Log session not found
@@ -924,9 +961,22 @@ class TrainingAPI {
             
             $this->sendResponse(404, [
                 'success' => false,
-                'message' => 'Training session not found or not active',
+                'message' => 'Training session not found',
                 'alreadySignedIn' => false,
-                'isExpectedAttendee' => false
+                'isExpectedAttendee' => false,
+                'debug' => ['sessionId' => $sessionId]
+            ]);
+            return;
+        }
+        
+        // Check if session is in active status
+        if (!in_array($session['status'], ['scheduled', 'in-progress', 'completed'])) {
+            $this->sendResponse(400, [
+                'success' => false,
+                'message' => 'Training session is not active (status: ' . $session['status'] . ')',
+                'alreadySignedIn' => false,
+                'isExpectedAttendee' => false,
+                'debug' => ['sessionId' => $sessionId, 'status' => $session['status']]
             ]);
             return;
         }
@@ -1131,11 +1181,121 @@ class TrainingAPI {
         $this->sendResponse(200, $templates);
     }
     
+    private function getTemplate($id) {
+        $query = "
+            SELECT 
+                tst.*,
+                tc.name as category_name,
+                tc.color_code as category_color
+            FROM training_session_templates tst
+            LEFT JOIN training_categories tc ON tst.category_id = tc.id
+            WHERE tst.id = :id
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($template) {
+            $this->sendResponse(200, $template);
+        } else {
+            $this->sendResponse(404, ['error' => 'Template not found']);
+        }
+    }
+    
+    private function createTemplate($data) {
+        $query = "
+            INSERT INTO training_session_templates 
+            (name, title_template, description_template, purpose_template, 
+             default_duration_minutes, default_location, category_id, is_active, created_by)
+            VALUES 
+            (:name, :title_template, :description_template, :purpose_template,
+             :default_duration_minutes, :default_location, :category_id, :is_active, :created_by)
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':title_template', $data['title_template']);
+        $stmt->bindParam(':description_template', $data['description_template']);
+        $stmt->bindParam(':purpose_template', $data['purpose_template']);
+        $stmt->bindParam(':default_duration_minutes', $data['default_duration_minutes'], PDO::PARAM_INT);
+        $stmt->bindParam(':default_location', $data['default_location']);
+        $stmt->bindParam(':category_id', $data['category_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':is_active', $data['is_active'], PDO::PARAM_INT);
+        $stmt->bindParam(':created_by', $data['created_by'], PDO::PARAM_INT);
+        
+        if ($stmt->execute()) {
+            $templateId = $this->db->lastInsertId();
+            $this->getTemplate($templateId);
+        } else {
+            $this->sendResponse(400, ['error' => 'Failed to create template']);
+        }
+    }
+    
+    private function updateTemplate($id, $data) {
+        $query = "
+            UPDATE training_session_templates 
+            SET name = :name,
+                title_template = :title_template,
+                description_template = :description_template,
+                purpose_template = :purpose_template,
+                default_duration_minutes = :default_duration_minutes,
+                default_location = :default_location,
+                category_id = :category_id,
+                is_active = :is_active
+            WHERE id = :id
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':title_template', $data['title_template']);
+        $stmt->bindParam(':description_template', $data['description_template']);
+        $stmt->bindParam(':purpose_template', $data['purpose_template']);
+        $stmt->bindParam(':default_duration_minutes', $data['default_duration_minutes'], PDO::PARAM_INT);
+        $stmt->bindParam(':default_location', $data['default_location']);
+        $stmt->bindParam(':category_id', $data['category_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':is_active', $data['is_active'], PDO::PARAM_INT);
+        
+        if ($stmt->execute()) {
+            $this->getTemplate($id);
+        } else {
+            $this->sendResponse(400, ['error' => 'Failed to update template']);
+        }
+    }
+    
+    private function deleteTemplate($id) {
+        $query = "DELETE FROM training_session_templates WHERE id = :id";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
+        if ($stmt->execute()) {
+            $this->sendResponse(200, ['message' => 'Template deleted successfully']);
+        } else {
+            $this->sendResponse(400, ['error' => 'Failed to delete template']);
+        }
+    }
+    
     // Export functionality
     private function exportAttendanceSheet($sessionId) {
         // This would generate a PDF or Excel file
         // For now, return JSON data that can be processed by frontend
         $this->getSession($sessionId);
+    }
+    
+    // Debug method to check sessions
+    private function debugSessions() {
+        $query = "SELECT id, title, status, date FROM training_sessions ORDER BY id DESC LIMIT 10";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        $sessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $this->sendResponse(200, [
+            'sessions' => $sessions,
+            'count' => count($sessions)
+        ]);
     }
     
     // Utility methods

@@ -43,6 +43,7 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
   availableTemplates: TrainingTemplate[] = [];
   templateCategories: TrainingTemplateCategory[] = [];
   selectedTemplate: TrainingTemplate | null = null;
+  showTemplateSelection = true;
   
   // Form state
   showSuccessMessage = false;
@@ -95,17 +96,131 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Custom validators
+  private pastDateValidator(control: any): { [key: string]: any } | null {
+    if (!control.value) {
+      return null; // Let required validator handle empty values
+    }
+    
+    const selectedDate = new Date(control.value + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for date comparison
+    
+    if (selectedDate < today) {
+      return { 'pastDate': { value: control.value } };
+    }
+    
+    return null;
+  }
+
+  private pastStartTimeValidator = (control: any): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null; // Let required validator handle empty values
+    }
+    
+    const dateControl = this.trainingForm?.get('date');
+    if (!dateControl?.value) {
+      return null; // Can't validate time without date
+    }
+    
+    const selectedDate = new Date(dateControl.value + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Only validate time if the selected date is today
+    if (selectedDate.getTime() === today.getTime()) {
+      const [hours, minutes] = control.value.split(':').map(Number);
+      const selectedDateTime = new Date();
+      selectedDateTime.setHours(hours, minutes, 0, 0);
+      
+      const now = new Date();
+      
+      // Add a 5-minute buffer to account for form filling time
+      const bufferTime = new Date(now.getTime() + (5 * 60 * 1000));
+      
+      if (selectedDateTime < bufferTime) {
+        return { 'pastTime': { value: control.value } };
+      }
+    }
+    
+    return null;
+  }
+
+  private endTimeValidator = (control: any): { [key: string]: any } | null => {
+    if (!control.value) {
+      return null; // Let required validator handle empty values
+    }
+    
+    const dateControl = this.trainingForm?.get('date');
+    const startTimeControl = this.trainingForm?.get('startTime');
+    
+    if (!dateControl?.value || !startTimeControl?.value) {
+      return null; // Can't validate without date and start time
+    }
+    
+    const selectedDate = new Date(dateControl.value + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if end time is in the past (only for today's date)
+    if (selectedDate.getTime() === today.getTime()) {
+      const [hours, minutes] = control.value.split(':').map(Number);
+      const selectedDateTime = new Date();
+      selectedDateTime.setHours(hours, minutes, 0, 0);
+      
+      const now = new Date();
+      
+      // Add a 5-minute buffer to account for form filling time
+      const bufferTime = new Date(now.getTime() + (5 * 60 * 1000));
+      
+      if (selectedDateTime < bufferTime) {
+        return { 'pastTime': { value: control.value } };
+      }
+    }
+    
+    // Check if end time is after start time
+    const [startHours, startMinutes] = startTimeControl.value.split(':').map(Number);
+    const [endHours, endMinutes] = control.value.split(':').map(Number);
+    
+    const startTimeMinutes = startHours * 60 + startMinutes;
+    const endTimeMinutes = endHours * 60 + endMinutes;
+    
+    // Ensure minimum 15-minute duration
+    if (endTimeMinutes <= startTimeMinutes) {
+      return { 'endTimeBeforeStart': { value: control.value } };
+    }
+    
+    if (endTimeMinutes - startTimeMinutes < 15) {
+      return { 'minimumDuration': { value: control.value } };
+    }
+    
+    return null;
+  }
+
   private createForm(): FormGroup {
-    return this.fb.group({
+    const form = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       purpose: ['', [Validators.required]],
-      date: ['', [Validators.required]],
-      startTime: ['', [Validators.required]],
-      endTime: ['', [Validators.required]],
+      date: ['', [Validators.required, this.pastDateValidator.bind(this)]],
+      startTime: ['', [Validators.required, this.pastStartTimeValidator]],
+      endTime: ['', [Validators.required, this.endTimeValidator]],
       location: ['', [Validators.required]],
       facilitatorName: [this.getCurrentUserName(), [Validators.required]]
     });
+
+    // Add cross-field validation - when date changes, revalidate both times
+    form.get('date')?.valueChanges.subscribe(() => {
+      form.get('startTime')?.updateValueAndValidity();
+      form.get('endTime')?.updateValueAndValidity();
+    });
+
+    // When start time changes, revalidate end time
+    form.get('startTime')?.valueChanges.subscribe(() => {
+      form.get('endTime')?.updateValueAndValidity();
+    });
+
+    return form;
   }
 
   private getCurrentUserName(): string {
@@ -129,6 +244,14 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       }
     }
     return ''; // Fallback to empty string if no user data available
+  }
+
+  private getCurrentUserId(): number {
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser && currentUser.id) {
+      return Number(currentUser.id);
+    }
+    return 1; // Fallback to user ID 1 if no current user ID available
   }
 
   private setDefaultValues(): void {
@@ -299,8 +422,22 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       this.saveTrainingSession();
     } else {
       this.markFormGroupTouched();
+      
+      // Check for specific validation errors
       if (this.selectedEmployees.length === 0) {
         this.showMessage('Please select at least one attendee', 'error');
+      } else if (this.trainingForm.get('date')?.hasError('pastDate')) {
+        this.showMessage('Training session date cannot be in the past', 'error');
+      } else if (this.trainingForm.get('startTime')?.hasError('pastTime')) {
+        this.showMessage('Training session start time cannot be in the past', 'error');
+      } else if (this.trainingForm.get('endTime')?.hasError('pastTime')) {
+        this.showMessage('Training session end time cannot be in the past', 'error');
+      } else if (this.trainingForm.get('endTime')?.hasError('endTimeBeforeStart')) {
+        this.showMessage('Training session end time must be after start time', 'error');
+      } else if (this.trainingForm.get('endTime')?.hasError('minimumDuration')) {
+        this.showMessage('Training session must be at least 15 minutes long', 'error');
+      } else {
+        this.showMessage('Please correct the form errors before submitting', 'error');
       }
     }
   }
@@ -318,7 +455,8 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
       endTime: formValue.endTime,
       location: formValue.location,
       facilitatorName: formValue.facilitatorName,
-      expectedAttendeeIds: this.selectedEmployees.map(emp => Number(emp.id))  // Ensure all IDs are numbers
+      expectedAttendeeIds: this.selectedEmployees.map(emp => Number(emp.id)),  // Ensure all IDs are numbers
+      createdBy: this.getCurrentUserId()  // Add the current user's ID
     };
 
     console.log('Saving session with data:', request);
@@ -414,6 +552,10 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
     if (field?.errors) {
       if (field.errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
       if (field.errors['minlength']) return `${this.getFieldLabel(fieldName)} is too short`;
+      if (field.errors['pastDate']) return `${this.getFieldLabel(fieldName)} cannot be in the past`;
+      if (field.errors['pastTime']) return `${this.getFieldLabel(fieldName)} cannot be in the past`;
+      if (field.errors['endTimeBeforeStart']) return `End time must be after start time`;
+      if (field.errors['minimumDuration']) return `Training session must be at least 15 minutes long`;
     }
     return '';
   }
@@ -488,6 +630,7 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
 
   useTemplate(template: TrainingTemplate): void {
     this.selectedTemplate = template;
+    this.showTemplateSelection = false;
     
     // Pre-fill form with template data
     this.trainingForm.patchValue({
@@ -523,8 +666,18 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
 
   startFromScratch(): void {
     this.selectedTemplate = null;
-    // Form is already initialized, just clear any template-filled data if needed
-    console.log('Starting from scratch');
+    this.showTemplateSelection = false;
+    // Form is already initialized and ready to use
+    console.log('Starting from scratch - template selection hidden');
+  }
+
+  clearForm(): void {
+    this.selectedTemplate = null;
+    this.trainingForm.reset();
+    this.selectedEmployees = [];
+    // Re-initialize form with default values
+    this.trainingForm = this.createForm();
+    console.log('Form cleared and reset to defaults');
   }
 
   goToTemplates(): void {

@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TrainingTemplateService } from '../../services/training-template.service';
 import { TrainingTemplate, TrainingTemplateCategory } from '../../models/training.model';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   selector: 'app-template-form',
@@ -36,7 +37,8 @@ export class TemplateFormComponent implements OnInit {
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private templateService: TrainingTemplateService
+    private templateService: TrainingTemplateService,
+    private authService: AuthenticationService
   ) {
     this.initializeForm();
   }
@@ -81,10 +83,14 @@ export class TemplateFormComponent implements OnInit {
   private loadTemplate(): void {
     if (!this.templateId) return;
     
+    console.log('Loading template with ID:', this.templateId);
     this.isLoading = true;
     const numericId = parseInt(this.templateId);
+    console.log('Numeric ID:', numericId);
+    
     this.templateService.getTemplate(numericId).subscribe({
       next: (template) => {
+        console.log('Template loaded successfully:', template);
         this.populateForm(template);
         this.isLoading = false;
       },
@@ -109,7 +115,18 @@ export class TemplateFormComponent implements OnInit {
     });
   }
 
+  private getCurrentUserId(): number {
+    const user = this.authService.currentUser();
+    return user ? user.id : 1; // Fallback to user ID 1 if no user is found
+  }
+
   onSubmit(): void {
+    console.log('onSubmit called');
+    console.log('Form valid:', this.templateForm.valid);
+    console.log('Form value:', this.templateForm.value);
+    console.log('Is edit mode:', this.isEditMode);
+    console.log('Template ID:', this.templateId);
+    
     if (this.templateForm.valid) {
       this.isSaving = true;
       const formValue = this.templateForm.value;
@@ -125,10 +142,19 @@ export class TemplateFormComponent implements OnInit {
         isActive: formValue.isActive
       };
 
+      // Add createdBy for new templates
+      if (!this.isEditMode) {
+        templateData.createdBy = this.getCurrentUserId();
+      }
+
+      console.log('Template data to send:', templateData);
+
       if (this.isEditMode && this.templateId) {
         templateData.id = parseInt(this.templateId);
+        console.log('Calling updateTemplate with ID:', this.templateId);
         this.templateService.updateTemplate(this.templateId, templateData as TrainingTemplate).subscribe({
-          next: () => {
+          next: (response) => {
+            console.log('Update response:', response);
             this.isSaving = false;
             this.router.navigate(['/training/templates']);
           },
@@ -138,8 +164,10 @@ export class TemplateFormComponent implements OnInit {
           }
         });
       } else {
+        console.log('Calling createTemplate');
         this.templateService.createTemplate(templateData as TrainingTemplate).subscribe({
-          next: () => {
+          next: (response) => {
+            console.log('Create response:', response);
             this.isSaving = false;
             this.router.navigate(['/training/templates']);
           },
@@ -149,6 +177,15 @@ export class TemplateFormComponent implements OnInit {
           }
         });
       }
+    } else {
+      console.log('Form is invalid');
+      console.log('Form errors:', this.templateForm.errors);
+      Object.keys(this.templateForm.controls).forEach(key => {
+        const control = this.templateForm.get(key);
+        if (control && control.errors) {
+          console.log(`${key} errors:`, control.errors);
+        }
+      });
     }
   }
 

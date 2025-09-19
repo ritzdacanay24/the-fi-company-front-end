@@ -23,18 +23,30 @@
 
       <!-- Page Header with Context -->
       <div class="mb-4">
-        <div class="d-flex align-items-center mb-3">
-          <button type="button" class="btn btn-outline-secondary me-3" (click)="goToSessions()" [disabled]="isSaving"
-            title="Back to Training Sessions">
-            <i class="mdi mdi-arrow-left me-2"></i>Back
-          </button>
-          <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
-            style="width: 60px; height: 60px;">
-            <i class="mdi mdi-{{ isEditMode ? 'pencil' : 'plus' }} text-white fs-4"></i>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-outline-secondary me-3" (click)="goToSessions()" [disabled]="isSaving"
+              title="Back to Training Sessions">
+              <i class="mdi mdi-arrow-left me-2"></i>Back
+            </button>
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
+              <i class="mdi mdi-{{ isEditMode ? 'pencil' : 'plus' }} text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">{{ isEditMode ? 'Edit Training Session' : 'Create Training Session' }}</h2>
+              <p class="text-muted mb-0">{{ isEditMode ? 'Update training session details and attendees' : 'Set up a new training session and assign expected attendees' }}</p>
+            </div>
           </div>
-          <div>
-            <h2 class="mb-1 text-primary">{{ isEditMode ? 'Edit Training Session' : 'Create Training Session' }}</h2>
-            <p class="text-muted mb-0">{{ isEditMode ? 'Update training session details and attendees' : 'Set up a new training session and assign expected attendees' }}</p>
+          
+          <!-- Action Buttons -->
+          <div class="d-flex gap-2" *ngIf="!isEditMode && !showTemplateSelection">
+            <button type="button" class="btn btn-outline-primary" (click)="showTemplateSelection = true">
+              <i class="mdi mdi-file-document-multiple me-2"></i>Use Template
+            </button>
+            <button type="button" class="btn btn-outline-secondary" (click)="clearForm()" *ngIf="selectedTemplate">
+              <i class="mdi mdi-refresh me-2"></i>Clear Form
+            </button>
           </div>
         </div>
 
@@ -61,7 +73,7 @@
       </div>
 
       <!-- Template Selection (Only for new sessions) -->
-      <div *ngIf="!isLoading && !isEditMode" class="card shadow-sm border-0 mb-4">
+      <div *ngIf="!isLoading && !isEditMode && showTemplateSelection" class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-light">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
@@ -152,6 +164,7 @@
                     <label for="title" class="form-label">Training Title *</label>
                     <input type="text" class="form-control" id="title" formControlName="title"
                       [class.is-invalid]="isFieldInvalid('title')" placeholder="e.g., Forklift Safety Training">
+                    <div class="form-text">Minimum 3 characters required</div>
                     <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
                       {{ getFieldError('title') }}
                     </div>
@@ -174,6 +187,7 @@
                     <textarea class="form-control" id="description" formControlName="description"
                       [class.is-invalid]="isFieldInvalid('description')" rows="3"
                       placeholder="Detailed description of the training content and objectives..."></textarea>
+                    <div class="form-text">Minimum 10 characters required</div>
                     <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
                       {{ getFieldError('description') }}
                     </div>
@@ -297,12 +311,12 @@
                         <div class="bulk-selection-section">
                           <label class="form-label">Bulk Selection</label>
                           <div class="d-flex gap-2 flex-wrap">
-                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                            <button type="button" class="btn btn-outline-secondary"
                               (click)="selectAllEmployees()">
                               <i class="mdi mdi-account-multiple"></i> All Employees
                             </button>
                             <div class="dropdown">
-                              <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                              <button class="btn btn-outline-secondary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="mdi mdi-office-building"></i> By Department
                               </button>
@@ -315,7 +329,7 @@
                                 </li>
                               </ul>
                             </div>
-                            <button type="button" class="btn btn-outline-danger btn-sm" (click)="clearAllEmployees()">
+                            <button type="button" class="btn btn-outline-danger" (click)="clearAllEmployees()">
                               <i class="mdi mdi-close"></i> Clear All
                             </button>
                           </div>
@@ -376,8 +390,9 @@
                   (click)="goToSessions()">
                   <i class="mdi mdi-close me-1"></i>Cancel
                 </button>
-                <button type="submit" class="btn btn-primary ms-auto"
-                  [disabled]="isSaving || trainingForm.invalid || selectedEmployees.length === 0">
+                <button type="button" class="btn btn-primary ms-auto"
+                  [disabled]="isSaving || trainingForm.invalid || selectedEmployees.length === 0"
+                  (click)="onSubmit()">
                   <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status"></span>
                   <i *ngIf="!isSaving" class="mdi mdi-check-circle-outline me-1"></i>
                   {{ isSaving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Training Session' : 'Create Training Session') }}

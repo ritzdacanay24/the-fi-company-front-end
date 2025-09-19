@@ -10,6 +10,8 @@ export interface Employee {
   title: string; // Alternative property name used in templates  
   department: string;
   email?: string;
+  image?: string; // Employee photo URL from users.image field
+  photoUrl?: string; // Alternative property name for photo
 }
 
 export interface TrainingSession {
@@ -87,6 +89,7 @@ export interface CreateTrainingSessionRequest {
   location: string;
   facilitatorName: string;
   expectedAttendeeIds: number[];
+  createdBy?: number; // User ID of the person creating the session
 }
 
 export interface UpdateAttendanceRequest {
