@@ -34,6 +34,7 @@ import { QirActionsCellRendererComponent } from './qir-actions-cell-renderer.com
   ],
   selector: "app-qir-list",
   templateUrl: "./qir-list.component.html",
+  styleUrls: ["./qir-list.component.scss"]
 })
 export class QirListComponent implements OnInit {
   pageId = "/qir/list-qir";
@@ -62,6 +63,7 @@ export class QirListComponent implements OnInit {
         : this.isAll;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
+      this.selectedType1 = params["selectedType1"] || this.selectedType1;
     });
 
     this.getData();
@@ -195,6 +197,11 @@ export class QirListComponent implements OnInit {
     },
   ];
 
+  // New Type 1 filter properties
+  selectedType1 = "";
+  type1Options: { value: string; label: string; count: number }[] = [];
+  filteredData: any[] = [];
+
   title = "QIR List";
 
   gridApi: GridApi;
@@ -303,9 +310,16 @@ export class QirListComponent implements OnInit {
         this.isAll
       );
 
+      // Calculate Type 1 options with counts
+      this.calculateType1Options();
+      
+      // Apply client-side filters
+      this.applyFilters();
+
       this.router.navigate(["."], {
         queryParams: {
           selectedViewType: this.selectedViewType,
+          selectedType1: this.selectedType1,
           isAll: this.isAll,
           dateFrom: this.dateFrom,
           dateTo: this.dateTo,
@@ -318,5 +332,83 @@ export class QirListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+
+  // New methods for improved filter UX
+  hasActiveFilters(): boolean {
+    return this.selectedViewType !== 'Open' || this.selectedType1 !== '' || (!this.isAll && this.dateRange && this.dateRange.length > 0);
+  }
+
+  clearFilters(): void {
+    this.selectedViewType = 'Open'; // Default to Open instead of All
+    this.selectedType1 = '';
+    this.isAll = true;
+    this.dateFrom = moment().subtract(1, "months").startOf("month").format("YYYY-MM-DD");
+    this.dateTo = moment().endOf("month").format("YYYY-MM-DD");
+    this.dateRange = [this.dateFrom, this.dateTo];
+    this.getData();
+  }
+
+  clearStatusFilter(): void {
+    this.selectedViewType = 'Open'; // Default back to Open
+    this.getData();
+  }
+
+  clearType1Filter(): void {
+    this.selectedType1 = '';
+    this.getData();
+  }
+
+  clearDateFilter(): void {
+    this.isAll = true;
+    this.getData();
+  }
+
+  getDateRangeDisplay(): string {
+    if (this.isAll) return 'All dates';
+    return `${moment(this.dateFrom).format('MMM DD')} - ${moment(this.dateTo).format('MMM DD, YYYY')}`;
+  }
+
+  // Calculate Type 1 options with counts
+  private calculateType1Options(): void {
+    if (!this.data) {
+      this.type1Options = [];
+      return;
+    }
+
+    const type1Counts = new Map<string, number>();
+    
+    this.data.forEach(item => {
+      const type1Value = item.type1 || 'Unspecified';
+      type1Counts.set(type1Value, (type1Counts.get(type1Value) || 0) + 1);
+    });
+
+    this.type1Options = Array.from(type1Counts.entries())
+      .map(([value, count]) => ({
+        value: value === 'Unspecified' ? '' : value,
+        label: value,
+        count: count
+      }))
+      .sort((a, b) => b.count - a.count); // Sort by count descending
+  }
+
+  // Apply client-side filtering
+  private applyFilters(): void {
+    if (!this.data) {
+      this.filteredData = [];
+      return;
+    }
+
+    this.filteredData = this.data.filter(item => {
+      // Type 1 filter
+      if (this.selectedType1 && this.selectedType1 !== '') {
+        const itemType1 = item.type1 || '';
+        if (itemType1 !== this.selectedType1) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
   }
 }

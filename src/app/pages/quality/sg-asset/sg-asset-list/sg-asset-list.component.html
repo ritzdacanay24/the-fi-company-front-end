@@ -1,7 +1,7 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-12">
-      
+
       <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
@@ -15,12 +15,13 @@
           </li>
         </ol>
       </nav>
-      
+
       <!-- Page Header with Context -->
       <div class="mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="d-flex align-items-center">
-            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center"
+              style="width: 60px; height: 60px;">
               <i class="mdi mdi-shield-check text-white fs-4"></i>
             </div>
             <div>
@@ -29,23 +30,21 @@
             </div>
           </div>
           <div>
-            <button 
-              type="button" 
-              class="btn btn-primary"
-              [routerLink]="['/quality/sg-asset/create']"
+            <button type="button" class="btn btn-primary" [routerLink]="['/quality/sg-asset/create']"
               title="Create new SG asset record">
               <i class="mdi mdi-plus me-2"></i>Create SG Asset
             </button>
           </div>
         </div>
-        
+
         <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
           <div class="d-flex align-items-start">
             <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
             <div>
               <h6 class="alert-heading text-primary mb-2">SG Asset Overview</h6>
               <p class="mb-0">
-                SG assets are the foundation of your gaming asset tracking. Each asset defines <strong>unique serial numbers</strong> 
+                SG assets are the foundation of your gaming asset tracking. Each asset defines <strong>unique serial
+                  numbers</strong>
                 and contains specific part information with quality control tracking.
               </p>
             </div>
@@ -55,31 +54,100 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex align-items-center">
-            <div class="form-icon me-3">
-              <input type="search" class="form-control form-control-icon" style="width:300px"
-                [(ngModel)]="quickFilter"
-                (ngModelChange)="onQuickFilterChange($event)"
-                placeholder="Search SG assets...">
-              <i class="mdi mdi-magnify"></i>
+          <!-- Primary Filters Row -->
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0 text-body-emphasis">
+              <i class="mdi mdi-filter-variant me-2 text-primary"></i>Filter SG Assets
+            </h5>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm" (click)="getData()" title="Refresh data">
+                <i class="mdi mdi-refresh me-1"></i>Refresh
+              </button>
             </div>
-            <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
-              <i class="mdi mdi-refresh me-1"></i>Refresh
-            </button>
-            <div class="ms-auto">
-              <h4 class="card-title mb-0">
-                <i class="mdi mdi-shield-check me-2"></i>{{title}}
-              </h4>
+          </div>
+
+          <!-- Filter Controls -->
+          <div class="row g-3 align-items-end">
+            <!-- Quick Search -->
+            <div class="col-md-3">
+              <label class="form-label fw-semibold text-muted small">Quick Search</label>
+              <div class="form-icon">
+                <input type="search" class="form-control form-control-icon custom-select" [(ngModel)]="searchTerm"
+                  placeholder="Search SG assets...">
+                <i class="mdi mdi-magnify"></i>
+              </div>
+              <small class="text-muted">Search across all fields</small>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-md-2">
+              <label class="form-label fw-semibold text-muted small">Asset Status</label>
+              <select class="form-select custom-select" [(ngModel)]="selectedViewType" (change)="getData()">
+                <option *ngFor="let option of selectedViewOptions" [value]="option.name">
+                  {{option.name}}
+                </option>
+              </select>
+              <small class="text-muted">Filter by asset status</small>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold text-muted small">Date Range</label>
+              <app-date-range (setDateRange)="onChangeDate($event)" [value]="dateRange" [disabled]="this.isAll"
+                [displayOptions]="true">
+              </app-date-range>
+              <small class="text-muted">Select creation date range</small>
+            </div>
+
+            <!-- Show All Toggle -->
+            <div class="col-md-2">
+              <label class="form-label fw-semibold text-muted small">Scope</label>
+              <div class="form-check form-switch form-switch-lg">
+                <input class="form-check-input" type="checkbox" id="showAllToggle" [(ngModel)]="isAll"
+                  (change)="getData()">
+                <label class="form-check-label fw-medium" for="showAllToggle">
+                  <span class="text-primary">Show All Records</span>
+                </label>
+              </div>
+              <small class="text-muted">Override date filter to show all</small>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="col-md-1">
+              <div class="text-end">
+                <div class="small text-muted mb-1">Total</div>
+                <div class="h5 mb-0 text-primary fw-bold">{{data?.length || 0}}</div>
+                <small class="text-muted">assets</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Filters Display -->
+          <div class="mt-3 pt-3 border-top" *ngIf="hasActiveFilters()">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <small class="text-muted fw-medium">Active filters:</small>
+              <span class="badge bg-primary-subtle text-primary" *ngIf="selectedViewType !== 'Active'">
+                Status: {{selectedViewType}}
+                <button type="button" class="btn-close btn-close-sm ms-1" (click)="clearStatusFilter()"></button>
+              </span>
+              <span class="badge bg-success-subtle text-success" *ngIf="searchTerm">
+                Search: "{{searchTerm}}"
+                <button type="button" class="btn-close btn-close-sm ms-1" (click)="clearSearchFilter()"></button>
+              </span>
+              <span class="badge bg-info-subtle text-info" *ngIf="!isAll && dateRange">
+                Date: {{getDateRangeDisplay()}}
+                <button type="button" class="btn-close btn-close-sm ms-1" (click)="clearDateFilter()"></button>
+              </span>
             </div>
           </div>
         </div>
-        
+
         <div class="card-body p-0">
           <ag-grid-angular class="ag-theme-quartz no-border" [rowData]="data" [gridOptions]="gridOptions"
             style="width: 100%;height: calc(100vh - 300px);">
           </ag-grid-angular>
         </div>
-        
+
         <div class="card-footer bg-light text-muted d-flex align-items-center">
           <i class="mdi mdi-information me-2"></i>
           <span>Click "SELECT" to modify asset settings or view detailed SG asset information</span>
@@ -88,7 +156,7 @@
           </div>
         </div>
       </div>
-      
+
     </div>
   </div>
 </div>

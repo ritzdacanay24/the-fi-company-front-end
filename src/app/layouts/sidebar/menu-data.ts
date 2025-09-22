@@ -115,6 +115,18 @@ export const MENU_DATA: MenuItem[] = [
         icon: "las la-check-circle",
         hideCheckBox: true,
     },
+    {
+        id: 121,
+        label: "Work Order Allocation",
+        link: "/operations/allocation-management",
+        description: "Allocate Work Orders to Sales Orders",
+        icon: "las la-exchange-alt",
+        hideCheckBox: true,
+        badge: {
+            variant: "badge bg-primary",
+            text: "New",
+        },
+    },
     // {
     //     id: 13,
     //     label: "Cable Production",
@@ -465,7 +477,7 @@ export const MENU_DATA: MenuItem[] = [
         ],
     },
     {
-        id: 35,
+        id: 36,
         label: "Serial Numbers",
         icon: "las la-barcode",
         isCollapsed: true,
@@ -511,10 +523,6 @@ function sortMenuItems(items: MenuItem[]): MenuItem[] {
             // Menu title always stays at top
             if (a.isTitle && a.label === "Menu") return -1;
             if (b.isTitle && b.label === "Menu") return 1;
-
-            // Admin section always goes to the bottom
-            if (a.label === "Admin" && a.id === 35) return 1;
-            if (b.label === "Admin" && b.id === 35) return -1;
 
             // For all other items with IDs, sort by ID
             if (a.id !== undefined && b.id !== undefined) {

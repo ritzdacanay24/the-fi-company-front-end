@@ -20,10 +20,12 @@ import { LinkRendererV2Component } from '@app/shared/ag-grid/cell-renderers/link
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
-    AgGridModule
+    AgGridModule,
+    DateRangeComponent
   ],
   selector: 'app-sg-asset-list',
   templateUrl: './sg-asset-list.component.html',
+  styleUrls: ['./sg-asset-list.component.scss']
 })
 export class SgAssetListComponent implements OnInit {
 
@@ -134,6 +136,8 @@ export class SgAssetListComponent implements OnInit {
 
   quickFilter = '';
 
+  searchTerm = '';
+
   changeIsAll() { }
 
   dateFrom = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD')
@@ -232,6 +236,36 @@ export class SgAssetListComponent implements OnInit {
       this.gridApi?.hideOverlay()
     }
 
+  }
+
+  // Filter Helper Methods
+  hasActiveFilters(): boolean {
+    return this.selectedViewType !== 'All' || 
+           !!this.searchTerm || 
+           !!(this.dateFrom && this.dateTo);
+  }
+
+  clearStatusFilter() {
+    this.selectedViewType = 'All';
+    this.getData();
+  }
+
+  clearSearchFilter() {
+    this.searchTerm = '';
+    this.getData();
+  }
+
+  clearDateFilter() {
+    this.dateFrom = null;
+    this.dateTo = null;
+    this.getData();
+  }
+
+  getDateRangeDisplay(): string {
+    if (this.dateFrom && this.dateTo) {
+      return `${moment(this.dateFrom).format('MM/DD/YYYY')} - ${moment(this.dateTo).format('MM/DD/YYYY')}`;
+    }
+    return '';
   }
 
 }

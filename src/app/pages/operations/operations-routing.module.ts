@@ -9,6 +9,7 @@ import { UniversalSearchComponent } from "./universal-search/universal-search.co
 import { AccessGuard } from "@app/core/guards/access.guard";
 import { LocationLookupComponent } from "./location-lookup/location-lookup.component";
 import { UniversalLookupComponent } from "@app/shared/components/universal-lookup/universal-lookup.component";
+import { AllocationManagementComponent } from "./allocation-management/allocation-management.component";
 
 const routes: Routes = [
   {
@@ -52,6 +53,12 @@ const routes: Routes = [
     title: "Location Lookup",
     path: "location-lookup",
     component: LocationLookupComponent,
+  },
+  {
+    title: "Work Order Allocation",
+    path: "allocation-management",
+    component: AllocationManagementComponent,
+    runGuardsAndResolvers: "always",
   },
   {
     path: "bom",

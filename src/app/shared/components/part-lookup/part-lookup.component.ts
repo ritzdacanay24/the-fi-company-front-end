@@ -234,6 +234,7 @@ export class PartLookupComponent {
     columnDefs: this.demandcolumnDefs,
     onGridReady: this.onGridReady4.bind(this),
     sideBar: false,
+    domLayout: "autoHeight",
     popupParent: document.querySelector("modal"),
   };
 
@@ -447,10 +448,48 @@ export class PartLookupComponent {
       this.locationDet = data.locationDet;
       this.poResults = data.POresults;
       this.woResults = data.WOresults;
+      
+      // Sort work orders by due date (earliest first)
+      if (this.woResults && this.woResults.length > 0) {
+        this.woResults.sort((a, b) => {
+          const dateA = new Date(a.WR_DUE);
+          const dateB = new Date(b.WR_DUE);
+          return dateA.getTime() - dateB.getTime();
+        });
+      }
+      
       this.locationDetDesc = data.locationDetDesc;
       this.itemInfo = data.itemInfo;
       this.demand = data.orderDemand;
+      
+      // Sort order demand by due date (earliest first)
+      if (this.demand && this.demand.length > 0) {
+        this.demand.sort((a, b) => {
+          const dateA = new Date(a.SOD_DUE_DATE);
+          const dateB = new Date(b.SOD_DUE_DATE);
+          return dateA.getTime() - dateB.getTime();
+        });
+      }
+      
+      // Sort purchase orders by due date (earliest first)
+      if (this.poResults && this.poResults.length > 0) {
+        this.poResults.sort((a, b) => {
+          const dateA = new Date(a.pod_due_date);
+          const dateB = new Date(b.pod_due_date);
+          return dateA.getTime() - dateB.getTime();
+        });
+      }
+      
       this.shortages = data.openShortages;
+      
+      // Sort shortages by request date (earliest first)
+      if (this.shortages && this.shortages.length > 0) {
+        this.shortages.sort((a, b) => {
+          const dateA = new Date(a.request_date);
+          const dateB = new Date(b.request_date);
+          return dateA.getTime() - dateB.getTime();
+        });
+      }
       this.isLoading = false;
       this.total = this.sumLocationDetails();
       this.totalDemand = this.orderDemandSum();
@@ -581,6 +620,12 @@ export class PartLookupComponent {
         return 'bg-success';
       default:
         return 'bg-info';
+    }
+  }
+
+  openWorkOrderModal(woNumber: number): void {
+    if (woNumber) {
+      this.workOrderInfoModalService.open(woNumber);
     }
   }
 }
