@@ -1,15 +1,26 @@
 import { Component, Input, OnInit, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridOptions, GridApi, RowDropZoneParams } from 'ag-grid-community';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { PartAllocationService, AllocationRecommendation, ManualAllocation } from '../../../core/api/operations/allocation/part-allocation.service';
+
+interface WorkflowFilterState {
+    urgentShortages: boolean;
+    noDemand: boolean; 
+    timingRisks: boolean;
+    multiWO: boolean;
+    manualReview: boolean;
+}
 
 interface AllocationTableRow {
     id: string;
     partNumber: string;
     totalWoQuantity: number;
     totalSoQuantity: number;
+    onHandQuantity?: number;        // Available inventory
+    effectiveShortage?: number;     // Shortage after considering inventory
     allocationGap: number;
     allocationStatus: 'SHORTAGE' | 'MATCHED' | 'EXCESS';
     allocations?: AllocationDetailRow[]; // Detail rows
@@ -48,63 +59,166 @@ interface AllocationDetailRow {
 @Component({
     selector: 'app-allocation-table',
     standalone: true,
-    imports: [CommonModule, AgGridModule],
+    imports: [CommonModule, FormsModule, AgGridModule],
     template: `
-    <div class="allocation-container">
-      <div class="allocation-header">
-        <h3>Work Order to Sales Order Allocation</h3>
-        <div class="allocation-controls">
-          <button class="btn btn-primary" (click)="refreshAllocations()">
-            <i class="fas fa-sync-alt"></i> Refresh
-          </button>
-          <button class="btn btn-success" (click)="saveAllocations()">
-            <i class="fas fa-save"></i> Save Changes
-          </button>
-          <button class="btn btn-warning" (click)="showAuditTrail()">
-            <i class="fas fa-history"></i> Audit Trail
-          </button>
-        </div>
-      </div>
-      
-      <div class="allocation-summary" *ngIf="allocationSummary">
-        <div class="summary-cards">
-          <div class="summary-card">
-            <div class="card-label">Total Allocations</div>
-            <div class="card-value">{{ totalAllocations }}</div>
-          </div>
-          <div class="summary-card manual">
-            <div class="card-label">Manual Overrides</div>
-            <div class="card-value">{{ manualAllocations }}</div>
-          </div>
-          <div class="summary-card locked">
-            <div class="card-label">Locked</div>
-            <div class="card-value">{{ lockedAllocations }}</div>
-          </div>
-          <div class="summary-card high-risk">
-            <div class="card-label">High Risk</div>
-            <div class="card-value">{{ highRiskAllocations }}</div>
+    <!-- Summary Cards -->
+    <div class="allocation-summary mb-4" *ngIf="allocationSummary">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm summary-card-clickable" 
+               (click)="filterByUrgentShortages()" 
+               [class.active]="workflowFilters.urgentShortages"
+               title="Click to filter urgent shortages">
+            <div class="card-body text-center">
+              <div class="text-danger mb-2">
+                <i class="mdi mdi-alert-octagon fs-2"></i>
+              </div>
+              <h4 class="mb-1">{{ urgentShortages }}</h4>
+              <small class="text-muted">Urgent Shortages</small>
+              <div class="mt-1">
+                <small class="text-danger">Need Work Orders Now</small>
+              </div>
+            </div>
           </div>
         </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm summary-card-clickable" 
+               (click)="filterByTimingRisks()" 
+               [class.active]="workflowFilters.timingRisks"
+               title="Click to filter timing risks">
+            <div class="card-body text-center">
+              <div class="text-warning mb-2">
+                <i class="mdi mdi-clock-alert fs-2"></i>
+              </div>
+              <h4 class="mb-1">{{ timingRisks }}</h4>
+              <small class="text-muted">Timing Risks</small>
+              <div class="mt-1">
+                <small class="text-warning">May Miss Due Dates</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm summary-card-clickable" 
+               (click)="filterByCoveredOrders()" 
+               title="Click to show well-covered orders">
+            <div class="card-body text-center">
+              <div class="text-success mb-2">
+                <i class="mdi mdi-check-circle fs-2"></i>
+              </div>
+              <h4 class="mb-1">{{ coveragePercentage }}%</h4>
+              <small class="text-muted">30-Day Coverage</small>
+              <div class="mt-1">
+                <small class="text-success">Demand Met</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-0 shadow-sm summary-card-clickable" 
+               (click)="filterByExcessCapacity()" 
+               title="Click to show excess capacity">
+            <div class="card-body text-center">
+              <div class="text-info mb-2">
+                <i class="mdi mdi-factory fs-2"></i>
+              </div>
+              <h4 class="mb-1">{{ excessCapacity }}</h4>
+              <small class="text-muted">Excess Units</small>
+              <div class="mt-1">
+                <small class="text-info">Available for Future</small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <ag-grid-angular
-        class="ag-theme-quartz no-border"
-        style="width: 100%;height: calc(100vh - 300px);"
-        [rowData]="rowData"
-        [columnDefs]="columnDefs"
-        [gridOptions]="gridOptions"
-        [defaultColDef]="defaultColDef"
-        (gridReady)="onGridReady($event)"
-        (cellValueChanged)="onCellValueChanged($event)"
-        (rowDragEnd)="onRowDragEnd($event)"
-        [rowSelection]="'multiple'"
-        [rowDragManaged]="true"
-        [suppressRowClickSelection]="true"
-        [enableRangeSelection]="true"
-        [enableCellChangeFlash]="true"
-        [animateRows]="true">
-      </ag-grid-angular>
     </div>
+
+    <!-- Workflow Filters Card -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header">
+        <div class="d-flex align-items-center justify-content-between">
+          <h6 class="mb-0 text-primary">
+            <i class="mdi mdi-filter-variant me-2"></i>Workflow Filters
+          </h6>
+          <button class="btn btn-sm btn-outline-secondary" (click)="clearAllFilters()">
+            <i class="mdi mdi-filter-remove me-1"></i>Clear All
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="urgentShortages" 
+                     [(ngModel)]="workflowFilters.urgentShortages" 
+                     (ngModelChange)="applyWorkflowFilters()">
+              <label class="form-check-label" for="urgentShortages">
+                <span class="badge bg-danger me-2">🚨</span>Urgent Shortages
+              </label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="noDemand"
+                     [(ngModel)]="workflowFilters.noDemand"
+                     (ngModelChange)="applyWorkflowFilters()">
+              <label class="form-check-label" for="noDemand">
+                <span class="badge bg-secondary me-2">❓</span>No Demand
+              </label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="timingRisks"
+                     [(ngModel)]="workflowFilters.timingRisks"
+                     (ngModelChange)="applyWorkflowFilters()">
+              <label class="form-check-label" for="timingRisks">
+                <span class="badge bg-warning me-2">⏰</span>Timing Risks
+              </label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="multiWO"
+                     [(ngModel)]="workflowFilters.multiWO"
+                     (ngModelChange)="applyWorkflowFilters()">
+              <label class="form-check-label" for="multiWO">
+                <span class="badge bg-info me-2">📋</span>Multi-WO Sales Orders
+              </label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="manualReview"
+                     [(ngModel)]="workflowFilters.manualReview"
+                     (ngModelChange)="applyWorkflowFilters()">
+              <label class="form-check-label" for="manualReview">
+                <span class="badge bg-dark me-2">👤</span>Manual Review
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation Table -->
+    <ag-grid-angular
+      class="ag-theme-quartz no-border"
+      style="width: 100%; height: 600px;"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      [gridOptions]="gridOptions"
+      [defaultColDef]="defaultColDef"
+      (gridReady)="onGridReady($event)"
+      (cellValueChanged)="onCellValueChanged($event)"
+      (rowDragEnd)="onRowDragEnd($event)"
+      [rowSelection]="'multiple'"
+      [rowDragManaged]="true"
+      [suppressRowClickSelection]="true"
+      [enableRangeSelection]="true"
+      [enableCellChangeFlash]="true"
+      [animateRows]="true">
+    </ag-grid-angular>
     `,
     
 })
@@ -115,6 +229,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
     private destroy$ = new Subject<void>();
 
     rowData: AllocationTableRow[] = [];
+    originalRowData: AllocationTableRow[] = []; // Store unfiltered data
     columnDefs: ColDef[] = [];
     detailColumnDefs: ColDef[] = [];
     defaultColDef: ColDef = {
@@ -128,10 +243,27 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
     gridApi!: GridApi;
 
     allocationSummary = true;
+    
+    // User-focused metrics
+    urgentShortages = 0;        // Parts needing immediate work orders
+    timingRisks = 0;           // Parts at risk of missing due dates  
+    coveragePercentage = 0;     // % of 30-day demand covered
+    excessCapacity = 0;         // Units of excess capacity available
+
+    // Legacy metrics (kept for compatibility)
     totalAllocations = 0;
     manualAllocations = 0;
     lockedAllocations = 0;
     highRiskAllocations = 0;
+
+    // Workflow Filters
+    workflowFilters: WorkflowFilterState = {
+        urgentShortages: false,
+        noDemand: false,
+        timingRisks: false,
+        multiWO: false,
+        manualReview: false
+    };
 
     constructor(private allocationService: PartAllocationService) {
         this.setupColumnDefs();
@@ -176,6 +308,32 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 cellClass: 'text-center'
             },
             {
+                headerName: 'On Hand',
+                field: 'onHandQuantity',
+                width: 100,
+                type: 'numericColumn',
+                cellClass: 'text-center',
+                cellStyle: (params: any) => {
+                    const onHand = params.value || 0;
+                    const demand = params.data.totalSoQuantity || 0;
+                    if (onHand >= demand) return { backgroundColor: '#e8f5e8', color: '#2e7d32' };
+                    if (onHand > 0) return { backgroundColor: '#fff3e0', color: '#ef6c00' };
+                    return { backgroundColor: '#ffebee', color: '#c62828' };
+                },
+                cellRenderer: (params: any) => {
+                    const onHand = params.value || 0;
+                    const demand = params.data.totalSoQuantity || 0;
+                    
+                    if (onHand >= demand) {
+                        return `<span class="fw-bold">${onHand}</span> <small class="text-success">✓ Covered</small>`;
+                    } else if (onHand > 0) {
+                        const shortage = demand - onHand;
+                        return `<span class="fw-bold">${onHand}</span> <small class="text-warning">-${shortage} short</small>`;
+                    }
+                    return `<span class="text-muted">${onHand}</span>`;
+                }
+            },
+            {
                 headerName: 'Gap',
                 field: 'allocationGap',
                 width: 100,
@@ -186,6 +344,16 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     if (value < 0) return { backgroundColor: '#ffebee', color: '#c62828' };
                     if (value > 0) return { backgroundColor: '#e8f5e8', color: '#2e7d32' };
                     return { backgroundColor: '#fff3e0', color: '#ef6c00' };
+                },
+                cellRenderer: (params: any) => {
+                    const gap = params.value || 0;
+                    
+                    if (gap < 0) {
+                        return `<span class="fw-bold">${Math.abs(gap)}</span> <small class="text-danger">short</small>`;
+                    } else if (gap > 0) {
+                        return `<span class="fw-bold">${gap}</span> <small class="text-success">excess</small>`;
+                    }
+                    return `<span class="fw-bold">0</span> <small class="text-warning">matched</small>`;
                 }
             },
             {
@@ -318,7 +486,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 field: 'woNumber',
                 width: 140,
                 cellRenderer: (params: any) => {
-                    const woNumber = params.value;
+                    const woNumber = params.value || '';
                     const data = params.data;
                     
                     // Check if this is a shortage, excess, or normal allocation
@@ -371,7 +539,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     const data = params.data;
                     
                     // Show different content based on allocation type
-                    if (data.woNumber.includes('SHORTAGE') || data.woNumber.includes('URGENT SHORTAGE') || data.woNumber.includes('FUTURE NEED')) {
+                    if (data.woNumber && (data.woNumber.includes('SHORTAGE') || data.woNumber.includes('URGENT SHORTAGE') || data.woNumber.includes('FUTURE NEED'))) {
                         return '<span class="text-muted">N/A</span>';
                     }
                     
@@ -404,7 +572,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     const available = params.data.woAvailable;
                     const data = params.data;
                     
-                    if (data.woNumber.includes('SHORTAGE')) {
+                    if (data.woNumber && data.woNumber.includes('SHORTAGE')) {
                         return 'Shortage - no work order capacity available';
                     }
                     
@@ -432,7 +600,9 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 headerName: 'Sales Order',
                 field: 'soNumber',
                 width: 120,
-                cellClass: 'text-info'
+                cellClass: 'text-info',
+                rowGroup: true, // Enable grouping by sales order
+                hide: true // Hide the column since we're grouping by it
             },
             {
                 headerName: 'SO Qty',
@@ -469,8 +639,8 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                         const sameSOAllocations = masterRowData.allocations.filter((allocation: any) => 
                             allocation.soNumber === data.soNumber && 
                             allocation.allocatedQuantity > 0 &&
-                            !allocation.woNumber.includes('SHORTAGE') &&
-                            !allocation.woNumber.includes('EXCESS')
+                            allocation.woNumber && !allocation.woNumber.includes('SHORTAGE') &&
+                            allocation.woNumber && !allocation.woNumber.includes('EXCESS')
                         );
                         
                         if (sameSOAllocations.length > 1) {
@@ -551,7 +721,51 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     columnDefs: this.detailColumnDefs,
                     defaultColDef: this.defaultColDef,
                     rowHeight: 35,
-                    domLayout: 'autoHeight' // Auto-size to content height
+                    domLayout: 'autoHeight', // Auto-size to content height
+                    
+                    // Enable grouping by sales order
+                    groupDisplayType: 'groupRows',
+                    suppressAggFuncInHeader: true,
+                    groupDefaultExpanded: 1, // Expand first level (sales orders) by default
+                    groupIncludeFooter: false,
+                    groupHideOpenParents: false,
+                    
+                    // Group row styling
+                    getRowStyle: (params) => {
+                        if (params.node.group) {
+                            return { 
+                                'font-weight': 'bold', 
+                                'background-color': '#f8f9fa',
+                                'border-left': '4px solid #007bff'
+                            };
+                        }
+                        return null;
+                    },
+                    
+                    // Custom group cell renderer for sales orders
+                    groupRowRenderer: (params: any) => {
+                        if (params.node.key) {
+                            // This is a sales order group
+                            const soNumber = params.node.key;
+                            const childData = params.node.allChildrenData;
+                            
+                            if (childData && childData.length > 0) {
+                                const firstChild = childData[0];
+                                const soQty = firstChild.soQuantity;
+                                const soDue = new Date(firstChild.soDueDate).toLocaleDateString();
+                                const totalAllocated = childData.reduce((sum: number, child: any) => sum + (child.allocatedQuantity || 0), 0);
+                                
+                                return `
+                                    <span class="text-primary fw-bold">📋 ${soNumber}</span>
+                                    <small class="text-muted ms-2">
+                                        (${soQty} needed | ${totalAllocated} allocated | Due: ${soDue})
+                                    </small>
+                                `;
+                            }
+                            return `<span class="text-primary fw-bold">📋 ${soNumber}</span>`;
+                        }
+                        return params.value;
+                    }
                 },
                 getDetailRowData: (params) => {
                     params.successCallback(params.data.allocations || []);
@@ -589,6 +803,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             .subscribe({
                 next: (recommendations) => {
                     this.rowData = this.transformRecommendationsToRows(recommendations);
+                    this.originalRowData = [...this.rowData]; // Store original data for filtering
                     this.updateSummaryStats();
                 },
                 error: (error) => {
@@ -616,6 +831,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                             next: (analysisResults) => {
                                 console.log('Analysis results:', analysisResults);
                                 this.rowData = this.transformAnalysisToRows(analysisResults);
+                                this.originalRowData = [...this.rowData]; // Store original data for filtering
                                 this.updateSummaryStats();
                                 console.log(`Loaded ${this.rowData.length} allocation rows`);
                             },
@@ -682,7 +898,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
 
     /**
      * Transform allocation analysis from backend API into master-detail rows
-     * Implements First-In-First-Out (FIFO) allocation logic
+     * Implements First-In-First-Out (FIFO) allocation logic with inventory consideration
      */
     private transformAnalysisToRows(analysisResults: any[]): AllocationTableRow[] {
         const masterRows: AllocationTableRow[] = [];
@@ -691,6 +907,12 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             const partNumber = analysis.partNumber;
             const workOrders = analysis.workOrders || [];
             const salesOrders = analysis.salesOrders || [];
+            
+            // Extract inventory quantity from inventory array
+            const inventory = analysis.inventory || [];
+            const onHandQuantity = inventory.reduce((total: number, inv: any) => {
+                return total + parseFloat(inv.AVAILABLE_STOCK || inv.ld_qty_oh || '0');
+            }, 0);
             
             // Sort sales orders by urgency (due date) for intelligent allocation
             const sortedSalesOrders = [...salesOrders].sort((a, b) => 
@@ -705,10 +927,14 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             // Calculate part-level totals (convert strings to numbers)
             const totalWoQuantity = workOrders.reduce((sum: number, wo: any) => sum + parseFloat(wo.AVAILABLE_QTY || '0'), 0);
             const totalSoQuantity = salesOrders.reduce((sum: number, so: any) => sum + parseFloat(so.OPENBALANCE || '0'), 0);
-            const allocationGap = totalWoQuantity - totalSoQuantity;
             
-            // Analyze urgency and timing for better recommendations
-            const urgencyAnalysis = this.analyzeUrgencyAndTiming(sortedSalesOrders, sortedWorkOrders);
+            // CRITICAL: Calculate effective shortage considering inventory
+            const totalAvailable = totalWoQuantity + onHandQuantity;
+            const effectiveShortage = Math.max(0, totalSoQuantity - totalAvailable);
+            const allocationGap = totalAvailable - totalSoQuantity;
+            
+            // Analyze urgency and timing for better recommendations (include inventory)
+            const urgencyAnalysis = this.analyzeUrgencyAndTimingWithInventory(sortedSalesOrders, sortedWorkOrders, onHandQuantity);
             
             let allocationStatus: 'SHORTAGE' | 'MATCHED' | 'EXCESS' = 'MATCHED';
             if (allocationGap < 0) {
@@ -717,8 +943,12 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 allocationStatus = 'EXCESS';
             }
             
-            // FIFO Allocation Logic: Allocate work orders sequentially to sales orders
-            const { allocations, woRemaining, soShortages } = this.performFIFOAllocation(sortedWorkOrders, sortedSalesOrders);
+            // FIFO Allocation Logic: Use inventory first, then allocate work orders
+            const { allocations, woRemaining, soShortages } = this.performInventoryAwareFIFOAllocation(
+                sortedWorkOrders, 
+                sortedSalesOrders, 
+                onHandQuantity
+            );
             
             // Create detail rows from FIFO allocation results
             const details: AllocationDetailRow[] = [];
@@ -856,15 +1086,39 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 partNumber: partNumber,
                 totalWoQuantity: totalWoQuantity,
                 totalSoQuantity: totalSoQuantity,
+                onHandQuantity: onHandQuantity,
+                effectiveShortage: effectiveShortage,
                 allocationGap: allocationGap,
                 allocationStatus: allocationStatus,
                 allocations: details,
                 
-                // Map decision summary from backend analysis
-                decisionSummary: analysis.decisionSummary || this.generateFallbackDecisionSummary(allocationStatus, allocationGap),
-                decisionCategory: analysis.decisionCategory || this.mapStatusToCategory(allocationStatus, urgencyAnalysis),
-                trafficLightStatus: this.mapCategoryToTrafficLight(analysis.decisionCategory || this.mapStatusToCategory(allocationStatus, urgencyAnalysis)),
-                actionRecommendations: analysis.actionRecommendations || this.generateFallbackActions(allocationStatus, urgencyAnalysis)
+                // Enhanced decision logic considering inventory
+                decisionSummary: analysis.decisionSummary || this.generateInventoryAwareDecisionSummary(
+                    allocationStatus, 
+                    effectiveShortage, 
+                    onHandQuantity, 
+                    totalSoQuantity
+                ),
+                decisionCategory: analysis.decisionCategory || this.mapInventoryAwareStatusToCategory(
+                    allocationStatus, 
+                    urgencyAnalysis, 
+                    onHandQuantity, 
+                    totalSoQuantity
+                ),
+                trafficLightStatus: this.mapCategoryToTrafficLight(
+                    analysis.decisionCategory || this.mapInventoryAwareStatusToCategory(
+                        allocationStatus, 
+                        urgencyAnalysis, 
+                        onHandQuantity, 
+                        totalSoQuantity
+                    )
+                ),
+                actionRecommendations: analysis.actionRecommendations || this.generateInventoryAwareActions(
+                    allocationStatus, 
+                    urgencyAnalysis, 
+                    onHandQuantity, 
+                    totalSoQuantity
+                )
             });
         });
         
@@ -965,8 +1219,8 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
         const sameSOAllocations = masterRowData.allocations.filter((allocation: any) => 
             allocation.soNumber === allocationData.soNumber && 
             allocation.allocatedQuantity > 0 &&
-            !allocation.woNumber.includes('SHORTAGE') &&
-            !allocation.woNumber.includes('EXCESS')
+            allocation.woNumber && !allocation.woNumber.includes('SHORTAGE') &&
+            allocation.woNumber && !allocation.woNumber.includes('EXCESS')
         );
         
         if (sameSOAllocations.length <= 1) {
@@ -1022,10 +1276,74 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
 
     private updateSummaryStats() {
         const allDetails = this.rowData.flatMap(row => row.allocations || []);
+        
+        // Legacy metrics (kept for compatibility)
         this.totalAllocations = allDetails.length;
         this.manualAllocations = allDetails.filter(detail => detail.allocationType === 'MANUAL').length;
         this.lockedAllocations = allDetails.filter(detail => detail.isLocked).length;
         this.highRiskAllocations = allDetails.filter(detail => detail.timingRisk === 'HIGH').length;
+
+        // User-focused actionable metrics
+        this.calculateActionableMetrics();
+    }
+
+    private calculateActionableMetrics() {
+        const today = new Date();
+        const thirtyDaysOut = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        
+        // 1. Urgent Shortages - Parts that need work orders created immediately
+        this.urgentShortages = this.rowData.filter(row => 
+            row.decisionCategory === 'URGENT_SHORTAGE'
+        ).length;
+
+        // 2. Timing Risks - Parts with high risk of missing due dates
+        this.timingRisks = this.rowData.filter(row => {
+            if (!row.allocations) return false;
+            return row.allocations.some(alloc => 
+                alloc.timingRisk === 'HIGH' && 
+                new Date(alloc.soDueDate) <= thirtyDaysOut
+            );
+        }).length;
+
+        // 3. Coverage Percentage - How much of 30-day demand is covered
+        let totalDemandNext30Days = 0;
+        let coveredDemandNext30Days = 0;
+
+        this.rowData.forEach(row => {
+            if (!row.allocations) return;
+            
+            row.allocations.forEach(alloc => {
+                const soDueDate = new Date(alloc.soDueDate);
+                if (soDueDate <= thirtyDaysOut && soDueDate >= today) {
+                    totalDemandNext30Days += alloc.soQuantity;
+                    
+                    // Count as covered if there's a valid work order allocation
+                    if (alloc.allocatedQuantity > 0 && 
+                        alloc.woNumber && !alloc.woNumber.includes('SHORTAGE') && 
+                        alloc.woNumber && !alloc.woNumber.includes('FUTURE NEED')) {
+                        coveredDemandNext30Days += Math.min(alloc.allocatedQuantity, alloc.soQuantity);
+                    }
+                }
+            });
+        });
+
+        this.coveragePercentage = totalDemandNext30Days > 0 
+            ? Math.round((coveredDemandNext30Days / totalDemandNext30Days) * 100)
+            : 100;
+
+        // 4. Excess Capacity - Available work order capacity not allocated
+        this.excessCapacity = this.rowData.reduce((total, row) => {
+            if (!row.allocations) return total;
+            
+            const excessAllocations = row.allocations.filter(alloc => 
+                (alloc.woNumber && alloc.woNumber.includes('EXCESS')) || 
+                (!alloc.soNumber && alloc.woAvailable > 0)
+            );
+            
+            return total + excessAllocations.reduce((sum, alloc) => 
+                sum + (alloc.woAvailable || 0), 0
+            );
+        }, 0);
     }
 
     onCellValueChanged(event: any) {
@@ -1419,5 +1737,343 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             primary: 'Review allocation',
             secondary: 'Manual adjustment'
         };
+    }
+
+    // Workflow Filter Methods
+    applyWorkflowFilters(): void {
+        if (!this.originalRowData.length) {
+            this.originalRowData = [...this.rowData];
+        }
+
+        let filteredData = [...this.originalRowData];
+
+        // Apply individual filters
+        if (this.workflowFilters.urgentShortages) {
+            filteredData = filteredData.filter(row => 
+                row.decisionCategory === 'URGENT_SHORTAGE'
+            );
+        }
+
+        if (this.workflowFilters.noDemand) {
+            filteredData = filteredData.filter(row => 
+                row.decisionCategory === 'NO_DEMAND'
+            );
+        }
+
+        if (this.workflowFilters.timingRisks) {
+            filteredData = filteredData.filter(row => 
+                row.allocations?.some(alloc => alloc.timingRisk === 'HIGH') || false
+            );
+        }
+
+        if (this.workflowFilters.multiWO) {
+            filteredData = filteredData.filter(row => {
+                if (!row.allocations) return false;
+                const uniqueSOs = new Set(row.allocations.map(alloc => alloc.soNumber));
+                return Array.from(uniqueSOs).some(soNumber => 
+                    row.allocations!.filter(alloc => alloc.soNumber === soNumber).length > 1
+                );
+            });
+        }
+
+        if (this.workflowFilters.manualReview) {
+            filteredData = filteredData.filter(row => 
+                row.decisionCategory === 'MANUAL_REVIEW'
+            );
+        }
+
+        // If no filters are active, show all data
+        const hasActiveFilters = Object.values(this.workflowFilters).some(filter => filter);
+        if (!hasActiveFilters) {
+            filteredData = [...this.originalRowData];
+        }
+
+        this.rowData = filteredData;
+        
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', this.rowData);
+        }
+    }
+
+    clearAllFilters(): void {
+        this.workflowFilters = {
+            urgentShortages: false,
+            noDemand: false,
+            timingRisks: false,
+            multiWO: false,
+            manualReview: false
+        };
+        
+        this.rowData = [...this.originalRowData];
+        
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', this.rowData);
+        }
+    }
+
+    // Summary Card Click Handlers for Contextual Filtering
+    filterByUrgentShortages(): void {
+        // Toggle urgent shortages filter
+        this.clearAllFilters();
+        this.workflowFilters.urgentShortages = true;
+        this.applyWorkflowFilters();
+    }
+
+    filterByTimingRisks(): void {
+        // Toggle timing risks filter
+        this.clearAllFilters();
+        this.workflowFilters.timingRisks = true;
+        this.applyWorkflowFilters();
+    }
+
+    filterByCoveredOrders(): void {
+        // Show parts that are well-covered (not shortages, not timing risks)
+        this.clearAllFilters();
+        
+        // Apply custom filter for well-covered orders
+        if (!this.originalRowData.length) {
+            this.originalRowData = [...this.rowData];
+        }
+
+        const today = new Date();
+        const thirtyDaysOut = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+
+        const filteredData = this.originalRowData.filter(row => {
+            // Show parts that have good coverage for the next 30 days
+            if (row.decisionCategory === 'URGENT_SHORTAGE') return false;
+            if (row.decisionCategory === 'STOCK_SUFFICIENT' || row.decisionCategory === 'URGENT_COVERED') return true;
+            
+            // Check if this part has good timing coverage
+            if (row.allocations) {
+                const hasGoodCoverage = row.allocations.some(alloc => {
+                    const soDueDate = new Date(alloc.soDueDate);
+                    return soDueDate <= thirtyDaysOut && 
+                           soDueDate >= today && 
+                           alloc.timingRisk === 'LOW' &&
+                           alloc.allocatedQuantity > 0 &&
+                           (!alloc.woNumber || !alloc.woNumber.includes('SHORTAGE'));
+                });
+                return hasGoodCoverage;
+            }
+            
+            return false;
+        });
+
+        this.rowData = filteredData;
+        
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', this.rowData);
+        }
+    }
+
+    filterByExcessCapacity(): void {
+        // Show parts with excess work order capacity
+        this.clearAllFilters();
+        
+        if (!this.originalRowData.length) {
+            this.originalRowData = [...this.rowData];
+        }
+
+        const filteredData = this.originalRowData.filter(row => {
+            // Show parts that have excess capacity or are over-allocated
+            if (row.allocationStatus === 'EXCESS') return true;
+            
+            if (row.allocations) {
+                const hasExcess = row.allocations.some(alloc => 
+                    (alloc.woNumber && alloc.woNumber.includes('EXCESS')) || 
+                    (!alloc.soNumber && alloc.woAvailable > 0)
+                );
+                return hasExcess;
+            }
+            
+            return false;
+        });
+
+        this.rowData = filteredData;
+        
+        if (this.gridApi) {
+            this.gridApi.setGridOption('rowData', this.rowData);
+        }
+    }
+
+    // Inventory-Aware Allocation Methods
+    
+    /**
+     * Analyze urgency and timing with inventory consideration
+     */
+    private analyzeUrgencyAndTimingWithInventory(salesOrders: any[], workOrders: any[], onHandQuantity: number) {
+        const baseAnalysis = this.analyzeUrgencyAndTiming(salesOrders, workOrders);
+        
+        // Adjust urgency based on inventory coverage
+        const urgentOrders = baseAnalysis.urgentOrders;
+        const urgentQuantity = baseAnalysis.urgentQuantity;
+        
+        // If inventory can cover urgent demand, reduce urgency
+        const urgentCoveredByInventory = Math.min(urgentQuantity, onHandQuantity);
+        const adjustedUrgentQuantity = Math.max(0, urgentQuantity - urgentCoveredByInventory);
+        
+        return {
+            ...baseAnalysis,
+            urgentQuantity: adjustedUrgentQuantity,
+            originalUrgentQuantity: urgentQuantity,
+            urgentCoveredByInventory,
+            inventoryAvailable: onHandQuantity
+        };
+    }
+
+    /**
+     * Perform FIFO allocation considering inventory first
+     */
+    private performInventoryAwareFIFOAllocation(workOrders: any[], salesOrders: any[], onHandQuantity: number) {
+        // Track remaining quantities
+        let remainingInventory = onHandQuantity;
+        
+        // Sort sales orders by urgency for inventory allocation
+        const sortedSalesOrders = [...salesOrders].sort((a, b) => 
+            new Date(a.SOD_DUE_DATE).getTime() - new Date(b.SOD_DUE_DATE).getTime()
+        );
+
+        const soTracker = sortedSalesOrders.map(so => ({
+            so: so,
+            originalDemand: parseFloat(so.OPENBALANCE || '0'),
+            remainingDemand: parseFloat(so.OPENBALANCE || '0'),
+            inventoryAllocated: 0
+        }));
+
+        // Step 1: Allocate inventory to urgent orders first
+        soTracker.forEach(soItem => {
+            if (remainingInventory > 0 && soItem.remainingDemand > 0) {
+                const inventoryToAllocate = Math.min(remainingInventory, soItem.remainingDemand);
+                soItem.inventoryAllocated = inventoryToAllocate;
+                soItem.remainingDemand -= inventoryToAllocate;
+                remainingInventory -= inventoryToAllocate;
+            }
+        });
+
+        // Step 2: Perform normal FIFO allocation for remaining demand
+        const remainingDemandSOs = soTracker
+            .filter(item => item.remainingDemand > 0)
+            .map(item => ({
+                ...item.so,
+                OPENBALANCE: item.remainingDemand.toString()
+            }));
+
+        const fifoResult = this.performFIFOAllocation(workOrders, remainingDemandSOs);
+
+        // Step 3: Add inventory allocations to the result
+        const inventoryAllocations: any[] = [];
+        soTracker.forEach(soItem => {
+            if (soItem.inventoryAllocated > 0) {
+                inventoryAllocations.push({
+                    wo: { WR_NO: 'INVENTORY', WR_DUE: new Date().toISOString(), AVAILABLE_QTY: soItem.inventoryAllocated.toString() },
+                    so: soItem.so,
+                    allocatedQty: soItem.inventoryAllocated,
+                    woRemainingAfterAllocation: remainingInventory
+                });
+            }
+        });
+
+        return {
+            allocations: [...inventoryAllocations, ...fifoResult.allocations],
+            woRemaining: fifoResult.woRemaining,
+            soShortages: fifoResult.soShortages,
+            unusedInventory: remainingInventory
+        };
+    }
+
+    /**
+     * Generate inventory-aware decision summary
+     */
+    private generateInventoryAwareDecisionSummary(
+        allocationStatus: 'SHORTAGE' | 'MATCHED' | 'EXCESS',
+        effectiveShortage: number,
+        onHandQuantity: number,
+        totalDemand: number
+    ): string {
+        if (onHandQuantity >= totalDemand) {
+            return `📦 INVENTORY SUFFICIENT: ${onHandQuantity} units in stock covers all ${totalDemand} units needed`;
+        }
+
+        if (onHandQuantity > 0 && effectiveShortage > 0) {
+            return `📦 PARTIAL COVERAGE: ${onHandQuantity} units in stock, need WO for ${effectiveShortage} units`;
+        }
+
+        if (onHandQuantity === 0 && effectiveShortage > 0) {
+            return `🚨 NO INVENTORY: Need WO for ${effectiveShortage} units, no stock available`;
+        }
+
+        // Fallback to original logic
+        return this.generateFallbackDecisionSummary(allocationStatus, totalDemand - onHandQuantity);
+    }
+
+    /**
+     * Map allocation status to category considering inventory
+     */
+    private mapInventoryAwareStatusToCategory(
+        allocationStatus: 'SHORTAGE' | 'MATCHED' | 'EXCESS',
+        urgencyAnalysis: any,
+        onHandQuantity: number,
+        totalDemand: number
+    ): 'STOCK_SUFFICIENT' | 'URGENT_COVERED' | 'URGENT_SHORTAGE' | 'FUTURE_ONLY' | 'NO_DEMAND' | 'MANUAL_REVIEW' {
+        
+        if (totalDemand === 0) {
+            return 'NO_DEMAND';
+        }
+
+        // If inventory covers all demand
+        if (onHandQuantity >= totalDemand) {
+            return 'STOCK_SUFFICIENT';
+        }
+
+        // If inventory covers urgent demand
+        if (onHandQuantity >= urgencyAnalysis.urgentQuantity) {
+            return urgencyAnalysis.urgentQuantity > 0 ? 'URGENT_COVERED' : 'STOCK_SUFFICIENT';
+        }
+
+        // If there's urgent demand not covered by inventory
+        if (urgencyAnalysis.urgentQuantity > onHandQuantity) {
+            return 'URGENT_SHORTAGE';
+        }
+
+        // Default to normal mapping
+        return this.mapStatusToCategory(allocationStatus, urgencyAnalysis);
+    }
+
+    /**
+     * Generate inventory-aware action recommendations
+     */
+    private generateInventoryAwareActions(
+        allocationStatus: 'SHORTAGE' | 'MATCHED' | 'EXCESS',
+        urgencyAnalysis: any,
+        onHandQuantity: number,
+        totalDemand: number
+    ): { primary: string; secondary?: string; urgent?: boolean } {
+        
+        if (onHandQuantity >= totalDemand) {
+            return {
+                primary: 'Use available inventory',
+                secondary: 'Consider delaying work orders'
+            };
+        }
+
+        const shortfall = totalDemand - onHandQuantity;
+        const urgentShortfall = Math.max(0, urgencyAnalysis.urgentQuantity - onHandQuantity);
+
+        if (urgentShortfall > 0) {
+            return {
+                primary: `Create urgent WO for ${urgentShortfall} units`,
+                secondary: `Use ${onHandQuantity} units from inventory`,
+                urgent: true
+            };
+        }
+
+        if (shortfall > 0) {
+            return {
+                primary: `Create WO for ${shortfall} units`,
+                secondary: `Use ${onHandQuantity} units from inventory`
+            };
+        }
+
+        return this.generateFallbackActions(allocationStatus, urgencyAnalysis);
     }
 }
