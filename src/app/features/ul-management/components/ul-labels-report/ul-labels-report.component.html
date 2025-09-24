@@ -19,11 +19,11 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-primary" (click)="refreshData()" title="Refresh data">
-              <i class="mdi mdi-refresh me-2"></i>Refresh
-            </button>
-            <button type="button" class="btn btn-outline-success" (click)="exportData()" title="Export to Excel">
-              <i class="mdi mdi-download me-2"></i>Export
+            <!-- <button type="button" class="btn btn-outline-secondary" (click)="goBack()" title="Go back">
+              <i class="mdi mdi-arrow-left me-2"></i>Back
+            </button> -->
+            <button type="button" class="btn btn-outline-info" (click)="goToUsageReport()" title="View UL usage report">
+              <i class="mdi mdi-chart-line me-2"></i>Usage Report
             </button>
             <button type="button" class="btn btn-outline-primary" (click)="goToUpload()" title="Upload UL label ranges">
               <i class="mdi mdi-upload me-2"></i>Upload Labels
@@ -51,13 +51,11 @@
       <div class="card shadow-sm border-0">
         <div class="card-header">
           <div class="d-flex align-items-center">
-            <div class="form-icon me-3">
-              <input type="search" class="form-control form-control-icon" style="width:300px"
-                (ngModelChange)="setFilter($event);" [(ngModel)]="query" placeholder="Search UL labels...">
-              <i class="mdi mdi-magnify"></i>
-            </div>
             <button class="btn btn-outline-secondary me-3" (click)="getData()" title="Refresh data">
               <i class="mdi mdi-refresh me-1"></i>Refresh
+            </button>
+            <button class="btn btn-outline-warning me-3" (click)="clearAllFilters()" title="Clear all filters">
+              <i class="mdi mdi-filter-remove me-1"></i>Clear Filters
             </button>
             <div class="ms-auto d-flex align-items-center">
               <div class="me-4">
@@ -80,8 +78,8 @@
         </div>
 
         <div class="card-footer bg-light text-muted d-flex align-items-center">
-          <i class="mdi mdi-primaryrmation me-2"></i>
-          <span>Click "Edit" to modify UL label details or "View" to see full certification information</span>
+          <i class="mdi mdi-information me-2"></i>
+          <span>Use row actions to edit, disable, or delete unused UL labels. Used labels can only be viewed for reference.</span>
           <div class="ms-auto">
             <small>Total: {{data().length}} UL labels</small>
           </div>

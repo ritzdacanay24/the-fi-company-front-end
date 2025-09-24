@@ -57,13 +57,73 @@
 
 // AG Grid styling
 .ag-theme-quartz {
-  --ag-border-color: rgba(var(--bs-primary-rgb), 0.1);
+  // --ag-border-color: rgba(var(--bs-primary-rgb), 0.1);
   
-  .ag-header {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
-  }
+  // .ag-header {
+  //   background-color: rgba(var(--bs-primary-rgb), 0.05);
+  // }
   
-  .ag-root-wrapper {
-    border: none;
-  }
+  // .ag-root-wrapper {
+  //   border: none;
+  // }
+  
+  // Ensure action buttons are vertically centered
+  // .ag-cell {
+  //   display: flex;
+  //   align-items: center;
+    
+  //   &[col-id="actions"] {
+  //     padding: 4px 8px;
+  //     justify-content: center;
+      
+  //     .d-flex {
+  //       width: 100%;
+  //       height: 100%;
+  //       align-items: center;
+  //       justify-content: flex-start;
+  //       gap: 4px;
+  //       min-height: 32px;
+  //     }
+      
+  //     button {
+  //       white-space: nowrap;
+  //       margin: 0 2px;
+  //     }
+  //   }
+  // }
+  
+  // Ensure consistent row height for action buttons
+  // .ag-row {
+  //   min-height: 40px;
+  // }
 }
+
+// Row styling based on allocation status
+// ::ng-deep .ag-theme-quartz {
+//   .row-shortage {
+//     background-color: #ffebee !important;  // Light red background
+//     border-left: 4px solid #f44336 !important;  // Red left border
+    
+//     &:hover {
+//       background-color: #ffcdd2 !important;
+//     }
+//   }
+  
+//   .row-matched {
+//     background-color: #e8f5e8 !important;  // Light green background  
+//     border-left: 4px solid #4caf50 !important;  // Green left border
+    
+//     &:hover {
+//       background-color: #c8e6c9 !important;
+//     }
+//   }
+  
+//   .row-excess {
+//     background-color: #e3f2fd !important;  // Light blue background
+//     border-left: 4px solid #2196f3 !important;  // Blue left border
+    
+//     &:hover {
+//       background-color: #bbdefb !important;
+//     }
+//   }
+// }

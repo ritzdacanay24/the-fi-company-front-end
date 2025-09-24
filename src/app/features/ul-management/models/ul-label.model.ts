@@ -25,6 +25,14 @@ export interface ULLabelUsage {
   user_name: string;
   customer_name: string;
   notes?: string;
+  // Work Order Information
+  wo_nbr?: number;
+  wo_due_date?: string;
+  wo_part?: string;
+  wo_qty_ord?: number;
+  wo_routing?: string;
+  wo_line?: string;
+  wo_description?: string;
   created_at?: string;
   updated_at?: string;
   created_by?: number;
@@ -49,4 +57,12 @@ export interface ULUsageReport {
   user_name: string;
   customer_name: string;
   notes: string;
+  // Work Order Information
+  wo_nbr?: number;
+  wo_due_date?: string;
+  wo_part?: string;
+  wo_qty_ord?: number;
+  wo_routing?: string;
+  wo_line?: string;
+  wo_description?: string;
 }

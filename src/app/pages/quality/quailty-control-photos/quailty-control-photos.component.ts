@@ -19,7 +19,12 @@ export class QuailtyControlPhotosComponent implements OnInit {
   // Updated to use dynamic data instead of hardcoded
   checklistTemplates: ChecklistTemplate[] = [];
   openChecklists: ChecklistInstance[] = [];
+  filteredChecklists: ChecklistInstance[] = [];
   loading: boolean;
+
+  // Filter properties
+  selectedStatus: string = '';
+  selectedTemplate: string = '';
 
   constructor(
     private photosService: PhotosService,
@@ -83,7 +88,78 @@ export class QuailtyControlPhotosComponent implements OnInit {
       this.openChecklists = data.filter(instance => 
         instance.status === 'in_progress' || instance.status === 'draft'
       );
+      this.applyFilters(); // Apply filters after loading data
     }, () => this.loading = false);
+  }
+
+  // Alias method for consistency with template
+  loadOpenChecklists() {
+    this.getOpenChecklists();
+  }
+
+  // Filter methods
+  filterChecklists() {
+    this.applyFilters();
+  }
+
+  private applyFilters() {
+    this.filteredChecklists = this.openChecklists.filter(checklist => {
+      let matches = true;
+
+      // Filter by work order number
+      if (this.woNumber && this.woNumber.trim()) {
+        matches = matches && checklist.work_order_number?.toLowerCase().includes(this.woNumber.toLowerCase());
+      }
+
+      // Filter by serial number
+      if (this.serialNumber && this.serialNumber.trim()) {
+        matches = matches && checklist.serial_number?.toLowerCase().includes(this.serialNumber.toLowerCase());
+      }
+
+      // Filter by status
+      if (this.selectedStatus) {
+        matches = matches && checklist.status === this.selectedStatus;
+      }
+
+      // Filter by template
+      if (this.selectedTemplate) {
+        matches = matches && checklist.template_id?.toString() === this.selectedTemplate;
+      }
+
+      return matches;
+    });
+  }
+
+  // Check if any filters are active
+  hasActiveFilters(): boolean {
+    return !!(this.woNumber || this.serialNumber || this.selectedStatus || this.selectedTemplate);
+  }
+
+  // Clear individual filters
+  clearWorkOrderFilter() {
+    this.woNumber = '';
+    this.applyFilters();
+  }
+
+  clearSerialFilter() {
+    this.serialNumber = '';
+    this.applyFilters();
+  }
+
+  clearStatusFilter() {
+    this.selectedStatus = '';
+    this.applyFilters();
+  }
+
+  clearTemplateFilter() {
+    this.selectedTemplate = '';
+    this.applyFilters();
+  }
+
+  // Get template name by ID
+  getTemplateName(templateId: string): string {
+    const template = this.checklistTemplates.find(t => t.id?.toString() === templateId);
+    return template?.name || 'Unknown Template';
   }
 
   results = [];
@@ -108,7 +184,8 @@ export class QuailtyControlPhotosComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.getOpenChecklists()
+    this.getOpenChecklists();
+    this.filteredChecklists = [...this.openChecklists]; // Initialize filtered list
   }
 
 }

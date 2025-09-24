@@ -4,7 +4,10 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Router } from '@angular/router';
 import { Subscription, timer } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
+import { ULLabelService } from '@app/features/ul-management/services/ul-label.service';
+import { ULLabelUsage } from '@app/features/ul-management/models/ul-label.model';
 
 export interface ULLabel {
   id: number;
@@ -73,9 +76,17 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   assignedULNumbers: string[] = []; // Automatically assigned UL numbers
   bulkTransactions: BulkTransaction[] = []; // For bulk mode form data
 
+  // Manual UL selection properties
+  selectionMethod: 'automatic' | 'manual' = 'automatic'; // Default to automatic
+  manuallySelectedULs: string[] = []; // Manually selected UL numbers
+  selectedManualUL: string = ''; // Currently selected UL in dropdown
+
   // Bulk helper properties
   bulkCustomer: string = '';
   bulkDescription: string = '';
+
+  // Work order data storage
+  selectedWorkOrderData: any = null; // Complete work order object
 
   // Bulk transaction mode (now automatic based on quantity)
   get isBulkMode(): boolean {
@@ -121,15 +132,22 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   constructor(
     private fb: FormBuilder,
     private authService: AuthenticationService,
-    private router: Router
+    private router: Router,
+    private ulLabelService: ULLabelService
   ) {
     this.initializeForm();
     this.setupActivityListeners();
   }
 
   ngOnInit() {
+    this.initializeForm();
     this.checkAuthenticationStatus();
-    this.loadAvailableULs();
+    
+    // Only load UL data if user is already authenticated
+    if (this.isAuthenticated) {
+      this.loadAvailableULs();
+    }
+    
     // Initialize browser tab title
     this.resetBrowserTabTitle();
   }
@@ -338,41 +356,85 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     }
   }
 
-  private loadAvailableULs() {
-    // Mock data representing UL number progression - replace with actual service call
-    const allULs: ULLabel[] = [];
+  private async loadAvailableULs() {
+    // Only load UL data if user is authenticated
+    if (!this.isAuthenticated) {
+      console.warn('Cannot load UL data: User is not authenticated');
+      return;
+    }
 
-    // Generate a range of UL numbers to simulate real data
-    const baseNumbers = [
-      { base: 73908490, prefix: '', category: 'New', description: 'New condition UL labels' },
-      { base: 73908510, prefix: '', category: 'Used', description: 'Used condition UL labels' },
-      { base: 75100000, prefix: 'ATM', category: 'New', description: 'New ATM machine labels' },
-      { base: 75100020, prefix: 'ATM', category: 'Used', description: 'Used ATM machine labels' }
-    ];
+    // Check if we have a valid authentication token
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser || !currentUser.access_token) {
+      console.error('Cannot load UL data: No valid authentication token found');
+      this.loginError = 'Session expired. Please login again.';
+      this.isAuthenticated = false;
+      return;
+    }
 
-    let currentULIndex = 5; // Simulate we're currently on the 6th UL number
+    try {
+      // Load available UL numbers and usage records in parallel
+      const [ulResponse, usageResponse] = await Promise.all([
+        this.ulLabelService.getAvailableULNumbers().toPromise(),
+        this.ulLabelService.getAllULLabelUsages().toPromise()
+      ]);
 
-    baseNumbers.forEach(({ base, prefix, category, description }) => {
-      for (let i = 0; i < 20; i++) {
-        const ulNumber = prefix ? `${prefix}${base + i}` : `${base + i}`;
-        const status = i < currentULIndex ? 'used' : 'available';
+      if (ulResponse && ulResponse.success) {
+        this.availableULs = ulResponse.data.map((ul: any) => ({
+          id: ul.id,
+          ul_number: ul.ul_number,
+          prefix: this.extractPrefix(ul.ul_number),
+          numeric_part: this.extractNumericPart(ul.ul_number),
+          description: ul.description || '',
+          category: ul.category || '',
+          status: ul.is_used ? 'used' : 'available',
+          dateCreated: new Date(ul.created_at),
+          dateUsed: ul.last_used_date ? new Date(ul.last_used_date) : undefined
+        }));
 
-        allULs.push({
-          id: allULs.length + 1,
-          ul_number: ulNumber,
-          prefix: prefix,
-          numeric_part: base + i,
-          description: description,
-          category: category,
-          status: status,
-          dateCreated: new Date(),
-          dateUsed: i < currentULIndex ? new Date(Date.now() - (currentULIndex - i) * 24 * 60 * 60 * 1000) : undefined
-        });
+        // Update UL status based on usage records
+        if (usageResponse && usageResponse.success && usageResponse.data) {
+          const usageRecords = usageResponse.data;
+          const usedULNumbers = new Set(usageRecords.map((usage: any) => usage.ul_number));
+
+          // Mark ULs as used if they have usage records
+          this.availableULs = this.availableULs.map(ul => {
+            if (usedULNumbers.has(ul.ul_number)) {
+              return {
+                ...ul,
+                status: 'used' as const,
+                dateUsed: new Date() // You could get actual usage date from records if needed
+              };
+            }
+            return ul;
+          });
+        }
+      } else {
+        console.error('Failed to load UL numbers:', ulResponse?.message);
+        this.availableULs = [];
       }
-    });
+    } catch (error) {
+      console.error('Error loading UL numbers:', error);
+      
+      // Handle specific authentication errors
+      if (error && (error as any).status === 900) {
+        console.error('Authentication error (900): Invalid or missing JWT token');
+        this.loginError = 'Session expired or invalid. Please login again.';
+        this.isAuthenticated = false;
+        this.currentUser = null;
+      } else if (error && (error as any).status === 401) {
+        console.error('Authentication error (401): Unauthorized');
+        this.loginError = 'Authentication failed. Please login again.';
+        this.isAuthenticated = false;
+        this.currentUser = null;
+      } else {
+        console.error('General error loading UL data:', error);
+      }
+      
+      this.availableULs = [];
+    }
 
-    this.availableULs = allULs;
-    this.organizeULsByRange(allULs);
+    this.organizeULsByRange(this.availableULs);
   }
 
   private filterULsByCategory(category: string) {
@@ -387,47 +449,43 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.organizeULsByRange(this.filteredULs);
   }
 
+  // Helper methods to extract prefix and numeric parts from UL numbers
+  private extractPrefix(ulNumber: string): string {
+    const match = ulNumber.match(/^([A-Za-z]+)/);
+    return match ? match[1] : '';
+  }
+
+  private extractNumericPart(ulNumber: string): number {
+    const match = ulNumber.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
   private organizeULsByRange(allULs: ULLabel[]) {
     // Sort by numeric part to ensure proper order
     const sortedULs = allULs.sort((a, b) => a.numeric_part - b.numeric_part);
 
-    // Group by category/prefix for better organization
-    const groupedULs = sortedULs.reduce((groups, ul) => {
-      const key = ul.prefix || 'default';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(ul);
-      return groups;
-    }, {} as { [key: string]: ULLabel[] });
-
-    // For each group, find the current position and organize ranges
-    Object.keys(groupedULs).forEach(key => {
-      const uls = groupedULs[key];
-      // Find last used index using reverse iteration
-      let lastUsedIndex = -1;
-      for (let i = uls.length - 1; i >= 0; i--) {
-        if (uls[i].status === 'used') {
-          lastUsedIndex = i;
-          break;
-        }
+    // Find last used index using reverse iteration
+    let lastUsedIndex = -1;
+    for (let i = sortedULs.length - 1; i >= 0; i--) {
+      if (sortedULs[i].status === 'used') {
+        lastUsedIndex = i;
+        break;
       }
-      const currentIndex = lastUsedIndex + 1;
+    }
 
-      // Last 5 used ULs
-      const lastUsed = lastUsedIndex >= 0 ? uls.slice(Math.max(0, lastUsedIndex - 4), lastUsedIndex + 1) : [];
+    // Current index is one after the last used
+    const currentIndex = lastUsedIndex + 1;
 
-      // Current UL (next to be used)
-      const current = uls[currentIndex] || null;
+    // Last 5 used ULs
+    this.lastUsedULs = lastUsedIndex >= 0 ? 
+      sortedULs.slice(Math.max(0, lastUsedIndex - 4), lastUsedIndex + 1) : [];
 
-      // Next 10 available ULs
-      const next = uls.slice(currentIndex + 1, currentIndex + 11);
+    // Current UL (next to be used) - should be first available after used ones
+    this.currentUL = sortedULs.find(ul => ul.status === 'available') || null;
 
-      // Combine for this category
-      if (key === Object.keys(groupedULs)[0]) { // Use first category as primary
-        this.lastUsedULs = lastUsed;
-        this.currentUL = current;
-        this.nextULs = next;
-      }
-    });
+    // Next 10 available ULs (excluding the current one)
+    const availableULs = sortedULs.filter(ul => ul.status === 'available');
+    this.nextULs = availableULs.slice(1, 11); // Skip first (current) and take next 10
   }
 
   // Load mock UL data - In real implementation, this would call an API
@@ -441,17 +499,21 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     const category = this.usageForm.get('category')?.value;
     let usageRecords: Partial<ULUsage>[] = [];
 
-    if (this.assignedULNumbers.length === 1) {
+    // Use appropriate UL numbers based on selection method
+    const ulNumbers = this.selectionMethod === 'automatic' ? this.assignedULNumbers : this.manuallySelectedULs;
+
+    if (ulNumbers.length === 1) {
       // Single transaction
       const formData = this.usageForm.value;
       usageRecords = [{
-        ul_number: this.assignedULNumbers[0],
+        ul_number: ulNumbers[0],
         serial_number: formData.serial_number,
         quantity: formData.quantity,
         work_order: formData.work_order,
         work_order_part: formData.work_order_part,
         work_order_description: formData.work_order_description,
         category: category,
+        customer: formData.customer || '', // Add customer field
         date_used: new Date(),
         user_signature: this.currentUser?.full_name || this.currentUser?.username
       }];
@@ -468,6 +530,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         work_order_part: workOrderPart,
         work_order_description: workOrderDescription,
         category: category,
+        customer: '', // Add customer field for bulk transactions
         date_used: new Date(),
         user_signature: this.currentUser?.full_name || this.currentUser?.username
       }));
@@ -484,11 +547,51 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.isSubmitting = true;
 
     try {
-      // TODO: Call actual API service to submit usage
-      console.log('Submitting UL usage:', this.pendingSubmissionData);
+      // Submit UL usage records to the real API service
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Submit each usage record to the API
+      const submissionPromises = this.pendingSubmissionData.map(record => {
+        // Find the UL label ID from available ULs
+        const ulLabel = this.availableULs.find(ul => ul.ul_number === record.ul_number);
+        
+        // Get work order information from stored data
+        const workOrderData = this.selectedWorkOrderData;
+        
+        // Map component data to API-expected format
+        const apiUsageRecord: Partial<ULLabelUsage> = {
+          ul_number: record.ul_number!,
+          ul_label_id: ulLabel?.id || 0,
+          eyefi_serial_number: record.serial_number!,
+          quantity_used: record.quantity!,
+          date_used: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
+          user_signature: record.user_signature!,
+          user_name: this.currentUser?.full_name || this.currentUser?.username || '',
+          customer_name: record.customer || '',
+          // Work Order Information (direct fields)
+          wo_nbr: workOrderData?.wo_nbr || null,
+          wo_due_date: workOrderData?.wo_due_date || null,
+          wo_part: workOrderData?.wo_part || null,
+          wo_qty_ord: workOrderData?.wo_qty_ord || null,
+          wo_routing: workOrderData?.wo_routing || null,
+          wo_line: workOrderData?.wo_line || null,
+          wo_description: workOrderData?.description || null,
+          // Also store as JSON in notes for backwards compatibility (optional)
+          notes: workOrderData ? JSON.stringify({
+            work_order: workOrderData,
+            recorded_at: new Date().toISOString()
+          }) : ''
+        };
+        
+        return this.ulLabelService.recordULLabelUsage(apiUsageRecord as ULLabelUsage).toPromise();
+      });
+
+      const results = await Promise.all(submissionPromises);
+      
+      // Check if all submissions were successful
+      const failedSubmissions = results.filter(result => !result?.success);
+      if (failedSubmissions.length > 0) {
+        throw new Error(`Failed to submit ${failedSubmissions.length} UL usage records`);
+      }
 
       // Show success message and track submitted ULs
       this.lastSubmittedULs = [...this.assignedULNumbers]; // Store for display
@@ -503,6 +606,9 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
       this.bulkTransactions = [];
       this.pendingSubmissionData = [];
       this.initializeForm();
+
+      // Reload UL data to reflect usage changes
+      await this.loadAvailableULs();
 
       // Reload UL data to reflect usage
       this.loadAvailableULs();
@@ -579,6 +685,8 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.showSuccessMessage = false;
     this.lastSubmittedULs = [];
     // Form is already reset, just need to hide success message
+    // Refresh UL data to ensure latest usage status
+    this.loadAvailableULs();
   }
 
   cancelAutoLogout() {
@@ -588,20 +696,39 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
   // Helper methods
   isFormValid(): boolean {
-    if (!this.isAuthenticated || this.assignedULNumbers.length === 0) {
+    if (!this.isAuthenticated) {
       return false;
     }
 
-    // For single transactions, check the reactive form
-    if (this.assignedULNumbers.length === 1) {
-      return this.usageForm.valid;
-    }
+    // Check based on selection method
+    if (this.selectionMethod === 'automatic') {
+      // For automatic selection, check if we have assigned UL numbers
+      if (this.assignedULNumbers.length === 0) {
+        return false;
+      }
 
-    // For bulk transactions, check each bulk transaction
-    return this.bulkTransactions.every(transaction =>
-      transaction.serial_number.trim() !== '' &&
-      transaction.quantity > 0
-    );
+      // For single transactions, check the reactive form
+      if (this.assignedULNumbers.length === 1) {
+        return this.usageForm.valid;
+      }
+
+      // For bulk transactions, check each bulk transaction
+      return this.bulkTransactions.every(transaction =>
+        transaction.serial_number.trim() !== '' &&
+        transaction.quantity > 0
+      );
+    } else {
+      // For manual selection, check if we have manually selected ULs
+      if (this.manuallySelectedULs.length === 0) {
+        return false;
+      }
+
+      // Check bulk transactions for manual selection
+      return this.bulkTransactions.every(transaction =>
+        transaction.serial_number.trim() !== '' &&
+        transaction.quantity > 0
+      );
+    }
   }
 
   getAvailableULOptions(): ULLabel[] {
@@ -611,8 +738,70 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // New method to handle quantity change
   onQuantityChange(event: any) {
     const quantity = parseInt(event.target.value);
-    if (quantity && this.usageForm.get('category')?.value) {
+    if (quantity && this.usageForm.get('category')?.value && this.selectionMethod === 'automatic') {
       this.assignNextAvailableULs(quantity);
+    }
+  }
+
+  // Handle selection method change
+  onSelectionMethodChange() {
+    // Clear any existing selections when switching methods
+    this.assignedULNumbers = [];
+    this.manuallySelectedULs = [];
+    this.bulkTransactions = [];
+    this.selectedManualUL = '';
+    
+    // Reset form quantity if switching away from automatic
+    if (this.selectionMethod === 'manual') {
+      this.usageForm.patchValue({ ul_quantity: '' });
+    }
+  }
+
+  // Get available UL options for manual selection dropdown
+  getAvailableULOptionsForManualSelection(): ULLabel[] {
+    // Use filtered ULs if available, otherwise use all available ULs
+    const ulsToFilter = this.filteredULs.length > 0 ? this.filteredULs : this.availableULs;
+    const availableULs = ulsToFilter.filter(ul => ul.status === 'available');
+    
+    return availableULs;
+  }
+
+  // Add manually selected UL
+  addManualUL() {
+    if (this.selectedManualUL && !this.manuallySelectedULs.includes(this.selectedManualUL)) {
+      this.manuallySelectedULs.push(this.selectedManualUL);
+      
+      // Update bulk transactions for manual selection
+      this.bulkTransactions = this.manuallySelectedULs.map(ulNumber => ({
+        ul_number: ulNumber,
+        serial_number: '',
+        quantity: 1,
+        work_order: ''
+      }));
+      
+      // Clear the selection dropdown
+      this.selectedManualUL = '';
+      
+      // Refresh UL ranges
+      this.organizeULsByRange(this.filteredULs.length > 0 ? this.filteredULs : this.availableULs);
+    }
+  }
+
+  // Remove manually selected UL
+  removeManualUL(index: number) {
+    if (index >= 0 && index < this.manuallySelectedULs.length) {
+      this.manuallySelectedULs.splice(index, 1);
+      
+      // Update bulk transactions
+      this.bulkTransactions = this.manuallySelectedULs.map(ulNumber => ({
+        ul_number: ulNumber,
+        serial_number: '',
+        quantity: 1,
+        work_order: ''
+      }));
+      
+      // Refresh UL ranges
+      this.organizeULsByRange(this.filteredULs.length > 0 ? this.filteredULs : this.availableULs);
     }
   }
 
@@ -642,6 +831,9 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     } else {
       this.bulkTransactions = [];
     }
+
+    // Refresh the UL ranges to account for assigned ULs
+    this.organizeULsByRange(this.filteredULs.length > 0 ? this.filteredULs : this.availableULs);
   }
 
   // Bulk helper methods
@@ -676,8 +868,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
       });
 
       if (applied) {
-        // Optional: Show success feedback
-        console.log('Bulk fields applied to all forms');
+        // Bulk fields applied successfully
       }
     }
   }
@@ -748,14 +939,33 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         this.isLoggingIn = false;
 
         if (result && result.access_token && result.access_token !== false) {
-          this.isAuthenticated = true;
-          this.currentUser = result.user || {
-            username: this.loginMethod === 'username' ? formData.username : result.user?.username,
-            card_number: this.loginMethod === 'cardNumber' ? formData.cardNumber : result.user?.card_number
+          // Store authentication data properly like the main login
+          localStorage.setItem("token", result.access_token);
+          
+          // Create user object with token property for JWT interceptor
+          const userWithToken = {
+            ...result.user,
+            token: result.access_token,
+            access_token: result.access_token // Keep for compatibility
           };
+          
+          // Store user data in localStorage using the same key as main login
+          localStorage.setItem(
+            THE_FI_COMPANY_CURRENT_USER,
+            JSON.stringify(userWithToken)
+          );
+
+          // Update component state
+          this.isAuthenticated = true;
+          this.currentUser = userWithToken;
+          
           this.startSessionTimer();
           this.updateLastActivity(); // Start inactivity tracking
           this.prefillUserData();
+          
+          // Load UL data now that user is authenticated
+          this.loadAvailableULs();
+          
           // Authentication successful - form will now show
         } else {
           // Handle failed authentication
@@ -832,13 +1042,19 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // Handle work order selection from QAD search
   onWorkOrderSelected(workOrder: any): void {
     if (workOrder) {
+      // Store complete work order data
+      this.selectedWorkOrderData = workOrder;
+      
+      // Update form with basic work order info
       this.usageForm.patchValue({
         work_order: workOrder.wo_nbr,
         work_order_part: workOrder.wo_part || '',
         work_order_description: workOrder.description || ''
       });
-      console.log('Work Order Selected:', workOrder);
     } else {
+      // Clear work order data
+      this.selectedWorkOrderData = null;
+      
       this.usageForm.patchValue({
         work_order: '',
         work_order_part: '',

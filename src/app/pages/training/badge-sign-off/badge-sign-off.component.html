@@ -171,7 +171,7 @@
                   </span>
                   <input #badgeInput type="password" class="form-control" [(ngModel)]="badgeNumber"
                     (keyup.enter)="onBadgeScanned()" placeholder="Scan or enter badge number" [disabled]="isLoading"
-                    autocomplete="off" style="font-size: 1.1rem;">
+                    autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" style="font-size: 1.1rem;">
                   <button class="btn btn-success btn-lg px-4" type="button" (click)="onBadgeScanned()"
                     [disabled]="isLoading || !badgeNumber.trim()">
                     <i class="mdi mdi-check me-2" *ngIf="!isLoading"></i>

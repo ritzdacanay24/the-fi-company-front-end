@@ -53,7 +53,7 @@
     <div *ngIf="!displayData.hasError" class="priority-content" [class.loading]="displayData.isLoading">
 
       <!-- No Priority Orders -->
-      <div *ngIf="!displayData.currentPriorityOrder && displayData.topThreePriorityOrders.length === 0"
+      <div *ngIf="!displayData.isLoading && !displayData.currentPriorityOrder && displayData.topThreePriorityOrders.length === 0"
         class="no-priorities">
         <div class="text-center">
           <i class="mdi mdi-clipboard-check display-1 text-success"></i>
@@ -65,120 +65,195 @@
         </div>
       </div>
 
-      <!-- Single Priority Display Mode -->
+      <!-- Single Priority Display Mode with Sidebar Queue -->
       <div *ngIf="displayMode === 'single' && displayData.currentPriorityOrder" class="current-priority-section">
-        <div class="row justify-content-center">
-          <div class="col-lg-8 col-xl-6">
-            <div class="current-priority-card">
-              <div class="card-header">
+        <div class="row g-4">
+          
+          <!-- Main Current Priority (Left Column) -->
+          <div class="col-lg-8">
+            <div class="current-priority-card border shadow-sm bg-white">
+              
+              <!-- Clean Professional Header -->
+              <div class="card-header bg-primary text-white py-3 border-0">
                 <div class="d-flex align-items-center justify-content-between">
-                  <div>
-                    <h3 class="fw-bold mb-1">
-                      <i class="mdi mdi-star text-warning me-2"></i>
-                      NOW PROCESSING
-                    </h3>
-                    <p class="mb-0 text-muted">Priority #{{ displayData.currentPriorityOrder.shipping_priority }}</p>
+                  <div class="d-flex align-items-center">
+                    <div class="me-3">
+                      <i class="mdi mdi-truck-fast fs-1"></i>
+                    </div>
+                    <div>
+                      <h3 class="mb-1 fw-bold text-white">NOW PROCESSING</h3>
+                      <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-light text-primary px-3 py-1 fw-bold">
+                          PRIORITY #{{ displayData.currentPriorityOrder.shipping_priority }}
+                        </span>
+                        <small class="text-light opacity-75">
+                          {{ formatDate(displayData.lastUpdated) }} • {{ currentTime }}
+                        </small>
+                      </div>
+                    </div>
                   </div>
-                  <div class="priority-badge">
-                    <span [class]="getPriorityBadgeClass(displayData.currentPriorityOrder.shipping_priority)">
-                      Priority {{ displayData.currentPriorityOrder.shipping_priority }}
+                  <div>
+                    <span class="badge px-3 py-2" 
+                         [class]="displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'bg-warning text-dark' : 'bg-success text-white'">
+                      <i class="mdi me-1" [class]="displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'mdi-clock' : 'mdi-check-circle'"></i>
+                      {{ displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'IN PROGRESS' : 'COMPLETED' }}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div class="card-body">
-                <!-- Missing Data Warning -->
-                <div class="alert alert-warning mb-3 d-flex align-items-center justify-content-between"
-                  *ngIf="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA'">
-                  <div>
+              <!-- Warning Alert (if needed) -->
+              <div class="alert alert-warning border-0 rounded-0 mb-0" 
+                   *ngIf="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA'">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center">
                     <i class="mdi mdi-alert-triangle me-2"></i>
-                    <strong>Data Sync Issue:</strong> This priority order exists but shipping data is not available.
-                    Please check data synchronization.
+                    <div>
+                      <strong>DATA SYNCHRONIZATION ISSUE</strong>
+                      <small class="d-block text-muted">Priority order exists but shipping data is unavailable</small>
+                    </div>
                   </div>
-                  <button class="btn btn-sm btn-outline-warning" (click)="refreshData()">
-                    <i class="mdi mdi-refresh me-1"></i>
-                    Retry
+                  <button class="btn btn-outline-warning btn-sm" (click)="refreshData()">
+                    <i class="mdi mdi-refresh me-1"></i>RETRY
                   </button>
                 </div>
+              </div>
 
-                <!-- Essential Info Only -->
-                <div class="text-center">
-                  <h2 class="order-number mb-4">{{ displayData.currentPriorityOrder.SOD_NBR }}-{{ displayData.currentPriorityOrder.SOD_LINE }}</h2>
-                  
-                  <!-- Main Info Row -->
-                  <div class="row g-4 mb-4">
-                    <div class="col-lg-6">
-                      <div class="essential-detail">
-                        <h5 class="text-primary mb-2">Part Number</h5>
-                        <p class="fw-bold fs-4 mb-1"
-                          [class]="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'text-danger' : ''"
-                          [title]="displayData.currentPriorityOrder.SOD_PART">
-                          {{ displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'Data Missing' : displayData.currentPriorityOrder.SOD_PART }}
-                        </p>
-                        <p class="text-muted mb-0"
-                          [title]="getPartDescription(displayData.currentPriorityOrder)">
-                          {{ truncateText(getPartDescription(displayData.currentPriorityOrder), 50) }}
-                        </p>
-                      </div>
-                    </div>
-                    <div class="col-lg-6">
-                      <div class="essential-detail">
-                        <h5 class="text-warning mb-2">Quantity to Ship</h5>
-                        <p class="fw-bold display-4 mb-0 text-warning">
-                          {{ formatQuantity(displayData.currentPriorityOrder.QTYOPEN || displayData.currentPriorityOrder.SOD_QTY_ORD || displayData.currentPriorityOrder.SOD_QTY_TO_SHIP) }}
-                        </p>
-                      </div>
-                    </div>
+              <!-- Main Content -->
+              <div class="card-body p-4">
+                
+                <!-- Order Number & Quantity -->
+                <div class="row align-items-center mb-4 pb-3 border-bottom">
+                  <div class="col-md-7">
+                    <div class="small text-muted text-uppercase fw-bold mb-1">Sales Order Number</div>
+                    <h1 class="display-6 fw-bold text-primary mb-0 font-monospace">
+                      {{ displayData.currentPriorityOrder.SOD_NBR }}-{{ displayData.currentPriorityOrder.SOD_LINE }}
+                    </h1>
                   </div>
+                  <div class="col-md-5 text-center">
+                    <div class="small text-muted text-uppercase fw-bold mb-1">Quantity to Ship</div>
+                    <div class="display-5 fw-bold text-warning">
+                      {{ formatQuantity(displayData.currentPriorityOrder.QTYOPEN || displayData.currentPriorityOrder.SOD_QTY_ORD || displayData.currentPriorityOrder.SOD_QTY_TO_SHIP) }}
+                    </div>
+                    <div class="small text-muted fw-bold">UNITS</div>
+                  </div>
+                </div>
 
-                  <!-- Secondary Info Row -->
-                  <div class="row g-3">
-                    <div class="col-md-4">
-                      <div class="essential-detail">
-                        <h6 class="text-info mb-1">Work Order</h6>
-                        <p class="fw-bold mb-0"
-                          [class]="getWorkOrderDisplay(displayData.currentPriorityOrder) === 'N/A' ? 'text-muted' : 'text-info'">
-                          {{ getWorkOrderDisplay(displayData.currentPriorityOrder) }}
-                        </p>
-                      </div>
+                <!-- Information Table -->
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td class="py-2 text-muted text-uppercase fw-bold" style="width: 20%;">Part Number:</td>
+                      <td class="py-2 font-monospace fw-bold"
+                          [class]="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'text-danger' : 'text-dark'">
+                        {{ displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'DATA MISSING' : displayData.currentPriorityOrder.SOD_PART }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 text-muted text-uppercase fw-bold">Description:</td>
+                      <td class="py-2 text-dark">
+                        {{ truncateText(getPartDescription(displayData.currentPriorityOrder), 60) || 'Not Available' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 text-muted text-uppercase fw-bold">Customer:</td>
+                      <td class="py-2 fw-bold"
+                          [class]="(displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' || displayData.currentPriorityOrder.CUSTNAME === 'MISSING_DATA') ? 'text-danger' : 'text-success'">
+                        {{ displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' ? 'DATA MISSING' : (displayData.currentPriorityOrder.SO_CUST || displayData.currentPriorityOrder.CUSTNAME || 'NOT SPECIFIED') }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="py-2 text-muted text-uppercase fw-bold">Due Date:</td>
+                      <td class="py-2 fw-bold text-danger">
+                        {{ formatDate(displayData.currentPriorityOrder.SOD_DUE_DATE || displayData.currentPriorityOrder.SOD_SHIP_DATE) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Critical Alerts -->
+                <div class="mt-4" 
+                     *ngIf="displayData.currentPriorityOrder.misc?.hot_order || (displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0))">
+                  <div class="d-flex gap-2 flex-wrap">
+                    <div class="alert alert-danger mb-0 py-2 px-3 d-flex align-items-center" 
+                         *ngIf="displayData.currentPriorityOrder.misc?.hot_order">
+                      <i class="mdi mdi-fire me-2"></i>
+                      <strong>HOT ORDER - EXPEDITE IMMEDIATELY</strong>
                     </div>
-                    <div class="col-md-4">
-                      <div class="essential-detail">
-                        <h6 class="text-success mb-1">Customer</h6>
-                        <p class="fw-bold mb-0"
-                          [class]="(displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' || displayData.currentPriorityOrder.CUSTNAME === 'MISSING_DATA') ? 'text-danger' : ''">
-                          {{ displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' ? 'Data Missing' : (displayData.currentPriorityOrder.SO_CUST || displayData.currentPriorityOrder.CUSTNAME || 'N/A') }}
-                        </p>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="essential-detail">
-                        <h6 class="text-secondary mb-1">Due Date</h6>
-                        <p class="fw-bold mb-0">
-                          {{ formatDate(displayData.currentPriorityOrder.SOD_DUE_DATE || displayData.currentPriorityOrder.SOD_SHIP_DATE) }}
-                        </p>
-                      </div>
+                    <div class="alert alert-warning mb-0 py-2 px-3 d-flex align-items-center" 
+                         *ngIf="displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0)">
+                      <i class="mdi mdi-alert-triangle me-2"></i>
+                      <strong>INSUFFICIENT INVENTORY</strong>
                     </div>
                   </div>
                 </div>
 
-                <!-- Critical Alerts Only -->
-                <div class="row mt-4"
-                  *ngIf="displayData.currentPriorityOrder.misc?.hot_order || (displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0))">
-                  <div class="col-12">
-                    <div class="alert-section">
-                      <div class="d-flex gap-2 align-items-center justify-content-center">
-                        <span class="badge bg-danger fs-6 px-3 py-2" *ngIf="displayData.currentPriorityOrder.misc?.hot_order">
-                          <i class="mdi mdi-fire me-1"></i>HOT ORDER
-                        </span>
-                        <span class="badge bg-warning text-dark fs-6 px-3 py-2"
-                          *ngIf="displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0)">
-                          <i class="mdi mdi-alert me-1"></i>LOW INVENTORY
-                        </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Queue Sidebar (Right Column) -->
+          <div class="col-lg-4">
+            <div class="queue-sidebar">
+              <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-light border-bottom">
+                  <h5 class="mb-0 fw-bold text-dark">
+                    <i class="mdi mdi-format-list-numbered me-2"></i>
+                    Coming Up Next
+                  </h5>
+                  <small class="text-muted">{{ displayData.nextPriorityOrders.length }} orders in queue</small>
+                </div>
+                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                  
+                  <!-- Queue Items -->
+                  <div *ngFor="let order of displayData.nextPriorityOrders; let i = index" class="queue-item border-bottom">
+                    <div class="p-3" [class.bg-light]="i % 2 === 0">
+                      <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div class="flex-grow-1">
+                          <div class="fw-bold text-dark">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</div>
+                          <div class="small text-muted">Priority #{{ order.shipping_priority }}</div>
+                        </div>
+                        <div class="text-end">
+                          <div class="fw-bold text-warning">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP) }}</div>
+                          <div class="small text-muted">units</div>
+                        </div>
+                      </div>
+                      
+                      <div class="small mb-1">
+                        <strong class="text-primary">{{ order.SOD_PART }}</strong>
+                      </div>
+                      
+                      <div class="small text-muted mb-2" [title]="getPartDescription(order)">
+                        {{ truncateText(getPartDescription(order), 40) }}
+                      </div>
+                      
+                      <div class="d-flex align-items-center justify-content-between">
+                        <div class="small">
+                          <i class="mdi mdi-account text-muted me-1"></i>
+                          <span class="text-truncate">{{ truncateText(order.SO_CUST || order.CUSTNAME || 'N/A', 15) }}</span>
+                        </div>
+                        <div class="small text-muted">
+                          {{ formatDate(order.SOD_DUE_DATE || order.SOD_SHIP_DATE) }}
+                        </div>
+                      </div>
+                      
+                      <!-- Status Indicators -->
+                      <div class="mt-2" *ngIf="order.misc?.['userName'] === 'Shipping' || order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0))">
+                        <div class="d-flex gap-1">
+                          <span class="badge bg-success badge-sm" *ngIf="order.misc?.['userName'] === 'Shipping'">✅ DONE</span>
+                          <span class="badge bg-danger badge-sm" *ngIf="order.misc?.hot_order">🔥 HOT</span>
+                          <span class="badge bg-warning text-dark badge-sm" *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)">⚠️ LOW INV</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  
+                  <!-- Empty State -->
+                  <div *ngIf="displayData.nextPriorityOrders.length === 0" class="p-4 text-center text-muted">
+                    <i class="mdi mdi-check-circle display-4 text-success"></i>
+                    <div class="mt-2">Queue is empty!</div>
+                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -187,11 +262,34 @@
       </div>
 
       <!-- Top 3 Priority Display Mode -->
-      <div *ngIf="displayMode !== 'single' && displayData.topThreePriorityOrders.length > 0"
-        class="top3-priority-section">
+      <div *ngIf="displayMode !== 'single'" class="top3-priority-section position-relative">
+        
+        <!-- Global Loading Overlay for entire section -->
+        <div *ngIf="displayData.isLoading" 
+             class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" 
+             style="background: rgba(248, 249, 250, 0.8); z-index: 20; top: 0; left: 0; min-height: 300px; backdrop-filter: blur(2px);">
+          <div class="text-center">
+            <div class="spinner-border text-primary mb-2" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="text-muted small">Refreshing priority orders...</div>
+          </div>
+        </div>
+        
+        <!-- Loading State for Initial Load -->
+        <div *ngIf="!displayData.isLoading && displayData.topThreePriorityOrders.length === 0" class="loading-state text-center py-5">
+          <div class="text-center">
+            <i class="mdi mdi-clipboard-check display-4 text-muted"></i>
+            <h4 class="mt-3 text-muted">No Priority Orders</h4>
+            <p class="text-muted">All orders are currently being processed</p>
+          </div>
+        </div>
+        
+        <!-- Top 3 Cards - Keep visible during refresh -->
         <div class="row g-3">
           <div class="col-lg-4 col-md-6" *ngFor="let order of displayData.topThreePriorityOrders; let i = index">
-            <div class="priority-card" [class]="getPriorityRankClass(i)">
+            <div class="priority-card position-relative" [class]="getPriorityRankClass(i)">
+              
               <div class="card-header">
                 <div class="d-flex align-items-center justify-content-between">
                   <h4 class="rank-title mb-0">{{ getPriorityRankText(i) }}</h4>
@@ -252,7 +350,10 @@
 
                 <!-- Critical Alerts -->
                 <div class="essential-badges mt-3 text-center"
-                  *ngIf="order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0))">
+                  *ngIf="order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)) || order.misc?.['userName'] === 'Shipping'">
+                  <span class="badge bg-success me-1" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed - Shipped">
+                    <i class="mdi mdi-check-circle"></i> DONE
+                  </span>
                   <span class="badge bg-danger me-1" *ngIf="order.misc?.hot_order" title="Hot Order">
                     <i class="mdi mdi-fire"></i> HOT
                   </span>
@@ -267,8 +368,8 @@
         </div>
       </div>
 
-      <!-- Next Orders Queue -->
-      <div *ngIf="displayData.nextPriorityOrders.length > 0" class="next-orders-section">
+      <!-- Next Orders Queue - Hidden in single mode (now using sidebar) -->
+      <div *ngIf="displayMode !== 'single' && displayData.nextPriorityOrders.length > 0" class="next-orders-section">
         <div class="section-header">
           <h3>
             <i class="mdi mdi-format-list-numbered me-2"></i>
@@ -295,6 +396,7 @@
                   <small class="text-muted">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD ||
                     order.SOD_QTY_TO_SHIP) }} open</small>
                   <div class="status-indicators">
+                    <span class="badge bg-success badge-xs" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed">✅</span>
                     <span class="badge bg-danger badge-xs" *ngIf="order.misc?.hot_order" title="Hot Order">🔥</span>
                     <span class="badge bg-warning badge-xs"
                       *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" title="Low Inventory">⚠️</span>
@@ -307,7 +409,7 @@
       </div>
 
       <!-- Summary Statistics -->
-      <div class="summary-section mb-3">
+      <!-- <div class="summary-section mb-3">
         <div class="row g-3">
           <div class="col-lg-3 col-md-6">
             <div class="summary-card">
@@ -362,7 +464,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Controls Section -->

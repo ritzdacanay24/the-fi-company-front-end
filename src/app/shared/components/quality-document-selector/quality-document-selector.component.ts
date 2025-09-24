@@ -28,12 +28,9 @@ export interface QualityDocumentSelection {
     <div class="quality-document-selector">
       <!-- Document Type Filter (Optional) -->
       <div class="row mb-3" *ngIf="showTypeFilter">
-        <div class="col-md-6">
-          <label class="form-label fw-bold">
-            <i class="mdi mdi-filter-variant me-1"></i>
-            Document Type
-          </label>
-          <select class="form-select form-select-sm" 
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Document Type</label>
+          <select class="form-select" 
                   [(ngModel)]="selectedType" 
                   (ngModelChange)="onTypeChange()">
             <option value="">All Types</option>
@@ -44,13 +41,14 @@ export interface QualityDocumentSelection {
             <option value="QCP">Quality Control Plans (QCP)</option>
             <option value="WI">Work Instructions (WI)</option>
           </select>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Filter documents by type category.
+          </div>
         </div>
-        <div class="col-md-6">
-          <label class="form-label fw-bold">
-            <i class="mdi mdi-tag-outline me-1"></i>
-            Category
-          </label>
-          <select class="form-select form-select-sm" 
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Category</label>
+          <select class="form-select" 
                   [(ngModel)]="selectedCategory" 
                   (ngModelChange)="onCategoryChange()">
             <option value="">All Categories</option>
@@ -60,14 +58,17 @@ export interface QualityDocumentSelection {
             <option value="safety">Safety</option>
             <option value="compliance">Compliance</option>
           </select>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Filter documents by functional category.
+          </div>
         </div>
       </div>
 
       <!-- Document Selection -->
       <div class="mb-3">
-        <label class="form-label fw-bold">
-          <i class="mdi mdi-file-document-outline me-1"></i>
-          {{label || 'Quality Document'}} {{required ? '*' : ''}}
+        <label class="form-label">
+          {{label || 'Quality Document'}}
         </label>
         
         <div class="input-group">
@@ -93,14 +94,14 @@ export interface QualityDocumentSelection {
           </button>
         </div>
         
+        <div class="form-text" *ngIf="helpText">
+          <i class="mdi mdi-information-outline me-1"></i>
+          {{helpText}}
+        </div>
+        
         <div class="invalid-feedback" *ngIf="invalid">
           Please select a quality document
         </div>
-        
-        <small class="text-muted" *ngIf="helpText">
-          <i class="mdi mdi-information-outline me-1"></i>
-          {{helpText}}
-        </small>
       </div>
 
       <!-- Loading State -->

@@ -1626,7 +1626,7 @@ export class ShippingComponent implements OnInit {
     },
     {
       field: "shipping_priority",
-      headerName: "Shipping Priority",
+      headerName: "Production Priority",
       filter: false,
       sortable: false, // Disable sorting to prevent interference with drag operations
       editable: true,

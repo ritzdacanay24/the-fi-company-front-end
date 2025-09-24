@@ -22,71 +22,58 @@
             <div class="card-header d-flex align-items-center">
                 
                 <!-- Priority Tab Navigation -->
-                <ul class="nav nav-pills me-3" id="priorityTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" 
-                                [class.active]="activeTab === 'all'"
-                                (click)="switchTab('all')" 
-                                type="button" role="tab">
-                            <i class="mdi mdi-format-list-bulleted me-1"></i>
-                            All Orders
-                            <span class="badge bg-light text-dark ms-1">{{allOrdersCount}}</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" 
-                                [class.active]="activeTab === 'priority'"
-                                (click)="switchTab('priority')" 
-                                type="button" role="tab">
-                            <i class="mdi mdi-star me-1"></i>
-                            Priority Orders
-                            <span class="badge bg-warning text-dark ms-1">{{priorityOrdersCount}}</span>
-                        </button>
-                    </li>
-                </ul>
-
-                <div>
-                    <div class="form-icon">
-                        <input type="search" class="form-control form-control-icon" style="width:250px"
-                            (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName"
-                            [(ngModel)]="searchName" placeholder="Search">
-                        <i class="ri-search-2-line"></i>
-                    </div>
+                <div class="me-3">
+                    <select class="form-select form-select-sm" [(ngModel)]="activeTab" (ngModelChange)="switchTab($event)" style="min-width: 180px;">
+                        <option value="all">📋 All Orders ({{allOrdersCount}})</option>
+                        <option value="priority">⭐ Priority Orders ({{priorityOrdersCount}})</option>
+                    </select>
                 </div>
 
-                <button class="btn btn-light ms-3" (click)="getData()">
+                <!-- Search -->
+                <div class="form-icon me-2">
+                    <input type="search" class="form-control form-control-icon form-control-sm" style="width:200px"
+                        (ngModelChange)="onFilterTextBoxChanged($event)" [value]="searchName"
+                        [(ngModel)]="searchName" placeholder="Search">
+                    <i class="ri-search-2-line"></i>
+                </div>
+
+                <!-- Action Buttons -->
+                <button class="btn btn-light btn-sm me-2" (click)="getData()" title="Refresh">
                     <i class="mdi mdi-refresh"></i>
                 </button>
                 
-                <!-- Priority Display Button -->
-                <button class="btn btn-primary ms-2" (click)="openPriorityDisplay()" title="Open Full Screen Priority Display">
+                <button class="btn btn-primary btn-sm me-3" (click)="openPriorityDisplay()" title="Open Full Screen Priority Display">
                     <i class="mdi mdi-monitor-dashboard me-1"></i>
                     Priority Display
                 </button>
                 
-                <div class="ms-3">
+                <!-- Grid Tools -->
+                <div class="me-2">
                     <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi"
                         [pageId]="pageId" [value]="gridViewId" (emitGrid)="emitGrid($event)"></app-grid-settings>
                 </div>
 
-                <div class="ms-3 me-3">
+                <div class="me-3">
                     <app-grid-filters [data]="defaultFilters" [gridApi]="gridApi"
                         [pageId]="pageId" [value]="gridFilterId" [dataRenderered]="dataRenderered"
                         (emitFilter)="emitFilter($event)"></app-grid-filters>
                 </div>
 
-                <span class="badge bg-danger-subtle text-danger ms-auto me-2 pointer ms-3" style="font-size: 14px;"
-                    (click)="pastDue()">
-                    {{statusCount.pastDue}} Past
-                    Due</span>
-                <span class="badge  bg-warning-subtle me-2 text-warning pointer" style="font-size: 14px;"
-                    (click)="dueToday()">
-                    {{statusCount.todayDue}} Due Today</span>
-                <span class="badge bg-success-subtle me-2 pointer  text-success" style="font-size: 14px;"
-                    (click)="future()">
-                    {{statusCount.futureDue}} Future</span>
-                <span class="badge bg-light text-body pointer" style="font-size: 14px;" (click)="all()">
-                    {{statusCount.pastDue + statusCount.todayDue + statusCount.futureDue}} Total</span>
+                <!-- Status Badges - Right aligned -->
+                <div class="ms-auto d-flex align-items-center gap-1">
+                    <span class="badge bg-danger-subtle text-danger pointer" style="font-size: 11px;" (click)="pastDue()">
+                        {{statusCount.pastDue}} Past Due
+                    </span>
+                    <span class="badge bg-warning-subtle text-warning pointer" style="font-size: 11px;" (click)="dueToday()">
+                        {{statusCount.todayDue}} Due Today
+                    </span>
+                    <span class="badge bg-success-subtle text-success pointer" style="font-size: 11px;" (click)="future()">
+                        {{statusCount.futureDue}} Future
+                    </span>
+                    <span class="badge bg-light text-body pointer" style="font-size: 11px;" (click)="all()">
+                        {{statusCount.pastDue + statusCount.todayDue + statusCount.futureDue}} Total
+                    </span>
+                </div>
             </div>
             <div class="card-body p-0">
                 

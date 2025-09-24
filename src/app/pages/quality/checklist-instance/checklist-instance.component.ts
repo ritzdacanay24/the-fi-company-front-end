@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { PhotoChecklistConfigService, ChecklistInstance, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { GlobalComponent } from '@app/global-component';
 
@@ -31,6 +32,7 @@ export interface ChecklistItemProgress {
     CommonModule, 
     FormsModule, 
     RouterModule,
+    NgbDropdownModule,
     ChecklistHeaderComponent,
     TaskDescriptionComponent,
     PhotoSectionComponent,
@@ -1373,7 +1375,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Get photo URL with proper base path
    */
   getPhotoUrl(photo: string): string {
-    return photo.startsWith('http') ? photo : `http://10.0.0.120:8080/${photo}`;
+    if (photo.startsWith('http')) {
+      return photo;
+    }
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = photo.startsWith('/') ? photo.substring(1) : photo;
+    return `https://dashboard.eye-fi.com/${cleanPath}`;
   }
 
   /**
@@ -1449,5 +1456,21 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         console.error('Silent save failed:', error);
       }
     });
+  }
+
+  /**
+   * Navigate to photo mode and go to specific item
+   */
+  navigateToPhotoMode(itemIndex: number): void {
+    this.isReviewMode = false;
+    this.currentStep = itemIndex + 1; // Convert 0-based index to 1-based step
+  }
+
+  /**
+   * Handle sample image loading errors
+   */
+  onSampleImageError(event: any): void {
+    console.warn('Failed to load sample image:', event.target.src);
+    event.target.style.display = 'none';
   }
 }

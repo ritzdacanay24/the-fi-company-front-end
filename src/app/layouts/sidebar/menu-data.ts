@@ -117,9 +117,9 @@ export const MENU_DATA: MenuItem[] = [
     },
     {
         id: 121,
-        label: "Work Order Allocation",
+        label: "Sales Order Coverage",
         link: "/operations/allocation-management",
-        description: "Allocate Work Orders to Sales Orders",
+        description: "Check if Work Orders cover Sales Order demand",
         icon: "las la-exchange-alt",
         hideCheckBox: true,
         badge: {
@@ -468,12 +468,33 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/quality/qir/*"
             },
             {
-                label: "Inspection Checklists",
-                link: "/inspection/dashboard",
-                description: "Inspection Checklist Management",
-                icon: "las la-clipboard-list",
-                activatedRoutes: "/inspection/*"
+                label: "Photo Checklist",
+                icon: "las la-camera",
+                isCollapsed: true,
+                subItems: [
+                    {
+                        label: "Checklists",
+                        link: "/quality/checklist",
+                        description: "Manage Photo Checklists",
+                        icon: "las la-clipboard-list",
+                        activatedRoutes: "/quality/checklist/*"
+                    },
+                    {
+                        label: "Control Photos",
+                        link: "/quality/quality-control-photos",
+                        description: "Quality Control Photos",
+                        icon: "las la-images",
+                        activatedRoutes: "/quality/quality-control-photos/*"
+                    }
+                ]
             },
+            // {
+            //     label: "Inspection Checklists",
+            //     link: "/inspection/dashboard",
+            //     description: "Inspection Checklist Management",
+            //     icon: "las la-clipboard-list",
+            //     activatedRoutes: "/inspection/*"
+            // },
         ],
     },
     {
@@ -508,7 +529,7 @@ export const MENU_DATA: MenuItem[] = [
             },
             {
                 label: "UL Labels",
-                link: "/ul-management/labels-report",
+                link: "/ul-management/usage-report",
                 accessRequired: false,
                 activatedRoutes: "/ul-management/*"
             },

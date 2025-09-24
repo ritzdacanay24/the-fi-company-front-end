@@ -1,0 +1,161 @@
+// Custom styling to match SG Asset List pattern
+
+// Form icon styling
+.form-icon {
+  position: relative;
+  
+  .form-control-icon {
+    padding-left: 2.5rem;
+  }
+  
+  i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 5;
+  }
+}
+
+// Custom select styling
+.custom-select {
+  border-radius: 0.375rem;
+  border: 1px solid #ced4da;
+  
+  &:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+}
+
+// Badge close button styling
+.badge {
+  .btn-close-sm {
+    --bs-btn-close-width: 0.5em;
+    --bs-btn-close-height: 0.5em;
+    font-size: 0.625rem;
+    vertical-align: middle;
+  }
+}
+
+// Card styling enhancements
+.card {
+  border: none;
+  
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+  }
+}
+
+// Table styling
+.table {
+  thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+}
+
+// Button group styling
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+// Alert styling
+.alert {
+  .alert-heading {
+    font-weight: 600;
+  }
+}
+
+// Breadcrumb styling
+.breadcrumb {
+  background-color: transparent;
+  margin-bottom: 0;
+  
+  .breadcrumb-item {
+    a {
+      color: #0d6efd;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    &.active {
+      color: #6c757d;
+    }
+  }
+}
+
+// Page header icon styling
+.bg-primary.bg-gradient {
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+}
+
+// Template card styling
+.card.border-success {
+  border-color: #198754 !important;
+  
+  .card-title {
+    color: #198754;
+  }
+}
+
+// Status badge styling
+.badge {
+  &.bg-success {
+    background-color: #198754 !important;
+  }
+  
+  &.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+  }
+  
+  &.bg-info {
+    background-color: #0dcaf0 !important;
+    color: #000;
+  }
+  
+  &.bg-secondary {
+    background-color: #6c757d !important;
+  }
+}
+
+// Empty state styling
+.text-center {
+  .mdi {
+    opacity: 0.5;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .col-md-3,
+  .col-md-2 {
+    margin-bottom: 1rem;
+  }
+  
+  .btn-group {
+    width: 100%;
+    
+    .btn {
+      flex: 1;
+    }
+  }
+}

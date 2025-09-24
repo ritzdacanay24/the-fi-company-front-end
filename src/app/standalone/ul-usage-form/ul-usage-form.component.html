@@ -324,17 +324,45 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Quantity Selection Section -->
+                                    
                                     <div class="mb-4 pb-4 border-bottom" *ngIf="usageForm.get('category')?.value">
                                         <div class="mb-3">
-                                            <h3 class="h5 mb-1">Quantity Selection</h3>
+                                            <h3 class="h5 mb-1">UL Number Selection</h3>
                                             <p class="text-muted mb-0">
-                                                How many UL numbers do you need for this usage recording?
+                                                Choose how you want to select UL numbers for this usage recording.
                                             </p>
                                         </div>
 
-                                        <div class="row">
+                                        <!-- Selection Method -->
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label class="form-label">Selection Method <span class="text-danger">*</span></label>
+                                                <div class="d-flex gap-3 mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="selectionMethod" id="automatic" 
+                                                               [value]="'automatic'" [(ngModel)]="selectionMethod" [ngModelOptions]="{standalone: true}" (change)="onSelectionMethodChange()">
+                                                        <label class="form-check-label" for="automatic">
+                                                            <i class="mdi mdi-auto-fix me-2"></i>Automatic Sequence
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="selectionMethod" id="manual" 
+                                                               [value]="'manual'" [(ngModel)]="selectionMethod" [ngModelOptions]="{standalone: true}" (change)="onSelectionMethodChange()">
+                                                        <label class="form-check-label" for="manual">
+                                                            <i class="mdi mdi-hand-pointing-up me-2"></i>Manual Selection
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-text">
+                                                    <i class="mdi mdi-information-outline me-1"></i>
+                                                    <span *ngIf="selectionMethod === 'automatic'">System will auto-assign the next available UL numbers in sequence</span>
+                                                    <span *ngIf="selectionMethod === 'manual'">You can manually select specific UL numbers to match your physical labels</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Automatic Selection (original quantity dropdown) -->
+                                        <div class="row" *ngIf="selectionMethod === 'automatic'">
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label">
                                                     Quantity <span class="text-danger">*</span>
@@ -352,14 +380,10 @@
                                                     <option value="25">25 UL Numbers</option>
                                                     <option value="50">50 UL Numbers</option>
                                                 </select>
-                                                <div class="form-text">
-                                                    <i class="mdi mdi-information-outline me-1"></i>
-                                                    System will automatically assign the next available UL numbers in sequence
-                                                </div>
                                             </div>
 
                                             <div class="col-md-6 mb-3" *ngIf="assignedULNumbers.length > 0">
-                                                <label class="form-label">Assigned UL Numbers</label>
+                                                <label class="form-label">Auto-Assigned UL Numbers</label>
                                                 <div class="bg-success bg-opacity-10 p-3 border border-success border-opacity-25 rounded">
                                                     <div class="d-flex flex-wrap gap-1 mb-2">
                                                         <span *ngFor="let ulNumber of assignedULNumbers" class="badge bg-success text-white">
@@ -368,7 +392,73 @@
                                                     </div>
                                                     <div class="form-text">
                                                         <i class="mdi mdi-information-outline me-1"></i>
-                                                        {{ assignedULNumbers.length }} UL number{{ assignedULNumbers.length > 1 ? 's' : '' }} assigned
+                                                        {{ assignedULNumbers.length }} UL number{{ assignedULNumbers.length > 1 ? 's' : '' }} auto-assigned
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Manual Selection (new UL picker) -->
+                                        <div class="row" *ngIf="selectionMethod === 'manual'">
+                                            <div class="col-12 mb-3">
+                                                <label class="form-label">
+                                                    Select UL Numbers <span class="text-danger">*</span>
+                                                </label>
+                                                <div class="manual-ul-selector p-3 bg-light border rounded">
+                                                    <div class="mb-3">
+                                                        <div class="input-group">
+                                                            <select class="form-select" [(ngModel)]="selectedManualUL" [ngModelOptions]="{standalone: true}" (change)="addManualUL()">
+                                                                <option value="">Choose a UL number...</option>
+                                                                <option *ngFor="let ul of getAvailableULOptionsForManualSelection()" 
+                                                                        [value]="ul.ul_number"
+                                                                        [disabled]="manuallySelectedULs.includes(ul.ul_number)">
+                                                                    {{ ul.ul_number }} - {{ ul.category }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        <div class="form-text">
+                                                            <i class="mdi mdi-information-outline me-1"></i>
+                                                            <span *ngIf="getAvailableULOptionsForManualSelection().length > 0">
+                                                                Select specific UL numbers that match your physical labels. Selection automatically adds to list.
+                                                            </span>
+                                                            <span *ngIf="getAvailableULOptionsForManualSelection().length === 0" class="text-warning">
+                                                                <strong>No UL numbers available.</strong>
+                                                                <span *ngIf="!usageForm.get('category')?.value">Please select a category first.</span>
+                                                                <span *ngIf="usageForm.get('category')?.value && availableULs.length === 0">UL data is still loading...</span>
+                                                                <span *ngIf="usageForm.get('category')?.value && availableULs.length > 0 && filteredULs.length === 0">No UL numbers found for the selected category.</span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Selected Manual ULs Display -->
+                                                    <div *ngIf="manuallySelectedULs.length > 0" class="selected-uls">
+                                                        <h6 class="small fw-semibold mb-2">
+                                                            <i class="mdi mdi-check-circle-outline me-1"></i>
+                                                            Selected UL Numbers ({{ manuallySelectedULs.length }})
+                                                        </h6>
+                                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                                            <div *ngFor="let ulNumber of manuallySelectedULs; let i = index" 
+                                                                 class="badge bg-primary text-white d-flex align-items-center gap-1 p-2">
+                                                                {{ ulNumber }}
+                                                                <button type="button" class="btn-close btn-close-white" 
+                                                                        style="font-size: 0.6rem;" 
+                                                                        (click)="removeManualUL(i)" 
+                                                                        aria-label="Remove UL">
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <i class="mdi mdi-lightbulb-outline me-1"></i>
+                                                            Click the × on any badge to remove that UL number
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Empty state for manual selection -->
+                                                    <div *ngIf="manuallySelectedULs.length === 0" class="text-center text-muted py-3">
+                                                        <i class="mdi mdi-label-outline display-4 opacity-50"></i>
+                                                        <p class="mb-0 small mt-2">No UL numbers selected yet</p>
+                                                        <p class="mb-0 small">Use the dropdown above to select UL numbers</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -482,12 +572,12 @@
                                 </div>
 
                                 <!-- Form Fields for each UL -->
-                                <div *ngIf="assignedULNumbers.length > 0">
+                                <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length > 0) || (selectionMethod === 'manual' && manuallySelectedULs.length > 0)">
                                     <div class="row mb-4">
                                         <div class="col-12">
                                             <h6 class="fw-semibold text-dark mb-3">
                                                 <i class="mdi mdi-form-select me-2"></i>
-                                                {{ assignedULNumbers.length === 1 ? 'Transaction Details' : 'Bulk Transaction Details' }}
+                                                {{ (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length === 1 ? 'Transaction Details' : 'Bulk Transaction Details' }}
                                             </h6>
                                         </div>
                                     </div>
@@ -556,7 +646,7 @@
                                     </div> -->
 
                                     <!-- Single UL Form -->
-                                    <div *ngIf="assignedULNumbers.length === 1" class="single-ul-form">
+                                    <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length === 1) || (selectionMethod === 'manual' && manuallySelectedULs.length === 1)" class="single-ul-form">
                                         <div class="row g-3 mb-4">
                                             <div class="col-md-8">
                                                 <label class="form-label fw-semibold">
@@ -567,7 +657,7 @@
                                                     class="form-control form-control-lg"
                                                     placeholder="Enter device serial number">
                                                 <div class="form-text">Device or component serial number for {{
-                                                    assignedULNumbers[0] }}</div>
+                                                    selectionMethod === 'automatic' ? assignedULNumbers[0] : manuallySelectedULs[0] }}</div>
                                             </div>
 
                                             <div class="col-md-4">
@@ -622,8 +712,8 @@
                                     </div>
 
                                     <!-- Bulk UL Forms -->
-                                    <div *ngIf="assignedULNumbers.length > 1" class="bulk-ul-forms">
-                                        <div *ngFor="let ulNumber of assignedULNumbers; let i = index"
+                                    <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length > 1) || (selectionMethod === 'manual' && manuallySelectedULs.length > 1)" class="bulk-ul-forms">
+                                        <div *ngFor="let ulNumber of (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs); let i = index"
                                             class="ul-form-section p-3 mb-3 border rounded bg-light">
                                             <div class="mb-3">
                                                 <h6 class="mb-0 fw-semibold">
@@ -666,17 +756,17 @@
                         </div>
 
                         <div class="form-footer bg-light border-top d-flex justify-content-between p-3">
-                            <button class="btn btn-light" type="button" (click)="usageForm.reset(); assignedULNumbers = []">
+                            <button class="btn btn-light" type="button" (click)="usageForm.reset(); assignedULNumbers = []; manuallySelectedULs = []">
                                 <i class="mdi mdi-refresh me-1"></i>Reset Form
                             </button>
                             <button class="btn btn-primary" type="submit" form="usageForm"
-                                    [disabled]="!isFormValid() || isSubmitting || assignedULNumbers.length === 0">
+                                    [disabled]="!isFormValid() || isSubmitting || ((selectionMethod === 'automatic' && assignedULNumbers.length === 0) || (selectionMethod === 'manual' && manuallySelectedULs.length === 0))">
                                 @if (isSubmitting) {
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                    {{ assignedULNumbers.length > 1 ? 'Recording...' : 'Recording...' }}
+                                    {{ ((selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length > 1) ? 'Recording...' : 'Recording...' }}
                                 } @else {
                                     <i class="mdi mdi-check me-1"></i>
-                                    {{ assignedULNumbers.length > 1 ? 'Record ' + assignedULNumbers.length + ' UL Usages' : 'Record UL Usage' }}
+                                    {{ ((selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length > 1) ? 'Record ' + (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length + ' UL Usages' : 'Record UL Usage' }}
                                 }
                             </button>
                         </div>

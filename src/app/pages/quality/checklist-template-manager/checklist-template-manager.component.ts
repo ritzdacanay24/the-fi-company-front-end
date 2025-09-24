@@ -28,210 +28,221 @@ interface SampleImage {
   imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent],
   template: `
     <div class="container-fluid">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h4 class="mb-1">Checklist Template Manager</h4>
-          <p class="text-muted mb-0">Create and manage photo checklist templates</p>
-        </div>
-        <button type="button" class="btn btn-primary" (click)="createNewTemplate()">
-          <i class="mdi mdi-plus me-2"></i>
-          New Template
-        </button>
-      </div>
-
-      <!-- Search and Filters -->
-      <div class="card shadow-sm mb-4" *ngIf="!loading">
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Search Templates</label>
-              <div class="input-group">
-                <span class="input-group-text">
-                  <i class="mdi mdi-magnify"></i>
-                </span>
-                <input type="text" class="form-control" [(ngModel)]="templateSearch" 
-                       placeholder="Search by name, description, part number..."
-                       (ngModelChange)="onTemplateSearch()">
-                <button class="btn btn-outline-secondary" type="button" 
-                        *ngIf="templateSearch" (click)="clearTemplateSearch()">
-                  <i class="mdi mdi-close"></i>
+      <div class="row justify-content-center">
+        <div class="col-12">
+          
+          <!-- Breadcrumb -->
+          <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item">
+                <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+                  <i class="mdi mdi-home-outline me-1"></i>Quality
+                </a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Template Manager
+              </li>
+            </ol>
+          </nav>
+          
+          <!-- Page Header with Context -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="d-flex align-items-center">
+                <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                  <i class="mdi mdi-clipboard-text text-white fs-4"></i>
+                </div>
+                <div>
+                  <h2 class="mb-1 text-primary">Template Manager</h2>
+                  <p class="text-muted mb-0">Create and manage photo checklist templates</p>
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <button 
+                  type="button" 
+                  class="btn btn-primary"
+                  (click)="createNewTemplate()"
+                  title="Create new checklist template">
+                  <i class="mdi mdi-plus me-2"></i>New Template
                 </button>
               </div>
             </div>
-            <div class="col-md-3">
-              <label class="form-label">Category</label>
-              <select class="form-select" [(ngModel)]="templateFilters.category" (change)="onTemplateSearch()">
-                <option value="">All Categories</option>
-                <option value="assembly">Assembly</option>
-                <option value="inspection">Inspection</option>
-                <option value="testing">Testing</option>
-                <option value="packaging">Packaging</option>
-                <option value="shipping">Shipping</option>
-                <option value="quality_control">Quality Control</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Part Number</label>
-              <input type="text" class="form-control" [(ngModel)]="templateFilters.partNumber" 
-                     placeholder="Filter by part number..." (ngModelChange)="onTemplateSearch()">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Status</label>
-              <select class="form-select" [(ngModel)]="templateFilters.activeOnly" (change)="onTemplateSearch()">
-                <option [ngValue]="null">All Templates</option>
-                <option [ngValue]="true">Active Only</option>
-                <option [ngValue]="false">Inactive Only</option>
-              </select>
+            
+            <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
+                <div>
+                  <h6 class="alert-heading text-primary mb-2">Template Manager Overview</h6>
+                  <p class="mb-0">
+                    Create and manage <strong>photo checklist templates</strong> for quality control processes. 
+                    Each template defines required photos, inspection points, and documentation standards.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Templates Table -->
-      <div class="card shadow-sm" *ngIf="!loading">
-        <div class="card-body">
-          <!-- Results Summary -->
-          <div class="d-flex justify-content-between align-items-center mb-3" *ngIf="templateSearch || hasActiveFilters()">
-            <small class="text-muted">
-              Showing {{getFilteredTemplates().length}} of {{templates.length}} templates
-              <span *ngIf="templateSearch"> for "{{templateSearch}}"</span>
-            </small>
-            <button class="btn btn-sm btn-outline-secondary" (click)="clearAllTemplateFilters()" 
-                    *ngIf="templateSearch || hasActiveFilters()">
-              <i class="mdi mdi-filter-remove me-1"></i>
-              Clear Filters
-            </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Template Name</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Part Number</th>
-                  <th>Items</th>
-                  <th>Active Instances</th>
-                  <th>Version</th>
-                  <th>Status</th>
-                  <th>Quality Doc</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let template of getFilteredTemplates(); trackBy: trackByTemplateId" 
-                    class="align-middle">
-                  <td>
-                    <div class="fw-semibold" [innerHTML]="highlightSearchTerm(template.name, templateSearch)"></div>
-                    <div class="mt-1" *ngIf="getVersionFamilyCount(template) > 1">
-                      <small class="text-primary">
-                        <i class="mdi mdi-source-branch me-1"></i>
-                        {{getVersionFamilyCount(template)}} versions in family
-                      </small>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="badge" [class]="template.category === 'quality_control' ? 'bg-primary' : 'bg-secondary'">
-                      {{template.category | titlecase}}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="text-muted" [innerHTML]="highlightSearchTerm(template.description || 'No description available', templateSearch)"></span>
-                  </td>
-                  <td>
-                    <code *ngIf="template.part_number" [innerHTML]="highlightSearchTerm(template.part_number, templateSearch)"></code>
-                    <span class="text-muted" *ngIf="!template.part_number">Generic</span>
-                  </td>
-                  <td>
-                    <div class="text-center">
-                      <div class="fw-semibold">{{template.item_count || 0}}</div>
-                      <small class="text-muted">items</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="text-center">
-                      <div class="fw-semibold">{{template.active_instances || 0}}</div>
-                      <small class="text-muted">active</small>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="badge bg-info">v{{template.version}}</span>
-                  </td>
-                  <td>
-                    <span class="badge" [class]="template.is_active ? 'bg-success' : 'bg-warning'">
-                      {{template.is_active ? 'Active' : 'Inactive'}}
-                    </span>
-                  </td>
-                  <td>
-                    <div *ngIf="template.quality_document_metadata" class="text-primary">
-                      <i class="mdi mdi-file-document-outline me-1"></i>
-                      <small>{{template.quality_document_metadata.version_string}}</small>
-                    </div>
-                    <span class="text-muted" *ngIf="!template.quality_document_metadata">-</span>
-                  </td>
-                  <td>
-                    <div ngbDropdown class="d-inline-block" container="body">
-                      <button class="btn btn-sm btn-outline-secondary" 
-                              id="dropdownMenuButton{{template.id}}"
-                              ngbDropdownToggle>
-                        <i class="mdi mdi-dots-vertical"></i>
-                      </button>
-                      <div ngbDropdownMenu [attr.aria-labelledby]="'dropdownMenuButton' + template.id">
-                        <button class="dropdown-item" (click)="editTemplate(template)">
-                          <i class="mdi mdi-eye me-2"></i>
-                          View/Edit
-                        </button>
-                        <button class="dropdown-item" (click)="duplicateTemplate(template)">
-                          <i class="mdi mdi-content-copy me-2"></i>
-                          Duplicate
-                        </button>
-                        <button class="dropdown-item" (click)="viewVersionHistory(template)">
-                          <i class="mdi mdi-source-branch me-2"></i>
-                          Version History
-                        </button>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item text-danger" (click)="deleteTemplate(template)">
-                          <i class="mdi mdi-delete me-2"></i>
-                          Delete
+          <div class="card shadow-sm border-0">
+            <div class="card-header">
+              <div class="d-flex align-items-center flex-wrap gap-3">
+                <div class="form-icon">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center">
+                      <label class="form-label mb-0 me-2 fw-semibold">Search:</label>
+                      <div class="input-group" style="min-width: 300px;">
+                        <input type="text" class="form-control" [(ngModel)]="templateSearch" 
+                               placeholder="Search templates..."
+                               (ngModelChange)="onTemplateSearch()">
+                        <button class="btn btn-outline-secondary" type="button" 
+                                *ngIf="templateSearch" (click)="clearTemplateSearch()">
+                          <i class="mdi mdi-close"></i>
                         </button>
                       </div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    
+                    <select class="form-select" [(ngModel)]="templateFilters.category" (change)="onTemplateSearch()" style="min-width: 150px;">
+                      <option value="">All Categories</option>
+                      <option value="assembly">Assembly</option>
+                      <option value="inspection">Inspection</option>
+                      <option value="testing">Testing</option>
+                      <option value="packaging">Packaging</option>
+                      <option value="shipping">Shipping</option>
+                      <option value="quality_control">Quality Control</option>
+                    </select>
+                    
+                    <select class="form-select" [(ngModel)]="templateFilters.activeOnly" (change)="onTemplateSearch()" style="min-width: 130px;">
+                      <option [ngValue]="null">All Status</option>
+                      <option [ngValue]="true">Active Only</option>
+                      <option [ngValue]="false">Inactive Only</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <button class="btn btn-outline-secondary" (click)="loadTemplates()" title="Refresh data">
+                  <i class="mdi mdi-refresh me-1"></i>Refresh
+                </button>
+                
+                <div class="ms-auto">
+                  <div class="d-flex align-items-center">
+                    <div class="me-4 d-flex gap-4 small text-muted">
+                      <span>
+                        <i class="mdi mdi-database text-info me-1"></i>
+                        <strong>{{templates?.length || 0}}</strong> Total
+                      </span>
+                      <span>
+                        <i class="mdi mdi-check-circle text-success me-1"></i>
+                        <strong>{{getActiveTemplatesCount()}}</strong> Active
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-body p-0">
+              <ng-container *ngIf="getFilteredTemplates()?.length; else noRecords">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 120px;">Actions</th>
+                        <th>Template Name</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Part Number</th>
+                        <th>Items</th>
+                        <th>Version</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let template of getFilteredTemplates(); trackBy: trackByTemplateId" 
+                          class="align-middle">
+                        <td>
+                          <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    (click)="viewTemplate(template)"
+                                    title="View Template">
+                              <i class="mdi mdi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" 
+                                    (click)="editTemplate(template)"
+                                    title="Edit Template">
+                              <i class="mdi mdi-pencil"></i>
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="fw-semibold">{{template.name}}</div>
+                        </td>
+                        <td>
+                          <span class="badge bg-primary">{{template.category | titlecase}}</span>
+                        </td>
+                        <td>
+                          <span class="text-muted">{{template.description || 'No description available'}}</span>
+                        </td>
+                        <td>
+                          <code *ngIf="template.part_number">{{template.part_number}}</code>
+                          <span class="text-muted" *ngIf="!template.part_number">-</span>
+                        </td>
+                        <td>
+                          <div class="text-center">
+                            <div class="fw-semibold">{{template.item_count || 0}}</div>
+                            <small class="text-muted">items</small>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge bg-secondary">v{{template.version}}</span>
+                        </td>
+                        <td>
+                          <span class="badge" [class]="template.is_active ? 'bg-success' : 'bg-danger'">
+                            {{template.is_active ? 'Active' : 'Inactive'}}
+                          </span>
+                        </td>
+                        <td>
+                          <small class="text-muted">
+                            {{template.created_at | date:'MMM d, y'}}
+                          </small>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </ng-container>
+              <ng-template #noRecords>
+                <div class="d-flex flex-column align-items-center justify-content-center p-5">
+                  <div class="text-center" style="max-width: 500px;">
+                    <div class="mb-4">
+                      <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                        <i class="mdi mdi-clipboard-text text-primary" style="font-size: 3rem;"></i>
+                      </div>
+                    </div>
+                    <h4 class="text-body-emphasis mb-3">No Templates Found</h4>
+                    <p class="text-muted mb-4">
+                      No templates match your current filters. Try adjusting your criteria or create a new template.
+                    </p>
+                    <button 
+                      type="button" 
+                      class="btn btn-primary"
+                      (click)="createNewTemplate()">
+                      <i class="mdi mdi-plus me-2"></i>Create First Template
+                    </button>
+                  </div>
+                </div>
+              </ng-template>
+            </div>
+            
+            <div class="card-footer bg-light text-muted d-flex align-items-center">
+              <i class="mdi mdi-information me-2"></i>
+              <span>Click "View" to preview templates or "Edit" to modify template configurations</span>
+              <div class="ms-auto">
+                <small>Total: {{getFilteredTemplates()?.length || 0}} templates</small>
+              </div>
+            </div>
           </div>
-
-          <!-- Empty State -->
-          <div class="text-center p-5" *ngIf="getFilteredTemplates().length === 0 && templates.length > 0">
-            <i class="mdi mdi-magnify text-muted mb-3" style="font-size: 4rem;"></i>
-            <h5 class="text-muted">No Templates Found</h5>
-            <p class="text-muted mb-4">Try adjusting your search criteria or filters</p>
-            <button class="btn btn-outline-primary" (click)="clearAllTemplateFilters()">
-              <i class="mdi mdi-filter-remove me-2"></i>
-              Clear All Filters
-            </button>
-          </div>
-
-          <!-- No Templates State -->
-          <div class="text-center p-5" *ngIf="templates.length === 0">
-            <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 4rem;"></i>
-            <h5 class="text-muted">No Templates Found</h5>
-            <p class="text-muted mb-4">Create your first checklist template to get started</p>
-            <button type="button" class="btn btn-primary" (click)="createNewTemplate()">
-              <i class="mdi mdi-plus me-2"></i>
-              Create Template
-            </button>
-          </div>
+          
         </div>
-      </div>
-
-      <!-- Loading State -->
-      <div class="text-center p-5" *ngIf="loading">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-3 text-muted">Loading templates...</p>
       </div>
     </div>    <!-- Template Editor Modal -->
     <ng-template #templateModal let-modal>
@@ -1994,6 +2005,22 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     // Track form changes
     this.templateForm.valueChanges.subscribe(() => {
       this.formChanged = true;
+    });
+  }
+
+  // ==============================================
+  // AGS Pattern Helper Methods
+  // ==============================================
+
+  getActiveTemplatesCount(): number {
+    return this.templates.filter(template => template.is_active).length;
+  }
+
+  viewTemplate(template: ChecklistTemplate): void {
+    // Navigate to view mode or open preview modal
+    this.router.navigate(['../template-editor', template.id], { 
+      relativeTo: this.route,
+      queryParams: { mode: 'view' }
     });
   }
 

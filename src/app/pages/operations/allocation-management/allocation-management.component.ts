@@ -35,8 +35,8 @@ import { AllocationTableComponent } from '../../../shared/components/allocation-
                   <i class="mdi mdi-swap-horizontal text-white fs-4"></i>
                 </div>
                 <div>
-                  <h2 class="mb-1 text-primary">Work Order Allocation Management</h2>
-                  <p class="text-muted mb-0">Manage allocation of work orders to sales orders with drag-and-drop, priority adjustment, and locking controls</p>
+                  <h2 class="mb-1 text-primary">Sales Order Management</h2>
+                  <p class="text-muted mb-0">Manage inventory and production assignments to sales orders with drag-and-drop, priority adjustment, and locking controls</p>
                 </div>
               </div>
               

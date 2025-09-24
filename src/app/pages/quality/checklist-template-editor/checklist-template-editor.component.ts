@@ -28,212 +28,321 @@ interface SampleImage {
   imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule],
   template: `
     <div class="container-fluid">
-      <!-- Versioning Warning for Editing Existing Template -->
-      <div *ngIf="editingTemplate" class="alert alert-warning d-flex align-items-center mb-3">
-        <i class="mdi mdi-alert me-2"></i>
-        <div>
-          <strong>Version Notice:</strong> Editing this template will create a <b>new version</b>. Previous versions will remain available for reference.
-        </div>
-      </div>
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="d-flex align-items-center">
-          <button type="button" class="btn btn-outline-secondary me-3" [routerLink]="['/quality/template-manager']">
-            <i class="mdi mdi-arrow-left me-2"></i>
-            Back to Templates
-          </button>
-          <div>
-            <h4 class="mb-1">
-              {{editingTemplate ? 'Edit Template' : 'Create New Template'}}
-            </h4>
-            <p class="text-muted mb-0" *ngIf="editingTemplate">
-              {{editingTemplate.name}} - Version {{editingTemplate.version}}
-            </p>
-            <p class="text-muted mb-0" *ngIf="!editingTemplate">
-              Create a new photo checklist template
-            </p>
-          </div>
-        </div>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">
-            <i class="mdi mdi-close me-2"></i>
-            Cancel
-          </button>
-          <button type="button" class="btn btn-success" (click)="saveTemplate()" [disabled]="!templateForm.valid || saving">
-            <i class="mdi mdi-content-save me-2"></i>
-            {{saving ? 'Saving...' : (editingTemplate ? 'Save as New Version' : 'Create Template')}}
-          </button>
-        </div>
-      </div>
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+          
+          <!-- Breadcrumb Navigation -->
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item">
+                <a [routerLink]="['/quality']">Quality</a>
+              </li>
+              <li class="breadcrumb-item">
+                <a [routerLink]="['/quality/template-manager']">Template Manager</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                {{editingTemplate ? 'Edit Template' : 'Create Template'}}
+              </li>
+            </ol>
+          </nav>
 
-      <!-- Main Content -->
-      <div class="row">
-        <div class="col-12">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
-                
-                <!-- Template Basic Information -->
-                <div class="row mb-4">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold">Template Name *</label>
-                    <input type="text" class="form-control" formControlName="name" placeholder="Enter template name">
+          <!-- Page Header with Context -->
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary me-3"
+                [routerLink]="['/quality/template-manager']"
+                title="Back to Template Manager">
+                <i class="mdi mdi-arrow-left me-2"></i>Back
+              </button>
+              <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                <i class="mdi mdi-clipboard-edit-outline text-white fs-4"></i>
+              </div>
+              <div>
+                <h2 class="mb-1 text-primary">{{editingTemplate ? 'Edit Checklist Template' : 'Create Checklist Template'}}</h2>
+                <p class="text-muted mb-0" *ngIf="editingTemplate">
+                  {{editingTemplate.name}} - Version {{editingTemplate.version}}
+                </p>
+                <p class="text-muted mb-0" *ngIf="!editingTemplate">
+                  Create a new photo checklist template with customizable inspection items
+                </p>
+              </div>
+            </div>
+            
+            <!-- Versioning Warning for Editing Existing Template -->
+            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-alert text-warning me-3 mt-1 fs-5"></i>
+                <div>
+                  <h6 class="alert-heading text-warning mb-2">Version Notice</h6>
+                  <p class="mb-2">
+                    Editing this template will create a <strong>new version</strong>. Previous versions will remain available for reference.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+
+          <!-- Main Content -->
+          <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()" class="settings-form" autocomplete="off">
+            
+            <div class="body">
+              
+              <!-- Template Basic Information Section -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Template Information</h3>
+                  <p class="text-muted mb-0">
+                    Basic template details and categorization for the checklist.
+                  </p>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Template Name</label>
+                    <input type="text" class="form-control" formControlName="name" 
+                           placeholder="Enter template name"
+                           [ngClass]="{ 'is-invalid': templateForm.get('name')?.invalid && templateForm.get('name')?.touched }">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      A descriptive name for this checklist template.
+                    </div>
                     <div class="invalid-feedback" *ngIf="templateForm.get('name')?.invalid && templateForm.get('name')?.touched">
                       Template name is required
                     </div>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold">Category *</label>
-                    <select class="form-select" formControlName="category">
+                  
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" formControlName="category"
+                            [ngClass]="{ 'is-invalid': templateForm.get('category')?.invalid && templateForm.get('category')?.touched }">
                       <option value="">Select a category</option>
                       <option value="quality_control">Quality Control</option>
                       <option value="installation">Installation</option>
                       <option value="maintenance">Maintenance</option>
                       <option value="inspection">Inspection</option>
                     </select>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Categorize the template for organization and filtering.
+                    </div>
                     <div class="invalid-feedback" *ngIf="templateForm.get('category')?.invalid && templateForm.get('category')?.touched">
                       Category is required
                     </div>
                   </div>
                 </div>
 
-                <div class="row mb-4">
-                  <div class="col-md-6">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
                     <label class="form-label">Part Number</label>
                     <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Optional part number reference for this template.
+                    </div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-6 mb-3">
                     <label class="form-label">Product Type</label>
                     <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Product type or classification for this template.
+                    </div>
                   </div>
                 </div>
 
-                <div class="mb-4">
-                  <label class="form-label">Description</label>
-                  <textarea class="form-control" formControlName="description" rows="3" placeholder="Enter template description"></textarea>
+                <div class="row">
+                  <div class="col-12 mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" formControlName="description" rows="3" placeholder="Enter template description"></textarea>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Detailed description of what this template covers.
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <!-- Quality Document Section -->
-                <div class="mb-4">
-                  <h5 class="mb-3">Quality Document (Optional)</h5>
-                  <app-quality-document-selector 
-                    (selectionChange)="onQualityDocumentSelected($event)">
-                  </app-quality-document-selector>
+              <!-- Quality Document Section -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Quality Document Reference</h3>
+                  <p class="text-muted mb-0">
+                    Optional quality document association for this template.
+                  </p>
                 </div>
+                
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <label class="form-label">Associated Quality Document</label>
+                    <app-quality-document-selector 
+                      (selectionChange)="onQualityDocumentSelected($event)">
+                    </app-quality-document-selector>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Link this template to a quality document for reference and compliance tracking.
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                <!-- Checklist Items Section -->
-                <div class="mb-4">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Checklist Items</h5>
-                    <button type="button" class="btn btn-primary btn-sm" (click)="addItem()">
+              <!-- Checklist Items Section -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h3 class="h5 mb-1">Checklist Items</h3>
+                      <p class="text-muted mb-0">
+                        Define inspection items and photo requirements for this template.
+                      </p>
+                    </div>
+                    <button type="button" class="btn btn-primary " (click)="addItem()">
                       <i class="mdi mdi-plus me-2"></i>
                       Add Item
                     </button>
                   </div>
+                </div>
 
-                  <!-- Items List -->
-                  <div formArrayName="items" cdkDropList (cdkDropListDropped)="dropItem($event)">
-                    <div *ngFor="let item of items.controls; let i = index" 
-                         class="card mb-3" 
-                         [formGroupName]="i" 
-                         cdkDrag>
-                      
-                      <!-- Drag Handle and Header -->
-                      <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
-                          <div class="drag-handle me-3" cdkDragHandle>
-                            <i class="mdi mdi-drag-vertical text-muted"></i>
-                          </div>
-                          <h6 class="mb-0">Item {{i + 1}}</h6>
+                <!-- Items List -->
+                <div formArrayName="items" cdkDropList (cdkDropListDropped)="dropItem($event)">
+                  <div *ngFor="let item of items.controls; let i = index" 
+                       class="card mb-3" 
+                       [formGroupName]="i" 
+                       cdkDrag>
+                    
+                    <!-- Drag Handle and Header -->
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                      <div class="d-flex align-items-center">
+                        <div class="drag-handle me-3" cdkDragHandle>
+                          <i class="mdi mdi-drag-vertical text-muted"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
-                            <label class="form-check-label" [for]="'required-' + i">
-                              Required
-                            </label>
+                        <h6 class="mb-0">Item {{i + 1}}</h6>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
+                          <label class="form-check-label" [for]="'required-' + i">
+                            Required
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Item Content -->
+                    <div class="card-body">
+                      <div class="row mb-3">
+                        <div class="col-md-8">
+                          <label class="form-label">Title</label>
+                          <input type="text" class="form-control" formControlName="title" placeholder="Enter item title">
+                          <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Clear title describing what needs to be inspected.
                           </div>
-                          <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)">
-                            <i class="mdi mdi-delete"></i>
-                          </button>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Order</label>
+                          <input type="number" class="form-control" formControlName="order_index" min="1">
+                          <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Display order for this item.
+                          </div>
                         </div>
                       </div>
 
-                      <!-- Item Content -->
-                      <div class="card-body">
-                        <div class="row mb-3">
-                          <div class="col-md-8">
-                            <label class="form-label">Title *</label>
-                            <input type="text" class="form-control" formControlName="title" placeholder="Enter item title">
-                          </div>
-                          <div class="col-md-4">
-                            <label class="form-label">Order</label>
-                            <input type="number" class="form-control" formControlName="order_index" min="1">
-                          </div>
+                      <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" formControlName="description" rows="2" placeholder="Enter item description"></textarea>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Detailed instructions for this inspection item.
+                        </div>
+                      </div>
+
+                      <!-- Photo Requirements -->
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">Photo Requirements</label>
+                          <button type="button" class="btn  btn-outline-primary" (click)="toggleRequirements(i)">
+                            <i class="mdi" [class.mdi-chevron-down]="!showRequirements[i]" [class.mdi-chevron-up]="showRequirements[i]"></i>
+                            {{showRequirements[i] ? 'Hide' : 'Show'}} Requirements
+                          </button>
                         </div>
 
-                        <div class="mb-3">
-                          <label class="form-label">Description</label>
-                          <textarea class="form-control" formControlName="description" rows="2" placeholder="Enter item description"></textarea>
-                        </div>
-
-                        <!-- Photo Requirements -->
-                        <div class="mb-3">
-                          <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label mb-0">Photo Requirements</label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" (click)="toggleRequirements(i)">
-                              <i class="mdi" [class.mdi-chevron-down]="!showRequirements[i]" [class.mdi-chevron-up]="showRequirements[i]"></i>
-                              {{showRequirements[i] ? 'Hide' : 'Show'}} Requirements
-                            </button>
-                          </div>
-
-                          <div *ngIf="showRequirements[i]" class="border rounded p-3 bg-light">
+                        <div *ngIf="showRequirements[i]" class="border rounded p-3 bg-light">
                             <div formGroupName="photo_requirements">
                               <div class="row mb-3">
-                                <div class="col-md-3">
-                                  <label class="form-label">Angle</label>
-                                  <select class="form-select form-select-sm" formControlName="angle">
-                                    <option value="">Any</option>
-                                    <option value="front">Front</option>
-                                    <option value="back">Back</option>
-                                    <option value="side">Side</option>
-                                    <option value="top">Top</option>
-                                    <option value="bottom">Bottom</option>
-                                    <option value="diagonal">Diagonal</option>
+                                <div class="col-md-3 mb-3">
+                                  <label class="form-label">Photo Angle</label>
+                                  <select class="form-select" formControlName="angle">
+                                    <option value="">Any Angle</option>
+                                    <option value="front">Front View</option>
+                                    <option value="back">Back View</option>
+                                    <option value="side">Side View</option>
+                                    <option value="top">Top View</option>
+                                    <option value="bottom">Bottom View</option>
+                                    <option value="diagonal">Diagonal View</option>
                                   </select>
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Required viewing angle for photos.
+                                  </div>
                                 </div>
-                                <div class="col-md-3">
-                                  <label class="form-label">Distance</label>
-                                  <select class="form-select form-select-sm" formControlName="distance">
-                                    <option value="">Any</option>
+                                <div class="col-md-3 mb-3">
+                                  <label class="form-label">Photo Distance</label>
+                                  <select class="form-select" formControlName="distance">
+                                    <option value="">Any Distance</option>
                                     <option value="close">Close-up</option>
                                     <option value="medium">Medium</option>
-                                    <option value="far">Wide view</option>
+                                    <option value="far">Wide View</option>
                                   </select>
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Required distance for photo capture.
+                                  </div>
                                 </div>
-                                <div class="col-md-3">
-                                  <label class="form-label">Lighting</label>
-                                  <select class="form-select form-select-sm" formControlName="lighting">
-                                    <option value="">Any</option>
+                                <div class="col-md-3 mb-3">
+                                  <label class="form-label">Lighting Conditions</label>
+                                  <select class="form-select" formControlName="lighting">
+                                    <option value="">Any Lighting</option>
                                     <option value="bright">Bright</option>
                                     <option value="normal">Normal</option>
                                     <option value="dim">Dim</option>
                                   </select>
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Required lighting conditions.
+                                  </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                   <label class="form-label">Focus Area</label>
-                                  <input type="text" class="form-control form-control-sm" formControlName="focus" placeholder="e.g., connector pins">
+                                  <input type="text" class="form-control" formControlName="focus" placeholder="e.g., connector pins">
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Specific area to focus on in photos.
+                                  </div>
                                 </div>
                               </div>
 
                               <div class="row">
-                                <div class="col-md-6">
-                                  <label class="form-label">Minimum Photos</label>
-                                  <input type="number" class="form-control form-control-sm" formControlName="min_photos" min="0" max="10">
+                                <div class="col-md-6 mb-3">
+                                  <label class="form-label">Minimum Photos Required</label>
+                                  <input type="number" class="form-control" formControlName="min_photos" min="0" max="10" placeholder="0">
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Minimum number of photos required for this item.
+                                  </div>
                                 </div>
-                                <div class="col-md-6">
-                                  <label class="form-label">Maximum Photos</label>
-                                  <input type="number" class="form-control form-control-sm" formControlName="max_photos" min="0" max="10">
+                                <div class="col-md-6 mb-3">
+                                  <label class="form-label">Maximum Photos Allowed</label>
+                                  <input type="number" class="form-control" formControlName="max_photos" min="0" max="10" placeholder="10">
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    Maximum number of photos allowed for this item.
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -244,7 +353,7 @@ interface SampleImage {
                         <div class="mb-3">
                           <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label mb-0">Sample Image</label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                            <button type="button" class="btn  btn-outline-primary" 
                                     (click)="openSampleImageUpload(i)"
                                     [disabled]="uploadingImage">
                               <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
@@ -268,7 +377,7 @@ interface SampleImage {
                                 </div>
                               </ng-container>
                               <button type="button"
-                                      class="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                      class="btn  btn-danger position-absolute top-0 end-0"
                                       style="transform: translate(50%, -50%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
                                       (click)="removeSampleImage(i)">
                                 <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
@@ -289,32 +398,63 @@ interface SampleImage {
                     </div>
                   </div>
 
-                  <!-- No Items State -->
-                  <div *ngIf="items.length === 0" class="text-center p-5 border rounded bg-light">
-                    <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 3rem;"></i>
-                    <h6 class="text-muted">No Checklist Items</h6>
-                    <p class="text-muted mb-3">Add your first checklist item to get started</p>
-                    <button type="button" class="btn btn-primary" (click)="addItem()">
-                      <i class="mdi mdi-plus me-2"></i>
-                      Add First Item
-                    </button>
-                  </div>
+                <!-- No Items State -->
+                <div *ngIf="items.length === 0" class="text-center p-5 border rounded bg-light">
+                  <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 3rem;"></i>
+                  <h6 class="text-muted">No Checklist Items</h6>
+                  <p class="text-muted mb-3">Add your first checklist item to get started</p>
+                  <button type="button" class="btn btn-primary" (click)="addItem()">
+                    <i class="mdi mdi-plus me-2"></i>
+                    Add First Item
+                  </button>
+                </div>
+              </div>
+
+              <!-- Template Status Section -->
+              <div class="mb-4">
+                <div class="mb-3">
+                  <h3 class="h5 mb-1">Template Status</h3>
+                  <p class="text-muted mb-0">
+                    Configure the availability status of this template.
+                  </p>
                 </div>
 
-                <!-- Active Status -->
-                <div class="mb-4">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" formControlName="is_active" id="activeStatus">
-                    <label class="form-check-label" for="activeStatus">
-                      <strong>Template is Active</strong>
-                      <small class="text-muted d-block">Active templates are available for creating new checklist instances</small>
-                    </label>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Template Status</label>
+                    <div class="form-check form-switch mt-2">
+                      <input class="form-check-input" type="checkbox" formControlName="is_active" id="activeStatus">
+                      <label class="form-check-label" for="activeStatus">
+                        Active Template
+                      </label>
+                    </div>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Active templates are available for creating new checklist instances.
+                    </div>
                   </div>
                 </div>
+              </div>
 
-              </form>
+            </div> <!-- end body container -->
+          </form>
+            </div>
+            
+            <div class="card-footer bg-light border-top d-flex p-3">
+              <button type="button" class="btn btn-outline-secondary me-2" [disabled]="saving" (click)="cancel()">
+                <i class="mdi mdi-close me-1"></i>Cancel
+              </button>
+              <button type="submit" class="btn btn-success ms-auto" [disabled]="!templateForm.valid || saving" (click)="saveTemplate()">
+                @if (saving) {
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Saving...
+                } @else {
+                  <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Save as New Version' : 'Create Template'}}
+                }
+              </button>
             </div>
           </div>
+          
         </div>
       </div>
     </div>

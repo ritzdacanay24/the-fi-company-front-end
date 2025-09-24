@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '@app/shared/shared.module';
 import { ULLabelService } from '../../services/ul-label.service';
@@ -45,15 +46,15 @@ export class ULUsageReportComponent implements OnInit {
         return `<strong class="text-primary">${params.value}</strong>`;
       }
     },
-    {
-      headerName: 'Description',
-      field: 'description',
-      sortable: true,
-      filter: true,
-      flex: 1,
-      minWidth: 200,
-      tooltipField: 'description'
-    },
+    // {
+    //   headerName: 'Description',
+    //   field: 'description',
+    //   sortable: true,
+    //   filter: true,
+    //   flex: 1,
+    //   minWidth: 200,
+    //   tooltipField: 'description'
+    // },
     {
       headerName: 'Eyefi Serial #',
       field: 'eyefi_serial_number',
@@ -89,6 +90,62 @@ export class ULUsageReportComponent implements OnInit {
       width: 150
     },
     {
+      headerName: 'Work Order #',
+      field: 'wo_nbr',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      width: 120,
+      cellRenderer: (params: any) => {
+        return params.value ? `<code class="text-success">${params.value}</code>` : '';
+      }
+    },
+    {
+      headerName: 'WO Part',
+      field: 'wo_part',
+      sortable: true,
+      filter: true,
+      width: 140,
+      tooltipField: 'wo_part'
+    },
+    {
+      headerName: 'WO Description',
+      field: 'wo_description',
+      sortable: true,
+      filter: true,
+      width: 200,
+      tooltipField: 'wo_description',
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        return params.value.length > 25 ? 
+          `${params.value.substring(0, 25)}...` : 
+          params.value;
+      }
+    },
+    {
+      headerName: 'WO Due Date',
+      field: 'wo_due_date',
+      sortable: true,
+      filter: 'agDateColumnFilter',
+      width: 120,
+      valueFormatter: (params: any) => {
+        return params.value ? moment(params.value).format('MM/DD/YYYY') : '';
+      }
+    },
+    {
+      headerName: 'WO Line',
+      field: 'wo_line',
+      sortable: true,
+      filter: true,
+      width: 100
+    },
+    {
+      headerName: 'WO Routing',
+      field: 'wo_routing',
+      sortable: true,
+      filter: true,
+      width: 110
+    },
+    {
       headerName: 'Notes',
       field: 'notes',
       sortable: true,
@@ -120,17 +177,20 @@ export class ULUsageReportComponent implements OnInit {
 
   defaultColDef: ColDef = {
     resizable: true,
-    sortable: true
+    sortable: true,
+    floatingFilter: true
   };
 
   constructor(
     private fb: FormBuilder,
     private ulLabelService: ULLabelService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private router: Router
   ) {
     this.filterForm = this.fb.group({
       search: [''],
       customer: [''],
+      workOrder: [''],
       startDate: [''],
       endDate: [''],
       ulNumber: ['']
@@ -183,9 +243,17 @@ export class ULUsageReportComponent implements OnInit {
       filters.endDate, 
       filters.customer
     ).subscribe({
-      next: (data) => {
+      next: (response) => {
         this.isLoading = false;
-        this.usageData = data || [];
+        // Handle API response structure
+        if (response && response.success && response.data) {
+          this.usageData = response.data || [];
+        } else if (Array.isArray(response)) {
+          // Handle direct array response
+          this.usageData = response;
+        } else {
+          this.usageData = [];
+        }
         this.filteredData = [...this.usageData];
         this.applyFilters();
       },
@@ -292,12 +360,27 @@ export class ULUsageReportComponent implements OnInit {
     const totalQuantity = this.filteredData.reduce((sum, item) => sum + item.quantity_used, 0);
     const uniqueULNumbers = new Set(this.filteredData.map(item => item.ul_number)).size;
     const uniqueCustomers = new Set(this.filteredData.map(item => item.customer_name)).size;
+    const uniqueWorkOrders = new Set(this.filteredData.filter(item => item.wo_nbr).map(item => item.wo_nbr)).size;
     
     return {
       totalUsages,
       totalQuantity,
       uniqueULNumbers,
-      uniqueCustomers
+      uniqueCustomers,
+      uniqueWorkOrders
     };
+  }
+
+  // Navigation Methods
+  goToManageLabels() {
+    this.router.navigate(['/ul-management/labels-report']);
+  }
+
+  goToUploadLabels() {
+    this.router.navigate(['/ul-management/upload-labels']);
+  }
+
+  goToCreateUsage() {
+    this.router.navigate(['/ul-usage']);
   }
 }

@@ -62,21 +62,25 @@ interface AllocationDetailRow {
     imports: [CommonModule, FormsModule, AgGridModule],
     template: `
     <!-- Summary Cards -->
-    <div class="allocation-summary mb-4" *ngIf="allocationSummary">
+    <div class="allocation-summary p-3" *ngIf="allocationSummary">
       <div class="row g-3">
         <div class="col-md-3">
           <div class="card border-0 shadow-sm summary-card-clickable" 
                (click)="filterByUrgentShortages()" 
                [class.active]="workflowFilters.urgentShortages"
                title="Click to filter urgent shortages">
-            <div class="card-body text-center">
-              <div class="text-danger mb-2">
-                <i class="mdi mdi-alert-octagon fs-2"></i>
-              </div>
-              <h4 class="mb-1">{{ urgentShortages }}</h4>
-              <small class="text-muted">Urgent Shortages</small>
-              <div class="mt-1">
-                <small class="text-danger">Need Work Orders Now</small>
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="mdi mdi-alert-octagon fs-1 text-danger"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h4 class="mb-1">{{ urgentShortages }}</h4>
+                  <small class="text-muted">Urgent Shortages</small>
+                  <div class="mt-1">
+                    <small class="text-danger">Need Work Orders Now</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -86,14 +90,18 @@ interface AllocationDetailRow {
                (click)="filterByTimingRisks()" 
                [class.active]="workflowFilters.timingRisks"
                title="Click to filter timing risks">
-            <div class="card-body text-center">
-              <div class="text-warning mb-2">
-                <i class="mdi mdi-clock-alert fs-2"></i>
-              </div>
-              <h4 class="mb-1">{{ timingRisks }}</h4>
-              <small class="text-muted">Timing Risks</small>
-              <div class="mt-1">
-                <small class="text-warning">May Miss Due Dates</small>
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="mdi mdi-clock-alert fs-1 text-warning"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h4 class="mb-1">{{ timingRisks }}</h4>
+                  <small class="text-muted">Timing Risks</small>
+                  <div class="mt-1">
+                    <small class="text-warning">May Miss Due Dates</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -102,14 +110,18 @@ interface AllocationDetailRow {
           <div class="card border-0 shadow-sm summary-card-clickable" 
                (click)="filterByCoveredOrders()" 
                title="Click to show well-covered orders">
-            <div class="card-body text-center">
-              <div class="text-success mb-2">
-                <i class="mdi mdi-check-circle fs-2"></i>
-              </div>
-              <h4 class="mb-1">{{ coveragePercentage }}%</h4>
-              <small class="text-muted">30-Day Coverage</small>
-              <div class="mt-1">
-                <small class="text-success">Demand Met</small>
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="mdi mdi-check-circle fs-1 text-success"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h4 class="mb-1">{{ coveragePercentage }}%</h4>
+                  <small class="text-muted">30-Day Coverage</small>
+                  <div class="mt-1">
+                    <small class="text-success">Demand Met</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -118,14 +130,18 @@ interface AllocationDetailRow {
           <div class="card border-0 shadow-sm summary-card-clickable" 
                (click)="filterByExcessCapacity()" 
                title="Click to show excess capacity">
-            <div class="card-body text-center">
-              <div class="text-info mb-2">
-                <i class="mdi mdi-factory fs-2"></i>
-              </div>
-              <h4 class="mb-1">{{ excessCapacity }}</h4>
-              <small class="text-muted">Excess Units</small>
-              <div class="mt-1">
-                <small class="text-info">Available for Future</small>
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="mdi mdi-factory fs-1 text-info"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h4 class="mb-1">{{ excessCapacity }}</h4>
+                  <small class="text-muted">Excess Units</small>
+                  <div class="mt-1">
+                    <small class="text-info">Available for Future</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -134,7 +150,7 @@ interface AllocationDetailRow {
     </div>
 
     <!-- Workflow Filters Card -->
-    <div class="card shadow-sm border-0 mb-4">
+    <!-- <div class="card shadow-sm border-0 mb-4">
       <div class="card-header">
         <div class="d-flex align-items-center justify-content-between">
           <h6 class="mb-0 text-primary">
@@ -187,24 +203,12 @@ interface AllocationDetailRow {
               </label>
             </div>
           </div>
-          <div class="col-auto">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="manualReview"
-                     [(ngModel)]="workflowFilters.manualReview"
-                     (ngModelChange)="applyWorkflowFilters()">
-              <label class="form-check-label" for="manualReview">
-                <span class="badge bg-dark me-2">👤</span>Manual Review
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </div> -->
 
     <!-- Allocation Table -->
     <ag-grid-angular
-      class="ag-theme-quartz no-border"
-      style="width: 100%; height: 600px;"
+      class="ag-theme-quartz no-border shadow-sm"
+      style="width: 100%; height: 600px; border-radius: 8px; overflow: hidden;"
       [rowData]="rowData"
       [columnDefs]="columnDefs"
       [gridOptions]="gridOptions"
@@ -220,7 +224,7 @@ interface AllocationDetailRow {
       [animateRows]="true">
     </ag-grid-angular>
     `,
-    
+    styleUrls: ['./allocation-table.component.scss']
 })
 export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewInit {
     @Input() partNumber: string = '';
@@ -294,51 +298,75 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 showRowGroup: true
             },
             {
-                headerName: 'WO Total',
+                headerName: 'Work Orders',
                 field: 'totalWoQuantity',
                 width: 100,
                 type: 'numericColumn',
-                cellClass: 'text-center'
+                cellClass: 'text-center',
+                tooltipValueGetter: () => 'Total available capacity from all work orders for this part'
             },
             {
-                headerName: 'SO Total',
+                headerName: 'Demand',
                 field: 'totalSoQuantity',
                 width: 100,
                 type: 'numericColumn',
-                cellClass: 'text-center'
+                cellClass: 'text-center',
+                tooltipValueGetter: () => 'Total quantity needed from all sales orders'
             },
             {
-                headerName: 'On Hand',
+                headerName: 'Inventory',
                 field: 'onHandQuantity',
-                width: 100,
+                width: 120,
                 type: 'numericColumn',
                 cellClass: 'text-center',
+                tooltipValueGetter: () => 'Current inventory on hand. Shows coverage status vs demand',
                 cellStyle: (params: any) => {
                     const onHand = params.value || 0;
                     const demand = params.data.totalSoQuantity || 0;
+                    const allocationStatus = params.data.allocationStatus;
+                    
                     if (onHand >= demand) return { backgroundColor: '#e8f5e8', color: '#2e7d32' };
                     if (onHand > 0) return { backgroundColor: '#fff3e0', color: '#ef6c00' };
-                    return { backgroundColor: '#ffebee', color: '#c62828' };
+                    
+                    // When inventory is 0, style based on allocation status
+                    if (allocationStatus === 'MATCHED') {
+                        return { backgroundColor: '#e3f2fd', color: '#1976d2' }; // Light blue for WO covered
+                    } else if (allocationStatus === 'EXCESS') {
+                        return { backgroundColor: '#e8f5e8', color: '#2e7d32' }; // Green for excess
+                    }
+                    
+                    return { backgroundColor: '#ffebee', color: '#c62828' }; // Red for shortage
                 },
                 cellRenderer: (params: any) => {
                     const onHand = params.value || 0;
                     const demand = params.data.totalSoQuantity || 0;
+                    const allocationStatus = params.data.allocationStatus;
+                    const woQuantity = params.data.totalWoQuantity || 0;
                     
                     if (onHand >= demand) {
                         return `<span class="fw-bold">${onHand}</span> <small class="text-success">✓ Covered</small>`;
                     } else if (onHand > 0) {
                         const shortage = demand - onHand;
                         return `<span class="fw-bold">${onHand}</span> <small class="text-warning">-${shortage} short</small>`;
+                    } else {
+                        // When inventory is 0, check if covered by work orders
+                        if (allocationStatus === 'MATCHED') {
+                            return `<span class="text-muted">${onHand}</span> <small class="text-success">✓ WO Covered</small>`;
+                        } else if (allocationStatus === 'EXCESS') {
+                            return `<span class="text-muted">${onHand}</span> <small class="text-info">+ WO Excess</small>`;
+                        } else {
+                            return `<span class="text-muted">${onHand}</span>`;
+                        }
                     }
-                    return `<span class="text-muted">${onHand}</span>`;
                 }
             },
             {
-                headerName: 'Gap',
+                headerName: 'Supply vs Demand',
                 field: 'allocationGap',
-                width: 100,
+                width: 140,
                 type: 'numericColumn',
                 cellClass: 'text-center',
+                tooltipValueGetter: () => 'Shows if we have enough supply to meet demand. Shows "X short" if undersupplied, "X excess" if oversupplied, or "matched" if balanced',
                 cellStyle: (params: any) => {
                     const value = params.value;
                     if (value < 0) return { backgroundColor: '#ffebee', color: '#c62828' };
@@ -398,7 +426,6 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                             align-items: center; 
                             background-color: ${bgColorMap[trafficLight]}; 
                             color: ${colorMap[trafficLight]};
-                            padding: 4px 8px;
                             border-radius: 4px;
                             font-weight: 500;
                         ">
@@ -413,6 +440,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 headerName: 'Actions',
                 field: 'actions',
                 width: 200,
+                cellClass: 'text-center',
                 cellRenderer: (params: any) => {
                     const data = params.data;
                     const category = data.decisionCategory || 'MANUAL_REVIEW';
@@ -423,11 +451,21 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     
                     switch (category) {
                         case 'STOCK_SUFFICIENT':
-                            buttons = `
-                                <button class="btn btn-sm btn-success me-1" onclick="window.useStockOnly('${data.partNumber}')">
-                                    <i class="fas fa-check"></i> Use Stock
-                                </button>
-                            `;
+                            // Check if this is perfectly matched (no excess, no shortage)
+                            const isMatched = data.allocationStatus === 'MATCHED';
+                            if (isMatched) {
+                                buttons = `
+                                    <button class="btn btn-sm btn-success me-1" disabled>
+                                        <i class="fas fa-check-circle"></i> Perfectly Balanced
+                                    </button>
+                                `;
+                            } else {
+                                buttons = `
+                                    <button class="btn btn-sm btn-success me-1" onclick="window.useStockOnly('${data.partNumber}')">
+                                        <i class="fas fa-check"></i> Use Stock
+                                    </button>
+                                `;
+                            }
                             break;
                             
                         case 'URGENT_SHORTAGE':
@@ -473,7 +511,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                             `;
                     }
                     
-                    return `<div class="d-flex">${buttons}</div>`;
+                    return `<div class="d-flex align-items-center">${buttons}</div>`;
                 },
                 pinned: 'right'
             }
@@ -709,8 +747,8 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
         this.gridOptions = {
             enableCellTextSelection: true,
             suppressMenuHide: true,
-            rowHeight: 40,
-            headerHeight: 40,
+            // rowHeight: 40,
+            // headerHeight: 40,
             defaultColDef: this.defaultColDef,
             getRowId: (params) => params.data.id,
             
@@ -720,7 +758,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                 detailGridOptions: {
                     columnDefs: this.detailColumnDefs,
                     defaultColDef: this.defaultColDef,
-                    rowHeight: 35,
+                    // rowHeight: 35,
                     domLayout: 'autoHeight', // Auto-size to content height
                     
                     // Enable grouping by sales order
@@ -731,16 +769,18 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     groupHideOpenParents: false,
                     
                     // Group row styling
-                    getRowStyle: (params) => {
-                        if (params.node.group) {
-                            return { 
-                                'font-weight': 'bold', 
-                                'background-color': '#f8f9fa',
-                                'border-left': '4px solid #007bff'
-                            };
-                        }
-                        return null;
-                    },
+                    // getRowStyle: (params) => {
+                    //     if (params.node.group) {
+                    //         return { 
+                    //             'font-weight': 'bold', 
+                    //             'background-color': '#f8f9fa',
+                    //             'border-left': '4px solid #007bff'
+                    //         };
+                    //     }
+                        
+                    //     // Let CSS classes handle non-group row styling
+                    //     return {};
+                    // },
                     
                     // Custom group cell renderer for sales orders
                     groupRowRenderer: (params: any) => {
@@ -755,14 +795,9 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                                 const soDue = new Date(firstChild.soDueDate).toLocaleDateString();
                                 const totalAllocated = childData.reduce((sum: number, child: any) => sum + (child.allocatedQuantity || 0), 0);
                                 
-                                return `
-                                    <span class="text-primary fw-bold">📋 ${soNumber}</span>
-                                    <small class="text-muted ms-2">
-                                        (${soQty} needed | ${totalAllocated} allocated | Due: ${soDue})
-                                    </small>
-                                `;
+                                return soNumber
                             }
-                            return `<span class="text-primary fw-bold">📋 ${soNumber}</span>`;
+                            return soNumber;
                         }
                         return params.value;
                     }
@@ -771,7 +806,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
                     params.successCallback(params.data.allocations || []);
                 }
             },
-            detailRowAutoHeight: true, // Enable auto-height for detail rows
+            // detailRowAutoHeight: true, // Enable auto-height for detail rows
             isRowMaster: (dataItem) => {
                 return dataItem && dataItem.allocations && dataItem.allocations.length > 0;
             },
@@ -1678,7 +1713,7 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             case 'EXCESS':
                 return `✅ EXCESS: ${allocationGap} units over requirement`;
             case 'MATCHED':
-                return `🟡 MATCHED: Supply exactly meets demand`;
+                return `✅ MATCHED: Supply exactly meets demand`;
             default:
                 return `❓ REVIEW: Manual analysis needed`;
         }
@@ -1693,7 +1728,13 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             return urgencyAnalysis.urgentQuantity > 0 ? 'URGENT_SHORTAGE' : 'FUTURE_ONLY';
         }
         
-        if (allocationStatus === 'MATCHED' || allocationStatus === 'EXCESS') {
+        if (allocationStatus === 'MATCHED') {
+            // If supply exactly matches demand, no action needed regardless of urgency
+            return 'STOCK_SUFFICIENT';
+        }
+        
+        if (allocationStatus === 'EXCESS') {
+            // Only excess capacity can truly "cover" urgent demand beyond what's needed
             return urgencyAnalysis.urgentQuantity > 0 ? 'URGENT_COVERED' : 'STOCK_SUFFICIENT';
         }
         
@@ -1990,6 +2031,19 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
         onHandQuantity: number,
         totalDemand: number
     ): string {
+        // If status is MATCHED, supply exactly meets demand - no action needed
+        if (allocationStatus === 'MATCHED') {
+            if (onHandQuantity >= totalDemand) {
+                return `✅ PERFECTLY COVERED: ${onHandQuantity} units in stock fully covers all ${totalDemand} units needed`;
+            } else if (onHandQuantity > 0) {
+                const woQuantity = totalDemand - onHandQuantity;
+                return `✅ PERFECTLY BALANCED: ${onHandQuantity} inventory + ${woQuantity} work orders exactly meets ${totalDemand} demand`;
+            } else {
+                return `✅ WORK ORDERS SUFFICIENT: ${totalDemand} work orders exactly covers all ${totalDemand} units needed`;
+            }
+        }
+
+        // For non-MATCHED statuses, use existing inventory logic
         if (onHandQuantity >= totalDemand) {
             return `📦 INVENTORY SUFFICIENT: ${onHandQuantity} units in stock covers all ${totalDemand} units needed`;
         }
@@ -2020,23 +2074,30 @@ export class AllocationTableComponent implements OnInit, OnDestroy, AfterViewIni
             return 'NO_DEMAND';
         }
 
-        // If inventory covers all demand
-        if (onHandQuantity >= totalDemand) {
-            return 'STOCK_SUFFICIENT';
+        // CRITICAL: Respect the allocation status first!
+        // If allocation status is MATCHED, supply exactly meets demand - no action needed
+        if (allocationStatus === 'MATCHED') {
+            return 'STOCK_SUFFICIENT';  // Perfectly balanced = sufficient
         }
 
-        // If inventory covers urgent demand
-        if (onHandQuantity >= urgencyAnalysis.urgentQuantity) {
+        // If allocation status is EXCESS, we have more than needed
+        if (allocationStatus === 'EXCESS') {
             return urgencyAnalysis.urgentQuantity > 0 ? 'URGENT_COVERED' : 'STOCK_SUFFICIENT';
         }
 
-        // If there's urgent demand not covered by inventory
-        if (urgencyAnalysis.urgentQuantity > onHandQuantity) {
-            return 'URGENT_SHORTAGE';
+        // If allocation status is SHORTAGE, we need more supply
+        if (allocationStatus === 'SHORTAGE') {
+            // Check if inventory can cover urgent demand even though total is short
+            if (onHandQuantity >= urgencyAnalysis.urgentQuantity && urgencyAnalysis.urgentQuantity > 0) {
+                return 'URGENT_COVERED';
+            }
+            
+            // Check if there's urgent demand not covered
+            return urgencyAnalysis.urgentQuantity > 0 ? 'URGENT_SHORTAGE' : 'FUTURE_ONLY';
         }
 
-        // Default to normal mapping
-        return this.mapStatusToCategory(allocationStatus, urgencyAnalysis);
+        // Fallback for edge cases
+        return 'MANUAL_REVIEW';
     }
 
     /**

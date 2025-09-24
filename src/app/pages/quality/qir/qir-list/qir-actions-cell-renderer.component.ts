@@ -33,7 +33,9 @@ export class QirActionsCellRendererComponent implements ICellRendererAngularComp
   private params!: QirActionsCellRendererParams;
   
   get isQirClosed(): boolean {
-    return this.params?.data?.status !== 'Open';
+    const status = this.params?.data?.status?.toLowerCase();
+    const openStatuses = ['open', 'in process', 'awaiting verification'];
+    return !openStatuses.includes(status);
   }
 
   agInit(params: QirActionsCellRendererParams): void {

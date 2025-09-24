@@ -43,9 +43,9 @@ export class QirListComponent implements OnInit {
     public api: QirService,
     public router: Router,
     private activatedRoute: ActivatedRoute
-  ) {}
+  ) { }
 
-  onCreate(){
+  onCreate() {
     this.router.navigate([NAVIGATION_ROUTE.CREATE], {
       queryParamsHandling: "merge"
     });
@@ -85,6 +85,7 @@ export class QirListComponent implements OnInit {
       minWidth: 150,
     },
     { field: "id", headerName: "ID", filter: "agMultiColumnFilter" },
+    { field: "status", headerName: "Status", filter: "agMultiColumnFilter" },
     {
       field: "qir_response_id",
       headerName: "QIR Reponse Found",
@@ -212,7 +213,7 @@ export class QirListComponent implements OnInit {
 
   isAll = true;
 
-  changeIsAll() {}
+  changeIsAll() { }
 
   dateFrom = moment()
     .subtract(1, "months")
@@ -312,7 +313,7 @@ export class QirListComponent implements OnInit {
 
       // Calculate Type 1 options with counts
       this.calculateType1Options();
-      
+
       // Apply client-side filters
       this.applyFilters();
 
@@ -377,7 +378,7 @@ export class QirListComponent implements OnInit {
     }
 
     const type1Counts = new Map<string, number>();
-    
+
     this.data.forEach(item => {
       const type1Value = item.type1 || 'Unspecified';
       type1Counts.set(type1Value, (type1Counts.get(type1Value) || 0) + 1);
@@ -407,7 +408,7 @@ export class QirListComponent implements OnInit {
           return false;
         }
       }
-      
+
       return true;
     });
   }
