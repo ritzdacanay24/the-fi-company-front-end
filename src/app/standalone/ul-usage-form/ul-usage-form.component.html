@@ -25,8 +25,8 @@
         <div class="bubble bubble-10"></div>
     </div> -->
 
-    <!-- Header -->
-    <div class="form-header bg-primary text-white">
+    <!-- Header - Fixed Sticky Navigation -->
+    <div class="form-header bg-primary text-white position-fixed w-100" style="top: 0; z-index: 1055; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <div class="container">
             <div class="row align-items-center py-3">
                 <div class="col-auto">
@@ -42,6 +42,26 @@
                 </div>
                 <div class="col-auto" *ngIf="isAuthenticated">
                     <div class="d-flex align-items-center">
+                        <!-- User Avatar -->
+                        <div class="user-avatar me-3">
+                            <div class="avatar-container position-relative" style="width: 45px; height: 45px;">
+                                <!-- User Image (shown when hasValidUserImage is true) -->
+                                <img 
+                                    *ngIf="hasValidUserImage"
+                                    [src]="getUserImageUrl()" 
+                                    [alt]="currentUser?.full_name || 'User'"
+                                    class="user-avatar-img"
+                                    (error)="onUserImageError($event)"
+                                    style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);">
+                                <!-- Fallback icon (shown when hasValidUserImage is false) -->
+                                <div 
+                                    *ngIf="!hasValidUserImage"
+                                    class="avatar-fallback d-flex align-items-center justify-content-center" 
+                                    style="width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3);">
+                                    <i class="mdi mdi-account text-white" style="font-size: 24px; opacity: 0.8;"></i>
+                                </div>
+                            </div>
+                        </div>
                         <div class="session-info me-3">
                             <div class="fw-semibold">{{ currentUser?.full_name }}</div>
                             <div class="small opacity-75">
@@ -68,7 +88,7 @@
     </div>
 
     <!-- Success Card -->
-    <div *ngIf="showSuccessMessage" class="success-overlay">
+    <div *ngIf="showSuccessMessage" class="success-overlay" style="padding-top: 100px;">
         <div class="container py-5">
             <div class="row justify-content-center">
                 <div class="col-md-8 col-lg-6">
@@ -132,7 +152,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="form-content" *ngIf="!showSuccessMessage">
+    <div class="form-content" *ngIf="!showSuccessMessage" style="padding-top: 100px;">
         <div class="container py-5">
 
             <!-- Authentication Required -->
@@ -577,7 +597,7 @@
                                         <div class="col-12">
                                             <h6 class="fw-semibold text-dark mb-3">
                                                 <i class="mdi mdi-form-select me-2"></i>
-                                                {{ (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length === 1 ? 'Transaction Details' : 'Bulk Transaction Details' }}
+                                                {{ (selectionMethod === 'automatic' && assignedULNumbers.length === 1) ? 'Transaction Details' : 'Bulk Transaction Details' }}
                                             </h6>
                                         </div>
                                     </div>
@@ -646,7 +666,8 @@
                                     </div> -->
 
                                     <!-- Single UL Form -->
-                                    <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length === 1) || (selectionMethod === 'manual' && manuallySelectedULs.length === 1)" class="single-ul-form">
+                                    <!-- Single UL Form (Only for Automatic Selection) -->
+                                    <div *ngIf="selectionMethod === 'automatic' && assignedULNumbers.length === 1" class="single-ul-form">
                                         <div class="row g-3 mb-4">
                                             <div class="col-md-8">
                                                 <label class="form-label fw-semibold">
@@ -657,7 +678,7 @@
                                                     class="form-control form-control-lg"
                                                     placeholder="Enter device serial number">
                                                 <div class="form-text">Device or component serial number for {{
-                                                    selectionMethod === 'automatic' ? assignedULNumbers[0] : manuallySelectedULs[0] }}</div>
+                                                    assignedULNumbers[0] }}</div>
                                             </div>
 
                                             <div class="col-md-4">
@@ -711,8 +732,8 @@
                                         </div> -->
                                     </div>
 
-                                    <!-- Bulk UL Forms -->
-                                    <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length > 1) || (selectionMethod === 'manual' && manuallySelectedULs.length > 1)" class="bulk-ul-forms">
+                                    <!-- Bulk UL Forms (Multiple Automatic OR Any Manual Selection) -->
+                                    <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length > 1) || (selectionMethod === 'manual' && manuallySelectedULs.length > 0)" class="bulk-ul-forms">
                                         <div *ngFor="let ulNumber of (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs); let i = index"
                                             class="ul-form-section p-3 mb-3 border rounded bg-light">
                                             <div class="mb-3">
@@ -729,7 +750,7 @@
                                                             Serial Number *
                                                         </label>
                                                         <input type="text"
-                                                            [(ngModel)]="bulkTransactions[i].serial_number"
+                                                            [(ngModel)]="getBulkTransactionByUL(ulNumber).serial_number"
                                                             [ngModelOptions]="{standalone: true}"
                                                             name="bulk_serial_{{ i }}" class="form-control"
                                                             placeholder="Enter device serial number" required>
@@ -740,7 +761,7 @@
                                                             <i class="mdi mdi-counter me-1"></i>
                                                             Quantity *
                                                         </label>
-                                                        <input type="number" [(ngModel)]="bulkTransactions[i].quantity"
+                                                        <input type="number" [(ngModel)]="getBulkTransactionByUL(ulNumber).quantity"
                                                             [ngModelOptions]="{standalone: true}"
                                                             name="bulk_quantity_{{ i }}" class="form-control" min="1"
                                                             placeholder="1" required tabindex="-1">
@@ -760,7 +781,7 @@
                                 <i class="mdi mdi-refresh me-1"></i>Reset Form
                             </button>
                             <button class="btn btn-primary" type="submit" form="usageForm"
-                                    [disabled]="!isFormValid() || isSubmitting || ((selectionMethod === 'automatic' && assignedULNumbers.length === 0) || (selectionMethod === 'manual' && manuallySelectedULs.length === 0))">
+                                    [disabled]="!isFormValid() || isSubmitting">
                                 @if (isSubmitting) {
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                     {{ ((selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs).length > 1) ? 'Recording...' : 'Recording...' }}
@@ -793,6 +814,23 @@
                         <div class="d-flex align-items-center justify-content-center">
                             <i class="mdi mdi-information me-2"></i>
                             <span>Please review the following information before submitting</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Physical Label Warning -->
+                <div class="alert alert-warning bg-warning bg-opacity-10 border-warning mb-4">
+                    <div class="d-flex align-items-start">
+                        <i class="mdi mdi-alert-circle text-warning me-3 mt-1" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <h6 class="fw-bold text-warning mb-2">
+                                <i class="mdi mdi-label-multiple me-1"></i>
+                                Physical Label Requirement
+                            </h6>
+                            <p class="mb-0">
+                                <strong>Important:</strong> Make sure you have the physical UL labels in your possession before submitting. 
+                                Each UL number must match the actual labels you're applying to devices.
+                            </p>
                         </div>
                     </div>
                 </div>

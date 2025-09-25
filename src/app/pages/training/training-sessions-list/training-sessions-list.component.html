@@ -161,7 +161,7 @@
                       <i class="mdi ms-1" [class]="getSortIcon('status')"></i>
                     </th>
                     <th style="width: 120px;">Expected</th>
-                    <th style="width: 200px;" class="text-center">Actions</th>
+                    <th style="width: 240px;" class="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,6 +214,13 @@
                           [disabled]="!canEditSession(session)"
                           title="Edit Session">
                           <i class="mdi mdi-pencil"></i>
+                        </button>
+                        <button 
+                          class="btn btn-sm btn-outline-warning" 
+                          (click)="manageAttendees(session)"
+                          [disabled]="!canManageAttendees(session)"
+                          title="Add/Manage Attendees">
+                          <i class="mdi mdi-account-multiple-plus"></i>
                         </button>
                         <button 
                           class="btn btn-sm btn-outline-info" 

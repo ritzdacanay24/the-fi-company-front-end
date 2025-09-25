@@ -267,11 +267,24 @@
             <div class="col-12 mt-4">
               <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-light">
-                  <h5 class="mb-0">
-                    <i class="mdi mdi-account-group me-2 text-primary"></i>
-                    Expected Attendees
-                    <span class="badge bg-primary ms-2">{{ selectedEmployees.length }} selected</span>
-                  </h5>
+                  <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0">
+                      <i class="mdi mdi-account-group me-2 text-primary"></i>
+                      Expected Attendees
+                      <span class="badge bg-primary ms-2">{{ selectedEmployees.length }} selected</span>
+                    </h5>
+                    <button 
+                      type="button" 
+                      class="btn btn-success btn-sm" 
+                      *ngIf="isEditMode"
+                      [disabled]="isSaving"
+                      (click)="saveAttendeesOnly()"
+                      title="Save attendee changes only">
+                      <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                      <i *ngIf="!isSaving" class="mdi mdi-content-save me-1"></i>
+                      {{ isSaving ? 'Saving...' : 'Update Attendees' }}
+                    </button>
+                  </div>
                 </div>
                 <div class="card-body">
 

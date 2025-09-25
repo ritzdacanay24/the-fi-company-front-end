@@ -90,7 +90,8 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
   // Bulk transaction mode (now automatic based on quantity)
   get isBulkMode(): boolean {
-    return this.assignedULNumbers.length > 1;
+    const ulNumbers = this.selectionMethod === 'automatic' ? this.assignedULNumbers : this.manuallySelectedULs;
+    return ulNumbers.length > 1;
   }
 
   // Category options
@@ -128,6 +129,9 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // Inactivity tracking
   lastActivity = Date.now();
   inactivityTimer: Subscription | null = null;
+
+  // User image handling
+  hasValidUserImage = true;
 
   constructor(
     private fb: FormBuilder,
@@ -203,6 +207,10 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     if (user && user.id) {
       this.isAuthenticated = true;
       this.currentUser = user;
+      
+      // Initialize user image validation
+      this.hasValidUserImage = !!(this.currentUser?.image);
+      
       this.startSessionTimer();
       this.updateLastActivity(); // Start inactivity tracking
     }
@@ -344,6 +352,11 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   }
 
   private logoutDueToInactivity() {
+    // Close confirmation modal if it's open during session expiry
+    this.showConfirmationModal = false;
+    this.pendingSubmissionData = [];
+    this.isSubmitting = false;
+    
     // Silent logout due to inactivity - no alerts
     this.logout();
   }
@@ -644,6 +657,12 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.bulkTransactions = [];
     this.showSuccessMessage = false;
     this.lastSubmittedULs = [];
+    
+    // Close confirmation modal if it's open
+    this.showConfirmationModal = false;
+    this.pendingSubmissionData = [];
+    this.isSubmitting = false;
+    
     this.initializeForm();
     
     // Reset to card number method and focus
@@ -723,11 +742,13 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         return false;
       }
 
-      // Check bulk transactions for manual selection
-      return this.bulkTransactions.every(transaction =>
-        transaction.serial_number.trim() !== '' &&
-        transaction.quantity > 0
-      );
+      // For manual selection (single or multiple), always check bulk transactions
+      // because each manually selected UL creates a bulk transaction entry
+      return this.bulkTransactions.length === this.manuallySelectedULs.length &&
+             this.bulkTransactions.every(transaction =>
+               transaction.serial_number.trim() !== '' &&
+               transaction.quantity > 0
+             );
     }
   }
 
@@ -771,13 +792,20 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     if (this.selectedManualUL && !this.manuallySelectedULs.includes(this.selectedManualUL)) {
       this.manuallySelectedULs.push(this.selectedManualUL);
       
-      // Update bulk transactions for manual selection
-      this.bulkTransactions = this.manuallySelectedULs.map(ulNumber => ({
-        ul_number: ulNumber,
-        serial_number: '',
-        quantity: 1,
-        work_order: ''
-      }));
+      // Update bulk transactions for manual selection - preserve existing serial numbers
+      const existingTransactions = new Map(
+        this.bulkTransactions.map(t => [t.ul_number, t])
+      );
+      
+      this.bulkTransactions = this.manuallySelectedULs.map(ulNumber => {
+        const existing = existingTransactions.get(ulNumber);
+        return existing || {
+          ul_number: ulNumber,
+          serial_number: '',
+          quantity: 1,
+          work_order: ''
+        };
+      });
       
       // Clear the selection dropdown
       this.selectedManualUL = '';
@@ -790,15 +818,14 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // Remove manually selected UL
   removeManualUL(index: number) {
     if (index >= 0 && index < this.manuallySelectedULs.length) {
+      const removedUL = this.manuallySelectedULs[index];
       this.manuallySelectedULs.splice(index, 1);
       
-      // Update bulk transactions
-      this.bulkTransactions = this.manuallySelectedULs.map(ulNumber => ({
-        ul_number: ulNumber,
-        serial_number: '',
-        quantity: 1,
-        work_order: ''
-      }));
+      // Update bulk transactions - preserve existing serial numbers for remaining ULs
+      this.bulkTransactions = this.bulkTransactions.filter(transaction => 
+        transaction.ul_number !== removedUL && 
+        this.manuallySelectedULs.includes(transaction.ul_number)
+      );
       
       // Refresh UL ranges
       this.organizeULsByRange(this.filteredULs.length > 0 ? this.filteredULs : this.availableULs);
@@ -883,6 +910,21 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     });
   }
 
+  // Get bulk transaction by UL number, create if not exists
+  getBulkTransactionByUL(ulNumber: string): BulkTransaction {
+    let transaction = this.bulkTransactions.find(t => t.ul_number === ulNumber);
+    if (!transaction) {
+      transaction = {
+        ul_number: ulNumber,
+        serial_number: '',
+        quantity: 1,
+        work_order: ''
+      };
+      this.bulkTransactions.push(transaction);
+    }
+    return transaction;
+  }
+
   // Custom validation for login form based on selected method
   isLoginFormValid(loginForm: any): boolean {
     const formData = loginForm.value;
@@ -958,6 +1000,9 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
           // Update component state
           this.isAuthenticated = true;
           this.currentUser = userWithToken;
+          
+          // Initialize user image validation
+          this.hasValidUserImage = !!(this.currentUser?.image);
           
           this.startSessionTimer();
           this.updateLastActivity(); // Start inactivity tracking
@@ -1060,6 +1105,37 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         work_order_part: '',
         work_order_description: ''
       });
+    }
+  }
+
+  // ============================================================================
+  // User Image Methods
+  // ============================================================================
+  
+  /**
+   * Get the URL for the current user's image
+   */
+  getUserImageUrl(): string {
+    if (this.currentUser?.image) {
+      // If image path starts with http/https, use as is
+      if (this.currentUser.image.startsWith('http')) {
+        return this.currentUser.image;
+      }
+      // Otherwise, prepend the dashboard URL
+      return `https://dashboard.eye-fi.com${this.currentUser.image}`;
+    }
+    // Return empty string to trigger error handler and show fallback
+    return '';
+  }
+
+  /**
+   * Handle user image load errors
+   */
+  onUserImageError(event: any): void {
+    this.hasValidUserImage = false;
+    // Hide the img element
+    if (event.target) {
+      event.target.style.display = 'none';
     }
   }
 }

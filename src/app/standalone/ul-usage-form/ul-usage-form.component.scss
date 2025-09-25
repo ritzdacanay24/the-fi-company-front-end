@@ -1398,3 +1398,68 @@ select[multiple] {
   left: 95%; 
   transform-origin: center center;
 }
+
+// ============================================================================
+// Sticky Navigation Enhancement
+// ============================================================================
+
+.form-header {
+  // Ensure smooth transitions when scrolling
+  transition: box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+  
+  // Enhanced shadow for better visibility when sticky
+  &.position-fixed {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    // Slightly enhanced shadow for floating effect
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  // Responsive adjustments for sticky header
+  @media (max-width: 768px) {
+    .container {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+    
+    .company-logo {
+      height: 40px !important;
+    }
+    
+    h3 {
+      font-size: 1.25rem;
+    }
+    
+    .session-info {
+      font-size: 0.8rem;
+      
+      .small {
+        font-size: 0.75rem;
+      }
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .py-3 {
+      padding-top: 0.75rem !important;
+      padding-bottom: 0.75rem !important;
+    }
+    
+    .company-logo {
+      height: 35px !important;
+    }
+  }
+}
+
+// Adjust main content for different screen sizes with sticky header
+.form-content,
+.success-overlay {
+  @media (max-width: 768px) {
+    padding-top: 85px !important; // Smaller header on mobile
+  }
+  
+  @media (max-width: 576px) {
+    padding-top: 75px !important; // Even smaller on very small screens
+  }
+}

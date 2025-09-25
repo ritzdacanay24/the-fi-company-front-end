@@ -276,6 +276,13 @@ export class TrainingSessionsListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/training/setup', session.id]);
   }
 
+  manageAttendees(session: TrainingSession): void {
+    // Navigate to setup page with focus on attendees section
+    this.router.navigate(['/training/setup', session.id], { 
+      queryParams: { tab: 'attendees' } 
+    });
+  }
+
   duplicateSession(session: TrainingSession): void {
     // Navigate to setup with session data for duplication
     this.router.navigate(['/training/setup'], { 
@@ -347,6 +354,11 @@ export class TrainingSessionsListComponent implements OnInit, OnDestroy {
 
   canEditSession(session: TrainingSession): boolean {
     return session.status === 'scheduled';
+  }
+
+  canManageAttendees(session: TrainingSession): boolean {
+    // Allow managing attendees for scheduled and in-progress sessions
+    return session.status === 'scheduled' || session.status === 'in-progress';
   }
 
   canDeleteSession(session: TrainingSession): boolean {

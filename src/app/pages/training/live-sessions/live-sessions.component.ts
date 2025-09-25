@@ -111,29 +111,33 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
         startTime,
         endTime,
         now,
-        isLive: now >= startTime && now <= endTime,
+        status: mappedSession.status,
+        isLive: (now >= startTime && now <= endTime) || mappedSession.status === 'in-progress',
         isUpcoming: startTime > now && (startTime.getTime() - now.getTime()) <= 4 * 60 * 60 * 1000,
         timeDiff: (startTime.getTime() - now.getTime()) / (1000 * 60 * 60) // hours
       });
       
-      // Session is live if current time is between start and end time
-      if (now >= startTime && now <= endTime) {
+      // Session is live if:
+      // 1. Current time is between start and end time, OR
+      // 2. Session status is 'in-progress' (hasn't been manually closed)
+      if ((now >= startTime && now <= endTime) || mappedSession.status === 'in-progress') {
         console.log('Adding to live sessions:', mappedSession.title);
         this.liveSessions.push(mappedSession);
       }
-      // Session is upcoming if it starts within the next 4 hours
-      else if (startTime > now && (startTime.getTime() - now.getTime()) <= 4 * 60 * 60 * 1000) {
+      // Session is upcoming if it starts within the next 4 hours and is not completed/cancelled
+      else if (startTime > now && (startTime.getTime() - now.getTime()) <= 4 * 60 * 60 * 1000 && 
+               mappedSession.status !== 'completed' && mappedSession.status !== 'cancelled') {
         console.log('Adding to upcoming sessions:', mappedSession.title);
         this.upcomingSessions.push(mappedSession);
       }
-      // Show all sessions for now (debug)
-      else if (startTime > now) {
+      // Show all future sessions for now (debug) - but not completed/cancelled ones
+      else if (startTime > now && mappedSession.status !== 'completed' && mappedSession.status !== 'cancelled') {
         console.log('Session is in future but beyond 4 hours:', mappedSession.title, 'Hours from now:', (startTime.getTime() - now.getTime()) / (1000 * 60 * 60));
         // Temporarily add to upcoming for debugging
         this.upcomingSessions.push(mappedSession);
       }
       else {
-        console.log('Session is in the past:', mappedSession.title);
+        console.log('Session is in the past or completed:', mappedSession.title, 'Status:', mappedSession.status);
       }
     });
 
@@ -306,8 +310,8 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
     this.trainingService.startSession(session.id).subscribe({
       next: (updatedSession) => {
         console.log('Session started:', updatedSession);
-        // Update the session in our arrays
-        this.updateSessionInArrays(updatedSession);
+        // Reload all sessions to get accurate state
+        this.loadSessions();
         this.isProcessing = false;
       },
       error: (error) => {
@@ -325,8 +329,8 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
     this.trainingService.endSession(session.id).subscribe({
       next: (updatedSession) => {
         console.log('Session ended:', updatedSession);
-        // Update the session in our arrays
-        this.updateSessionInArrays(updatedSession);
+        // Reload all sessions to get accurate state
+        this.loadSessions();
         this.isProcessing = false;
       },
       error: (error) => {
@@ -350,14 +354,5 @@ export class LiveSessionsComponent implements OnInit, OnDestroy {
 
   editSession(session: any): void {
     this.router.navigate(['../setup', session.id], { relativeTo: this.route });
-  }
-
-  private updateSessionInArrays(updatedSession: any): void {
-    // Remove from current arrays
-    this.liveSessions = this.liveSessions.filter(s => s.id !== updatedSession.id);
-    this.upcomingSessions = this.upcomingSessions.filter(s => s.id !== updatedSession.id);
-    
-    // Re-categorize based on new status
-    this.categorizeSessionsByStatus([updatedSession]);
   }
 }

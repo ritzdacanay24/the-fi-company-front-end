@@ -21,7 +21,7 @@ import {
   styleUrls: ['./badge-sign-off.component.scss']
 })
 export class BadgeSignOffComponent implements OnInit, OnDestroy {
-  @ViewChild('badgeInput', { static: true }) badgeInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('badgeInput', { static: false }) badgeInput!: ElementRef<HTMLInputElement>;
   @ViewChild('confirmationModal', { static: true }) confirmationModal!: TemplateRef<any>;
   
   session: TrainingSession | null = null;
@@ -47,6 +47,7 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   showSuccessMessage = false;
   showErrorMessage = false;
   messageText = '';
+  isInputFocused = false;
   
   private modalService = inject(NgbModal);
   
@@ -77,12 +78,15 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     this.trainingService.getTrainingSession(sessionId).subscribe({
-      next: (session) => {
-        this.session = session;
-        this.trainingService.setCurrentSession(session);
+      next: (rawSession) => {
+        // Map backend response to proper format
+        this.session = this.mapTrainingSessionData(rawSession);
+        this.trainingService.setCurrentSession(this.session);
         this.loadCompletions();
         this.loadMetrics();
         this.isLoading = false;
+        // Focus the badge input after session loads and DOM updates
+        setTimeout(() => this.focusBadgeInput(), 200);
       },
       error: (error) => {
         console.error('Error loading session:', error);
@@ -90,6 +94,28 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  private mapTrainingSessionData(rawData: any): TrainingSession {
+    return {
+      id: Number(rawData.id),
+      title: rawData.title,
+      description: rawData.description,
+      purpose: rawData.purpose,
+      date: rawData.date,
+      startTime: rawData.start_time || rawData.startTime,
+      endTime: rawData.end_time || rawData.endTime,
+      duration: rawData.duration || `${rawData.duration_minutes}m`,
+      durationMinutes: Number(rawData.duration_minutes),
+      location: rawData.location,
+      facilitatorName: rawData.facilitator_name || rawData.facilitatorName,
+      facilitatorSignature: rawData.facilitator_signature || rawData.facilitatorSignature,
+      status: rawData.status,
+      createdBy: Number(rawData.created_by),
+      createdDate: rawData.created_date || rawData.createdDate,
+      expectedAttendees: rawData.expectedAttendees || [],
+      actualAttendees: rawData.actualAttendees || []
+    };
   }
 
   private loadCompletions(): void {
@@ -169,12 +195,16 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
         this.loadCompletions();
         this.loadMetrics();
         this.isLoading = false;
+        // Auto-focus back to badge input for next scan with longer delay for modal
+        setTimeout(() => this.focusBadgeInput(), 500);
       },
       error: (error) => {
         console.error('Error completing training:', error);
         this.showMessage('Error completing training. Please try again.', 'error');
         this.hideConfirmationModal();
         this.isLoading = false;
+        // Auto-focus back to badge input for retry
+        setTimeout(() => this.focusBadgeInput(), 500);
       }
     });
   }
@@ -256,9 +286,42 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
     }, 3000);
   }
 
+  onInputFocus(event: FocusEvent): void {
+    const input = event.target as HTMLInputElement;
+    input.removeAttribute('readonly');
+    this.isInputFocused = true;
+  }
+
+  onInputBlur(event: FocusEvent): void {
+    this.isInputFocused = false;
+  }
+
   private focusBadgeInput(): void {
     if (this.badgeInput?.nativeElement) {
-      this.badgeInput.nativeElement.focus();
+      console.log('Attempting to focus badge input');
+      const input = this.badgeInput.nativeElement;
+      
+      // Ensure input is visible and enabled
+      if (input.offsetParent !== null && !input.disabled) {
+        input.focus();
+        this.isInputFocused = true; // Update focus state
+        console.log('Badge input focused successfully');
+        
+        // Verify focus was successful, retry if not
+        setTimeout(() => {
+          if (document.activeElement !== input) {
+            console.log('Focus failed, retrying...');
+            input.focus();
+            this.isInputFocused = document.activeElement === input;
+          }
+        }, 50);
+      } else {
+        console.log('Badge input not ready for focus, retrying...');
+        // Retry if input not ready
+        setTimeout(() => this.focusBadgeInput(), 100);
+      }
+    } else {
+      console.log('Badge input element not found');
     }
   }
 
@@ -282,6 +345,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
     if (this.session) {
       this.loadCompletions();
       this.loadMetrics();
+      // Auto-focus back to badge input after refresh
+      setTimeout(() => this.focusBadgeInput(), 100);
     }
   }
 

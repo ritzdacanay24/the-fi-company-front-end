@@ -521,6 +521,44 @@ export class TrainingSetupComponent implements OnInit, OnDestroy {
     }
   }
 
+  saveAttendeesOnly(): void {
+    if (!this.isEditMode || !this.sessionId || !this.existingSession) {
+      this.showMessage('Can only update attendees in edit mode', 'error');
+      return;
+    }
+
+    this.isSaving = true;
+    
+    // Use the existing session data but only update the attendees
+    const updateData = {
+      title: this.existingSession.title,
+      description: this.existingSession.description,
+      purpose: this.existingSession.purpose,
+      date: this.existingSession.date,
+      startTime: this.existingSession.startTime,
+      endTime: this.existingSession.endTime,
+      location: this.existingSession.location,
+      facilitatorName: this.existingSession.facilitatorName,
+      expectedAttendeeIds: this.selectedEmployees.map(emp => Number(emp.id))
+    };
+
+    console.log('Updating attendees only with full session data:', updateData);
+    
+    this.trainingService.updateTrainingSession(this.sessionId, updateData).subscribe({
+      next: (rawSession) => {
+        const session = this.mapTrainingSessionData(rawSession);
+        this.existingSession = session;
+        this.showMessage(`Attendees updated successfully! ${this.selectedEmployees.length} attendee(s) selected.`, 'success');
+        this.isSaving = false;
+      },
+      error: (error) => {
+        console.error('Error updating attendees:', error);
+        this.showMessage('Error updating attendees. Please try again.', 'error');
+        this.isSaving = false;
+      }
+    });
+  }
+
   private markFormGroupTouched(): void {
     Object.keys(this.trainingForm.controls).forEach(key => {
       const control = this.trainingForm.get(key);
