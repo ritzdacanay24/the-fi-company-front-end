@@ -40,6 +40,13 @@ export class SidebarComponent implements OnInit {
   maxFavs = 5;
   favs = [];
 
+  // User preferences with localStorage persistence
+  isCollapsed: boolean = true; // Favorites section collapsed state
+  sidebarPreferences = {
+    favoritesExpanded: false,
+    sidebarSize: 'normal' // 'normal' or 'small'
+  };
+
   version = environment.VERSION;
   // Search functionality using Angular signals
   showSearch: boolean = true; // toggle visibility of the search box
@@ -95,6 +102,75 @@ export class SidebarComponent implements OnInit {
     this.appSwitcherService.currentApp$.subscribe(() => {
       this.getMenu();
     });
+
+    // Initialize user preferences from localStorage
+    this.loadUserPreferences();
+  }
+
+  // User Preferences Management
+  private loadUserPreferences(): void {
+    try {
+      const savedPreferences = localStorage.getItem('sidebar-preferences');
+      if (savedPreferences) {
+        this.sidebarPreferences = { ...this.sidebarPreferences, ...JSON.parse(savedPreferences) };
+      }
+      
+      // Apply favorites expanded state
+      this.isCollapsed = !this.sidebarPreferences.favoritesExpanded;
+      
+      // Apply sidebar size state
+      this.applySidebarSize();
+    } catch (error) {
+      console.warn('Failed to load sidebar preferences:', error);
+    }
+  }
+
+  private saveUserPreferences(): void {
+    try {
+      localStorage.setItem('sidebar-preferences', JSON.stringify(this.sidebarPreferences));
+    } catch (error) {
+      console.warn('Failed to save sidebar preferences:', error);
+    }
+  }
+
+  private applySidebarSize(): void {
+    const currentSize = document.documentElement.getAttribute("data-sidebar-size");
+    
+    if (this.sidebarPreferences.sidebarSize === 'small' && currentSize !== 'sm-hover') {
+      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
+    } else if (this.sidebarPreferences.sidebarSize === 'normal' && currentSize === 'sm-hover') {
+      document.documentElement.removeAttribute("data-sidebar-size");
+    }
+  }
+
+  // Toggle favorites expanded/collapsed state with persistence
+  toggleFavoritesExpansion(): void {
+    this.sidebarPreferences.favoritesExpanded = !this.sidebarPreferences.favoritesExpanded;
+    this.isCollapsed = !this.sidebarPreferences.favoritesExpanded;
+    this.saveUserPreferences();
+  }
+
+  // Handle sidebar size change from dropdown
+  onSidebarSizeChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const newSize = target.value as 'normal' | 'small';
+    
+    this.sidebarPreferences.sidebarSize = newSize;
+    this.applySidebarSize();
+    this.saveUserPreferences();
+  }
+
+  // Reset all preferences to defaults
+  resetUserPreferences(): void {
+    this.sidebarPreferences = {
+      favoritesExpanded: false,
+      sidebarSize: 'normal'
+    };
+    
+    // Apply the reset preferences
+    this.isCollapsed = !this.sidebarPreferences.favoritesExpanded;
+    this.applySidebarSize();
+    this.saveUserPreferences();
   }
 
   generateChild = (arr) => {
@@ -182,7 +258,6 @@ export class SidebarComponent implements OnInit {
     // When searching, include hidden items with special indicators
     const config = this.getMenuConfiguration();
     const searchResults = this.originalMenuItems.filter(item => {
-      if (item.isTitle) return false;
       return this.itemOrChildrenMatch(item, term);
     }).map(item => ({
       ...item,
@@ -205,13 +280,15 @@ export class SidebarComponent implements OnInit {
   }
 
   private itemOrChildrenMatch(item: MenuItem, searchTerm: string): boolean {
-    // Skip title items
-    if (item.isTitle) return false;
-    
-    // Check if current item matches
+    // Check if current item matches (including titles)
     const currentMatches = item.label?.toLowerCase().includes(searchTerm);
     
-    // Check if any children match
+    // For titles, only check their own label
+    if (item.isTitle) {
+      return currentMatches;
+    }
+    
+    // For regular items, check if any children match
     let childrenMatch = false;
     if (item.subItems && item.subItems.length > 0) {
       childrenMatch = item.subItems.some(child => this.itemOrChildrenMatch(child, searchTerm));
@@ -360,7 +437,6 @@ export class SidebarComponent implements OnInit {
     });
   }
 
-  isCollapsed = true;
   mouseHovering(e) {
     if (!e) return; // Add safety check
     e.showStar = true;
@@ -582,6 +658,7 @@ export class SidebarComponent implements OnInit {
 
   /**
    * Toggle between collapsed sidebar (sm-hover) and full sidebar (null)
+   * Now saves the preference to localStorage
    */
   toggleMobileMenu(event: any) {
     var sidebarsize =
@@ -589,10 +666,15 @@ export class SidebarComponent implements OnInit {
     if (sidebarsize == "sm-hover") {
       // If currently collapsed, expand to full menu
       document.documentElement.removeAttribute("data-sidebar-size");
+      this.sidebarPreferences.sidebarSize = 'normal';
     } else {
       // If currently full or any other state, collapse to hover mode
       document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
+      this.sidebarPreferences.sidebarSize = 'small';
     }
+    
+    // Save the sidebar size preference
+    this.saveUserPreferences();
   }
 
   // Configuration Modal Methods

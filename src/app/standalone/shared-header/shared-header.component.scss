@@ -1,0 +1,43 @@
+.form-header {
+  pointer-events: auto !important;
+  
+  * {
+    pointer-events: auto !important;
+  }
+  
+  .company-logo {
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .user-avatar-img {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .avatar-fallback {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba(255,255,255,0.3) !important;
+    }
+  }
+
+  .btn-group .btn {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.3);
+    }
+  }
+
+  .session-info {
+    min-width: 140px; // Ensure consistent width for session info
+  }
+}

@@ -1,0 +1,81 @@
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg bg-primary navbar-dark position-fixed w-100" style="top: 0; z-index: 1055; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <div class="container-fluid">
+    <!-- Brand with Logo Only -->
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png"
+           alt="The Fi Company" 
+           style="height: 40px; width: auto;">
+    </a>
+    
+    <!-- Mobile Toggle Button -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <!-- Collapsible Content -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <!-- Forms Menu Button (Always Visible) -->
+        <li class="nav-item">
+          <button class="btn btn-outline-light btn-sm ms-2" (click)="onGoToFormsMenu()">
+            <i class="mdi mdi-view-grid me-1"></i>Forms Menu
+          </button>
+        </li>
+      </ul>
+      
+      <!-- Authenticated User Section -->
+      <div *ngIf="isAuthenticated" class="d-flex align-items-center">
+        <!-- User Avatar -->
+        <div class="user-avatar me-3">
+          <div class="avatar-container position-relative" style="width: 40px; height: 40px;">
+            <!-- User Image -->
+            <img 
+                *ngIf="hasValidUserImage"
+                [src]="getUserImageUrl()" 
+                [alt]="currentUser?.full_name || 'User'"
+                class="user-avatar-img"
+                (error)="onUserImageError($event)"
+                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);">
+            <!-- Fallback initials -->
+            <div 
+                *ngIf="!hasValidUserImage"
+                class="avatar-fallback d-flex align-items-center justify-content-center" 
+                style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3);">
+              <span class="text-white fw-bold" style="font-size: 12px;">{{ getUserInitials() }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Session Info -->
+        <div class="session-info text-white me-3">
+          <div class="fw-semibold small">{{ currentUser?.full_name }}</div>
+          <div class="small opacity-75 d-none d-sm-block">
+            <i class="mdi mdi-timer me-1"></i>{{ sessionTimeRemaining }}
+            <span class="mx-1">|</span>
+            <i class="mdi mdi-account-clock me-1"></i>{{ inactivityTimeRemaining }}
+          </div>
+          <!-- Mobile version - show only session time -->
+          <div class="small opacity-75 d-block d-sm-none">
+            <i class="mdi mdi-timer me-1"></i>{{ sessionTimeRemaining }}
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="btn-group">
+          <button class="btn btn-outline-light btn-sm" (click)="onExtendSession()">
+            <i class="mdi mdi-refresh me-1"></i>
+            <span class="d-none d-lg-inline">Extend</span>
+          </button>
+          <button class="btn btn-outline-light btn-sm" (click)="onLogout()">
+            <i class="mdi mdi-logout me-1"></i>
+            <span class="d-none d-lg-inline">Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Page Header Section -->

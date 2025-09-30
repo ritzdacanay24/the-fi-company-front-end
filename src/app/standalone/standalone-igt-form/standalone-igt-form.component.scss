@@ -1,0 +1,79 @@
+.standalone-igt-form {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  
+  .form-header {
+    .company-logo {
+      transition: transform 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+    
+    .breadcrumb {
+      .breadcrumb-item {
+        a {
+          transition: opacity 0.3s ease;
+          
+          &:hover {
+            opacity: 0.8;
+          }
+        }
+      }
+    }
+  }
+  
+  .form-content {
+    .card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+      }
+    }
+  }
+  
+  .success-overlay {
+    .success-icon {
+      animation: successPulse 1.5s ease-in-out infinite alternate;
+    }
+    
+    @keyframes successPulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .standalone-igt-form {
+    .form-header {
+      .col-auto {
+        .company-logo {
+          height: 40px !important;
+        }
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .standalone-igt-form {
+    .form-header,
+    footer {
+      display: none !important;
+    }
+    
+    .form-content {
+      padding-top: 0 !important;
+    }
+  }
+}

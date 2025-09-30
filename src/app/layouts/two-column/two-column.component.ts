@@ -12,8 +12,15 @@ import { EventService } from '../../core/services/event.service';
  */
 export class TwoColumnComponent implements OnInit {
 
-  constructor(private eventService: EventService) { }
+  constructor(private eventService: EventService) {
+    this.loadSidebarPreferences();
+  }
   isCondensed = false;
+
+  // Sidebar preferences for two-column layout
+  sidebarPreferences = {
+    panelCollapsed: false
+  };
 
   ngOnInit(): void {
     window.addEventListener('resize', () => {
@@ -47,15 +54,21 @@ export class TwoColumnComponent implements OnInit {
 
   /**
    * On mobile toggle button clicked
+   * Now saves the panel state preference to localStorage
    */
   onToggleMobileMenu() {
     if (document.documentElement.clientWidth <= 767) {
       document.body.classList.toggle('vertical-sidebar-enable');
       document.getElementById('side-bar')?.classList.remove('d-none')
+      this.sidebarPreferences.panelCollapsed = false;
     } else {
       document.body.classList.toggle('twocolumn-panel');
       document.getElementById('side-bar')?.classList.add('d-none')
+      this.sidebarPreferences.panelCollapsed = document.body.classList.contains('twocolumn-panel');
     }
+    
+    // Save the panel state preference
+    this.saveSidebarPreferences();
   }
 
   /**
@@ -87,6 +100,42 @@ export class TwoColumnComponent implements OnInit {
         this.eventService.broadcast('changeLayout', 'twocolumn');
         document.body.classList.remove('twocolumn-panel');
         document.body.classList.remove('vertical-sidebar-enable');
+      }
+    }
+  }
+
+  // Two-column layout preferences management
+  private loadSidebarPreferences(): void {
+    try {
+      const savedPreferences = localStorage.getItem('two-column-sidebar-preferences');
+      if (savedPreferences) {
+        this.sidebarPreferences = { ...this.sidebarPreferences, ...JSON.parse(savedPreferences) };
+      }
+      
+      // Apply saved panel state
+      this.applySavedPanelState();
+    } catch (error) {
+      console.warn('Failed to load two-column sidebar preferences:', error);
+    }
+  }
+
+  private saveSidebarPreferences(): void {
+    try {
+      localStorage.setItem('two-column-sidebar-preferences', JSON.stringify(this.sidebarPreferences));
+    } catch (error) {
+      console.warn('Failed to save two-column sidebar preferences:', error);
+    }
+  }
+
+  private applySavedPanelState(): void {
+    if (document.documentElement.clientWidth > 767) {
+      // Only apply on larger screens
+      if (this.sidebarPreferences.panelCollapsed) {
+        document.body.classList.add('twocolumn-panel');
+        document.getElementById('side-bar')?.classList.add('d-none');
+      } else {
+        document.body.classList.remove('twocolumn-panel');
+        document.getElementById('side-bar')?.classList.remove('d-none');
       }
     }
   }

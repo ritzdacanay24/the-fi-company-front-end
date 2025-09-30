@@ -7,9 +7,9 @@
   "display_override": ["tabbed", "minimal-ui", "standalone"],
   "categories": ["productivity", "business"],
   "prefer_related_applications": true,
-  "id": "/",
+  "id": "./",
   "scope": "/",
-  "start_url": "/",
+  "start_url": "./",
   "related_applications": [
     {
       "platform": "webapp",

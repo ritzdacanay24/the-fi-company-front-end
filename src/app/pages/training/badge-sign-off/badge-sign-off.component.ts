@@ -97,7 +97,7 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   }
 
   private mapTrainingSessionData(rawData: any): TrainingSession {
-    return {
+    const mappedData = {
       id: Number(rawData.id),
       title: rawData.title,
       description: rawData.description,
@@ -116,6 +116,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
       expectedAttendees: rawData.expectedAttendees || [],
       actualAttendees: rawData.actualAttendees || []
     };
+    
+    return mappedData;
   }
 
   private loadCompletions(): void {

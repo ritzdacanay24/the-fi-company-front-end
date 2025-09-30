@@ -161,7 +161,7 @@
                       <i class="mdi ms-1" [class]="getSortIcon('status')"></i>
                     </th>
                     <th style="width: 120px;">Expected</th>
-                    <th style="width: 240px;" class="text-center">Actions</th>
+                    <th style="width: 140px;" class="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,40 +201,67 @@
                       <span class="fw-semibold">{{ session.expectedCount || 0 }}</span>
                     </td>
                     <td>
-                      <div class="d-flex gap-1 justify-content-center">
+                      <div class="dropdown" ngbDropdown placement="bottom-right" container="body">
                         <button 
-                          class="btn btn-sm btn-outline-primary" 
-                          (click)="viewSessionDetails(session)"
-                          title="View Details">
-                          <i class="mdi mdi-eye"></i>
+                          class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                          type="button" 
+                          ngbDropdownToggle
+                          title="Session Actions"
+                          [disabled]="isLoading" container="body">
+                          <i class="mdi mdi-cog me-1"></i>Actions
                         </button>
-                        <button 
-                          class="btn btn-sm btn-outline-success" 
-                          (click)="editSession(session)"
-                          [disabled]="!canEditSession(session)"
-                          title="Edit Session">
-                          <i class="mdi mdi-pencil"></i>
-                        </button>
-                        <button 
-                          class="btn btn-sm btn-outline-warning" 
-                          (click)="manageAttendees(session)"
-                          [disabled]="!canManageAttendees(session)"
-                          title="Add/Manage Attendees">
-                          <i class="mdi mdi-account-multiple-plus"></i>
-                        </button>
-                        <button 
-                          class="btn btn-sm btn-outline-info" 
-                          (click)="duplicateSession(session)"
-                          title="Duplicate Session">
-                          <i class="mdi mdi-content-copy"></i>
-                        </button>
-                        <button 
-                          class="btn btn-sm btn-outline-danger" 
-                          (click)="confirmDeleteSession(session)"
-                          [disabled]="!canEditSession(session)"
-                          title="Delete Session">
-                          <i class="mdi mdi-delete"></i>
-                        </button>
+                        
+                        <div class="dropdown-menu" ngbDropdownMenu container="body">
+                          <button 
+                            class="dropdown-item d-flex align-items-center" 
+                            (click)="viewSessionDetails(session)"
+                            title="View Details">
+                            <i class="mdi mdi-eye me-2 text-primary"></i>
+                            View Details
+                          </button>
+                          
+                          <button 
+                            class="dropdown-item d-flex align-items-center" 
+                            (click)="editSession(session)"
+                            [disabled]="!canEditSession(session)"
+                            [class.text-muted]="!canEditSession(session)"
+                            title="Edit Session">
+                            <i class="mdi mdi-pencil me-2 text-success"></i>
+                            Edit Session
+                          </button>
+                          
+                          <button 
+                            class="dropdown-item d-flex align-items-center" 
+                            (click)="manageAttendees(session)"
+                            [disabled]="!canManageAttendees(session)"
+                            [class.text-muted]="!canManageAttendees(session)"
+                            title="Add/Manage Attendees">
+                            <i class="mdi mdi-account-multiple-plus me-2 text-warning"></i>
+                            Manage Attendees
+                          </button>
+                          
+                          <div class="dropdown-divider"></div>
+                          
+                          <button 
+                            class="dropdown-item d-flex align-items-center" 
+                            (click)="duplicateSession(session)"
+                            title="Duplicate Session">
+                            <i class="mdi mdi-content-copy me-2 text-info"></i>
+                            Duplicate Session
+                          </button>
+                          
+                          <div class="dropdown-divider"></div>
+                          
+                          <button 
+                            class="dropdown-item d-flex align-items-center text-danger" 
+                            (click)="confirmDeleteSession(session)"
+                            [disabled]="!canEditSession(session)"
+                            [class.text-muted]="!canEditSession(session)"
+                            title="Delete Session">
+                            <i class="mdi mdi-delete me-2"></i>
+                            Delete Session
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>

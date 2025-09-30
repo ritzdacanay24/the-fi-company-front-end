@@ -72,17 +72,48 @@
                 Upload or manage photos, reports, or other relevant documents.
               </p>
             </div>
+
+            <!-- Existing Attachments Display -->
+            <div class="mb-4" *ngIf="attachments && attachments.length > 0">
+              <h6 class="mb-2">Current Attachments:</h6>
+              <div *ngFor="let attachment of attachments; let i = index" class="d-flex align-items-center p-3 border rounded mb-2 bg-light">
+                <i class="mdi mdi-file-document me-2 text-warning"></i>
+                <div class="flex-grow-1" style="overflow:hidden; text-overflow: ellipsis;">
+                  <p class="mb-0 small fw-medium">{{attachment.fileName}}</p>
+                  <small class="text-muted">{{attachment.fileSizeConv}}</small>
+                </div>
+                <div class="btn-group">
+                  <a [href]="'https://dashboard.eye-fi.com/attachments/safetyIncident/' + attachment.fileName" 
+                     target="_blank" 
+                     class="btn btn-sm btn-outline-info"
+                     title="Download attachment">
+                    <i class="mdi mdi-download"></i>
+                  </a>
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-danger"
+                          (click)="deleteAttachment(attachment.id, i)"
+                          title="Delete attachment">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload New Files -->
             <div class="mt-3">
-              <label for="file" class="form-label">Upload Supporting Documents</label>
+              <label for="file" class="form-label">Upload Additional Documents</label>
               <input id="file" type="file" multiple class="form-control" (change)="onFileChange($event)">
               <div class="form-text">
                 <i class="mdi mdi-information-outline me-1"></i>
                 Accepted file types: images, PDFs, documents. Maximum 10MB per file.
               </div>
             </div>
+
+            <!-- No Attachments Message -->
             <div class="text-center py-4" *ngIf="!attachments?.length">
               <i class="mdi mdi-file-outline text-muted" style="font-size: 3rem;"></i>
               <p class="text-muted mb-0">No attachments found</p>
+              <small class="text-muted">Upload supporting documents using the file input above.</small>
             </div>
           </div>
         </div>

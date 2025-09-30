@@ -77,7 +77,7 @@ export class SerialNumberService {
   }
 
   // Get available serial numbers for selection
-  getAvailable(category: string = 'gaming', limit: number = 100): Promise<any[]> {
+  getAvailable(category: string = 'gaming', limit: number = 5000): Promise<any[]> {
     return firstValueFrom(this.http.get<any[]>(`${API_URL}?path=serial-numbers/available&category=${category}&limit=${limit}`));
   }
 

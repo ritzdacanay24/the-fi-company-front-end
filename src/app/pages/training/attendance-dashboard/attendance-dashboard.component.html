@@ -307,7 +307,7 @@
                   </td>
                   <td>
                     <span class="badge bg-light text-dark">
-                      {{ attendance.employee.department }}
+                      {{ attendance.employee.department || attendance.employee.title }}
                     </span>
                   </td>
                   <td>
@@ -363,7 +363,7 @@
                   </td>
                   <td>
                     <span class="badge bg-light text-dark">
-                      {{ employee.department }}
+                      {{ employee.department || employee.title }}
                     </span>
                   </td>
                   <td>

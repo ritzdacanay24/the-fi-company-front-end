@@ -44,10 +44,9 @@
                             title="Export filtered results">
                             <i class="mdi mdi-download me-2"></i>Export Data
                         </button>
-                        <button type="button" class="btn btn-primary" (click)="refreshData()" [disabled]="isRefreshing"
+                        <button type="button" class="btn btn-primary" (click)="refreshData()"
                             title="Refresh inventory data">
-                            <i class="mdi" [ngClass]="isRefreshing ? 'mdi-loading mdi-spin' : 'mdi-refresh'"
-                                class="me-2"></i>Refresh
+                            <i class="mdi mdi-refresh me-2"></i>Refresh
                         </button>
                     </div>
                 </div>
@@ -92,7 +91,7 @@
 
                     <!-- Statistics Row -->
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-lg-2 col-md-4 col-6">
                             <div class="d-flex align-items-center p-3 bg-light rounded border-0">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="bg-success rounded-circle d-flex align-items-center justify-content-center"
@@ -101,12 +100,12 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-0 text-success fw-bold">{{statistics.available}}</h4>
+                                    <h4 class="mb-0 text-success fw-bold">{{statistics.available || 0}}</h4>
                                     <small class="text-success-emphasis fw-medium">Available</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-2 col-md-4 col-6">
                             <div class="d-flex align-items-center p-3 bg-light rounded border-0">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center"
@@ -115,12 +114,12 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-0 text-warning fw-bold">{{statistics.reserved}}</h4>
+                                    <h4 class="mb-0 text-warning fw-bold">{{statistics.reserved || 0}}</h4>
                                     <small class="text-warning-emphasis fw-medium">Reserved</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-2 col-md-4 col-6">
                             <div class="d-flex align-items-center p-3 bg-light rounded border-0">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="bg-info rounded-circle d-flex align-items-center justify-content-center"
@@ -129,12 +128,26 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-0 text-info fw-bold">{{statistics.used}}</h4>
+                                    <h4 class="mb-0 text-info fw-bold">{{statistics.used || 0}}</h4>
                                     <small class="text-info-emphasis fw-medium">Used</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center p-3 bg-light rounded border-0">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 40px; height: 40px;">
+                                        <i class="mdi mdi-close-circle text-white fs-5"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h4 class="mb-0 text-danger fw-bold">{{statistics.inactive || 0}}</h4>
+                                    <small class="text-danger-emphasis fw-medium">Inactive</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-8 col-12">
                             <div class="d-flex align-items-center p-3 bg-light rounded border-0">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center"
@@ -143,7 +156,7 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h4 class="mb-0 text-secondary fw-bold">{{statistics.total}}</h4>
+                                    <h4 class="mb-0 text-secondary fw-bold">{{statistics.total || 0}}</h4>
                                     <small class="text-secondary-emphasis fw-medium">Total Records</small>
                                 </div>
                             </div>
@@ -216,9 +229,8 @@
                         <ag-grid-angular class="ag-theme-quartz no-border"
                             style="width: 100%;height: calc(100vh - 350px);" [rowData]="rowData"
                             [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowSelection]="'multiple'"
-                            [suppressRowClickSelection]="true" [pagination]="true" [paginationPageSize]="50"
-                            [animateRows]="true" [enableRangeSelection]="true" [suppressMenuHide]="true"
-                            [suppressColumnVirtualisation]="true" [getRowId]="getRowId"
+                            [suppressRowClickSelection]="true" [animateRows]="true" [enableRangeSelection]="true"
+                            [suppressMenuHide]="true" [suppressColumnVirtualisation]="true" [getRowId]="getRowId"
                             (gridReady)="onGridReady($event)" (selectionChanged)="onSelectionChanged($event)">
                         </ag-grid-angular>
                     </div>

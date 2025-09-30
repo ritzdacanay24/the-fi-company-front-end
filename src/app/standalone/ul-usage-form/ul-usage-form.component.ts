@@ -8,6 +8,7 @@ import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
 import { ULLabelService } from '@app/features/ul-management/services/ul-label.service';
 import { ULLabelUsage } from '@app/features/ul-management/models/ul-label.model';
+import { PublicFormWrapperComponent } from '../public-form-wrapper/public-form-wrapper.component';
 
 export interface ULLabel {
   id: number;
@@ -50,17 +51,16 @@ export interface BulkTransaction {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    QadWoSearchComponent
+    QadWoSearchComponent,
+    PublicFormWrapperComponent
   ],
   templateUrl: './ul-usage-form.component.html',
   styleUrls: ['./ul-usage-form.component.scss']
 })
 export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterViewInit {
-  // Authentication state
+  // Authentication state (managed by wrapper component)
   isAuthenticated = false;
   currentUser: any = null;
-  sessionTimer: Subscription | null = null;
-  sessionTimeRemaining = 0;
 
   // UL Management
   availableULs: ULLabel[] = [];
@@ -87,6 +87,11 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
   // Work order data storage
   selectedWorkOrderData: any = null; // Complete work order object
+
+  // Work order validation
+  workOrderValidationResults: any[] = []; // Existing usage records for selected work order
+  showWorkOrderWarning = false; // Flag to show duplicate work order warning
+  workOrderValidationLoading = false; // Loading state for validation check
 
   // Bulk transaction mode (now automatic based on quantity)
   get isBulkMode(): boolean {
@@ -122,15 +127,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   @ViewChild('usernameInput') usernameInput!: ElementRef<HTMLInputElement>;
   @ViewChild('cardNumberInput') cardNumberInput!: ElementRef<HTMLInputElement>;
 
-  // Session and inactivity timeouts
-  readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes total session
-  readonly INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute of inactivity
-
-  // Inactivity tracking
-  lastActivity = Date.now();
-  inactivityTimer: Subscription | null = null;
-
-  // User image handling
+  // User image handling (managed by wrapper)
   hasValidUserImage = true;
 
   constructor(
@@ -140,20 +137,14 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     private ulLabelService: ULLabelService
   ) {
     this.initializeForm();
-    this.setupActivityListeners();
+    // Activity tracking handled by wrapper component
   }
 
   ngOnInit() {
     this.initializeForm();
-    this.checkAuthenticationStatus();
     
-    // Only load UL data if user is already authenticated
-    if (this.isAuthenticated) {
-      this.loadAvailableULs();
-    }
-    
-    // Initialize browser tab title
-    this.resetBrowserTabTitle();
+    // Authentication and data loading handled by wrapper component
+    // Browser title management handled by wrapper component
   }
 
   ngAfterViewInit() {
@@ -164,9 +155,10 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   }
 
   ngOnDestroy() {
-    this.clearSessionTimer();
-    this.clearAutoLogoutTimer();
-    this.clearInactivityTimer();
+    // Session management handled by wrapper component
+    if (this.usageForm && this.usageForm.value) {
+      localStorage.setItem('ulUsageFormData', JSON.stringify(this.usageForm.value));
+    }
   }
 
   private initializeForm() {
@@ -201,22 +193,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     });
   }
 
-  private checkAuthenticationStatus() {
-    // Check if user is already authenticated
-    const user = this.authService.currentUserValue;
-    if (user && user.id) {
-      this.isAuthenticated = true;
-      this.currentUser = user;
-      
-      // Initialize user image validation
-      this.hasValidUserImage = !!(this.currentUser?.image);
-      
-      this.startSessionTimer();
-      this.updateLastActivity(); // Start inactivity tracking
-    }
-  }
-
-  // Session and authentication management
+  // Session and authentication management handled by wrapper component
   /*
   openLoginModal(loginModalTemplate: any) {
     // Clear any previous login errors
@@ -245,51 +222,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   }
   */
 
-  private startSessionTimer() {
-    this.sessionTimeRemaining = this.SESSION_TIMEOUT / 1000; // Convert to seconds
-
-    this.sessionTimer = timer(0, 1000).subscribe(() => {
-      this.sessionTimeRemaining--;
-
-      // Update browser tab title with remaining time
-      this.updateBrowserTabTitle();
-
-      if (this.sessionTimeRemaining <= 0) {
-        this.logout();
-      }
-    });
-  }
-
-  private clearSessionTimer() {
-    if (this.sessionTimer) {
-      this.sessionTimer.unsubscribe();
-      this.sessionTimer = null;
-    }
-    // Reset browser tab title when session ends
-    this.resetBrowserTabTitle();
-  }
-
-  private updateBrowserTabTitle() {
-    if (this.isAuthenticated && this.sessionTimeRemaining > 0) {
-      const timeFormatted = this.getTimeRemainingFormatted();
-      const inactivityTime = this.getInactivityTimeRemainingFormatted();
-
-      // Show the shorter of the two timers
-      const sessionMinutes = Math.floor(this.sessionTimeRemaining / 60);
-      const inactivityMinutes = Math.floor((this.INACTIVITY_TIMEOUT - (Date.now() - this.lastActivity)) / 60000);
-
-      const criticalTime = Math.min(sessionMinutes, inactivityMinutes);
-      const timeDisplay = criticalTime <= 2 ? `⚠️ ${timeFormatted}` : timeFormatted;
-
-      document.title = `UL Usage - ${timeDisplay} | The Fi Company`;
-    } else {
-      this.resetBrowserTabTitle();
-    }
-  }
-
-  private resetBrowserTabTitle() {
-    document.title = 'UL Usage Recording | The Fi Company';
-  }
+  // Session management methods removed - handled by wrapper component
 
   private startAutoLogoutTimer() {
     this.autoLogoutCountdown = 20; // 20 seconds countdown
@@ -313,43 +246,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     }
   }
 
-  private setupActivityListeners() {
-    // Track user activity (mouse movement, keyboard, clicks, scrolling)
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-
-    activityEvents.forEach(event => {
-      document.addEventListener(event, () => this.updateLastActivity(), true);
-    });
-  }
-
-  private updateLastActivity() {
-    this.lastActivity = Date.now();
-
-    if (this.isAuthenticated && !this.inactivityTimer) {
-      this.startInactivityTimer();
-    }
-  }
-
-  private startInactivityTimer() {
-    this.inactivityTimer = timer(0, 1000).subscribe(() => {
-      const timeSinceLastActivity = Date.now() - this.lastActivity;
-
-      // Update browser tab title (this will show the most critical timer)
-      this.updateBrowserTabTitle();
-
-      if (timeSinceLastActivity >= this.INACTIVITY_TIMEOUT) {
-        // User has been inactive too long - force logout immediately
-        this.logoutDueToInactivity();
-      }
-    });
-  }
-
-  private clearInactivityTimer() {
-    if (this.inactivityTimer) {
-      this.inactivityTimer.unsubscribe();
-      this.inactivityTimer = null;
-    }
-  }
+  // Activity tracking methods removed - handled by wrapper component
 
   private logoutDueToInactivity() {
     // Close confirmation modal if it's open during session expiry
@@ -646,9 +543,8 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   }
 
   logout() {
-    this.clearSessionTimer();
+    // Session management handled by wrapper component
     this.clearAutoLogoutTimer();
-    this.clearInactivityTimer();
     this.authService.logout();
     this.isAuthenticated = false;
     this.currentUser = null;
@@ -672,31 +568,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     }, 100);
   }
 
-  extendSession() {
-    this.clearSessionTimer();
-    this.startSessionTimer();
-    this.updateLastActivity(); // Reset inactivity timer
-  }
-
-  getTimeRemainingFormatted(): string {
-    const minutes = Math.floor(this.sessionTimeRemaining / 60);
-    const seconds = this.sessionTimeRemaining % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
-
-  getInactivityTimeRemaining(): number {
-    if (!this.isAuthenticated) return 0;
-    const timeSinceLastActivity = Date.now() - this.lastActivity;
-    const remaining = Math.max(0, this.INACTIVITY_TIMEOUT - timeSinceLastActivity);
-    return Math.ceil(remaining / 1000); // Return seconds
-  }
-
-  getInactivityTimeRemainingFormatted(): string {
-    const seconds = this.getInactivityTimeRemaining();
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }
+  // Session timing methods removed - handled by wrapper component
 
   // Success card action methods
   startNewULUsage() {
@@ -1004,8 +876,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
           // Initialize user image validation
           this.hasValidUserImage = !!(this.currentUser?.image);
           
-          this.startSessionTimer();
-          this.updateLastActivity(); // Start inactivity tracking
+          // Session management handled by wrapper component
           this.prefillUserData();
           
           // Load UL data now that user is authenticated
@@ -1096,9 +967,13 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         work_order_part: workOrder.wo_part || '',
         work_order_description: workOrder.description || ''
       });
+
+      // Check if this work order is already used in other UL labels
+      this.checkWorkOrderForDuplicates(workOrder.wo_nbr);
     } else {
       // Clear work order data
       this.selectedWorkOrderData = null;
+      this.clearWorkOrderValidation();
       
       this.usageForm.patchValue({
         work_order: '',
@@ -1106,6 +981,110 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
         work_order_description: ''
       });
     }
+  }
+
+  // Check if work order is already used in other UL labels
+  private checkWorkOrderForDuplicates(workOrderNumber: string | number): void {
+    if (!workOrderNumber) {
+      this.clearWorkOrderValidation();
+      return;
+    }
+
+    this.workOrderValidationLoading = true;
+    this.showWorkOrderWarning = false;
+
+    this.ulLabelService.checkWorkOrderUsage(workOrderNumber).subscribe({
+      next: (response) => {
+        this.workOrderValidationLoading = false;
+        
+        if (response.success && response.data && response.data.length > 0) {
+          // Work order is already used in other UL labels
+          this.workOrderValidationResults = response.data;
+          this.showWorkOrderWarning = true;
+        } else {
+          // Work order is not used elsewhere
+          this.clearWorkOrderValidation();
+        }
+      },
+      error: (error) => {
+        console.error('Error validating work order:', error);
+        this.workOrderValidationLoading = false;
+        this.clearWorkOrderValidation();
+        // Optionally show error message to user
+      }
+    });
+  }
+
+  // Clear work order validation state
+  private clearWorkOrderValidation(): void {
+    this.workOrderValidationResults = [];
+    this.showWorkOrderWarning = false;
+    this.workOrderValidationLoading = false;
+  }
+
+  // ============================================================================
+  // Temporary Login Event Handlers
+  // ============================================================================
+  
+  // Wrapper component event handlers
+  onAuthenticationComplete(user: any): void {
+    this.onLoginSuccess(user);
+  }
+
+  onUserLoggedOut(): void {
+    this.logout();
+  }
+
+  /**
+   * Handle successful login from temporary login component
+   */
+  onLoginSuccess(user: any): void {
+    console.log('Login successful:', user);
+    
+    // Store authentication data properly like the main login
+    localStorage.setItem("token", user.access_token || user.token);
+    
+    // Create user object with token property for JWT interceptor  
+    const userWithToken = {
+      ...user,
+      token: user.access_token || user.token,
+      access_token: user.access_token || user.token // Keep for compatibility
+    };
+    
+    // Store user data in localStorage using the same key as main login
+    localStorage.setItem(
+      THE_FI_COMPANY_CURRENT_USER,
+      JSON.stringify(userWithToken)
+    );
+    
+    // Update component state
+    this.isAuthenticated = true;
+    this.currentUser = userWithToken;
+    
+    // Initialize user image validation
+    this.hasValidUserImage = !!(this.currentUser?.image);
+    
+    // Session management handled by wrapper component
+    this.prefillUserData();
+    
+    // Load UL data now that user is authenticated
+    this.loadAvailableULs();
+  }
+
+  /**
+   * Handle login error from temporary login component
+   */
+  onLoginError(error: string): void {
+    console.error('Login error received:', error);
+    this.loginError = error;
+  }
+
+  /**
+   * Handle session expiration from temporary login component
+   */
+  onSessionExpired(): void {
+    console.log('Session expired');
+    this.logout();
   }
 
   // ============================================================================
@@ -1137,5 +1116,12 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     if (event.target) {
       event.target.style.display = 'none';
     }
+  }
+
+  /**
+   * Navigate to public forms menu
+   */
+  goToFormsMenu(): void {
+    this.router.navigate(['/forms']);
   }
 }

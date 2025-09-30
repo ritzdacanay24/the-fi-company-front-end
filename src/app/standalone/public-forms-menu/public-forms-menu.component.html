@@ -1,0 +1,193 @@
+<div class="public-forms-wrapper d-flex flex-column min-vh-100">
+  <!-- Shared Header -->
+  <app-shared-header [pageTitle]="pageTitle" [pageDescription]="pageDescription" [pageIcon]="pageIcon"
+      [isAuthenticated]="isAuthenticated" [currentUser]="currentUser" [hasValidUserImage]="hasValidUserImage"
+      [sessionTimeRemaining]="getTimeRemainingFormatted()"
+      [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()" (extendSession)="extendSession()"
+      (logout)="logout()" (userImageError)="onUserImageError($event)" (goToFormsMenu)="goToFormsMenu()">
+  </app-shared-header>
+
+  <!-- Main Content -->
+  <div class="flex-grow-1">
+    <section class="py-5 text-center container">
+      <div class="row py-lg-5">
+        <div class="col-lg-6 col-md-8 mx-auto">
+          <h1 class="fw-light">Public Forms Portal</h1>
+          <p class="lead text-body-secondary">
+            Quick access to standalone forms and data entry tools. Select from the available forms below to begin data entry without requiring full system authentication.
+          </p>
+          <p>
+            <a href="/" class="btn btn-primary my-2 me-2">Go to Main Application</a>
+            <a href="#" class="btn btn-secondary my-2">Help & Support</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="album py-5 bg-body-tertiary">
+      <div class="container">
+        
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+          
+          <!-- UL Usage Form Card -->
+          <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-primary text-white" style="height: 200px;">
+                <i class="mdi mdi-tag-multiple-outline" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">UL Label Usage Form</h5>
+                <p class="card-text">Record and track UL label usage for compliance and inventory management. Quick data entry for label applications and work order tracking.</p>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('ul-usage')">
+                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-success">Active</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IGT Serial Form Card -->
+          <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-info text-white" style="height: 200px;">
+                <i class="mdi mdi-barcode-scan" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">IGT Serial Number Form</h5>
+                <p class="card-text">Register new IGT serial numbers and manage asset inventory. Streamlined form for quick serial number entry and categorization.</p>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('igt-serial')">
+                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-success">Active</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Safety Incident Form Card -->
+          <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-warning text-white" style="height: 200px;">
+                <i class="mdi mdi-alert-circle-outline" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Safety Incident Report</h5>
+                <p class="card-text">Report safety incidents, near misses, and workplace hazards. Anonymous reporting option available for confidential submissions.</p>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('safety-incident')" [disabled]="true">
+                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-warning">Coming Soon</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quality Checklist Form Card -->
+          <!-- <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-success text-white" style="height: 200px;">
+                <i class="mdi mdi-checkbox-marked-circle-outline" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Quality Checklist</h5>
+                <p class="card-text">Complete quality control checklists and inspection forms. Digital forms with photo upload and signature capture capabilities.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('quality-checklist')" [disabled]="true">
+                      <i class="mdi mdi-form-select me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-secondary">Planned</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div> -->
+
+          <!-- Maintenance Request Form Card -->
+          <!-- <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-danger text-white" style="height: 200px;">
+                <i class="mdi mdi-tools" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Maintenance Request</h5>
+                <p class="card-text">Submit maintenance requests and work orders. Quick form for reporting equipment issues and requesting repairs or service.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('maintenance-request')" [disabled]="true">
+                      <i class="mdi mdi-form-select me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-secondary">Planned</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div> -->
+
+          <!-- Training Record Form Card -->
+          <!-- <div class="col">
+            <div class="card shadow-sm">
+              <div class="card-img-top d-flex align-items-center justify-content-center bg-dark text-white" style="height: 200px;">
+                <i class="mdi mdi-school-outline" style="font-size: 4rem;"></i>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Training Record</h5>
+                <p class="card-text">Log training sessions, certifications, and skill assessments. Digital record keeping for compliance and HR documentation.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('training-record')" [disabled]="true">
+                      <i class="mdi mdi-form-select me-1"></i>Open Form
+                    </button>
+                  </div>
+                  <small class="text-body-secondary">
+                    <span class="badge bg-secondary">Planned</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div> -->
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-white py-4 mt-auto">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p class="mb-0">
+            <i class="mdi mdi-copyright me-1"></i>
+            {{ getCurrentYear() }} The Fi Company. All rights reserved.
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <small class="text-muted">
+            Public Forms Portal - Secure Access System
+          </small>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

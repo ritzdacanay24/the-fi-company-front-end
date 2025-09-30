@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { TrainingService } from '../services/training.service';
 import { TrainingSession, TrainingMetrics } from '../models/training.model';
 
 @Component({
   selector: 'app-training-sessions-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDropdownModule],
   templateUrl: './training-sessions-list.component.html',
   styleUrls: ['./training-sessions-list.component.scss']
 })

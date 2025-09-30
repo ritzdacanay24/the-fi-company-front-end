@@ -2,7 +2,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { OrgChartModule } from "../org-chart.module";
 
-import { Component, OnInit, Input, ViewChild, ElementRef } from "@angular/core";
+import { Component, OnInit, AfterViewInit, Input, ViewChild, ElementRef } from "@angular/core";
 import { OrgChart } from "d3-org-chart";
 import { UserService } from "@app/core/api/field-service/user.service";
 import { UserModalService } from "@app/pages/maintenance/user/user-modal/user-modal.component";
@@ -19,7 +19,7 @@ import * as d3 from "d3";
   templateUrl: "./org-chart-view.component.html",
   styleUrls: [],
 })
-export class OrgChartViewComponent implements OnInit {
+export class OrgChartViewComponent implements OnInit, AfterViewInit {
   constructor(
     public activatedRoute: ActivatedRoute,
     public router: Router,
@@ -59,15 +59,23 @@ export class OrgChartViewComponent implements OnInit {
   }
 
   expandImmediate() {
+    if (!this.chart) {
+      console.warn('Chart not initialized yet');
+      return;
+    }
+    
     const data = this.chart.data();
+    if (!data || !Array.isArray(data)) {
+      console.warn('Chart data not available');
+      return;
+    }
 
     // Mark all previously expanded nodes for collapse
     data.forEach((d) => (d._expanded = false));
-    let parent;
+    
     // Loop over data and check if input value matches any name
     data.forEach((d) => {
-      // if (d._directSubordinates == 1 || d.org_chart_expand == 1) {
-      if (d.org_chart_expand == 1) {
+      if (d.org_chart_expand === 1) {
         d._expanded = true;
         this.chart.setExpanded(d.id, true).render();
       }
@@ -78,19 +86,18 @@ export class OrgChartViewComponent implements OnInit {
     const modalRef: any = this.userModalService.open(null);
     modalRef.result.then(
       (data: any) => {
-        data = {
+        const newNodeData = {
           ...data,
           name: data.first + " " + data.last || "",
           imageUrl: data.image || "assets/images/default-user.png",
           bgColor: this.bgColor(data),
         };
 
-        this.chart.addNode(data).setCentered(data.id).render();
-
-        const d = this.chart.data();
-
-        this.originalData = structuredClone(d);
-        //this.getData(data.id);
+        // Add to original data
+        this.originalData.push(newNodeData);
+        
+        // Add to chart and render
+        this.chart.addNode(newNodeData).setCentered(newNodeData.id).render();
       },
       () => { }
     );
@@ -120,83 +127,73 @@ export class OrgChartViewComponent implements OnInit {
   }
 
   filterChart(id) {
+    if (!this.chart) {
+      console.warn('Chart not initialized yet');
+      return;
+    }
+
     // Get input value
     const value = id;
 
-    // Clear previous higlighting
+    // Clear previous highlighting
     this.chart.clearHighlighting();
 
     // Get chart nodes
-    if (Number(value) == 0) {
+    if (!value || Number(value) === 0) {
       this.chart.data(structuredClone(this.originalData)).render().fit();
     } else {
-      let data = this.viewOnlyTree(Number(value) == 0 ? null : Number(value));
+      let data = this.viewOnlyTree(Number(value) === 0 ? null : Number(value));
       this.chart.data(data).render().fit();
     }
-
-    // // Mark all previously expanded nodes for collapse
-    // if (value != "") {
-    //   data.forEach((d) => (d._expanded = false));
-
-    //   // Loop over data and check if input value matches any name
-    //   data.forEach((d) => {
-    //     if (value != "" && d.name.toLowerCase().includes(value.toLowerCase())) {
-    //       // If matches, mark node as highlighted
-    //       d._highlighted = true;
-    //       d._expanded = true;
-    //     }
-    //   });
-    // } else {
-    //   data.forEach((d) => (d._expanded = true));
-    // }
-
-    // Update data and rerender graph
   }
 
   defaultExpand() {
+    if (!this.chart) {
+      console.warn('Chart not initialized yet');
+      return;
+    }
+    
     const data = this.chart.data();
+    if (!data || !Array.isArray(data)) {
+      console.warn('Chart data not available');
+      return;
+    }
 
-    // Mark all previously expanded nodes for collapse
-    //data.forEach((d) => (d._expanded = false));
-
-    let parent;
     // Loop over data and check if input value matches any name
     data.forEach((d) => {
-      if (d._directSubordinates == 1 || d.org_chart_expand == 1) {
-        parent = d.id;
+      if (d._directSubordinates === 1 || d.org_chart_expand === 1) {
         // If matches, mark node as highlighted
         d._expanded = true;
         this.chart.setExpanded(d.id, true).render();
       }
     });
-
-    // Update data and rerender graph
-    //this.chart.data(data).render().fit();
   }
   isMoreThan6MonthsAgo = (dateString: string) => {
-    if (!dateString) return "#3AB6E3";
-    const now = moment();
-
+    if (!dateString) return "gray"; // No hire date set
+    
     const inputDate = moment(dateString);
+    if (!inputDate.isValid()) {
+      return "gray"; // Invalid date
+    }
+
+    const now = moment();
     const oneMonthAgo = moment().subtract(1, 'months');
     const sixMonthsAgo = moment().subtract(6, 'months');
     const twelveMonthsAgo = moment().subtract(12, 'months');
 
-    if (inputDate.isBefore(oneMonthAgo)) {
-      //after 1 months
+    if (inputDate.isAfter(oneMonthAgo)) {
+      // Less than 1 month - New Position
       return 'orange';
-    } else if (inputDate.isBefore(sixMonthsAgo)) {
-      //after 6 months
+    } else if (inputDate.isAfter(sixMonthsAgo)) {
+      // 1-6 months - Less than 6 months
       return "rgb(0, 195, 255)";
-    } else if (inputDate.isBefore(twelveMonthsAgo)) {
-      //after 11 months
+    } else if (inputDate.isAfter(twelveMonthsAgo)) {
+      // 6-12 months - Less than 12 months
       return "#4B0082";
-    } else if (inputDate.isSameOrAfter(twelveMonthsAgo)) {
-      //after 
+    } else {
+      // More than 12 months - 12+ months
       return "#002D62";
     }
-
-    return "#3AB6E3";
   }
   currentView;
   onNodeClick = (d) => {
@@ -205,13 +202,14 @@ export class OrgChartViewComponent implements OnInit {
       return;
     }
 
-    this.router.navigate([`.`], {
-      relativeTo: this.activatedRoute,
-      queryParamsHandling: "merge",
-      queryParams: {
-        user_edit: d.data.id,
-      },
-    });
+    // Don't set the user_edit query parameter to avoid triggering reopening
+    // this.router.navigate([`.`], {
+    //   relativeTo: this.activatedRoute,
+    //   queryParamsHandling: "merge",
+    //   queryParams: {
+    //     user_edit: d.data.id,
+    //   },
+    // });
 
     this.chart.clearHighlighting();
     d.data._highlighted = true;
@@ -221,9 +219,8 @@ export class OrgChartViewComponent implements OnInit {
     const modalRef: any = this.userModalService.open(d.data.id);
     modalRef.result.then(
       (data: any) => {
-        let attrs = this.chart.getChartState();
-
-        d.data = {
+        // Update node data first
+        const updatedNodeData = {
           ...d.data,
           ...data,
           name: (data.first || "") + " " + (data.last || ""),
@@ -232,37 +229,64 @@ export class OrgChartViewComponent implements OnInit {
           hire_date_color: this.bgColor(data)
         };
         
-        let dd = attrs.data.map((e) => {
-          return d.data.id == e.id
-            ? {
-              ...e.data,
-              ...d.data,
-            }
-            : e;
+        // Update the original data array
+        this.originalData = this.originalData.map((e) => {
+          return d.data.id == e.id ? { ...e, ...data } : e;
         });
 
-        if (d.data.parentId != data.parentId) {
-          this.chart.data(dd).setCentered(d.data.id).render();
-        } else {
-          this.chart.data(dd).render();
+        // Handle removal cases first
+        if (data.access == 100 || data.active == 0) {
+          this.chart.removeNode(d.data.id).render();
+          this.currentView = null;
+          return;
         }
 
-        if (data.access == 100 || data.active == 0)
-          this.chart.removeNode(d.data.id).render();
+        // Get current chart data and update it
+        let chartData = this.chart.data().map((node) => {
+          if (node.id == d.data.id) {
+            return { ...node, ...updatedNodeData };
+          }
+          return node;
+        });
+
+        // Apply the updated data
+        this.chart.data(chartData);
+        
+        // Handle position changes
+        if (d.data.parentId != data.parentId) {
+          this.chart.setCentered(d.data.id);
+        }
+        
+        // Render the chart with updated data
+        this.chart.render();
+        
+        // Re-apply highlighting to the updated node
+        setTimeout(() => {
+          const updatedNode = this.chart.data().find(n => n.id === d.data.id);
+          if (updatedNode) {
+            updatedNode._highlighted = true;
+            this.chart.render();
+          }
+        }, 100);
       },
-      () => { }
+      () => {
+        // Modal cancelled - do nothing
+      }
     );
   };
   bgColor(data) {
-
-    return this.isMoreThan6MonthsAgo(data.hire_date)
+    if (!data) {
+      return "#002D62"; // Default color for missing data
+    }
+    
+    return this.isMoreThan6MonthsAgo(data.hire_date);
     // for (let ii = 0; ii < accessRight.length; ii++) {
     //   if (accessRight[ii].value == data.employeeType) {
     //     return accessRight[ii].bgColor;
     //   }
     // }
 
-    return "#3AB6E3";
+    // return "#3AB6E3"; // This is unreachable code but keeping for reference
   }
 
   locations = ["All", "Seattle", "Las Vegas"];
@@ -429,6 +453,41 @@ export class OrgChartViewComponent implements OnInit {
   }
 
   originalData;
+  
+  // Simplified state management - just track basic state
+  private currentZoom = 1;
+  private currentPan = { x: 0, y: 0 };
+
+  // Methods for leadership insights
+  getNewHires(): number {
+    if (!this.originalData) return 0;
+    return this.originalData.filter(emp => {
+      if (!emp.hire_date) return false;
+      const hireDate = moment(emp.hire_date);
+      const oneMonthAgo = moment().subtract(1, 'months');
+      return hireDate.isAfter(oneMonthAgo);
+    }).length;
+  }
+
+  getOpenPositions(): number {
+    if (!this.originalData) return 0;
+    return this.originalData.filter(emp => emp.openPosition).length;
+  }
+
+  getEstablishedEmployees(): number {
+    if (!this.originalData) return 0;
+    return this.originalData.filter(emp => {
+      if (!emp.hire_date) return false;
+      const hireDate = moment(emp.hire_date);
+      const sixMonthsAgo = moment().subtract(6, 'months');
+      return hireDate.isBefore(sixMonthsAgo);
+    }).length;
+  }
+
+  getPendingData(): number {
+    if (!this.originalData) return 0;
+    return this.originalData.filter(emp => !emp.hire_date).length;
+  }
   async getData(id?) {
     try {
       let data: any = await this.userService.getOrgchart({

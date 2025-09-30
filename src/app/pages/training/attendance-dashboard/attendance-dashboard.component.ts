@@ -103,7 +103,14 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
     // Load completed attendees
     this.trainingService.getSessionAttendance(this.session.id).subscribe({
       next: (attendance) => {
-        this.completedAttendees = attendance;
+        // Process attendance data and calculate duration if missing
+        this.completedAttendees = attendance.map(att => {
+          // Calculate duration if not provided by backend
+          if (att.attendanceDuration === null || att.attendanceDuration === undefined) {
+            att.attendanceDuration = this.calculateAttendanceDuration(att);
+          }
+          return att;
+        });
         this.calculatePendingAttendees();
         this.sortAttendees();
       },
@@ -111,6 +118,30 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
         console.error('Error loading attendance:', error);
       }
     });
+  }
+
+  private calculateAttendanceDuration(attendance: TrainingAttendance): number {
+    if (!this.session) return 0;
+    
+    try {
+      // For training completion tracking: duration from session start to badge scan time
+      if (attendance.signoffTime || attendance.signInTime) {
+        const sessionStart = new Date(`${this.session.date}T${this.session.startTime}`);
+        // Use signoffTime (badge scan) if available, otherwise use signInTime
+        const scanTime = new Date(attendance.signoffTime || attendance.signInTime);
+        
+        const diffMs = scanTime.getTime() - sessionStart.getTime();
+        const diffMinutes = Math.round(diffMs / (1000 * 60));
+        
+        // Return duration from session start to scan, capped at reasonable maximum
+        return Math.max(0, Math.min(diffMinutes, this.session.durationMinutes + 60)); // Allow 1 hour buffer
+      }
+      
+      return 0; // No scan time available
+    } catch (error) {
+      console.error('Error calculating attendance duration:', error);
+      return 0;
+    }
   }
 
   private loadMetrics(): void {

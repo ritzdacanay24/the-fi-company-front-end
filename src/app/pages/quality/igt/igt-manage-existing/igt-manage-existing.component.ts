@@ -4,8 +4,14 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angul
 import { Router } from '@angular/router';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { AgGridModule } from 'ag-grid-angular';
-import { GridApi, GridReadyEvent, ColDef, SelectionChangedEvent } from 'ag-grid-community';
+import { 
+  GridApi, 
+  GridReadyEvent, 
+  ColDef, 
+  SelectionChangedEvent 
+} from 'ag-grid-community';
 import { ToastrService } from 'ngx-toastr';
+import { SerialNumberService } from '../services/serial-number.service';
 
 export interface IgtSerial {
   id: number;
@@ -67,7 +73,6 @@ export class IgtManageExistingComponent implements OnInit {
 
   // Loading states
   isLoading = false;
-  isRefreshing = false;
 
   // Permissions
   canManageSerials = true; // This should come from your auth service
@@ -85,7 +90,8 @@ export class IgtManageExistingComponent implements OnInit {
     private fb: FormBuilder,
     private modal: NgbModal,
     private toastr: ToastrService,
-    private router: Router
+    private router: Router,
+    private serialNumberService: SerialNumberService
   ) {
     this.editForm = this.fb.group({
       serial_number: [''],
@@ -101,7 +107,62 @@ export class IgtManageExistingComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadSerials();
+    this.setupColumnDefs();
+    this.loadAllData();
+  }
+
+  loadAllData(): void {
+    this.isLoading = true;
+    
+    // Build API parameters to get ALL records (no pagination)
+    const apiParams = {
+      includeInactive: true,
+      search: this.searchTerm,
+      status: this.statusFilter,
+      category: this.categoryFilter,
+      is_active: this.isActiveFilter
+    };
+
+    console.log('Loading all records with filters:', apiParams);
+
+    this.serialNumberService.getAll(apiParams)
+      .then((response: any) => {
+        let allData: IgtSerial[] = [];
+
+        console.log('API Response:', response);
+
+        // Handle different API response formats
+        if (response && typeof response === 'object') {
+          if (response.data && Array.isArray(response.data)) {
+            allData = response.data;
+          } else if (Array.isArray(response)) {
+            allData = response;
+          }
+        } else if (Array.isArray(response)) {
+          allData = response;
+        }
+
+        // Set all data to rowData for client-side AG-Grid
+        this.rowData = allData;
+
+        console.log(`Loaded ${this.rowData.length} total records`);
+        if (this.rowData.length > 0) {
+          console.log('First record ID:', this.rowData[0].id, 'Serial:', this.rowData[0].serial_number);
+          console.log('Last record ID:', this.rowData[this.rowData.length - 1].id, 'Serial:', this.rowData[this.rowData.length - 1].serial_number);
+        }
+
+        // Update statistics with all data
+        this.updateStatistics(this.rowData, this.rowData.length);
+        this.isLoading = false;
+        this.toastr.success(`Loaded ${this.rowData.length} serial numbers successfully`);
+      })
+      .catch((error) => {
+        console.error('Error loading serial numbers:', error);
+        this.toastr.error('Failed to load serial numbers');
+        this.isLoading = false;
+        this.rowData = [];
+        this.updateStatistics([], 0);
+      });
   }
 
   private setupColumnDefs(): void {
@@ -258,76 +319,39 @@ export class IgtManageExistingComponent implements OnInit {
 
   getRowId = (params: any) => params.data.id;
 
-  loadSerials(): void {
-    this.isLoading = true;
-    
-    // Mock data for now - replace with actual API call
-    setTimeout(() => {
-      this.rowData = this.generateMockData();
-      this.updateStatistics();
-      this.isLoading = false;
-    }, 1000);
-  }
-
-  private generateMockData(): IgtSerial[] {
-    // Generate sample data for demonstration
-    const categories = ['gaming', 'peripheral', 'system', 'other'];
-    const statuses: ('available' | 'reserved' | 'used')[] = ['available', 'reserved', 'used'];
-    const manufacturers = ['IGT', 'Bally', 'Scientific Games', 'Aristocrat', 'Konami'];
-    
-    return Array.from({ length: 150 }, (_, i) => ({
-      id: i + 1,
-      serial_number: `Z${String(i + 1).padStart(6, '0')}`,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      manufacturer: Math.random() > 0.3 ? manufacturers[Math.floor(Math.random() * manufacturers.length)] : '',
-      model: Math.random() > 0.4 ? `Model-${Math.floor(Math.random() * 100)}` : '',
-      notes: Math.random() > 0.7 ? 'Sample notes for this serial number' : '',
-      is_active: Math.random() > 0.1 ? 1 : 0,
-      created_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      used_at: Math.random() > 0.6 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined,
-      used_by: Math.random() > 0.7 ? 'John Doe' : undefined,
-      used_in_asset_id: Math.random() > 0.7 ? `ASSET-${Math.floor(Math.random() * 1000)}` : undefined,
-      used_in_asset_number: Math.random() > 0.7 ? `AN-${Math.floor(Math.random() * 10000)}` : undefined
-    }));
-  }
-
-  private updateStatistics(): void {
-    this.statistics = {
-      total: this.rowData.length,
-      available: this.rowData.filter(s => s.status === 'available' && s.is_active === 1).length,
-      reserved: this.rowData.filter(s => s.status === 'reserved' && s.is_active === 1).length,
-      used: this.rowData.filter(s => s.status === 'used' && s.is_active === 1).length,
-      inactive: this.rowData.filter(s => s.is_active === 0).length
-    };
+  private updateStatistics(allData?: IgtSerial[], totalCount?: number): void {
+    // Now that we have all data loaded at once, calculate accurate statistics
+    if (allData && Array.isArray(allData)) {
+      this.statistics = {
+        total: totalCount || allData.length,
+        available: allData.filter(s => s.status === 'available' && s.is_active === 1).length,
+        reserved: allData.filter(s => s.status === 'reserved' && s.is_active === 1).length,
+        used: allData.filter(s => s.status === 'used' && s.is_active === 1).length,
+        inactive: allData.filter(s => s.is_active === 0).length
+      };
+    } else {
+      // Fallback for empty data
+      this.statistics = {
+        total: 0,
+        available: 0,
+        reserved: 0,
+        used: 0,
+        inactive: 0
+      };
+    }
   }
 
   // Filter methods
   onFilterChange(): void {
-    this.applyFilters();
+    this.loadAllData();
   }
 
   onSearchChange(): void {
-    this.applyFilters();
+    this.loadAllData();
   }
 
   onIsActiveFilterChange(): void {
-    this.applyFilters();
-  }
-
-  private applyFilters(): void {
-    if (!this.gridApi) return;
-
-    // Apply quick filter for search
-    if (this.searchTerm) {
-      this.gridApi.setGridOption('quickFilterText', this.searchTerm);
-    } else {
-      this.gridApi.setGridOption('quickFilterText', '');
-    }
-
-    // Apply custom filters by updating row data with filtering logic
-    this.gridApi.onFilterChanged();
+    this.loadAllData();
   }
 
   clearFilters(): void {
@@ -335,7 +359,7 @@ export class IgtManageExistingComponent implements OnInit {
     this.statusFilter = '';
     this.isActiveFilter = '';
     this.searchTerm = '';
-    this.applyFilters();
+    this.loadAllData();
   }
 
   hasActiveFilters(): boolean {
@@ -347,9 +371,7 @@ export class IgtManageExistingComponent implements OnInit {
   }
 
   refreshData(): void {
-    this.isRefreshing = true;
-    this.loadSerials();
-    setTimeout(() => this.isRefreshing = false, 1000);
+    this.loadAllData();
   }
 
   // CRUD Operations
@@ -374,16 +396,59 @@ export class IgtManageExistingComponent implements OnInit {
     if (this.editForm.valid) {
       const updatedSerial = { ...this.serialToEdit, ...this.editForm.value };
       
-      // Mock save - replace with actual API call
-      const index = this.rowData.findIndex(s => s.id === updatedSerial.id);
-      if (index !== -1) {
-        this.rowData[index] = updatedSerial as IgtSerial;
-        this.gridApi.setGridOption('rowData', this.rowData);
-        this.updateStatistics();
-        this.toastr.success('Serial number updated successfully');
+      // Use real API to update the serial number
+      if (updatedSerial.id) {
+        this.serialNumberService.update(updatedSerial.id, updatedSerial)
+          .then((response) => {
+            // Handle different response formats and extract the actual data
+            let serialData = response;
+            if (response && typeof response === 'object' && !Array.isArray(response)) {
+              if (response.data) {
+                serialData = response.data;
+              } else if (response.serial) {
+                serialData = response.serial;
+              }
+            }
+            
+            // Update local data
+            const index = this.rowData.findIndex(s => s.id === updatedSerial.id);
+            if (index !== -1) {
+              this.rowData[index] = { ...this.rowData[index], ...serialData };
+              this.gridApi.setGridOption('rowData', this.rowData);
+              this.updateStatistics();
+            }
+            this.toastr.success('Serial number updated successfully');
+            this.editModalRef?.close();
+          })
+          .catch((error) => {
+            console.error('Error updating serial number:', error);
+            this.toastr.error('Failed to update serial number');
+          });
+      } else {
+        // Create new serial if no ID exists
+        this.serialNumberService.create(updatedSerial)
+          .then((response) => {
+            // Handle different response formats and extract the actual data
+            let serialData = response;
+            if (response && typeof response === 'object' && !Array.isArray(response)) {
+              if (response.data) {
+                serialData = response.data;
+              } else if (response.serial) {
+                serialData = response.serial;
+              }
+            }
+            
+            this.rowData.push(serialData);
+            this.gridApi.setGridOption('rowData', this.rowData);
+            this.updateStatistics();
+            this.toastr.success('Serial number created successfully');
+            this.editModalRef?.close();
+          })
+          .catch((error) => {
+            console.error('Error creating serial number:', error);
+            this.toastr.error('Failed to create serial number');
+          });
       }
-      
-      this.editModalRef?.close();
     }
   }
 
@@ -402,13 +467,27 @@ export class IgtManageExistingComponent implements OnInit {
   }
 
   private performDelete(serials: IgtSerial[]): void {
-    // Mock delete - replace with actual API call
-    const idsToDelete = serials.map(s => s.id);
-    this.rowData = this.rowData.filter(s => !idsToDelete.includes(s.id));
-    this.gridApi.setGridOption('rowData', this.rowData);
-    this.updateStatistics();
-    this.selectedSerials = [];
-    this.toastr.success(`${serials.length} serial number(s) deleted successfully`);
+    // Use real API to delete serial numbers (bulk delete if multiple)
+    const deletePromises = serials.map(serial => {
+      return this.serialNumberService.delete(serial.id);
+    });
+
+    Promise.all(deletePromises)
+      .then(() => {
+        // Remove deleted items from local data
+        const idsToDelete = serials.map(s => s.id);
+        this.rowData = this.rowData.filter(s => !idsToDelete.includes(s.id));
+        this.gridApi.setGridOption('rowData', this.rowData);
+        this.updateStatistics();
+        this.selectedSerials = [];
+        this.toastr.success(`${serials.length} serial number(s) deleted successfully`);
+      })
+      .catch((error) => {
+        console.error('Error deleting serial numbers:', error);
+        this.toastr.error('Failed to delete some serial numbers');
+        // Reload data to ensure consistency
+        this.refreshData();
+      });
   }
 
   // Export functionality

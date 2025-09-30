@@ -1,0 +1,31 @@
+/* Public Forms Menu - Bootstrap Album Theme */
+
+// Custom overrides for the Bootstrap Album layout
+.album {
+  .card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,.15) !important;
+    }
+  }
+}
+
+.navbar-brand img {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.btn {
+  transition: all 0.2s ease-in-out;
+}
+
+// Additional spacing for better visual hierarchy
+.card-img-top {
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+// Badge styling
+.badge {
+  font-size: 0.75rem;
+}

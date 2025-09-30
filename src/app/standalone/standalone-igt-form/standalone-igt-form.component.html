@@ -1,0 +1,287 @@
+<!-- Standalone IGT Serial Form -->
+<app-public-form-wrapper
+    pageTitle="IGT Serial Generator"
+    pageDescription="Create new IGT serial assets with automatic serial number assignment"
+    pageIcon="mdi-barcode"
+    formTitle="Access Required"
+    formDescription="Please authenticate to access the IGT Serial Generator. You can login using your username with password, or simply scan your employee card number."
+    (authenticationComplete)="onAuthenticationComplete($event)"
+    (userLoggedOut)="onUserLoggedOut()">
+
+  <!-- Success Message -->
+  <div *ngIf="showSuccessMessage" class="success-overlay">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card border-0 shadow-lg">
+            <div class="card-body p-5 text-center">
+              <div class="success-icon mb-4">
+                <i class="mdi mdi-check-circle text-success" style="font-size: 5rem;"></i>
+              </div>
+              <h3 class="fw-bold text-success mb-3">IGT Asset Created Successfully!</h3>
+              <p class="text-muted mb-4 fs-5" *ngIf="createdAssetData?.message">
+                {{ createdAssetData.message }}
+              </p>
+              <p class="text-muted mb-4 fs-5" *ngIf="!createdAssetData?.message">
+                Your IGT serial asset has been created and a serial number has been automatically assigned.
+              </p>
+              
+              <!-- Asset Summary -->
+              <div class="alert alert-success bg-success bg-opacity-10 border-success">
+                <h6 class="fw-bold mb-3 text-success">
+                  <i class="mdi mdi-information me-1"></i>
+                  Asset Details
+                </h6>
+                <div class="row text-start">
+                  <!-- Asset ID - show the extracted ID -->
+                  <div class="col-md-6">
+                    <strong>Asset ID:</strong> 
+                    <span *ngIf="createdAssetId && createdAssetId !== 'Generated'; else noAssetId">{{ createdAssetId }}</span>
+                    <ng-template #noAssetId><em class="text-muted">Auto-generated</em></ng-template>
+                  </div>
+                  
+                  <!-- Serial Number - most important field -->
+                  <div class="col-md-6" *ngIf="createdAssetData?.serial_number">
+                    <strong>Serial Number:</strong> 
+                    <span class="badge bg-primary ms-1">{{ createdAssetData.serial_number }}</span>
+                  </div>
+                  
+                  <!-- IGT Asset Number -->
+                  <div class="col-md-6">
+                    <strong>IGT Asset:</strong>
+                    <span *ngIf="createdAssetData?.generated_IGT_asset; else noIgtAsset">{{ createdAssetData.generated_IGT_asset }}</span>
+                    <ng-template #noIgtAsset><em class="text-muted">Auto-generated</em></ng-template>
+                  </div>
+                  
+                  <!-- Creator -->
+                  <div class="col-md-6">
+                    <strong>Created By:</strong> {{ createdAssetData?.inspector_name || currentUser?.full_name }}
+                  </div>
+                  
+                  <!-- Timestamp -->
+                  <div class="col-md-6">
+                    <strong>Created On:</strong> 
+                    <span *ngIf="createdAssetData?.time_stamp; else currentTime">{{ formatTimestamp(createdAssetData.time_stamp) }}</span>
+                    <ng-template #currentTime>{{ getCurrentTimestamp() }}</ng-template>
+                  </div>
+                  
+                  <!-- IGT Part Number -->
+                  <div class="col-md-6" *ngIf="createdAssetData?.igt_part_number">
+                    <strong>IGT Part:</strong> {{ createdAssetData.igt_part_number }}
+                  </div>
+                  
+                  <!-- Work Order Number -->
+                  <div class="col-md-6" *ngIf="createdAssetData?.wo_number">
+                    <strong>Work Order:</strong> {{ createdAssetData.wo_number }}
+                  </div>
+                  
+                  <!-- Work Order Part -->
+                  <div class="col-md-6" *ngIf="createdAssetData?.wo_part">
+                    <strong>WO Part:</strong> {{ createdAssetData.wo_part }}
+                  </div>
+                  
+                  <!-- Work Order Description -->
+                  <div class="col-12 mt-2" *ngIf="createdAssetData?.wo_description">
+                    <strong>WO Description:</strong> {{ createdAssetData.wo_description }}
+                  </div>
+                  
+                  <!-- Available Serials -->
+                  <div class="col-12 mt-2">
+                    <strong>Available Serials:</strong> {{ availableSerialCount }} remaining
+                  </div>
+                  
+                  <!-- Debug Info (temporary) -->
+                  <!-- <div class="col-12 mt-3">
+                    <details>
+                      <summary class="text-muted small">Debug: Backend Response</summary>
+                      <pre class="bg-light p-2 small mt-2">{{ getDebugInfo() }}</pre>
+                    </details>
+                  </div> -->
+                </div>
+              </div>
+              
+              <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
+                <button class="btn btn-success btn-lg" (click)="createAnother()">
+                  <i class="mdi mdi-plus me-2"></i>
+                  Create Another Asset
+                </button>
+                <!-- <button class="btn btn-outline-secondary" (click)="onUserLoggedOut()">
+                  <i class="mdi mdi-arrow-left me-2"></i>
+                  Back to Forms Menu
+                </button> -->
+                <button class="btn btn-outline-danger" (click)="logout()">
+                  <i class="mdi mdi-logout me-2"></i>
+                  Log Off
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IGT Form -->
+  <div *ngIf="!showSuccessMessage" class="row justify-content-center">
+    <div class="col-lg-10 col-xl-10">
+      
+      <!-- Serial Number Statistics -->
+      <!-- <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <div class="bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center" 
+                   style="width: 60px; height: 60px;">
+                <i class="mdi mdi-database text-white fs-4"></i>
+              </div>
+            </div>
+            <div class="col">
+              <h5 class="mb-1 text-primary">Serial Number Status</h5>
+              <p class="text-muted mb-0">Current inventory of available serial numbers</p>
+            </div>
+            <div class="col-auto">
+              <div class="text-end">
+                <div class="h4 mb-1 text-success fw-bold">
+                  {{ isLoadingSerialStats ? '...' : availableSerialCount }}
+                </div>
+                <small class="text-muted">Available</small>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="text-end">
+                <div class="h4 mb-1 text-secondary fw-bold">
+                  {{ isLoadingSerialStats ? '...' : totalSerialCount }}
+                </div>
+                <small class="text-muted">Total</small>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="availableSerialCount === 0 && !isLoadingSerialStats" class="alert alert-warning mt-3 mb-0">
+            <div class="d-flex align-items-center">
+              <i class="mdi mdi-alert-circle me-2"></i>
+              <div>
+                <strong>No Available Serial Numbers</strong><br>
+                <small>Please contact IT support to upload more serial numbers before creating IGT assets.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+      <!-- Unified IGT Form Card -->
+      <div class="card border-0 shadow-lg">
+        <div class="card-header border-bottom">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-success bg-gradient rounded-circle d-flex align-items-center justify-content-center"
+                   style="width: 50px; height: 50px;">
+                <i class="mdi mdi-plus text-white fs-5"></i>
+              </div>
+            </div>
+            <div>
+              <h4 class="mb-1 text-success">Create New IGT Asset</h4>
+              <p class="text-muted mb-0">Fill out the form below to create a new IGT serial asset with optional work order tracking</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-4">
+          <!-- Work Order Section -->
+          <div class="mb-4">
+            <div class="mb-3">
+              <h6 class="mb-1 text-primary">
+                <i class="mdi mdi-briefcase me-2"></i>
+                Work Order Information
+              </h6>
+              <p class="text-muted mb-0 small">
+                Search and select a work order number to associate with this IGT asset for tracking purposes. This will automatically populate the work order fields.
+              </p>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <app-qad-wo-search
+                  *ngIf="isAuthenticated"
+                  [form_label]="'Work Order Number'"
+                  [placeholder]="'Search by WO Number'"
+                  [required]="false"
+                  [showLabel]="true"
+                  [value]="selectedWorkOrderData?.wo_nbr || ''"
+                  (notifyParent)="onWorkOrderSelected($event)">
+                </app-qad-wo-search>
+                <div class="form-text">
+                  <i class="mdi mdi-information-outline me-1"></i>
+                  Link this IGT asset to a specific work order for tracking purposes
+                </div>
+              </div>
+            </div>
+
+            <!-- Work Order Details Display -->
+            <div *ngIf="selectedWorkOrderData" class="row mb-3">
+              <div class="col-md-12">
+                <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-check-circle text-success me-3 mt-1" style="font-size: 1.25rem;"></i>
+                    <div class="flex-grow-1">
+                      <h6 class="alert-heading mb-2 text-success">Work Order Selected</h6>
+                      <div class="mb-1">
+                        <strong>WO Number:</strong> {{ selectedWorkOrderData.wo_nbr }}
+                      </div>
+                      <div *ngIf="selectedWorkOrderData.wo_part" class="mb-1">
+                        <strong>Part:</strong> {{ selectedWorkOrderData.wo_part }}
+                      </div>
+                      <div *ngIf="selectedWorkOrderData.description" class="mb-1">
+                        <strong>Description:</strong> {{ selectedWorkOrderData.description }}
+                      </div>
+                      <small class="text-muted">
+                        This work order will be linked to the new IGT asset
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <hr class="my-4">
+
+          <!-- IGT Asset Information Section -->
+          <div class="mb-3">
+            <h6 class="mb-1 text-primary">
+              <i class="mdi mdi-barcode me-2"></i>
+              IGT Asset Information
+            </h6>
+            <p class="text-muted mb-0 small">
+              Enter the details for the new IGT serial asset. A serial number will be automatically assigned.
+            </p>
+          </div>
+
+          <!-- IGT Form Component -->
+          <app-igt-form 
+            *ngIf="isAuthenticated"
+            [submitted]="submitted"
+            (setFormEmitter)="setFormEmitter($event)">
+          </app-igt-form>
+        </div>
+
+        <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+          <button class="btn btn-outline-secondary" type="button" (click)="resetForm()" [disabled]="isLoading">
+            <i class="mdi mdi-refresh me-1"></i>Reset Form
+          </button>
+          <button class="btn btn-primary" type="button" (click)="onSubmit()" 
+                  [disabled]="!form || form.invalid || isLoading || availableSerialCount === 0">
+            @if (isLoading) {
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Creating Asset...
+            } @else {
+              <i class="mdi mdi-check me-1"></i>
+              Create IGT Asset
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-public-form-wrapper>

@@ -14,6 +14,7 @@ import { RequestPublicComponent } from "./pages/public/request-public/request-pu
 import { QirCreatePublicComponent } from "./pages/quality/qir/qir-create-public/qir-create-public.component";
 import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-usage-form.component";
 import { StandaloneShippingPriorityDisplayComponent } from "./standalone/shipping-priority-display/shipping-priority-display.component";
+import { PublicFormsMenuComponent } from "./standalone/public-forms-menu/public-forms-menu.component";
 import { SafetyDashboardComponent } from "./pages/operations/forms/safety-incident/safety-dashboard/safety-dashboard.component";
 
 import { FlagBasedPreloadingStrategy } from "./shared/providers/preload";
@@ -32,10 +33,30 @@ const routes: Routes = [
   { path: "menu", component: MenuComponent },
   { path: "request", component: RequestPublicComponent },
   { path: "quality-incident-request", component: QirCreatePublicComponent },
+  
+  // Public Forms Portal
   { 
-    path: "ul-usage", 
+    path: "forms", 
+    component: PublicFormsMenuComponent,
+    title: "Public Forms Portal"
+  },
+  
+  // Standalone Forms
+  { 
+    path: "standalone/ul-usage", 
     component: StandaloneULUsageFormComponent,
     title: "UL Usage Entry"
+  },
+  { 
+    path: "standalone/igt-serial", 
+    loadComponent: () => import("./standalone/standalone-igt-form/standalone-igt-form.component").then(c => c.StandaloneIgtFormComponent),
+    title: "IGT Serial Generator"
+  },
+  
+  // Legacy route for backward compatibility
+  { 
+    path: "ul-usage", 
+    redirectTo: "standalone/ul-usage"
   },
   { 
     path: "shipping-priority-display", 

@@ -109,10 +109,38 @@
         </div>
         
         <div class="card-footer bg-light border-top d-flex p-3">
+          <div class="d-flex align-items-center me-auto">
+            <span class="small text-muted me-2">Label Size:</span>
+            <div class="btn-group" role="group">
+              <input 
+                type="radio" 
+                class="btn-check" 
+                name="labelSizeCreate" 
+                id="fullSizeCreate" 
+                autocomplete="off" 
+                [checked]="!useCompactLabel"
+                (change)="useCompactLabel = false">
+              <label class="btn btn-outline-secondary btn-sm" for="fullSizeCreate">
+                <i class="mdi mdi-card-outline me-1"></i>Full
+              </label>
+              
+              <input 
+                type="radio" 
+                class="btn-check" 
+                name="labelSizeCreate" 
+                id="compactSizeCreate" 
+                autocomplete="off" 
+                [checked]="useCompactLabel"
+                (change)="useCompactLabel = true">
+              <label class="btn btn-outline-secondary btn-sm" for="compactSizeCreate">
+                <i class="mdi mdi-card me-1"></i>4×2
+              </label>
+            </div>
+          </div>
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary ms-auto" 
+          <button type="submit" class="btn btn-primary" 
                   [disabled]="isLoading || availableSerialCount === 0" 
                   (click)="onSubmit()"
                   [title]="availableSerialCount === 0 ? 'No available serial numbers. Please upload serial numbers first.' : ''">
@@ -213,6 +241,34 @@
           <div class="text-muted small me-auto align-self-center" *ngIf="data">
             <i class="mdi mdi-history text-info me-1"></i>
             Last modified: {{data?.lastUpdate | date:'medium'}}
+          </div>
+          <div class="d-flex align-items-center me-3">
+            <span class="small text-muted me-2">Label Size:</span>
+            <div class="btn-group" role="group">
+              <input 
+                type="radio" 
+                class="btn-check" 
+                name="labelSize" 
+                id="fullSize" 
+                autocomplete="off" 
+                [checked]="!useCompactLabel"
+                (change)="useCompactLabel = false">
+              <label class="btn btn-outline-secondary btn-sm" for="fullSize">
+                <i class="mdi mdi-card-outline me-1"></i>Full
+              </label>
+              
+              <input 
+                type="radio" 
+                class="btn-check" 
+                name="labelSize" 
+                id="compactSize" 
+                autocomplete="off" 
+                [checked]="useCompactLabel"
+                (change)="useCompactLabel = true">
+              <label class="btn btn-outline-secondary btn-sm" for="compactSize">
+                <i class="mdi mdi-card me-1"></i>4×2
+              </label>
+            </div>
           </div>
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel

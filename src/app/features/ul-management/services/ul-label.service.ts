@@ -143,4 +143,10 @@ export class ULLabelService {
   getDashboardStats(): Observable<any> {
     return this.http.get(`${this.API_URL}/dashboard-stats.php`);
   }
+
+  // Work Order Validation
+  checkWorkOrderUsage(workOrderNumber: string | number): Observable<any> {
+    const params = new HttpParams().set('wo_nbr', workOrderNumber.toString());
+    return this.http.get(`${this.API_URL}/validate-work-order.php`, { params });
+  }
 }

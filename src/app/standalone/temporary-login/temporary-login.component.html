@@ -1,0 +1,133 @@
+<!-- Authentication Required -->
+<div *ngIf="!isAuthenticated">
+  <div class="card border-0 shadow-lg">
+    <div class="card-header border-bottom-0 pb-0">
+      <h4 class="card-title fw-bold w-100 text-center">
+        <i class="mdi mdi-login me-2"></i>
+        {{ formTitle }}
+      </h4>
+    </div>
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <div class="login-icon mb-3">
+          <i class="mdi mdi-shield-lock mdi-48px text-primary"></i>
+        </div>
+        <p class="text-muted">{{ formDescription }}</p>
+      </div>
+
+      <div *ngIf="loginError" class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="mdi mdi-alert-circle me-2"></i>
+          <div class="flex-grow-1">{{ loginError }}</div>
+          <button type="button" class="btn btn-link p-0" (click)="loginError = ''">
+            <i class="mdi mdi-close text-muted"></i>
+          </button>
+        </div>
+      </div>
+
+      <form #loginForm="ngForm" (ngSubmit)="authenticateUser(loginForm)">
+
+        <!-- Login Method Toggle -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-center">
+            <div class="btn-group" role="group">
+              <input type="radio" class="btn-check" name="loginMethod" id="username" value="username"
+                [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+              <label class="btn btn-outline-primary" for="username">
+                <i class="mdi mdi-account me-1"></i>Username
+              </label>
+
+              <input type="radio" class="btn-check" name="loginMethod" id="cardNumber" value="cardNumber"
+                [(ngModel)]="loginMethod" (change)="onLoginMethodChange()">
+              <label class="btn btn-outline-primary" for="cardNumber">
+                <i class="mdi mdi-credit-card me-1"></i>Card Number
+              </label>
+            </div>
+          </div>
+          <div class="text-center mt-2">
+            <small class="text-muted">Choose your preferred login method</small>
+          </div>
+        </div>
+
+        <!-- Username Login -->
+        <div class="mb-3" *ngIf="loginMethod === 'username'">
+          <label class="form-label fw-semibold">Username</label>
+          <div class="input-group">
+            <input type="text" class="form-control form-control-lg" name="username" ngModel required
+              placeholder="first.lastname" #usernameInput>
+            <span class="input-group-text">&#64;the-fi-company.com</span>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Enter your company username
+          </div>
+        </div>
+
+        <!-- Card Number Login -->
+        <div class="mb-3" *ngIf="loginMethod === 'cardNumber'">
+          <label class="form-label fw-semibold">Employee Card Number</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="mdi mdi-credit-card"></i>
+            </span>
+            <input type="password" class="form-control form-control-lg" name="cardNumber" ngModel required
+              placeholder="Scan or enter your employee card number" maxlength="20" autocomplete="off"
+              (keydown.enter)="onCardNumberEnter($any($event), loginForm)" #cardNumberInput>
+          </div>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Scan or enter your employee ID card number (input is hidden for security). Press Enter or scan card to
+            login.
+          </div>
+        </div>
+
+        <!-- Password field only for username login -->
+        <div class="mb-4" *ngIf="loginMethod === 'username'">
+          <label class="form-label fw-semibold">Password</label>
+          <input type="password" class="form-control form-control-lg" name="password" ngModel required
+            placeholder="Enter your password">
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="!isLoginFormValid(loginForm) || isLoggingIn">
+            <i *ngIf="isLoggingIn" class="mdi mdi-loading mdi-spin me-2"></i>
+            <i *ngIf="!isLoggingIn" class="mdi mdi-login me-2"></i>
+            {{ isLoggingIn ? 'Authenticating...' : 'Login & Start Session' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- User Info Header (when authenticated) -->
+<div *ngIf="isAuthenticated" class="col-auto">
+  <div class="d-flex align-items-center">
+    <!-- User Avatar -->
+    <div class="user-avatar me-3">
+      <div class="avatar-container position-relative" style="width: 45px; height: 45px;">
+        <div
+          class="avatar bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+          style="width: 100%; height: 100%; font-size: 1.1rem;">
+          {{ getUserInitials() }}
+        </div>
+        <div class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white"
+          style="width: 12px; height: 12px;" title="Active Session"></div>
+      </div>
+    </div>
+    <div class="session-info me-3">
+      <div class="fw-semibold">{{ currentUser?.full_name }}</div>
+      <div class="small opacity-75">
+        Session: Active
+      </div>
+      <div class="small opacity-75">
+        Logged in as employee
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-outline-light btn-sm" (click)="logout()">
+        <i class="mdi mdi-logout me-1"></i>Logout
+      </button>
+    </div>
+  </div>
+</div>

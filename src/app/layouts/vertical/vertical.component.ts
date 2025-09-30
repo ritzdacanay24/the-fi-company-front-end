@@ -15,7 +15,14 @@ export class VerticalComponent implements OnInit {
   isCondensed = false;
   getsize:any;
 
+  // Sidebar preferences
+  sidebarPreferences = {
+    sidebarSize: 'lg' // Default size
+  };
+
   constructor(private eventService: EventService, private router: Router, private activatedRoute: ActivatedRoute,private store: Store<RootReducerState>) {
+    // Load preferences on initialization
+    this.loadSidebarPreferences();
   }
 
   ngOnInit(): void {
@@ -80,17 +87,27 @@ export class VerticalComponent implements OnInit {
 
   /**
    * On mobile toggle button clicked
+   * Now saves the sidebar size preference to localStorage
    */
   onToggleMobileMenu() {
     const currentSIdebarSize = document.documentElement.getAttribute("data-sidebar-size");
+    let newSidebarSize = currentSIdebarSize;
+    
     if (document.documentElement.clientWidth >= 767) {
       if (currentSIdebarSize == null) {
-        (document.documentElement.getAttribute('data-sidebar-size') == null || document.documentElement.getAttribute('data-sidebar-size') == "lg") ? document.documentElement.setAttribute('data-sidebar-size', 'sm') : document.documentElement.setAttribute('data-sidebar-size', 'lg')
+        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == null || document.documentElement.getAttribute('data-sidebar-size') == "lg") ? 'sm' : 'lg';
+        document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       } else if (currentSIdebarSize == "md") {
-        (document.documentElement.getAttribute('data-sidebar-size') == "md") ? document.documentElement.setAttribute('data-sidebar-size', 'sm') : document.documentElement.setAttribute('data-sidebar-size', 'md')
+        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == "md") ? 'sm' : 'md';
+        document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       } else {
-        (document.documentElement.getAttribute('data-sidebar-size') == "sm") ? document.documentElement.setAttribute('data-sidebar-size', 'lg') : document.documentElement.setAttribute('data-sidebar-size', 'sm')
+        newSidebarSize = (document.documentElement.getAttribute('data-sidebar-size') == "sm") ? 'lg' : 'sm';
+        document.documentElement.setAttribute('data-sidebar-size', newSidebarSize);
       }
+      
+      // Save the new sidebar size preference
+      this.sidebarPreferences.sidebarSize = newSidebarSize;
+      this.saveSidebarPreferences();
     }
 
     if (document.documentElement.clientWidth <= 767) {
@@ -122,6 +139,44 @@ export class VerticalComponent implements OnInit {
         document.body.classList.remove('vertical-sidebar-enable');
       }
     }
+  }
+
+  // Sidebar preferences management
+  private loadSidebarPreferences(): void {
+    try {
+      const savedPreferences = localStorage.getItem('vertical-sidebar-preferences');
+      if (savedPreferences) {
+        this.sidebarPreferences = { ...this.sidebarPreferences, ...JSON.parse(savedPreferences) };
+      }
+      
+      // Apply the saved sidebar size on initialization
+      this.applySavedSidebarSize();
+    } catch (error) {
+      console.warn('Failed to load vertical sidebar preferences:', error);
+    }
+  }
+
+  private saveSidebarPreferences(): void {
+    try {
+      localStorage.setItem('vertical-sidebar-preferences', JSON.stringify(this.sidebarPreferences));
+    } catch (error) {
+      console.warn('Failed to save vertical sidebar preferences:', error);
+    }
+  }
+
+  private applySavedSidebarSize(): void {
+    if (document.documentElement.clientWidth >= 767) {
+      // Only apply on larger screens to avoid conflicts with mobile behavior
+      const savedSize = this.sidebarPreferences.sidebarSize;
+      if (savedSize && savedSize !== 'lg') { // lg is often the default, so only set if different
+        document.documentElement.setAttribute('data-sidebar-size', savedSize);
+      }
+    }
+  }
+
+  private getCurrentSidebarSize(): string {
+    const currentSize = document.documentElement.getAttribute("data-sidebar-size");
+    return currentSize || 'lg'; // Default to 'lg' if no attribute
   }
 
 }

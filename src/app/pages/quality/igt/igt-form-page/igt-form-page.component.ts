@@ -32,6 +32,9 @@ export class IgtFormPageComponent {
   availableSerialCount = 0;
   totalSerialCount = 0;
   isLoadingSerialStats = true;
+  
+  // Label printing options
+  useCompactLabel = false;
 
   constructor(
     private router: Router,
@@ -200,33 +203,101 @@ export class IgtFormPageComponent {
   onPrint() {
     let row = this.form.getRawValue();
     setTimeout(() => {
-      let cmds = `
-      ^XA^FO50,50^GFA,1620,1620,20,,::::::P0FFN01FEL01MF8,O07FFEM0IFCK07MF8,N01JF8K03JFK0NF8,N03JFC
-      K07JF8I01NF8,N07JFEK0KFCI03NF8,N0LFJ01KFEI07NF8,M01LF8I03LFI0OF8,M03LFCI07LF800OF8,01EJ07L
-      FEI0MFC00OF8,03F8I07MFI0MFC01OF8,07FCI0IF00IF001FFE01FFE01FF,07FFI0FFC003FF803FF8007FF01FE
-      ,07FF800FF8001FF803FFI03FF01FE,07FFE007FJ0FFC07FEI01FF81FC,07IF001EJ07FC07FCJ0FF83FC,07IFC
-      00EJ03FC07FCJ0FF81FC,07IFEM03FE0FF8J07FC1FE,07JF8L01FE0FF8J07FC1FE,07JFCL01FE0FFK03FC1FF,0
-      7KFL01FE0FFK03FC1LFE,07KF8L0FE0FFK03FC0MFC,07KFEL0FE0FEK01FC0NF,07LFL0FF0FEK01FC0NF8,07LF8
-      K0FF0FEK01FC07MFC,07LF8K0FF0FEK01FC03MFE,07LF8K0FF0FEK01FC01MFE,07LF8K0FF0FEK01FC00NF,07KF
-      EL0FF0FFK03FC007MF,07KFCK01FF0FFK03FC001MF8,07KFL01FF0FFK03FCM01FF8,07JFEL01FF0FFK03FCN07F
-      8,07JF8L03FF0FF8J07FCN07F8,07JFM03FF07F8J07FCN03F8,07IFC006J07FF07FCJ0FFCN03F8,07IF800FJ0I
-      F07FEI01FFCN03F8,07FFE003F8I0IF03FFI03FFCN03F8,07FFC007FC003IF03FF8007FFCN07F8,07FFI0FFE00
-      7IF01FFC00IFCN0FF8,07FEI0IFC1JF01IF87IFCM01FF8,07F8I07NF00NFC1OF8,03FJ03NF007MFC3OF,00CJ03
-      NF007MFC3OF,M01NF003MFC3NFE,N0NF001MFC3NFE,N07JFEFFI0KFDFC3NFC,N01JFCFFI03JF1FC3NF8,O0JF0F
-      FI01IFE1FC3NF1,O01FFC0FFJ03FF03FC3MFC,gJ03FC,:gJ07FC,gJ07F8,gJ0FF8,:gI01FF,gI03FF,gI07FF,g
-      H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,:::::^FS
-      ^FX
-      ^FWN
-      ^CFA,25
-      ^FS^FO50,135^FDPart Number^FS
-      ^FS^FO50,170^FD${row.igtPartNumber}^FS
-      ^FS^FO50,200^BY2,2.5^B3,N,42,N,N,N,A^FD${row.igtPartNumber}^FS
-      ^FS^FO50,260^FDIGT Asset Number^FS
-      ^FS^FO50,295^FD${row.generated_IGT_asset}^FS
-      ^FS^FO50,330^BY2,2.5^B3,N,42,N,N,N,A^FD${row.generated_IGT_asset}^FS
-      ^CFA,15
-      ^XZ
-      `;
+      let cmds = '';
+      
+      if (this.useCompactLabel) {
+        // 4x2 inch compact label format
+        cmds = `
+        ^XA
+        ^FWN
+        ^CFA,18
+        ^FS^FO20,20^FDIGT Asset: ${row.generated_IGT_asset || 'N/A'}^FS
+        ^FS^FO20,45^BY1.5,2.0^B3,N,25,N,N,N,A^FD${row.generated_IGT_asset || ''}^FS
+        
+        ^CFA,16
+        ^FS^FO20,90^FDSerial: ${row.serial_number || 'N/A'}^FS
+        ^FS^FO20,115^BY1.5,2.0^B3,N,25,N,N,N,A^FD${row.serial_number || ''}^FS
+        
+        ^CFA,14
+        ^FS^FO200,20^FDIGT P/N: ${row.igt_part_number || 'N/A'}^FS
+        ^FS^FO200,40^FDEyefi P/N: ${row.eyefi_part_number || 'N/A'}^FS
+        ^FS^FO200,60^FDWO: ${row.wo_number || 'N/A'}^FS
+        ^FS^FO200,80^FDSite: ${row.property_site || 'N/A'}^FS
+        ^FS^FO200,100^FDInspector: ${row.inspector_name || 'N/A'}^FS
+        ^FS^FO200,120^FDDate: ${row.time_stamp ? new Date(row.time_stamp).toLocaleDateString() : 'N/A'}^FS
+        
+        ^CFA,12
+        ^FS^FO20,150^FDPrinted: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}^FS
+        ^XZ
+        `;
+      } else {
+        // Full-size label format (original)
+        cmds = `
+        ^XA^FO50,50^GFA,1620,1620,20,,::::::P0FFN01FEL01MF8,O07FFEM0IFCK07MF8,N01JF8K03JFK0NF8,N03JFC
+        K07JF8I01NF8,N07JFEK0KFCI03NF8,N0LFJ01KFEI07NF8,M01LF8I03LFI0OF8,M03LFCI07LF800OF8,01EJ07L
+        FEI0MFC00OF8,03F8I07MFI0MFC01OF8,07FCI0IF00IF001FFE01FFE01FF,07FFI0FFC003FF803FF8007FF01FE
+        ,07FF800FF8001FF803FFI03FF01FE,07FFE007FJ0FFC07FEI01FF81FC,07IF001EJ07FC07FCJ0FF83FC,07IFC
+        00EJ03FC07FCJ0FF81FC,07IFEM03FE0FF8J07FC1FE,07JF8L01FE0FF8J07FC1FE,07JFCL01FE0FFK03FC1FF,0
+        7KFL01FE0FFK03FC1LFE,07KF8L0FE0FFK03FC0MFC,07KFEL0FE0FEK01FC0NF,07LFL0FF0FEK01FC0NF8,07LF8
+        K0FF0FEK01FC07MFC,07LF8K0FF0FEK01FC03MFE,07LF8K0FF0FEK01FC01MFE,07LF8K0FF0FEK01FC00NF,07KF
+        EL0FF0FFK03FC007MF,07KFCK01FF0FFK03FC001MF8,07KFL01FF0FFK03FCM01FF8,07JFEL01FF0FFK03FCN07F
+        8,07JF8L03FF0FF8J07FCN07F8,07JFM03FF07F8J07FCN03F8,07IFC006J07FF07FCJ0FFCN03F8,07IF800FJ0I
+        F07FEI01FFCN03F8,07FFE003F8I0IF03FFI03FFCN03F8,07FFC007FC003IF03FF8007FFCN07F8,07FFI0FFE00
+        7IF01FFC00IFCN0FF8,07FEI0IFC1JF01IF87IFCM01FF8,07F8I07NF00NFC1OF8,03FJ03NF007MFC3OF,00CJ03
+        NF007MFC3OF,M01NF003MFC3NFE,N0NF001MFC3NFE,N07JFEFFI0KFDFC3NFC,N01JFCFFI03JF1FC3NF8,O0JF0F
+        FI01IFE1FC3NF1,O01FFC0FFJ03FF03FC3MFC,gJ03FC,:gJ07FC,gJ07F8,gJ0FF8,:gI01FF,gI03FF,gI07FF,g
+        H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,:::::^FS
+        ^FX
+        ^FWN
+        ^CFA,20
+        ^FS^FO50,135^FDIGT Part Number^FS
+        ^CFA,25
+        ^FS^FO50,165^FD${row.igt_part_number || 'N/A'}^FS
+        ^FS^FO50,195^BY2,2.0^B3,N,35,N,N,N,A^FD${row.igt_part_number || ''}^FS
+        
+        ^CFA,20
+        ^FS^FO50,250^FDEyefi Part Number^FS
+        ^CFA,25
+        ^FS^FO50,280^FD${row.eyefi_part_number || 'N/A'}^FS
+        ^FS^FO50,310^BY2,2.0^B3,N,35,N,N,N,A^FD${row.eyefi_part_number || ''}^FS
+        
+        ^CFA,20
+        ^FS^FO50,365^FDIGT Asset Number^FS
+        ^CFA,25
+        ^FS^FO50,395^FD${row.generated_IGT_asset || 'N/A'}^FS
+        ^FS^FO50,425^BY2,2.0^B3,N,35,N,N,N,A^FD${row.generated_IGT_asset || ''}^FS
+        
+        ^CFA,20
+        ^FS^FO50,480^FDSerial Number^FS
+        ^CFA,25
+        ^FS^FO50,510^FD${row.serial_number || 'N/A'}^FS
+        ^FS^FO50,540^BY2,2.0^B3,N,35,N,N,N,A^FD${row.serial_number || ''}^FS
+        
+        ^CFA,18
+        ^FS^FO450,135^FDInspector^FS
+        ^FS^FO450,160^FD${row.inspector_name || 'N/A'}^FS
+        
+        ^FS^FO450,190^FDDate Created^FS
+        ^FS^FO450,215^FD${row.time_stamp ? new Date(row.time_stamp).toLocaleDateString() : 'N/A'}^FS
+        
+        ^FS^FO450,245^FDWork Order^FS
+        ^FS^FO450,270^FD${row.wo_number || 'N/A'}^FS
+        
+        ^FS^FO450,300^FDProperty Site^FS
+        ^FS^FO450,325^FD${row.property_site || 'N/A'}^FS
+        
+        ^FS^FO450,355^FDStatus^FS
+        ^FS^FO450,380^FD${row.active ? 'Active' : 'Inactive'}^FS
+        
+        ^FS^FO450,410^FDNotes^FS
+        ^FS^FO450,435^FD${row.notes || 'N/A'}^FS
+        
+        ^CFA,15
+        ^FS^FO50,580^FDPrinted: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}^FS
+        ^XZ
+        `;
+      }
+      
       var printwindow = window.open("", "PRINT", "height=500,width=600");
       printwindow.document.write(cmds);
       printwindow.document.close();

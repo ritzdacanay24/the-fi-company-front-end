@@ -7,13 +7,22 @@
 	--vz-vertical-menu-sub-item-hover-color: #ffffff;
 }
 
-/* Ensure entire sidebar expands on hover for sm-hover mode */
+/* Enhanced sidebar hover expansion for sm-hover mode */
 html[data-sidebar-size="sm-hover"] {
 	.navbar-menu {
 		/* Ensure the hover area covers the entire sidebar */
 		&:hover {
-			/* Force expansion of entire sidebar */
-			width: var(--vz-vertical-menu-width) !important;
+			/* Force expansion of entire sidebar to full width */
+			width: 250px !important; /* Use fixed width that matches normal sidebar */
+			
+			/* Smooth transition */
+			transition: width 0.15s ease-in-out !important;
+			
+			/* Ensure proper z-index so it overlays content */
+			z-index: 1051 !important;
+			
+			/* Add shadow to indicate overlay */
+			box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 			
 			/* Show ALL text elements across the entire sidebar */
 			.navbar-nav {
@@ -21,11 +30,19 @@ html[data-sidebar-size="sm-hover"] {
 				.menu-title span,
 				.badge {
 					display: inline-block !important;
+					opacity: 1 !important;
+					visibility: visible !important;
 				}
 				
 				/* Ensure dropdown menus can show */
 				.menu-dropdown {
 					display: block !important;
+				}
+				
+				/* Show collapsed menu items */
+				.nav-link {
+					padding-left: 1rem !important;
+					padding-right: 1rem !important;
 				}
 			}
 			
@@ -33,6 +50,7 @@ html[data-sidebar-size="sm-hover"] {
 			.logo {
 				span.logo-lg {
 					display: inline-block !important;
+					opacity: 1 !important;
 				}
 				span.logo-sm {
 					display: none !important;
@@ -43,7 +61,34 @@ html[data-sidebar-size="sm-hover"] {
 			.navbar-brand-box {
 				text-align: left !important;
 			}
+			
+			/* Ensure search box shows if enabled */
+			.menu-search-container {
+				display: block !important;
+			}
 		}
+		
+		/* Add transition for smooth collapse */
+		transition: width 0.15s ease-in-out;
+		
+		/* Ensure hover trigger area is adequate */
+		position: relative;
+		
+		/* Add invisible hover trigger area on the right edge */
+		&::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			right: -10px; /* Extend 10px to the right for easier hover triggering */
+			width: 10px;
+			height: 100%;
+			z-index: 1050;
+		}
+	}
+	
+	/* Ensure main content doesn't get pushed when sidebar expands on hover */
+	.main-content {
+		transition: margin-left 0s !important; /* Disable main content movement on hover */
 	}
 }
 
