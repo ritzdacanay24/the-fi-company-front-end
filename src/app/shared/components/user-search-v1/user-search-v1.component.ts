@@ -37,7 +37,7 @@ export class UserSearchV1Component implements OnInit {
   @Input() debounceTime: number = 500;
   @Input() virtualScroll: boolean = true;
   @Input() appendToBody = "";
-  @Input() className = "testing mb-3";
+  @Input() className = "testing";
   @Input() hideSelected: boolean = true;
   @Input() closeOnSelect: boolean = true;
   @Input() clearSearchOnAdd: boolean = true;

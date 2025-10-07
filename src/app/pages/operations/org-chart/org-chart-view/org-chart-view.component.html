@@ -16,74 +16,46 @@
         </ol>
       </nav>
       
-      <!-- Page Header with Context -->
-      <div class="mb-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div class="d-flex align-items-center">
-            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-              <i class="mdi mdi-sitemap text-white fs-4"></i>
-            </div>
-            <div>
-              <h2 class="mb-1 text-primary">Organization Chart</h2>
-              <p class="text-muted mb-0">Interactive organizational structure and employee hierarchy visualization</p>
-            </div>
-          </div>
-          <div class="d-flex gap-2">
-            <button 
-              type="button" 
-              class="btn btn-primary"
-              (click)="addNode()"
-              title="Add new employee">
-              <i class="mdi mdi-account-plus me-2"></i>Add Employee
-            </button>
-          </div>
-        </div>
-        
-        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
-          <div class="d-flex align-items-start">
-            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
-            <div>
-              <h6 class="alert-heading text-primary mb-2">Organization Chart Overview</h6>
-              <p class="mb-0">
-                View and manage the company's <strong>organizational structure</strong> with interactive charts. 
-                Click on employees to view details, expand/collapse departments, and track reporting relationships.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div class="card shadow-sm border-0">
         <div class="card-header">
-          <div class="d-flex align-items-center flex-wrap gap-3">
-            <div class="form-icon flex-grow-1" style="max-width: 400px;">
-              <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
-                  [appendToBody]="'body'" [ngClass]="'mb-0'" [placeholder]="'Search employees...'"
-                  [editableSearchTerm]="false"></app-user-search-v1>
+          <div class="d-flex align-items-stretch justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-stretch gap-3 flex-grow-1">
+              <div class="form-icon d-flex align-items-center" style="min-width: 300px; max-width: 400px;">
+                <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
+                    [appendToBody]="'body'" [ngClass]="'mb-0 w-100'" [placeholder]="'Search employees...'"
+                    [editableSearchTerm]="false"></app-user-search-v1>
+              </div>
+              
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-secondary d-flex align-items-center" (click)="getData()" title="Refresh chart">
+                  <i class="mdi mdi-refresh me-1"></i>Refresh
+                </button>
+                
+                <button class="btn btn-outline-primary d-flex align-items-center" (click)="toggleLayout()" 
+                        [title]="isHorizontalLayout ? 'Switch to Vertical Layout' : 'Switch to Horizontal Layout'">
+                  <i class="mdi me-1" [ngClass]="layoutIcon"></i>
+                  {{isHorizontalLayout ? 'Vertical' : 'Horizontal'}}
+                </button>
+              </div>
             </div>
             
-            <button class="btn btn-outline-secondary" (click)="getData()" title="Refresh chart">
-              <i class="mdi mdi-refresh me-1"></i>Refresh
-            </button>
-            
-            <div class="ms-auto">
-              <div class="d-flex align-items-center">
-                <div class="me-4 d-flex gap-4 small text-muted">
-                  <span>
-                    <i class="mdi mdi-account-multiple text-info me-1"></i>
-                    <strong>{{originalData?.length || 0}}</strong> Employees
-                  </span>
-                  <span *ngIf="currentView">
-                    <i class="mdi mdi-account-circle text-primary me-1"></i>
-                    Viewing: <strong>{{currentView}}</strong>
-                  </span>
-                </div>
+            <div class="d-flex align-items-center">
+              <div class="d-flex gap-4 small text-muted">
+                <span>
+                  <i class="mdi mdi-account-multiple text-info me-1"></i>
+                  <strong>{{originalData?.length || 0}}</strong> Employees
+                </span>
+                <span *ngIf="currentView">
+                  <i class="mdi mdi-account-circle text-primary me-1"></i>
+                  Viewing: <strong>{{currentView}}</strong>
+                </span>
               </div>
             </div>
           </div>
         </div>
         
-        <div class="card-body p-0 position-relative" style="height: calc(100vh - 300px);">
+        <div class="card-body p-0 position-relative" style="height: calc(100vh - 223px);">
           <div #chartContainer id="chartContainer"></div>
           
           <!-- Status Legend - Inside Chart Area -->

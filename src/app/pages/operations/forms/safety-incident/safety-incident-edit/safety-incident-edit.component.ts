@@ -124,6 +124,11 @@ export class SafetyIncidentEditComponent {
     try {
       this.isLoading = true;
       
+      // Upload any pending attachments first
+      if (this.myFiles && this.myFiles.length > 0) {
+        await this.uploadPendingAttachments();
+      }
+      
       // Get form data including disabled fields for submission
       const formData = this.form.getRawValue();
       
@@ -134,6 +139,47 @@ export class SafetyIncidentEditComponent {
       this.goBack();
     } catch (err) {
       this.isLoading = false;
+    }
+  }
+
+  /**
+   * Upload attachments that are selected but not yet uploaded
+   */
+  private async uploadPendingAttachments() {
+    if (this.myFiles && this.myFiles.length > 0) {
+      let totalAttachments = 0;
+      let failedAttachments = 0;
+      
+      for (let i = 0; i < this.myFiles.length; i++) {
+        const formData = new FormData();
+        formData.append("file", this.myFiles[i]);
+        formData.append("field", FILE.FIELD);
+        formData.append("uniqueData", `${this.id}`);
+        formData.append("folderName", FILE.FOLDER);
+        
+        try {
+          await this.attachmentsService.uploadfile(formData);
+          totalAttachments++;
+        } catch (err) {
+          failedAttachments++;
+          console.error('Failed to upload file:', this.myFiles[i].name, err);
+        }
+      }
+      
+      // Clear the file selection and reset input
+      this.myFiles = [];
+      const fileInput = document.getElementById('file') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      // Refresh attachments list
+      await this.getAttachments();
+      
+      // Show upload results
+      if (failedAttachments > 0) {
+        this.toastrService.warning(`${totalAttachments} file(s) uploaded, ${failedAttachments} failed`);
+      }
     }
   }
 
@@ -157,7 +203,7 @@ export class SafetyIncidentEditComponent {
 
   file: File = null;
 
-  myFiles: string[] = [];
+  myFiles: File[] = [];
 
   onFileChange(event: any) {
     this.myFiles = [];
@@ -167,22 +213,18 @@ export class SafetyIncidentEditComponent {
   }
 
   async onUploadAttachments() {
-    if (this.myFiles) {
-      let totalAttachments = 0;
+    if (this.myFiles && this.myFiles.length > 0) {
       this.isLoading = true;
-      const formData = new FormData();
-      for (var i = 0; i < this.myFiles.length; i++) {
-        formData.append("file", this.myFiles[i]);
-        formData.append("field", FILE.FIELD);
-        formData.append("uniqueData", `${this.id}`);
-        formData.append("folderName", FILE.FOLDER);
-        try {
-          await this.attachmentsService.uploadfile(formData);
-          totalAttachments++;
-        } catch (err) {}
+      const fileCount = this.myFiles.length;
+      
+      try {
+        await this.uploadPendingAttachments();
+        this.toastrService.success(`${fileCount} file(s) uploaded successfully`);
+      } catch (err) {
+        this.toastrService.error('Failed to upload some files');
+      } finally {
+        this.isLoading = false;
       }
-      this.isLoading = false;
-      await this.getAttachments();
     }
   }
 }

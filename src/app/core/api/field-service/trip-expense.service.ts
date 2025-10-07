@@ -1,6 +1,8 @@
 import { Injectable } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import { HttpClient } from "@angular/common/http";
+import { MindeeService } from "../mindee/mindee.service";
+import { MindeeApiResponse, ExpenseReceiptPrediction, MindeeRequestOptions } from "../mindee/mindee-interfaces";
 
 let url = "FieldServiceMobile/trip-expense";
 
@@ -8,17 +10,47 @@ let url = "FieldServiceMobile/trip-expense";
   providedIn: "root",
 })
 export class TripExpenseService {
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private mindeeService: MindeeService
+  ) {}
 
-  predictApi = async (params: any, key) => {
-    params.apikey = key;
-    return firstValueFrom(
-      this.http.post(
-        `https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict`,
-        params,
-        {}
-      )
-    );
+  /**
+   * Parse expense receipt using Mindee API (new implementation)
+   * @param file - The receipt image file
+   * @param options - Optional Mindee API parameters
+   * @returns Promise with parsed receipt data
+   */
+  async parseExpenseReceipt(
+    file: File,
+    options?: MindeeRequestOptions
+  ): Promise<MindeeApiResponse<ExpenseReceiptPrediction>> {
+    return this.mindeeService.parseExpenseReceipt(file, undefined, options);
+  }
+
+  /**
+   * @deprecated Use parseExpenseReceipt instead
+   * Legacy method for backward compatibility
+   */
+  predictApi = async (formData: FormData, key: string) => {
+    console.warn('predictApi is deprecated. Use parseExpenseReceipt method instead.');
+    
+    // Extract file from FormData for new API
+    const file = formData.get('document') as File;
+    if (!file) {
+      throw new Error('No file found in FormData');
+    }
+
+    // Temporarily override API key for backward compatibility
+    const originalGetApiKey = (this.mindeeService as any).getApiKey;
+    (this.mindeeService as any).getApiKey = () => key;
+
+    try {
+      return await this.mindeeService.parseExpenseReceipt(file);
+    } finally {
+      // Restore original method
+      (this.mindeeService as any).getApiKey = originalGetApiKey;
+    }
   };
 
   getByWorkOrderId(workOrderId) {

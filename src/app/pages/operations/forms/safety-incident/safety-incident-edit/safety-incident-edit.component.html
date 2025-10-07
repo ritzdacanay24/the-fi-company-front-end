@@ -107,6 +107,30 @@
                 <i class="mdi mdi-information-outline me-1"></i>
                 Accepted file types: images, PDFs, documents. Maximum 10MB per file.
               </div>
+              
+              <!-- Upload Button and Pending Files Notice -->
+              <div class="mt-2" *ngIf="myFiles && myFiles.length > 0">
+                <div class="alert alert-info d-flex align-items-center mb-2" role="alert">
+                  <i class="mdi mdi-clock-outline me-2"></i>
+                  <div class="flex-grow-1">
+                    <strong>{{myFiles.length}} file(s) selected</strong>
+                    <br>
+                    <small>Files will be uploaded when you save the form, or click "Upload Now" below.</small>
+                  </div>
+                </div>
+                
+                <button type="button" 
+                        class="btn btn-outline-primary" 
+                        [disabled]="isLoading" 
+                        (click)="onUploadAttachments()">
+                  @if (isLoading) {
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Uploading...
+                  } @else {
+                  <i class="mdi mdi-upload me-1"></i>Upload Now ({{myFiles.length}} files)
+                  }
+                </button>
+              </div>
             </div>
 
             <!-- No Attachments Message -->

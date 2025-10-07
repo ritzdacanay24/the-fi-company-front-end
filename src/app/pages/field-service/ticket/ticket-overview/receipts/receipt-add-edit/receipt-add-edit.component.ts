@@ -6,6 +6,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import moment from 'moment';
 import imageCompression from 'browser-image-compression';
 import { LazyLoadImageModule } from 'ng-lazyload-image';
+import { ExpenseReceiptPrediction } from '@app/core/api/mindee/mindee-interfaces';
 
 import { SchedulerService } from '@app/core/api/field-service/scheduler.service';
 import { SharedModule } from '@app/shared/shared.module';
@@ -235,29 +236,49 @@ export class ReceiptAddEditComponent implements OnInit {
 
     try {
       if (this.autoExtract) {
+        // Use the new Mindee service for better error handling and type safety
+        const mindeeResponse = await this.api.parseExpenseReceipt(compressedFile, {
+          raw_text: false,
+          polygon: true,
+          confidence: false
+        });
+        
+        console.log('Mindee response structure:', mindeeResponse);
+        
+        // Handle the response structure - could be inference directly or wrapped
+        const inferenceData = (mindeeResponse as any).inference || mindeeResponse;
+        const prediction = inferenceData.result.fields;
+        this.predictInfo = inferenceData;
 
-        let apiKey: any = await this.api.getPredictApi(data);
-        let res: any = await this.api.predictApi(data, apiKey);
+        // Extract data with confidence checking
+        const extractedData = this.extractReceiptData(prediction, compressedFile.name);
+        console.log('Extracted data:', extractedData);
+        console.log('Time from prediction:', prediction.time);
+        this.form.patchValue(extractedData);
+        console.log('Form values after patch:', this.form.value);
 
-        let obj = res
-        let prediction = obj.document.inference.prediction;
-
-        this.predictInfo = obj.document;
-
-        this.form.patchValue({
-          cost: prediction.total_incl.value,
-          vendor_name: prediction.supplier.value || '',
-          date: prediction.date.value,
-          locale: prediction.locale.value || '',
-          time: prediction.time.value,
-          name: prediction.category.value,
-          fileName: compressedFile.name,
-        })
+        // Show confidence warnings if needed
+        this.showConfidenceWarnings(prediction);
 
         SweetAlert.close();
       }
     } catch (err) {
-      this.receiptMessage = 'Unable to extract the data from the receipt but you can still enter the information manually.';
+      console.error('Mindee API Error:', err);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Unable to extract the data from the receipt but you can still enter the information manually.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('API key')) {
+          errorMessage = 'Receipt extraction service unavailable. Please enter information manually.';
+        } else if (err.message.includes('File size')) {
+          errorMessage = 'Receipt file is too large. Please use a smaller image or enter information manually.';
+        } else if (err.message.includes('file type')) {
+          errorMessage = 'Unsupported file type. Please use JPG, PNG, or PDF files, or enter information manually.';
+        }
+      }
+      
+      this.receiptMessage = errorMessage;
       SweetAlert.close(0);
     } finally {
 
@@ -404,5 +425,94 @@ export class ReceiptAddEditComponent implements OnInit {
         )
       )
     );
+  }
+
+  /**
+   * Extract receipt data from Mindee V2 API prediction with proper typing
+   */
+  private extractReceiptData(prediction: any, fileName: string): any {
+    return {
+      cost: prediction.total_amount?.value || '',
+      vendor_name: prediction.supplier_name?.value || '',
+      date: prediction.date?.value || '',
+      locale: this.formatLocale(prediction.locale),
+      time: this.convertTimeTo24Hour(prediction.time?.value) || '',
+      name: prediction.purchase_subcategory?.value || prediction.purchase_category?.value || '',
+      fileName: fileName,
+    };
+  }
+
+  /**
+   * Convert time from 12-hour format (1:50:44 PM) to 24-hour format (13:50:44)
+   */
+  private convertTimeTo24Hour(timeStr: string): string {
+    if (!timeStr) return '';
+    
+    try {
+      // Handle formats like "1:50:44 PM" or "1:50 PM"
+      const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+      if (!match) return timeStr; // Return as-is if format doesn't match
+      
+      let [, hours, minutes, seconds = '00', period] = match;
+      let hour24 = parseInt(hours, 10);
+      
+      if (period.toUpperCase() === 'PM' && hour24 !== 12) {
+        hour24 += 12;
+      } else if (period.toUpperCase() === 'AM' && hour24 === 12) {
+        hour24 = 0;
+      }
+      
+      return `${hour24.toString().padStart(2, '0')}:${minutes}:${seconds}`;
+    } catch (error) {
+      console.warn('Failed to convert time format:', timeStr, error);
+      return timeStr;
+    }
+  }
+
+  /**
+   * Format locale information for display (V2 API structure)
+   */
+  private formatLocale(locale: any): string {
+    if (!locale) return '';
+    
+    if (typeof locale === 'object' && locale.fields) {
+      // V2 API has nested fields structure
+      const parts = [];
+      if (locale.fields.currency?.value) parts.push(locale.fields.currency.value);
+      if (locale.fields.country?.value) parts.push(locale.fields.country.value);
+      return parts.join(' - ');
+    } else if (typeof locale === 'object') {
+      // Fallback for other structures
+      const parts = [];
+      if (locale.currency) parts.push(locale.currency);
+      if (locale.country) parts.push(locale.country);
+      return parts.join(' - ');
+    }
+    
+    return String(locale);
+  }
+
+  /**
+   * Show warnings for low confidence predictions (V2 API)
+   */
+  private showConfidenceWarnings(prediction: any): void {
+    const lowConfidenceFields: string[] = [];
+    const confidenceThreshold = 0.7;
+
+    // Check confidence levels for important fields (V2 field names)
+    const fieldsToCheck = ['total_amount', 'supplier_name', 'date', 'purchase_category'];
+    
+    fieldsToCheck.forEach(field => {
+      const fieldValue = prediction[field];
+      if (fieldValue?.confidence && fieldValue.confidence < confidenceThreshold) {
+        lowConfidenceFields.push(field.replace('_', ' '));
+      }
+    });
+
+    if (lowConfidenceFields.length > 0) {
+      const warningMessage = `Low confidence detected for: ${lowConfidenceFields.join(', ')}. Please verify the extracted data.`;
+      this.receiptMessage = warningMessage;
+      console.warn('Low confidence fields:', lowConfidenceFields);
+    }
   }
 }

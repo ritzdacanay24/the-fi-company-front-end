@@ -60,6 +60,16 @@ export class QirEditComponent {
 
   submitted = false;
 
+  statusOptions = [
+    { value: 'Open', label: 'Open', canEdit: true },
+    { value: 'In Process', label: 'In Process', canEdit: true },
+    { value: 'Awaiting Verification', label: 'Awaiting Verification', canEdit: true },
+    { value: 'Approved', label: 'Approved', canEdit: false },
+    { value: 'Rejected', label: 'Rejected', canEdit: false },
+    { value: 'Closed', label: 'Closed', canEdit: false },
+    { value: 'N/A', label: 'N/A', canEdit: true }
+  ];
+
   async openQirResponse() {
     const modalRef = this.qirResponseModalService.open(this.id);
     modalRef.result.then(async (result: any) => { });
@@ -72,8 +82,9 @@ export class QirEditComponent {
   };
 
   get isQirClosed(): boolean {
-    // Check if QIR status is not 'Open' (meaning it's closed)
-    return this.data?.status !== 'Open';
+    // Check if QIR status allows editing based on canEdit property
+    const currentStatus = this.statusOptions.find(status => status.value === this.data?.status);
+    return currentStatus ? !currentStatus.canEdit : false;
   }
 
   @HostListener("window:beforeunload")

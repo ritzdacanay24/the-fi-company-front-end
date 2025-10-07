@@ -18,6 +18,11 @@ export class JwtInterceptor implements HttpInterceptor {
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
+    // Skip JWT authentication for Mindee API calls
+    if (request.url.includes('api-v2.mindee.net')) {
+      return next.handle(request);
+    }
+
     // add authorization header with jwt token if available
     let currentUser = this.authenticationService.currentUser();
     let twostep = localStorage.getItem(THE_FI_COMPANY_TWOSTEP_TOKEN);

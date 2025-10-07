@@ -52,6 +52,21 @@ import { AccessGuard } from "./core/guards/access.guard";
 import { Deactivate } from "./core/guards/deactivate.guard";
 import { TwostepGuard } from "./core/guards/twostep.guard";
 
+// Global Quill module registration to prevent initialization errors
+import Quill from "quill";
+import BlotFormatter from "quill-blot-formatter";
+
+// Register Quill modules globally with proper error handling
+try {
+  if (BlotFormatter && typeof BlotFormatter === 'function') {
+    Quill.register("modules/blotFormatter", BlotFormatter);
+  }
+} catch (error) {
+  console.warn('Failed to register global blotFormatter module:', error);
+}
+
+// NOTE: Removed quill-better-table due to compatibility issues
+// Tables can still be used via standard Quill table functionality
 
 provideGlobalGridOptions(agGridOptions);
 

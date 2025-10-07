@@ -36,11 +36,12 @@ export class ErrorInterceptor implements HttpInterceptor {
           // if (error?.error?.code == "TWOSTEP") {
           //   localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
           // }
-          if (
-            error.url ==
-            "https://api.mindee.net/v1/products/mindee/expense_receipts/v3/predict"
-          ) {
+          // Don't logout for Mindee API errors - they have their own authentication
+          if (error.url?.includes("api.mindee.net")) {
+            // Mindee API error - don't trigger app logout
+            console.warn('Mindee API authentication error:', error.error);
           } else {
+            // Internal API error - trigger logout
             localStorage.removeItem(THE_FI_COMPANY_TWOSTEP_TOKEN);
 
             this.authenticationService.logout();

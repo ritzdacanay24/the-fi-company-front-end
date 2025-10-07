@@ -4,9 +4,7 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import { QuillModule, QuillModules } from "ngx-quill";
-import "quill-mention/autoregister";
-import QuillBetterTable from "quill-better-table";
-
+import "quill-mention";
 import BlotFormatter from "quill-blot-formatter";
 
 import Quill from "quill";
@@ -21,9 +19,7 @@ import { SafeHtmlPipe } from "@app/shared/pipes/safe-html.pipe";
 import { Pipe, PipeTransform } from "@angular/core";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 
-Quill.register("modules/blotFormatter", BlotFormatter);
-
-Quill.register({ "modules/better-table": QuillBetterTable }, true);
+// Quill modules are now registered globally in app.module.ts
 import { AngularDraggableModule } from 'angular2-draggable';
 
 import { ResizableModule, ResizeEvent } from 'angular-resizable-element';
@@ -190,7 +186,8 @@ export class CommentsModalComponent implements OnInit {
   onCommentEmailNotification() { }
 
   ngOnInit() {
-    this.quillConfig = {
+    // Build quill config with conditional better-table module
+    const baseConfig: any = {
       toolbar: {
         container: [
           ["bold", "italic", "underline", "strike"],
@@ -200,25 +197,12 @@ export class CommentsModalComponent implements OnInit {
           [{ color: [] }, { background: [] }],
           [{ align: [] }],
           ["link", "image", "video"],
+          // Basic table support without better-table module
+          [{ table: "TD" }],
         ],
       },
       blotFormatter: {
         // empty object for default behaviour.
-      },
-      "better-table": {
-        operationMenu: {
-          items: {
-            unmergeCells: {
-              text: "Another unmerge cells name",
-            },
-            mergeCells: {
-              text: "Another merge cells name",
-            },
-          },
-        },
-        keyboard: {
-          bindings: QuillBetterTable.keyboardBindings,
-        },
       },
       mention: {
         minChars: 0,
@@ -259,6 +243,11 @@ export class CommentsModalComponent implements OnInit {
         },
       },
     };
+
+    // Better-table module removed due to compatibility issues
+    // Basic table functionality is still available through Quill's default table support
+
+    this.quillConfig = baseConfig;
     this.getUsers();
     this.getData();
   }

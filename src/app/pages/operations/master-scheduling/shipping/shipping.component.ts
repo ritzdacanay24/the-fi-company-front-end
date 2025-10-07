@@ -1457,7 +1457,7 @@ export class ShippingComponent implements OnInit {
     }
   }
 
-  async loadPriorities() {
+  async loadPriorities(autoMerge: boolean = true) {
     try {
       const response = await this.api.getShippingPriorities();
       if (response && response.success) {
@@ -1474,11 +1474,11 @@ export class ShippingComponent implements OnInit {
           priorities: Array.from(this.priorityMap.values())
         });
 
-        // Merge priority data with shipping data
-        this.mergePriorityData();
-
-        // Clean up any inconsistent data
-        this.cleanupPriorityData();
+        // Only merge if autoMerge is true and data exists
+        if (autoMerge) {
+          this.mergePriorityData();
+          this.cleanupPriorityData();
+        }
       }
     } catch (error) {
       console.error('Error loading priorities:', error);
@@ -1487,6 +1487,11 @@ export class ShippingComponent implements OnInit {
 
   cleanupPriorityData() {
     console.log('🧹 Cleaning up priority data inconsistencies...');
+
+    if (!this.data || !Array.isArray(this.data)) {
+      console.log('⚠️ No shipping data available yet, skipping priority cleanup');
+      return;
+    }
 
     let cleanupCount = 0;
 
@@ -1516,6 +1521,11 @@ export class ShippingComponent implements OnInit {
 
   mergePriorityData() {
     // Add priority information to shipping data
+    if (!this.data || !Array.isArray(this.data)) {
+      console.log('⚠️ No shipping data available yet, skipping priority merge');
+      return;
+    }
+
     this.data.forEach((order: any) => {
       const orderId = `${order.SOD_NBR}-${order.SOD_LINE}`;
       const priorityData = this.priorityMap.get(orderId);
@@ -2544,14 +2554,15 @@ export class ShippingComponent implements OnInit {
       // Load shipping data and priorities in parallel
       const [shippingData] = await Promise.all([
         this.api.getShipping(),
-        this.loadPriorities()
+        this.loadPriorities(false) // Don't auto-merge during parallel loading
       ]);
 
       this.data = shippingData; 
       this.statusCount = this.calculateStatus();
 
-      // Merge priority data with shipping data
+      // Merge priority data with shipping data after both are loaded
       this.mergePriorityData();
+      this.cleanupPriorityData();
 
       // Set data to all orders, filtering will be handled by the tab switching
       this.data = this.allOrdersData;
