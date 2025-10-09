@@ -1,0 +1,536 @@
+.sn-stats-container {
+  padding: 20px;
+  max-width: 100%;
+  margin: 0 auto;
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    
+    h3 {
+      color: #2c3e50;
+      margin-bottom: 0;
+      
+      i {
+        margin-right: 10px;
+        color: #3498db;
+      }
+    }
+
+    .header-actions {
+      .btn {
+        i {
+          margin-right: 6px;
+        }
+      }
+    }
+  }
+
+  .loading-section {
+    text-align: center;
+    padding: 60px;
+    color: #6c757d;
+    
+    .fa-spinner {
+      color: #3498db;
+    }
+  }
+
+  // Overview Cards
+  .overview-section {
+    margin-bottom: 30px;
+    
+    .stats-card {
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-bottom: 20px;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      
+      .card-body {
+        padding: 25px 20px;
+        
+        .stats-icon {
+          margin-bottom: 15px;
+          
+          i {
+            font-size: 2.5rem;
+          }
+        }
+        
+        .stats-value {
+          font-size: 2.2rem;
+          font-weight: bold;
+          color: #2c3e50;
+          margin-bottom: 8px;
+        }
+        
+        .stats-label {
+          color: #6c757d;
+          font-weight: 500;
+          text-transform: uppercase;
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
+        }
+        
+        .stats-change {
+          font-size: 0.8rem;
+          font-weight: 500;
+          
+          i {
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+  }
+
+  // Chart Cards
+  .charts-section, .trends-section, .activity-section {
+    margin-bottom: 30px;
+    
+    .chart-card, .card {
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      
+      .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0;
+        padding: 15px 20px;
+        
+        h5 {
+          margin: 0;
+          color: #2c3e50;
+          font-size: 1.1rem;
+          
+          i {
+            margin-right: 8px;
+            color: #3498db;
+          }
+        }
+      }
+      
+      .card-body {
+        padding: 25px;
+      }
+    }
+  }
+
+  // Status Distribution Chart
+  .pie-chart {
+    .chart-legend {
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 6px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: #e9ecef;
+        }
+        
+        .legend-color {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          margin-right: 12px;
+          flex-shrink: 0;
+        }
+        
+        .legend-details {
+          flex: 1;
+          margin-right: 12px;
+          
+          .legend-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 4px;
+            
+            i {
+              margin-right: 6px;
+              width: 16px;
+            }
+          }
+          
+          .legend-stats {
+            .count {
+              font-weight: 600;
+              color: #2c3e50;
+            }
+            
+            .percentage {
+              color: #6c757d;
+              margin-left: 6px;
+            }
+          }
+        }
+        
+        .progress-bar {
+          width: 80px;
+          
+          .progress {
+            height: 6px;
+            border-radius: 3px;
+            background-color: #e9ecef;
+            
+            .progress-bar {
+              border-radius: 3px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Product Model Bar Chart
+  .bar-chart {
+    .bar-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      
+      .bar-info {
+        width: 180px;
+        margin-right: 15px;
+        
+        .bar-label {
+          font-weight: 500;
+          color: #495057;
+          margin-bottom: 4px;
+          font-size: 0.9rem;
+          
+          i {
+            margin-right: 6px;
+            width: 16px;
+          }
+        }
+        
+        .bar-value {
+          font-weight: 600;
+          color: #2c3e50;
+          font-size: 1.1rem;
+        }
+      }
+      
+      .bar-container {
+        flex: 1;
+        height: 20px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-right: 10px;
+        
+        .bar {
+          height: 100%;
+          border-radius: 10px;
+          transition: width 0.8s ease;
+        }
+      }
+      
+      .bar-percentage {
+        width: 50px;
+        text-align: right;
+        font-weight: 500;
+        color: #6c757d;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  // Monthly Trends
+  .trends-section {
+    .trends-summary {
+      margin-bottom: 30px;
+      
+      .trend-metric {
+        text-align: center;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        
+        .trend-label {
+          color: #6c757d;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
+        }
+        
+        .trend-value {
+          font-size: 2rem;
+          font-weight: bold;
+          color: #2c3e50;
+          margin-bottom: 8px;
+        }
+        
+        .trend-change {
+          font-size: 0.85rem;
+          font-weight: 500;
+          
+          i {
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+    
+    .trends-chart {
+      .chart-header {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+        
+        .chart-legends {
+          display: flex;
+          gap: 20px;
+          
+          .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            
+            .legend-color {
+              width: 12px;
+              height: 12px;
+              border-radius: 2px;
+              margin-right: 6px;
+            }
+          }
+        }
+      }
+      
+      .chart-area {
+        .chart-grid {
+          display: flex;
+          justify-content: space-around;
+          align-items: flex-end;
+          height: 120px;
+          border-bottom: 2px solid #dee2e6;
+          padding: 0 10px;
+          
+          .month-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
+            .month-label {
+              font-size: 0.8rem;
+              font-weight: 500;
+              color: #6c757d;
+              margin-top: 10px;
+            }
+            
+            .bars-container {
+              height: 80px;
+              display: flex;
+              align-items: flex-end;
+              margin-bottom: 10px;
+              
+              .bar-group {
+                display: flex;
+                gap: 2px;
+                align-items: flex-end;
+                
+                .bar {
+                  width: 8px;
+                  min-height: 2px;
+                  border-radius: 4px 4px 0 0;
+                  transition: height 0.8s ease;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Recent Activity
+  .activity-section {
+    .activity-list {
+      .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background-color: #f8f9fa;
+          border-color: #3498db;
+        }
+        
+        &.latest {
+          border-color: #3498db;
+          background-color: #e3f2fd;
+        }
+        
+        .activity-icon {
+          width: 40px;
+          height: 40px;
+          background-color: #ffffff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 15px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          
+          i {
+            font-size: 1.2rem;
+          }
+        }
+        
+        .activity-details {
+          flex: 1;
+          
+          .activity-title {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 4px;
+          }
+          
+          .activity-meta {
+            font-size: 0.85rem;
+            color: #6c757d;
+          }
+        }
+        
+        .activity-status {
+          .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+          }
+        }
+      }
+      
+      .no-activity {
+        text-align: center;
+        padding: 40px;
+        
+        i {
+          margin-bottom: 15px;
+        }
+      }
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 992px) {
+    .header-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+    
+    .bar-chart .bar-item .bar-info {
+      width: 140px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 15px;
+    
+    .overview-section .stats-card .card-body {
+      padding: 20px 15px;
+      
+      .stats-icon i {
+        font-size: 2rem;
+      }
+      
+      .stats-value {
+        font-size: 1.8rem;
+      }
+    }
+    
+    .charts-section .card-body,
+    .trends-section .card-body,
+    .activity-section .card-body {
+      padding: 20px 15px;
+    }
+    
+    .trends-summary .row .col-md-4 {
+      margin-bottom: 15px;
+    }
+    
+    .trends-chart .chart-header .chart-legends {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .bar-chart .bar-item {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .bar-info {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      .bar-container {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 6px;
+      }
+      
+      .bar-percentage {
+        width: auto;
+        align-self: flex-end;
+      }
+    }
+    
+    .activity-list .activity-item {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .activity-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+        align-self: center;
+      }
+      
+      .activity-details {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+    }
+  }
+
+  @media (max-width: 576px) {
+    .header-actions {
+      width: 100%;
+      
+      .btn {
+        width: 48%;
+        
+        &.ml-2 {
+          margin-left: 0 !important;
+        }
+      }
+    }
+    
+    .trends-chart .chart-area .chart-grid .month-column .bars-container .bar-group .bar {
+      width: 6px;
+    }
+  }
+}

@@ -37,6 +37,88 @@
                   <i class="mdi me-1" [ngClass]="layoutIcon"></i>
                   {{isHorizontalLayout ? 'Vertical' : 'Horizontal'}}
                 </button>
+                
+                <div class="dropdown" ngbDropdown container="body">
+                  <button class="btn btn-success d-flex align-items-center" 
+                          type="button" 
+                          id="departmentDropdown"
+                          ngbDropdownToggle>
+                    <i class="mdi mdi-domain me-1"></i>Departments
+                    <i class="mdi mdi-chevron-down ms-1"></i>
+                  </button>
+                  <div class="dropdown-menu" 
+                       ngbDropdownMenu 
+                       aria-labelledby="departmentDropdown">
+                    <a class="dropdown-item" href="#" (click)="$event.preventDefault(); openDepartmentModal()">
+                      <i class="mdi mdi-plus me-2"></i>Add New Department
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <h6 class="dropdown-header">Existing Departments ({{departments.length}})</h6>
+                    <a class="dropdown-item" 
+                       href="#" 
+                       *ngFor="let dept of departments"
+                       (click)="$event.preventDefault(); openDepartmentModal(dept)">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold">{{dept.department_name}}</div>
+                          <small class="text-muted">
+                            {{dept.user_count || 0}} users
+                          </small>
+                        </div>
+                        <i class="mdi mdi-pencil text-primary ms-2" title="Edit Department"></i>
+                      </div>
+                    </a>
+                    <div *ngIf="departments.length === 0" class="dropdown-item-text text-muted">
+                      <small>No departments found</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- User Assignment Section -->
+                <div class="dropdown" ngbDropdown container="body">
+                  <!-- <button class="btn btn-outline-info d-flex align-items-center" 
+                          type="button" 
+                          id="userAssignmentDropdown"
+                          ngbDropdownToggle>
+                    <i class="mdi mdi-account-plus me-1"></i>Assign Users
+                    <i class="mdi mdi-chevron-down ms-1"></i>
+                  </button> -->
+                  <div class="dropdown-menu p-3" 
+                       ngbDropdownMenu 
+                       aria-labelledby="userAssignmentDropdown"
+                       style="min-width: 350px;">
+                    <h6 class="dropdown-header">Assign User to Department</h6>
+                    
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">Select User:</label>
+                      <app-user-search-v1 
+                        (notifyParent)="onUserSelected($event)" 
+                        [value]="selectedUserId"
+                        [showLabel]="false"
+                        [placeholder]="'Search and select user...'"
+                        className="mb-0">
+                      </app-user-search-v1>
+                    </div>
+                    
+                    <div class="mb-3" *ngIf="selectedUser">
+                      <label class="form-label small fw-semibold">Assign to Department:</label>
+                      <select class="form-select form-select-sm" 
+                              [(ngModel)]="selectedDepartmentId" 
+                              (change)="assignUserToDepartment()">
+                        <option value="">-- Select Department --</option>
+                        <option *ngFor="let dept of departments" [value]="dept.id">
+                          {{dept.department_name}}
+                        </option>
+                      </select>
+                    </div>
+                    
+                    <div *ngIf="selectedUser" class="text-center">
+                      <small class="text-muted">
+                        Selected: <strong>{{selectedUser.first}} {{selectedUser.last}}</strong>
+                      </small>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -126,6 +208,12 @@
                     </tr>
                   </tbody>
                 </table>
+                <!-- <div class="border-top pt-2 mt-2">
+                  <small class="text-muted">
+                    <i class="mdi mdi-information me-1"></i>
+                    <strong>Tip:</strong> Use the "Assign Users" dropdown to assign employees to departments
+                  </small>
+                </div> -->
               </div>
             </div>
           </div>
@@ -193,3 +281,12 @@
     </div>
   </div>
 </div>
+
+<!-- Department Management Modal -->
+<app-department-modal
+  [isVisible]="showDepartmentModal"
+  [currentDepartment]="currentDepartment"
+  (departmentSaved)="onDepartmentSaved()"
+  (departmentDeleted)="onDepartmentDeleted()"
+  (modalClosed)="closeDepartmentModal()">
+</app-department-modal>

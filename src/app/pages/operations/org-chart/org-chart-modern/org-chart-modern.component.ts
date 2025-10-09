@@ -364,6 +364,12 @@ export class OrgChartModernComponent implements OnInit, AfterViewInit {
 
     // Open user modal
     const modalRef = this.userModalService.open(d.data.id);
+    
+    // Listen for image upload success events
+    modalRef.componentInstance.imageUpdated.subscribe((event: {userId: string, imageUrl: string}) => {
+      this.handleImageUpdate(event.userId, event.imageUrl);
+    });
+    
     modalRef.result.then(
       (updatedData: any) => {
         this.handleUserUpdate(d, updatedData);
@@ -684,5 +690,40 @@ export class OrgChartModernComponent implements OnInit, AfterViewInit {
     }
 
     return data;
+  }
+
+  handleImageUpdate(userId: string, imageUrl: string) {
+    // Update the local data with the new image URL
+    const userIdNum = parseInt(userId);
+    const userNode = this.originalData.find(user => user.id === userIdNum);
+    
+    if (userNode) {
+      // Add cache-busting parameter to force browser to reload image
+      const cacheBustUrl = imageUrl + '?t=' + new Date().getTime();
+      
+      // Update the user's image in the local data
+      userNode.image = cacheBustUrl;
+      userNode.imageUrl = cacheBustUrl;
+      
+      // Also update any existing chart data
+      if (this.chart) {
+        const chartData = this.chart.data();
+        if (chartData && Array.isArray(chartData)) {
+          const chartNode = chartData.find((node: any) => node.id === userIdNum);
+          if (chartNode) {
+            chartNode.image = cacheBustUrl;
+            chartNode.imageUrl = cacheBustUrl;
+          }
+        }
+      }
+      
+      // Force refresh the chart to show the new image
+      console.log('Updating user image in modern org chart:', userId, cacheBustUrl);
+      
+      // Re-render the chart with updated data instead of fetching from API
+      if (this.chart) {
+        this.chart.render();
+      }
+    }
   }
 }

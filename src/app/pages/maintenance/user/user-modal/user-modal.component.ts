@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input } from "@angular/core";
+import { ChangeDetectorRef, Component, Input, Output, EventEmitter } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 
 import { Injectable } from "@angular/core";
@@ -57,6 +57,7 @@ export class UserModalComponent {
 
 
   @Input() public id;
+  @Output() imageUpdated = new EventEmitter<{userId: string, imageUrl: string}>();
 
   data: any;
   isLoading: any;
@@ -67,6 +68,30 @@ export class UserModalComponent {
     this.data.image = null;
     this.myFiles = null;
     this.form.patchValue({ image: "" });
+  }
+
+  onImageUploadSuccess(event: {userId: string, imageUrl: string}) {
+    console.log('Modal onImageUploadSuccess called with:', event);
+    
+    // Add cache-busting parameter to force browser to reload image
+    const cacheBustUrl = event.imageUrl + '?t=' + new Date().getTime();
+    
+    // Update the local data with the new image
+    if (this.data) {
+      this.data.image = cacheBustUrl;
+      console.log('Updated modal data.image to:', cacheBustUrl);
+    }
+    
+    // Emit the event with the original URL (org chart will add its own cache-busting)
+    console.log('Emitting imageUpdated event:', {
+      userId: event.userId,
+      imageUrl: event.imageUrl
+    });
+    
+    this.imageUpdated.emit({
+      userId: event.userId,
+      imageUrl: event.imageUrl
+    });
   }
 
   getData = async () => {
@@ -137,14 +162,26 @@ export class UserModalComponent {
   }
 
   async onUploadAttachments() {
+    console.log('Modal onUploadAttachments called');
     if (this.myFiles) {
       this.isLoading = true;
       const formData = new FormData();
       formData.append("file", this.myFiles[0]);
       try {
         let image: any = await this.api.uploadfile(this.id, formData);
+        console.log('Image uploaded successfully:', image);
         this.form.patchValue({ image: image.url });
-      } catch (err) { }
+        
+        // Emit the imageUpdated event for org chart
+        console.log('Emitting imageUpdated event from modal upload');
+        this.imageUpdated.emit({
+          userId: this.id.toString(),
+          imageUrl: image.url
+        });
+        
+      } catch (err) { 
+        console.error('Upload failed:', err);
+      }
 
       this.isLoading = false;
     }

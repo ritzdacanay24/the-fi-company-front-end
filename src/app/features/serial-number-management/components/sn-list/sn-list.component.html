@@ -1,0 +1,357 @@
+<div class="sn-list-container">
+  <div class="header-section">
+    <h3><i class="fas fa-list"></i> EyeFi Serial Number Management</h3>
+    <div class="header-actions">
+      <button class="btn btn-success" routerLink="../upload">
+        <i class="fas fa-plus-square"></i> Add Serial Range
+      </button>
+      <button class="btn btn-warning ml-2" routerLink="../assignment">
+        <i class="fas fa-clipboard-list"></i> Assign Numbers
+      </button>
+      <button class="btn btn-outline-secondary ml-2" routerLink="../stats">
+        <i class="fas fa-chart-bar"></i> Statistics
+      </button>
+      <button class="btn btn-primary ml-2" (click)="refreshData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-card card">
+    <div class="card-header">
+      <h4><i class="fas fa-filter"></i> Filters & Search</h4>
+      <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+        <i class="fas fa-times"></i> Clear All
+      </button>
+    </div>
+    
+    <form [formGroup]="filterForm" class="filter-form">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="search">Search</label>
+            <input 
+              type="text" 
+              id="search"
+              class="form-control"
+              formControlName="search"
+              placeholder="Serial number, model, batch...">
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" class="form-control" formControlName="status">
+              <option *ngFor="let option of statusOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="productModel">Product Model</label>
+            <select id="productModel" class="form-control" formControlName="productModel">
+              <option *ngFor="let model of productModels" [value]="model">
+                {{ model }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="sortBy">Sort By</label>
+            <select id="sortBy" class="form-control" formControlName="sortBy">
+              <option *ngFor="let option of sortOptions" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="batchNumber">Batch Number</label>
+            <input 
+              type="text" 
+              id="batchNumber"
+              class="form-control"
+              formControlName="batchNumber"
+              placeholder="Filter by batch">
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="dateFrom">Date From</label>
+            <input 
+              type="date" 
+              id="dateFrom"
+              class="form-control"
+              formControlName="dateFrom">
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="dateTo">Date To</label>
+            <input 
+              type="date" 
+              id="dateTo"
+              class="form-control"
+              formControlName="dateTo">
+          </div>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <div class="form-group w-100">
+            <button 
+              type="button" 
+              class="btn btn-info btn-block"
+              (click)="exportAllFiltered()">
+              <i class="fas fa-download"></i> Export All
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions" *ngIf="selectedSerialNumbers.size > 0">
+    <div class="selected-info">
+      <span class="badge badge-primary">{{ selectedSerialNumbers.size }} selected</span>
+    </div>
+    
+    <div class="bulk-buttons">
+      <div class="dropdown">
+        <button class="btn btn-warning dropdown-toggle" type="button" data-toggle="dropdown">
+          <i class="fas fa-edit"></i> Bulk Update Status
+        </button>
+        <div class="dropdown-menu">
+          <button class="dropdown-item" (click)="bulkUpdateStatus('available')">
+            <i class="fas fa-check-circle text-success"></i> Available
+          </button>
+          <button class="dropdown-item" (click)="bulkUpdateStatus('assigned')">
+            <i class="fas fa-clock text-warning"></i> Assigned
+          </button>
+          <button class="dropdown-item" (click)="bulkUpdateStatus('shipped')">
+            <i class="fas fa-shipping-fast text-info"></i> Shipped
+          </button>
+          <button class="dropdown-item" (click)="bulkUpdateStatus('returned')">
+            <i class="fas fa-undo text-secondary"></i> Returned
+          </button>
+          <button class="dropdown-item" (click)="bulkUpdateStatus('defective')">
+            <i class="fas fa-exclamation-triangle text-danger"></i> Defective
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-success" (click)="exportSelected()">
+        <i class="fas fa-download"></i> Export Selected
+      </button>
+
+      <button class="btn btn-outline-secondary" (click)="selectedSerialNumbers.clear()">
+        <i class="fas fa-times"></i> Clear Selection
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-section">
+    <div class="text-center">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2">Loading serial numbers...</p>
+    </div>
+  </div>
+
+  <!-- Serial Numbers Table -->
+  <div class="table-container" *ngIf="!isLoading">
+    <div class="results-info">
+      <span class="text-muted">
+        Showing {{ totalItems }} result(s)
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>
+              <div class="custom-control custom-checkbox">
+                <input 
+                  type="checkbox"
+                  class="custom-control-input"
+                  id="selectAll"
+                  [checked]="allSelected(paginatedItems | async)"
+                  [class.indeterminate]="someSelected(paginatedItems | async)"
+                  (change)="toggleSelectAllPaginated()">
+                <label class="custom-control-label" for="selectAll"></label>
+              </div>
+            </th>
+            <th>Serial Number</th>
+            <th>Product Model</th>
+            <th>Status</th>
+            <th>Batch Number</th>
+            <th>Hardware Ver.</th>
+            <th>Firmware Ver.</th>
+            <th>Manufacture Date</th>
+            <th>Created Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr 
+            *ngFor="let sn of paginatedItems | async; trackBy: trackBySerialNumber"
+            [class.selected]="selectedSerialNumbers.has(sn.serial_number)">
+            
+            <td>
+              <div class="custom-control custom-checkbox">
+                <input 
+                  type="checkbox"
+                  class="custom-control-input"
+                  [id]="'cb-' + sn.serial_number"
+                  [checked]="selectedSerialNumbers.has(sn.serial_number)"
+                  (change)="toggleSelection(sn.serial_number, $event)">
+                <label class="custom-control-label" [for]="'cb-' + sn.serial_number"></label>
+              </div>
+            </td>
+
+            <td class="serial-number">
+              <strong>{{ sn.serial_number }}</strong>
+              <div class="qr-code" *ngIf="sn.qr_code">
+                <small class="text-muted">QR: {{ sn.qr_code }}</small>
+              </div>
+            </td>
+
+            <td>{{ sn.product_model }}</td>
+
+            <td>
+              <span class="badge" [ngClass]="getStatusBadgeClass(sn.status)">
+                <i class="fas" [ngClass]="getStatusIcon(sn.status)"></i>
+                {{ sn.status | titlecase }}
+              </span>
+            </td>
+
+            <td>
+              <span *ngIf="sn.batch_number" class="batch-number">
+                {{ sn.batch_number }}
+              </span>
+              <span *ngIf="!sn.batch_number" class="text-muted">—</span>
+            </td>
+
+            <td>
+              <span *ngIf="sn.hardware_version">{{ sn.hardware_version }}</span>
+              <span *ngIf="!sn.hardware_version" class="text-muted">—</span>
+            </td>
+
+            <td>
+              <span *ngIf="sn.firmware_version">{{ sn.firmware_version }}</span>
+              <span *ngIf="!sn.firmware_version" class="text-muted">—</span>
+            </td>
+
+            <td>
+              <span *ngIf="sn.manufacture_date">{{ formatDate(sn.manufacture_date) }}</span>
+              <span *ngIf="!sn.manufacture_date" class="text-muted">—</span>
+            </td>
+
+            <td>
+              <span *ngIf="sn.created_at">{{ formatDate(sn.created_at) }}</span>
+              <span *ngIf="!sn.created_at" class="text-muted">—</span>
+            </td>
+
+            <td class="actions">
+              <div class="dropdown">
+                <button 
+                  class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                  type="button" 
+                  [attr.data-toggle]="'dropdown'"
+                  [attr.id]="'actions-' + sn.serial_number">
+                  <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu" [attr.aria-labelledby]="'actions-' + sn.serial_number">
+                  <h6 class="dropdown-header">Change Status</h6>
+                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'available')">
+                    <i class="fas fa-check-circle text-success"></i> Available
+                  </button>
+                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'assigned')">
+                    <i class="fas fa-clock text-warning"></i> Assigned
+                  </button>
+                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'shipped')">
+                    <i class="fas fa-shipping-fast text-info"></i> Shipped
+                  </button>
+                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'returned')">
+                    <i class="fas fa-undo text-secondary"></i> Returned
+                  </button>
+                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'defective')">
+                    <i class="fas fa-exclamation-triangle text-danger"></i> Defective
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item text-info">
+                    <i class="fas fa-info-circle"></i> View Details
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="(paginatedItems | async)?.length === 0">
+            <td colspan="10" class="text-center text-muted py-4">
+              <i class="fas fa-search fa-2x mb-2"></i>
+              <p>No serial numbers found matching your criteria.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalPages > 1">
+      <nav>
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <button class="page-link" (click)="goToPage(currentPage - 1)">
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+          </li>
+
+          <li *ngFor="let page of visiblePages" 
+              class="page-item" 
+              [class.active]="page === currentPage"
+              [class.disabled]="page === -1">
+            <button 
+              *ngIf="page !== -1" 
+              class="page-link" 
+              (click)="goToPage(page)">
+              {{ page }}
+            </button>
+            <span *ngIf="page === -1" class="page-link">...</span>
+          </li>
+
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <button class="page-link" (click)="goToPage(currentPage + 1)">
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="pagination-info">
+        <select class="form-control form-control-sm d-inline-block w-auto" 
+                [(ngModel)]="pageSize" 
+                (change)="currentPage = 1">
+          <option value="25">25 per page</option>
+          <option value="50">50 per page</option>
+          <option value="100">100 per page</option>
+          <option value="250">250 per page</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>

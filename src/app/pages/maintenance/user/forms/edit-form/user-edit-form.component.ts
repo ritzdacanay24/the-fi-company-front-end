@@ -5,6 +5,7 @@ import { SharedModule } from "@app/shared/shared.module";
 import { accessRight, departments } from "../../user-constant";
 import { NgSelectModule } from "@ng-select/ng-select";
 import { merge } from "rxjs";
+import { NewUserService } from "@app/core/api/users/users.service";
 
 @Component({
   standalone: true,
@@ -22,8 +23,9 @@ export class UserEditFormComponent {
   isLoading = false;
 
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
+  @Output() imageUploadSuccess: EventEmitter<any> = new EventEmitter();
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private userService: NewUserService) {
     merge(
       this.form.get("orgChartPlaceHolder").valueChanges,
       this.form.get("openPosition").valueChanges
@@ -60,6 +62,10 @@ export class UserEditFormComponent {
   @Input() id = null;
 
   @Input() submitted = false;
+
+  // Image upload properties
+  selectedFile: File | null = null;
+  isUploadingImage = false;
 
   get f() {
     return this.form.controls;
@@ -112,5 +118,90 @@ export class UserEditFormComponent {
 
   clearAttempts() {
     this.form.get("attempts").patchValue(0);
+  }
+
+  onImageSelected(event: Event) {
+    console.log('onImageSelected called');
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      this.selectedFile = target.files[0];
+      console.log('File selected:', this.selectedFile.name, this.selectedFile.type, this.selectedFile.size);
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(this.selectedFile.type)) {
+        alert('Please select a valid image file (JPG, PNG, or GIF).');
+        this.selectedFile = null;
+        target.value = '';
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (this.selectedFile.size > maxSize) {
+        alert('Image file size must be less than 5MB.');
+        this.selectedFile = null;
+        target.value = '';
+        return;
+      }
+      
+      console.log('File validation passed, ready to upload');
+    } else {
+      this.selectedFile = null;
+      console.log('No file selected');
+    }
+  }
+
+  async uploadImage() {
+    console.log('uploadImage method called');
+    console.log('selectedFile:', this.selectedFile);
+    console.log('id:', this.id);
+    
+    if (!this.selectedFile || !this.id) {
+      console.log('Upload validation failed - missing file or ID');
+      alert('Please select an image file first.');
+      return;
+    }
+
+    try {
+      console.log('Starting image upload...');
+      this.isUploadingImage = true;
+      
+      const formData = new FormData();
+      formData.append('file', this.selectedFile);
+      
+      // Use the existing user service upload method
+      const result: any = await this.userService.uploadfile(this.id, formData);
+      
+      if (result && result.url) {
+        // Update the form with the new image URL
+        this.form.get('image').patchValue(result.url);
+        
+        // Clear the file input
+        this.selectedFile = null;
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        
+        // Emit success event with user ID and new image URL
+        console.log('Form emitting imageUploadSuccess:', {
+          userId: this.id,
+          imageUrl: result.url
+        });
+        
+        this.imageUploadSuccess.emit({
+          userId: this.id,
+          imageUrl: result.url
+        });
+        
+        alert('Image uploaded successfully!');
+      } else {
+        throw new Error('Upload failed - no URL returned');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      this.isUploadingImage = false;
+    }
   }
 }

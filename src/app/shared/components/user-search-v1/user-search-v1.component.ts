@@ -74,9 +74,15 @@ export class UserSearchV1Component implements OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes["value"]?.currentValue) {
       if (!changes["multiple"]?.currentValue) {
-        this.dataInput$.next(this.value);
-
-        this.value = changes["value"].currentValue;
+        // If value is a number (ID), fetch the user data
+        if (typeof changes["value"].currentValue === 'number' || 
+            (typeof changes["value"].currentValue === 'string' && !isNaN(Number(changes["value"].currentValue)))) {
+          this.fetchUserById(changes["value"].currentValue);
+        } else {
+          // If value is already a user object, use it directly
+          this.dataInput$.next(this.value);
+          this.value = changes["value"].currentValue;
+        }
       } else {
         this.value = changes["value"]?.currentValue?.split(",");
       }
@@ -106,6 +112,34 @@ export class UserSearchV1Component implements OnInit {
         )
       )
     );
+  }
+
+  private async fetchUserById(userId: number | string) {
+    try {
+      this.dataLoading = true;
+      this.notifyParentItsLoading.emit(this.dataLoading);
+      
+      // Convert string to number if needed
+      const numericId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
+      // Fetch user by ID from the API
+      const userData = await this.api.getById(numericId);
+      
+      if (userData) {
+        // Set the value to the user object so it displays the name
+        this.value = userData;
+        
+        // Also add this user to the data$ observable so it's available in the dropdown
+        this.data$ = concat(of([userData]), this.data$ || of([]));
+      }
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      // If fetch fails, just display the ID as fallback
+      this.value = userId;
+    } finally {
+      this.dataLoading = false;
+      this.notifyParentItsLoading.emit(this.dataLoading);
+    }
   }
 
   constructor(private api: UserService) {}

@@ -1,0 +1,284 @@
+<div class="sn-stats-container">
+  <div class="header-section">
+    <h3><i class="fas fa-chart-bar"></i> Serial Number Statistics</h3>
+    <div class="header-actions">
+      <button class="btn btn-outline-primary" (click)="refreshStats()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+      <button class="btn btn-primary ml-2" (click)="exportReport()">
+        <i class="fas fa-download"></i> Export Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-section">
+    <div class="text-center">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p class="mt-2">Loading statistics...</p>
+    </div>
+  </div>
+
+  <!-- Main Stats -->
+  <div *ngIf="!isLoading" class="stats-content">
+    
+    <!-- Overview Cards -->
+    <div class="overview-section">
+      <div class="row">
+        <div class="col-lg-3 col-md-6">
+          <div class="stats-card card text-center">
+            <div class="card-body">
+              <div class="stats-icon">
+                <i class="fas fa-barcode text-primary"></i>
+              </div>
+              <div class="stats-value">{{ formatNumber(totalSerialNumbers) }}</div>
+              <div class="stats-label">Total Serial Numbers</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+          <div class="stats-card card text-center">
+            <div class="card-body">
+              <div class="stats-icon">
+                <i class="fas fa-check-circle text-success"></i>
+              </div>
+              <div class="stats-value">{{ formatNumber(availableCount) }}</div>
+              <div class="stats-label">Available</div>
+              <div class="stats-change text-success">
+                <i class="fas fa-arrow-up"></i> 12% from last month
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+          <div class="stats-card card text-center">
+            <div class="card-body">
+              <div class="stats-icon">
+                <i class="fas fa-shipping-fast text-info"></i>
+              </div>
+              <div class="stats-value">{{ formatNumber(shippedCount) }}</div>
+              <div class="stats-label">Shipped</div>
+              <div class="stats-change text-success">
+                <i class="fas fa-arrow-up"></i> 8% from last month
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+          <div class="stats-card card text-center">
+            <div class="card-body">
+              <div class="stats-icon">
+                <i class="fas fa-clock text-warning"></i>
+              </div>
+              <div class="stats-value">{{ formatNumber(assignedCount) }}</div>
+              <div class="stats-label">Assigned</div>
+              <div class="stats-change text-warning">
+                <i class="fas fa-minus"></i> No change
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-section">
+      <div class="row">
+        <!-- Status Distribution -->
+        <div class="col-lg-6">
+          <div class="chart-card card">
+            <div class="card-header">
+              <h5><i class="fas fa-pie-chart"></i> Status Distribution</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <div class="pie-chart">
+                  <div class="chart-legend">
+                    <div *ngFor="let item of statusDistribution" class="legend-item">
+                      <div class="legend-color" [style.background-color]="item.color"></div>
+                      <div class="legend-details">
+                        <div class="legend-label">
+                          <i class="fas" [ngClass]="getStatusIcon(item.status)"></i>
+                          {{ item.status }}
+                        </div>
+                        <div class="legend-stats">
+                          <span class="count">{{ formatNumber(item.count) }}</span>
+                          <span class="percentage">({{ formatPercentage(item.percentage) }})</span>
+                        </div>
+                      </div>
+                      <div class="progress-bar">
+                        <div class="progress">
+                          <div class="progress-bar" 
+                               [style.width.%]="item.percentage"
+                               [style.background-color]="item.color">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Model Distribution -->
+        <div class="col-lg-6">
+          <div class="chart-card card">
+            <div class="card-header">
+              <h5><i class="fas fa-chart-bar"></i> Product Model Distribution</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <div class="bar-chart">
+                  <div *ngFor="let item of modelDistribution" class="bar-item">
+                    <div class="bar-info">
+                      <div class="bar-label">
+                        <i class="fas" [ngClass]="getModelIcon(item.model)"></i>
+                        {{ item.model }}
+                      </div>
+                      <div class="bar-value">{{ formatNumber(item.count) }}</div>
+                    </div>
+                    <div class="bar-container">
+                      <div class="bar" 
+                           [style.width.%]="item.percentage"
+                           [style.background-color]="item.color">
+                      </div>
+                    </div>
+                    <div class="bar-percentage">{{ formatPercentage(item.percentage) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trends Section -->
+    <div class="trends-section">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chart-line"></i> Monthly Trends</h5>
+        </div>
+        <div class="card-body">
+          <div class="trends-summary">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="trend-metric">
+                  <div class="trend-label">Generated This Month</div>
+                  <div class="trend-value">{{ formatNumber(monthlyTrends[monthlyTrends.length-1]?.generated || 0) }}</div>
+                  <div class="trend-change text-success">
+                    <i class="fas fa-arrow-up"></i> +15% vs last month
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="trend-metric">
+                  <div class="trend-label">Assigned This Month</div>
+                  <div class="trend-value">{{ formatNumber(monthlyTrends[monthlyTrends.length-1]?.assigned || 0) }}</div>
+                  <div class="trend-change text-success">
+                    <i class="fas fa-arrow-up"></i> +18% vs last month
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="trend-metric">
+                  <div class="trend-label">Shipped This Month</div>
+                  <div class="trend-value">{{ formatNumber(monthlyTrends[monthlyTrends.length-1]?.shipped || 0) }}</div>
+                  <div class="trend-change text-success">
+                    <i class="fas fa-arrow-up"></i> +12% vs last month
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="trends-chart">
+            <div class="chart-header">
+              <div class="chart-legends">
+                <div class="legend-item">
+                  <div class="legend-color bg-primary"></div>
+                  <span>Generated</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color bg-warning"></div>
+                  <span>Assigned</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color bg-success"></div>
+                  <span>Shipped</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chart-area">
+              <div class="chart-grid">
+                <div *ngFor="let trend of monthlyTrends" class="month-column">
+                  <div class="month-label">{{ trend.month }}</div>
+                  <div class="bars-container">
+                    <div class="bar-group">
+                      <div class="bar bg-primary" 
+                           [style.height.px]="(trend.generated / 80) * 60"
+                           [title]="'Generated: ' + trend.generated">
+                      </div>
+                      <div class="bar bg-warning" 
+                           [style.height.px]="(trend.assigned / 80) * 60"
+                           [title]="'Assigned: ' + trend.assigned">
+                      </div>
+                      <div class="bar bg-success" 
+                           [style.height.px]="(trend.shipped / 80) * 60"
+                           [title]="'Shipped: ' + trend.shipped">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="activity-section">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-history"></i> Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          <div class="activity-list">
+            <div *ngFor="let activity of recentActivity$ | async; let i = index" 
+                 class="activity-item"
+                 [class.latest]="i === 0">
+              <div class="activity-icon">
+                <i class="fas fa-shipping-fast text-info"></i>
+              </div>
+              <div class="activity-details">
+                <div class="activity-title">
+                  Serial number <strong>{{ activity.serial_number }}</strong> assigned to {{ activity.customer_name }}
+                </div>
+                <div class="activity-meta">
+                  <span *ngIf="activity.work_order_number">WO: {{ activity.work_order_number }} • </span>
+                  <span>{{ formatDate(activity.assigned_date || '') }}</span>
+                </div>
+              </div>
+              <div class="activity-status">
+                <span class="badge badge-info">{{ activity.status | titlecase }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="(recentActivity$ | async)?.length === 0" class="no-activity">
+              <i class="fas fa-inbox fa-2x text-muted"></i>
+              <p class="text-muted mt-2">No recent activity</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

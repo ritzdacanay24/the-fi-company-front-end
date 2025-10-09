@@ -95,7 +95,7 @@
         <div class="col-md-6 mb-3">
           <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="form.value['parentId']"
             [ngClass]="{ 'is-invalid': submitted && f.parentId.errors }" [disabled]="form?.disabled" [required]="true"
-            [form_label]="'Reports to (User ID)'" [editableSearchTerm]="false"></app-user-search-v1>
+            [form_label]="'Reports to'" [editableSearchTerm]="false"></app-user-search-v1>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Direct supervisor or manager for approval workflows and organizational hierarchy.
@@ -276,15 +276,39 @@
           </div>
         </div>
 
-        <div class="col-md-6 mb-3" *ngIf="form.value.image">
+        <div class="col-md-6 mb-3">
           <label class="form-label">Profile Image</label>
-          <div class="input-group">
-            <input type="text" class="form-control" placeholder="No profile image found" formControlName="image" readonly>
-            <span class="input-group-text pointer" id="basic-addon2" (click)="removeImage()">Remove</span>
+          
+          <!-- Show current image if exists -->
+          <div class="mb-2" *ngIf="form.value.image">
+            <div class="d-flex align-items-center gap-2 p-2 border rounded">
+              <img [src]="form.value.image" alt="Profile" class="rounded" 
+                   style="width: 40px; height: 40px; object-fit: cover;">
+              <div class="flex-grow-1">
+                <small class="text-muted">Current image</small>
+              </div>
+              <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeImage()">
+                <i class="mdi mdi-delete me-1"></i>Remove
+              </button>
+            </div>
           </div>
+          
+          <!-- Upload new image -->
+          <div class="input-group">
+            <input type="file" class="form-control" #fileInput 
+                   accept="image/*" (change)="onImageSelected($event)">
+            <button type="button" class="btn btn-outline-primary" 
+                    [disabled]="!selectedFile || isUploadingImage" 
+                    (click)="uploadImage()">
+              <i class="mdi mdi-upload me-1" *ngIf="!isUploadingImage"></i>
+              <i class="mdi mdi-loading mdi-spin me-1" *ngIf="isUploadingImage"></i>
+              {{ isUploadingImage ? 'Uploading...' : 'Upload' }}
+            </button>
+          </div>
+          
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Current profile image file. Click remove to delete the image.
+            {{ form.value.image ? 'Upload a new image to replace the current one.' : 'Upload a profile image (JPG, PNG, GIF formats supported).' }}
           </div>
         </div>
       </div>

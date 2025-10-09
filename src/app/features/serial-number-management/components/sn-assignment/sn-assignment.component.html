@@ -1,0 +1,485 @@
+<div class="sn-assignment-container">
+  <div class="header-section">
+    <h3><i class="fas fa-clipboard-list"></i> Serial Number Assignment</h3>
+    
+    <div class="view-toggle">
+      <div class="btn-group" role="group">
+        <button 
+          type="button" 
+          class="btn"
+          [class.btn-primary]="currentView === 'assign'"
+          [class.btn-outline-secondary]="currentView !== 'assign'"
+          (click)="currentView = 'assign'">
+          <i class="fas fa-plus"></i> New Assignment
+        </button>
+        <button 
+          type="button" 
+          class="btn"
+          [class.btn-primary]="currentView === 'history'"
+          [class.btn-outline-secondary]="currentView !== 'history'"
+          (click)="currentView = 'history'">
+          <i class="fas fa-history"></i> Assignment History
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Assignment View -->
+  <div class="assignment-view" *ngIf="currentView === 'assign'">
+    
+    <!-- Serial Number Search & Selection -->
+    <div class="search-section card">
+      <div class="card-header">
+        <h4><i class="fas fa-search"></i> Search Available Serial Numbers</h4>
+      </div>
+      
+      <form [formGroup]="searchForm" class="search-form">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label for="serialNumberQuery">Serial Number Search</label>
+              <input 
+                type="text" 
+                id="serialNumberQuery"
+                class="form-control"
+                formControlName="serialNumberQuery"
+                placeholder="Search by serial number...">
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-group">
+              <label for="productModelFilter">Product Model</label>
+              <select id="productModelFilter" class="form-control" formControlName="productModelFilter">
+                <option value="all">All Models</option>
+                <option value="EyeFi Pro X1">EyeFi Pro X1</option>
+                <option value="EyeFi Standard S2">EyeFi Standard S2</option>
+                <option value="EyeFi Enterprise E3">EyeFi Enterprise E3</option>
+                <option value="EyeFi Lite L1">EyeFi Lite L1</option>
+                <option value="EyeFi Advanced A2">EyeFi Advanced A2</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-group">
+              <label for="batchNumberFilter">Batch Number</label>
+              <input 
+                type="text" 
+                id="batchNumberFilter"
+                class="form-control"
+                formControlName="batchNumberFilter"
+                placeholder="Filter by batch...">
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="limit">Limit</label>
+              <select id="limit" class="form-control" formControlName="limit">
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <!-- Selected Serial Numbers Summary -->
+      <div class="selection-summary" *ngIf="selectedSerialNumbers.length > 0">
+        <div class="selection-info">
+          <span class="badge badge-primary">{{ selectedSerialNumbers.length }} selected</span>
+          <button 
+            class="btn btn-outline-secondary btn-sm ml-2"
+            (click)="clearSelection()">
+            <i class="fas fa-times"></i> Clear All
+          </button>
+        </div>
+        
+        <div class="selected-items">
+          <span 
+            *ngFor="let sn of selectedSerialNumbers"
+            class="badge badge-info mr-1 mb-1">
+            {{ sn.serial_number }}
+            <button 
+              type="button" 
+              class="btn-close"
+              (click)="toggleSerialNumberSelection(sn)">
+              ×
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <!-- Available Serial Numbers List -->
+      <div class="serial-numbers-list">
+        <div class="list-header">
+          <div class="list-actions">
+            <button 
+              class="btn btn-outline-primary btn-sm"
+              (click)="selectAllVisibleFromObservable()"
+              [disabled]="isSearching">
+              <i class="fas fa-check-double"></i> Select All Visible
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="isSearching" class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i> Searching...
+        </div>
+
+        <div class="table-responsive" *ngIf="!isSearching">
+          <table class="table table-hover">
+            <thead class="thead-light">
+              <tr>
+                <th width="40"></th>
+                <th>Serial Number</th>
+                <th>Product Model</th>
+                <th>Batch Number</th>
+                <th>Manufacture Date</th>
+                <th>Hardware Ver.</th>
+                <th>Firmware Ver.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr 
+                *ngFor="let sn of availableSerialNumbers$ | async; trackBy: trackBySerialNumber"
+                [class.selected]="isSelected(sn)"
+                (click)="toggleSerialNumberSelection(sn)">
+                
+                <td>
+                  <div class="custom-control custom-checkbox">
+                    <input 
+                      type="checkbox"
+                      class="custom-control-input"
+                      [id]="'sn-' + sn.serial_number"
+                      [checked]="isSelected(sn)">
+                    <label class="custom-control-label" [for]="'sn-' + sn.serial_number"></label>
+                  </div>
+                </td>
+
+                <td class="serial-number">{{ sn.serial_number }}</td>
+                <td>{{ sn.product_model }}</td>
+                <td>
+                  <span *ngIf="sn.batch_number" class="batch-number">{{ sn.batch_number }}</span>
+                  <span *ngIf="!sn.batch_number" class="text-muted">—</span>
+                </td>
+                <td>
+                  <span *ngIf="sn.manufacture_date">{{ formatDate(sn.manufacture_date) }}</span>
+                  <span *ngIf="!sn.manufacture_date" class="text-muted">—</span>
+                </td>
+                <td>
+                  <span *ngIf="sn.hardware_version">{{ sn.hardware_version }}</span>
+                  <span *ngIf="!sn.hardware_version" class="text-muted">—</span>
+                </td>
+                <td>
+                  <span *ngIf="sn.firmware_version">{{ sn.firmware_version }}</span>
+                  <span *ngIf="!sn.firmware_version" class="text-muted">—</span>
+                </td>
+              </tr>
+
+              <tr *ngIf="(availableSerialNumbers$ | async)?.length === 0">
+                <td colspan="7" class="text-center text-muted py-4">
+                  <i class="fas fa-search fa-2x mb-2"></i>
+                  <p>No available serial numbers found.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assignment Form -->
+    <div class="assignment-form-section card" *ngIf="selectedSerialNumbers.length > 0">
+      <div class="card-header">
+        <h4><i class="fas fa-clipboard-check"></i> Assignment Details</h4>
+      </div>
+      
+      <form [formGroup]="assignmentForm" (ngSubmit)="assignSerialNumbers()">
+        <div class="form-content">
+          <!-- Customer Information -->
+          <div class="form-section">
+            <h5><i class="fas fa-user"></i> Customer Information</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="customerName">Customer Name *</label>
+                  <input 
+                    type="text" 
+                    id="customerName"
+                    class="form-control"
+                    formControlName="customerName"
+                    placeholder="Enter customer name"
+                    [class.is-invalid]="customerNameError">
+                  <div class="invalid-feedback" *ngIf="customerNameError">{{ customerNameError }}</div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="customerPo">Customer PO</label>
+                  <input 
+                    type="text" 
+                    id="customerPo"
+                    class="form-control"
+                    formControlName="customerPo"
+                    placeholder="Customer purchase order number">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Work Order Information -->
+          <div class="form-section">
+            <h5><i class="fas fa-clipboard"></i> Work Order Information</h5>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="workOrderNumber">Work Order Number</label>
+                  <div class="input-group">
+                    <input 
+                      type="text" 
+                      id="workOrderNumber"
+                      class="form-control"
+                      formControlName="workOrderNumber"
+                      placeholder="WO-12345"
+                      [class.is-invalid]="workOrderError">
+                    <div class="input-group-append">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-secondary"
+                        (click)="searchWorkOrder()"
+                        [disabled]="!assignmentForm.get('workOrderNumber')?.value">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="invalid-feedback" *ngIf="workOrderError">{{ workOrderError }}</div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="woPart">WO Part</label>
+                  <input 
+                    type="text" 
+                    id="woPart"
+                    class="form-control"
+                    formControlName="woPart"
+                    placeholder="Part number">
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="woQtyOrd">WO Quantity</label>
+                  <input 
+                    type="number" 
+                    id="woQtyOrd"
+                    class="form-control"
+                    formControlName="woQtyOrd"
+                    placeholder="Quantity ordered">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="woDueDate">WO Due Date</label>
+                  <input 
+                    type="date" 
+                    id="woDueDate"
+                    class="form-control"
+                    formControlName="woDueDate">
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="woDescription">WO Description</label>
+                  <input 
+                    type="text" 
+                    id="woDescription"
+                    class="form-control"
+                    formControlName="woDescription"
+                    placeholder="Work order description">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Assignment Details -->
+          <div class="form-section">
+            <h5><i class="fas fa-calendar"></i> Assignment Details</h5>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="assignedDate">Assignment Date *</label>
+                  <input 
+                    type="date" 
+                    id="assignedDate"
+                    class="form-control"
+                    formControlName="assignedDate">
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="assignedByName">Assigned By *</label>
+                  <input 
+                    type="text" 
+                    id="assignedByName"
+                    class="form-control"
+                    formControlName="assignedByName"
+                    placeholder="Your name"
+                    [class.is-invalid]="assignedByError">
+                  <div class="invalid-feedback" *ngIf="assignedByError">{{ assignedByError }}</div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="form-group">
+                  <label for="shippedDate">Shipped Date</label>
+                  <input 
+                    type="date" 
+                    id="shippedDate"
+                    class="form-control"
+                    formControlName="shippedDate">
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="trackingNumber">Tracking Number</label>
+                  <input 
+                    type="text" 
+                    id="trackingNumber"
+                    class="form-control"
+                    formControlName="trackingNumber"
+                    placeholder="Shipping tracking number">
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label for="notes">Notes</label>
+                  <textarea 
+                    id="notes"
+                    class="form-control"
+                    formControlName="notes"
+                    rows="1"
+                    placeholder="Additional notes..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button 
+              type="submit" 
+              class="btn btn-success"
+              [disabled]="assignmentForm.invalid || selectedSerialNumbers.length === 0 || isAssigning">
+              <span *ngIf="!isAssigning">
+                <i class="fas fa-clipboard-check"></i> 
+                Assign {{ selectedSerialNumbers.length }} Serial Number{{ selectedSerialNumbers.length !== 1 ? 's' : '' }}
+              </span>
+              <span *ngIf="isAssigning">
+                <i class="fas fa-spinner fa-spin"></i> Processing...
+              </span>
+            </button>
+            
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary ml-3"
+              (click)="clearSelection(); assignmentForm.reset()"
+              [disabled]="isAssigning">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Assignment History View -->
+  <div class="history-view" *ngIf="currentView === 'history'">
+    <div class="card">
+      <div class="card-header">
+        <h4><i class="fas fa-history"></i> Assignment History</h4>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="thead-light">
+            <tr>
+              <th>Serial Number</th>
+              <th>Customer</th>
+              <th>Work Order</th>
+              <th>Assigned Date</th>
+              <th>Assigned By</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let assignment of assignments$ | async; trackBy: trackByAssignment">
+              <td class="serial-number">{{ assignment.serial_number }}</td>
+              <td>
+                <div>{{ assignment.customer_name }}</div>
+                <small class="text-muted" *ngIf="assignment.customer_po">PO: {{ assignment.customer_po }}</small>
+              </td>
+              <td>
+                <span *ngIf="assignment.work_order_number">{{ assignment.work_order_number }}</span>
+                <span *ngIf="!assignment.work_order_number" class="text-muted">—</span>
+              </td>
+              <td>{{ formatDate(assignment.assigned_date) }}</td>
+              <td>{{ assignment.assigned_by_name }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(assignment)">
+                  {{ getStatusText(assignment) }}
+                </span>
+              </td>
+              <td class="actions">
+                <div class="dropdown">
+                  <button 
+                    class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                    type="button" 
+                    [attr.data-toggle]="'dropdown'"
+                    [attr.id]="'assignment-actions-' + assignment.serial_number">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <div class="dropdown-menu" [attr.aria-labelledby]="'assignment-actions-' + assignment.serial_number">
+                    <button class="dropdown-item" (click)="viewAssignmentDetails(assignment)">
+                      <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="dropdown-item" (click)="updateShippingInfo(assignment)">
+                      <i class="fas fa-shipping-fast"></i> Update Shipping
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item text-danger">
+                      <i class="fas fa-undo"></i> Unassign
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="(assignments$ | async)?.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">
+                <i class="fas fa-clipboard fa-2x mb-2"></i>
+                <p>No assignments found.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

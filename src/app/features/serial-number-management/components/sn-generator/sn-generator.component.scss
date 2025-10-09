@@ -1,0 +1,239 @@
+.sn-generator-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 30px;
+    
+    h3 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+      
+      i {
+        margin-right: 10px;
+        color: #3498db;
+      }
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      margin-bottom: 0;
+      font-size: 1.1rem;
+    }
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    padding: 20px;
+    
+    h4 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+      
+      i {
+        margin-right: 8px;
+        color: #3498db;
+      }
+    }
+  }
+
+  .quick-generate-section {
+    .quick-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      
+      .btn {
+        min-width: 120px;
+        padding: 8px 16px;
+        font-weight: 500;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        
+        i {
+          margin-right: 6px;
+        }
+        
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .batch-generate-section {
+    .form-group {
+      margin-bottom: 20px;
+      
+      label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 6px;
+        display: block;
+      }
+      
+      .form-control {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        
+        &:focus {
+          border-color: #3498db;
+          box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        &.is-invalid {
+          border-color: #dc3545;
+          
+          &:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+          }
+        }
+      }
+      
+      .form-text {
+        font-size: 0.8rem;
+        margin-top: 4px;
+      }
+      
+      .invalid-feedback {
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+    }
+    
+    .form-actions {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #e9ecef;
+      text-align: center;
+      
+      .btn {
+        min-width: 180px;
+        padding: 10px 20px;
+        font-weight: 500;
+        border-radius: 6px;
+        
+        i {
+          margin-right: 8px;
+        }
+        
+        &.btn-success {
+          background-color: #27ae60;
+          border-color: #27ae60;
+          
+          &:hover:not(:disabled) {
+            background-color: #219a52;
+            border-color: #1e8449;
+          }
+        }
+      }
+    }
+  }
+
+  .manual-add-section {
+    .card-header {
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      border-radius: 8px 8px 0 0;
+      margin: -20px -20px 20px -20px;
+      padding: 15px 20px;
+      
+      h4 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      
+      .btn {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        
+        i {
+          margin-right: 6px;
+        }
+      }
+    }
+    
+    .card-body {
+      padding: 0;
+      
+      .form-actions {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+        
+        .btn {
+          padding: 8px 16px;
+          font-weight: 500;
+          border-radius: 6px;
+          
+          i {
+            margin-right: 6px;
+          }
+        }
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    padding: 15px;
+    
+    .quick-generate-section .quick-buttons {
+      justify-content: stretch;
+      
+      .btn {
+        flex: 1;
+        min-width: auto;
+      }
+    }
+    
+    .card {
+      padding: 15px;
+    }
+    
+    .manual-add-section .card-header {
+      margin: -15px -15px 15px -15px;
+      padding: 12px 15px;
+      
+      .d-flex {
+        flex-direction: column;
+        gap: 10px;
+        
+        .btn {
+          align-self: stretch;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 576px) {
+    .form-actions {
+      .btn {
+        width: 100%;
+        margin-bottom: 10px;
+        
+        &.ml-2 {
+          margin-left: 0 !important;
+        }
+      }
+    }
+  }
+}

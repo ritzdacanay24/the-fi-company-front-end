@@ -1,0 +1,260 @@
+<div class="sn-generator-container">
+  <div class="header-section">
+    <h3><i class="fas fa-barcode"></i> Serial Number Generator</h3>
+    <p class="subtitle">Generate serial numbers for EyeFi devices</p>
+  </div>
+
+  <!-- Quick Generate Section -->
+  <div class="quick-generate-section card">
+    <h4><i class="fas fa-bolt"></i> Quick Generate</h4>
+    <div class="quick-buttons">
+      <button 
+        class="btn btn-primary btn-sm" 
+        (click)="generateQuickBatch(10)"
+        [disabled]="isGenerating">
+        <i class="fas fa-plus"></i> Generate 10
+      </button>
+      <button 
+        class="btn btn-primary btn-sm" 
+        (click)="generateQuickBatch(25)"
+        [disabled]="isGenerating">
+        <i class="fas fa-plus"></i> Generate 25
+      </button>
+      <button 
+        class="btn btn-primary btn-sm" 
+        (click)="generateQuickBatch(50)"
+        [disabled]="isGenerating">
+        <i class="fas fa-plus"></i> Generate 50
+      </button>
+      <button 
+        class="btn btn-primary btn-sm" 
+        (click)="generateQuickBatch(100)"
+        [disabled]="isGenerating">
+        <i class="fas fa-plus"></i> Generate 100
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom Batch Generation -->
+  <div class="batch-generate-section card">
+    <h4><i class="fas fa-cogs"></i> Custom Batch Generation</h4>
+    
+    <form [formGroup]="generateForm" (ngSubmit)="generateSerialNumbers()">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="prefix">Prefix *</label>
+            <input 
+              type="text" 
+              id="prefix"
+              class="form-control"
+              formControlName="prefix"
+              placeholder="e.g., EYE"
+              [class.is-invalid]="prefixError">
+            <div class="invalid-feedback" *ngIf="prefixError">{{ prefixError }}</div>
+            <small class="form-text text-muted">2-4 uppercase letters</small>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="startNumber">Starting Number *</label>
+            <input 
+              type="number" 
+              id="startNumber"
+              class="form-control"
+              formControlName="startNumber"
+              min="1">
+            <small class="form-text text-muted">Sequential numbering starts here</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="quantity">Quantity *</label>
+            <input 
+              type="number" 
+              id="quantity"
+              class="form-control"
+              formControlName="quantity"
+              min="1"
+              max="1000"
+              [class.is-invalid]="quantityError">
+            <div class="invalid-feedback" *ngIf="quantityError">{{ quantityError }}</div>
+            <small class="form-text text-muted">1-1000 serial numbers</small>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="productModel">Product Model *</label>
+            <select 
+              id="productModel"
+              class="form-control"
+              formControlName="productModel">
+              <option *ngFor="let model of productModels" [value]="model">
+                {{ model }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="batchNumber">Batch Number</label>
+            <input 
+              type="text" 
+              id="batchNumber"
+              class="form-control"
+              formControlName="batchNumber"
+              placeholder="Optional batch identifier">
+            <small class="form-text text-muted">Leave empty for auto-generation</small>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="manufactureDate">Manufacture Date *</label>
+            <input 
+              type="date" 
+              id="manufactureDate"
+              class="form-control"
+              formControlName="manufactureDate">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-success"
+          [disabled]="generateForm.invalid || isGenerating">
+          <span *ngIf="!isGenerating">
+            <i class="fas fa-play"></i> Generate Serial Numbers
+          </span>
+          <span *ngIf="isGenerating">
+            <i class="fas fa-spinner fa-spin"></i> Generating...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Manual Add Section -->
+  <div class="manual-add-section card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4><i class="fas fa-edit"></i> Manual Entry</h4>
+      <button 
+        class="btn btn-outline-primary btn-sm"
+        (click)="toggleAddForm()">
+        <i class="fas" [class.fa-plus]="!showAddForm" [class.fa-times]="showAddForm"></i>
+        {{ showAddForm ? 'Cancel' : 'Add Manual Serial' }}
+      </button>
+    </div>
+
+    <div class="card-body" *ngIf="showAddForm">
+      <form [formGroup]="addForm" (ngSubmit)="addManualSerialNumber()">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="manualSerialNumber">Serial Number *</label>
+              <input 
+                type="text" 
+                id="manualSerialNumber"
+                class="form-control"
+                formControlName="serialNumber"
+                placeholder="Enter existing serial number"
+                [class.is-invalid]="serialNumberError">
+              <div class="invalid-feedback" *ngIf="serialNumberError">{{ serialNumberError }}</div>
+              <small class="form-text text-muted">8-15 alphanumeric characters</small>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="manualProductModel">Product Model *</label>
+              <select 
+                id="manualProductModel"
+                class="form-control"
+                formControlName="productModel">
+                <option *ngFor="let model of productModels" [value]="model">
+                  {{ model }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="hardwareVersion">Hardware Version</label>
+              <input 
+                type="text" 
+                id="hardwareVersion"
+                class="form-control"
+                formControlName="hardwareVersion"
+                placeholder="e.g., 1.2.0">
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="firmwareVersion">Firmware Version</label>
+              <input 
+                type="text" 
+                id="firmwareVersion"
+                class="form-control"
+                formControlName="firmwareVersion"
+                placeholder="e.g., 2.1.4">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="manualManufactureDate">Manufacture Date</label>
+              <input 
+                type="date" 
+                id="manualManufactureDate"
+                class="form-control"
+                formControlName="manufactureDate">
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="manualBatchNumber">Batch Number</label>
+              <input 
+                type="text" 
+                id="manualBatchNumber"
+                class="form-control"
+                formControlName="batchNumber"
+                placeholder="Optional batch identifier">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="addForm.invalid">
+            <i class="fas fa-save"></i> Add Serial Number
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-secondary ml-2"
+            (click)="toggleAddForm()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

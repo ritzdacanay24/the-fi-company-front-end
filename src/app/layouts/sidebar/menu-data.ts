@@ -533,6 +533,14 @@ export const MENU_DATA: MenuItem[] = [
                 accessRequired: false,
                 activatedRoutes: "/ul-management/*"
             },
+            {
+                label: "EyeFi Serial Management",
+                link: "/eyefi-serial-number-management/list",
+                description: "Manage EyeFi device serial numbers",
+                icon: "las la-microchip",
+                accessRequired: false,
+                activatedRoutes: "/eyefi-serial-number-management/*"
+            },
         ],
     },
 ];

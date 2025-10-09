@@ -130,6 +130,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         console.log('🔄 Auto-refreshing priority data...');
+        console.log('🔄 Current display mode during auto-refresh:', this.displayMode);
+        // Ensure display mode is preserved during auto-refresh
+        this.priorityDisplayService.updateDisplayMode(this.displayMode);
         this.priorityDisplayService.loadPriorityData();
       });
   }
@@ -140,10 +143,11 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   private async loadInitialData(): Promise<void> {
     try {
       console.log('🚀 Loading initial priority data...');
-      await this.priorityDisplayService.loadPriorityData();
+      console.log('🚀 Initial display mode from URL:', this.displayMode);
       
-      // Update service with current display mode after data loads
+      // Set display mode BEFORE loading data
       this.priorityDisplayService.updateDisplayMode(this.displayMode);
+      await this.priorityDisplayService.loadPriorityData();
       
       console.log('✅ Initial data load completed');
     } catch (error) {
@@ -156,6 +160,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
    */
   async refreshData(): Promise<void> {
     console.log('🔄 Manual refresh triggered');
+    console.log('🔄 Current display mode during manual refresh:', this.displayMode);
+    // Ensure display mode is preserved during manual refresh
+    this.priorityDisplayService.updateDisplayMode(this.displayMode);
     await this.priorityDisplayService.loadPriorityData();
   }
 

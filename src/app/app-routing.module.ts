@@ -201,6 +201,24 @@ const routes: Routes = [
       },
     ],
   },
+  // EyeFi Serial Number Management routes
+  {
+    path: "eyefi-serial-number-management",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    runGuardsAndResolvers: "always",
+    children: [
+      { path: "", redirectTo: "list", pathMatch: "full" },
+      {
+        title: "EyeFi Serial Number Management",
+        path: "",
+        loadChildren: () =>
+          import("./features/serial-number-management/serial-number-management-routing.module").then(
+            (m) => m.SerialNumberManagementRoutingModule
+          ),
+      },
+    ],
+  },
   // Training Management routes
   {
     path: "training",

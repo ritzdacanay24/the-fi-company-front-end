@@ -136,6 +136,9 @@ export class PriorityDisplayService {
 
   public readonly displayData$ = this._displayData$.asObservable();
 
+  // Track current display mode
+  private currentDisplayMode: 'single' | 'top3' = 'single';
+
   constructor(
     private api: MasterSchedulingService,
     private websocketService: WebsocketService
@@ -197,6 +200,9 @@ export class PriorityDisplayService {
    * Update display mode and recalculate display data
    */
   updateDisplayMode(mode: 'single' | 'top3'): void {
+    console.log(`🔄 Setting display mode to: ${mode}`);
+    this.currentDisplayMode = mode;
+    
     const currentData = this._displayData$.value;
     const updatedData = this.calculateDisplayData(currentData.allPriorityOrders, mode);
     
@@ -434,7 +440,10 @@ export class PriorityDisplayService {
    */
   private updateDisplayDataState(allPriorityOrders: ShippingOrder[], statusCount: any): void {
     const currentData = this._displayData$.value;
-    const displayData = this.calculateDisplayData(allPriorityOrders, 'single'); // Default to single mode
+    // Use current display mode instead of defaulting to 'single'
+    const displayData = this.calculateDisplayData(allPriorityOrders, this.currentDisplayMode);
+    
+    console.log(`📊 Updating display data with mode: ${this.currentDisplayMode}`);
     
     this._displayData$.next({
       ...currentData,
