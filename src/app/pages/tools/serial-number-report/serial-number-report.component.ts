@@ -29,7 +29,20 @@ export class SerialNumberReportComponent implements OnInit {
       width: 200,
       pinned: 'left',
       cellRenderer: (params: any) => {
-        return `<span class="font-monospace fw-semibold text-dark">${params.value}</span>`;
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
       }
     },
     {
@@ -40,18 +53,7 @@ export class SerialNumberReportComponent implements OnInit {
     {
       headerName: 'Used For',
       field: 'used_for',
-      width: 120,
-      cellRenderer: (params: any) => {
-        const badges: { [key: string]: string } = {
-          'product': 'bg-primary',
-          'asset': 'bg-info',
-          'work_order': 'bg-warning',
-          'transaction': 'bg-success',
-          'demo': 'bg-secondary'
-        };
-        const badgeClass = badges[params.value] || 'bg-light';
-        return `<span class="badge ${badgeClass}">${params.value}</span>`;
-      }
+      width: 120
     },
     {
       headerName: 'Status',
