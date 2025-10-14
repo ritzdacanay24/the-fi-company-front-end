@@ -251,7 +251,7 @@
         </div>
         <div class="card-body">
           <div class="activity-list">
-            <div *ngFor="let activity of recentActivity$ | async; let i = index" 
+            <div *ngFor="let activity of recentActivity; let i = index" 
                  class="activity-item"
                  [class.latest]="i === 0">
               <div class="activity-icon">
@@ -271,7 +271,7 @@
               </div>
             </div>
 
-            <div *ngIf="(recentActivity$ | async)?.length === 0" class="no-activity">
+            <div *ngIf="recentActivity.length === 0" class="no-activity">
               <i class="fas fa-inbox fa-2x text-muted"></i>
               <p class="text-muted mt-2">No recent activity</p>
             </div>

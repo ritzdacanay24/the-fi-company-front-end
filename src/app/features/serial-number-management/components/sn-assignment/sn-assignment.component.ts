@@ -19,8 +19,8 @@ export class SnAssignmentComponent implements OnInit {
   assignmentForm: FormGroup;
   searchForm: FormGroup;
   
-  availableSerialNumbers$: Observable<SerialNumber[]> = new Observable();
-  assignments$: Observable<SerialNumberAssignment[]> = new Observable();
+  availableSerialNumbers: SerialNumber[] = [];
+  assignments: SerialNumberAssignment[] = [];
   
   selectedSerialNumbers: SerialNumber[] = [];
   isAssigning = false;
@@ -67,26 +67,39 @@ export class SnAssignmentComponent implements OnInit {
     this.setupSearch();
   }
 
-  loadAvailableSerialNumbers() {
+  async loadAvailableSerialNumbers() {
     this.isSearching = true;
     
-    const searchParams = this.searchForm.value;
-    
-    // In a real implementation, you would filter based on search criteria
-    this.availableSerialNumbers$ = this.serialNumberService.getAvailableSerialNumbers(searchParams.limit).pipe(
-      map(response => {
-        this.isSearching = false;
-        // Filter for available serial numbers only
-        return (response as SerialNumber[]).filter(sn => sn.status === 'available');
-      })
-    );
+    try {
+      const searchParams = this.searchForm.value;
+      const response = await this.serialNumberService.getAvailableSerialNumbers(searchParams.limit);
+      
+      // Filter for available serial numbers only
+      if (response && response.success) {
+        this.availableSerialNumbers = (response.data || []).filter((sn: SerialNumber) => sn.status === 'available');
+      } else {
+        this.availableSerialNumbers = [];
+      }
+    } catch (error) {
+      console.error('Error loading available serial numbers:', error);
+      this.availableSerialNumbers = [];
+    } finally {
+      this.isSearching = false;
+    }
   }
 
-  loadAssignments() {
-    this.assignments$ = this.refreshAssignments.pipe(
-      map(() => this.serialNumberService.getSerialNumberAssignments()),
-      map(obs => obs as Observable<SerialNumberAssignment[]>)
-    )[0] || this.serialNumberService.getSerialNumberAssignments();
+  async loadAssignments() {
+    try {
+      const response = await this.serialNumberService.getSerialNumberAssignments();
+      if (response && response.success) {
+        this.assignments = response.data || [];
+      } else {
+        this.assignments = [];
+      }
+    } catch (error) {
+      console.error('Error loading assignments:', error);
+      this.assignments = [];
+    }
   }
 
   setupSearch() {
@@ -125,7 +138,7 @@ export class SnAssignmentComponent implements OnInit {
     });
   }
 
-  assignSerialNumbers() {
+  async assignSerialNumbers() {
     if (this.assignmentForm.invalid || this.selectedSerialNumbers.length === 0) {
       return;
     }
@@ -155,27 +168,29 @@ export class SnAssignmentComponent implements OnInit {
       wo_description: formValue.woDescription
     } as SerialNumberAssignment));
 
-    // Process assignments (in real app, this would be a batch API call)
-    Promise.all(
-      assignments.map(assignment => 
-        this.serialNumberService.assignSerialNumber(assignment).toPromise()
-      )
-    ).then(() => {
+    try {
+      // Process assignments (in real app, this would be a batch API call)
+      await Promise.all(
+        assignments.map(assignment => 
+          this.serialNumberService.assignSerialNumber(assignment)
+        )
+      );
+      
       // Success
-      this.isAssigning = false;
       this.selectedSerialNumbers = [];
       this.assignmentForm.reset({
         assignedDate: new Date().toISOString().split('T')[0]
       });
-      this.loadAvailableSerialNumbers();
-      this.refreshAssignments.next();
+      await this.loadAvailableSerialNumbers();
+      await this.loadAssignments();
       
       // Emit completion event with the first assignment as example
       this.assignmentCompleted.emit(assignments[0]);
-    }).catch(error => {
+    } catch (error) {
       console.error('Assignment error:', error);
+    } finally {
       this.isAssigning = false;
-    });
+    }
   }
 
   searchWorkOrder() {
@@ -273,9 +288,7 @@ export class SnAssignmentComponent implements OnInit {
   }
 
   // Template helper method
-  selectAllVisibleFromObservable() {
-    this.availableSerialNumbers$.subscribe(items => {
-      this.selectAllVisible(items);
-    }).unsubscribe();
+  selectAllVisibleFromArray() {
+    this.selectAllVisible(this.availableSerialNumbers);
   }
 }

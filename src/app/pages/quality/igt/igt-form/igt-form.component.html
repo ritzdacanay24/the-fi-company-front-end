@@ -58,7 +58,28 @@
           </div>
           @if (submitted && f.serial_number.errors) {
             <div class="invalid-feedback d-block">
-              <i class="mdi mdi-alert-circle me-1"></i> EyeFi serial number selection is required
+              <i class="mdi mdi-alert-circle me-1"></i> IGT serial number selection is required
+            </div>
+          }
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <app-eyefi-serial-search-ng
+            formControlName="eyefi_serial_number"
+            [form_label]="'EyeFi Serial Number'" 
+            [placeholder]="'Search and select EyeFi serial number'"
+            [required]="true" 
+            [showLabel]="true"
+            [status]="'available'"
+            [strictMode]="true">
+          </app-eyefi-serial-search-ng>
+          <div class="form-text">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Must select a valid EyeFi serial number from the database.
+          </div>
+          @if (submitted && f.eyefi_serial_number.errors) {
+            <div class="invalid-feedback d-block">
+              <i class="mdi mdi-alert-circle me-1"></i> EyeFi serial number is required
             </div>
           }
         </div>

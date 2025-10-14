@@ -91,6 +91,49 @@ export class SgAssetCreateComponent {
       this.goBack();
     } catch (err) {
       this.isLoading = false;
+      
+      // Extract the error message
+      let errorMessage = 'An error occurred while creating the SG Asset';
+      
+      if (err?.error?.message) {
+        errorMessage = err.error.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (typeof err?.error === 'string') {
+        errorMessage = err.error;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      // Check if it's an EyeFi serial duplicate error
+      // Handle both trigger errors (SQLSTATE[45000]) and UNIQUE constraint errors
+      if (errorMessage.includes('EyeFi serial') || 
+          errorMessage.includes('SQLSTATE[45000]') || 
+          errorMessage.includes('unique_sg_eyefi_serial') ||
+          errorMessage.includes('Duplicate entry')) {
+        
+        // Try to extract from trigger error message
+        const triggerMatch = errorMessage.match(/EyeFi serial "([^"]+)" is already ([^.]+)\./);
+        if (triggerMatch) {
+          errorMessage = `EyeFi serial "${triggerMatch[1]}" is already ${triggerMatch[2]}. Please select a different serial.`;
+        } 
+        // Try to extract from UNIQUE constraint error
+        else {
+          const uniqueMatch = errorMessage.match(/Duplicate entry '([^']+)' for key/);
+          if (uniqueMatch) {
+            errorMessage = `EyeFi serial "${uniqueMatch[1]}" is already in use. Please select a different serial.`;
+          } else {
+            // Generic duplicate error message
+            errorMessage = 'This EyeFi serial number is already in use. Please select a different serial.';
+          }
+        }
+      }
+      
+      this.toastrService.error(errorMessage, 'Error', {
+        timeOut: 5000,
+        closeButton: true,
+        progressBar: true
+      });
     }
   }
 

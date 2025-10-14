@@ -505,7 +505,7 @@ export const MENU_DATA: MenuItem[] = [
         hideCheckBox: true,
         subItems: [
             {
-                label: "Generate Serial Numbers",
+                label: "Serial Generator",
                 link: "/quality/serial-number-report",
                 description: "View and manage quality serial numbers",
                 accessRequired: false,
@@ -534,7 +534,7 @@ export const MENU_DATA: MenuItem[] = [
                 activatedRoutes: "/ul-management/*"
             },
             {
-                label: "EyeFi Serial Management",
+                label: "EyeFi Serials",
                 link: "/eyefi-serial-number-management/list",
                 description: "Manage EyeFi device serial numbers",
                 icon: "las la-microchip",

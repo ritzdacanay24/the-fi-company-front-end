@@ -207,27 +207,27 @@ export class IgtManageExistingComponent implements OnInit {
           `;
         }
       },
-      {
-        headerName: 'Category',
-        field: 'category',
-        width: 130,
-        cellRenderer: (params: any) => {
-          const categoryMap: Record<string, { label: string; icon: string; color: string }> = {
-            gaming: { label: 'Gaming', icon: 'mdi-gamepad-variant', color: 'text-primary' },
-            peripheral: { label: 'Peripheral', icon: 'mdi-usb', color: 'text-info' },
-            system: { label: 'System', icon: 'mdi-desktop-tower', color: 'text-success' },
-            other: { label: 'Other', icon: 'mdi-package-variant', color: 'text-secondary' }
-          };
+      // {
+      //   headerName: 'Category',
+      //   field: 'category',
+      //   width: 130,
+      //   cellRenderer: (params: any) => {
+      //     const categoryMap: Record<string, { label: string; icon: string; color: string }> = {
+      //       gaming: { label: 'Gaming', icon: 'mdi-gamepad-variant', color: 'text-primary' },
+      //       peripheral: { label: 'Peripheral', icon: 'mdi-usb', color: 'text-info' },
+      //       system: { label: 'System', icon: 'mdi-desktop-tower', color: 'text-success' },
+      //       other: { label: 'Other', icon: 'mdi-package-variant', color: 'text-secondary' }
+      //     };
           
-          const cat = categoryMap[params.value] || categoryMap['other'];
-          return `
-            <div class="d-flex align-items-center">
-              <i class="mdi ${cat.icon} ${cat.color} me-1"></i>
-              <span>${cat.label}</span>
-            </div>
-          `;
-        }
-      },
+      //     const cat = categoryMap[params.value] || categoryMap['other'];
+      //     return `
+      //       <div class="d-flex align-items-center">
+      //         <i class="mdi ${cat.icon} ${cat.color} me-1"></i>
+      //         <span>${cat.label}</span>
+      //       </div>
+      //     `;
+      //   }
+      // },
       {
         headerName: 'Status',
         field: 'status',
@@ -243,16 +243,16 @@ export class IgtManageExistingComponent implements OnInit {
           return `<span class="${status.color}">${status.label}</span>`;
         }
       },
-      {
-        headerName: 'Manufacturer',
-        field: 'manufacturer',
-        width: 120
-      },
-      {
-        headerName: 'Model',
-        field: 'model',
-        width: 120
-      },
+      // {
+      //   headerName: 'Manufacturer',
+      //   field: 'manufacturer',
+      //   width: 120
+      // },
+      // {
+      //   headerName: 'Model',
+      //   field: 'model',
+      //   width: 120
+      // },
       {
         headerName: 'Active',
         field: 'is_active',

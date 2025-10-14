@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
+import { EyefiSerialSearchNgSelectComponent } from "@app/shared/eyefi-serial-search/eyefi-serial-search-ng-select.component";
 import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
@@ -11,6 +12,7 @@ import { SharedModule } from "@app/shared/shared.module";
     ReactiveFormsModule,
     QadCustomerPartSearchComponent,
     QadWoSearchComponent,
+    EyefiSerialSearchNgSelectComponent,
   ],
   selector: "app-sg-asset-form",
   templateUrl: "./sg-asset-form.component.html",

@@ -4,28 +4,30 @@ import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule } from '@angular/forms';
 import { SerialNumberService } from '../../services/serial-number.service';
 import { SerialNumber } from '../../models/serial-number.model';
-import { Observable, BehaviorSubject, combineLatest } from 'rxjs';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
+import moment from 'moment';
+import { ToastrService } from 'ngx-toastr';
 
 type SerialNumberStatus = 'available' | 'assigned' | 'shipped' | 'returned' | 'defective';
-import { map, startWith, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, AgGridModule],
   selector: 'app-sn-list',
   templateUrl: './sn-list.component.html',
   styleUrls: ['./sn-list.component.scss']
 })
 export class SnListComponent implements OnInit {
-  serialNumbers$: Observable<SerialNumber[]> = new Observable();
-  filteredSerialNumbers$: Observable<SerialNumber[]> = new Observable();
-  
+  serialNumbers: SerialNumber[] = [];
+  filteredSerialNumbers: SerialNumber[] = [];
+
   filterForm: FormGroup;
   isLoading = false;
+  hasError = false;
+  errorMessage = '';
   selectedSerialNumbers: Set<string> = new Set();
-  currentPage = 1;
-  pageSize = 25;
-  totalItems = 0;
+  gridApi!: GridApi;
 
   // Filter options
   statusOptions: { value: SerialNumberStatus | 'all', label: string }[] = [
@@ -40,7 +42,7 @@ export class SnListComponent implements OnInit {
   productModels = [
     'All Models',
     'EyeFi Pro X1',
-    'EyeFi Standard S2', 
+    'EyeFi Standard S2',
     'EyeFi Enterprise E3',
     'EyeFi Lite L1',
     'EyeFi Advanced A2'
@@ -55,11 +57,172 @@ export class SnListComponent implements OnInit {
     { value: 'product_model_asc', label: 'Product Model (A-Z)' }
   ];
 
-  private refreshSubject = new BehaviorSubject<void>(undefined);
+  // AG Grid Configuration
+  columnDefs: ColDef[] = [
+    {
+      headerName: 'Serial Number',
+      field: 'serial_number',
+      sortable: true,
+      filter: true,
+      width: 180,
+      pinned: 'left',
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
+      }
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      filter: true,
+      width: 130,
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        const badges: Record<string, string> = {
+          available: 'success',
+          assigned: 'warning',
+          shipped: 'info',
+          returned: 'secondary',
+          defective: 'danger'
+        };
+        const icons: Record<string, string> = {
+          available: 'check-circle',
+          assigned: 'clock',
+          shipped: 'truck',
+          returned: 'undo',
+          defective: 'exclamation-triangle'
+        };
+        const badgeClass = badges[status] || 'secondary';
+        const icon = icons[status] || 'question';
+        return `<span class="badge bg-${badgeClass} text-white">
+          <i class="mdi mdi-${icon}"></i> ${status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>`;
+      }
+    },
+    // {
+    //   headerName: 'Product Model',
+    //   field: 'product_model',
+    //   sortable: true,
+    //   filter: true,
+    //   width: 180
+    // },
+    {
+      headerName: 'Assigned To',
+      field: 'assigned_to_table',
+      sortable: true,
+      filter: true,
+      width: 150,
+      cellRenderer: (params: any) => {
+        if (!params.data.assigned_to_table || !params.data.assigned_to_id) {
+          return '<span class="text-muted">Not Assigned</span>';
+        }
+        const labels: Record<string, string> = {
+          'agsSerialGenerator': 'AGS Asset',
+          'ul_label_usages': 'UL Label',
+          'sgAssetGenerator': 'SG Asset',
+          'igt_assets': 'IGT Asset'
+        };
+        const label = labels[params.data.assigned_to_table] || params.data.assigned_to_table;
+        return `<span class="badge bg-primary text-white me-1">${label}</span>
+                <small class="text-muted">#${params.data.assigned_to_id}</small>`;
+      }
+    },
+    {
+      headerName: 'Assigned By',
+      field: 'assigned_by',
+      sortable: true,
+      filter: true,
+      width: 140,
+      cellRenderer: (params: any) => {
+        return params.value || '<span class="text-muted">—</span>';
+      }
+    },
+    {
+      headerName: 'Assigned At',
+      field: 'assigned_at',
+      sortable: true,
+      filter: 'agDateColumnFilter',
+      width: 140,
+      valueFormatter: (params: any) => {
+        return params.value ? moment(params.value).format('MM/DD/YYYY') : '—';
+      }
+    },
+    {
+      headerName: 'Batch Number',
+      field: 'batch_number',
+      sortable: true,
+      filter: true,
+      width: 140,
+      cellRenderer: (params: any) => {
+        return params.value || '<span class="text-muted">—</span>';
+      }
+    },
+    {
+      headerName: 'QR Code',
+      field: 'qr_code',
+      sortable: true,
+      filter: true,
+      width: 140,
+      cellRenderer: (params: any) => {
+        if (!params.value) return '<span class="text-muted">—</span>';
+        return `<code style="font-family: 'Courier New', monospace; font-size: 11px;">${params.value}</code>`;
+      },
+      hide: true
+    },
+    {
+      headerName: 'Created Date',
+      field: 'created_at',
+      sortable: true,
+      filter: 'agDateColumnFilter',
+      width: 130,
+      valueFormatter: (params: any) => {
+        return params.value ? moment(params.value).format('MM/DD/YYYY') : '—';
+      }
+    },
+    {
+      headerName: 'Actions',
+      width: 100,
+      pinned: 'right',
+      cellRenderer: (params: any) => {
+        return `
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                    type="button" 
+                    data-action="menu" 
+                    data-serial="${params.data.serial_number}">
+              <i class="mdi mdi-dots-vertical"></i>
+            </button>
+          </div>
+        `;
+      }
+    }
+  ];
+
+  defaultColDef: ColDef = {
+    resizable: true,
+    sortable: true,
+    floatingFilter: true
+  };
 
   constructor(
     private serialNumberService: SerialNumberService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private toastr: ToastrService
   ) {
     this.filterForm = this.fb.group({
       search: [''],
@@ -77,35 +240,73 @@ export class SnListComponent implements OnInit {
     this.setupFilters();
   }
 
-  loadSerialNumbers() {
+  onGridReady(params: GridReadyEvent): void {
+    this.gridApi = params.api;
+
+    // Handle action button clicks
+    const eGridDiv = document.querySelector('#serial-number-grid');
+    if (eGridDiv) {
+      eGridDiv.addEventListener('click', (e: Event) => {
+        const target = e.target as HTMLElement;
+        const button = target.closest('[data-action]') as HTMLElement;
+
+        if (button) {
+          const action = button.getAttribute('data-action');
+          const serial = button.getAttribute('data-serial');
+
+          if (action === 'menu' && serial) {
+            // Handle dropdown menu
+            e.stopPropagation();
+          }
+        }
+      });
+    }
+  }
+
+  async loadSerialNumbers() {
     this.isLoading = true;
-    this.serialNumbers$ = this.refreshSubject.pipe(
-      map(() => this.serialNumberService.getAllSerialNumbers()),
-      map(obs => {
-        obs.subscribe({
-          next: () => this.isLoading = false,
-          error: () => this.isLoading = false
-        });
-        return obs;
-      })
-    ).pipe(
-      map(obs => obs as Observable<SerialNumber[]>)
-    )[0] || this.serialNumberService.getAllSerialNumbers();
+    this.hasError = false;
+    this.errorMessage = '';
+
+    try {
+      const response = await this.serialNumberService.getAllSerialNumbers();
+      if (response && response.success) {
+        this.serialNumbers = response.data || [];
+        this.filteredSerialNumbers = [...this.serialNumbers];
+        this.applyCurrentFilters();
+      } else {
+        this.hasError = true;
+        this.errorMessage = response?.error || 'Failed to load serial numbers';
+        this.serialNumbers = [];
+        this.filteredSerialNumbers = [];
+      }
+    } catch (error: any) {
+      this.hasError = true;
+      this.errorMessage = error?.message || 'Network error occurred while loading serial numbers';
+      console.error('Error loading serial numbers:', error);
+      this.serialNumbers = [];
+      this.filteredSerialNumbers = [];
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  refresh() {
+    this.loadSerialNumbers();
   }
 
   setupFilters() {
-    const filters$ = this.filterForm.valueChanges.pipe(
-      startWith(this.filterForm.value),
-      debounceTime(300),
-      distinctUntilChanged()
-    );
+    this.filterForm.valueChanges.subscribe(filters => {
+      this.applyCurrentFilters();
+    });
 
-    this.filteredSerialNumbers$ = combineLatest([
-      this.serialNumbers$,
-      filters$
-    ]).pipe(
-      map(([serialNumbers, filters]) => this.applyFilters(serialNumbers, filters))
-    );
+    // Apply initial filters
+    this.applyCurrentFilters();
+  }
+
+  private applyCurrentFilters() {
+    const filters = this.filterForm.value;
+    this.filteredSerialNumbers = this.applyFilters(this.serialNumbers, filters);
   }
 
   private applyFilters(serialNumbers: SerialNumber[], filters: any): SerialNumber[] {
@@ -114,7 +315,7 @@ export class SnListComponent implements OnInit {
     // Text search
     if (filters.search?.trim()) {
       const searchTerm = filters.search.toLowerCase().trim();
-      filtered = filtered.filter(sn => 
+      filtered = filtered.filter(sn =>
         sn.serial_number.toLowerCase().includes(searchTerm) ||
         sn.product_model.toLowerCase().includes(searchTerm) ||
         sn.batch_number?.toLowerCase().includes(searchTerm)
@@ -133,7 +334,7 @@ export class SnListComponent implements OnInit {
 
     // Batch number filter
     if (filters.batchNumber?.trim()) {
-      filtered = filtered.filter(sn => 
+      filtered = filtered.filter(sn =>
         sn.batch_number?.toLowerCase().includes(filters.batchNumber.toLowerCase())
       );
     }
@@ -170,91 +371,77 @@ export class SnListComponent implements OnInit {
       });
     }
 
-    this.totalItems = filtered.length;
     return filtered;
   }
 
-  // Selection methods
-  toggleSelection(serialNumber: string, event: Event) {
-    event.stopPropagation();
-    if (this.selectedSerialNumbers.has(serialNumber)) {
-      this.selectedSerialNumbers.delete(serialNumber);
-    } else {
-      this.selectedSerialNumbers.add(serialNumber);
-    }
+  // Selection methods (using AG Grid's built-in selection)
+  getSelectedRows(): SerialNumber[] {
+    if (!this.gridApi) return [];
+    return this.gridApi.getSelectedRows();
   }
 
-  toggleSelectAll(serialNumbers: SerialNumber[]) {
-    if (this.allSelected(serialNumbers)) {
-      serialNumbers.forEach(sn => this.selectedSerialNumbers.delete(sn.serial_number));
-    } else {
-      serialNumbers.forEach(sn => this.selectedSerialNumbers.add(sn.serial_number));
-    }
-  }
-
-  allSelected(serialNumbers: SerialNumber[]): boolean {
-    return serialNumbers.length > 0 && 
-           serialNumbers.every(sn => this.selectedSerialNumbers.has(sn.serial_number));
-  }
-
-  someSelected(serialNumbers: SerialNumber[]): boolean {
-    return serialNumbers.some(sn => this.selectedSerialNumbers.has(sn.serial_number)) &&
-           !this.allSelected(serialNumbers);
+  get selectedCount(): number {
+    return this.getSelectedRows().length;
   }
 
   // Status update methods
   updateStatus(serialNumber: string, newStatus: SerialNumberStatus) {
-    // For now, we'll implement a simple status update
-    // In a real implementation, you'd find the ID first or have a separate endpoint
     console.log(`Updating ${serialNumber} to ${newStatus}`);
+    this.toastr.info(`Status update: ${serialNumber} → ${newStatus}`);
     this.refreshData();
   }
 
   bulkUpdateStatus(newStatus: SerialNumberStatus) {
-    if (this.selectedSerialNumbers.size === 0) return;
+    const selected = this.getSelectedRows();
+    if (selected.length === 0) {
+      this.toastr.warning('No serial numbers selected');
+      return;
+    }
 
-    // For now, just clear selection and refresh
-    // In a real implementation, you'd have a bulk update endpoint
-    console.log(`Bulk updating ${this.selectedSerialNumbers.size} items to ${newStatus}`);
-    this.selectedSerialNumbers.clear();
+    console.log(`Bulk updating ${selected.length} items to ${newStatus}`);
+    this.toastr.info(`Updating ${selected.length} serial numbers to ${newStatus}`);
     this.refreshData();
   }
 
   // Export methods
-  exportSelected() {
-    if (this.selectedSerialNumbers.size === 0) return;
-    
-    const serialNumbers = Array.from(this.selectedSerialNumbers);
-    this.serialNumberService.exportSerialNumbers(serialNumbers).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `serial-numbers-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        window.URL.revokeObjectURL(url);
-      },
-      error: (error) => {
-        console.error('Error exporting:', error);
-      }
-    });
+  async exportSelected() {
+    const selected = this.getSelectedRows();
+    if (selected.length === 0) {
+      this.toastr.warning('No serial numbers selected');
+      return;
+    }
+
+    try {
+      const serialNumbers = selected.map(sn => sn.serial_number);
+      const blob = await this.serialNumberService.exportSerialNumbers(serialNumbers);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `serial-numbers-${moment().format('YYYY-MM-DD')}.csv`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.toastr.success(`Exported ${selected.length} serial numbers`);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      this.toastr.error('Error exporting serial numbers');
+    }
   }
 
-  exportAll(filteredSerialNumbers: SerialNumber[]) {
-    const serialNumbers = filteredSerialNumbers.map(sn => sn.serial_number);
-    this.serialNumberService.exportSerialNumbers(serialNumbers).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `all-serial-numbers-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        window.URL.revokeObjectURL(url);
-      },
-      error: (error) => {
-        console.error('Error exporting:', error);
-      }
-    });
+  async exportAll() {
+    try {
+      const serialNumbers = this.filteredSerialNumbers.map(sn => sn.serial_number);
+      const blob = await this.serialNumberService.exportSerialNumbers(serialNumbers);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `all-serial-numbers-${moment().format('YYYY-MM-DD')}.csv`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.toastr.success(`Exported ${serialNumbers.length} serial numbers`);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      this.toastr.error('Error exporting serial numbers');
+    }
   }
 
   // Utility methods
@@ -271,103 +458,24 @@ export class SnListComponent implements OnInit {
   }
 
   refreshData() {
-    this.refreshSubject.next();
+    this.loadSerialNumbers();
+    this.toastr.success('Data refreshed');
   }
 
-  getStatusBadgeClass(status: SerialNumberStatus): string {
-    const classes: Record<SerialNumberStatus, string> = {
-      available: 'badge-success',
-      assigned: 'badge-warning',
-      shipped: 'badge-info', 
-      returned: 'badge-secondary',
-      defective: 'badge-danger'
+  // Summary statistics
+  getSummary() {
+    const total = this.filteredSerialNumbers.length;
+    const available = this.filteredSerialNumbers.filter(sn => sn.status === 'available').length;
+    const assigned = this.filteredSerialNumbers.filter(sn => sn.status === 'assigned').length;
+    const shipped = this.filteredSerialNumbers.filter(sn => sn.status === 'shipped').length;
+    const uniqueModels = new Set(this.filteredSerialNumbers.map(sn => sn.product_model)).size;
+
+    return {
+      total,
+      available,
+      assigned,
+      shipped,
+      uniqueModels
     };
-    return classes[status] || 'badge-secondary';
-  }
-
-  getStatusIcon(status: SerialNumberStatus): string {
-    const icons: Record<SerialNumberStatus, string> = {
-      available: 'fa-check-circle',
-      assigned: 'fa-clock',
-      shipped: 'fa-shipping-fast',
-      returned: 'fa-undo',
-      defective: 'fa-exclamation-triangle'
-    };
-    return icons[status] || 'fa-question';
-  }
-
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-
-  // Pagination methods
-  get totalPages(): number {
-    return Math.ceil(this.totalItems / this.pageSize);
-  }
-
-  get paginatedItems() {
-    return this.filteredSerialNumbers$.pipe(
-      map(items => {
-        const startIndex = (this.currentPage - 1) * this.pageSize;
-        return items.slice(startIndex, startIndex + this.pageSize);
-      })
-    );
-  }
-
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
-  }
-
-  get visiblePages(): number[] {
-    const totalPages = this.totalPages;
-    const current = this.currentPage;
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-
-    for (let i = Math.max(2, current - delta); 
-         i <= Math.min(totalPages - 1, current + delta); 
-         i++) {
-      range.push(i);
-    }
-
-    if (current - delta > 2) {
-      rangeWithDots.push(1, -1);
-    } else {
-      rangeWithDots.push(1);
-    }
-
-    rangeWithDots.push(...range);
-
-    if (current + delta < totalPages - 1) {
-      rangeWithDots.push(-1, totalPages);
-    } else if (totalPages > 1) {
-      rangeWithDots.push(totalPages);
-    }
-
-    return rangeWithDots;
-  }
-
-  trackBySerialNumber(index: number, item: SerialNumber): string {
-    return item.serial_number;
-  }
-
-  // Template helper methods
-  toggleSelectAllPaginated() {
-    this.paginatedItems.subscribe(items => {
-      this.toggleSelectAll(items);
-    }).unsubscribe();
-  }
-
-  exportAllFiltered() {
-    this.filteredSerialNumbers$.subscribe(items => {
-      this.exportAll(items);
-    }).unsubscribe();
   }
 }

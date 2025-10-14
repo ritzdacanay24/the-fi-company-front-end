@@ -33,14 +33,21 @@
         </div>
 
         <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Serial Number
-          </label>
-          <input class="form-control" type="text" formControlName="serialNumber" placeholder="Enter Serial Number"
-            [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+          <app-eyefi-serial-search-ng
+            formControlName="serialNumber"
+            [form_label]="'EyeFi Serial Number'" 
+            [placeholder]="'Search and select EyeFi serial number'"
+            [required]="true" 
+            [showLabel]="true"
+            [status]="'available'"
+            [strictMode]="true">
+          </app-eyefi-serial-search-ng>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Device serial number for identification.
+            Must select a valid EyeFi serial number from the database.
+          </div>
+          <div *ngIf="submitted && f.serialNumber.errors" class="invalid-feedback d-block">
+            <span *ngIf="f.serialNumber.errors['required']">Serial Number is required</span>
           </div>
         </div>
       </div>

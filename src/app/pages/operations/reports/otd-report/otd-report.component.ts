@@ -185,6 +185,11 @@ export class OtdReportComponent implements OnInit {
 
   columnDefs: ColDef[] = [
     {
+      field: "sod_part",
+      headerName: "Part number",
+      filter: "agMultiColumnFilter",
+    },
+    {
       field: "sod_per_date",
       headerName: "Performance Date",
       filter: "agTextColumnFilter",

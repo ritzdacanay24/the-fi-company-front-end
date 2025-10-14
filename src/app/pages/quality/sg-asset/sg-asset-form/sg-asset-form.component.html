@@ -40,12 +40,16 @@
           <label class="form-label">
             Device Serial Number <span class="text-danger">*</span>
           </label>
-          <input class="form-control" type="text" formControlName="serialNumber" 
-            placeholder="Enter device serial number"
-            [ngClass]="{ 'is-invalid': submitted && f.serialNumber.errors }" />
+          <app-eyefi-serial-search-ng
+            formControlName="serialNumber"
+            [showLabel]="false"
+            [required]="true"
+            [disabled]="isEditMode"
+            [placeholder]="'Search or select EyeFi serial number'">
+          </app-eyefi-serial-search-ng>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
-            Unique device serial number for identification.
+            Unique EyeFi device serial number for identification.
           </div>
           @if (submitted && f.serialNumber.errors) {
             <div class="invalid-feedback d-block">

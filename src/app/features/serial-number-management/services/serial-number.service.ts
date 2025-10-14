@@ -1,91 +1,146 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { SerialNumber, SerialNumberAssignment, SerialNumberReport, SerialNumberUsageReport, SerialNumberStats, SerialNumberBatch } from '../models/serial-number.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SerialNumberService {
-  private readonly API_URL = '/serial-numbers';
+  // DO NOT MODIFY: This API_URL is correct for the current backend structure
+  // ANY CHANGES TO THIS WILL BREAK THE API CALLS
+  // The ApiPrefixInterceptor automatically adds: https://dashboard.eye-fi.com/server/Api/
+  // Final URL will be: https://dashboard.eye-fi.com/server/Api/eyefi-serial-numbers/index.php
+  private readonly API_URL = 'eyefi-serial-numbers';
 
   constructor(private http: HttpClient) {}
 
   // Serial Number CRUD Operations
-  getAllSerialNumbers(): Observable<any> {
-    return this.http.get(`${this.API_URL}/index.php`);
+  async getAllSerialNumbers(filters?: any): Promise<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+          params = params.set(key, filters[key]);
+        }
+      });
+    }
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  getSerialNumberById(id: number): Observable<any> {
-    return this.http.get(`${this.API_URL}/index.php?id=${id}`);
+  async getSerialNumberById(id: number): Promise<any> {
+    const params = new HttpParams().set('id', id.toString());
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  getSerialNumberByNumber(serialNumber: string): Observable<any> {
+  async getSerialNumberByNumber(serialNumber: string): Promise<any> {
     const params = new HttpParams().set('serial_number', serialNumber);
-    return this.http.get(`${this.API_URL}/index.php`, { params });
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  createSerialNumber(serialNumber: SerialNumber): Observable<any> {
-    return this.http.post(`${this.API_URL}/index.php`, serialNumber);
+  async createSerialNumber(serialNumber: SerialNumber): Promise<any> {
+    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php`, serialNumber));
   }
 
-  updateSerialNumber(id: number, serialNumber: SerialNumber): Observable<any> {
-    return this.http.put(`${this.API_URL}/index.php?id=${id}`, serialNumber);
+  async updateSerialNumber(id: number, serialNumber: SerialNumber): Promise<any> {
+    const params = new HttpParams().set('id', id.toString());
+    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php`, serialNumber, { params }));
   }
 
-  deleteSerialNumber(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/index.php?id=${id}`);
+  async deleteSerialNumber(id: number): Promise<any> {
+    const params = new HttpParams().set('id', id.toString());
+    return await firstValueFrom(this.http.delete(`${this.API_URL}/index.php`, { params }));
   }
 
   // Bulk create serial numbers (for range uploads)
-  bulkCreateSerialNumbers(serialNumbers: Partial<SerialNumber>[]): Observable<any> {
-    return this.http.post(`${this.API_URL}/bulk-upload.php`, { serial_numbers: serialNumbers });
+  async bulkCreateSerialNumbers(serialNumbers: Partial<SerialNumber>[]): Promise<any> {
+    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, { serialNumbers: serialNumbers }));
   }
 
   // Create serial numbers from range
-  createSerialNumbersFromRange(rangeData: any): Observable<any> {
-    return this.http.post(`${this.API_URL}/bulk-upload.php`, rangeData);
+  async createSerialNumbersFromRange(rangeData: any): Promise<any> {
+    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, rangeData));
   }
 
-  // Generate serial numbers batch
-  generateSerialNumbersBatch(batchData: Partial<SerialNumberBatch>): Observable<any> {
-    return this.http.post(`${this.API_URL}/generate-batch.php`, batchData);
+  // Generate serial numbers batch  
+  async generateSerialNumbersBatch(batchData: Partial<SerialNumberBatch>): Promise<any> {
+    return await firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=bulk-upload`, batchData));
   }
 
-  // Bulk upload serial numbers
-  bulkUploadSerialNumbers(file: File): Observable<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post(`${this.API_URL}/bulk-upload`, formData);
+  // Get EyeFi serial statistics
+  async getEyeFiStatistics(): Promise<any> {
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php?action=statistics`));
   }
 
-  // Search serial numbers
-  searchSerialNumbers(query: string): Observable<any> {
-    const params = new HttpParams().set('search', query);
-    return this.http.get(`${this.API_URL}/search`, { params });
+  // Search serial numbers with filters
+  async searchSerialNumbers(searchQuery: string, additionalFilters?: any): Promise<any> {
+    let params = new HttpParams().set('search', searchQuery);
+    
+    if (additionalFilters) {
+      Object.keys(additionalFilters).forEach(key => {
+        if (additionalFilters[key] !== null && additionalFilters[key] !== undefined && additionalFilters[key] !== '') {
+          params = params.set(key, additionalFilters[key]);
+        }
+      });
+    }
+    
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
   // Serial Number Assignment Operations
-  assignSerialNumber(assignment: SerialNumberAssignment): Observable<any> {
-    return this.http.post(`${this.API_URL}/assignments.php`, assignment);
+  async assignSerialNumber(assignment: SerialNumberAssignment): Promise<any> {
+    return firstValueFrom(this.http.post(`${this.API_URL}/index.php?action=assign`, assignment));
   }
 
-  getSerialNumberAssignments(): Observable<any> {
-    return this.http.get(`${this.API_URL}/assignments.php`);
+  async getSerialNumberAssignments(filters: any = {}): Promise<any> {
+    let params = new HttpParams().set('action', 'assignments');
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+          params = params.set(key, filters[key]);
+        }
+      });
+    }
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  getAssignmentBySerialNumber(serialNumber: string): Observable<any> {
-    const params = new HttpParams().set('serial_number', serialNumber);
-    return this.http.get(`${this.API_URL}/assignments.php`, { params });
+  async getAssignmentBySerialNumber(serialNumber: string): Promise<any> {
+    const params = new HttpParams()
+      .set('action', 'assignments')
+      .set('serial_number', serialNumber);
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  updateAssignment(id: number, assignment: SerialNumberAssignment): Observable<any> {
-    return this.http.put(`${this.API_URL}/assignments.php?id=${id}`, assignment);
+  async updateAssignment(id: number, assignment: SerialNumberAssignment): Promise<any> {
+    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php?id=${id}`, assignment));
+  }
+
+  // Update serial number status
+  async updateSerialNumberStatus(serialNumber: string, status: string, reason?: string): Promise<any> {
+    const data = { serial_number: serialNumber, status: status };
+    if (reason) {
+      (data as any).reason = reason;
+    }
+    return await firstValueFrom(this.http.put(`${this.API_URL}/index.php`, data));
+  }
+
+  // Export serial numbers to CSV
+  async exportSerialNumbers(serialNumbers: string[] = []): Promise<any> {
+    let params = new HttpParams().set('action', 'export');
+    
+    if (serialNumbers.length > 0) {
+      params = params.set('serial_numbers', serialNumbers.join(','));
+    }
+    
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { 
+      params,
+      responseType: 'blob' as 'json'
+    }));
   }
 
   // Serial Number Reports
-  getSerialNumberReport(filters?: any): Observable<SerialNumberReport[]> {
-    let params = new HttpParams();
+  async getSerialNumberReport(filters?: any): Promise<SerialNumberReport[]> {
+    let params = new HttpParams().set('action', 'reports');
     if (filters) {
       Object.keys(filters).forEach(key => {
         if (filters[key]) {
@@ -93,11 +148,11 @@ export class SerialNumberService {
         }
       });
     }
-    return this.http.get<SerialNumberReport[]>(`${this.API_URL}/reports.php`, { params });
+    return await firstValueFrom(this.http.get<SerialNumberReport[]>(`${this.API_URL}/index.php`, { params }));
   }
 
-  getUsageReport(filters?: any): Observable<SerialNumberUsageReport[]> {
-    let params = new HttpParams();
+  async getUsageReport(filters?: any): Promise<SerialNumberUsageReport[]> {
+    let params = new HttpParams().set('action', 'usage-report');
     if (filters) {
       Object.keys(filters).forEach(key => {
         if (filters[key]) {
@@ -105,56 +160,47 @@ export class SerialNumberService {
         }
       });
     }
-    return this.http.get<SerialNumberUsageReport[]>(`${this.API_URL}/usage-report.php`, { params });
+    return await firstValueFrom(this.http.get<SerialNumberUsageReport[]>(`${this.API_URL}/index.php`, { params }));
   }
 
   // Serial Number Statistics
-  getSerialNumberStats(): Observable<SerialNumberStats> {
-    return this.http.get<SerialNumberStats>(`${this.API_URL}/stats.php`);
+  async getSerialNumberStats(): Promise<SerialNumberStats> {
+    return await firstValueFrom(this.http.get<SerialNumberStats>(`${this.API_URL}/index.php?action=statistics`));
   }
 
   // Utility Methods
-  getAvailableSerialNumbers(limit?: number): Observable<any> {
-    let params = new HttpParams();
+  async getAvailableSerialNumbers(limit?: number): Promise<any> {
+    let params = new HttpParams().set('action', 'available');
     if (limit) {
       params = params.set('limit', limit.toString());
     }
-    return this.http.get(`${this.API_URL}/available.php`, { params });
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  validateSerialNumber(serialNumber: string): Observable<any> {
-    const params = new HttpParams().set('serial_number', serialNumber);
-    return this.http.get(`${this.API_URL}/validate.php`, { params });
+  async validateSerialNumber(serialNumber: string): Promise<any> {
+    const params = new HttpParams()
+      .set('action', 'validate')
+      .set('serial_number', serialNumber);
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  getProductModels(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.API_URL}/product-models.php`);
+  async getProductModels(): Promise<string[]> {
+    return await firstValueFrom(this.http.get<string[]>(`${this.API_URL}/index.php?action=product-models`));
   }
 
   // QR Code and Barcode generation
-  generateQRCode(serialNumber: string): Observable<any> {
-    const params = new HttpParams().set('serial_number', serialNumber);
-    return this.http.get(`${this.API_URL}/qr-code.php`, { params });
+  async generateQRCode(serialNumber: string): Promise<any> {
+    const params = new HttpParams()
+      .set('action', 'qr-code')
+      .set('serial_number', serialNumber);
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  generateBarcode(serialNumber: string): Observable<any> {
-    const params = new HttpParams().set('serial_number', serialNumber);
-    return this.http.get(`${this.API_URL}/barcode.php`, { params });
+  async generateBarcode(serialNumber: string): Promise<any> {
+    const params = new HttpParams()
+      .set('action', 'barcode')
+      .set('serial_number', serialNumber);
+    return  await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
-  // Export functionality
-  exportSerialNumbers(filters?: any): Observable<Blob> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        if (filters[key]) {
-          params = params.set(key, filters[key]);
-        }
-      });
-    }
-    return this.http.get(`${this.API_URL}/export.php`, { 
-      params, 
-      responseType: 'blob' 
-    });
-  }
 }

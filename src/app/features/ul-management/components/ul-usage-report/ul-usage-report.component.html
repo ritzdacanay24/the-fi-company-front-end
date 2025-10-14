@@ -77,18 +77,18 @@
                 <i class="mdi mdi-clipboard-check text-primary me-1"></i>
                 <strong>{{ getUsageSummary().totalUsages }}</strong> Total Usages
               </span>
-              <span>
+              <!-- <span>
                 <i class="mdi mdi-counter text-info me-1"></i>
                 <strong>{{ getUsageSummary().totalQuantity }}</strong> Total Quantity
-              </span>
-              <span>
+              </span> -->
+              <!-- <span>
                 <i class="mdi mdi-certificate text-success me-1"></i>
                 <strong>{{ getUsageSummary().uniqueULNumbers }}</strong> UL Numbers
-              </span>
-              <span>
+              </span> -->
+              <!-- <span>
                 <i class="mdi mdi-account-group text-warning me-1"></i>
                 <strong>{{ getUsageSummary().uniqueCustomers }}</strong> Customers
-              </span>
+              </span> -->
               <span>
                 <i class="mdi mdi-clipboard-list text-purple me-1"></i>
                 <strong>{{ getUsageSummary().uniqueWorkOrders }}</strong> Work Orders
@@ -103,77 +103,6 @@
             </div>
           </div>
           
-          <!-- Filters Section -->
-          <div class="mt-3 pt-3 border-top">
-            <form [formGroup]="filterForm">
-              <div class="row g-3">
-                <div class="col-md-2">
-                  <input type="text" 
-                         class="form-control form-control-sm" 
-                         formControlName="search"
-                         placeholder="Search UL Number, Serial, User...">
-                </div>
-                <div class="col-md-2">
-                  <input type="text" 
-                         class="form-control form-control-sm" 
-                         formControlName="ulNumber"
-                         placeholder="UL Number">
-                </div>
-                <div class="col-md-2">
-                  <input type="text" 
-                         class="form-control form-control-sm" 
-                         formControlName="customer"
-                         placeholder="Customer">
-                </div>
-                <div class="col-md-2">
-                  <input type="number" 
-                         class="form-control form-control-sm" 
-                         formControlName="workOrder"
-                         placeholder="Work Order #">
-                </div>
-                <div class="col-md-2">
-                  <input type="date" class="form-control form-control-sm" formControlName="startDate">
-                </div>
-                <div class="col-md-2">
-                  <input type="date" class="form-control form-control-sm" formControlName="endDate">
-                </div>
-              </div>
-              
-              <!-- Clear Button Row -->
-              <div class="d-flex justify-content-end mt-2">
-                <button type="button" 
-                        class="btn btn-outline-secondary btn-sm" 
-                        (click)="clearFilters()"
-                        title="Clear filters">
-                  <i class="mdi mdi-close me-1"></i>Clear Filters
-                </button>
-              </div>
-              
-              <!-- Quick Filter Buttons -->
-              <div class="d-flex gap-2 flex-wrap mt-3">
-                <button type="button" 
-                        class="btn btn-outline-primary btn-sm" 
-                        (click)="filterByDateRange(7)">
-                  <i class="mdi mdi-calendar-week me-1"></i>Last 7 Days
-                </button>
-                <button type="button" 
-                        class="btn btn-outline-primary btn-sm" 
-                        (click)="filterByDateRange(30)">
-                  <i class="mdi mdi-calendar-month me-1"></i>Last 30 Days
-                </button>
-                <button type="button" 
-                        class="btn btn-outline-primary btn-sm" 
-                        (click)="filterByDateRange(90)">
-                  <i class="mdi mdi-calendar-range me-1"></i>Last 90 Days
-                </button>
-                <button type="button" 
-                        class="btn btn-outline-secondary btn-sm" 
-                        (click)="loadUsageData()">
-                  <i class="mdi mdi-magnify me-1"></i>Apply Filters
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
         
         <div class="card-body p-0">

@@ -12,6 +12,12 @@ export interface SerialNumber {
   created_at?: string;
   updated_at?: string;
   created_by?: number;
+  
+  // Assignment tracking (populated by backend join queries)
+  assigned_to_table?: string; // 'agsSerialGenerator' | 'ul_label_usages' | 'sgAssetGenerator'
+  assigned_to_id?: number;
+  assigned_by?: string;
+  assigned_at?: string;
 }
 
 export interface SerialNumberAssignment {

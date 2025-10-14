@@ -189,6 +189,25 @@
                                     </div>
                                 </div>
 
+                                <!-- EyeFi Serial Number Search -->
+                                <!-- <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <app-eyefi-serial-search 
+                                            [form_label]="'EyeFi Serial Number'" 
+                                            [placeholder]="'Search by Serial Number'"
+                                            [required]="false" 
+                                            [showLabel]="true"
+                                            [status]="'available'"
+                                            [value]="usageForm.get('eyefi_serial_number')?.value"
+                                            (notifyParent)="onEyeFiSerialSelected($event)">
+                                        </app-eyefi-serial-search>
+                                        <div class="form-text">
+                                            <i class="mdi mdi-information-outline me-1"></i>
+                                            Optional: Link this UL usage to a specific EyeFi device serial number
+                                        </div>
+                                    </div>
+                                </div> -->
+
                                 <!-- Work Order Validation Loading -->
                                 <div *ngIf="workOrderValidationLoading" class="row mb-3">
                                     <div class="col-md-12">
@@ -641,15 +660,18 @@
                                     class="single-ul-form">
                                     <div class="row g-3 mb-4">
                                         <div class="col-md-8">
-                                            <label class="form-label fw-semibold">
-                                                <i class="mdi mdi-barcode me-1"></i>
-                                                Serial Number *
-                                            </label>
-                                            <input type="text" formControlName="serial_number"
-                                                class="form-control form-control-lg"
-                                                placeholder="Enter device serial number">
-                                            <div class="form-text">Device or component serial number for {{
-                                                assignedULNumbers[0] }}</div>
+                                            <app-eyefi-serial-search-ng 
+                                                formControlName="serial_number"
+                                                [form_label]="'Serial Number'" 
+                                                [placeholder]="'Search and select EyeFi serial number'"
+                                                [required]="true" 
+                                                [showLabel]="true"
+                                                [status]="'available'"
+                                                [strictMode]="true">
+                                            </app-eyefi-serial-search-ng>
+                                            <div class="form-text">
+                                                Device serial number for {{ assignedULNumbers[0] }} - Must select a valid EyeFi serial number from the database
+                                            </div>
                                         </div>
 
                                         <div class="col-md-4">
@@ -708,7 +730,8 @@
                                 <div *ngIf="(selectionMethod === 'automatic' && assignedULNumbers.length > 1) || (selectionMethod === 'manual' && manuallySelectedULs.length > 0)"
                                     class="bulk-ul-forms">
                                     <div *ngFor="let ulNumber of (selectionMethod === 'automatic' ? assignedULNumbers : manuallySelectedULs); let i = index"
-                                        class="ul-form-section p-3 mb-3 border rounded bg-light">
+                                        class="ul-form-section p-3 mb-3 border rounded bg-light"
+                                        [ngClass]="{'border-danger': isSerialNumberDuplicate(ulNumber, getBulkTransactionByUL(ulNumber).serial_number)}">
                                         <div class="mb-3">
                                             <h6 class="mb-0 fw-semibold">
                                                 <i class="mdi mdi-numeric me-2"></i>
@@ -718,15 +741,31 @@
                                         <div class="form-content">
                                             <div class="row g-3">
                                                 <div class="col-md-8">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="mdi mdi-barcode me-1"></i>
-                                                        Serial Number *
-                                                    </label>
-                                                    <input type="text"
+                                                    <app-eyefi-serial-search-ng 
                                                         [(ngModel)]="getBulkTransactionByUL(ulNumber).serial_number"
-                                                        [ngModelOptions]="{standalone: true}" name="bulk_serial_{{ i }}"
-                                                        class="form-control" placeholder="Enter device serial number"
-                                                        required>
+                                                        [ngModelOptions]="{standalone: true}"
+                                                        [name]="'bulk_serial_' + i"
+                                                        [form_label]="'Serial Number'" 
+                                                        [placeholder]="'Search and select EyeFi serial number'"
+                                                        [required]="true" 
+                                                        [showLabel]="true"
+                                                        [status]="'available'"
+                                                        [strictMode]="true"
+                                                        [excludeSerials]="getExcludedSerialNumbers(ulNumber)">
+                                                    </app-eyefi-serial-search-ng>
+                                                    
+                                                    <!-- Duplicate Warning for this specific field -->
+                                                    <div *ngIf="isSerialNumberDuplicate(ulNumber, getBulkTransactionByUL(ulNumber).serial_number)" 
+                                                         class="alert alert-danger alert-sm mt-2 mb-0 py-2">
+                                                        <small>
+                                                            <i class="mdi mdi-alert-circle me-1"></i>
+                                                            <strong>Duplicate serial number!</strong> This serial is already used in another transaction.
+                                                        </small>
+                                                    </div>
+                                                    
+                                                    <div class="form-text" *ngIf="!isSerialNumberDuplicate(ulNumber, getBulkTransactionByUL(ulNumber).serial_number)">
+                                                        Device serial number for {{ ulNumber }} - Must select a valid EyeFi serial number from the database
+                                                    </div>
                                                 </div>
 
                                                 <div class="col-md-4">
@@ -747,6 +786,20 @@
                             </div>
 
                         </div> <!-- end body container -->
+
+                        <!-- Duplicate Serial Number Warning -->
+                        <div *ngIf="hasDuplicateSerialNumbers()" class="alert alert-danger mx-4 mb-0" role="alert">
+                            <div class="d-flex align-items-start">
+                                <i class="mdi mdi-alert-circle me-2 mt-1" style="font-size: 1.25rem;"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-2 fw-bold">Duplicate Serial Numbers Detected</h6>
+                                    <p class="mb-0">
+                                        You cannot use the same EyeFi serial number for multiple UL labels. 
+                                        Each UL label must have a unique serial number. Please select different serial numbers for each transaction.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
 

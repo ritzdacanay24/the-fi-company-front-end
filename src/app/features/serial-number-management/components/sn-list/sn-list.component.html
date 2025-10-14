@@ -1,357 +1,210 @@
-<div class="sn-list-container">
-  <div class="header-section">
-    <h3><i class="fas fa-list"></i> EyeFi Serial Number Management</h3>
-    <div class="header-actions">
-      <button class="btn btn-success" routerLink="../upload">
-        <i class="fas fa-plus-square"></i> Add Serial Range
-      </button>
-      <button class="btn btn-warning ml-2" routerLink="../assignment">
-        <i class="fas fa-clipboard-list"></i> Assign Numbers
-      </button>
-      <button class="btn btn-outline-secondary ml-2" routerLink="../stats">
-        <i class="fas fa-chart-bar"></i> Statistics
-      </button>
-      <button class="btn btn-primary ml-2" (click)="refreshData()">
-        <i class="fas fa-sync-alt"></i> Refresh
-      </button>
-    </div>
-  </div>
-
-  <!-- Filters Section -->
-  <div class="filters-card card">
-    <div class="card-header">
-      <h4><i class="fas fa-filter"></i> Filters & Search</h4>
-      <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
-        <i class="fas fa-times"></i> Clear All
-      </button>
-    </div>
-    
-    <form [formGroup]="filterForm" class="filter-form">
-      <div class="row">
-        <div class="col-md-4">
-          <div class="form-group">
-            <label for="search">Search</label>
-            <input 
-              type="text" 
-              id="search"
-              class="form-control"
-              formControlName="search"
-              placeholder="Serial number, model, batch...">
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+              <i class="mdi mdi-home-outline me-1"></i>Quality
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            EyeFi Serials
+          </li>
+        </ol>
+      </nav>
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-barcode text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">EyeFi Serial Management</h2>
+              <p class="text-muted mb-0">Track EyeFi device serial numbers for asset identification and quality control</p>
+            </div>
           </div>
-        </div>
-
-        <div class="col-md-2">
-          <div class="form-group">
-            <label for="status">Status</label>
-            <select id="status" class="form-control" formControlName="status">
-              <option *ngFor="let option of statusOptions" [value]="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="productModel">Product Model</label>
-            <select id="productModel" class="form-control" formControlName="productModel">
-              <option *ngFor="let model of productModels" [value]="model">
-                {{ model }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="sortBy">Sort By</label>
-            <select id="sortBy" class="form-control" formControlName="sortBy">
-              <option *ngFor="let option of sortOptions" [value]="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="batchNumber">Batch Number</label>
-            <input 
-              type="text" 
-              id="batchNumber"
-              class="form-control"
-              formControlName="batchNumber"
-              placeholder="Filter by batch">
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="dateFrom">Date From</label>
-            <input 
-              type="date" 
-              id="dateFrom"
-              class="form-control"
-              formControlName="dateFrom">
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="dateTo">Date To</label>
-            <input 
-              type="date" 
-              id="dateTo"
-              class="form-control"
-              formControlName="dateTo">
-          </div>
-        </div>
-
-        <div class="col-md-3 d-flex align-items-end">
-          <div class="form-group w-100">
+          <div class="d-flex gap-2">
             <button 
               type="button" 
-              class="btn btn-info btn-block"
-              (click)="exportAllFiltered()">
-              <i class="fas fa-download"></i> Export All
+              class="btn btn-success"
+              routerLink="../upload"
+              title="Add new serial number range">
+              <i class="mdi mdi-plus-circle me-2"></i>Add Serial Range
             </button>
+            <!-- <button 
+              type="button" 
+              class="btn btn-warning"
+              routerLink="../assignment"
+              title="Assign serial numbers">
+              <i class="mdi mdi-clipboard-list me-2"></i>Assign Numbers
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              routerLink="../stats"
+              title="View statistics">
+              <i class="mdi mdi-chart-bar me-2"></i>Statistics
+            </button> -->
+          </div>
+        </div>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">EyeFi Serial Overview</h6>
+              <p class="mb-0">
+                EyeFi serials provide <strong>unique device identification</strong> for tracking and quality control. 
+                Each record includes model information, status tracking, and manufacturing details.
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </form>
-  </div>
 
-  <!-- Bulk Actions -->
-  <div class="bulk-actions" *ngIf="selectedSerialNumbers.size > 0">
-    <div class="selected-info">
-      <span class="badge badge-primary">{{ selectedSerialNumbers.size }} selected</span>
-    </div>
-    
-    <div class="bulk-buttons">
-      <div class="dropdown">
-        <button class="btn btn-warning dropdown-toggle" type="button" data-toggle="dropdown">
-          <i class="fas fa-edit"></i> Bulk Update Status
-        </button>
-        <div class="dropdown-menu">
-          <button class="dropdown-item" (click)="bulkUpdateStatus('available')">
-            <i class="fas fa-check-circle text-success"></i> Available
-          </button>
-          <button class="dropdown-item" (click)="bulkUpdateStatus('assigned')">
-            <i class="fas fa-clock text-warning"></i> Assigned
-          </button>
-          <button class="dropdown-item" (click)="bulkUpdateStatus('shipped')">
-            <i class="fas fa-shipping-fast text-info"></i> Shipped
-          </button>
-          <button class="dropdown-item" (click)="bulkUpdateStatus('returned')">
-            <i class="fas fa-undo text-secondary"></i> Returned
-          </button>
-          <button class="dropdown-item" (click)="bulkUpdateStatus('defective')">
-            <i class="fas fa-exclamation-triangle text-danger"></i> Defective
-          </button>
-        </div>
-      </div>
-
-      <button class="btn btn-success" (click)="exportSelected()">
-        <i class="fas fa-download"></i> Export Selected
-      </button>
-
-      <button class="btn btn-outline-secondary" (click)="selectedSerialNumbers.clear()">
-        <i class="fas fa-times"></i> Clear Selection
-      </button>
-    </div>
-  </div>
-
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-section">
-    <div class="text-center">
-      <i class="fas fa-spinner fa-spin fa-2x"></i>
-      <p class="mt-2">Loading serial numbers...</p>
-    </div>
-  </div>
-
-  <!-- Serial Numbers Table -->
-  <div class="table-container" *ngIf="!isLoading">
-    <div class="results-info">
-      <span class="text-muted">
-        Showing {{ totalItems }} result(s)
-      </span>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead class="thead-light">
-          <tr>
-            <th>
-              <div class="custom-control custom-checkbox">
-                <input 
-                  type="checkbox"
-                  class="custom-control-input"
-                  id="selectAll"
-                  [checked]="allSelected(paginatedItems | async)"
-                  [class.indeterminate]="someSelected(paginatedItems | async)"
-                  (change)="toggleSelectAllPaginated()">
-                <label class="custom-control-label" for="selectAll"></label>
-              </div>
-            </th>
-            <th>Serial Number</th>
-            <th>Product Model</th>
-            <th>Status</th>
-            <th>Batch Number</th>
-            <th>Hardware Ver.</th>
-            <th>Firmware Ver.</th>
-            <th>Manufacture Date</th>
-            <th>Created Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr 
-            *ngFor="let sn of paginatedItems | async; trackBy: trackBySerialNumber"
-            [class.selected]="selectedSerialNumbers.has(sn.serial_number)">
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            <div class="form-icon">
+              <button class="btn btn-outline-secondary" (click)="refreshData()" title="Refresh data">
+                Refresh
+              </button>
+            </div>
             
-            <td>
-              <div class="custom-control custom-checkbox">
-                <input 
-                  type="checkbox"
-                  class="custom-control-input"
-                  [id]="'cb-' + sn.serial_number"
-                  [checked]="selectedSerialNumbers.has(sn.serial_number)"
-                  (change)="toggleSelection(sn.serial_number, $event)">
-                <label class="custom-control-label" [for]="'cb-' + sn.serial_number"></label>
+            <div class="form-check form-switch form-switch-md">
+              <input class="form-check-input" type="checkbox" id="showAllSwitch" 
+                (change)="refreshData()">
+              <label class="form-check-label" for="showAllSwitch">Show All</label>
+            </div>
+            
+            <div class="ms-auto">
+              <div class="d-flex align-items-center">
+                <div class="me-4 d-flex gap-4 small text-muted">
+                  <span>
+                    <i class="mdi mdi-database text-info me-1"></i>
+                    <strong>{{filteredSerialNumbers.length}}</strong> Total
+                  </span>
+                  <span>
+                    <i class="mdi mdi-check-circle text-success me-1"></i>
+                    <strong>Serial Numbers</strong> Management
+                  </span>
+                </div>
               </div>
-            </td>
+            </div>
+          </div>
+        </div>
 
-            <td class="serial-number">
-              <strong>{{ sn.serial_number }}</strong>
-              <div class="qr-code" *ngIf="sn.qr_code">
-                <small class="text-muted">QR: {{ sn.qr_code }}</small>
-              </div>
-            </td>
-
-            <td>{{ sn.product_model }}</td>
-
-            <td>
-              <span class="badge" [ngClass]="getStatusBadgeClass(sn.status)">
-                <i class="fas" [ngClass]="getStatusIcon(sn.status)"></i>
-                {{ sn.status | titlecase }}
-              </span>
-            </td>
-
-            <td>
-              <span *ngIf="sn.batch_number" class="batch-number">
-                {{ sn.batch_number }}
-              </span>
-              <span *ngIf="!sn.batch_number" class="text-muted">—</span>
-            </td>
-
-            <td>
-              <span *ngIf="sn.hardware_version">{{ sn.hardware_version }}</span>
-              <span *ngIf="!sn.hardware_version" class="text-muted">—</span>
-            </td>
-
-            <td>
-              <span *ngIf="sn.firmware_version">{{ sn.firmware_version }}</span>
-              <span *ngIf="!sn.firmware_version" class="text-muted">—</span>
-            </td>
-
-            <td>
-              <span *ngIf="sn.manufacture_date">{{ formatDate(sn.manufacture_date) }}</span>
-              <span *ngIf="!sn.manufacture_date" class="text-muted">—</span>
-            </td>
-
-            <td>
-              <span *ngIf="sn.created_at">{{ formatDate(sn.created_at) }}</span>
-              <span *ngIf="!sn.created_at" class="text-muted">—</span>
-            </td>
-
-            <td class="actions">
+        <!-- Bulk Actions -->
+        <div class="card-body border-top" *ngIf="selectedCount > 0">
+          <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-primary me-3">{{ selectedCount }} selected</span>
+            </div>
+            
+            <div class="d-flex gap-2">
               <div class="dropdown">
-                <button 
-                  class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                  type="button" 
-                  [attr.data-toggle]="'dropdown'"
-                  [attr.id]="'actions-' + sn.serial_number">
-                  <i class="fas fa-ellipsis-v"></i>
+                <button class="btn btn-warning dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown">
+                  <i class="mdi mdi-pencil me-1"></i>Bulk Update Status
                 </button>
-                <div class="dropdown-menu" [attr.aria-labelledby]="'actions-' + sn.serial_number">
-                  <h6 class="dropdown-header">Change Status</h6>
-                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'available')">
-                    <i class="fas fa-check-circle text-success"></i> Available
+                <div class="dropdown-menu">
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('available')">
+                    <i class="mdi mdi-check-circle text-success me-2"></i>Available
                   </button>
-                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'assigned')">
-                    <i class="fas fa-clock text-warning"></i> Assigned
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('assigned')">
+                    <i class="mdi mdi-clock text-warning me-2"></i>Assigned
                   </button>
-                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'shipped')">
-                    <i class="fas fa-shipping-fast text-info"></i> Shipped
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('shipped')">
+                    <i class="mdi mdi-truck text-info me-2"></i>Shipped
                   </button>
-                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'returned')">
-                    <i class="fas fa-undo text-secondary"></i> Returned
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('returned')">
+                    <i class="mdi mdi-undo text-secondary me-2"></i>Returned
                   </button>
-                  <button class="dropdown-item" (click)="updateStatus(sn.serial_number, 'defective')">
-                    <i class="fas fa-exclamation-triangle text-danger"></i> Defective
-                  </button>
-                  <div class="dropdown-divider"></div>
-                  <button class="dropdown-item text-info">
-                    <i class="fas fa-info-circle"></i> View Details
+                  <button class="dropdown-item" (click)="bulkUpdateStatus('defective')">
+                    <i class="mdi mdi-alert text-danger me-2"></i>Defective
                   </button>
                 </div>
               </div>
-            </td>
-          </tr>
 
-          <tr *ngIf="(paginatedItems | async)?.length === 0">
-            <td colspan="10" class="text-center text-muted py-4">
-              <i class="fas fa-search fa-2x mb-2"></i>
-              <p>No serial numbers found matching your criteria.</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <button class="btn btn-success btn-sm" (click)="exportSelected()">
+                <i class="mdi mdi-download me-1"></i>Export Selected
+              </button>
 
-    <!-- Pagination -->
-    <div class="pagination-container" *ngIf="totalPages > 1">
-      <nav>
-        <ul class="pagination justify-content-center">
-          <li class="page-item" [class.disabled]="currentPage === 1">
-            <button class="page-link" (click)="goToPage(currentPage - 1)">
-              <i class="fas fa-chevron-left"></i> Previous
-            </button>
-          </li>
+              <button class="btn btn-info btn-sm" (click)="exportAll()">
+                <i class="mdi mdi-download me-1"></i>Export All
+              </button>
 
-          <li *ngFor="let page of visiblePages" 
-              class="page-item" 
-              [class.active]="page === currentPage"
-              [class.disabled]="page === -1">
-            <button 
-              *ngIf="page !== -1" 
-              class="page-link" 
-              (click)="goToPage(page)">
-              {{ page }}
-            </button>
-            <span *ngIf="page === -1" class="page-link">...</span>
-          </li>
+              <button class="btn btn-outline-secondary btn-sm" (click)="gridApi?.deselectAll()">
+                <i class="mdi mdi-close me-1"></i>Clear Selection
+              </button>
+            </div>
+          </div>
+        </div>
 
-          <li class="page-item" [class.disabled]="currentPage === totalPages">
-            <button class="page-link" (click)="goToPage(currentPage + 1)">
-              Next <i class="fas fa-chevron-right"></i>
-            </button>
-          </li>
-        </ul>
-      </nav>
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="card-body text-center p-5">
+          <div class="d-flex flex-column align-items-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Loading serial numbers...</p>
+          </div>
+        </div>
 
-      <div class="pagination-info">
-        <select class="form-control form-control-sm d-inline-block w-auto" 
-                [(ngModel)]="pageSize" 
-                (change)="currentPage = 1">
-          <option value="25">25 per page</option>
-          <option value="50">50 per page</option>
-          <option value="100">100 per page</option>
-          <option value="250">250 per page</option>
-        </select>
+        
+        <div class="card-body p-0" *ngIf="!isLoading">
+          <ng-container *ngIf="filteredSerialNumbers.length > 0; else noRecords">
+            <ag-grid-angular
+              id="serial-number-grid"
+              class="ag-theme-quartz no-border"
+              style="width: 100%; height: 600px;"
+              [rowData]="filteredSerialNumbers"
+              [columnDefs]="columnDefs"
+              [defaultColDef]="defaultColDef"
+              [pagination]="true"
+              [paginationPageSize]="25"
+              [paginationPageSizeSelector]="[25, 50, 100, 250]"
+              [rowSelection]="'multiple'"
+              [suppressRowClickSelection]="true"
+              (gridReady)="onGridReady($event)">
+            </ag-grid-angular>
+          </ng-container>
+          <ng-template #noRecords>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+              <div class="text-center" style="max-width: 500px;">
+                <div class="mb-4">
+                  <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                    <i class="mdi mdi-database-search text-primary" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <h4 class="text-body-emphasis mb-3">No EyeFi Serial Records Found</h4>
+                <p class="text-muted mb-4">
+                  No records match your current filters or criteria. Try adjusting your search or create a new serial number range.
+                </p>
+                <button 
+                  type="button" 
+                  class="btn btn-primary"
+                  routerLink="../upload">
+                  <i class="mdi mdi-plus me-2"></i>Add First Serial Range
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+        
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Manage EyeFi device serial numbers, track status changes, and maintain quality control records</span>
+          <div class="ms-auto">
+            <small>Total: {{filteredSerialNumbers.length}} EyeFi serial records</small>
+          </div>
+        </div>
       </div>
+      
     </div>
   </div>
 </div>

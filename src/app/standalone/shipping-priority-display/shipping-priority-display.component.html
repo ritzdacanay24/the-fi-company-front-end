@@ -7,8 +7,8 @@
     <!-- Header Section -->
     <div class="priority-header">
       <div class="header-left">
-        <h1 class="display-4 fw-bold">
-          <i class="mdi mdi-truck-fast text-primary me-3"></i>
+        <h1 class="display-4 fw-bold text-white">
+          <i class="mdi mdi-truck-fast text-primary me-3 text-white"></i>
           Shipping Priority Queue
         </h1>
         <p class="lead mb-0">Real-time shipping priority display</p>
@@ -18,7 +18,7 @@
         <div class="current-time">
           <h3 class="fw-bold mb-1">{{ currentTime }}</h3>
           <p class="mb-0 text-muted">
-            <small>
+            <small class="text-white">
               <i class="mdi mdi-clock-outline me-1"></i>
               Updated: {{ displayData.lastUpdated }}
             </small>
@@ -162,12 +162,6 @@
                         {{ displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' ? 'DATA MISSING' : (displayData.currentPriorityOrder.SO_CUST || displayData.currentPriorityOrder.CUSTNAME || 'NOT SPECIFIED') }}
                       </td>
                     </tr>
-                    <tr>
-                      <td class="py-2 text-muted text-uppercase fw-bold">Due Date:</td>
-                      <td class="py-2 fw-bold text-danger">
-                        {{ formatDate(displayData.currentPriorityOrder.SOD_DUE_DATE || displayData.currentPriorityOrder.SOD_SHIP_DATE) }}
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
 
@@ -286,81 +280,100 @@
         </div>
         
         <!-- Top 3 Cards - Keep visible during refresh -->
-        <div class="row g-3">
+        <div class="row g-4">
           <div class="col-lg-4 col-md-6" *ngFor="let order of displayData.topThreePriorityOrders; let i = index">
-            <div class="priority-card position-relative" [class]="getPriorityRankClass(i)">
+            <div class="priority-card-enterprise position-relative" [class]="getPriorityRankClass(i)">
               
-              <div class="card-header">
-                <div class="d-flex align-items-center justify-content-between">
-                  <h4 class="rank-title mb-0">{{ getPriorityRankText(i) }}</h4>
-                  <span [class]="getPriorityBadgeClass(order.shipping_priority)" class="small">
-                    Priority {{ order.shipping_priority }}
+              <!-- Professional Header with Gradient -->
+              <div class="card-header-enterprise">
+                <div class="priority-rank-indicator">
+                  <span class="rank-number">{{ i + 1 }}</span>
+                </div>
+                <div class="header-content">
+                  <h4 class="rank-title text-white">{{ getPriorityRankText(i) }}</h4>
+                  <span class="priority-badge" [class]="getPriorityBadgeClass(order.shipping_priority)">
+                    <i class="mdi mdi-star me-1"></i>Priority {{ order.shipping_priority }}
                   </span>
+                </div>
+                <div class="status-indicator">
+                  <span class="status-dot" [class]="order.misc?.['userName'] === 'Shipping' ? 'completed' : 'pending'"></span>
                 </div>
               </div>
 
-              <div class="card-body">
-                <h5 class="order-number mb-3">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</h5>
+              <!-- Card Body with Enhanced Layout -->
+              <div class="card-body-enterprise">
+                <!-- Order Header -->
+                <div class="order-header-section">
+                  <div class="order-number-display-warehouse">
+                    <span class="order-label-warehouse">Sales Order</span>
+                    <h1 class="order-number-warehouse">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</h1>
+                  </div>
+                </div>
                 
-                <!-- Primary Info -->
-                <div class="mb-3">
-                  <div class="part-info mb-2">
-                    <p class="part-number mb-1" [title]="order.SOD_PART">
-                      <strong class="text-primary">{{ order.SOD_PART }}</strong>
-                    </p>
-                    <p class="part-description small text-muted mb-0" [title]="getPartDescription(order)">
-                      {{ truncateText(getPartDescription(order), 35) }}
-                    </p>
+                <!-- Primary Information Grid -->
+                <div class="info-grid">
+                  <div class="info-section part-section">
+                    <div class="info-label">
+                      <i class="mdi mdi-package-variant me-1"></i>Part Number
+                    </div>
+                    <div class="part-number-display" [title]="order.SOD_PART">
+                      {{ order.SOD_PART }}
+                    </div>
+                    <div class="part-description" [title]="getPartDescription(order)">
+                      {{ truncateText(getPartDescription(order), 40) }}
+                    </div>
                   </div>
                   
-                  <div class="quantity-display text-center py-2">
-                    <span class="fw-bold fs-3 text-warning">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP) }}</span>
-                    <small class="text-muted d-block">units to ship</small>
+                  <div class="info-section quantity-section">
+                    <div class="info-label">
+                      <i class="mdi mdi-cube-outline me-1"></i>Quantity
+                    </div>
+                    <div class="quantity-display-enterprise">
+                      <span class="quantity-number">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP) }}</span>
+                      <span class="quantity-unit">units</span>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Secondary Info -->
-                <div class="secondary-info">
-                  <div class="row g-2 small">
-                    <div class="col-6">
-                      <i class="mdi mdi-account text-muted"></i>
-                      <span class="text-truncate" [title]="order.SO_CUST || order.CUSTNAME || 'N/A'">
-                        {{ truncateText(order.SO_CUST || order.CUSTNAME || 'N/A', 12) }}
-                      </span>
+                <!-- Secondary Information -->
+                <div class="secondary-info-grid">
+                  <div class="info-item">
+                    <div class="info-icon">
+                      <i class="mdi mdi-account-outline"></i>
                     </div>
-                    <div class="col-6">
-                      <i class="mdi mdi-wrench text-muted"></i>
-                      <span class="text-truncate" [title]="getWorkOrderDisplay(order)">
-                        {{ truncateText(getWorkOrderDisplay(order), 12) }}
-                      </span>
+                    <div class="info-content">
+                      <div class="info-label-small">Customer</div>
+                      <div class="info-value" [title]="order.SO_CUST || order.CUSTNAME || 'N/A'">
+                        {{ truncateText(order.SO_CUST || order.CUSTNAME || 'N/A', 20) }}
+                      </div>
                     </div>
                   </div>
-                  
-                  <div class="due-date text-center mt-2">
-                    <small class="text-muted">
-                      <i class="mdi mdi-calendar me-1"></i>Due: {{ formatDate(order.SOD_DUE_DATE || order.SOD_SHIP_DATE) }}
-                    </small>
-                  </div>
-                  
-                  <!-- Status Badge -->
-                  <div class="text-center mt-2">
-                    <span [class]="getStatusBadgeClass(order.STATUS)" class="badge">{{ order.STATUS }}</span>
-                  </div>
+                </div>
+                
+                <!-- Status Badge Section -->
+                <div class="status-badge-section">
+                  <span [class]="getStatusBadgeClass(order.STATUS)" class="status-badge-enterprise">
+                    <i class="mdi mdi-information-outline me-1"></i>{{ order.STATUS }}
+                  </span>
                 </div>
 
                 <!-- Critical Alerts -->
-                <div class="essential-badges mt-3 text-center"
+                <div class="alerts-section"
                   *ngIf="order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)) || order.misc?.['userName'] === 'Shipping'">
-                  <span class="badge bg-success me-1" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed - Shipped">
-                    <i class="mdi mdi-check-circle"></i> DONE
-                  </span>
-                  <span class="badge bg-danger me-1" *ngIf="order.misc?.hot_order" title="Hot Order">
-                    <i class="mdi mdi-fire"></i> HOT
-                  </span>
-                  <span class="badge bg-warning text-dark"
-                    *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" title="Insufficient Inventory">
-                    <i class="mdi mdi-alert"></i> LOW INV
-                  </span>
+                  <div class="alert-badges">
+                    <span class="alert-badge completed" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed - Shipped">
+                      <i class="mdi mdi-check-circle-outline"></i>
+                      <span>Completed</span>
+                    </span>
+                    <span class="alert-badge hot" *ngIf="order.misc?.hot_order" title="Hot Order - Expedite">
+                      <i class="mdi mdi-fire"></i>
+                      <span>Hot Order</span>
+                    </span>
+                    <span class="alert-badge warning" *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" title="Insufficient Inventory">
+                      <i class="mdi mdi-alert-circle-outline"></i>
+                      <span>Low Inventory</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

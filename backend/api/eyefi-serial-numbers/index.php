@@ -4,16 +4,20 @@
  * Handles all EyeFi device serial number operations including CRUD, assignments, and statistics
  */
 
+require_once __DIR__ . '/../../../vendor/autoload.php';
+
+use EyefiDb\Databases\DatabaseEyefi;
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+// Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+    http_response_code(200);
+    exit();
 }
-
-require_once '../../config/database.php';
 
 class EyeFiSerialNumberAPI {
     private $db;
@@ -29,56 +33,78 @@ class EyeFiSerialNumberAPI {
      */
     public function getSerialNumbers($filters = []) {
         try {
-            $query = "SELECT * FROM vw_eyefi_serial_summary WHERE 1=1";
+            $query = "SELECT 
+                esn.*,
+                COALESCE(ags.id, ul.id, sg.id) as assigned_to_id,
+                CASE 
+                    WHEN ags.id IS NOT NULL THEN 'agsSerialGenerator'
+                    WHEN ul.id IS NOT NULL THEN 'ul_label_usages'
+                    WHEN sg.id IS NOT NULL THEN 'sgAssetGenerator'
+                    ELSE NULL 
+                END as assigned_to_table
+            FROM eyefi_serial_numbers esn
+            LEFT JOIN agsSerialGenerator ags ON esn.serial_number = ags.serialNumber
+            LEFT JOIN ul_label_usages ul ON esn.serial_number = ul.eyefi_serial_number
+            LEFT JOIN sgAssetGenerator sg ON esn.serial_number = sg.serialNumber
+            WHERE 1=1";
             $params = [];
 
             // Apply filters
             if (!empty($filters['search'])) {
-                $query .= " AND (serial_number LIKE ? OR product_model LIKE ? OR customer_name LIKE ?)";
+                $query .= " AND (esn.serial_number LIKE ? OR esn.product_model LIKE ?)";
                 $searchTerm = '%' . $filters['search'] . '%';
-                $params[] = $searchTerm;
                 $params[] = $searchTerm;
                 $params[] = $searchTerm;
             }
 
             if (!empty($filters['status'])) {
-                $query .= " AND status = ?";
+                $query .= " AND esn.status = ?";
                 $params[] = $filters['status'];
             }
 
             if (!empty($filters['product_model'])) {
-                $query .= " AND product_model = ?";
+                $query .= " AND esn.product_model = ?";
                 $params[] = $filters['product_model'];
             }
 
             if (!empty($filters['batch_number'])) {
-                $query .= " AND batch_number LIKE ?";
+                $query .= " AND esn.batch_number LIKE ?";
                 $params[] = '%' . $filters['batch_number'] . '%';
             }
 
             if (!empty($filters['date_from'])) {
-                $query .= " AND created_at >= ?";
+                $query .= " AND esn.created_at >= ?";
                 $params[] = $filters['date_from'] . ' 00:00:00';
             }
 
             if (!empty($filters['date_to'])) {
-                $query .= " AND created_at <= ?";
+                $query .= " AND esn.created_at <= ?";
                 $params[] = $filters['date_to'] . ' 23:59:59';
             }
 
             // Sorting
-            $sortBy = $filters['sort_by'] ?? 'created_at';
-            $sortOrder = $filters['sort_order'] ?? 'DESC';
-            $query .= " ORDER BY $sortBy $sortOrder";
+            $sortBy = $filters['sort'] ?? 'serial_number';
+            $sortOrder = $filters['order'] ?? 'ASC';
+            
+            // Map frontend sort field to database column
+            $sortMap = [
+                'serial_number' => 'esn.serial_number',
+                'product_model' => 'esn.product_model',
+                'status' => 'esn.status',
+                'created_at' => 'esn.created_at'
+            ];
+            
+            $sortColumn = $sortMap[$sortBy] ?? 'esn.created_at';
+            $query .= " ORDER BY $sortColumn $sortOrder";
 
-            // Pagination
+            // Pagination - handle LIMIT without binding (for MySQL compatibility)
             if (isset($filters['limit'])) {
-                $query .= " LIMIT ?";
-                $params[] = (int)$filters['limit'];
+                $limit = (int)$filters['limit'];
+                $query .= " LIMIT $limit";
                 
                 if (isset($filters['offset'])) {
-                    $query = str_replace("LIMIT ?", "LIMIT ? OFFSET ?", $query);
-                    $params[] = (int)$filters['offset'];
+                    $offset = (int)$filters['offset'];
+                    $query .= " OFFSET $offset";
                 }
             }
 
@@ -498,16 +524,20 @@ class EyeFiSerialNumberAPI {
 
 // Handle the request
 try {
-    $database = new Database();
-    $db = $database->getConnection();
+    $db_connect = new DatabaseEyefi();
+    $db = $db_connect->getConnection();
+    
+    if (!$db) {
+        throw new Exception("Database connection failed");
+    }
     
     $api = new EyeFiSerialNumberAPI($db);
     
     $method = $_SERVER['REQUEST_METHOD'];
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $pathSegments = explode('/', trim($path, '/'));
     
-    $action = $pathSegments[count($pathSegments) - 1] ?? '';
+    // Get action from query parameter instead of URL path
+    $action = $_GET['action'] ?? '';
+    $id = isset($_GET['id']) ? intval($_GET['id']) : null;
     
     switch ($method) {
         case 'GET':
@@ -515,6 +545,7 @@ try {
                 $result = $api->getStatistics();
             } elseif ($action === 'assignments') {
                 $filters = $_GET;
+                unset($filters['action']); // Remove action from filters
                 $result = $api->getAssignmentHistory($filters);
             } elseif ($action === 'export') {
                 $serialNumbers = isset($_GET['serial_numbers']) ? explode(',', $_GET['serial_numbers']) : [];
@@ -528,6 +559,7 @@ try {
                 }
             } else {
                 $filters = $_GET;
+                unset($filters['action']); // Remove action from filters
                 $result = $api->getSerialNumbers($filters);
             }
             break;
@@ -540,7 +572,7 @@ try {
             } elseif ($action === 'assign') {
                 $result = $api->assignToCustomer($input);
             } else {
-                $result = ['success' => false, 'error' => 'Invalid action'];
+                $result = ['success' => false, 'error' => 'Invalid action. Use ?action=bulk-upload or ?action=assign'];
             }
             break;
             

@@ -118,8 +118,24 @@ export class AgsSerialListComponent implements OnInit {
     },
     {
       field: "serialNumber",
-      headerName: "Serial Number",
+      headerName: "EyeFi Serial Number",
       filter: "agMultiColumnFilter",
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
+      }
     },
     {
       field: "sgPartNumber",

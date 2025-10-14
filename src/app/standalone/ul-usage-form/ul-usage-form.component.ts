@@ -6,6 +6,7 @@ import { Subscription, timer } from 'rxjs';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { THE_FI_COMPANY_CURRENT_USER } from '@app/core/guards/admin.guard';
 import { QadWoSearchComponent } from '@app/shared/components/qad-wo-search/qad-wo-search.component';
+import { EyefiSerialSearchNgSelectComponent } from '@app/shared/eyefi-serial-search/eyefi-serial-search-ng-select.component';
 import { ULLabelService } from '@app/features/ul-management/services/ul-label.service';
 import { ULLabelUsage } from '@app/features/ul-management/models/ul-label.model';
 import { PublicFormWrapperComponent } from '../public-form-wrapper/public-form-wrapper.component';
@@ -52,6 +53,7 @@ export interface BulkTransaction {
     FormsModule,
     ReactiveFormsModule,
     QadWoSearchComponent,
+    EyefiSerialSearchNgSelectComponent,
     PublicFormWrapperComponent
   ],
   templateUrl: './ul-usage-form.component.html',
@@ -167,6 +169,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
       work_order: [''], // Work order number from QAD search
       work_order_part: [''], // Part number from selected work order
       work_order_description: [''], // Description from selected work order
+      eyefi_serial_number: [''], // EyeFi device serial number from search
       category: [''], // Category comes first
       ul_quantity: ['', Validators.required], // How many UL numbers they need
       serial_number: ['', [Validators.required, Validators.minLength(3)]], // For single transactions
@@ -600,14 +603,21 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
       // For single transactions, check the reactive form
       if (this.assignedULNumbers.length === 1) {
-        return this.usageForm.valid;
+        // Must have valid form and serial number must not be empty
+        const serialNumber = this.usageForm.get('serial_number')?.value;
+        return this.usageForm.valid && serialNumber && serialNumber.trim() !== '';
       }
 
-      // For bulk transactions, check each bulk transaction
-      return this.bulkTransactions.every(transaction =>
+      // For bulk transactions, check each bulk transaction has a valid serial number
+      const allValid = this.bulkTransactions.every(transaction =>
+        transaction.serial_number && 
         transaction.serial_number.trim() !== '' &&
         transaction.quantity > 0
       );
+
+      // Check for duplicate serial numbers
+      if (!allValid) return false;
+      return !this.hasDuplicateSerialNumbers();
     } else {
       // For manual selection, check if we have manually selected ULs
       if (this.manuallySelectedULs.length === 0) {
@@ -616,12 +626,41 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
       // For manual selection (single or multiple), always check bulk transactions
       // because each manually selected UL creates a bulk transaction entry
-      return this.bulkTransactions.length === this.manuallySelectedULs.length &&
+      const allValid = this.bulkTransactions.length === this.manuallySelectedULs.length &&
              this.bulkTransactions.every(transaction =>
+               transaction.serial_number && 
                transaction.serial_number.trim() !== '' &&
                transaction.quantity > 0
              );
+
+      // Check for duplicate serial numbers
+      if (!allValid) return false;
+      return !this.hasDuplicateSerialNumbers();
     }
+  }
+
+  // Check if there are duplicate serial numbers in bulk transactions
+  hasDuplicateSerialNumbers(): boolean {
+    const serialNumbers = this.bulkTransactions
+      .map(t => t.serial_number?.trim())
+      .filter(s => s && s !== '');
+    
+    const uniqueSerials = new Set(serialNumbers);
+    return serialNumbers.length !== uniqueSerials.size;
+  }
+
+  // Check if a specific serial number is a duplicate
+  isSerialNumberDuplicate(ulNumber: string, serialNumber: string): boolean {
+    if (!serialNumber || serialNumber.trim() === '') {
+      return false;
+    }
+
+    const trimmedSerial = serialNumber.trim();
+    const duplicateCount = this.bulkTransactions.filter(
+      t => t.ul_number !== ulNumber && t.serial_number?.trim() === trimmedSerial
+    ).length;
+
+    return duplicateCount > 0;
   }
 
   getAvailableULOptions(): ULLabel[] {
@@ -795,6 +834,22 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
       this.bulkTransactions.push(transaction);
     }
     return transaction;
+  }
+
+  // Get already selected serial numbers to exclude from dropdown
+  getExcludedSerialNumbers(currentUlNumber: string): string[] {
+    // Get all selected serial numbers from bulk transactions except the current one
+    const selectedSerials = this.bulkTransactions
+      .filter(t => t.ul_number !== currentUlNumber && t.serial_number && t.serial_number.trim() !== '')
+      .map(t => t.serial_number);
+    
+    // Also include the serial from single form if applicable
+    const singleSerial = this.usageForm.get('serial_number')?.value;
+    if (singleSerial && singleSerial.trim() !== '' && !selectedSerials.includes(singleSerial)) {
+      selectedSerials.push(singleSerial);
+    }
+    
+    return selectedSerials;
   }
 
   // Custom validation for login form based on selected method
@@ -1020,6 +1075,57 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.workOrderValidationResults = [];
     this.showWorkOrderWarning = false;
     this.workOrderValidationLoading = false;
+  }
+
+  // Handle EyeFi serial number selection
+  onEyeFiSerialSelected(serialData: any): void {
+    if (serialData) {
+      // Check if this is a validated EyeFi device (has product_model) or manual entry
+      const isValidatedEyeFi = serialData.product_model && serialData.status;
+      
+      // Update both eyefi_serial_number (for tracking) and serial_number (for the form)
+      this.usageForm.patchValue({
+        eyefi_serial_number: serialData.serial_number,
+        serial_number: serialData.serial_number
+      });
+      
+      if (isValidatedEyeFi) {
+        console.log('✅ EyeFi Serial Selected:', serialData);
+        console.log('Device Model:', serialData.product_model);
+        console.log('Status:', serialData.status);
+        
+        // Show success feedback for validated EyeFi device
+        // You could add a toast notification here if you have one
+      } else {
+        console.log('📝 Manual Serial Entered:', serialData.serial_number);
+        console.log('Note: Not a validated EyeFi device - manual entry accepted');
+      }
+      
+      console.log('Serial Number field updated to:', serialData.serial_number);
+      
+      // Update bulk transactions if they exist
+      if (this.bulkTransactions.length > 0) {
+        this.bulkTransactions.forEach(transaction => {
+          transaction.serial_number = serialData.serial_number;
+        });
+        console.log('Bulk transactions updated with serial number');
+      }
+    } else {
+      // Clear serial number data
+      this.usageForm.patchValue({
+        eyefi_serial_number: '',
+        serial_number: ''
+      });
+      
+      // Clear bulk transactions serial numbers
+      if (this.bulkTransactions.length > 0) {
+        this.bulkTransactions.forEach(transaction => {
+          transaction.serial_number = '';
+        });
+      }
+      
+      console.log('Serial number cleared');
+    }
   }
 
   // ============================================================================

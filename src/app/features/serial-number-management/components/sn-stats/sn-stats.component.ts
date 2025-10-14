@@ -12,8 +12,8 @@ import { Observable } from 'rxjs';
   styleUrls: ['./sn-stats.component.scss']
 })
 export class SnStatsComponent implements OnInit {
-  stats$: Observable<SerialNumberStats> = new Observable();
-  recentActivity$: Observable<SerialNumberReport[]> = new Observable();
+  stats: SerialNumberStats | null = null;
+  recentActivity: SerialNumberReport[] = [];
   isLoading = true;
 
   // Chart data (mock data for display)
@@ -49,25 +49,31 @@ export class SnStatsComponent implements OnInit {
     this.loadRecentActivity();
   }
 
-  loadStats() {
+  async loadStats() {
     this.isLoading = true;
-    this.stats$ = this.serialNumberService.getSerialNumberStats();
-    
-    // Simulate loading completion
-    this.stats$.subscribe({
-      next: () => this.isLoading = false,
-      error: () => this.isLoading = false
-    });
+    try {
+      this.stats = await this.serialNumberService.getSerialNumberStats();
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      this.stats = null;
+    } finally {
+      this.isLoading = false;
+    }
   }
 
-  loadRecentActivity() {
+  async loadRecentActivity() {
     const filters = {
       limit: 10,
       sort: 'assigned_date',
       order: 'desc'
     };
     
-    this.recentActivity$ = this.serialNumberService.getSerialNumberReport(filters);
+    try {
+      this.recentActivity = await this.serialNumberService.getSerialNumberReport(filters);
+    } catch (error) {
+      console.error('Failed to load recent activity:', error);
+      this.recentActivity = [];
+    }
   }
 
   refreshStats() {

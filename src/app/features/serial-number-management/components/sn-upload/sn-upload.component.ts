@@ -41,10 +41,10 @@ export class SnUploadComponent {
 
   // Range input properties
   inputMethod: 'range' | 'list' = 'range';
-  rangePrefix = 'eyefi';
+  rangePrefix = '';
   rangeStart: number | null = null;
   rangeEnd: number | null = null;
-  rangePadding = '3';
+  rangePadding = '0';
   individualList = '';
   previewSerialNumbers: string[] = [];
 
@@ -115,58 +115,89 @@ export class SnUploadComponent {
     this.uploadResult = null;
   }
 
-  uploadFile() {
+  async uploadFile() {
     if (!this.selectedFile || this.uploadForm.invalid) return;
 
     this.isUploading = true;
     this.uploadResult = null;
 
-    // Simulate upload process
-    this.simulateUpload().then((result) => {
-      this.isUploading = false;
+    try {
+      // Process file upload
+      const result = await this.processFileUpload();
       this.uploadResult = result;
       this.uploadCompleted.emit(result);
-    }).catch((error) => {
-      this.isUploading = false;
+    } catch (error: any) {
       this.uploadResult = {
         success: false,
-        message: 'Upload failed: ' + error.message,
+        message: 'Upload failed: ' + (error.message || 'Unknown error'),
         totalRows: 0,
         successCount: 0,
         errorCount: 0
       };
-    });
+    } finally {
+      this.isUploading = false;
+    }
   }
 
-  private async simulateUpload(): Promise<UploadResult> {
-    // In a real implementation, you would call:
-    // return this.serialNumberService.bulkUploadSerialNumbers(this.selectedFile!).toPromise();
+  private async processFileUpload(): Promise<UploadResult> {
+    if (!this.selectedFile) {
+      throw new Error('No file selected');
+    }
+
+    // Parse CSV file content (simplified - in real implementation you'd use a CSV parser library)
+    const fileContent = await this.readFileAsText(this.selectedFile);
+    const lines = fileContent.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
     
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Simulate processing
-        const randomSuccess = Math.random() > 0.2; // 80% success rate
-        const totalRows = Math.floor(Math.random() * 100) + 10;
-        const errorCount = randomSuccess ? Math.floor(Math.random() * 5) : Math.floor(totalRows * 0.3);
-        const successCount = totalRows - errorCount;
+    const serialNumbers = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const values = line.split(',').map(v => v.trim());
+      const serialData: any = {};
+      
+      headers.forEach((header, index) => {
+        if (values[index]) {
+          serialData[header] = values[index];
+        }
+      });
+      
+      if (serialData.serial_number) {
+        serialNumbers.push(serialData);
+      }
+    }
 
-        const result: UploadResult = {
-          success: randomSuccess,
-          message: randomSuccess 
-            ? `Successfully processed ${successCount} of ${totalRows} rows.`
-            : `Upload completed with errors. ${successCount} successful, ${errorCount} failed.`,
-          totalRows,
-          successCount,
-          errorCount,
-          errors: errorCount > 0 ? [
-            'Row 5: Duplicate serial number EYE2024001005',
-            'Row 12: Invalid product model "Unknown Model"',
-            'Row 18: Missing required field: serial_number'
-          ].slice(0, errorCount) : undefined
-        };
+    try {
+      // Call the real service method
+      const result = await this.serialNumberService.bulkCreateSerialNumbers(serialNumbers);
+      
+      return {
+        success: result.success,
+        message: result.message || `Processed ${serialNumbers.length} serial numbers`,
+        totalRows: serialNumbers.length,
+        successCount: result.success_count || 0,
+        errorCount: result.error_count || 0,
+        errors: result.errors || []
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Upload failed: ' + (error.message || 'Unknown error'),
+        totalRows: serialNumbers.length,
+        successCount: 0,
+        errorCount: serialNumbers.length,
+        errors: [error.message || 'Unknown error']
+      };
+    }
+  }
 
-        resolve(result);
-      }, 2000); // Simulate 2-second upload
+  private readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
     });
   }
 
@@ -230,8 +261,7 @@ export class SnUploadComponent {
 
   // Range input methods
   isValidRange(): boolean {
-    return !!(this.rangePrefix && 
-              this.rangeStart !== null && 
+    return !!(this.rangeStart !== null && 
               this.rangeEnd !== null &&
               this.rangeStart > 0 && 
               this.rangeEnd >= this.rangeStart);
@@ -250,8 +280,14 @@ export class SnUploadComponent {
     
     for (let i = this.rangeStart!; i <= this.rangeEnd!; i++) {
       const paddedNumber = padding > 0 ? i.toString().padStart(padding, '0') : i.toString();
-      const separator = this.rangePrefix ? '-' : '';
-      this.previewSerialNumbers.push(`${this.rangePrefix}${separator}${paddedNumber}`);
+      
+      if (this.rangePrefix && this.rangePrefix.trim()) {
+        // If prefix exists, add it with a separator
+        this.previewSerialNumbers.push(`${this.rangePrefix}-${paddedNumber}`);
+      } else {
+        // If no prefix, just use the number
+        this.previewSerialNumbers.push(paddedNumber);
+      }
     }
   }
 
@@ -267,7 +303,7 @@ export class SnUploadComponent {
       .filter(line => line.length > 0);
   }
 
-  addRangeToDatabase(): void {
+  async addRangeToDatabase(): Promise<void> {
     if (this.inputMethod === 'range' && !this.isValidRange()) return;
     if (this.inputMethod === 'list' && this.previewSerialNumbers.length === 0) return;
 
@@ -280,34 +316,45 @@ export class SnUploadComponent {
       created_at: new Date().toISOString()
     }));
 
-    // Call the service to create the serial numbers
-    this.serialNumberService.createSerialNumbersFromRange({ serialNumbers }).subscribe({
-      next: (result) => {
+    try {
+      // Call the service to create the serial numbers
+      const result = await this.serialNumberService.createSerialNumbersFromRange({ serialNumbers });
+      
+      if (result.success) {
         this.uploadResult = {
           success: true,
-          message: `Successfully added ${serialNumbers.length} serial numbers`,
+          message: result.message || `Successfully added ${serialNumbers.length} serial numbers`,
           totalRows: serialNumbers.length,
-          successCount: serialNumbers.length,
-          errorCount: 0
+          successCount: result.success_count || serialNumbers.length,
+          errorCount: result.error_count || 0,
+          errors: result.errors || []
         };
         this.uploadCompleted.emit(this.uploadResult);
-        this.isUploading = false;
         
-        // Reset form
+        // Reset form on success
         this.resetForm();
-      },
-      error: (error) => {
+      } else {
         this.uploadResult = {
           success: false,
-          message: 'Failed to add serial numbers: ' + (error.message || 'Unknown error'),
+          message: result.error || 'Failed to add serial numbers',
           totalRows: serialNumbers.length,
           successCount: 0,
           errorCount: serialNumbers.length,
-          errors: [error.message || 'Unknown error']
+          errors: [result.error || 'Unknown error']
         };
-        this.isUploading = false;
       }
-    });
+    } catch (error: any) {
+      this.uploadResult = {
+        success: false,
+        message: 'Failed to add serial numbers: ' + (error.message || 'Unknown error'),
+        totalRows: serialNumbers.length,
+        successCount: 0,
+        errorCount: serialNumbers.length,
+        errors: [error.message || 'Unknown error']
+      };
+    } finally {
+      this.isUploading = false;
+    }
   }
 
   resetForm(): void {

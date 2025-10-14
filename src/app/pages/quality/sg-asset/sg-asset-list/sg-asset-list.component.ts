@@ -74,10 +74,10 @@ export class SgAssetListComponent implements OnInit {
       onCellClicked: (event: any) => {
         const target = event.event?.target;
         if (!target) return;
-        
+
         const viewBtn = target.closest('.view-btn');
         const editBtn = target.closest('.edit-btn');
-        
+
         if (viewBtn) {
           const id = viewBtn.getAttribute('data-id');
           this.onView(id);
@@ -99,7 +99,26 @@ export class SgAssetListComponent implements OnInit {
     { field: 'manualUpdate', headerName: 'Manual Update', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'poNumber', headerName: 'WO Number', filter: 'agMultiColumnFilter', cellDataType: 'text' },
     { field: 'property_site', headerName: 'Property Site', filter: 'agMultiColumnFilter' },
-    { field: 'serialNumber', headerName: 'Serial Number', filter: 'agMultiColumnFilter' },
+    {
+      field: 'serialNumber', headerName: 'EyeFi Serial Number', filter: 'agMultiColumnFilter',
+
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
+      }
+    },
     { field: 'sgPartNumber', headerName: 'SG Part Number', filter: 'agMultiColumnFilter' },
     { field: 'timeStamp', headerName: 'Created Date', filter: 'agMultiColumnFilter' },
     { field: 'active', headerName: 'Active', filter: 'agMultiColumnFilter' },
@@ -240,9 +259,9 @@ export class SgAssetListComponent implements OnInit {
 
   // Filter Helper Methods
   hasActiveFilters(): boolean {
-    return this.selectedViewType !== 'All' || 
-           !!this.searchTerm || 
-           !!(this.dateFrom && this.dateTo);
+    return this.selectedViewType !== 'All' ||
+      !!this.searchTerm ||
+      !!(this.dateFrom && this.dateTo);
   }
 
   clearStatusFilter() {

@@ -4,6 +4,7 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { QadCustomerPartSearchComponent } from "@app/shared/components/qad-customer-part-search/qad-customer-part-search.component";
 import { QadWoSearchComponent } from "@app/shared/components/qad-wo-search/qad-wo-search.component";
 import { SerialNumberModalComponent } from "@app/shared/components/serial-number-modal/serial-number-modal.component";
+import { EyefiSerialSearchNgSelectComponent } from "@app/shared/eyefi-serial-search/eyefi-serial-search-ng-select.component";
 import { SharedModule } from "@app/shared/shared.module";
 
 @Component({
@@ -13,6 +14,7 @@ import { SharedModule } from "@app/shared/shared.module";
     ReactiveFormsModule,
     QadWoSearchComponent,
     QadCustomerPartSearchComponent,
+    EyefiSerialSearchNgSelectComponent,
   ],
   selector: "app-ags-serial-form",
   templateUrl: "./ags-serial-form.component.html",
@@ -105,5 +107,25 @@ export class AgsSerialFormComponent {
     }).catch(() => {
       // Modal dismissed
     });
+  }
+
+  onEyeFiSerialSelected(serialData: any): void {
+    if (serialData) {
+      const serialNumber = serialData.serial_number || serialData;
+      
+      this.form.patchValue({
+        serialNumber: serialNumber
+      });
+
+      // Log for debugging
+      if (serialData.product_model && serialData.status) {
+        console.log('✅ EyeFi Serial Selected for AGS:', serialData);
+        console.log('Device Model:', serialData.product_model);
+        console.log('Status:', serialData.status);
+      } else {
+        console.log('📝 Manual Serial Entered for AGS:', serialNumber);
+        console.log('Note: Not a validated EyeFi device - manual entry accepted');
+      }
+    }
   }
 }

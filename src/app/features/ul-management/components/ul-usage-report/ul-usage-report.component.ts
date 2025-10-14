@@ -60,9 +60,22 @@ export class ULUsageReportComponent implements OnInit {
       field: 'eyefi_serial_number',
       sortable: true,
       filter: true,
-      width: 140,
+      width: 160,
       cellRenderer: (params: any) => {
-        return `<code class="text-info">${params.value}</code>`;
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
       }
     },
     {
@@ -70,10 +83,7 @@ export class ULUsageReportComponent implements OnInit {
       field: 'quantity_used',
       sortable: true,
       filter: 'agNumberColumnFilter',
-      width: 100,
-      cellRenderer: (params: any) => {
-        return `<span class="badge bg-secondary">${params.value}</span>`;
-      }
+      width: 100
     },
     {
       headerName: 'User Name',
@@ -82,22 +92,19 @@ export class ULUsageReportComponent implements OnInit {
       filter: true,
       width: 150
     },
-    {
-      headerName: 'Customer',
-      field: 'customer_name',
-      sortable: true,
-      filter: true,
-      width: 150
-    },
+    // {
+    //   headerName: 'Customer',
+    //   field: 'customer_name',
+    //   sortable: true,
+    //   filter: true,
+    //   width: 150
+    // },
     {
       headerName: 'Work Order #',
       field: 'wo_nbr',
       sortable: true,
       filter: 'agNumberColumnFilter',
-      width: 120,
-      cellRenderer: (params: any) => {
-        return params.value ? `<code class="text-success">${params.value}</code>` : '';
-      }
+      width: 120
     },
     {
       headerName: 'WO Part',
@@ -116,8 +123,8 @@ export class ULUsageReportComponent implements OnInit {
       tooltipField: 'wo_description',
       cellRenderer: (params: any) => {
         if (!params.value) return '';
-        return params.value.length > 25 ? 
-          `${params.value.substring(0, 25)}...` : 
+        return params.value.length > 25 ?
+          `${params.value.substring(0, 25)}...` :
           params.value;
       }
     },
@@ -129,21 +136,24 @@ export class ULUsageReportComponent implements OnInit {
       width: 120,
       valueFormatter: (params: any) => {
         return params.value ? moment(params.value).format('MM/DD/YYYY') : '';
-      }
+      },
+      hide: true
     },
     {
       headerName: 'WO Line',
       field: 'wo_line',
       sortable: true,
       filter: true,
-      width: 100
+      width: 100,
+      hide: true
     },
     {
       headerName: 'WO Routing',
       field: 'wo_routing',
       sortable: true,
       filter: true,
-      width: 110
+      width: 110,
+      hide: true
     },
     {
       headerName: 'Notes',
@@ -154,10 +164,11 @@ export class ULUsageReportComponent implements OnInit {
       tooltipField: 'notes',
       cellRenderer: (params: any) => {
         if (!params.value) return '';
-        return params.value.length > 30 ? 
-          `${params.value.substring(0, 30)}...` : 
+        return params.value.length > 30 ?
+          `${params.value.substring(0, 30)}...` :
           params.value;
-      }
+      },
+      hide: true
     },
     {
       headerName: 'Actions',
@@ -171,7 +182,8 @@ export class ULUsageReportComponent implements OnInit {
             </button>
           </div>
         `;
-      }
+      },
+      hide: true
     }
   ];
 
@@ -199,7 +211,7 @@ export class ULUsageReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsageData();
-    
+
     // Set default date range (last 30 days)
     const endDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(30, 'days').format('YYYY-MM-DD');
@@ -207,7 +219,7 @@ export class ULUsageReportComponent implements OnInit {
       startDate: startDate,
       endDate: endDate
     });
-    
+
     // Watch for form changes
     this.filterForm.valueChanges.subscribe(() => {
       this.applyFilters();
@@ -216,7 +228,7 @@ export class ULUsageReportComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent): void {
     this.gridApi = params.api;
-    
+
     // Handle action button clicks
     const eGridDiv = document.querySelector('#ul-usage-grid');
     if (eGridDiv) {
@@ -225,7 +237,7 @@ export class ULUsageReportComponent implements OnInit {
         if (target.classList.contains('action-btn')) {
           const action = target.getAttribute('data-action');
           const id = target.getAttribute('data-id');
-          
+
           if (action === 'edit' && id) {
             this.editUsage(parseInt(id));
           }
@@ -237,10 +249,10 @@ export class ULUsageReportComponent implements OnInit {
   loadUsageData(): void {
     this.isLoading = true;
     const filters = this.filterForm.value;
-    
+
     this.ulLabelService.getULUsageReport(
-      filters.startDate, 
-      filters.endDate, 
+      filters.startDate,
+      filters.endDate,
       filters.customer
     ).subscribe({
       next: (response) => {
@@ -272,7 +284,7 @@ export class ULUsageReportComponent implements OnInit {
     // Search filter
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.ul_number.toLowerCase().includes(searchTerm) ||
         item.description.toLowerCase().includes(searchTerm) ||
         item.eyefi_serial_number.toLowerCase().includes(searchTerm) ||
@@ -283,14 +295,14 @@ export class ULUsageReportComponent implements OnInit {
 
     // UL Number filter
     if (filters.ulNumber) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.ul_number.toLowerCase().includes(filters.ulNumber.toLowerCase())
       );
     }
 
     // Customer filter
     if (filters.customer) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.customer_name.toLowerCase().includes(filters.customer.toLowerCase())
       );
     }
@@ -308,9 +320,9 @@ export class ULUsageReportComponent implements OnInit {
 
   exportData(): void {
     const filters = this.filterForm.value;
-    
+
     this.ulLabelService.exportULUsageReport(
-      filters.startDate, 
+      filters.startDate,
       filters.endDate
     ).subscribe({
       next: (blob) => {
@@ -361,7 +373,7 @@ export class ULUsageReportComponent implements OnInit {
     const uniqueULNumbers = new Set(this.filteredData.map(item => item.ul_number)).size;
     const uniqueCustomers = new Set(this.filteredData.map(item => item.customer_name)).size;
     const uniqueWorkOrders = new Set(this.filteredData.filter(item => item.wo_nbr).map(item => item.wo_nbr)).size;
-    
+
     return {
       totalUsages,
       totalQuantity,

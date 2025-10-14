@@ -6,6 +6,7 @@ import { RealTimeSerialNumberService } from "../services/real-time-serial-number
 import { NgSelectModule } from "@ng-select/ng-select";
 import { AuthenticationService } from "@app/core/services/auth.service";
 import { Subscription } from "rxjs";
+import { EyefiSerialSearchNgSelectComponent } from "@app/shared/eyefi-serial-search/eyefi-serial-search-ng-select.component";
 
 @Component({
   standalone: true,
@@ -13,6 +14,7 @@ import { Subscription } from "rxjs";
     SharedModule,
     ReactiveFormsModule,
     NgSelectModule,
+    EyefiSerialSearchNgSelectComponent,
   ],
   providers: [RealTimeSerialNumberService],
   selector: "app-igt-form",
@@ -114,6 +116,7 @@ export class IgtFormComponent implements OnDestroy {
     inspector_name: [""],
     generated_IGT_asset: [""],
     serial_number: [null, Validators.required],
+    eyefi_serial_number: [null, Validators.required],
     igt_serial_number: [""],
     last_update: [""],
     active: [1],

@@ -76,16 +76,53 @@ export class IgtListComponent implements OnInit {
       field: "igtSerialNumber",
       headerName: "IGT Serial Number",
       filter: "agMultiColumnFilter",
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
+      }
     },
-    {
-      field: "serialNumber",
-      headerName: "EyeFi Serial Number",
-      filter: "agMultiColumnFilter",
-    },
+    // {
+    //   field: "serialNumber",
+    //   headerName: "EyeFi Serial Number",
+    //   filter: "agMultiColumnFilter",
+    // },
     {
       field: "igtPartNumber",
       headerName: "IGT Part Number",
       filter: "agMultiColumnFilter",
+    },
+    {
+      field: "eyefi_serial_number",
+      headerName: "EyeFi Serial Number",
+      filter: "agMultiColumnFilter",
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        const serialNumber = params.value.toString();
+        return `<code style="
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: #495057;
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 2px;
+          padding: 1px 4px;
+          text-transform: uppercase;
+        ">${serialNumber}</code>`;
+      }
     },
     {
       field: "woNumber",
@@ -96,6 +133,11 @@ export class IgtListComponent implements OnInit {
     {
       field: "eyefiPartNumber",
       headerName: "Eyefi Part Number",
+      filter: "agMultiColumnFilter",
+    },
+    {
+      field: "eyefiDescription",
+      headerName: "Eyefi Part Description",
       filter: "agMultiColumnFilter",
     },
     {
@@ -259,7 +301,8 @@ export class IgtListComponent implements OnInit {
         woNumber: item.wo_number,
         property_site: item.property_site,
         igtPartNumber: item.igt_part_number,
-        eyefiPartNumber: item.eyefi_part_number,
+        eyefiPartNumber: item.wo_part,
+        eyefiDescription: item.wo_description,
         inspectorName: item.inspector_name,
         lastUpdate: item.last_update,
         active: item.active,
@@ -274,6 +317,7 @@ export class IgtListComponent implements OnInit {
         serial_manufacturer: item.serial_manufacturer,
         serial_model: item.serial_model,
         serial_status: item.serial_status,
+        eyefi_serial_number: item.eyefi_serial_number,
       }));
 
       // Populate uniqueInspectors after data is loaded
