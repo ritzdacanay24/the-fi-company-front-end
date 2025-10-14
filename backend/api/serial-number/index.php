@@ -13,8 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once '../config/database.php';
+use EyefiDb\Databases\DatabaseEyefi as DatabaseEyefi;
+use EyefiDb\Config\Protection as Protection;
 
+$protected = new Protection();
+$protectedResults = $protected->getProtected();
+$userInfo = $protectedResults->data;
+
+$db_connect = new DatabaseEyefi();
+$db = $db_connect->getConnection();
+$conn = $db;
 class SerialNumberAPI {
     private $db;
     private $user_id;
@@ -27,7 +35,7 @@ class SerialNumberAPI {
     /**
      * Generate a single serial number
      */
-    public function generateSerial($template_id, $used_for = null, $reference_id = null, $reference_table = null) {
+    public function generateSerial($template_id, $used_for = null, $reference_id = null, $reference_table = null, $notes = null, $consume_immediately = false) {
         try {
             // Get template configuration
             $stmt = $this->db->prepare("SELECT * FROM serial_number_templates WHERE template_id = ? AND is_active = TRUE");
@@ -54,11 +62,16 @@ class SerialNumberAPI {
                 throw new Exception("Unable to generate unique serial number after 10 attempts");
             }
 
+            // Determine if serial should be marked as used
+            $is_used = $consume_immediately ? 1 : 0;
+            $used_at = $consume_immediately ? date('Y-m-d H:i:s') : null;
+            $status = $consume_immediately ? 'used' : 'available';
+
             // Insert into database
             $stmt = $this->db->prepare("
                 INSERT INTO generated_serial_numbers 
-                (serial_number, template_id, config, used_for, reference_id, reference_table, generated_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (serial_number, template_id, config, used_for, reference_id, reference_table, notes, is_used, used_at, status, generated_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -67,21 +80,32 @@ class SerialNumberAPI {
                 json_encode($config), 
                 $used_for, 
                 $reference_id, 
-                $reference_table, 
+                $reference_table,
+                $notes,
+                $is_used,
+                $used_at,
+                $status,
                 $this->user_id
             ]);
 
             // Log the generation
             $this->logAudit('GENERATE', $serial_number, $template_id, $reference_table, $reference_id, [
                 'template_name' => $template['name'],
-                'config' => $config
+                'config' => $config,
+                'consumed_immediately' => $consume_immediately,
+                'used_for' => $used_for,
+                'notes' => $notes
             ]);
 
             return [
                 'success' => true,
                 'serial_number' => $serial_number,
                 'template_id' => $template_id,
-                'template_name' => $template['name']
+                'template_name' => $template['name'],
+                'is_used' => $is_used,
+                'used_for' => $used_for,
+                'notes' => $notes,
+                'status' => $status
             ];
 
         } catch (Exception $e) {
@@ -93,71 +117,106 @@ class SerialNumberAPI {
     }
 
     /**
-     * Generate batch of serial numbers
+     * Generate batch of serial numbers - SIMPLIFIED VERSION
      */
-    public function generateBatch($template_id, $count, $purpose = null) {
+    public function generateBatch($template_id, $prefix, $count, $used_for = null, $notes = null, $consume_immediately = false) {
         try {
-            if ($count > 1000) {
-                throw new Exception("Batch size cannot exceed 1000");
+            if ($count > 100) {
+                throw new Exception("Batch size cannot exceed 100");
             }
 
-            $batch_id = uniqid('BATCH_', true);
             $serial_numbers = [];
 
-            // Create batch record
-            $stmt = $this->db->prepare("
-                INSERT INTO serial_number_batches 
-                (batch_id, template_id, total_count, purpose, created_by) 
-                VALUES (?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$batch_id, $template_id, $count, $purpose, $this->user_id]);
-
-            // Generate individual serial numbers
-            for ($i = 0; $i < $count; $i++) {
-                $result = $this->generateSerial($template_id, 'batch', $batch_id, 'serial_number_batches');
-                
-                if ($result['success']) {
-                    $serial_numbers[] = $result['serial_number'];
-                    
-                    // Link to batch
-                    $stmt = $this->db->prepare("
-                        INSERT INTO batch_serial_numbers 
-                        (batch_id, serial_number_id, sequence_in_batch) 
-                        SELECT ?, id, ? FROM generated_serial_numbers WHERE serial_number = ?
-                    ");
-                    $stmt->execute([$batch_id, $i + 1, $result['serial_number']]);
-                } else {
-                    throw new Exception("Failed to generate serial number " . ($i + 1) . ": " . $result['error']);
+            // Get template info
+            $template_name = 'Custom';
+            if ($template_id && $template_id !== 'OTHER_001') {
+                $stmt = $this->db->prepare("SELECT name FROM serial_number_templates WHERE template_id = ?");
+                $stmt->execute([$template_id]);
+                $template = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($template) {
+                    $template_name = $template['name'];
                 }
             }
 
-            // Update batch as completed
-            $stmt = $this->db->prepare("
-                UPDATE serial_number_batches 
-                SET status = 'COMPLETED', generated_count = ?, completed_at = NOW() 
-                WHERE batch_id = ?
-            ");
-            $stmt->execute([$count, $batch_id]);
+            // Determine if serial should be marked as used
+            $is_used = $consume_immediately ? 1 : 0;
+            $status = $consume_immediately ? 'used' : 'available';
+            $used_at_value = $consume_immediately ? date('Y-m-d H:i:s') : null;
+
+            // Generate individual serial numbers
+            for ($i = 0; $i < $count; $i++) {
+                $uniqueId = $this->generateUniqueId();
+                $serial_number = strtoupper($prefix) . $uniqueId;
+                
+                // Check if exists, regenerate if needed
+                $attempts = 0;
+                while ($this->serialNumberExists($serial_number) && $attempts < 10) {
+                    $uniqueId = $this->generateUniqueId();
+                    $serial_number = strtoupper($prefix) . $uniqueId;
+                    $attempts++;
+                }
+
+                if ($attempts >= 10) {
+                    throw new Exception("Unable to generate unique serial number");
+                }
+                
+                // Insert into database
+                $stmt = $this->db->prepare("
+                    INSERT INTO generated_serial_numbers 
+                    (serial_number, prefix, template_id, template_name, used_for, notes, is_used, used_at, status, generated_by, generated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ");
+                
+                $stmt->execute([
+                    $serial_number,
+                    strtoupper($prefix),
+                    $template_id,
+                    $template_name,
+                    $used_for,
+                    $notes,
+                    $is_used,
+                    $used_at_value,
+                    $status,
+                    $this->user_id
+                ]);
+
+                $serial_numbers[] = [
+                    'id' => $this->db->lastInsertId(),
+                    'serial_number' => $serial_number,
+                    'prefix' => strtoupper($prefix),
+                    'template_id' => $template_id,
+                    'template_name' => $template_name,
+                    'is_used' => $is_used,
+                    'used_for' => $used_for,
+                    'notes' => $notes,
+                    'status' => $status,
+                    'generated_by' => $this->user_id,
+                    'generated_at' => date('Y-m-d H:i:s')
+                ];
+            }
 
             return [
                 'success' => true,
-                'batch_id' => $batch_id,
-                'serial_numbers' => $serial_numbers,
+                'serials' => $serial_numbers,
                 'count' => count($serial_numbers)
             ];
 
         } catch (Exception $e) {
-            // Mark batch as cancelled if it exists
-            if (isset($batch_id)) {
-                $stmt = $this->db->prepare("UPDATE serial_number_batches SET status = 'CANCELLED' WHERE batch_id = ?");
-                $stmt->execute([$batch_id]);
-            }
-
             return [
                 'success' => false,
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Generate unique ID for serial number
+     */
+    private function generateUniqueId() {
+        // Generate 7-digit unique ID: timestamp (4 digits) + random (3 digits)
+        $timestamp = substr((string)time(), -4);
+        $random = str_pad(mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        return $timestamp . $random;
     }
 
     /**
@@ -194,17 +253,36 @@ class SerialNumberAPI {
      */
     public function getTemplates($include_inactive = false) {
         try {
-            $sql = "SELECT * FROM v_serial_number_templates";
+            $sql = "SELECT 
+                      template_id,
+                      name,
+                      description,
+                      prefix,
+                      is_active,
+                      is_default,
+                      (SELECT COUNT(*) FROM generated_serial_numbers WHERE template_id = serial_number_templates.template_id) as total_count,
+                      (SELECT COUNT(*) FROM generated_serial_numbers WHERE template_id = serial_number_templates.template_id AND is_used = 1) as used_count,
+                      (SELECT COUNT(*) FROM generated_serial_numbers WHERE template_id = serial_number_templates.template_id AND is_used = 0) as unused_count
+                    FROM serial_number_templates";
+            
             if (!$include_inactive) {
-                $sql .= " WHERE is_active = TRUE";
+                $sql .= " WHERE is_active = 1";
             }
             $sql .= " ORDER BY is_default DESC, name ASC";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Format config for frontend
+            foreach ($templates as &$template) {
+                $template['config'] = [
+                    'prefix' => $template['prefix'],
+                    'used_for' => strtolower(str_replace(' ', '_', $template['name']))
+                ];
+            }
 
-            return ['success' => true, 'templates' => $templates];
+            return $templates;
 
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -247,31 +325,38 @@ class SerialNumberAPI {
     }
 
     /**
-     * Get serial number history
+     * Get serial number history - SIMPLIFIED
      */
-    public function getSerialHistory($limit = 100, $template_id = null, $used_for = null) {
+    public function getSerialHistory($limit = 100, $template_id = null, $status = null) {
         try {
-            $sql = "SELECT * FROM v_generated_serial_numbers WHERE 1=1";
+            $sql = "SELECT 
+                      gsn.*,
+                      concat(u.first, ' ', u.last) as generated_by_name
+                    FROM generated_serial_numbers gsn
+                    LEFT JOIN db.users u ON gsn.generated_by = u.id
+                    WHERE 1=1";
             $params = [];
 
             if ($template_id) {
-                $sql .= " AND template_id = ?";
+                $sql .= " AND gsn.template_id = ?";
                 $params[] = $template_id;
             }
 
-            if ($used_for) {
-                $sql .= " AND used_for = ?";
-                $params[] = $used_for;
+            if ($status === 'used') {
+                $sql .= " AND gsn.is_used = 1";
+            } elseif ($status === 'available') {
+                $sql .= " AND gsn.is_used = 0";
             }
 
-            $sql .= " ORDER BY generated_at DESC LIMIT ?";
-            $params[] = (int)$limit;
+            // Use LIMIT directly in SQL instead of as a parameter
+            $limit = (int)$limit;
+            $sql .= " ORDER BY gsn.generated_at DESC LIMIT " . $limit;
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            return ['success' => true, 'history' => $history];
+            return $history;
 
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -411,7 +496,7 @@ class SerialNumberAPI {
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     $input = json_decode(file_get_contents('php://input'), true);
-    $user_id = $_SESSION['user_id'] ?? null; // Implement your authentication logic
+    $user_id = $userInfo->id ?? null; // Implement your authentication logic
     
     $api = new SerialNumberAPI($conn, $user_id);
     
@@ -425,15 +510,20 @@ try {
                         $input['template_id'],
                         $input['used_for'] ?? null,
                         $input['reference_id'] ?? null,
-                        $input['reference_table'] ?? null
+                        $input['reference_table'] ?? null,
+                        $input['notes'] ?? null,
+                        $input['consume_immediately'] ?? false
                     );
                     break;
                     
                 case 'generate_batch':
                     $result = $api->generateBatch(
                         $input['template_id'],
+                        $input['prefix'],
                         $input['count'],
-                        $input['purpose'] ?? null
+                        $input['used_for'] ?? null,
+                        $input['notes'] ?? null,
+                        $input['consume_immediately'] ?? false
                     );
                     break;
                     
@@ -471,15 +561,19 @@ try {
             switch ($action) {
                 case 'templates':
                     $result = $api->getTemplates($_GET['include_inactive'] ?? false);
-                    break;
+                    // Return directly for GET requests  
+                    echo json_encode($result);
+                    exit;
                     
                 case 'history':
                     $result = $api->getSerialHistory(
                         $_GET['limit'] ?? 100,
                         $_GET['template_id'] ?? null,
-                        $_GET['used_for'] ?? null
+                        $_GET['status'] ?? null
                     );
-                    break;
+                    // Return directly for GET requests
+                    echo json_encode($result);
+                    exit;
                     
                 default:
                     $result = ['success' => false, 'error' => 'Invalid action'];

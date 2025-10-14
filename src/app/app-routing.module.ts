@@ -52,6 +52,21 @@ const routes: Routes = [
     loadComponent: () => import("./standalone/standalone-igt-form/standalone-igt-form.component").then(c => c.StandaloneIgtFormComponent),
     title: "IGT Serial Generator"
   },
+  { 
+    path: "standalone/ags-serial", 
+    loadComponent: () => import("./standalone/standalone-ags-serial/standalone-ags-serial.component").then(c => c.StandaloneAgsSerialComponent),
+    title: "AGS Serial Creation"
+  },
+  { 
+    path: "standalone/sg-asset", 
+    loadComponent: () => import("./standalone/standalone-sg-asset/standalone-sg-asset.component").then(c => c.StandaloneSgAssetComponent),
+    title: "Light and Wonder Asset Creation"
+  },
+  { 
+    path: "standalone/serial-generator", 
+    loadComponent: () => import("./standalone/standalone-serial-generator/standalone-serial-generator.component").then(c => c.StandaloneSerialGeneratorComponent),
+    title: "Serial Number Generator"
+  },
   
   // Legacy route for backward compatibility
   { 

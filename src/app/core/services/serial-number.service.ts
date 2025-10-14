@@ -53,7 +53,7 @@ export interface SerialNumberBatch {
 })
 export class SerialNumberService {
   
-  private readonly API_URL = '/backend/api/serial-number';
+  private readonly API_URL = 'serial-number';
   private readonly STORAGE_KEY = 'serial_number_templates';
 
   constructor(private http: HttpClient) { }
@@ -63,25 +63,22 @@ export class SerialNumberService {
   /**
    * Generate a single serial number
    */
-  generateSerial(template_id: string, used_for?: string, reference_id?: string, reference_table?: string): Observable<any> {
+  generateSerial(
+    template_id: string, 
+    used_for?: string, 
+    reference_id?: string, 
+    reference_table?: string,
+    notes?: string,
+    consume_immediately?: boolean
+  ): Observable<any> {
     return this.http.post(`${this.API_URL}/index.php`, {
       action: 'generate',
       template_id,
       used_for,
       reference_id,
-      reference_table
-    });
-  }
-
-  /**
-   * Generate batch of serial numbers
-   */
-  generateBatch(template_id: string, count: number, purpose?: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/index.php`, {
-      action: 'generate_batch',
-      template_id,
-      count,
-      purpose
+      reference_table,
+      notes,
+      consume_immediately
     });
   }
 
@@ -118,14 +115,36 @@ export class SerialNumberService {
   getTemplates(include_inactive: boolean = false): Observable<any> {
     return this.http.get(`${this.API_URL}/index.php?action=templates&include_inactive=${include_inactive}`);
   }
+  
+  /**
+   * Generate batch of serial numbers
+   */
+  generateBatch(
+    template_id: string, 
+    prefix: string, 
+    count: number,
+    used_for?: string,
+    notes?: string,
+    consume_immediately?: boolean
+  ): Observable<any> {
+    return this.http.post(`${this.API_URL}/index.php`, {
+      action: 'generate_batch',
+      template_id,
+      prefix,
+      count,
+      used_for,
+      notes,
+      consume_immediately
+    });
+  }
 
   /**
    * Get serial number history
    */
-  getSerialHistory(limit: number = 100, template_id?: string, used_for?: string): Observable<any> {
+  getSerialHistory(limit: number = 100, template_id?: string, status?: string): Observable<any> {
     let url = `${this.API_URL}/index.php?action=history&limit=${limit}`;
     if (template_id) url += `&template_id=${template_id}`;
-    if (used_for) url += `&used_for=${used_for}`;
+    if (status) url += `&status=${status}`;
     return this.http.get(url);
   }
 

@@ -16,8 +16,8 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-success me-2" (click)="open(addSerialModal)" title="Add new serial numbers">
-              <i class="mdi mdi-plus me-2"></i>Add Serial Numbers
+            <button type="button" class="btn btn-success me-2" (click)="navigateToGenerator()" title="Go to serial number generator">
+              <i class="mdi mdi-plus me-2"></i>Generate Serial Numbers
             </button>
             <button type="button" class="btn btn-primary" (click)="exportToCSV()" title="Export serial number data">
               <i class="mdi mdi-download me-2"></i>Export CSV
@@ -179,103 +179,4 @@
 </div>
 <div class="modal-backdrop fade" [class.show]="showBarcodeModal" *ngIf="showBarcodeModal"></div>
 
-<!-- Add Serial Number Modal -->
-<ng-template #addSerialModal let-modal>
-  <div class="modal-header">
-    <h4 class="modal-title text-success" id="modal-basic-title">
-      <i class="mdi mdi-plus-circle me-2"></i>Generate Serial Numbers
-    </h4>
-    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
-  </div>
-  <div class="modal-body">
-    <div class="alert alert-info border-0 mb-3">
-      <i class="mdi mdi-information me-2"></i>
-      <small>Configure the settings below to generate unique serial numbers with your specified prefix.</small>
-    </div>
-
-    <form [formGroup]="addSerialForm" (ngSubmit)="generateSerialNumbers(); modal.close('Generate')">
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Template <span class="text-danger">*</span>
-          </label>
-          <select class="form-select" formControlName="template"
-            [class.is-invalid]="f['template'].invalid && f['template'].touched">
-            <option value="">Select template</option>
-            <option *ngFor="let template of templates" [value]="template.template_id">
-              {{ template.name }}
-            </option>
-          </select>
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Choose the template category for these serial numbers
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Prefix <span class="text-danger">*</span>
-          </label>
-          <input type="text" class="form-control" formControlName="prefix" placeholder="e.g., PRD, AST" maxlength="5"
-            style="text-transform: uppercase" [readonly]="!isOtherTemplate"
-            [class.is-invalid]="f['prefix'].invalid && f['prefix'].touched">
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            <span *ngIf="!isOtherTemplate">Prefix is set by the selected template</span>
-            <span *ngIf="isOtherTemplate">2-5 characters, letters and numbers only</span>
-          </div>
-          <div class="invalid-feedback" *ngIf="f['prefix'].invalid && f['prefix'].touched">
-            Prefix must be 2-5 characters (letters/numbers only)
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <label class="form-label">
-            Count <span class="text-danger">*</span>
-          </label>
-          <input type="number" class="form-control" formControlName="count" min="1" max="100"
-            [class.is-invalid]="f['count'].invalid && f['count'].touched">
-          <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Number of serial numbers to generate (1-100)
-          </div>
-          <div class="invalid-feedback" *ngIf="f['count'].invalid && f['count'].touched">
-            Count must be between 1 and 100
-          </div>
-        </div>
-      </div>
-      <div class="form-text">
-        <i class="mdi mdi-information-outline me-1"></i>
-        Choose the template category for these serial numbers
-      </div>
-    </form>
-  </div>
-
-  <div class="modal-footer">
-    <!-- Preview -->
-    <div class="alert alert-light border mb-3 w-100" *ngIf="addSerialForm.get('prefix')?.value">
-      <h6 class="fw-bold text-secondary mb-2">
-        <i class="mdi mdi-eye me-1"></i>Preview Format
-      </h6>
-      <div class="font-monospace text-primary">
-        {{ addSerialForm.get('prefix')?.value }}12345XX
-      </div>
-      <small class="text-muted">
-        XX represents unique generated digits
-      </small>
-    </div>
-  </div>
-
-  <div class="modal-footer">
-    <div class="d-flex justify-content-end gap-2">
-      <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('Cancel')">
-        <i class="mdi mdi-close me-1"></i>Cancel
-      </button>
-      <button type="button" (click)="generateSerialNumbers();modal.close('Generate')" class="btn btn-success" [disabled]="addSerialForm.invalid">
-        <i class="mdi mdi-plus-circle me-1"></i>Generate Serial Numbers
-      </button>
-    </div>
-  </div>
-</ng-template>
+<!-- Add Serial Number Modal removed - Users should use the standalone generator at /forms/serial-number-generator -->

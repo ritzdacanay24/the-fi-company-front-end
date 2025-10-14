@@ -1,7 +1,7 @@
 <!-- Standalone IGT Serial Form -->
 <app-public-form-wrapper
     pageTitle="IGT Serial Generator"
-    pageDescription="Create new IGT serial assets with automatic serial number assignment"
+    pageDescription="Create and track International Gaming Technology (IGT) serial assets with automatic serial number assignment and work order integration"
     pageIcon="mdi-barcode"
     formTitle="Access Required"
     formDescription="Please authenticate to access the IGT Serial Generator. You can login using your username with password, or simply scan your employee card number."
@@ -23,7 +23,7 @@
                 {{ createdAssetData.message }}
               </p>
               <p class="text-muted mb-4 fs-5" *ngIf="!createdAssetData?.message">
-                Your IGT serial asset has been created and a serial number has been automatically assigned.
+                Your IGT asset has been registered with an automatically assigned serial number.
               </p>
               
               <!-- Asset Summary -->
@@ -181,7 +181,7 @@
             </div>
             <div>
               <h4 class="mb-1 text-success">Create New IGT Asset</h4>
-              <p class="text-muted mb-0">Fill out the form below to create a new IGT serial asset with optional work order tracking</p>
+              <p class="text-muted mb-0">Register IGT gaming equipment with automatic serial number assignment and work order tracking</p>
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@
                 Work Order Information
               </h6>
               <p class="text-muted mb-0 small">
-                Search and select a work order number to associate with this IGT asset for tracking purposes. This will automatically populate the work order fields.
+                Search and select a work order number to link this IGT gaming equipment/part to a manufacturing or assembly work order. This enables full traceability and connects the asset to production records.
               </p>
             </div>
 
@@ -212,7 +212,7 @@
                 </app-qad-wo-search>
                 <div class="form-text">
                   <i class="mdi mdi-information-outline me-1"></i>
-                  Link this IGT asset to a specific work order for tracking purposes
+                  Link this IGT gaming equipment to a specific production work order for full manufacturing traceability
                 </div>
               </div>
             </div>
@@ -254,7 +254,7 @@
               IGT Asset Information
             </h6>
             <p class="text-muted mb-0 small">
-              Enter the details for the new IGT serial asset. A serial number will be automatically assigned.
+              Enter the IGT part details and asset information. Each registered asset receives a unique serial number for inventory management, compliance tracking, and warranty support.
             </p>
           </div>
 

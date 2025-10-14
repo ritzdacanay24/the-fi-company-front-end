@@ -329,6 +329,44 @@
                     </div>
                 </div>
 
+                <!-- Usage Information -->
+                <div class="mb-4" *ngIf="saveToDatabase">
+                    <h6 class="text-primary mb-3">
+                        <i class="mdi mdi-tag-text me-1"></i>Usage Information
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label">Used For</label>
+                        <input type="text" class="form-control" formControlName="used_for"
+                            placeholder="e.g., Product Assembly, Testing, Shipment">
+                        <div class="form-text">
+                            <small class="text-muted">What this serial number will be used for</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" formControlName="notes" rows="3"
+                            placeholder="Additional notes or comments..."></textarea>
+                        <div class="form-text">
+                            <small class="text-muted">Optional notes about this serial number</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" formControlName="consume_immediately"
+                                id="consumeImmediately">
+                            <label class="form-check-label" for="consumeImmediately">
+                                Mark as Used Immediately
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="mdi mdi-information me-1"></i>
+                                When enabled, the serial number will be marked as consumed upon generation
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Live Preview -->
                 <div class="mb-3">
                     <div class="alert alert-light border-primary">

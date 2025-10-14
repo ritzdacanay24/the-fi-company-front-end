@@ -155,6 +155,15 @@ export class PublicFormsMenuComponent implements OnInit, OnDestroy {
       case 'igt-serial':
         this.router.navigate(['/standalone/igt-serial']);
         break;
+      case 'ags-serial':
+        this.router.navigate(['/standalone/ags-serial']);
+        break;
+      case 'sg-asset':
+        this.router.navigate(['/standalone/sg-asset']);
+        break;
+      case 'serial-generator':
+        this.router.navigate(['/standalone/serial-generator']);
+        break;
       case 'safety-incident':
         this.router.navigate(['/standalone/safety-incident']);
         break;

@@ -1,0 +1,146 @@
+<app-public-form-wrapper
+    pageTitle="Light and Wonder Asset Creation"
+    pageDescription="Create and track Light and Wonder (Scientific Games) gaming machine assets with integrated EyeFi serial number validation and QAD system synchronization"
+    pageIcon="mdi-package-variant-closed"
+    (authenticationComplete)="onAuthenticationComplete($event)"
+    (userLoggedOut)="onUserLoggedOut()">
+
+  <!-- Success Message Overlay -->
+  <div *ngIf="showSuccessMessage" class="success-overlay">
+    <div class="container-fluid h-100 d-flex align-items-center justify-content-center">
+      <div class="row justify-content-center w-100">
+        <div class="col-12 col-lg-8 col-xl-6">
+          <div class="card shadow-lg border-0">
+            <div class="card-body p-5 text-center">
+              <div class="success-icon mb-4">
+                <i class="mdi mdi-check-circle text-success" style="font-size: 5rem;"></i>
+              </div>
+              <h2 class="text-success mb-3">Light and Wonder Asset Created Successfully!</h2>
+              <p class="text-muted mb-4">Your Light and Wonder asset record has been created and saved to the system.</p>
+              
+              <div class="asset-summary bg-light rounded p-4 mb-4">
+                <h5 class="mb-3">Asset Details</h5>
+                <div class="row g-3 text-start">
+                  <div class="col-md-6" *ngIf="createdAssetData?.generated_SG_asset">
+                    <small class="text-muted d-block">Light and Wonder Asset Number</small>
+                    <strong>{{ createdAssetData.generated_SG_asset }}</strong>
+                  </div>
+                  <div class="col-md-6" *ngIf="createdAssetData?.eyefi_serial_number">
+                    <small class="text-muted d-block">EyeFi Serial</small>
+                    <span class="badge bg-info">{{ createdAssetData.eyefi_serial_number }}</span>
+                  </div>
+                  <div class="col-md-6" *ngIf="createdAssetData?.inspectorName">
+                    <small class="text-muted d-block">Inspector</small>
+                    <strong>{{ createdAssetData.inspectorName }}</strong>
+                  </div>
+                  <div class="col-md-6" *ngIf="createdAssetData?.timeStamp">
+                    <small class="text-muted d-block">Created</small>
+                    <strong>{{ formatTimestamp(createdAssetData.timeStamp) }}</strong>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="d-flex gap-3 justify-content-center">
+                <button type="button" class="btn btn-primary btn-lg" (click)="createAnother()">
+                  <i class="mdi mdi-plus-circle-outline me-2"></i>Create Another Asset
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" (click)="logout()">
+                  <i class="mdi mdi-logout me-2"></i>Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Component -->
+  <div *ngIf="isAuthenticated && !showSuccessMessage" class="container-fluid py-4">
+    <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-10">
+        
+        <!-- Info Alert -->
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10 mb-4" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information-outline text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Creating a New Light and Wonder Asset</h6>
+              <p class="mb-2">
+                This form creates asset records for <strong>Light and Wonder</strong> (formerly Scientific Games) gaming machines. 
+                Asset numbers are <strong>automatically generated</strong> upon submission. All fields marked with an asterisk (*) are required.
+              </p>
+              <div class="row g-2 small">
+                <div class="col-md-6">
+                  <i class="mdi mdi-check-circle text-primary me-1"></i>
+                  Auto-generated asset numbers
+                </div>
+                <div class="col-md-6">
+                  <i class="mdi mdi-database-sync text-info me-1"></i>
+                  Real-time QAD integration
+                </div>
+                <div class="col-md-6">
+                  <i class="mdi mdi-shield-check text-success me-1"></i>
+                  EyeFi serial validation
+                </div>
+                <div class="col-md-6">
+                  <i class="mdi mdi-history text-warning me-1"></i>
+                  Complete audit trail
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-white border-bottom">
+            <div class="d-flex align-items-center">
+              <i class="mdi mdi-package-variant-closed text-primary me-2 fs-4"></i>
+              <h5 class="mb-0">Light and Wonder Asset Information</h5>
+            </div>
+          </div>
+          
+          <div class="card-body p-4">
+            <app-sg-asset-form (setFormEmitter)="setFormEmitter($event)" [submitted]="submitted"></app-sg-asset-form>
+          </div>
+          
+          <div class="card-footer bg-light border-top d-flex p-3">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="isLoading" (click)="resetForm()">
+              <i class="mdi mdi-refresh me-1"></i>Reset
+            </button>
+            <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+              @if (isLoading) {
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Creating Asset...
+              } @else {
+                <i class="mdi mdi-check-circle-outline me-1"></i>Create Asset
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card shadow-sm border-0 mt-4">
+          <div class="card-body p-4">
+            <h6 class="text-primary mb-3">
+              <i class="mdi mdi-help-circle-outline me-2"></i>Need Help?
+            </h6>
+            <p class="text-muted mb-2">
+              If you encounter any issues or have questions about creating Light and Wonder assets, please contact the Quality department.
+            </p>
+            <ul class="text-muted small mb-0">
+              <li>Light and Wonder (formerly Scientific Games) asset numbers are automatically generated</li>
+              <li>EyeFi serial numbers are tracked and validated to prevent duplicates across all systems</li>
+              <li>All required fields must be completed before submission</li>
+              <li>Timestamps and user information are recorded automatically for audit purposes</li>
+              <li>Asset data is synchronized with QAD inventory management system in real-time</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</app-public-form-wrapper>

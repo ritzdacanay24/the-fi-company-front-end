@@ -112,7 +112,10 @@ export class SerialNumberGeneratorComponent {
       randomNumberLength: [4, [Validators.min(1), Validators.max(10)]], // Default 4 digits
       suffix: [''], // No suffix by default
       separator: ['-'], // Default separator
-      customFormat: ['']
+      customFormat: [''],
+      used_for: [''], // What the serial number will be used for
+      notes: [''], // Additional notes
+      consume_immediately: [false] // Mark as used immediately upon generation
     });
   }
 
@@ -211,16 +214,26 @@ export class SerialNumberGeneratorComponent {
     // Create a template ID based on current configuration
     const templateId = this.createTemplateId();
     
+    // Get form values for used_for, notes, and consume_immediately
+    const usedFor = this.form.get('used_for')?.value || this.usedFor;
+    const notes = this.form.get('notes')?.value || null;
+    const consumeImmediately = this.form.get('consume_immediately')?.value || false;
+    
     // Note: The API generates its own serial number, so we'll need to modify the API
     // to accept a pre-generated serial number, or save the template and generate normally
-    this.serialNumberService.generateSerial(templateId, this.usedFor).subscribe({
+    this.serialNumberService.generateSerial(templateId, usedFor, null, null, notes, consumeImmediately).subscribe({
       next: (response) => {
         if (response.success) {
           this.isSerialNumberSaved = true;
           // Use the API-generated serial number instead of our local one
           this.generatedSerialNumber = response.data.serial_number;
           this.serialNumberGenerated.emit(this.generatedSerialNumber);
-          this.toastrService.success(`Serial number "${this.generatedSerialNumber}" saved to database and ready to use!`);
+          
+          const statusMessage = consumeImmediately 
+            ? `Serial number "${this.generatedSerialNumber}" generated, saved, and marked as used!`
+            : `Serial number "${this.generatedSerialNumber}" saved to database and ready to use!`;
+          
+          this.toastrService.success(statusMessage);
         } else {
           this.toastrService.error('Failed to save serial number: ' + response.message);
           // Still emit the local serial number as fallback

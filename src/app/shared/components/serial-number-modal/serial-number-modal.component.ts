@@ -37,14 +37,16 @@ export class SerialNumberModalComponent {
 
   generateBatch() {
     if (this.batchCount > 1) {
-      // Use template_id from config or fallback to a default
-      const template_id = this.config?.template_id || 'standard-product';
+      // Use template_id and prefix from config or fallback to defaults
+      const template_id = this.config?.template_id || 'PROD_001';
+      const prefix = this.config?.prefix || 'PRD';
       
-      this.serialNumberService.generateBatch(template_id, this.batchCount, 'modal-batch')
+      this.serialNumberService.generateBatch(template_id, prefix, this.batchCount)
         .subscribe({
           next: (response) => {
-            if (response.success) {
-              this.generatedBatch = response.serial_numbers || [];
+            if (response.success && response.serials) {
+              // Extract serial_number from each object
+              this.generatedBatch = response.serials.map((s: any) => s.serial_number || s);
             } else {
               console.error('Batch generation failed:', response.error);
               // Fallback to local generation

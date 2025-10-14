@@ -27,7 +27,6 @@ export class MenuComponent implements OnInit {
         { name: "Operations Dashboard", link: "/operations" },
         { name: "Field Service Dashboard", link: "/field-service" },
         { name: "Quality Dashboard", link: "/quality" },
-        { name: "Shipping Analytics Dashboard", link: "/operations/shipping-analytics" },
         {
           name: "Shipping Request Form",
           link: "/operations/forms/shipping-request/create",
@@ -36,6 +35,10 @@ export class MenuComponent implements OnInit {
         {
           name: "Quality Incident Request Form",
           link: "/quality-incident-request",
+        },
+        {
+          name: "Forms",
+          link: "/forms",
         },
         {
           name: "Safety Incident Form",
