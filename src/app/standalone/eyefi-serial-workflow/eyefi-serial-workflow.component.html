@@ -1,0 +1,1061 @@
+<!-- EyeFi Serial Workflow -->
+<app-public-form-wrapper
+    pageTitle="EyeFi Serial Workflow"
+    pageDescription="Manage EyeFi serial number assignments across multiple forms with a guided step-by-step process"
+    pageIcon="mdi-timeline-check"
+    formTitle="Access Required"
+    formDescription="Please authenticate to access the EyeFi Serial Workflow. You can login using your username with password, or simply scan your employee card number."
+    (authenticationComplete)="onAuthenticationComplete($event)"
+    (userLoggedOut)="onUserLoggedOut()">
+
+  <div *ngIf="isAuthenticated" class="row">
+    <!-- Left Sidebar - Batch Summary (Always Visible) -->
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0 text-white">
+            <i class="mdi mdi-cart-outline me-2"></i>
+            Batch Summary
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- Work Order -->
+          <div class="mb-3 pb-3 border-bottom">
+            <small class="text-muted d-block mb-1">
+              <i class="mdi mdi-file-document-outline me-1"></i>
+              Work Order
+            </small>
+            <strong class="d-block" [class.text-muted]="!workOrderNumber">
+              {{ workOrderNumber || 'Not set' }}
+            </strong>
+            
+            <!-- Work Order Details (if available) -->
+            <div *ngIf="workOrderDetails" class="mt-2">
+              <small class="text-muted d-block mb-1">Part Number</small>
+              <span class="d-block small">{{ workOrderDetails.wo_part || 'N/A' }}</span>
+              
+              <small class="text-muted d-block mb-1 mt-2">Description</small>
+              <span class="d-block small">{{ workOrderDetails.description || 'N/A' }}</span>
+              
+              <small class="text-muted d-block mb-1 mt-2">Ordered Qty</small>
+              <span class="d-block small">{{ workOrderDetails.wo_qty_ord || 'N/A' }}</span>
+              
+              <small class="text-muted d-block mb-1 mt-2">Due Date</small>
+              <span class="d-block small">{{ workOrderDetails.wo_due_date || 'N/A' }}</span>
+            </div>
+          </div>
+          
+          <!-- Quantity -->
+          <div class="mb-3">
+            <small class="text-muted d-block mb-1">
+              <i class="mdi mdi-counter me-1"></i>
+              Quantity
+            </small>
+            <strong class="d-block">{{ quantity }}</strong>
+          </div>
+          
+          <!-- Category -->
+          <div class="mb-3">
+            <small class="text-muted d-block mb-1">
+              <i class="mdi mdi-tag-outline me-1"></i>
+              Category
+            </small>
+            <span class="badge" [class.bg-success]="category === 'new'" [class.bg-warning]="category === 'used'">
+              {{ category === 'new' ? 'New' : 'Used' }}
+            </span>
+          </div>
+          
+          <!-- Progress (only show after step 2) -->
+          <div *ngIf="currentStep >= 3" class="mb-3">
+            <small class="text-muted d-block mb-1">
+              <i class="mdi mdi-progress-check me-1"></i>
+              Progress
+            </small>
+            <div class="d-flex align-items-center">
+              <strong class="me-2">{{ getCompletedAssignmentsCount() }} / {{ quantity }}</strong>
+              <div class="progress flex-grow-1" style="height: 8px;">
+                <div class="progress-bar bg-success" 
+                     role="progressbar" 
+                     [style.width.%]="(getCompletedAssignmentsCount() / quantity) * 100">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer (only show after step 4) -->
+          <div *ngIf="currentStep >= 4 && selectedCustomer" class="mb-3">
+            <small class="text-muted d-block mb-1">
+              <i class="mdi mdi-account-outline me-1"></i>
+              Customer
+            </small>
+            <strong class="d-block">{{ selectedCustomer }}</strong>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Current Step Indicator -->
+          <div class="text-center">
+            <div class="mb-2">
+              <span class="badge bg-info px-3 py-2">
+                Step {{ currentStep }} of {{ steps.length }}
+              </span>
+            </div>
+            <small class="text-muted">{{ steps[currentStep - 1].title }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-lg-8">
+      
+      <!-- Workflow Progress Stepper -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="row">
+            <div class="col-12">
+              <div class="stepper-wrapper d-flex justify-content-between align-items-start">
+                <div *ngFor="let step of steps; let i = index" 
+                     class="stepper-item" 
+                     [class.active]="step.active"
+                     [class.completed]="step.completed">
+                  <div class="step-counter">
+                    <span *ngIf="!step.completed">{{ step.id }}</span>
+                    <i *ngIf="step.completed" class="mdi mdi-check"></i>
+                  </div>
+                  <div class="step-name">{{ step.title }}</div>
+                  <div class="step-description small text-muted">{{ step.description }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Workflow Card -->
+      <div class="card border-0 shadow-lg">
+        <div class="card-header border-bottom bg-primary bg-gradient text-white">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-white rounded-circle d-flex align-items-center justify-content-center"
+                   style="width: 50px; height: 50px;">
+                <i class="mdi mdi-numeric-{{ currentStep }}-circle text-primary fs-4"></i>
+              </div>
+            </div>
+            <div>
+              <h4 class="mb-1">Step {{ currentStep }}: {{ steps[currentStep - 1].title }}</h4>
+              <p class="mb-0 small opacity-75">{{ steps[currentStep - 1].description }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-4">
+          <!-- Step 1: Enter Work Order Number -->
+          <div *ngIf="currentStep === 1" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-file-document-outline me-2"></i>
+                Enter Work Order Number
+              </h5>
+              <p class="text-muted mb-4">
+                Enter the work order number for this batch of EyeFi serial number assignments.
+              </p>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <app-qad-wo-search 
+                    [form_label]="'Work Order Number'"
+                    [placeholder]="'Search by work order number...'"
+                    [required]="true"
+                    [value]="workOrderNumber"
+                    [disabled]="isLoading"
+                    (notifyParent)="getWorkOrderNumber($event)"
+                    [appendToBody]="'body'">
+                  </app-qad-wo-search>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    This work order will be associated with all serial numbers in this batch
+                  </div>
+                  
+                  <!-- Show work order details once selected -->
+                  <div *ngIf="workOrderDetails" class="alert alert-info mt-3 mb-0">
+                    <h6 class="alert-heading mb-2">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Work Order Details
+                    </h6>
+                    <div class="row small">
+                      <div class="col-md-6 mb-2">
+                        <strong>Part Number:</strong><br>
+                        {{ workOrderDetails.wo_part || 'N/A' }}
+                      </div>
+                      <div class="col-md-6 mb-2">
+                        <strong>Description:</strong><br>
+                        {{ workOrderDetails.description || 'N/A' }}
+                      </div>
+                      <div class="col-md-6 mb-2">
+                        <strong>Ordered Quantity:</strong><br>
+                        {{ workOrderDetails.wo_qty_ord || 'N/A' }}
+                      </div>
+                      <div class="col-md-6 mb-2">
+                        <strong>Due Date:</strong><br>
+                        {{ workOrderDetails.wo_due_date || 'N/A' }}
+                      </div>
+                      <div class="col-md-6">
+                        <strong>Routing:</strong><br>
+                        {{ workOrderDetails.wo_routing || 'N/A' }}
+                      </div>
+                      <div class="col-md-6">
+                        <strong>Line:</strong><br>
+                        {{ workOrderDetails.wo_line || 'N/A' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          
+          <!-- Step 2: Configure Batch (Quantity + Category) -->
+          <div *ngIf="currentStep === 2" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-cog-outline me-2"></i>
+                Configure Batch
+              </h5>
+              <p class="text-muted mb-4">
+                Specify how many serial numbers you need and select the category (New or Used).
+              </p>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">Quantity *</label>
+                  <input 
+                    type="number" 
+                    class="form-control form-control-lg" 
+                    [(ngModel)]="quantity"
+                    (ngModelChange)="onQuantityChange()"
+                    min="1"
+                    max="50"
+                    placeholder="Enter quantity"
+                    [disabled]="isLoading">
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Number of serial numbers to assign (1-50)
+                  </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">Category *</label>
+                  <select 
+                    class="form-select form-select-lg" 
+                    [(ngModel)]="category"
+                    [disabled]="isLoading">
+                    <option value="new">New</option>
+                    <option value="used">Used</option>
+                  </select>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Select whether these are new or used serial numbers
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Assign Serials & UL Numbers -->
+          <div *ngIf="currentStep === 3" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-link-variant me-2"></i>
+                Assign Serial Numbers & UL Labels
+              </h5>
+              <p class="text-muted mb-4">
+                Select {{ quantity }} EyeFi serial number(s) and assign UL labels to each. Category: <strong class="text-capitalize">{{ category }}</strong>
+              </p>
+
+              <!-- Auto-populate Info Alert -->
+              <div class="alert alert-info bg-info bg-opacity-10 border-info mb-4">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                  <div>
+                    <strong><i class="mdi mdi-auto-fix"></i> Auto-Populate Feature:</strong>
+                    <p class="mb-2 mt-2">
+                      The system has automatically selected the next {{ quantity }} available serial numbers and UL labels for you.
+                    </p>
+                    <ul class="mb-0 small">
+                      <li><strong>If physical devices match:</strong> Great! Simply review and proceed to the next step.</li>
+                      <li><strong>If physical devices don't match:</strong> Click the <i class="mdi mdi-pencil"></i> Edit button on any row to change the serial number or UL label.</li>
+                      <li><strong>Save your changes:</strong> Click <i class="mdi mdi-check"></i> to save or <i class="mdi mdi-close"></i> to cancel editing.</li>
+                      <li><strong>Reset option:</strong> If you changed a value and want to revert, click the <i class="mdi mdi-refresh"></i> button to reset to auto-selected.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Serial/UL Assignment Table -->
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50px;">#</th>
+                      <th>EyeFi Serial Number</th>
+                      <th>UL Label Number</th>
+                      <th style="width: 120px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let assignment of serialAssignments; let i = index">
+                      <td class="text-center align-middle">{{ i + 1 }}</td>
+                      
+                      <!-- Serial Number Column -->
+                      <td>
+                        <!-- Read-only Mode: Show auto-populated value -->
+                        <div *ngIf="!assignment.isEditing && assignment.serial" class="d-flex align-items-center">
+                          <div class="flex-grow-1">
+                            <strong class="text-primary">{{ assignment.serial?.serial_number || assignment.serial }}</strong>
+                            <span *ngIf="assignment.isAutoPopulated && !assignment.manuallyChanged" 
+                                  class="badge bg-info ms-2"
+                                  style="font-size: 0.7rem;">
+                              <i class="mdi mdi-auto-fix"></i> Auto
+                            </span>
+                            <span *ngIf="assignment.manuallyChanged" 
+                                  class="badge bg-warning ms-2"
+                                  style="font-size: 0.7rem;">
+                              <i class="mdi mdi-pencil"></i> Manual
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <!-- Edit Mode: Show search field OR plain text input based on category -->
+                        <div *ngIf="assignment.isEditing || !assignment.serial">
+                          
+                          <!-- NEW Category: Use searchable dropdown -->
+                          <div *ngIf="category === 'new'">
+                            <app-eyefi-serial-search-ng
+                              [placeholder]="'Search by serial number...'"
+                              [required]="true"
+                              [showLabel]="false"
+                              [status]="'available'"
+                              [(ngModel)]="assignment.serial"
+                              (notifyParent)="onSerialAssigned(i, $event)">
+                            </app-eyefi-serial-search-ng>
+                            <small class="text-muted">
+                              <i class="mdi mdi-information-outline"></i> Type to search for EyeFi serial numbers
+                            </small>
+                          </div>
+                          
+                          <!-- USED Category: Use plain text input (UL serials already have tracking) -->
+                          <div *ngIf="category === 'used'">
+                            <input 
+                              type="text" 
+                              class="form-control" 
+                              placeholder="Enter EyeFi serial number..."
+                              [(ngModel)]="assignment.serial"
+                              (ngModelChange)="onSerialManualInput(i, $event)"
+                              [disabled]="isLoading"
+                              required>
+                            <small class="text-muted">
+                              <i class="mdi mdi-information-outline"></i> Enter EyeFi serial number manually
+                            </small>
+                          </div>
+                          
+                        </div>
+                      </td>
+                      
+                      <!-- UL Number Column -->
+                      <td>
+                        <!-- Read-only Mode: Show auto-populated value -->
+                        <div *ngIf="!assignment.isEditing && assignment.ulNumber" class="d-flex align-items-center">
+                          <div class="flex-grow-1">
+                            <strong class="text-info">{{ assignment.ulNumber?.ul_number }}</strong>
+                            <span class="text-muted ms-2 small">- {{ assignment.ulNumber?.category }}</span>
+                            <span *ngIf="assignment.isAutoPopulated && !assignment.manuallyChanged" 
+                                  class="badge bg-info ms-2"
+                                  style="font-size: 0.7rem;">
+                              <i class="mdi mdi-auto-fix"></i> Auto
+                            </span>
+                            <span *ngIf="assignment.manuallyChanged" 
+                                  class="badge bg-warning ms-2"
+                                  style="font-size: 0.7rem;">
+                              <i class="mdi mdi-pencil"></i> Manual
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <!-- Edit Mode: Show dropdown -->
+                        <div *ngIf="assignment.isEditing || !assignment.ulNumber">
+                          <select 
+                            class="form-select" 
+                            [(ngModel)]="assignment.ulNumber"
+                            (ngModelChange)="onULAssigned(i, $event)"
+                            [disabled]="isLoadingULs || isLoading">
+                            <option [ngValue]="null" disabled>
+                              {{ isLoadingULs ? 'Loading UL numbers...' : 'Select a UL number' }}
+                            </option>
+                            <option *ngFor="let ul of availableULs" [ngValue]="ul">
+                              {{ ul.ul_number }} - {{ ul.category }}
+                            </option>
+                          </select>
+                          <small class="text-muted">
+                            <i class="mdi mdi-information-outline"></i> Select UL label number
+                          </small>
+                        </div>
+                      </td>
+                      
+                      <!-- Actions Column -->
+                      <td class="text-center align-middle">
+                        <!-- Read-only mode: Show Edit button -->
+                        <button 
+                          *ngIf="!assignment.isEditing && assignment.serial && assignment.ulNumber"
+                          type="button"
+                          class="btn btn-sm btn-outline-primary me-1"
+                          (click)="toggleEditMode(i)"
+                          [disabled]="isLoading"
+                          title="Edit this assignment">
+                          <i class="mdi mdi-pencil"></i>
+                        </button>
+                        
+                        <!-- Edit mode: Show Save/Cancel buttons -->
+                        <div *ngIf="assignment.isEditing" class="d-flex gap-1 justify-content-center">
+                          <button 
+                            type="button"
+                            class="btn btn-sm btn-success"
+                            (click)="saveEdit(i)"
+                            [disabled]="isLoading || !assignment.serial || !assignment.ulNumber"
+                            title="Save changes">
+                            <i class="mdi mdi-check"></i>
+                          </button>
+                          <button 
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            (click)="cancelEdit(i)"
+                            [disabled]="isLoading"
+                            title="Cancel editing">
+                            <i class="mdi mdi-close"></i>
+                          </button>
+                        </div>
+                        
+                        <!-- Reset button (for manually changed items) -->
+                        <button 
+                          *ngIf="assignment.manuallyChanged && !assignment.isEditing"
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          (click)="resetAssignmentToAuto(i)"
+                          [disabled]="isLoading"
+                          title="Reset to auto-selected">
+                          <i class="mdi mdi-refresh"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Select Customer -->
+          <div *ngIf="currentStep === 4" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-account me-2"></i>
+                Select Customer
+              </h5>
+              <p class="text-muted mb-4">
+                Assign the {{ quantity }} EyeFi serial number(s) to a customer. This will complete the batch registration process.
+              </p>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold">Customer *</label>
+                  <select 
+                    class="form-select form-select-lg" 
+                    [(ngModel)]="selectedCustomer"
+                    [disabled]="isLoading">
+                    <option value="" disabled>Select a customer</option>
+                    <option *ngFor="let customer of customerOptions" [value]="customer">
+                      {{ customer }}
+                    </option>
+                  </select>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    The customer who will receive these serial number assignments
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Step 5: Customer Form -->
+          <div *ngIf="currentStep === 5" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-account me-2"></i>
+                Select Customer
+              </h5>
+              <p class="text-muted mb-4">
+                Assign the EyeFi serial number and UL label to a customer. This completes the registration process.
+              </p>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold">Customer *</label>
+                  <select 
+                    class="form-select form-select-lg" 
+                    [(ngModel)]="selectedCustomer"
+                    [disabled]="isLoading">
+                    <option value="" disabled>Select a customer</option>
+                    <option *ngFor="let customer of customerOptions" [value]="customer">
+                      {{ customer }}
+                    </option>
+                  </select>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    The customer who will receive this serial number assignment
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Step 5: Generated Assets -->
+          <div *ngIf="currentStep === 5" class="workflow-step">
+            
+            <!-- Success Banner (shown after submission) -->
+            <div *ngIf="submissionComplete && successSummary" class="alert alert-success border-0 shadow-sm mb-4" role="alert">
+              <!-- Test Mode Badge -->
+              <div *ngIf="isTestMode" class="mb-3">
+                <span class="badge bg-warning text-dark fs-6">
+                  <i class="mdi mdi-test-tube me-1"></i>
+                  TEST MODE - No database changes made. Asset numbers are randomly generated for preview.
+                </span>
+              </div>
+              
+              <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                  <i class="mdi mdi-check-circle fs-1 text-success"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                  <h4 class="alert-heading mb-2">
+                    <i class="mdi mdi-check-all me-2"></i>
+                    Batch Successfully Created!
+                  </h4>
+                  <p class="mb-2">
+                    <strong>{{ successSummary.batch.quantity }}</strong> {{ successSummary.customer }} asset(s) have been successfully created and serial numbers have been consumed.
+                  </p>
+                  <hr class="my-3">
+                  <div class="row align-items-center">
+                    <div class="col-md-6">
+                      <p class="mb-0 small">
+                        <i class="mdi mdi-clock-outline me-1"></i>
+                        <strong>Created:</strong> {{ successSummary.timestamp | date:'medium' }}
+                      </p>
+                    </div>
+                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                      <button type="button" class="btn btn-sm btn-outline-primary me-2" (click)="printSerialReport()">
+                        <i class="mdi mdi-printer me-1"></i>
+                        Print Report
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary me-2" (click)="printLabels()">
+                        <i class="mdi mdi-label-multiple me-1"></i>
+                        Print Labels
+                      </button>
+                      <button type="button" class="btn btn-sm btn-success" (click)="resetWorkflow()">
+                        <i class="mdi mdi-refresh me-1"></i>
+                        Start New Batch
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Work Order Summary (shown after submission) -->
+            <div *ngIf="submissionComplete && successSummary" class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">
+                  <i class="mdi mdi-file-document-outline me-2"></i>
+                  Work Order Information
+                </h6>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Work Order #</small>
+                    <strong>{{ successSummary.workOrder.number }}</strong>
+                  </div>
+                  <div class="col-md-3">
+                    <small class="text-muted d-block">Part Number</small>
+                    <strong>{{ successSummary.workOrder.part }}</strong>
+                  </div>
+                  <div class="col-md-6">
+                    <small class="text-muted d-block">Description</small>
+                    <strong>{{ successSummary.workOrder.description }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Created Assets Table (shown after submission) -->
+            <div *ngIf="submissionComplete && successSummary" class="card border-0 shadow-sm mb-4">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                  <i class="mdi mdi-tag-multiple me-2"></i>
+                  Created Assets ({{ successSummary.createdAssets.length }})
+                </h6>
+                <span class="badge bg-success">{{ successSummary.customer }}</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 80px;">#</th>
+                        <th>{{ successSummary.customer }} Asset Number</th>
+                        <th>EyeFi Serial Number</th>
+                        <th>UL Number</th>
+                        <th>UL Category</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let asset of successSummary.createdAssets">
+                        <td class="text-center">
+                          <span class="badge bg-secondary">{{ asset.index }}</span>
+                        </td>
+                        <td>
+                          <strong class="text-success">{{ asset.assetNumber }}</strong>
+                        </td>
+                        <td>
+                          <span class="text-muted">{{ asset.eyefiSerial }}</span>
+                        </td>
+                        <td>
+                          <span class="text-muted">{{ asset.ulNumber }}</span>
+                        </td>
+                        <td>
+                          <span class="badge" [class.bg-success]="asset.ulCategory === 'New'" 
+                                               [class.bg-info]="asset.ulCategory === 'Used'">
+                            {{ asset.ulCategory }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Regular Step 5 content (hidden after submission) -->
+            <div *ngIf="!submissionComplete" class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-package-variant me-2"></i>
+                {{ selectedCustomer }} Assets
+              </h5>
+              
+              <!-- Loading State -->
+              <div *ngIf="isGeneratingAssets" class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status">
+                  <span class="visually-hidden">Generating assets...</span>
+                </div>
+                <p class="text-muted">Generating {{ selectedCustomer }} assets...</p>
+              </div>
+
+              <!-- Light and Wonder & AGS - Show preview table (assets will be generated on submit) -->
+              <div *ngIf="!isGeneratingAssets && (selectedCustomer === 'Light and Wonder' || selectedCustomer === 'AGS')">
+                <div class="alert alert-info mb-4">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                    <div>
+                      <h6 class="alert-heading mb-2">Ready to Generate Assets</h6>
+                      <p class="mb-0">{{ generatedAssets.length }} {{ selectedCustomer }} assets will be generated when you submit the form below.</p>
+                      <small class="text-muted">Asset numbers are generated sequentially to prevent gaps.</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Preview Assets Table -->
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>#</th>
+                        <th>EyeFi Serial Number</th>
+                        <th>UL Label Number</th>
+                        <th>{{ selectedCustomer }} Asset Number</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let generated of generatedAssets; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>
+                          <span class="badge bg-primary">{{ generated.serial?.serial_number }}</span>
+                        </td>
+                        <td>
+                          <span class="badge bg-info">{{ generated.ulNumber?.ul_number }}</span>
+                        </td>
+                        <td>
+                          <span class="text-muted">
+                            <i class="mdi mdi-clock-outline"></i> Pending Generation
+                          </span>
+                        </td>
+                        <td>
+                          <span class="badge bg-warning text-dark">
+                            <i class="mdi mdi-clock-outline"></i> Pending
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- IGT - Show pre-selected assets table (like EyeFi/UL) -->
+              <div *ngIf="!isGeneratingAssets && selectedCustomer === 'IGT'">
+                <div class="alert alert-success mb-4">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-check-circle-outline me-3 mt-1 fs-4"></i>
+                    <div>
+                      <h6 class="alert-heading mb-2">IGT Assets Pre-Selected</h6>
+                      <p class="mb-0">{{ generatedAssets.length }} IGT serial numbers have been automatically selected in sequence. Review the assignments below.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pre-selected IGT Assets Table (Similar to EyeFi/UL display) -->
+                <div class="table-responsive">
+                  <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th>#</th>
+                        <th>EyeFi Serial Number</th>
+                        <th>UL Label Number</th>
+                        <th>IGT Serial Number (Auto-Selected)</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let generated of generatedAssets; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>
+                          <span class="badge bg-primary">{{ generated.serial?.serial_number }}</span>
+                        </td>
+                        <td>
+                          <span class="badge bg-info">{{ generated.ulNumber?.ul_number }}</span>
+                        </td>
+                        <td>
+                          <strong class="text-success" *ngIf="generated.assetNumber">{{ generated.assetNumber }}</strong>
+                          <span class="text-muted" *ngIf="!generated.assetNumber">Not available</span>
+                        </td>
+                        <td>
+                          <span class="badge" [class.bg-success]="generated.assetNumber" [class.bg-warning]="!generated.assetNumber">
+                            <i class="mdi" [class.mdi-check]="generated.assetNumber" [class.mdi-alert]="!generated.assetNumber"></i>
+                            {{ generated.assetNumber ? 'Pre-selected' : 'Pending' }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Additional Info -->
+                <div class="alert alert-info mt-3">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-information-outline me-3 mt-1"></i>
+                    <div class="small">
+                      <strong>Auto-Population Complete:</strong>
+                      <p class="mb-0">The next available IGT serial numbers have been automatically assigned in sequence, just like EyeFi serials and UL labels. You can proceed to complete the form or make manual adjustments if needed.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Embedded IGT Form -->
+                <div class="embedded-form-container mt-4">
+                  <app-standalone-igt-form 
+                    [isEmbedded]="true"
+                    (formSubmit)="onFormSubmit($event, 'igt')">
+                  </app-standalone-igt-form>
+                </div>
+              </div>
+
+              <!-- Other - Show default form -->
+              <div *ngIf="!isGeneratingAssets && selectedCustomer === 'Other'">
+                <div class="alert alert-warning mb-4">
+                  <p class="mb-0">Please complete the form for this custom customer assignment.</p>
+                </div>
+                <app-standalone-igt-form 
+                  [isEmbedded]="true"
+                  (formSubmit)="onFormSubmit($event, 'igt')">
+                </app-standalone-igt-form>
+              </div>
+            </div>
+            <!-- End of regular Step 5 content (hidden after submission) -->
+          </div>
+        </div>
+
+        <!-- Card Footer with Navigation -->
+        <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" 
+                    type="button" 
+                    (click)="previousStep()" 
+                    [disabled]="currentStep === 1 || isLoading">
+              <i class="mdi mdi-chevron-left me-1"></i>Previous
+            </button>
+            <button class="btn btn-outline-danger" type="button" (click)="logout()">
+              <i class="mdi mdi-logout me-1"></i>Log Off
+            </button>
+          </div>
+          
+          <div>
+            <!-- Steps 1-3: Regular Next Step button -->
+            <button *ngIf="currentStep < 4" 
+                    class="btn btn-primary btn-lg" 
+                    type="button" 
+                    (click)="nextStep()" 
+                    [disabled]="!canProceedToNextStep() || isLoading">
+              Next Step
+              <i class="mdi mdi-chevron-right ms-1"></i>
+            </button>
+            
+            <!-- Step 4: Proceed to Customer Form button -->
+            <button *ngIf="currentStep === 4" 
+                    class="btn btn-success btn-lg" 
+                    type="button" 
+                    (click)="proceedToCustomerForm()" 
+                    [disabled]="!canProceedToNextStep() || isLoading">
+              <i class="mdi mdi-arrow-right-circle me-1"></i>
+              Proceed to {{ selectedCustomer }} Form
+            </button>
+            
+            <!-- Step 5: Submit buttons (only shown before submission) -->
+            <div *ngIf="currentStep === 5 && !submissionComplete" class="d-flex gap-2">
+              <!-- Test Submit Button -->
+              <button class="btn btn-warning" 
+                      type="button" 
+                      (click)="testSubmit()" 
+                      [disabled]="isLoading">
+                <i class="mdi mdi-test-tube me-1"></i>
+                Test Submit (Preview)
+              </button>
+              
+              <!-- Real Submit Button -->
+              <button class="btn btn-success btn-lg" 
+                      type="button" 
+                      (click)="submitEmbeddedForm()" 
+                      [disabled]="isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span *ngIf="isLoading">Generating & Submitting...</span>
+                <span *ngIf="!isLoading">
+                  <i class="mdi mdi-check-circle me-1"></i>
+                  Generate Assets & Submit
+                </span>
+              </button>
+            </div>
+
+            <!-- Step 5: After submission buttons -->
+            <button *ngIf="currentStep === 5 && submissionComplete"
+                    class="btn btn-primary btn-lg"
+                    type="button"
+                    (click)="resetWorkflow()">
+              <i class="mdi mdi-refresh me-1"></i>
+              Start New Batch
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-public-form-wrapper>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" 
+     [class.show]="showConfirmationModal" 
+     [style.display]="showConfirmationModal ? 'block' : 'none'"
+     tabindex="-1" 
+     role="dialog"
+     *ngIf="showConfirmationModal">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title text-white">
+          <i class="mdi mdi-clipboard-check-outline me-2"></i>
+          Confirm Batch Submission
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cancelConfirmation()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body" *ngIf="confirmationSummary">
+        <!-- Work Order Information -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">
+              <i class="mdi mdi-file-document-outline me-2"></i>
+              Work Order Information
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3">
+                <small class="text-muted d-block">Work Order #</small>
+                <strong>{{ confirmationSummary.workOrder.number }}</strong>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted d-block">Part Number</small>
+                <strong>{{ confirmationSummary.workOrder.part }}</strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Description</small>
+                <strong>{{ confirmationSummary.workOrder.description }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batch Details -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">
+              <i class="mdi mdi-package-variant me-2"></i>
+              Batch Details
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3">
+                <small class="text-muted d-block">Quantity</small>
+                <strong class="text-primary">{{ confirmationSummary.batch.quantity }}</strong>
+              </div>
+              <div class="col-md-3">
+                <small class="text-muted d-block">Category</small>
+                <span class="badge" [class.bg-success]="confirmationSummary.batch.category === 'New'" 
+                                     [class.bg-info]="confirmationSummary.batch.category === 'Used'">
+                  {{ confirmationSummary.batch.category }}
+                </span>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Customer Type</small>
+                <strong>{{ confirmationSummary.customer }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Serial Assignments Table -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">
+              <i class="mdi mdi-format-list-numbered me-2"></i>
+              Serial Number Assignments ({{ confirmationSummary.assignments.length }})
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 80px;">#</th>
+                    <th>EyeFi Serial Number</th>
+                    <th>UL Number</th>
+                    <th>UL Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let assignment of confirmationSummary.assignments">
+                    <td class="text-center">
+                      <span class="badge bg-secondary">{{ assignment.index }}</span>
+                    </td>
+                    <td>
+                      <strong class="text-primary">{{ assignment.eyefiSerial }}</strong>
+                    </td>
+                    <td>
+                      <strong>{{ assignment.ulNumber }}</strong>
+                    </td>
+                    <td>
+                      <span class="badge" [class.bg-success]="assignment.ulCategory === 'New'" 
+                                           [class.bg-info]="assignment.ulCategory === 'Used'">
+                        {{ assignment.ulCategory }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated/Selected Assets -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">
+              <i class="mdi mdi-tag-multiple me-2"></i>
+              Assets to be Generated/Created
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 80px;">#</th>
+                    <th>{{ confirmationSummary.customer }} Asset Number</th>
+                    <th>EyeFi Serial</th>
+                    <th>UL Number</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let asset of confirmationSummary.assets">
+                    <td class="text-center">
+                      <span class="badge bg-secondary">{{ asset.index }}</span>
+                    </td>
+                    <td>
+                      <strong class="text-success">{{ asset.assetNumber }}</strong>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ asset.eyefiSerial }}</span>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ asset.ulNumber }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning Message -->
+        <div class="alert alert-warning mb-0" role="alert">
+          <i class="mdi mdi-alert-circle-outline me-2"></i>
+          <strong>Please review carefully!</strong> 
+          Once submitted, {{ confirmationSummary.batch.quantity }} asset(s) will be created in the database and serial numbers will be marked as consumed.
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" (click)="cancelConfirmation()">
+          <i class="mdi mdi-close-circle me-1"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-success btn-lg" (click)="confirmAndSubmit()" [disabled]="isLoading">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <span *ngIf="!isLoading">
+            <i class="mdi mdi-check-all me-1"></i>
+          </span>
+          Confirm & Submit {{ confirmationSummary?.batch?.quantity }} Asset(s)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop fade" 
+     [class.show]="showConfirmationModal" 
+     *ngIf="showConfirmationModal"
+     (click)="cancelConfirmation()">
+</div>

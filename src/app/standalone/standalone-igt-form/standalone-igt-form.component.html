@@ -1,5 +1,7 @@
 <!-- Standalone IGT Serial Form -->
+<!-- Show wrapper only when NOT embedded -->
 <app-public-form-wrapper
+    *ngIf="!isEmbedded"
     pageTitle="IGT Serial Generator"
     pageDescription="Create and track International Gaming Technology (IGT) serial assets with automatic serial number assignment and work order integration"
     pageIcon="mdi-barcode"
@@ -12,7 +14,7 @@
   <div *ngIf="showSuccessMessage" class="success-overlay">
     <div class="container">
       <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-md-8 col-lg-9">
           <div class="card border-0 shadow-lg">
             <div class="card-body p-5 text-center">
               <div class="success-icon mb-4">
@@ -101,7 +103,11 @@
               </div>
               
               <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
-                <button class="btn btn-success btn-lg" (click)="createAnother()">
+                <button class="btn btn-success btn-lg" (click)="printAssetDetails()">
+                  <i class="mdi mdi-printer me-2"></i>
+                  Print Asset Details
+                </button>
+                <button class="btn btn-primary btn-lg" (click)="createAnother()">
                   <i class="mdi mdi-plus me-2"></i>
                   Create Another Asset
                 </button>
@@ -267,9 +273,15 @@
         </div>
 
         <div class="card-footer bg-light border-top d-flex justify-content-between p-3">
-          <button class="btn btn-outline-secondary" type="button" (click)="resetForm()" [disabled]="isLoading">
-            <i class="mdi mdi-refresh me-1"></i>Reset Form
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" type="button" (click)="resetForm()" [disabled]="isLoading || showPrintPreview">
+              <i class="mdi mdi-refresh me-1"></i>Reset Form
+            </button>
+            <button class="btn btn-outline-info" type="button" (click)="testPrint()" [disabled]="isLoading">
+              <i class="mdi {{ showPrintPreview ? 'mdi-eye-off' : 'mdi-eye' }} me-1"></i>
+              {{ showPrintPreview ? 'Hide Preview' : 'Show Print Preview' }}
+            </button>
+          </div>
           <button class="btn btn-primary" type="button" (click)="onSubmit()" 
                   [disabled]="!form || form.invalid || isLoading || availableSerialCount === 0">
             @if (isLoading) {
@@ -284,4 +296,174 @@
       </div>
     </div>
   </div>
+
+  <!-- Print-Only Section (Hidden on screen, visible on print OR when in preview mode) -->
+  <div id="printSection" [class.d-none]="!showPrintPreview" [class.d-print-block]="true" class="print-preview-section" *ngIf="createdAssetData">
+    <!-- Preview Mode Header (only visible on screen, not in print) -->
+    <div class="d-print-none bg-warning bg-opacity-10 border border-warning rounded p-3 mb-4" *ngIf="showPrintPreview">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1 text-warning">
+            <i class="mdi mdi-eye me-2"></i>Print Preview Mode
+          </h5>
+          <p class="mb-0 small text-muted">This is how the document will look when printed. Click "Close Preview" to return to the form, or "Print Document" to print.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" (click)="printAssetDetails()">
+            <i class="mdi mdi-printer me-1"></i>Print Document
+          </button>
+          <button class="btn btn-outline-secondary" (click)="testPrint()">
+            <i class="mdi mdi-close me-1"></i>Close Preview
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="print-header text-center mb-4">
+      <h1 class="fw-bold">IGT Asset Record</h1>
+      <p class="text-muted">International Gaming Technology Asset</p>
+      <hr class="my-3">
+    </div>
+
+    <div class="container-fluid">
+      <!-- Primary Asset Information -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <h3 class="border-bottom pb-2 mb-3">Asset Information</h3>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <strong class="d-block text-muted small">Asset ID:</strong>
+          <span class="fs-5">{{ createdAssetId || 'Auto-generated' }}</span>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <strong class="d-block text-muted small">Serial Number:</strong>
+          <span class="fs-5 fw-bold">{{ createdAssetData.serial_number || 'N/A' }}</span>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <strong class="d-block text-muted small">IGT Part Number:</strong>
+          <span class="fs-5">{{ createdAssetData.igt_part_number || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <!-- Work Order Information -->
+      <div class="row mb-4" *ngIf="createdAssetData.wo_number">
+        <div class="col-12">
+          <h3 class="border-bottom pb-2 mb-3">Work Order Details</h3>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+          <strong class="d-block text-muted small">Work Order Number:</strong>
+          <span class="fs-5">{{ createdAssetData.wo_number }}</span>
+        </div>
+        
+        <div class="col-md-4 mb-3" *ngIf="createdAssetData.wo_part">
+          <strong class="d-block text-muted small">WO Part:</strong>
+          <span class="fs-5">{{ createdAssetData.wo_part }}</span>
+        </div>
+        
+        <div class="col-md-4 mb-3" *ngIf="createdAssetData.wo_line">
+          <strong class="d-block text-muted small">WO Line:</strong>
+          <span class="fs-5">{{ createdAssetData.wo_line }}</span>
+        </div>
+        
+        <div class="col-12 mb-3" *ngIf="createdAssetData.wo_description">
+          <strong class="d-block text-muted small">Description:</strong>
+          <span>{{ createdAssetData.wo_description }}</span>
+        </div>
+      </div>
+
+      <!-- Barcode Section -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <h3 class="border-bottom pb-2 mb-3">Barcode</h3>
+        </div>
+        <div class="col-12 text-center">
+          <div class="border p-4 bg-light d-flex flex-column align-items-center">
+            <ngx-barcode6 
+              [bc-value]="createdAssetData.serial_number || 'SERIAL-NUMBER'"
+              [bc-display-value]="true"
+              [bc-width]="2"
+              [bc-height]="60"
+              [bc-font-size]="16"
+              [bc-margin]="10"
+              bc-format="CODE128">
+            </ngx-barcode6>
+          </div>
+        </div>
+      </div>
+
+      <!-- Creation Information -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <h3 class="border-bottom pb-2 mb-3">Record Information</h3>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <strong class="d-block text-muted small">Created By:</strong>
+          <span>{{ createdAssetData.inspector_name || currentUser?.full_name || 'Unknown' }}</span>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+          <strong class="d-block text-muted small">Created On:</strong>
+          <span *ngIf="createdAssetData.time_stamp">{{ formatTimestamp(createdAssetData.time_stamp) }}</span>
+          <span *ngIf="!createdAssetData.time_stamp">{{ getCurrentTimestamp() }}</span>
+        </div>
+        
+        <div class="col-md-6 mb-3" *ngIf="createdAssetData.inspector_signature">
+          <strong class="d-block text-muted small">Inspector Signature:</strong>
+          <span>{{ createdAssetData.inspector_signature }}</span>
+        </div>
+        
+        <div class="col-md-6 mb-3" *ngIf="createdAssetData.tech_name">
+          <strong class="d-block text-muted small">Technician:</strong>
+          <span>{{ createdAssetData.tech_name }}</span>
+        </div>
+      </div>
+
+      <!-- Additional Notes -->
+      <div class="row mb-4" *ngIf="createdAssetData.comments">
+        <div class="col-12">
+          <h3 class="border-bottom pb-2 mb-3">Comments</h3>
+        </div>
+        <div class="col-12">
+          <p class="border p-3 bg-light">{{ createdAssetData.comments }}</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="row mt-5">
+        <div class="col-12 text-center">
+          <hr class="my-3">
+          <p class="small text-muted">
+            This document was generated automatically by the IGT Serial Generator system.<br>
+            Printed on {{ getCurrentTimestamp() }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </app-public-form-wrapper>
+
+<!-- Embedded mode: Form only (no wrapper, no cards, no submit button) -->
+<div *ngIf="isEmbedded">
+  <!-- Success Message for embedded mode -->
+  <div *ngIf="showSuccessMessage" class="alert alert-success">
+    <h4 class="alert-heading">IGT Asset Created Successfully!</h4>
+    <p *ngIf="createdAssetData?.serial_number">
+      Serial Number: <strong class="badge bg-primary">{{ createdAssetData.serial_number }}</strong>
+    </p>
+    <button class="btn btn-primary" (click)="createAnother()">Create Another</button>
+  </div>
+
+  <!-- Pure form content for embedded mode (parent handles submission) -->
+  <div *ngIf="!showSuccessMessage">
+    <app-igt-form
+      (setFormEmitter)="setFormEmitter($event)"
+      [submitted]="submitted">
+    </app-igt-form>
+  </div>
+</div>

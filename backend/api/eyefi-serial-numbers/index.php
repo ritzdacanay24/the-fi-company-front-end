@@ -50,6 +50,11 @@ class EyeFiSerialNumberAPI {
             $params = [];
 
             // Apply filters
+            if (!empty($filters['id'])) {
+                $query .= " AND esn.id = ?";
+                $params[] = $filters['id'];
+            }
+
             if (!empty($filters['search'])) {
                 $query .= " AND (esn.serial_number LIKE ? OR esn.product_model LIKE ?)";
                 $searchTerm = '%' . $filters['search'] . '%';

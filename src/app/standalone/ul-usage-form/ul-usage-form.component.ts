@@ -117,6 +117,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
   // Success state
   lastSubmittedULs: string[] = []; // Track last submitted UL numbers for display
+  lastSubmittedData: Partial<ULUsage>[] = []; // Store complete submission data for printing
   autoLogoutCountdown = 0; // Countdown timer for auto logout
   autoLogoutTimer: Subscription | null = null; // Timer subscription
 
@@ -128,6 +129,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // ViewChild references for login inputs
   @ViewChild('usernameInput') usernameInput!: ElementRef<HTMLInputElement>;
   @ViewChild('cardNumberInput') cardNumberInput!: ElementRef<HTMLInputElement>;
+  @ViewChild(PublicFormWrapperComponent) wrapperComponent!: PublicFormWrapperComponent;
 
   // User image handling (managed by wrapper)
   hasValidUserImage = true;
@@ -508,6 +510,7 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
       // Show success message and track submitted ULs
       this.lastSubmittedULs = [...this.assignedULNumbers]; // Store for display
+      this.lastSubmittedData = [...this.pendingSubmissionData]; // Store complete data for printing
       this.showSuccessMessage = true;
 
       // Start auto logout countdown
@@ -548,14 +551,24 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   logout() {
     // Session management handled by wrapper component
     this.clearAutoLogoutTimer();
-    this.authService.logout();
-    this.isAuthenticated = false;
-    this.currentUser = null;
+    
+    // Use wrapper component's logout method for proper authentication clearing
+    if (this.wrapperComponent) {
+      this.wrapperComponent.logout();
+    } else {
+      // Fallback if wrapper is not available
+      this.authService.logout();
+      this.isAuthenticated = false;
+      this.currentUser = null;
+    }
+    
+    // Clear form state
     this.usageForm.reset();
     this.assignedULNumbers = [];
     this.bulkTransactions = [];
     this.showSuccessMessage = false;
     this.lastSubmittedULs = [];
+    this.lastSubmittedData = [];
     
     // Close confirmation modal if it's open
     this.showConfirmationModal = false;
@@ -578,9 +591,206 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
     this.clearAutoLogoutTimer();
     this.showSuccessMessage = false;
     this.lastSubmittedULs = [];
+    this.lastSubmittedData = [];
     // Form is already reset, just need to hide success message
     // Refresh UL data to ensure latest usage status
     this.loadAvailableULs();
+  }
+
+  printULUsageRecords() {
+    if (this.lastSubmittedData.length === 0) {
+      console.error('No data to print');
+      return;
+    }
+
+    // Create print content
+    const printWindow = window.open('', 'PRINT', 'height=600,width=800');
+    
+    if (!printWindow) {
+      alert('Please allow popups to print');
+      return;
+    }
+
+    const currentDate = new Date().toLocaleString();
+    const userName = this.currentUser?.full_name || this.currentUser?.username || 'Unknown User';
+    
+    // Build rows for each UL usage
+    const rows = this.lastSubmittedData.map((record, index) => `
+      <tr>
+        <td class="text-center">${index + 1}</td>
+        <td><strong>${record.ul_number}</strong></td>
+        <td>${record.serial_number || 'N/A'}</td>
+        <td class="text-center">${record.quantity || 1}</td>
+        <td>${record.category || 'N/A'}</td>
+        <td>${record.work_order || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>UL Usage Records - ${currentDate}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20mm;
+            margin: 0;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #333;
+            padding-bottom: 15px;
+          }
+          .header h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 28px;
+          }
+          .header p {
+            margin: 5px 0;
+            color: #7f8c8d;
+          }
+          .info-section {
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+          }
+          .info-label {
+            font-weight: bold;
+            color: #2c3e50;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+          }
+          th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+          }
+          tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+          }
+          .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .signature-box {
+            width: 45%;
+            border-top: 2px solid #333;
+            padding-top: 10px;
+          }
+          @media print {
+            body {
+              padding: 10mm;
+            }
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>UL Label Usage Records</h1>
+          <p>The Fi Company - Label Tracking System</p>
+        </div>
+
+        <div class="info-section">
+          <div class="info-row">
+            <span class="info-label">Recorded By:</span>
+            <span>${userName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date & Time:</span>
+            <span>${currentDate}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total UL Labels:</span>
+            <span><strong>${this.lastSubmittedData.length}</strong></span>
+          </div>
+          ${this.lastSubmittedData[0]?.work_order ? `
+          <div class="info-row">
+            <span class="info-label">Work Order:</span>
+            <span>${this.lastSubmittedData[0].work_order}</span>
+          </div>
+          ` : ''}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>UL Number</th>
+              <th>Serial Number</th>
+              <th style="width: 100px; text-align: center;">Quantity</th>
+              <th style="width: 100px;">Category</th>
+              <th>Work Order</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <div><strong>Recorded By:</strong></div>
+            <div>${userName}</div>
+          </div>
+          <div class="signature-box">
+            <div><strong>Verified By:</strong></div>
+            <div>_______________________</div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>This is an automatically generated document from The Fi Company Label Tracking System</p>
+          <p>Printed on: ${currentDate}</p>
+        </div>
+
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+          <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+            Print Document
+          </button>
+          <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; margin-left: 10px;">
+            Close
+          </button>
+        </div>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Auto print after a short delay
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
   }
 
   cancelAutoLogout() {
@@ -665,6 +875,11 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
 
   getAvailableULOptions(): ULLabel[] {
     return this.filteredULs.filter(ul => ul.status === 'available');
+  }
+
+  // Check if the selected category is "Used"
+  isUsedCategory(): boolean {
+    return this.usageForm.get('category')?.value === 'Used';
   }
 
   // New method to handle quantity change

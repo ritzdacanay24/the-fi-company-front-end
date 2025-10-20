@@ -48,6 +48,11 @@ const routes: Routes = [
     title: "UL Usage Entry"
   },
   { 
+    path: "standalone/eyefi-workflow", 
+    loadComponent: () => import("./standalone/eyefi-serial-workflow/eyefi-serial-workflow.component").then(c => c.EyefiSerialWorkflowComponent),
+    title: "EyeFi Serial Workflow"
+  },
+  { 
     path: "standalone/igt-serial", 
     loadComponent: () => import("./standalone/standalone-igt-form/standalone-igt-form.component").then(c => c.StandaloneIgtFormComponent),
     title: "IGT Serial Generator"

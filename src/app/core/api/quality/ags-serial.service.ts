@@ -20,4 +20,12 @@ export class AgsSerialService extends DataService<any> {
   checkIfSerialIsFound = async (assetNumber) =>
     await firstValueFrom(this.http.get<any[]>(`${url}/checkIfSerialIsFound?assetNumber=${assetNumber}`));
 
+  /**
+   * Bulk create multiple AGS assets in a single transaction
+   * @param assignments Array of assignment objects with serialNumber, sgPartNumber, poNumber, etc.
+   * @returns Promise with bulk creation response
+   */
+  bulkCreate = async (assignments: any[]) =>
+    await firstValueFrom(this.http.post<any>(`${url}/bulkCreate`, { assignments }));
+
 }

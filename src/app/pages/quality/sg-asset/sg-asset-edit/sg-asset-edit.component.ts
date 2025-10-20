@@ -6,6 +6,7 @@ import { SgAssetFormComponent } from '../sg-asset-form/sg-asset-form.component';
 import { NAVIGATION_ROUTE } from '../sg-asset-constant';
 import { SgAssetService } from '@app/core/api/quality/sg-asset.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { SerialNumberService } from '@app/features/serial-number-management/services/serial-number.service';
 
 @Component({
   standalone: true,
@@ -20,6 +21,7 @@ export class SgAssetEditComponent {
     private activatedRoute: ActivatedRoute,
     private api: SgAssetService,
     private toastrService: ToastrService,
+    private serialNumberService: SerialNumberService,
   ) { }
 
   ngOnInit(): void {
@@ -49,9 +51,29 @@ export class SgAssetEditComponent {
   async getData() {
     try {
       this.data = await this.api.getById(this.id);
-      this.form.get('generated_SG_asset').disable()
+      this.form.get('generated_SG_asset').disable();
+      
+      // If serialNumber is a number (ID), fetch the actual serial number string
+      if (this.data.serialNumber && typeof this.data.serialNumber === 'number') {
+        try {
+          const response = await this.serialNumberService.getSerialNumberById(this.data.serialNumber);
+          // The API returns { success: true, data: [...], count: 1 }
+          if (response?.success && response.data?.length > 0) {
+            this.data.serialNumber = response.data[0].serial_number;
+          } else {
+            // If not found, set to null to show blank instead of the ID
+            this.data.serialNumber = null;
+          }
+        } catch (err) {
+          console.error('Error fetching EyeFi serial number:', err);
+          this.data.serialNumber = null;
+        }
+      }
+      
       this.form.patchValue(this.data);
-    } catch (err) { }
+    } catch (err) {
+      console.error('Error loading SG Asset data:', err);
+    }
   }
 
   onCancel() {

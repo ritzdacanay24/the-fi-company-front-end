@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, Input, Output, EventEmitter } from "@angular/core";
 import { FormGroup } from "@angular/forms";
 import { Router } from "@angular/router";
 import { ToastrService } from "ngx-toastr";
@@ -9,6 +9,7 @@ import { AuthenticationService } from "@app/core/services/auth.service";
 import { SharedModule } from "@app/shared/shared.module";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
 import { PublicFormWrapperComponent } from "../public-form-wrapper/public-form-wrapper.component";
+import { ZebraLabelPrintModalService } from '@app/shared/components/zebra-label-print-modal/zebra-label-print-modal.service';
 
 @Component({
   standalone: true,
@@ -18,15 +19,28 @@ import { PublicFormWrapperComponent } from "../public-form-wrapper/public-form-w
   styleUrls: ["./standalone-ags-serial.component.scss"],
 })
 export class StandaloneAgsSerialComponent implements OnInit {
+  // Input to determine if this form is embedded in another component (like workflow)
+  @Input() isEmbedded = false;
+  
+  // Output to emit form data to parent component (for embedded mode)
+  @Output() formSubmit = new EventEmitter<any>();
+
   constructor(
     private router: Router,
     private api: AgsSerialService,
     private toastrService: ToastrService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private zebraLabelPrintModalService: ZebraLabelPrintModalService
   ) {}
 
   ngOnInit(): void {
     // Component initialization
+    this.loadWorkflowData();
+    
+    // If embedded, auto-authenticate using current stored user
+    if (this.isEmbedded) {
+      this.autoAuthenticateWhenEmbedded();
+    }
   }
 
   form: FormGroup;
@@ -36,6 +50,38 @@ export class StandaloneAgsSerialComponent implements OnInit {
   currentUser: any = null;
   showSuccessMessage = false;
   createdAssetData: any = null;
+  
+  // Workflow data from eyefi-serial-workflow
+  pendingWorkflowData: any = null;
+
+  private autoAuthenticateWhenEmbedded(): void {
+    // Get current user from auth service
+    const currentUser = this.authenticationService.currentUserValue;
+    if (currentUser) {
+      console.log('Auto-authenticating embedded AGS form with current user:', currentUser);
+      this.onAuthenticationComplete({ user: currentUser });
+    }
+  }
+
+  private loadWorkflowData(): void {
+    const workflowDataStr = sessionStorage.getItem('eyefiWorkflowData');
+    if (workflowDataStr) {
+      try {
+        const workflowData = JSON.parse(workflowDataStr);
+        console.log('Loading workflow data:', workflowData);
+        
+        // Store for later use when form is ready
+        this.pendingWorkflowData = workflowData;
+        
+        // Clear from session storage
+        sessionStorage.removeItem('eyefiWorkflowData');
+        
+        this.toastrService.info(`Pre-filling form with Serial: ${workflowData.serialNumber}`, 'Workflow Data Loaded');
+      } catch (error) {
+        console.error('Error parsing workflow data:', error);
+      }
+    }
+  }
 
   onAuthenticationComplete(event: any): void {
     console.log('Authentication complete:', event);
@@ -78,7 +124,41 @@ export class StandaloneAgsSerialComponent implements OnInit {
         },
         { emitEvent: false }
       );
+      
+      // Apply workflow data if available
+      if (this.pendingWorkflowData) {
+        this.applyWorkflowDataToForm();
+      }
     }
+  }
+
+  private applyWorkflowDataToForm(): void {
+    if (!this.form || !this.pendingWorkflowData) {
+      return;
+    }
+
+    console.log('Applying workflow data to form:', this.pendingWorkflowData);
+
+    // Pre-fill the EyeFi serial number field (in AGS, it's called 'serialNumber')
+    if (this.pendingWorkflowData.serialNumber) {
+      this.form.patchValue({
+        serialNumber: this.pendingWorkflowData.serialNumber
+      }, { emitEvent: false });
+      
+      console.log('Pre-filled EyeFi Serial Number:', this.pendingWorkflowData.serialNumber);
+    }
+
+    // Store additional workflow data for reference
+    if (this.pendingWorkflowData.ulNumber) {
+      console.log('UL Number from workflow:', this.pendingWorkflowData.ulNumber);
+    }
+
+    if (this.pendingWorkflowData.customer) {
+      console.log('Customer from workflow:', this.pendingWorkflowData.customer);
+    }
+
+    // Clear pending data after applying
+    this.pendingWorkflowData = null;
   }
 
   async onSubmit() {
@@ -93,6 +173,17 @@ export class StandaloneAgsSerialComponent implements OnInit {
       return;
     }
 
+    // If embedded, emit form data to parent component instead of submitting directly
+    if (this.isEmbedded) {
+      console.log('Embedded mode: Emitting form data to parent workflow');
+      this.formSubmit.emit({
+        formValue: this.form.value,
+        formValid: this.form.valid
+      });
+      return;
+    }
+
+    // Standalone mode: Handle submission directly
     // Check for duplicate AGS serial if provided
     if (this.form.value?.generated_SG_asset) {
       let data = await this.api.checkIfSerialIsFound(
@@ -161,5 +252,20 @@ export class StandaloneAgsSerialComponent implements OnInit {
   formatTimestamp(timestamp: string): string {
     if (!timestamp) return '';
     return moment(timestamp).format('MM/DD/YYYY hh:mm A');
+  }
+
+  printLabel(): void {
+    const eyefiSerial = this.createdAssetData?.serialNumber;
+    
+    if (!eyefiSerial) {
+      this.toastrService.warning('No EyeFi serial number found to print');
+      return;
+    }
+
+    this.zebraLabelPrintModalService.open({
+      serialNumber: eyefiSerial,
+      title: 'Print AGS Asset Label',
+      partNumber: this.createdAssetData?.generated_SG_asset || ''
+    });
   }
 }
