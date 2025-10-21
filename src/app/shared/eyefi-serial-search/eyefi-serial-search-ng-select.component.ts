@@ -212,9 +212,9 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
         filters.search = term;
       }
 
-      // if (this.status) {
-      //   filters.status = this.status;
-      // }
+      if (this.status) {
+        filters.status = this.status;
+      }
 
       if (this.productModel) {
         filters.product_model = this.productModel;

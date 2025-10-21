@@ -103,14 +103,35 @@ abstract class BaseAssetGenerator
     /**
      * Create central assignment record
      * Links EyeFi serial → UL label → Customer asset
+     * Checks if serial is already consumed before creating record
      * 
      * @param array $assignment Assignment data
      * @param int $customerAssetId ID from customer-specific table
      * @param string $generatedAssetNumber Generated asset number
      * @return int Assignment ID
+     * @throws Exception if serial is already consumed
      */
     protected function createAssignment($assignment, $customerAssetId, $generatedAssetNumber)
     {
+        // First, check if this serial already has a consumed record
+        if (!empty($assignment['eyefi_serial_id'])) {
+            $checkStmt = $this->db->prepare("
+                SELECT id, status, consumed_at, consumed_by 
+                FROM eyefidb.serial_assignments 
+                WHERE eyefi_serial_id = ? AND status = 'consumed'
+            ");
+            $checkStmt->execute([$assignment['eyefi_serial_id']]);
+            $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($existing) {
+                throw new Exception(
+                    "EyeFi Serial #{$assignment['serialNumber']} has already been consumed. " .
+                    "Consumed on {$existing['consumed_at']} by {$existing['consumed_by']}. " .
+                    "Please select an available serial."
+                );
+            }
+        }
+        
         $qry = "
             INSERT INTO eyefidb.serial_assignments (
                 eyefi_serial_id,
@@ -152,13 +173,14 @@ abstract class BaseAssetGenerator
     /**
      * Mark serials as consumed (prevents reuse)
      * Updates both eyefi_serial_numbers and ul_labels tables
+     * Only marks if not already consumed to prevent duplicate key errors
      * 
      * @param array $assignment Assignment data
      * @param int $assignmentId Assignment ID from serial_assignments
      */
     protected function markSerialsAsConsumed($assignment, $assignmentId)
     {
-        // Mark EyeFi serial as consumed
+        // Mark EyeFi serial as consumed (only if not already consumed)
         if (!empty($assignment['eyefi_serial_id'])) {
             $stmt = $this->db->prepare("
                 UPDATE eyefi_serial_numbers 
@@ -166,16 +188,37 @@ abstract class BaseAssetGenerator
                     consumed_at = NOW(),
                     consumed_by = ?,
                     assignment_id = ?
-                WHERE id = ?
+                WHERE id = ? 
+                AND is_consumed = FALSE
             ");
             $stmt->execute([
                 $this->user_full_name,
                 $assignmentId,
                 $assignment['eyefi_serial_id']
             ]);
+            
+            // Check if serial was already consumed
+            if ($stmt->rowCount() === 0) {
+                // Check if it's already consumed
+                $checkStmt = $this->db->prepare("
+                    SELECT is_consumed, consumed_at, consumed_by 
+                    FROM eyefi_serial_numbers 
+                    WHERE id = ?
+                ");
+                $checkStmt->execute([$assignment['eyefi_serial_id']]);
+                $status = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($status && $status['is_consumed']) {
+                    throw new Exception(
+                        "EyeFi Serial #{$assignment['serialNumber']} is already consumed. " .
+                        "Consumed on {$status['consumed_at']} by {$status['consumed_by']}. " .
+                        "Please select an available serial."
+                    );
+                }
+            }
         }
         
-        // Mark UL label as consumed (if exists)
+        // Mark UL label as consumed (only if not already consumed)
         if (!empty($assignment['ul_label_id'])) {
             $stmt = $this->db->prepare("
                 UPDATE ul_labels 
@@ -183,13 +226,33 @@ abstract class BaseAssetGenerator
                     consumed_at = NOW(),
                     consumed_by = ?,
                     assignment_id = ?
-                WHERE id = ?
+                WHERE id = ? 
+                AND is_consumed = FALSE
             ");
             $stmt->execute([
                 $this->user_full_name,
                 $assignmentId,
                 $assignment['ul_label_id']
             ]);
+            
+            // Check if UL was already consumed
+            if ($stmt->rowCount() === 0) {
+                $checkStmt = $this->db->prepare("
+                    SELECT is_consumed, consumed_at, consumed_by 
+                    FROM ul_labels 
+                    WHERE id = ?
+                ");
+                $checkStmt->execute([$assignment['ul_label_id']]);
+                $status = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($status && $status['is_consumed']) {
+                    throw new Exception(
+                        "UL Label #{$assignment['ulNumber']} is already consumed. " .
+                        "Consumed on {$status['consumed_at']} by {$status['consumed_by']}. " .
+                        "Please select an available UL label."
+                    );
+                }
+            }
         }
     }
 

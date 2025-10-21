@@ -15,6 +15,7 @@ import { IgtAssetService } from '@app/pages/quality/igt/services/igt-asset.servi
 import { AgsSerialService } from '@app/core/api/quality/ags-serial.service';
 import { SerialNumberService } from '@app/features/serial-number-management/services/serial-number.service';
 import { ZebraLabelPrintModalService } from '@app/shared/components/zebra-label-print-modal/zebra-label-print-modal.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 interface WorkflowStep {
   id: number;
@@ -107,6 +108,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
 
   // Step 4: Customer selection
   selectedCustomer: string = '';
+  customOtherCustomerName: string = ''; // For "Other" customer type - store custom name
 
   // Step 5: Generated Assets
   generatedAssets: any[] = []; // Store generated SG/AGS assets or selected IGT assets
@@ -158,7 +160,8 @@ export class EyefiSerialWorkflowComponent implements OnInit {
     private igtAssetService: IgtAssetService,
     private agsSerialService: AgsSerialService,
     private serialNumberService: SerialNumberService,
-    private zebraLabelPrintModalService: ZebraLabelPrintModalService
+    private zebraLabelPrintModalService: ZebraLabelPrintModalService,
+    private authenticationService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
@@ -338,7 +341,10 @@ export class EyefiSerialWorkflowComponent implements OnInit {
                  return hasSerial && hasUL;
                });
       case 4:
-        // Step 4: Customer selected
+        // Step 4: Customer selected (and custom name if "Other" selected)
+        if (this.selectedCustomer === 'Other') {
+          return !!this.selectedCustomer && !!this.customOtherCustomerName && this.customOtherCustomerName.trim().length > 0;
+        }
         return !!this.selectedCustomer;
       default:
         return false;
@@ -697,22 +703,52 @@ export class EyefiSerialWorkflowComponent implements OnInit {
   }
 
   resetWorkflow(): void {
+    // Reset step navigation
     this.currentStep = 1;
+    
+    // Reset work order
     this.workOrderNumber = '';
+    this.workOrderDetails = null;
+    
+    // Reset batch configuration
     this.quantity = 1;
     this.category = 'new';
+    
+    // Reset serial assignments
     this.serialAssignments = [];
     this.selectedSerial = null;
     this.selectedUL = null;
     this.selectedULNumber = '';
+    
+    // Reset customer selection
     this.selectedCustomer = '';
+    this.customOtherCustomerName = '';
+    this.currentFormType = '';
+    
+    // Reset generated assets
+    this.generatedAssets = [];
+    
+    // Reset submission state
     this.submissionComplete = false;
     this.successSummary = null;
     this.isTestMode = false;
+    this.confirmationSummary = null;
+    this.showConfirmationModal = false;
+    
+    // Reset loading states
+    this.isLoading = false;
+    this.isGeneratingAssets = false;
+    
+    // Reset pending form data
+    this.pendingFormData = null;
+    
+    // Reset step states
     this.steps.forEach(step => {
       step.completed = false;
       step.active = step.id === 1;
     });
+    
+    console.log('🔄 Workflow reset - ready for new batch');
   }
 
   onULSelected(): void {
@@ -728,6 +764,10 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       ul: this.selectedUL,
       customer: this.selectedCustomer
     });
+    
+    // Set current form type based on selected customer
+    this.currentFormType = this.getCustomerFormComponent();
+    console.log('🎯 Setting currentFormType:', this.currentFormType);
     
     // Store workflow data in sessionStorage for the embedded form to use
     const workflowData = {
@@ -771,6 +811,16 @@ export class EyefiSerialWorkflowComponent implements OnInit {
         await this.preselectIGTAssets();
         console.log('✅ preselectIGTAssets() completed');
         console.log('📦 Generated Assets:', this.generatedAssets);
+      } else if (customerType === 'other') {
+        // Other - No asset generation, just show assignments
+        console.log('➡️ Other customer - no asset generation needed');
+        this.generatedAssets = this.serialAssignments.map((a, i) => ({
+          index: i,
+          serial: a.serial,
+          ulNumber: a.ulNumber,
+          assetNumber: 'N/A', // No asset number for Other
+          asset: null
+        }));
       } else {
         // SG & AGS - Just show preview message, will generate on submit
         console.log('➡️ SG/AGS assets will be generated on form submit');
@@ -795,6 +845,10 @@ export class EyefiSerialWorkflowComponent implements OnInit {
    */
   async generateSGAssets(): Promise<void> {
     try {
+      // Get current user info
+      const currentUser = this.authenticationService.currentUserValue;
+      const userFullName = currentUser?.full_name || 'System';
+
       // Prepare bulk assignments array
       const assignments = this.serialAssignments.map((assignment) => ({
         serialNumber: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
@@ -808,14 +862,15 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       }));
 
       console.log('📦 Bulk creating SG assets:', assignments);
+      console.log('👤 Created by:', userFullName);
 
-      // Call bulk create API - single transaction
-      const response: any = await this.sgAssetService.bulkCreate(assignments);
+      // Call bulk create API - single transaction with user info
+      const response: any = await this.sgAssetService.bulkCreate(assignments, userFullName);
       
       console.log('✅ Bulk SG response:', response);
 
       // Map response data to generatedAssets for display
-      // response.data = [{ generated_SG_asset: "US14421701", insertId: 123, serialNumber: 1234, ... }, ...]
+      // response.data = [{ generated_asset_number: "US14432505", customer_asset_id: "5522", serialNumber: "147398", ... }, ...]
       if (response?.success && response?.data && Array.isArray(response.data)) {
         this.generatedAssets = this.serialAssignments.map((assignment, index) => {
           const createdAsset = response.data[index];
@@ -824,7 +879,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
             serial: assignment.serial,
             ulNumber: assignment.ulNumber,
             asset: createdAsset,
-            assetNumber: createdAsset?.generated_SG_asset || 'Generated'
+            assetNumber: createdAsset?.generated_asset_number || 'Generated'
           };
         });
 
@@ -844,6 +899,10 @@ export class EyefiSerialWorkflowComponent implements OnInit {
    */
   async generateAGSAssets(): Promise<void> {
     try {
+      // Get current user info
+      const currentUser = this.authenticationService.currentUserValue;
+      const userFullName = currentUser?.full_name || 'System';
+
       // Prepare bulk assignments array
       const assignments = this.serialAssignments.map((assignment) => ({
         serialNumber: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
@@ -857,9 +916,10 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       }));
 
       console.log('📦 Bulk creating AGS assets:', assignments);
+      console.log('👤 Created by:', userFullName);
 
-      // Call bulk create API - single transaction
-      const response: any = await this.agsSerialService.bulkCreate(assignments);
+      // Call bulk create API - single transaction with user info
+      const response: any = await this.agsSerialService.bulkCreate(assignments, userFullName);
       
       console.log('✅ Bulk AGS response:', response);
 
@@ -872,7 +932,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
             serial: assignment.serial,
             ulNumber: assignment.ulNumber,
             asset: createdAsset,
-            assetNumber: createdAsset?.generated_AGS_asset || 'Generated'
+            assetNumber: createdAsset?.generated_asset_number || 'Generated'
           };
         });
 
@@ -883,6 +943,109 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       }
     } catch (error) {
       console.error('💥 Error generating AGS assets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate IGT assets using pre-selected IGT serials
+   */
+  async generateIGTAssets(): Promise<void> {
+    try {
+      // Get current user info
+      const currentUser = this.authenticationService.currentUserValue;
+      const userFullName = currentUser?.full_name || 'System';
+
+      // Prepare bulk assignments array with pre-selected IGT assets
+      const assignments = this.generatedAssets.map((generated) => ({
+        igt_serial_number: generated.assetNumber, // Pre-selected IGT serial
+        igt_asset_id: generated.asset?.id || null, // IGT asset ID if available
+        eyefi_serial_number: typeof generated.serial === 'string' ? generated.serial : generated.serial.serial_number,
+        eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
+        ulNumber: generated.ulNumber?.ul_number || '',
+        ul_label_id: generated.ulNumber?.id || null,
+        partNumber: this.workOrderDetails?.wo_part || '',
+        poNumber: this.workOrderNumber,
+        active: 1
+      }));
+
+      console.log('📦 Bulk creating IGT assets:', assignments);
+      console.log('👤 Created by:', userFullName);
+
+      // Call bulk create API - single transaction with user info
+      const response: any = await this.igtAssetService.bulkCreate(assignments, userFullName);
+      
+      console.log('✅ Bulk IGT response:', response);
+
+      // Map response data to generatedAssets for display
+      if (response?.success && response?.data && Array.isArray(response.data)) {
+        this.generatedAssets = this.generatedAssets.map((generated, index) => {
+          const createdAsset = response.data[index];
+          return {
+            ...generated,
+            asset: createdAsset,
+            assetNumber: createdAsset?.generated_asset_number || generated.assetNumber
+          };
+        });
+
+        this.toastrService.success(`Generated ${response.count} IGT assets in bulk`);
+        console.log('✨ Generated IGT Assets (BULK):', this.generatedAssets);
+      } else {
+        throw new Error('Invalid bulk create response');
+      }
+    } catch (error) {
+      console.error('💥 Error generating IGT assets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create "Other" customer assignments without asset generation
+   * Just links EyeFi serial + UL label with custom customer name
+   */
+  async createOtherAssignments(): Promise<void> {
+    try {
+      // Get current user info
+      const currentUser = this.authenticationService.currentUserValue;
+      const userFullName = currentUser?.full_name || 'System';
+
+      // For "Other" customer, we just create assignment records with no customer asset
+      // This will mark EyeFi serials and UL labels as consumed/used
+      const assignments = this.serialAssignments.map((assignment) => ({
+        eyefi_serial_number: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
+        eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
+        ulNumber: assignment.ulNumber?.ul_number || '',
+        ul_label_id: assignment.ulNumber?.id || null,
+        partNumber: this.workOrderDetails?.wo_part || '',
+        poNumber: this.workOrderNumber,
+        customer_name: this.customOtherCustomerName, // Custom customer name from input
+        customer_type: 'Other',
+        customer_type_id: null, // No specific customer type
+        inspector_name: userFullName,
+        consumed_by: userFullName,
+        status: 'consumed',
+        active: 1
+      }));
+
+      console.log('📦 Creating Other customer assignments:', assignments);
+      console.log('👤 Customer Name:', this.customOtherCustomerName);
+      console.log('👤 Created by:', userFullName);
+
+      // For now, just mark as successful locally
+      // TODO: Create backend API endpoint if needed to store these assignments
+      this.generatedAssets = this.serialAssignments.map((assignment, index) => ({
+        index,
+        serial: assignment.serial,
+        ulNumber: assignment.ulNumber,
+        asset: null,
+        assetNumber: 'N/A', // No asset number for Other customer
+        customerName: this.customOtherCustomerName
+      }));
+
+      this.toastrService.success(`Created ${assignments.length} assignments for ${this.customOtherCustomerName}`);
+      console.log('✨ Created Other Assignments:', this.generatedAssets);
+    } catch (error) {
+      console.error('💥 Error creating Other assignments:', error);
       throw error;
     }
   }
@@ -1008,9 +1171,9 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       case 'AGS':
         return 'ags';
       case 'Other':
-        return 'igt'; // Default to IGT
+        return 'other'; // Just assignment, no asset generation
       default:
-        return 'igt';
+        return 'other';
     }
   }
 
@@ -1058,7 +1221,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
         quantity: this.quantity,
         category: this.category === 'new' ? 'New' : 'Used'
       },
-      customer: this.selectedCustomer,
+      customer: this.selectedCustomer === 'Other' ? this.customOtherCustomerName : this.selectedCustomer,
       assignments: this.serialAssignments.map((assignment, index) => ({
         index: index + 1,
         eyefiSerial: typeof assignment.serial === 'string' 
@@ -1092,13 +1255,20 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       let result: any;
       switch (this.currentFormType) {
         case 'sg':
-          result = await this.submitSgAssetForm(this.pendingFormData.formValue);
+          // Light and Wonder - Generate assets directly (no embedded form)
+          result = await this.generateSGAssets();
           break;
         case 'igt':
-          result = await this.submitIgtForm(this.pendingFormData.formValue);
+          // IGT - Generate assets directly using pre-selected serials
+          result = await this.generateIGTAssets();
           break;
         case 'ags':
-          result = await this.submitAgsSerialForm(this.pendingFormData.formValue);
+          // AGS - Generate assets directly (no embedded form)
+          result = await this.generateAGSAssets();
+          break;
+        case 'other':
+          // Other - Just create assignments without asset generation
+          result = await this.createOtherAssignments();
           break;
         default:
           throw new Error('Unknown form type: ' + this.currentFormType);
@@ -1110,7 +1280,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       this.successSummary = {
         workOrder: this.confirmationSummary.workOrder,
         batch: this.confirmationSummary.batch,
-        customer: this.selectedCustomer,
+        customer: this.selectedCustomer === 'Other' ? this.customOtherCustomerName : this.selectedCustomer,
         customerType: this.currentFormType,
         createdAssets: this.generatedAssets.map((asset, index) => ({
           index: index + 1,

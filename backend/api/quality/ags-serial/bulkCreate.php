@@ -11,11 +11,11 @@ include_once 'AgsSerialGenerator.php';
 $database = new Database();
 $db = $database->getConnection();
 
-$agsSerial = new AgsSerialGenerator($db);
-$agsSerial->user_full_name = $_POST['user_full_name'] ?? 'System';
-
-// Get POST data
+// Get POST data (JSON)
 $data = json_decode(file_get_contents("php://input"));
+
+$agsSerial = new AgsSerialGenerator($db);
+$agsSerial->user_full_name = $data->user_full_name ?? $_POST['user_full_name'] ?? 'System';
 
 if (!empty($data->assignments) && is_array($data->assignments)) {
     try {

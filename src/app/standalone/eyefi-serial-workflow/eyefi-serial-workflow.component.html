@@ -10,7 +10,7 @@
 
   <div *ngIf="isAuthenticated" class="row">
     <!-- Left Sidebar - Batch Summary (Always Visible) -->
-    <div class="col-lg-4 mb-4">
+    <div class="col-4 mb-4">
       <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
         <div class="card-header bg-primary text-white">
           <h6 class="mb-0 text-white">
@@ -107,7 +107,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="col-lg-8">
+    <div class="col-8">
       
       <!-- Workflow Progress Stepper -->
       <div class="card border-0 shadow-sm mb-4">
@@ -133,7 +133,7 @@
       </div>
 
       <!-- Main Workflow Card -->
-      <div class="card border-0 shadow-lg">
+      <div class="card border-0 shadow">
         <div class="card-header border-bottom bg-primary bg-gradient text-white">
           <div class="d-flex align-items-center">
             <div class="me-3">
@@ -232,7 +232,7 @@
                   <label class="form-label fw-bold">Quantity *</label>
                   <input 
                     type="number" 
-                    class="form-control form-control-lg" 
+                    class="form-control form-control" 
                     [(ngModel)]="quantity"
                     (ngModelChange)="onQuantityChange()"
                     min="1"
@@ -248,7 +248,7 @@
                 <div class="col-md-6 mb-3">
                   <label class="form-label fw-bold">Category *</label>
                   <select 
-                    class="form-select form-select-lg" 
+                    class="form-select form-select" 
                     [(ngModel)]="category"
                     [disabled]="isLoading">
                     <option value="new">New</option>
@@ -469,7 +469,7 @@
                 <div class="col-md-12">
                   <label class="form-label fw-bold">Customer *</label>
                   <select 
-                    class="form-select form-select-lg" 
+                    class="form-select form-select" 
                     [(ngModel)]="selectedCustomer"
                     [disabled]="isLoading">
                     <option value="" disabled>Select a customer</option>
@@ -480,6 +480,22 @@
                   <div class="form-text">
                     <i class="mdi mdi-information-outline me-1"></i>
                     The customer who will receive these serial number assignments
+                  </div>
+                </div>
+                
+                <!-- Show custom name input if "Other" is selected -->
+                <div class="col-md-12 mt-3" *ngIf="selectedCustomer === 'Other'">
+                  <label class="form-label fw-bold">Customer Name *</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="customOtherCustomerName"
+                    placeholder="Enter customer name..."
+                    [disabled]="isLoading"
+                    required>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Enter the name of the customer (e.g., "Everi", "Konami", etc.)
                   </div>
                 </div>
               </div>
@@ -502,7 +518,7 @@
                 <div class="col-md-12">
                   <label class="form-label fw-bold">Customer *</label>
                   <select 
-                    class="form-select form-select-lg" 
+                    class="form-select form-select" 
                     [(ngModel)]="selectedCustomer"
                     [disabled]="isLoading">
                     <option value="" disabled>Select a customer</option>
@@ -771,23 +787,87 @@
                 </div>
 
                 <!-- Embedded IGT Form -->
-                <div class="embedded-form-container mt-4">
+                <!-- <div class="embedded-form-container mt-4">
                   <app-standalone-igt-form 
                     [isEmbedded]="true"
                     (formSubmit)="onFormSubmit($event, 'igt')">
                   </app-standalone-igt-form>
-                </div>
+                </div> -->
               </div>
 
-              <!-- Other - Show default form -->
+              <!-- Other - Show assignments without asset generation -->
               <div *ngIf="!isGeneratingAssets && selectedCustomer === 'Other'">
-                <div class="alert alert-warning mb-4">
-                  <p class="mb-0">Please complete the form for this custom customer assignment.</p>
+                <!-- Customer Name Input -->
+                <div class="card border-primary mb-4">
+                  <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0 text-white">
+                      <i class="mdi mdi-account-edit me-2"></i>
+                      Enter Customer Name
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <label class="form-label fw-bold">Customer Name *</label>
+                        <input 
+                          type="text" 
+                          class="form-control form-control-lg" 
+                          [(ngModel)]="customOtherCustomerName"
+                          placeholder="Enter customer/company name..."
+                          [disabled]="isLoading"
+                          required>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Enter the name of the customer or company for these assignments
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <app-standalone-igt-form 
-                  [isEmbedded]="true"
-                  (formSubmit)="onFormSubmit($event, 'igt')">
-                </app-standalone-igt-form>
+
+                <div class="alert alert-info mb-4" *ngIf="customOtherCustomerName">
+                  <div class="d-flex align-items-start">
+                    <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                    <div>
+                      <h6 class="alert-heading mb-2">{{ customOtherCustomerName }} - No Asset Generation</h6>
+                      <p class="mb-0">{{ generatedAssets.length }} assignments will be created for <strong>{{ customOtherCustomerName }}</strong> without customer asset numbers. This will link EyeFi serials with UL labels and mark them as consumed.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Preview Assignments Table -->
+                <div class="table-responsive" *ngIf="customOtherCustomerName">
+                  <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>EyeFi Serial Number</th>
+                        <th>UL Label Number</th>
+                        <th>Customer Asset</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let generated of generatedAssets; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>
+                          <strong>{{ customOtherCustomerName || 'Not specified' }}</strong>
+                        </td>
+                        <td>
+                          <span class="badge bg-primary">{{ generated.serial?.serial_number }}</span>
+                        </td>
+                        <td>
+                          <span class="badge bg-info">{{ generated.ulNumber?.ul_number }}</span>
+                        </td>
+                        <td>
+                          <span class="text-muted">
+                            <i class="mdi mdi-minus-circle"></i> No Asset Number
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
             <!-- End of regular Step 5 content (hidden after submission) -->
@@ -811,7 +891,7 @@
           <div>
             <!-- Steps 1-3: Regular Next Step button -->
             <button *ngIf="currentStep < 4" 
-                    class="btn btn-primary btn-lg" 
+                    class="btn btn-primary btn" 
                     type="button" 
                     (click)="nextStep()" 
                     [disabled]="!canProceedToNextStep() || isLoading">
@@ -821,7 +901,7 @@
             
             <!-- Step 4: Proceed to Customer Form button -->
             <button *ngIf="currentStep === 4" 
-                    class="btn btn-success btn-lg" 
+                    class="btn btn-success btn" 
                     type="button" 
                     (click)="proceedToCustomerForm()" 
                     [disabled]="!canProceedToNextStep() || isLoading">
@@ -841,22 +921,22 @@
               </button>
               
               <!-- Real Submit Button -->
-              <button class="btn btn-success btn-lg" 
+              <button class="btn btn-success btn" 
                       type="button" 
                       (click)="submitEmbeddedForm()" 
-                      [disabled]="isLoading">
+                      [disabled]="isLoading || (selectedCustomer === 'Other' && !customOtherCustomerName)">
                 <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
                 <span *ngIf="isLoading">Generating & Submitting...</span>
                 <span *ngIf="!isLoading">
                   <i class="mdi mdi-check-circle me-1"></i>
-                  Generate Assets & Submit
+                  {{ selectedCustomer === 'Other' ? 'Create Assignments & Submit' : 'Generate Assets & Submit' }}
                 </span>
               </button>
             </div>
 
             <!-- Step 5: After submission buttons -->
             <button *ngIf="currentStep === 5 && submissionComplete"
-                    class="btn btn-primary btn-lg"
+                    class="btn btn-primary btn"
                     type="button"
                     (click)="resetWorkflow()">
               <i class="mdi mdi-refresh me-1"></i>
@@ -1041,7 +1121,7 @@
           <i class="mdi mdi-close-circle me-1"></i>
           Cancel
         </button>
-        <button type="button" class="btn btn-success btn-lg" (click)="confirmAndSubmit()" [disabled]="isLoading">
+        <button type="button" class="btn btn-success btn" (click)="confirmAndSubmit()" [disabled]="isLoading">
           <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
           <span *ngIf="!isLoading">
             <i class="mdi mdi-check-all me-1"></i>
