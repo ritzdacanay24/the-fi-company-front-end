@@ -24,6 +24,7 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
           [class.is-invalid]="showInvalidMessage"
           [(ngModel)]="model"
           [ngbTypeahead]="search"
+          [resultTemplate]="rt"
           [resultFormatter]="formatter"
           [inputFormatter]="formatter"
           [placeholder]="placeholder"
@@ -50,7 +51,6 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
         <div *ngIf="!result.isPlaceholder" class="d-flex align-items-center justify-content-between py-2">
           <div>
             <div class="fw-semibold text-dark">{{result.serial_number}}</div>
-            <small class="text-muted">{{result.product_model}}</small>
           </div>
           <span class="badge bg-{{getStatusBadgeClass(result.status)}} ms-3">
             {{result.status}}
@@ -202,7 +202,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   private async searchSerials(term: string): Promise<any[]> {
     try {
       const filters: any = {
-        limit: 10,
+        // limit: 30,
         sort: 'serial_number',
         order: 'asc'
       };
@@ -212,9 +212,9 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
         filters.search = term;
       }
 
-      if (this.status) {
-        filters.status = this.status;
-      }
+      // if (this.status) {
+      //   filters.status = this.status;
+      // }
 
       if (this.productModel) {
         filters.product_model = this.productModel;
