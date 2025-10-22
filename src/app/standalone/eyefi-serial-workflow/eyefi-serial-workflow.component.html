@@ -79,8 +79,8 @@
             </div>
           </div>
 
-          <!-- Customer (only show after step 4) -->
-          <div *ngIf="currentStep >= 4 && selectedCustomer" class="mb-3">
+          <!-- Customer (only show after step 2) -->
+          <div *ngIf="currentStep >= 2 && selectedCustomer" class="mb-3">
             <div class="d-flex justify-content-between align-items-center">
               <small class="text-muted">
                 <i class="mdi mdi-account-outline me-1"></i>
@@ -203,8 +203,63 @@
           </div>
 
           
-          <!-- Step 2: Configure Batch (Quantity + Category) -->
+          <!-- Step 2: Select Customer -->
           <div *ngIf="currentStep === 2" class="workflow-step">
+            <div class="mb-4">
+              <h5 class="mb-3 text-primary">
+                <i class="mdi mdi-account me-2"></i>
+                Select Customer
+              </h5>
+              <p class="text-muted mb-4">
+                Choose which customer will receive the EyeFi serial numbers for this work order.
+              </p>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold">Customer *</label>
+                  <div class="form-text mb-3">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    The customer who will receive these serial number assignments
+                  </div>
+                  
+                  <div class="d-flex flex-column gap-2">
+                    <div *ngFor="let customer of customerOptions" class="form-check form-check-lg">
+                      <input 
+                        class="form-check-input" 
+                        type="radio" 
+                        [id]="'customer-' + customer"
+                        [value]="customer"
+                        [(ngModel)]="selectedCustomer"
+                        [disabled]="isLoading">
+                      <label class="form-check-label" [for]="'customer-' + customer">
+                        {{ customer }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Show custom name input if "Other" is selected -->
+                <div class="col-md-12 mt-3" *ngIf="selectedCustomer === 'Other'">
+                  <label class="form-label fw-bold">Customer Name *</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="customOtherCustomerName"
+                    placeholder="Enter customer name..."
+                    [disabled]="isLoading"
+                    required>
+                  <div class="form-text">
+                    <i class="mdi mdi-information-outline me-1"></i>
+                    Enter the name of the customer (e.g., "Everi", "Konami", etc.)
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Step 3: Configure Batch (Quantity + Category) -->
+          <div *ngIf="currentStep === 3" class="workflow-step">
             <div class="mb-4">
               <h5 class="mb-3 text-primary">
                 <i class="mdi mdi-cog-outline me-2"></i>
@@ -272,8 +327,8 @@
             </div>
           </div>
 
-          <!-- Step 3: Assign Serials & UL Numbers -->
-          <div *ngIf="currentStep === 3" class="workflow-step">
+          <!-- Step 4: Assign Serials & UL Numbers -->
+          <div *ngIf="currentStep === 4" class="workflow-step">
             <div class="mb-4">
               <h5 class="mb-3 text-primary">
                 <i class="mdi mdi-link-variant me-2"></i>
@@ -460,61 +515,6 @@
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-
-          <!-- Step 4: Select Customer -->
-          <div *ngIf="currentStep === 4" class="workflow-step">
-            <div class="mb-4">
-              <h5 class="mb-3 text-primary">
-                <i class="mdi mdi-account me-2"></i>
-                Select Customer
-              </h5>
-              <p class="text-muted mb-4">
-                Assign the {{ quantity }} EyeFi serial number(s) to a customer. This will complete the batch registration process.
-              </p>
-
-              <div class="row">
-                <div class="col-md-12">
-                  <label class="form-label fw-bold">Customer *</label>
-                  <div class="form-text mb-3">
-                    <i class="mdi mdi-information-outline me-1"></i>
-                    The customer who will receive these serial number assignments
-                  </div>
-                  
-                  <div class="d-flex flex-column gap-2">
-                    <div *ngFor="let customer of customerOptions" class="form-check form-check-lg">
-                      <input 
-                        class="form-check-input" 
-                        type="radio" 
-                        [id]="'customer-' + customer"
-                        [value]="customer"
-                        [(ngModel)]="selectedCustomer"
-                        [disabled]="isLoading">
-                      <label class="form-check-label" [for]="'customer-' + customer">
-                        {{ customer }}
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Show custom name input if "Other" is selected -->
-                <div class="col-md-12 mt-3" *ngIf="selectedCustomer === 'Other'">
-                  <label class="form-label fw-bold">Customer Name *</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    [(ngModel)]="customOtherCustomerName"
-                    placeholder="Enter customer name..."
-                    [disabled]="isLoading"
-                    required>
-                  <div class="form-text">
-                    <i class="mdi mdi-information-outline me-1"></i>
-                    Enter the name of the customer (e.g., "Everi", "Konami", etc.)
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -843,24 +843,14 @@
           </div>
           
           <div>
-            <!-- Steps 1-3: Regular Next Step button -->
-            <button *ngIf="currentStep < 4" 
+            <!-- Steps 1-4: Regular Next Step button -->
+            <button *ngIf="currentStep < 5" 
                     class="btn btn-primary btn" 
                     type="button" 
                     (click)="nextStep()" 
                     [disabled]="!canProceedToNextStep() || isLoading">
               Next Step
               <i class="mdi mdi-chevron-right ms-1"></i>
-            </button>
-            
-            <!-- Step 4: Proceed to Customer Form button -->
-            <button *ngIf="currentStep === 4" 
-                    class="btn btn-success btn" 
-                    type="button" 
-                    (click)="proceedToCustomerForm()" 
-                    [disabled]="!canProceedToNextStep() || isLoading">
-              <i class="mdi mdi-arrow-right-circle me-1"></i>
-              Proceed to {{ selectedCustomer }} Form
             </button>
             
             <!-- Step 5: Submit buttons (only shown before submission) -->

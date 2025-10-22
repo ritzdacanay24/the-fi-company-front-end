@@ -61,22 +61,22 @@ export class EyefiSerialWorkflowComponent implements OnInit {
     },
     {
       id: 2,
+      title: 'Select Customer',
+      description: 'Choose the customer for this batch',
+      completed: false,
+      active: false
+    },
+    {
+      id: 3,
       title: 'Configure Batch',
       description: 'Enter quantity and select category (New/Used)',
       completed: false,
       active: false
     },
     {
-      id: 3,
+      id: 4,
       title: 'Assign Serials & UL Numbers',
       description: 'Select serial numbers and assign UL labels',
-      completed: false,
-      active: false
-    },
-    {
-      id: 4,
-      title: 'Select Customer',
-      description: 'Assign the serial numbers to a customer',
       completed: false,
       active: false
     },
