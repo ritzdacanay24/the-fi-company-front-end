@@ -239,6 +239,22 @@ const routes: Routes = [
       },
     ],
   },
+  // Serial Assignments Management
+  {
+    path: "serial-assignments",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: "",
+        title: "Serial Assignments",
+        loadComponent: () =>
+          import("./features/serial-assignments/serial-assignments.component").then(
+            (c) => c.SerialAssignmentsComponent
+          ),
+      }
+    ],
+  },
   // Training Management routes
   {
     path: "training",

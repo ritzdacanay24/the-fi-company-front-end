@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../BaseAssetGenerator.php';
+
 /**
  * IGT Assignment Generator
  * 
@@ -9,16 +11,42 @@
  * - UL Label (assigned)
  * - IGT Serial Number (marked as used)
  */
-class IgtAssetGenerator
+class IgtAssetGenerator extends BaseAssetGenerator
 {
-    private $db;
-    public $user_full_name = 'System';
-    private $nowDate;
-
     public function __construct($db)
     {
-        $this->db = $db;
-        $this->nowDate = date("Y-m-d H:i:s", time());
+        // IGT customer_type_id = 1 (based on customer_types table)
+        parent::__construct($db, 1, 'igt');
+    }
+
+    /**
+     * IGT doesn't generate new asset numbers - it uses pre-loaded serials
+     * This method is required by BaseAssetGenerator but not used for IGT
+     * 
+     * @param array $assignment Assignment data
+     * @return string Returns the pre-assigned IGT serial number
+     */
+    protected function generateAssetNumber($assignment)
+    {
+        // IGT uses pre-loaded serial numbers, not generated ones
+        // Return the IGT serial number that was passed in
+        return $assignment['igt_serial_number'] ?? null;
+    }
+
+    /**
+     * IGT doesn't insert into a customer asset table
+     * IGT serials are pre-loaded in igt_serial_numbers table
+     * This method is required by BaseAssetGenerator but not used for IGT
+     * 
+     * @param array $assignment Assignment data
+     * @param string $assetNumber Asset number
+     * @return int Returns the IGT serial ID (customer_asset_id)
+     */
+    protected function insertCustomerAsset($assignment, $assetNumber)
+    {
+        // IGT serials are already in igt_serial_numbers table
+        // We just return the igt_asset_id that was passed in
+        return $assignment['igt_asset_id'] ?? null;
     }
 
     /**
@@ -28,7 +56,7 @@ class IgtAssetGenerator
      * @param int $assignmentId The serial_assignments record ID
      * @return bool Success status
      */
-    private function markIgtSerialAsUsed($serialId, $assignmentId)
+    protected function markIgtSerialAsUsed($serialId, $assignmentId)
     {
         $query = "
             UPDATE igt_serial_numbers 
@@ -56,7 +84,7 @@ class IgtAssetGenerator
     /**
      * Mark EyeFi serial as consumed
      */
-    private function markEyefiSerialAsConsumed($eyefiSerialId, $assignmentId)
+    protected function markEyefiSerialAsConsumed($eyefiSerialId, $assignmentId)
     {
         $query = "
             UPDATE eyefi_serial_numbers 
@@ -80,12 +108,12 @@ class IgtAssetGenerator
     }
 
     /**
-     * Create a single assignment record
+     * Create a single IGT assignment record
      * 
      * Note: IGT serial is stored in customer_asset_id and generated_asset_number
      * since serial_assignments table doesn't have specific IGT columns
      */
-    private function createAssignment($assignment)
+    protected function createIgtAssignment($assignment)
     {
         // Insert into serial_assignments table
         // customer_type_id = 1 for IGT (based on customer_types table)
@@ -159,8 +187,14 @@ class IgtAssetGenerator
             $results = [];
             
             foreach ($assignments as $assignment) {
+                // 0. Ensure EyeFi serial exists in database (auto-create if manually entered)
+                if (!empty($assignment['eyefi_serial_number']) && empty($assignment['eyefi_serial_id'])) {
+                    $assignment['eyefi_serial_id'] = $this->findOrCreateEyeFiSerial($assignment['eyefi_serial_number']);
+                    error_log("Auto-created EyeFi serial: {$assignment['eyefi_serial_number']} with ID: {$assignment['eyefi_serial_id']}");
+                }
+                
                 // 1. Create assignment record
-                $assignmentId = $this->createAssignment($assignment);
+                $assignmentId = $this->createIgtAssignment($assignment);
                 
                 // 2. Mark IGT serial as used
                 if (!empty($assignment['igt_asset_id'])) {

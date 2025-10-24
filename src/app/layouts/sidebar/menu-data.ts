@@ -541,6 +541,18 @@ export const MENU_DATA: MenuItem[] = [
                 accessRequired: false,
                 activatedRoutes: "/eyefi-serial-number-management/*"
             },
+            {
+                label: "Serial Assignments",
+                link: "/serial-assignments",
+                description: "View and manage all serial number assignments",
+                icon: "las la-clipboard-list",
+                accessRequired: false,
+                activatedRoutes: "/serial-assignments/*",
+                badge: {
+                    variant: "badge bg-success",
+                    text: "New",
+                },
+            },
         ],
     },
 ];

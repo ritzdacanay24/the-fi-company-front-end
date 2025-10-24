@@ -2,12 +2,12 @@ import { Component, EventEmitter, Input, OnInit, OnChanges, Output, forwardRef, 
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgbTypeahead, NgbTypeaheadModule } from '@ng-bootstrap/ng-bootstrap';
-import { Observable, of, OperatorFunction, Subject, merge } from 'rxjs';
+import { Observable, of, OperatorFunction, Subject, merge, firstValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged, tap, switchMap, catchError, map, filter } from 'rxjs/operators';
-import { SerialNumberService } from '../../features/serial-number-management/services/serial-number.service';
+import { ULLabelService } from '../../features/ul-management/services/ul-label.service';
 
 @Component({
-  selector: 'app-eyefi-serial-search-ng',
+  selector: 'app-ul-label-search-ng',
   standalone: true,
   imports: [CommonModule, FormsModule, NgbTypeaheadModule],
   template: `
@@ -30,7 +30,7 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
           [placeholder]="placeholder"
           [disabled]="disabled"
           container="body"
-          (selectItem)="onSerialSelect($event)"
+          (selectItem)="onLabelSelect($event)"
           (focus)="focus$.next($any($event).target.value)"
           (click)="click$.next($any($event).target.value)"
           (blur)="onBlur()"
@@ -38,7 +38,7 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
           #instance="ngbTypeahead"
         />
         <button 
-          *ngIf="selectedSerial" 
+          *ngIf="selectedLabel" 
           class="btn btn-outline-secondary" 
           type="button"
           (click)="clearSelection()"
@@ -51,37 +51,30 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
       <ng-template #rt let-result="result" let-term="term">
         <div *ngIf="!result.isPlaceholder" class="d-flex align-items-center justify-content-between py-2">
           <div>
-            <div class="fw-semibold text-dark">{{result.serial_number}}</div>
+            <div class="fw-semibold text-dark">{{result.ul_number}}</div>
+            <small class="text-muted">{{result.category}}</small>
           </div>
           <span class="badge bg-{{getStatusBadgeClass(result.status)}} ms-3">
             {{result.status}}
           </span>
         </div>
-        <div *ngIf="result.isPlaceholder && !result.allowAdd" class="py-3 text-center text-muted" style="cursor: default;">
+        <div *ngIf="result.isPlaceholder" class="py-3 text-center text-muted" style="cursor: default;">
           <i class="mdi mdi-alert-circle-outline me-1"></i>
-          <div>{{result.serial_number}}</div>
-          <small>{{result.product_model}}</small>
-        </div>
-        <div *ngIf="result.isPlaceholder && result.allowAdd" class="py-3 text-center" style="cursor: default; background-color: #d1ecf1;">
-          <i class="mdi mdi-information text-info fs-5 mb-2"></i>
-          <div class="fw-semibold text-info">{{result.serial_number}}</div>
-          <small class="text-info">
-            <i class="mdi mdi-check-circle me-1"></i>{{result.product_model}}
-          </small>
+          <div>{{result.ul_number}}</div>
+          <small>{{result.category}}</small>
         </div>
       </ng-template>
       
       <ng-template #noResults>
         <div class="p-3 text-center text-muted">
           <i class="mdi mdi-alert-circle-outline me-1"></i>
-          No serial numbers found in database
+          No UL labels found in database
         </div>
       </ng-template>
       
-      <div class="form-text" *ngIf="showHelpText && !selectedSerial && !isSearching && !showNewSerialMessage">
+      <div class="form-text" *ngIf="showHelpText && !selectedLabel && !isSearching">
         <i class="mdi mdi-information-outline me-1"></i>
-        <span *ngIf="!allowFreeText">Type to search for EyeFi serial numbers</span>
-        <span *ngIf="allowFreeText">Search existing or enter new serial number</span>
+        Type to search for UL labels
       </div>
       
       <div class="form-text text-primary" *ngIf="showHelpText && isSearching">
@@ -89,9 +82,9 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
         Searching...
       </div>
       
-      <div class="text-danger small mt-1" *ngIf="showHelpText && showInvalidMessage && !allowFreeText">
+      <div class="text-danger small mt-1" *ngIf="showHelpText && showInvalidMessage">
         <i class="mdi mdi-alert-circle-outline me-1"></i>
-        Serial number not found in database. Please select from the dropdown.
+        UL label not found in database. Please select from the dropdown.
       </div>
     </div>
   `,
@@ -145,32 +138,30 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => EyefiSerialSearchNgSelectComponent),
+      useExisting: forwardRef(() => UlLabelSearchNgSelectComponent),
       multi: true
     }
   ]
 })
-export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, ControlValueAccessor {
-  @Input() form_label: string = 'Serial Number';
-  @Input() placeholder: string = 'Search by Serial Number';
+export class UlLabelSearchNgSelectComponent implements OnInit, OnChanges, ControlValueAccessor {
+  @Input() form_label: string = 'UL Label Number';
+  @Input() placeholder: string = 'Search by UL Number';
   @Input() required: boolean = false;
   @Input() showLabel: boolean = true;
   @Input() showHelpText: boolean = true; // Show help text below input
   @Input() status: string = 'available';
-  @Input() productModel: string = '';
+  @Input() category: string = ''; // 'New' or 'Used'
   @Input() strictMode: boolean = true;
-  @Input() excludeSerials: string[] = [];
-  @Input() allowFreeText: boolean = false; // Allow entering new serial numbers
+  @Input() excludeLabels: string[] = [];
   
   @Output() notifyParent = new EventEmitter<any>();
 
   @ViewChild('instance', { static: true }) instance!: NgbTypeahead;
 
   model: any;
-  selectedSerial: any = null;
+  selectedLabel: any = null;
   isSearching: boolean = false;
   showInvalidMessage: boolean = false;
-  showNewSerialMessage: boolean = false;
   
   focus$ = new Subject<string>();
   click$ = new Subject<string>();
@@ -179,7 +170,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   private onTouched: () => void = () => {};
   disabled: boolean = false;
 
-  constructor(private serialNumberService: SerialNumberService) {}
+  constructor(private ulLabelService: ULLabelService) {}
 
   ngOnInit(): void {
     // No initialization needed
@@ -193,27 +184,16 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
 
     return merge(debouncedText$, inputFocus$, clicksWithClosedPopup$).pipe(
       tap(() => this.isSearching = true),
-      switchMap(term => this.searchSerials(term || '')),
+      switchMap(term => this.searchLabels(term || '')),
       map(results => {
         // If no results, return a placeholder object
         if (results.length === 0) {
-          // Different message based on allowFreeText mode
-          if (this.allowFreeText) {
-            return [{ 
-              serial_number: 'No results found in database', 
-              product_model: 'You can still enter this serial number (USED)',
-              status: 'new',
-              isPlaceholder: true,
-              allowAdd: true
-            }];
-          } else {
-            return [{ 
-              serial_number: 'No results found', 
-              product_model: 'Try a different search term',
-              status: 'none',
-              isPlaceholder: true 
-            }];
-          }
+          return [{ 
+            ul_number: 'No results found', 
+            category: 'Try a different search term',
+            status: 'none',
+            isPlaceholder: true 
+          }];
         }
         return results;
       }),
@@ -221,8 +201,8 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
       catchError(() => {
         this.isSearching = false;
         return of([{ 
-          serial_number: 'Error loading results', 
-          product_model: 'Please try again',
+          ul_number: 'Error loading results', 
+          category: 'Please try again',
           status: 'none',
           isPlaceholder: true 
         }]);
@@ -231,68 +211,97 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   };
 
   // Formatter for displaying selected item
-  formatter = (result: any) => result.serial_number || '';
+  formatter = (result: any) => result.ul_number || '';
 
-  private async searchSerials(term: string): Promise<any[]> {
+  private async searchLabels(term: string): Promise<any[]> {
     try {
-      const filters: any = {
-        // limit: 30,
-        sort: 'serial_number',
-        order: 'asc'
-      };
-
-      // If term is empty, get recent/available serials, otherwise search
-      if (term && term.length > 0) {
-        filters.search = term;
+      console.log('🔍 UL Search - Term:', term, 'Category:', this.category, 'Status:', this.status);
+      
+      // Build filters for the search
+      const filters: any = {};
+      
+      // Add category filter if specified
+      if (this.category) {
+        filters.category = this.category;
       }
-
-      if (this.status) {
+      
+      // For 'available' status, use the available flag instead
+      // Backend will filter for: status='active' AND is_consumed=0
+      if (this.status === 'available') {
+        filters.available = 'true';
+      } else {
+        // For other statuses (active, inactive, expired), pass directly
         filters.status = this.status;
       }
-
-      if (this.productModel) {
-        filters.product_model = this.productModel;
-      }
-
-      const response = await this.serialNumberService.getAllSerialNumbers(filters);
       
-      if (response?.success) {
-        const serials = response.data || [];
-        // Filter out excluded serials
-        return serials.filter(
-          serial => !this.excludeSerials.includes(serial.serial_number)
-        );
+      console.log('🔍 UL Search - Filters being sent:', filters);
+      
+      // Request more results to account for filtering out excluded labels
+      // This ensures we can still show ~10 after filtering
+      filters.limit = 50;
+      
+      // Use searchULLabels which passes the search term to backend
+      const response = await firstValueFrom(this.ulLabelService.searchULLabels(term || '', filters));
+      
+      console.log('🔍 UL Search - Raw response:', response);
+      
+      // Handle both wrapped and unwrapped responses
+      let labels = [];
+      if (response?.data) {
+        labels = response.data;
+      } else if (Array.isArray(response)) {
+        labels = response;
       }
-      return [];
+      
+      console.log('🔍 UL Search - Total labels loaded:', labels.length);
+      
+      // Filter out ULs that are already assigned to other rows
+      // But keep the currently selected UL for this row (if any) so it shows highlighted
+      const currentValue = this.model?.ul_number || this.model;
+      const filteredLabels = labels.filter(label => {
+        // Keep if it's the current selection for this row
+        if (label.ul_number === currentValue) {
+          return true;
+        }
+        // Otherwise, exclude if it's already used in another row
+        return !this.excludeLabels.includes(label.ul_number);
+      });
+      
+      // Limit to 10 results for the dropdown
+      const finalResults = filteredLabels.slice(0, 10);
+      
+      console.log('🔍 UL Search - After filtering excluded:', filteredLabels.length);
+      console.log('🔍 UL Search - Returning (max 10):', finalResults.map(l => l.ul_number));
+      
+      return finalResults;
     } catch (error) {
-      console.error('Error searching serial numbers:', error);
+      console.error('❌ Error searching UL labels:', error);
       return [];
     }
   }
 
-  // Watch for changes in excludeSerials
+  // Watch for changes in excludeLabels
   ngOnChanges(changes: SimpleChanges): void {
-    // If excludeSerials changes, clear the current selection if it's now excluded
-    if (changes['excludeSerials'] && !changes['excludeSerials'].firstChange) {
-      if (this.selectedSerial && this.excludeSerials.includes(this.selectedSerial.serial_number)) {
+    // If excludeLabels changes, clear the current selection if it's now excluded
+    if (changes['excludeLabels'] && !changes['excludeLabels'].firstChange) {
+      if (this.selectedLabel && this.excludeLabels.includes(this.selectedLabel.ul_number)) {
         this.clearSelection();
       }
     }
   }
 
-  onSerialSelect(event: any): void {
-    const serial = event.item;
+  onLabelSelect(event: any): void {
+    const label = event.item;
     
     // Don't allow selection of placeholder items
-    if (serial && !serial.isPlaceholder) {
-      this.model = serial;
-      this.selectedSerial = serial;
+    if (label && !label.isPlaceholder) {
+      this.model = label;
+      this.selectedLabel = label;
       this.showInvalidMessage = false;
-      this.showNewSerialMessage = false;
-      this.onChange(serial.serial_number);
+      this.onChange(label.ul_number);
       this.onTouched();
-      this.notifyParent.emit(serial);
-    } else if (serial && serial.isPlaceholder) {
+      this.notifyParent.emit(label);
+    } else if (label && label.isPlaceholder) {
       // Prevent selection and keep dropdown open
       event.preventDefault();
     }
@@ -312,33 +321,19 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
     // Check if the current model is a valid selection
     if (this.model && typeof this.model === 'string') {
       // User typed something but didn't select from dropdown
+      this.showInvalidMessage = true;
+      this.model = null;
+      this.selectedLabel = null;
+      this.onChange(null);
       
-      if (this.allowFreeText) {
-        // Allow free text entry (for USED category)
-        // No messages shown - just accept the input
+      // Hide message after 5 seconds
+      setTimeout(() => {
         this.showInvalidMessage = false;
-        this.showNewSerialMessage = false;
-        this.selectedSerial = { serial_number: this.model };
-        this.onChange(this.model);
-        this.notifyParent.emit({ serial_number: this.model });
-      } else {
-        // Strict mode: Must select from dropdown
-        this.showInvalidMessage = true;
-        this.showNewSerialMessage = false;
-        this.model = null;
-        this.selectedSerial = null;
-        this.onChange(null);
-        
-        // Hide message after 5 seconds
-        setTimeout(() => {
-          this.showInvalidMessage = false;
-        }, 5000);
-      }
+      }, 5000);
     } else if (!this.model) {
       // Field is empty
       this.showInvalidMessage = false;
-      this.showNewSerialMessage = false;
-      this.selectedSerial = null;
+      this.selectedLabel = null;
       this.onChange(null);
     } else {
       // Valid object selected
@@ -348,9 +343,8 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
 
   clearSelection(): void {
     this.model = null;
-    this.selectedSerial = null;
+    this.selectedLabel = null;
     this.showInvalidMessage = false;
-    this.showNewSerialMessage = false;
     this.onChange(null);
     this.onTouched();
     this.notifyParent.emit(null);
@@ -360,8 +354,8 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
     const statusMap: { [key: string]: string } = {
       'available': 'success',
       'assigned': 'primary',
-      'shipped': 'info',
-      'returned': 'warning',
+      'used': 'info',
+      'consumed': 'warning',
       'defective': 'danger'
     };
     return statusMap[status] || 'secondary';
@@ -373,30 +367,40 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
       if (typeof value === 'string') {
         // Set display value and try to fetch the full object
         this.model = value;
-        this.loadSerialByNumber(value);
+        this.loadLabelByNumber(value);
       } else {
-        this.selectedSerial = value;
+        this.selectedLabel = value;
         this.model = value;
       }
     } else {
-      this.selectedSerial = null;
+      this.selectedLabel = null;
       this.model = null;
     }
   }
 
-  private async loadSerialByNumber(serialNumber: string): Promise<void> {
+  private async loadLabelByNumber(ulNumber: string): Promise<void> {
     try {
-      const filters = {
-        search: serialNumber,
-        limit: 1
-      };
-      const response = await this.serialNumberService.getAllSerialNumbers(filters);
-      if (response?.success && response.data?.length > 0) {
-        this.selectedSerial = response.data[0];
-        this.model = response.data[0];
+      // Use getAvailableULNumbers to find the label
+      const response = await firstValueFrom(this.ulLabelService.getAvailableULNumbers());
+      
+      let labels = [];
+      if (response?.data) {
+        labels = response.data;
+      } else if (Array.isArray(response)) {
+        labels = response;
+      }
+      
+      // Find exact match
+      const exactMatch = labels.find(
+        label => label.ul_number === ulNumber
+      );
+      
+      if (exactMatch) {
+        this.selectedLabel = exactMatch;
+        this.model = exactMatch;
       }
     } catch (error) {
-      console.error('Error loading serial by number:', error);
+      console.error('Error loading UL label by number:', error);
     }
   }
 

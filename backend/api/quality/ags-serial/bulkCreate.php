@@ -14,8 +14,13 @@ $db = $database->getConnection();
 // Get POST data (JSON)
 $data = json_decode(file_get_contents("php://input"));
 
+// Debug: Log received data
+error_log("AGS Bulk Create - Received user_full_name: " . ($data->user_full_name ?? 'NOT SET'));
+
 $agsSerial = new AgsSerialGenerator($db);
 $agsSerial->user_full_name = $data->user_full_name ?? $_POST['user_full_name'] ?? 'System';
+
+error_log("AGS Bulk Create - Set user_full_name to: " . $agsSerial->user_full_name);
 
 if (!empty($data->assignments) && is_array($data->assignments)) {
     try {

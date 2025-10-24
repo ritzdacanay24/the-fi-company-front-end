@@ -1,0 +1,764 @@
+<?php
+/**
+ * Serial Assignments API
+ * View and manage serial number assignments
+ */
+
+use EyefiDb\Databases\DatabaseEyefi;
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+class SerialAssignmentsAPI {
+    private $db;
+
+    public function __construct($database) {
+        $this->db = $database;
+    }
+
+    /**
+     * Get all serial assignments with optional filters
+     */
+    public function getAssignments($filters = []) {
+        try {
+            $conditions = ["1=1"];
+            $params = [];
+
+            // Build WHERE conditions based on filters
+            if (!empty($filters['wo_number'])) {
+                $conditions[] = "sa.wo_number LIKE ?";
+                $params[] = '%' . $filters['wo_number'] . '%';
+            }
+
+            if (!empty($filters['eyefi_serial_number'])) {
+                $conditions[] = "sa.eyefi_serial_number LIKE ?";
+                $params[] = '%' . $filters['eyefi_serial_number'] . '%';
+            }
+
+            if (!empty($filters['ul_number'])) {
+                $conditions[] = "sa.ul_number LIKE ?";
+                $params[] = '%' . $filters['ul_number'] . '%';
+            }
+
+            if (!empty($filters['consumed_by'])) {
+                $conditions[] = "sa.consumed_by LIKE ?";
+                $params[] = '%' . $filters['consumed_by'] . '%';
+            }
+
+            if (!empty($filters['date_from'])) {
+                $conditions[] = "DATE(sa.consumed_at) >= ?";
+                $params[] = $filters['date_from'];
+            }
+
+            if (!empty($filters['date_to'])) {
+                $conditions[] = "DATE(sa.consumed_at) <= ?";
+                $params[] = $filters['date_to'];
+            }
+
+            if (!empty($filters['status'])) {
+                $conditions[] = "sa.status = ?";
+                $params[] = $filters['status'];
+            }
+
+            // Filter voided assignments unless explicitly requested
+            if (!isset($filters['include_voided']) || !$filters['include_voided']) {
+                $conditions[] = "(sa.is_voided = 0 OR sa.is_voided IS NULL)";
+            }
+
+            $whereClause = implode(' AND ', $conditions);
+
+            // Pagination
+            $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+            $limit = isset($filters['limit']) ? (int)$filters['limit'] : 50;
+            $offset = ($page - 1) * $limit;
+
+            // Get total count
+            $countQuery = "SELECT COUNT(*) as total 
+                          FROM serial_assignments sa 
+                          WHERE {$whereClause}";
+            $countStmt = $this->db->prepare($countQuery);
+            $countStmt->execute($params);
+            $total = $countStmt->fetch(\PDO::FETCH_ASSOC)['total'];
+
+            // Get assignments
+            $query = "SELECT 
+                        sa.id,
+                        sa.eyefi_serial_id,
+                        sa.eyefi_serial_number,
+                        sa.ul_label_id,
+                        sa.ul_number,
+                        sa.wo_number,
+                        sa.consumed_at,
+                        sa.consumed_by,
+                        sa.status,
+                        sa.created_at,
+                        sa.is_voided,
+                        sa.voided_by,
+                        sa.voided_at,
+                        sa.void_reason
+                      FROM serial_assignments sa
+                      WHERE {$whereClause}
+                      ORDER BY sa.consumed_at DESC, sa.id DESC
+                      LIMIT {$limit} OFFSET {$offset}";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results,
+                'total' => (int)$total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => ceil($total / $limit)
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getAssignments: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching assignments: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get assignment by ID
+     */
+    public function getAssignmentById($id) {
+        try {
+            $query = "SELECT 
+                        sa.id,
+                        sa.eyefi_serial_id,
+                        sa.eyefi_serial_number,
+                        sa.ul_label_id,
+                        sa.ul_number,
+                        sa.wo_number,
+                        sa.consumed_at,
+                        sa.consumed_by,
+                        sa.status,
+                        sa.created_at,
+                        sa.is_voided,
+                        sa.voided_by,
+                        sa.voided_at,
+                        sa.void_reason
+                      FROM serial_assignments sa
+                      WHERE sa.id = ?";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($result) {
+                return [
+                    'success' => true,
+                    'data' => $result
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'Assignment not found'
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Error fetching assignment: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get assignment statistics
+     */
+    public function getStatistics() {
+        try {
+            $query = "SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                        SUM(CASE WHEN status = 'consumed' THEN 1 ELSE 0 END) as consumed,
+                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+                        SUM(CASE WHEN status = 'returned' THEN 1 ELSE 0 END) as returned,
+                        SUM(CASE WHEN DATE(consumed_at) = CURDATE() THEN 1 ELSE 0 END) as today,
+                        SUM(CASE WHEN YEARWEEK(consumed_at, 1) = YEARWEEK(CURDATE(), 1) THEN 1 ELSE 0 END) as this_week,
+                        SUM(CASE WHEN is_voided = 1 THEN 1 ELSE 0 END) as voided
+                      FROM serial_assignments";
+
+            $stmt = $this->db->query($query);
+            $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $stats
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Error fetching statistics: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get assignments grouped by status
+     */
+    public function getAssignmentsByType() {
+        try {
+            $query = "SELECT 
+                        status,
+                        COUNT(*) as count,
+                        MAX(consumed_at) as last_consumed
+                      FROM serial_assignments
+                      GROUP BY status
+                      ORDER BY count DESC";
+
+            $stmt = $this->db->query($query);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Error fetching assignments by status: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get recent assignments
+     */
+    public function getRecentAssignments($limit = 10) {
+        try {
+            $limit = (int)$limit;
+            
+            $query = "SELECT 
+                        sa.id,
+                        sa.serial_type,
+                        sa.serial_id,
+                        sa.serial_number,
+                        sa.work_order_number,
+                        sa.assigned_date,
+                        sa.assigned_by
+                      FROM serial_assignments sa
+                      ORDER BY sa.assigned_date DESC, sa.id DESC
+                      LIMIT {$limit}";
+
+            $stmt = $this->db->query($query);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results,
+                'count' => count($results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Error fetching recent assignments: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Search assignments
+     */
+    public function searchAssignments($searchTerm) {
+        try {
+            $searchParam = '%' . $searchTerm . '%';
+            
+            $query = "SELECT 
+                        sa.id,
+                        sa.serial_type,
+                        sa.serial_id,
+                        sa.serial_number,
+                        sa.work_order_number,
+                        sa.assigned_date,
+                        sa.assigned_by
+                      FROM serial_assignments sa
+                      WHERE sa.serial_number LIKE ?
+                         OR sa.work_order_number LIKE ?
+                         OR sa.assigned_by LIKE ?
+                      ORDER BY sa.assigned_date DESC
+                      LIMIT 100";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$searchParam, $searchParam, $searchParam]);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results,
+                'count' => count($results)
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Error searching assignments: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Void an assignment (soft delete)
+     * Marks assignment as voided and FREES UP the serial for reuse
+     */
+    public function voidAssignment($id, $reason, $performedBy) {
+        try {
+            $this->db->beginTransaction();
+
+            // Get the assignment details first
+            $query = "SELECT * FROM serial_assignments WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+            $assignment = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$assignment) {
+                throw new \Exception('Assignment not found');
+            }
+
+            if ($assignment['is_voided']) {
+                throw new \Exception('Assignment is already voided');
+            }
+
+            // Update assignment to mark as voided
+            $updateQuery = "UPDATE serial_assignments 
+                           SET is_voided = 1,
+                               voided_by = ?,
+                               voided_at = NOW(),
+                               void_reason = ?,
+                               status = 'cancelled'
+                           WHERE id = ?";
+            
+            $updateStmt = $this->db->prepare($updateQuery);
+            $updateStmt->execute([$performedBy, $reason, $id]);
+
+            // FREE UP THE EYEFI SERIAL - set back to available
+            $freeSerialQuery = "UPDATE eyefi_serial_numbers 
+                               SET status = 'available' 
+                               WHERE id = ?";
+            $freeSerialStmt = $this->db->prepare($freeSerialQuery);
+            $freeSerialStmt->execute([$assignment['eyefi_serial_id']]);
+
+            // Create audit trail entry
+            $auditQuery = "INSERT INTO serial_assignment_audit (
+                            assignment_id,
+                            action,
+                            reason,
+                            performed_by,
+                            performed_at
+                          ) VALUES (?, 'voided', ?, ?, NOW())";
+            
+            $auditStmt = $this->db->prepare($auditQuery);
+            $auditStmt->execute([$id, $reason, $performedBy]);
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Assignment voided and serial freed for reuse',
+                'assignment_id' => $id,
+                'freed_serial' => $assignment['eyefi_serial_number']
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("ERROR in voidAssignment: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error voiding assignment: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Delete an assignment (hard delete)
+     * Permanently removes assignment and FREES UP the serial for reuse
+     */
+    public function deleteAssignment($id, $reason, $performedBy) {
+        try {
+            $this->db->beginTransaction();
+
+            // Get the assignment details first
+            $query = "SELECT * FROM serial_assignments WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+            $assignment = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$assignment) {
+                throw new \Exception('Assignment not found');
+            }
+
+            // FREE UP THE EYEFI SERIAL - set back to available
+            $freeSerialQuery = "UPDATE eyefi_serial_numbers 
+                               SET status = 'available' 
+                               WHERE id = ?";
+            $freeSerialStmt = $this->db->prepare($freeSerialQuery);
+            $freeSerialStmt->execute([$assignment['eyefi_serial_id']]);
+
+            // Create audit trail entry BEFORE deletion
+            $auditQuery = "INSERT INTO serial_assignment_audit (
+                            assignment_id,
+                            action,
+                            reason,
+                            performed_by,
+                            performed_at
+                          ) VALUES (?, 'deleted', ?, ?, NOW())";
+            
+            $auditStmt = $this->db->prepare($auditQuery);
+            $auditStmt->execute([$id, $reason, $performedBy]);
+
+            // Delete the assignment
+            $deleteQuery = "DELETE FROM serial_assignments WHERE id = ?";
+            $deleteStmt = $this->db->prepare($deleteQuery);
+            $deleteStmt->execute([$id]);
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Assignment deleted and serial freed for reuse',
+                'assignment_id' => $id,
+                'freed_serial' => $assignment['eyefi_serial_number']
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("ERROR in deleteAssignment: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error deleting assignment: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Restore a voided assignment
+     * Marks serial as consumed again
+     */
+    public function restoreAssignment($id, $performedBy) {
+        try {
+            $this->db->beginTransaction();
+
+            // Get the assignment details first
+            $query = "SELECT * FROM serial_assignments WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+            $assignment = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$assignment) {
+                throw new \Exception('Assignment not found');
+            }
+
+            if (!$assignment['is_voided']) {
+                throw new \Exception('Assignment is not voided');
+            }
+
+            // Update assignment to restore
+            $updateQuery = "UPDATE serial_assignments 
+                           SET is_voided = 0,
+                               voided_by = NULL,
+                               voided_at = NULL,
+                               void_reason = NULL,
+                               status = 'consumed'
+                           WHERE id = ?";
+            
+            $updateStmt = $this->db->prepare($updateQuery);
+            $updateStmt->execute([$id]);
+
+            // MARK SERIAL AS CONSUMED AGAIN
+            $consumeSerialQuery = "UPDATE eyefi_serial_numbers 
+                                  SET status = 'consumed' 
+                                  WHERE id = ?";
+            $consumeSerialStmt = $this->db->prepare($consumeSerialQuery);
+            $consumeSerialStmt->execute([$assignment['eyefi_serial_id']]);
+
+            // Create audit trail entry
+            $auditQuery = "INSERT INTO serial_assignment_audit (
+                            assignment_id,
+                            action,
+                            reason,
+                            performed_by,
+                            performed_at
+                          ) VALUES (?, 'restored', 'Assignment restored', ?, NOW())";
+            
+            $auditStmt = $this->db->prepare($auditQuery);
+            $auditStmt->execute([$id, $performedBy]);
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Assignment restored and serial marked as consumed',
+                'assignment_id' => $id
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("ERROR in restoreAssignment: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error restoring assignment: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get audit trail for an assignment
+     */
+    public function getAuditTrail($assignmentId = null, $limit = 100) {
+        try {
+            $limit = (int)$limit;
+            
+            if ($assignmentId) {
+                $query = "SELECT 
+                            id,
+                            assignment_id,
+                            action,
+                            reason,
+                            performed_by,
+                            performed_at
+                          FROM serial_assignment_audit
+                          WHERE assignment_id = ?
+                          ORDER BY performed_at DESC";
+                
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$assignmentId]);
+            } else {
+                $query = "SELECT 
+                            id,
+                            assignment_id,
+                            action,
+                            reason,
+                            performed_by,
+                            performed_at
+                          FROM serial_assignment_audit
+                          ORDER BY performed_at DESC
+                          LIMIT {$limit}";
+                
+                $stmt = $this->db->query($query);
+            }
+            
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results,
+                'count' => count($results)
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getAuditTrail: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching audit trail: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Bulk void assignments
+     */
+    public function bulkVoidAssignments($ids, $reason, $performedBy) {
+        try {
+            $this->db->beginTransaction();
+            
+            $voidedCount = 0;
+            $errors = [];
+
+            foreach ($ids as $id) {
+                $result = $this->voidAssignment($id, $reason, $performedBy);
+                if ($result['success']) {
+                    $voidedCount++;
+                } else {
+                    $errors[] = "ID {$id}: " . $result['error'];
+                }
+            }
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => "Voided {$voidedCount} out of " . count($ids) . " assignments",
+                'voided_count' => $voidedCount,
+                'errors' => $errors
+            ];
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'error' => 'Error in bulk void: ' . $e->getMessage()
+            ];
+        }
+    }
+}
+
+// Initialize database connection and handle request
+try {
+    $db_connect = new DatabaseEyefi();
+    $db = $db_connect->getConnection();
+    
+    if (!$db) {
+        throw new \Exception("Database connection failed");
+    }
+    
+    $api = new SerialAssignmentsAPI($db);
+    
+    $method = $_SERVER['REQUEST_METHOD'];
+    $action = isset($_GET['action']) ? $_GET['action'] : '';
+    
+    $result = null;
+    
+    switch ($method) {
+        case 'GET':
+            switch ($action) {
+                case 'get_assignments':
+                    $filters = [
+                        'serial_type' => $_GET['serial_type'] ?? null,
+                        'work_order_number' => $_GET['work_order_number'] ?? null,
+                        'serial_number' => $_GET['serial_number'] ?? null,
+                        'assigned_by' => $_GET['assigned_by'] ?? null,
+                        'date_from' => $_GET['date_from'] ?? null,
+                        'date_to' => $_GET['date_to'] ?? null,
+                        'page' => $_GET['page'] ?? 1,
+                        'limit' => $_GET['limit'] ?? 50
+                    ];
+                    $result = $api->getAssignments($filters);
+                    break;
+                    
+                case 'get_assignment':
+                    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                    if ($id > 0) {
+                        $result = $api->getAssignmentById($id);
+                    } else {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Invalid assignment ID'
+                        ];
+                    }
+                    break;
+                    
+                case 'get_statistics':
+                    $result = $api->getStatistics();
+                    break;
+                    
+                case 'get_by_type':
+                    $result = $api->getAssignmentsByType();
+                    break;
+                    
+                case 'get_recent':
+                    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+                    $result = $api->getRecentAssignments($limit);
+                    break;
+                    
+                case 'search':
+                    $term = isset($_GET['term']) ? $_GET['term'] : '';
+                    if (!empty($term)) {
+                        $result = $api->searchAssignments($term);
+                    } else {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Search term is required'
+                        ];
+                    }
+                    break;
+                    
+                case 'get_audit_trail':
+                    $assignmentId = isset($_GET['assignment_id']) ? (int)$_GET['assignment_id'] : null;
+                    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
+                    $result = $api->getAuditTrail($assignmentId, $limit);
+                    break;
+                    
+                default:
+                    $result = [
+                        'success' => false,
+                        'error' => 'Invalid action. Available actions: get_assignments, get_assignment, get_statistics, get_by_type, get_recent, search, get_audit_trail'
+                    ];
+            }
+            break;
+            
+        case 'POST':
+            $data = json_decode(file_get_contents('php://input'), true);
+            $action = isset($_GET['action']) ? $_GET['action'] : '';
+            
+            switch ($action) {
+                case 'void_assignment':
+                    if (!isset($data['id']) || !isset($data['performed_by'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: id, performed_by'
+                        ];
+                    } else {
+                        $reason = $data['reason'] ?? 'No reason provided';
+                        $result = $api->voidAssignment($data['id'], $reason, $data['performed_by']);
+                    }
+                    break;
+                    
+                case 'delete_assignment':
+                    if (!isset($data['id']) || !isset($data['performed_by'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: id, performed_by'
+                        ];
+                    } else {
+                        $reason = $data['reason'] ?? 'No reason provided';
+                        $result = $api->deleteAssignment($data['id'], $reason, $data['performed_by']);
+                    }
+                    break;
+                    
+                case 'restore_assignment':
+                    if (!isset($data['id']) || !isset($data['performed_by'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: id, performed_by'
+                        ];
+                    } else {
+                        $result = $api->restoreAssignment($data['id'], $data['performed_by']);
+                    }
+                    break;
+                    
+                case 'bulk_void':
+                    if (!isset($data['ids']) || !is_array($data['ids']) || !isset($data['performed_by'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: ids (array), performed_by'
+                        ];
+                    } else {
+                        $reason = $data['reason'] ?? 'Bulk void';
+                        $result = $api->bulkVoidAssignments($data['ids'], $reason, $data['performed_by']);
+                    }
+                    break;
+                    
+                default:
+                    $result = [
+                        'success' => false,
+                        'error' => 'Invalid POST action. Available: void_assignment, delete_assignment, restore_assignment, bulk_void'
+                    ];
+            }
+            break;
+            
+        default:
+            http_response_code(405);
+            $result = [
+                'success' => false,
+                'error' => 'Method not allowed'
+            ];
+            break;
+    }
+    
+    echo json_encode($result);
+    
+} catch (\Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Internal server error: ' . $e->getMessage()
+    ]);
+}
+?>

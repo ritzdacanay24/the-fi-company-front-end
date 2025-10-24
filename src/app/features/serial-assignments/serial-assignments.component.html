@@ -1,0 +1,491 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="mdi mdi-clipboard-list-outline me-2"></i>
+        Serial Assignments
+      </h2>
+      <p class="text-muted mb-0">View and manage all serial number assignments</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-info" (click)="openAuditModal()" title="View audit trail">
+        <i class="mdi mdi-history me-1"></i> Audit Trail
+      </button>
+      <button class="btn btn-outline-danger" (click)="bulkVoid()" 
+              [disabled]="selectedAssignments.size === 0" title="Void selected">
+        <i class="mdi mdi-cancel me-1"></i> Void Selected ({{ selectedAssignments.size }})
+      </button>
+      <button class="btn btn-outline-secondary" (click)="toggleViewMode()" title="Toggle view">
+        <i class="mdi" [class.mdi-table]="viewMode === 'cards'" [class.mdi-view-grid]="viewMode === 'table'"></i>
+      </button>
+      <button class="btn btn-outline-primary" (click)="exportToCSV()" [disabled]="loading || assignments.length === 0">
+        <i class="mdi mdi-download me-1"></i> Export CSV
+      </button>
+      <button class="btn btn-primary" (click)="refresh()">
+        <i class="mdi mdi-refresh me-1"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-counter display-6 text-primary"></i>
+          <h3 class="mb-0 mt-2">{{ stats.total }}</h3>
+          <small class="text-muted">Total Assignments</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-barcode-scan display-6 text-primary"></i>
+          <h3 class="mb-0 mt-2">{{ stats.eyefi }}</h3>
+          <small class="text-muted">EyeFi Serials</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-tag display-6 text-success"></i>
+          <h3 class="mb-0 mt-2">{{ stats.ul }}</h3>
+          <small class="text-muted">UL Labels</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-chip display-6 text-warning"></i>
+          <h3 class="mb-0 mt-2">{{ stats.igt }}</h3>
+          <small class="text-muted">IGT Serials</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-calendar-today display-6 text-info"></i>
+          <h3 class="mb-0 mt-2">{{ stats.today }}</h3>
+          <small class="text-muted">Today</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <i class="mdi mdi-calendar-week display-6 text-secondary"></i>
+          <h3 class="mb-0 mt-2">{{ stats.thisWeek }}</h3>
+          <small class="text-muted">This Week</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">
+        <i class="mdi mdi-filter-outline me-2"></i>
+        Filters
+      </h5>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" [(ngModel)]="filters.status">
+            <option [ngValue]="undefined">All Status</option>
+            <option value="active">ACTIVE</option>
+            <option value="consumed">CONSUMED</option>
+            <option value="cancelled">CANCELLED</option>
+            <option value="returned">RETURNED</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Work Order</label>
+          <input type="text" class="form-control" [(ngModel)]="filters.wo_number" placeholder="Enter work order">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Serial Number</label>
+          <input type="text" class="form-control" [(ngModel)]="filters.eyefi_serial_number" placeholder="Enter serial number">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Consumed By</label>
+          <input type="text" class="form-control" [(ngModel)]="filters.consumed_by" placeholder="Enter user name">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date From</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.date_from">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date To</label>
+          <input type="date" class="form-control" [(ngModel)]="filters.date_to">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label d-block">Options</label>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeVoided" [(ngModel)]="includeVoided">
+            <label class="form-check-label" for="includeVoided">
+              Include Voided Assignments
+            </label>
+          </div>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary me-2" (click)="applyFilters()">
+            <i class="mdi mdi-filter-check me-1"></i> Apply Filters
+          </button>
+          <button class="btn btn-outline-secondary" (click)="clearFilters()">
+            <i class="mdi mdi-filter-remove me-1"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger" role="alert">
+    <i class="mdi mdi-alert-circle me-2"></i>
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3 text-muted">Loading assignments...</p>
+  </div>
+
+  <!-- Table View -->
+  <div *ngIf="!loading && viewMode === 'table'" class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" (change)="selectAll()" 
+                       [checked]="selectedAssignments.size === assignments.length && assignments.length > 0">
+              </th>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Type</th>
+              <th>Serial Number</th>
+              <th>Work Order</th>
+              <th>Assigned Date</th>
+              <th>Assigned By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let assignment of paginatedAssignments" 
+                [class.table-warning]="assignment.is_voided">
+              <td>
+                <input type="checkbox" [checked]="isSelected(assignment.id)"
+                       (change)="toggleSelection(assignment.id)">
+              </td>
+              <td>{{ assignment.id }}</td>
+              <td>
+                <span *ngIf="assignment.is_voided" class="badge bg-warning text-dark">
+                  <i class="mdi mdi-cancel"></i> VOIDED
+                </span>
+                <span *ngIf="!assignment.is_voided" class="badge bg-success">
+                  <i class="mdi mdi-check-circle"></i> ACTIVE
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getSerialTypeBadgeClass(assignment.status)">
+                  <i class="mdi" [ngClass]="getSerialTypeIcon(assignment.status)"></i>
+                  {{ assignment.status | uppercase }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ assignment.eyefi_serial_number }}</strong>
+                <small *ngIf="assignment.is_voided && assignment.void_reason" 
+                       class="d-block text-muted">
+                  Reason: {{ assignment.void_reason }}
+                </small>
+              </td>
+              <td>{{ assignment.wo_number || '-' }}</td>
+              <td>{{ assignment.consumed_at | date:'short' }}</td>
+              <td>{{ assignment.consumed_by }}</td>
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button class="btn btn-outline-info" (click)="openAuditModal(assignment)" 
+                          title="View history">
+                    <i class="mdi mdi-history"></i>
+                  </button>
+                  <button *ngIf="!assignment.is_voided" class="btn btn-outline-warning" 
+                          (click)="openVoidModal(assignment)" title="Void">
+                    <i class="mdi mdi-cancel"></i>
+                  </button>
+                  <button *ngIf="assignment.is_voided" class="btn btn-outline-success" 
+                          (click)="restoreAssignment(assignment)" title="Restore">
+                    <i class="mdi mdi-restore"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="openDeleteModal(assignment)" 
+                          title="Delete">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedAssignments.length === 0">
+              <td colspan="6" class="text-center text-muted py-4">
+                <i class="mdi mdi-information-outline display-6"></i>
+                <p class="mb-0 mt-2">No assignments found</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards View -->
+  <div *ngIf="!loading && viewMode === 'cards'" class="row">
+    <div class="col-md-4 mb-3" *ngFor="let assignment of paginatedAssignments">
+      <div class="card border-0 shadow-sm h-100" [class.border-warning]="assignment.is_voided">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <span class="badge" [ngClass]="getSerialTypeBadgeClass(assignment.status)">
+                <i class="mdi" [ngClass]="getSerialTypeIcon(assignment.status)"></i>
+                {{ assignment.status | uppercase }}
+              </span>
+              <span *ngIf="assignment.is_voided" class="badge bg-warning text-dark ms-2">
+                <i class="mdi mdi-cancel"></i> VOIDED
+              </span>
+            </div>
+            <small class="text-muted">#{{ assignment.id }}</small>
+          </div>
+          <h5 class="card-title">{{ assignment.eyefi_serial_number }}</h5>
+          <ul class="list-unstyled mb-3">
+            <li class="mb-2">
+              <i class="mdi mdi-file-document-outline me-2 text-muted"></i>
+              <strong>WO:</strong> {{ assignment.wo_number || 'N/A' }}
+            </li>
+            <li class="mb-2">
+              <i class="mdi mdi-calendar me-2 text-muted"></i>
+              {{ assignment.consumed_at | date:'short' }}
+            </li>
+            <li>
+              <i class="mdi mdi-account me-2 text-muted"></i>
+              {{ assignment.consumed_by }}
+            </li>
+            <li *ngIf="assignment.is_voided && assignment.void_reason" class="mt-2">
+              <small class="text-warning">
+                <i class="mdi mdi-alert me-1"></i>
+                <strong>Void Reason:</strong> {{ assignment.void_reason }}
+              </small>
+            </li>
+          </ul>
+          <div class="btn-group w-100" role="group">
+            <button class="btn btn-sm btn-outline-info" (click)="openAuditModal(assignment)" 
+                    title="View history">
+              <i class="mdi mdi-history"></i>
+            </button>
+            <button *ngIf="!assignment.is_voided" class="btn btn-sm btn-outline-warning" 
+                    (click)="openVoidModal(assignment)" title="Void">
+              <i class="mdi mdi-cancel"></i>
+            </button>
+            <button *ngIf="assignment.is_voided" class="btn btn-sm btn-outline-success" 
+                    (click)="restoreAssignment(assignment)" title="Restore">
+              <i class="mdi mdi-restore"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="openDeleteModal(assignment)" 
+                    title="Delete">
+              <i class="mdi mdi-delete"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12" *ngIf="paginatedAssignments.length === 0">
+      <div class="text-center text-muted py-5">
+        <i class="mdi mdi-information-outline display-1"></i>
+        <p class="mt-3">No assignments found</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <nav *ngIf="!loading && totalPages > 1" class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item" [class.disabled]="currentPage === 1">
+        <a class="page-link" (click)="onPageChange(1)" tabindex="-1">
+          <i class="mdi mdi-chevron-double-left"></i>
+        </a>
+      </li>
+      <li class="page-item" [class.disabled]="currentPage === 1">
+        <a class="page-link" (click)="onPageChange(currentPage - 1)" tabindex="-1">
+          <i class="mdi mdi-chevron-left"></i>
+        </a>
+      </li>
+      <li class="page-item" *ngFor="let page of pageNumbers" [class.active]="page === currentPage">
+        <a class="page-link" (click)="onPageChange(page)">{{ page }}</a>
+      </li>
+      <li class="page-item" [class.disabled]="currentPage === totalPages">
+        <a class="page-link" (click)="onPageChange(currentPage + 1)">
+          <i class="mdi mdi-chevron-right"></i>
+        </a>
+      </li>
+      <li class="page-item" [class.disabled]="currentPage === totalPages">
+        <a class="page-link" (click)="onPageChange(totalPages)">
+          <i class="mdi mdi-chevron-double-right"></i>
+        </a>
+      </li>
+    </ul>
+    <p class="text-center text-muted">
+      Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} assignments
+    </p>
+  </nav>
+</div>
+
+<!-- Void Assignment Modal -->
+<div class="modal" [class.show]="showVoidModal" [style.display]="showVoidModal ? 'block' : 'none'" 
+     tabindex="-1" *ngIf="showVoidModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">
+          <i class="mdi mdi-cancel me-2"></i>
+          Void Assignment
+        </h5>
+        <button type="button" class="btn-close" (click)="closeVoidModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p>You are about to void the following assignment:</p>
+        <div class="alert alert-info" *ngIf="assignmentToVoid">
+          <strong>Serial:</strong> {{ assignmentToVoid.eyefi_serial_number }}<br>
+          <strong>Status:</strong> {{ assignmentToVoid.status | uppercase }}<br>
+          <strong>Work Order:</strong> {{ assignmentToVoid.wo_number || 'N/A' }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Reason for voiding <span class="text-danger">*</span></label>
+          <textarea class="form-control" rows="3" [(ngModel)]="voidReason" 
+                    placeholder="Enter reason for voiding this assignment..." required></textarea>
+        </div>
+        <p class="text-muted small">
+          <i class="mdi mdi-information me-1"></i>
+          Voided assignments can be restored later if needed.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeVoidModal()">Cancel</button>
+        <button type="button" class="btn btn-warning" (click)="confirmVoid()" 
+                [disabled]="!voidReason.trim()">
+          <i class="mdi mdi-cancel me-1"></i> Void Assignment
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showVoidModal" *ngIf="showVoidModal"></div>
+
+<!-- Delete Assignment Modal -->
+<div class="modal" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" 
+     tabindex="-1" *ngIf="showDeleteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-delete me-2"></i>
+          Delete Assignment
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeDeleteModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger">
+          <i class="mdi mdi-alert me-2"></i>
+          <strong>Warning:</strong> This action cannot be undone!
+        </div>
+        <p>You are about to permanently delete the following assignment:</p>
+        <div class="alert alert-info" *ngIf="assignmentToDelete">
+          <strong>Serial:</strong> {{ assignmentToDelete.eyefi_serial_number }}<br>
+          <strong>Status:</strong> {{ assignmentToDelete.status | uppercase }}<br>
+          <strong>Work Order:</strong> {{ assignmentToDelete.wo_number || 'N/A' }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Reason for deletion <span class="text-danger">*</span></label>
+          <textarea class="form-control" rows="3" [(ngModel)]="deleteReason" 
+                    placeholder="Enter reason for deleting this assignment..." required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" 
+                [disabled]="!deleteReason.trim()">
+          <i class="mdi mdi-delete me-1"></i> Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal"></div>
+
+<!-- Audit Trail Modal -->
+<div class="modal modal-lg" [class.show]="showAuditModal" [style.display]="showAuditModal ? 'block' : 'none'" 
+     tabindex="-1" *ngIf="showAuditModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-history me-2"></i>
+          Assignment Audit Trail
+          <span *ngIf="selectedAssignmentForAudit"> - {{ selectedAssignmentForAudit.eyefi_serial_number }}</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAuditModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div *ngIf="auditLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">Loading audit trail...</p>
+        </div>
+
+        <!-- Audit Trail Table -->
+        <div *ngIf="!auditLoading && auditTrail.length > 0" class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Reason</th>
+                <th>Performed By</th>
+                <th>Date/Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let entry of auditTrail">
+                <td>
+                  <span class="badge" [ngClass]="getActionBadgeClass(entry.action)">
+                    <i class="mdi" [ngClass]="getActionIcon(entry.action)"></i>
+                    {{ entry.action | uppercase }}
+                  </span>
+                </td>
+                <td>{{ entry.reason || '-' }}</td>
+                <td>{{ entry.performed_by }}</td>
+                <td>{{ entry.performed_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!auditLoading && auditTrail.length === 0" class="text-center py-5">
+          <i class="mdi mdi-information-outline display-4 text-muted"></i>
+          <p class="mt-3 text-muted">No audit trail entries found</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAuditModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showAuditModal" *ngIf="showAuditModal"></div>

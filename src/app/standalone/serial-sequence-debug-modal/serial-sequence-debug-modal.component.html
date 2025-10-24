@@ -1,0 +1,391 @@
+<div class="modal-header">
+  <h4 class="modal-title">Serial Sequence Debug Viewer</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="dismiss()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- Controls -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <label for="limitInput" class="form-label">Display Limit:</label>
+      <input 
+        type="number" 
+        id="limitInput"
+        class="form-control" 
+        [(ngModel)]="displayLimit" 
+        (change)="onLimitChange()"
+        min="1"
+        max="100">
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+      <button class="btn btn-primary me-2" (click)="loadAllSequences()">
+        <i class="mdi mdi-refresh"></i> Refresh All
+      </button>
+      <button 
+        class="btn" 
+        [class.btn-success]="autoRefreshEnabled"
+        [class.btn-outline-secondary]="!autoRefreshEnabled"
+        (click)="toggleAutoRefresh()">
+        <i class="mdi" [class.mdi-pause-circle]="autoRefreshEnabled" [class.mdi-play-circle]="!autoRefreshEnabled"></i>
+        {{ autoRefreshEnabled ? 'Stop Auto-Refresh' : 'Start Auto-Refresh (5s)' }}
+      </button>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- EyeFi Serials Section -->
+  <div class="sequence-section mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5>
+        <i class="mdi mdi-barcode-scan text-primary"></i> 
+        {{ eyefiSequence.type }}
+        <span class="badge bg-secondary ms-2" *ngIf="!eyefiSequence.loading">{{ eyefiSequence.count }} available</span>
+      </h5>
+      <div>
+        <button class="btn btn-sm btn-outline-primary me-1" (click)="loadEyefiSequence()">
+          <i class="mdi mdi-refresh"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="copyRawResponse(eyefiSequence)">
+          <i class="mdi mdi-content-copy"></i> Copy JSON
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="eyefiSequence.loading" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <span class="ms-2">Loading...</span>
+    </div>
+
+    <div *ngIf="eyefiSequence.error" class="alert alert-danger">
+      <i class="mdi mdi-alert-circle"></i> {{ eyefiSequence.error }}
+    </div>
+
+    <div *ngIf="!eyefiSequence.loading && !eyefiSequence.error">
+      <!-- Recently Used -->
+      <div class="mb-3">
+        <h6 class="text-muted mb-2">
+          <i class="mdi mdi-history"></i> Last {{ recentLimit }} Used (Most Recent First)
+        </h6>
+        <div *ngIf="recentlyUsedEyefi.loading" class="text-center py-2">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          <span class="ms-2">Loading...</span>
+        </div>
+        <div *ngIf="recentlyUsedEyefi.error" class="alert alert-danger alert-sm">
+          <i class="mdi mdi-alert-circle"></i> {{ recentlyUsedEyefi.error }}
+        </div>
+        <div *ngIf="!recentlyUsedEyefi.loading && !recentlyUsedEyefi.error && recentlyUsedEyefi.data.length > 0">
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-hover">
+              <thead class="sticky-top bg-light">
+                <tr>
+                  <th>Serial Number</th>
+                  <th>Work Order</th>
+                  <th>Used Date</th>
+                  <th>Used By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of recentlyUsedEyefi.data">
+                  <td><strong class="text-muted">{{ item.serial_number }}</strong></td>
+                  <td>{{ item.work_order_number || '-' }}</td>
+                  <td>{{ item.assigned_date | date:'short' }}</td>
+                  <td>{{ item.assigned_by || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div *ngIf="!recentlyUsedEyefi.loading && !recentlyUsedEyefi.error && recentlyUsedEyefi.data.length === 0" class="alert alert-secondary alert-sm">
+          <i class="mdi mdi-information-outline"></i> No recently used EyeFi serials found.
+        </div>
+      </div>
+
+      <!-- Debug Info -->
+      <div class="alert alert-info" *ngIf="eyefiSequence.debug && eyefiSequence.data.length > 0">
+        <strong>Debug Info:</strong>
+        <ul class="mb-0">
+          <li *ngIf="eyefiSequence.debug.first_id">First ID: {{ eyefiSequence.debug.first_id }}</li>
+          <li *ngIf="eyefiSequence.debug.first_serial">First Serial: {{ eyefiSequence.debug.first_serial }}</li>
+        </ul>
+      </div>
+
+      <!-- Available Serials Table -->
+      <div *ngIf="eyefiSequence.data.length > 0">
+        <h6 class="text-success mb-2">
+          <i class="mdi mdi-check-circle"></i> Next Available (In Sequence Order)
+        </h6>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-sm table-striped table-hover">
+            <thead class="sticky-top bg-light">
+              <tr>
+                <th>ID</th>
+                <th>Serial Number</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of eyefiSequence.data; let i = index" 
+                  [class.table-primary]="i === 0"
+                  [class.table-warning]="isCurrentlySelected(item.serial_number, 'eyefi')">
+                <td>{{ item.id }}</td>
+                <td>
+                  <strong>{{ item.serial_number }}</strong>
+                  <span class="badge bg-warning ms-1" *ngIf="isCurrentlySelected(item.serial_number, 'eyefi')">SELECTED</span>
+                  <button class="btn btn-sm btn-link p-0 ms-1" (click)="copyToClipboard(item.serial_number)" title="Copy">
+                    <i class="mdi mdi-content-copy"></i>
+                  </button>
+                </td>
+                <td><span class="badge bg-success">{{ item.status }}</span></td>
+                <td>{{ item.created_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="eyefiSequence.data.length === 0" class="alert alert-warning">
+        No available EyeFi serials found.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- UL Labels Section -->
+  <div class="sequence-section mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5>
+        <i class="mdi mdi-tag text-success"></i> 
+        {{ ulSequence.type }}
+        <span class="badge bg-secondary ms-2" *ngIf="!ulSequence.loading">{{ ulSequence.count }} available</span>
+      </h5>
+      <div>
+        <button class="btn btn-sm btn-outline-primary me-1" (click)="loadUlSequence()">
+          <i class="mdi mdi-refresh"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="copyRawResponse(ulSequence)">
+          <i class="mdi mdi-content-copy"></i> Copy JSON
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="ulSequence.loading" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <span class="ms-2">Loading...</span>
+    </div>
+
+    <div *ngIf="ulSequence.error" class="alert alert-danger">
+      <i class="mdi mdi-alert-circle"></i> {{ ulSequence.error }}
+    </div>
+
+    <div *ngIf="!ulSequence.loading && !ulSequence.error">
+      <!-- Recently Used -->
+      <div class="mb-3">
+        <h6 class="text-muted mb-2">
+          <i class="mdi mdi-history"></i> Last {{ recentLimit }} Used (Most Recent First)
+        </h6>
+        <div *ngIf="recentlyUsedUl.loading" class="text-center py-2">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          <span class="ms-2">Loading...</span>
+        </div>
+        <div *ngIf="recentlyUsedUl.error" class="alert alert-danger alert-sm">
+          <i class="mdi mdi-alert-circle"></i> {{ recentlyUsedUl.error }}
+        </div>
+        <div *ngIf="!recentlyUsedUl.loading && !recentlyUsedUl.error && recentlyUsedUl.data.length > 0">
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-hover">
+              <thead class="sticky-top bg-light">
+                <tr>
+                  <th>UL Number</th>
+                  <th>EyeFi Serial</th>
+                  <th>Work Order</th>
+                  <th>Used Date</th>
+                  <th>Used By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of recentlyUsedUl.data">
+                  <td><strong class="text-muted">{{ item.ul_number }}</strong></td>
+                  <td>{{ item.eyefi_serial_number || '-' }}</td>
+                  <td>{{ item.work_order_number || '-' }}</td>
+                  <td>{{ item.date_used | date:'short' }}</td>
+                  <td>{{ item.user_name || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div *ngIf="!recentlyUsedUl.loading && !recentlyUsedUl.error && recentlyUsedUl.data.length === 0" class="alert alert-secondary alert-sm">
+          <i class="mdi mdi-information-outline"></i> No recently used UL labels found.
+        </div>
+      </div>
+
+      <!-- Debug Info -->
+      <div class="alert alert-info" *ngIf="ulSequence.debug && ulSequence.data.length > 0">
+        <strong>Debug Info:</strong>
+        <ul class="mb-0">
+          <li *ngIf="ulSequence.debug.first_ul">First UL: {{ ulSequence.debug.first_ul }}</li>
+        </ul>
+      </div>
+
+      <!-- Available UL Labels Table -->
+      <div *ngIf="ulSequence.data.length > 0">
+        <h6 class="text-success mb-2">
+          <i class="mdi mdi-check-circle"></i> Next Available (In Sequence Order)
+        </h6>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-sm table-striped table-hover">
+            <thead class="sticky-top bg-light">
+              <tr>
+                <th>ID</th>
+                <th>UL Number</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of ulSequence.data; let i = index" 
+                  [class.table-primary]="i === 0"
+                  [class.table-warning]="isCurrentlySelected(item.ul_number, 'ul')">
+                <td>{{ item.id }}</td>
+                <td>
+                  <strong>{{ item.ul_number }}</strong>
+                  <span class="badge bg-warning ms-1" *ngIf="isCurrentlySelected(item.ul_number, 'ul')">SELECTED</span>
+                  <button class="btn btn-sm btn-link p-0 ms-1" (click)="copyToClipboard(item.ul_number)" title="Copy">
+                    <i class="mdi mdi-content-copy"></i>
+                  </button>
+                </td>
+                <td>{{ item.category || '-' }}</td>
+                <td><span class="badge bg-success">{{ item.status }}</span></td>
+                <td>{{ item.created_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="ulSequence.data.length === 0" class="alert alert-warning">
+        No available UL labels found.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- IGT Serials Section -->
+  <div class="sequence-section mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5>
+        <i class="mdi mdi-chip text-warning"></i> 
+        {{ igtSequence.type }}
+        <span class="badge bg-secondary ms-2" *ngIf="!igtSequence.loading">{{ igtSequence.count }} available</span>
+      </h5>
+      <div>
+        <button class="btn btn-sm btn-outline-primary me-1" (click)="loadIgtSequence()">
+          <i class="mdi mdi-refresh"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="copyRawResponse(igtSequence)">
+          <i class="mdi mdi-content-copy"></i> Copy JSON
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="igtSequence.loading" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <span class="ms-2">Loading...</span>
+    </div>
+
+    <div *ngIf="igtSequence.error" class="alert alert-danger">
+      <i class="mdi mdi-alert-circle"></i> {{ igtSequence.error }}
+    </div>
+
+    <div *ngIf="!igtSequence.loading && !igtSequence.error">
+      <!-- Recently Used -->
+      <div class="mb-3">
+        <h6 class="text-muted mb-2">
+          <i class="mdi mdi-history"></i> Last {{ recentLimit }} Used (Most Recent First)
+        </h6>
+        <div *ngIf="recentlyUsedIgt.loading" class="text-center py-2">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          <span class="ms-2">Loading...</span>
+        </div>
+        <div *ngIf="recentlyUsedIgt.error" class="alert alert-danger alert-sm">
+          <i class="mdi mdi-alert-circle"></i> {{ recentlyUsedIgt.error }}
+        </div>
+        <div *ngIf="!recentlyUsedIgt.loading && !recentlyUsedIgt.error && recentlyUsedIgt.data.length > 0">
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-sm table-hover">
+              <thead class="sticky-top bg-light">
+                <tr>
+                  <th>Serial Number</th>
+                  <th>Work Order</th>
+                  <th>Used Date</th>
+                  <th>Used By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of recentlyUsedIgt.data">
+                  <td><strong class="text-muted">{{ item.serial_number }}</strong></td>
+                  <td>{{ item.work_order_number || '-' }}</td>
+                  <td>{{ item.assigned_date | date:'short' }}</td>
+                  <td>{{ item.assigned_by || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div *ngIf="!recentlyUsedIgt.loading && !recentlyUsedIgt.error && recentlyUsedIgt.data.length === 0" class="alert alert-secondary alert-sm">
+          <i class="mdi mdi-information-outline"></i> No recently used IGT serials found.
+        </div>
+      </div>
+
+      <!-- Available IGT Serials Table -->
+      <div *ngIf="igtSequence.data.length > 0">
+        <h6 class="text-success mb-2">
+          <i class="mdi mdi-check-circle"></i> Next Available (In Sequence Order)
+        </h6>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-sm table-striped table-hover">
+            <thead class="sticky-top bg-light">
+              <tr>
+                <th>ID</th>
+                <th>Serial Number</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of igtSequence.data; let i = index" 
+                  [class.table-primary]="i === 0"
+                  [class.table-warning]="isCurrentlySelected(item.serial_number, 'igt')">
+                <td>{{ item.id }}</td>
+                <td>
+                  <strong>{{ item.serial_number }}</strong>
+                  <span class="badge bg-warning ms-1" *ngIf="isCurrentlySelected(item.serial_number, 'igt')">SELECTED</span>
+                  <button class="btn btn-sm btn-link p-0 ms-1" (click)="copyToClipboard(item.serial_number)" title="Copy">
+                    <i class="mdi mdi-content-copy"></i>
+                  </button>
+                </td>
+                <td>{{ item.category || '-' }}</td>
+                <td><span class="badge bg-success">{{ item.status }}</span></td>
+                <td>{{ item.created_at | date:'short' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="igtSequence.data.length === 0" class="alert alert-warning">
+        No available IGT serials found.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="dismiss()">Close</button>
+</div>

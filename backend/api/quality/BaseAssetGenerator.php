@@ -40,7 +40,48 @@ abstract class BaseAssetGenerator
     }
 
     /**
-     * Bulk create assignments with asset generation
+     * Find or create EyeFi serial number in database
+     * If serial exists, return its ID
+     * If not, create it and return new ID
+     * 
+     * @param string $serialNumber Serial number to find or create
+     * @return int Serial ID
+     */
+    protected function findOrCreateEyeFiSerial($serialNumber)
+    {
+        if (empty($serialNumber)) {
+            return null;
+        }
+        
+        // Try to find existing serial
+        $stmt = $this->db->prepare("
+            SELECT id FROM eyefi_serial_numbers 
+            WHERE serial_number = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$serialNumber]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            return $existing['id'];
+        }
+        
+        // Serial doesn't exist, create it
+        $insertStmt = $this->db->prepare("
+            INSERT INTO eyefi_serial_numbers (
+                serial_number,
+                status,
+                is_consumed,
+                created_at
+            ) VALUES (?, 'available', FALSE, NOW())
+        ");
+        $insertStmt->execute([$serialNumber]);
+        
+        return $this->db->lastInsertId();
+    }
+
+    /**
+     * Bulk create multiple assignments in a single transaction
      * Main entry point for all customer types
      * 
      * @param array $assignments Array of assignment data
@@ -55,7 +96,13 @@ abstract class BaseAssetGenerator
             $results = [];
             
             foreach ($assignments as $assignment) {
-                // 1. Generate asset number (customer-specific logic)
+                // 0. Ensure EyeFi serial exists in database if provided
+                if (!empty($assignment['serialNumber']) && empty($assignment['eyefi_serial_id'])) {
+                    $assignment['eyefi_serial_id'] = $this->findOrCreateEyeFiSerial($assignment['serialNumber']);
+                    error_log("Created/found EyeFi serial '{$assignment['serialNumber']}' with ID: {$assignment['eyefi_serial_id']}");
+                }
+                
+                // 1. Generate customer-specific asset number
                 $generatedAssetNumber = $this->generateAssetNumber($assignment);
                 
                 // 2. Insert into customer-specific table
@@ -113,6 +160,13 @@ abstract class BaseAssetGenerator
      */
     protected function createAssignment($assignment, $customerAssetId, $generatedAssetNumber)
     {
+        // DEBUG: Log what we're receiving
+        error_log("=== CREATE ASSIGNMENT DEBUG ===");
+        error_log("Assignment inspector_name: " . ($assignment['inspector_name'] ?? 'NOT SET'));
+        error_log("Assignment consumed_by: " . ($assignment['consumed_by'] ?? 'NOT SET'));
+        error_log("Class user_full_name: " . ($this->user_full_name ?? 'NOT SET'));
+        error_log("Full assignment data: " . json_encode($assignment));
+        
         // First, check if this serial already has a consumed record
         if (!empty($assignment['eyefi_serial_id'])) {
             $checkStmt = $this->db->prepare("
@@ -144,11 +198,20 @@ abstract class BaseAssetGenerator
                 po_number,
                 property_site,
                 part_number,
+                wo_number,
+                wo_part,
+                wo_description,
+                wo_qty_ord,
+                wo_due_date,
+                wo_routing,
+                wo_line,
+                cp_cust_part,
+                cp_cust,
                 inspector_name,
                 status,
                 consumed_at,
                 consumed_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?)
         ";
         
         $stmt = $this->db->prepare($qry);
@@ -163,8 +226,17 @@ abstract class BaseAssetGenerator
             $assignment['poNumber'] ?? null,
             $assignment['property_site'] ?? null,
             $assignment['partNumber'] ?? $assignment['sgPartNumber'] ?? $assignment['agsPartNumber'] ?? null,
-            $this->user_full_name,
-            $this->user_full_name
+            $assignment['wo_number'] ?? null,
+            $assignment['wo_part'] ?? null,
+            $assignment['wo_description'] ?? null,
+            $assignment['wo_qty_ord'] ?? null,
+            $assignment['wo_due_date'] ?? null,
+            $assignment['wo_routing'] ?? null,
+            $assignment['wo_line'] ?? null,
+            $assignment['cp_cust_part'] ?? null,
+            $assignment['cp_cust'] ?? null,
+            $assignment['inspector_name'] ?? $this->user_full_name ?? 'System',
+            $assignment['consumed_by'] ?? $this->user_full_name ?? 'System'
         ]);
         
         return $this->db->lastInsertId();
@@ -180,6 +252,9 @@ abstract class BaseAssetGenerator
      */
     protected function markSerialsAsConsumed($assignment, $assignmentId)
     {
+        // Get user name from assignment or fall back to class property
+        $userName = $assignment['consumed_by'] ?? $this->user_full_name ?? 'System';
+        
         // Mark EyeFi serial as consumed (only if not already consumed)
         if (!empty($assignment['eyefi_serial_id'])) {
             $stmt = $this->db->prepare("
@@ -192,7 +267,7 @@ abstract class BaseAssetGenerator
                 AND is_consumed = FALSE
             ");
             $stmt->execute([
-                $this->user_full_name,
+                $userName,
                 $assignmentId,
                 $assignment['eyefi_serial_id']
             ]);
@@ -230,7 +305,7 @@ abstract class BaseAssetGenerator
                 AND is_consumed = FALSE
             ");
             $stmt->execute([
-                $this->user_full_name,
+                $userName,
                 $assignmentId,
                 $assignment['ul_label_id']
             ]);
