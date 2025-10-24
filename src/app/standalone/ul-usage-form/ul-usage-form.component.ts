@@ -230,17 +230,16 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   // Session management methods removed - handled by wrapper component
 
   private startAutoLogoutTimer() {
-    this.autoLogoutCountdown = 20; // 20 seconds countdown
-
-    this.autoLogoutTimer = timer(0, 1000).subscribe(() => {
-      if (this.autoLogoutCountdown > 0) {
-        this.autoLogoutCountdown--;
-        // Update browser tab title to show auto logout countdown
-        document.title = `🚪 Auto Logout in ${this.autoLogoutCountdown}s | The Fi Company`;
-      } else {
-        this.logout();
-      }
-    });
+    // DISABLED: Auto logout timer removed - users will manually log out after form submission
+    // this.autoLogoutCountdown = 20; // 20 seconds countdown
+    // this.autoLogoutTimer = timer(0, 1000).subscribe(() => {
+    //   if (this.autoLogoutCountdown > 0) {
+    //     this.autoLogoutCountdown--;
+    //     document.title = `🚪 Auto Logout in ${this.autoLogoutCountdown}s | The Fi Company`;
+    //   } else {
+    //     this.logout();
+    //   }
+    // });
   }
 
   private clearAutoLogoutTimer() {
@@ -794,8 +793,9 @@ export class StandaloneULUsageFormComponent implements OnInit, OnDestroy, AfterV
   }
 
   cancelAutoLogout() {
+    // DISABLED: Auto logout timer already removed
     this.clearAutoLogoutTimer();
-    // Keep the success message visible but stop the countdown
+    // Success message remains visible, no countdown to cancel
   }
 
   // Helper methods

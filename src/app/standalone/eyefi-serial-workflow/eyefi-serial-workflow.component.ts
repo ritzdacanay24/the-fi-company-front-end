@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -48,7 +48,7 @@ interface WorkflowStep {
   templateUrl: './eyefi-serial-workflow.component.html',
   styleUrls: ['./eyefi-serial-workflow.component.scss']
 })
-export class EyefiSerialWorkflowComponent implements OnInit {
+export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   @ViewChild(PublicFormWrapperComponent) wrapperComponent!: PublicFormWrapperComponent;
   @ViewChild('confirmationModal') confirmationModal!: TemplateRef<any>;
   @ViewChild('mismatchReportModal') mismatchReportModal!: TemplateRef<any>;
@@ -283,7 +283,15 @@ export class EyefiSerialWorkflowComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Restore workflow state from sessionStorage if exists
+    this.restoreWorkflowState();
+    
     // Don't load UL numbers until user is authenticated
+  }
+
+  ngOnDestroy(): void {
+    // Save workflow state before component is destroyed (refresh/navigation)
+    this.saveWorkflowState();
   }
 
   // Helper methods to extract prefix and numeric parts from UL numbers
@@ -348,6 +356,9 @@ export class EyefiSerialWorkflowComponent implements OnInit {
     
     // Load UL numbers after authentication
     this.loadAvailableULs();
+    
+    // Restore workflow state if user refreshed while authenticated
+    this.restoreWorkflowState();
   }
 
   onUserLoggedOut(): void {
@@ -355,6 +366,9 @@ export class EyefiSerialWorkflowComponent implements OnInit {
     this.isAuthenticated = false;
     this.currentUser = null;
     this.resetWorkflow();
+    
+    // Clear saved workflow state on logout
+    this.clearWorkflowState();
   }
 
   // Serial number selection
@@ -462,6 +476,7 @@ export class EyefiSerialWorkflowComponent implements OnInit {
         this.currentStep++;
         this.updateStepStates();
         await this.autoPopulateSerials();
+        this.saveWorkflowState(); // Save after populating
       }
       // Auto-generate/select assets when moving from Step 4 (Assign Serials) to Step 5 (Generate Assets)
       else if (this.currentStep === 4) {
@@ -473,10 +488,12 @@ export class EyefiSerialWorkflowComponent implements OnInit {
         console.log('🎯 Setting currentFormType:', this.currentFormType, 'for customer:', this.selectedCustomer);
         
         await this.handleAssetGeneration();
+        this.saveWorkflowState(); // Save after generating assets
       }
       else {
         this.currentStep++;
         this.updateStepStates();
+        this.saveWorkflowState(); // Save after each step
         
         // If moved to step 2 and customer is selected, scroll to it
         if (this.currentStep === 2 && this.selectedCustomer) {
@@ -592,6 +609,51 @@ export class EyefiSerialWorkflowComponent implements OnInit {
     // This will be called when moving from Step 3 to Step 4
     this.isLoading = true;
     try {
+      await this.performAutoPopulation();
+    } catch (error) {
+      console.error('Error auto-populating serials:', error);
+      this.toastrService.error('Failed to auto-populate. Please select manually.');
+      // Set to manual mode on error
+      for (let i = 0; i < this.quantity; i++) {
+        if (this.serialAssignments[i]) {
+          this.serialAssignments[i].isEditing = true;
+        }
+      }
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * Refresh serials and ULs - useful if admin fixed sequence
+   * Reloads from API and re-populates assignments
+   */
+  async refreshSerialAssignments(): Promise<void> {
+    if (!confirm('Refresh serial and UL assignments? This will reload the latest available items from the database.')) {
+      return;
+    }
+
+    this.isLoading = true;
+    try {
+      // Reload UL numbers first
+      await this.loadAvailableULs();
+      
+      // Re-populate assignments with fresh data
+      await this.performAutoPopulation();
+      
+      this.toastrService.success('Serial and UL assignments refreshed successfully!');
+    } catch (error) {
+      console.error('Error refreshing assignments:', error);
+      this.toastrService.error('Failed to refresh assignments. Please try again.');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * Core auto-population logic - extracted for reuse by both autoPopulateSerials() and refreshSerialAssignments()
+   */
+  private async performAutoPopulation(): Promise<void> {
       // For USED category, only auto-populate UL numbers, NOT serials (user will enter manually)
       // For NEW category, auto-populate both serials and UL numbers
       let serials = [];
@@ -704,18 +766,6 @@ export class EyefiSerialWorkflowComponent implements OnInit {
           }
         }
       }
-    } catch (error) {
-      console.error('Error auto-populating serials:', error);
-      this.toastrService.error('Failed to auto-populate. Please select manually.');
-      // Set to manual mode on error
-      for (let i = 0; i < this.quantity; i++) {
-        if (this.serialAssignments[i]) {
-          this.serialAssignments[i].isEditing = true;
-        }
-      }
-    } finally {
-      this.isLoading = false;
-    }
   }
 
   onSerialAssigned(index: number, serial: any): void {
@@ -993,6 +1043,9 @@ export class EyefiSerialWorkflowComponent implements OnInit {
       step.completed = false;
       step.active = step.id === 1;
     });
+    
+    // Clear saved workflow state
+    this.clearWorkflowState();
     
     console.log('🔄 Workflow reset - ready for new batch');
   }
@@ -2442,6 +2495,105 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
     componentInstance.currentlySelectedIgt = this.generatedAssets
       .map(a => a.serial_number)
       .filter(s => s);
+  }
+
+  /**
+   * Save workflow state to sessionStorage
+   * Called on component destroy (refresh/navigation) and after key changes
+   */
+  private saveWorkflowState(): void {
+    // Only save if user is authenticated and has started the workflow
+    if (!this.isAuthenticated || this.currentStep === 1) {
+      return;
+    }
+
+    const workflowState = {
+      currentStep: this.currentStep,
+      workOrderNumber: this.workOrderNumber,
+      workOrderDetails: this.workOrderDetails,
+      selectedCustomer: this.selectedCustomer,
+      customOtherCustomerName: this.customOtherCustomerName,
+      quantity: this.quantity,
+      category: this.category,
+      ulRequired: this.ulRequired,
+      serialAssignments: this.serialAssignments,
+      generatedAssets: this.generatedAssets,
+      currentFormType: this.currentFormType,
+      steps: this.steps,
+      timestamp: Date.now()
+    };
+
+    try {
+      sessionStorage.setItem('eyefi_workflow_state', JSON.stringify(workflowState));
+      console.log('💾 Workflow state saved to sessionStorage');
+    } catch (error) {
+      console.error('Failed to save workflow state:', error);
+    }
+  }
+
+  /**
+   * Restore workflow state from sessionStorage
+   * Called on component init and after authentication
+   */
+  private restoreWorkflowState(): void {
+    // Only restore if user is authenticated
+    if (!this.isAuthenticated) {
+      return;
+    }
+
+    try {
+      const savedState = sessionStorage.getItem('eyefi_workflow_state');
+      if (!savedState) {
+        return;
+      }
+
+      const workflowState = JSON.parse(savedState);
+      
+      // Check if state is recent (within last 24 hours)
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      if (Date.now() - workflowState.timestamp > ONE_DAY) {
+        console.log('⏰ Workflow state expired, clearing...');
+        this.clearWorkflowState();
+        return;
+      }
+
+      // Restore workflow state
+      this.currentStep = workflowState.currentStep || 1;
+      this.workOrderNumber = workflowState.workOrderNumber || '';
+      this.workOrderDetails = workflowState.workOrderDetails || null;
+      this.selectedCustomer = workflowState.selectedCustomer || '';
+      this.customOtherCustomerName = workflowState.customOtherCustomerName || '';
+      this.quantity = workflowState.quantity || 1;
+      this.category = workflowState.category || 'new';
+      this.ulRequired = workflowState.ulRequired !== undefined ? workflowState.ulRequired : true;
+      this.serialAssignments = workflowState.serialAssignments || [];
+      this.generatedAssets = workflowState.generatedAssets || [];
+      this.currentFormType = workflowState.currentFormType || '';
+      this.steps = workflowState.steps || this.steps;
+
+      console.log('✅ Workflow state restored from sessionStorage');
+      console.log('📍 Current Step:', this.currentStep);
+      console.log('🔢 Quantity:', this.quantity);
+      console.log('📋 Serial Assignments:', this.serialAssignments.length);
+
+      this.toastrService.info('Previous workflow session restored', 'Welcome Back');
+    } catch (error) {
+      console.error('Failed to restore workflow state:', error);
+      this.clearWorkflowState();
+    }
+  }
+
+  /**
+   * Clear workflow state from sessionStorage
+   * Called on logout or when starting a new workflow
+   */
+  private clearWorkflowState(): void {
+    try {
+      sessionStorage.removeItem('eyefi_workflow_state');
+      console.log('🗑️ Workflow state cleared from sessionStorage');
+    } catch (error) {
+      console.error('Failed to clear workflow state:', error);
+    }
   }
 }
 

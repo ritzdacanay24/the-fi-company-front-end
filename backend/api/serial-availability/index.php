@@ -98,7 +98,7 @@ class SerialAvailabilityAPI {
 
     /**
      * Get available UL labels
-     * LEFT JOIN to ul_label_usages to exclude consumed ULs (legacy table)
+     * LEFT JOIN to BOTH ul_label_usages (legacy) AND serial_assignments (new) to exclude consumed ULs
      * Returns next available ULs in sequence
      */
     public function getAvailableUlLabels($quantity = 10) {
@@ -119,11 +119,14 @@ class SerialAvailabilityAPI {
                         ul.part_number,
                         ul.status,
                         ul.created_at,
-                        ulu.id as usage_id
+                        ulu.id as legacy_usage_id,
+                        sa.id as new_assignment_id
                       FROM ul_labels ul
                       LEFT JOIN ul_label_usages ulu ON ul.id = ulu.ul_label_id
+                      LEFT JOIN serial_assignments sa ON ul.id = sa.ul_label_id
                       WHERE ul.status = 'active' 
                         AND ulu.id IS NULL
+                        AND sa.id IS NULL
                       ORDER BY ul.ul_number ASC
                       LIMIT {$limit}";
             
@@ -137,12 +140,14 @@ class SerialAvailabilityAPI {
             if (count($results) > 0) {
                 error_log("First result UL: " . $results[0]['ul_number']);
                 error_log("First result ID: " . $results[0]['id']);
-                error_log("First result usage_id: " . ($results[0]['usage_id'] ?? 'NULL'));
+                error_log("First result legacy_usage_id: " . ($results[0]['legacy_usage_id'] ?? 'NULL'));
+                error_log("First result new_assignment_id: " . ($results[0]['new_assignment_id'] ?? 'NULL'));
             }
             
-            // Remove usage_id from results (it was just for debugging)
+            // Remove debug columns from results
             foreach ($results as &$result) {
-                unset($result['usage_id']);
+                unset($result['legacy_usage_id']);
+                unset($result['new_assignment_id']);
             }
             
             return [

@@ -38,11 +38,13 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   // Session management
   sessionTimer: Subscription | null = null;
   sessionTimeRemaining = 0;
-  readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  // DISABLED: Auto logout timer - users will manually log out
+  // readonly SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
   // Inactivity tracking
   lastActivity = Date.now();
-  readonly INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute
+  // DISABLED: Inactivity timeout - users will manually log out
+  // readonly INACTIVITY_TIMEOUT = 1 * 60 * 1000; // 1 minute
 
   constructor(
     private authService: AuthenticationService,
@@ -64,39 +66,19 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
       if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
         const user = JSON.parse(storedUser);
         if (user && user.token) {
-          // Check if session is still valid
-          const sessionStart = localStorage.getItem('temp_session_start');
-          if (sessionStart) {
-            const elapsed = Date.now() - parseInt(sessionStart);
-            if (elapsed < this.SESSION_TIMEOUT) {
-              this.isAuthenticated = true;
-              this.currentUser = user;
-              this.hasValidUserImage = !!(user?.image);
-              // Calculate remaining time based on elapsed time
-              const elapsed = Date.now() - parseInt(sessionStart);
-              const remaining = Math.max(0, this.SESSION_TIMEOUT - elapsed);
-              this.sessionTimeRemaining = Math.ceil(remaining / 1000);
-              
-              if (this.sessionTimeRemaining > 0) {
-                this.startSessionTimer(false); // Don't reset time, use calculated remaining time
-              } else {
-                this.logout();
-                return;
-              }
-              this.setupInactivityTracking();
-              this.updateLastActivity();
-              
-              // Emit authentication event to parent component
-              this.authenticationComplete.emit(user);
-              
-              console.log('Found existing valid session, user remains authenticated');
-              return;
-            } else {
-              console.log('Existing session has expired, clearing storage');
-              localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
-              localStorage.removeItem('temp_session_start');
-            }
-          }
+          // Session never expires - users will manually log out
+          this.isAuthenticated = true;
+          this.currentUser = user;
+          this.hasValidUserImage = !!(user?.image);
+          
+          // DISABLED: Session timeout check
+          // No timer or inactivity tracking needed
+          
+          // Emit authentication event to parent component
+          this.authenticationComplete.emit(user);
+          
+          console.log('Found existing valid session, user remains authenticated (no auto-logout)');
+          return;
         }
       }
     } catch (error) {
@@ -115,13 +97,8 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
     this.currentUser = user;
     this.hasValidUserImage = !!(user?.image);
     
-    // Store session start time for persistence across components
-    const sessionStartTime = Date.now().toString();
-    localStorage.setItem('temp_session_start', sessionStartTime);
-    
-    this.startSessionTimer();
-    this.setupInactivityTracking();
-    this.updateLastActivity();
+    // DISABLED: No session timeout tracking - users will manually log out
+    // No timer or inactivity tracking needed
     
     this.authenticationComplete.emit(user);
   }
@@ -140,21 +117,16 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
     this.currentUser = null;
     this.hasValidUserImage = false;
     localStorage.removeItem(THE_FI_COMPANY_CURRENT_USER);
-    localStorage.removeItem('temp_session_start');
+    // DISABLED: No session start time needed
+    // localStorage.removeItem('temp_session_start');
     this.toastrService.info('You have been logged out.', 'Logged Out');
     this.userLoggedOut.emit();
   }
 
   extendSession(): void {
-    this.clearSessionTimer();
-    
-    // Reset session start time
-    const sessionStartTime = Date.now().toString();
-    localStorage.setItem('temp_session_start', sessionStartTime);
-    
-    this.startSessionTimer();
-    this.updateLastActivity();
-    this.toastrService.success('Session extended successfully!', 'Session Extended');
+    // DISABLED: Session extension not needed - no auto logout
+    // Users can stay logged in indefinitely until manual logout
+    this.toastrService.info('Auto logout is disabled. Please log out manually when done.', 'Info');
   }
 
   goToFormsMenu(): void {
@@ -170,15 +142,8 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
 
   // Session Management
   private startSessionTimer(resetTime: boolean = true): void {
-    if (resetTime) {
-      this.sessionTimeRemaining = this.SESSION_TIMEOUT / 1000;
-    }
-    this.sessionTimer = timer(0, 1000).subscribe(() => {
-      this.sessionTimeRemaining--;
-      if (this.sessionTimeRemaining <= 0) {
-        this.logout();
-      }
-    });
+    // DISABLED: Auto logout timer removed - users will manually log out
+    // Session never expires
   }
 
   private clearSessionTimer(): void {
@@ -189,28 +154,20 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
   }
 
   private setupInactivityTracking(): void {
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    events.forEach(event => {
-      document.addEventListener(event, () => this.updateLastActivity(), true);
-    });
+    // DISABLED: Inactivity tracking removed - users will manually log out
   }
 
   private updateLastActivity(): void {
-    this.lastActivity = Date.now();
+    // DISABLED: Activity tracking removed - users will manually log out
   }
 
   getTimeRemainingFormatted(): string {
-    const minutes = Math.floor(this.sessionTimeRemaining / 60);
-    const seconds = this.sessionTimeRemaining % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    // DISABLED: No timer, return empty or informational message
+    return 'No auto-logout';
   }
 
   getInactivityTimeRemainingFormatted(): string {
-    const timeSinceLastActivity = Date.now() - this.lastActivity;
-    const remaining = Math.max(0, this.INACTIVITY_TIMEOUT - timeSinceLastActivity);
-    const seconds = Math.ceil(remaining / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    // DISABLED: No inactivity timeout
+    return 'No timeout';
   }
 }
