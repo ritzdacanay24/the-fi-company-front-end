@@ -763,7 +763,7 @@ class SerialAssignmentsAPI {
                         );
                     }
 
-                    // Insert assignment record - MINIMAL VERSION with explicit defaults
+                    // Insert assignment record - Save all work order details
                     // customer_type_id: 1=IGT, 2=SG, 3=AGS, 4=Other
                     $insertQuery = "
                         INSERT INTO serial_assignments (
@@ -776,13 +776,16 @@ class SerialAssignmentsAPI {
                             generated_asset_number,
                             po_number,
                             part_number,
+                            wo_number,
+                            wo_description,
+                            cp_cust_part,
                             cp_cust,
                             status,
                             consumed_at,
                             consumed_by,
                             is_voided,
                             verification_status
-                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
+                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
                     ";
                     
                     // Customer name goes into cp_cust field
@@ -796,6 +799,9 @@ class SerialAssignmentsAPI {
                         $assignment['ulNumber'] ?? null,               // ul_number
                         $assignment['poNumber'] ?? null,               // po_number
                         $assignment['partNumber'] ?? null,             // part_number
+                        $assignment['wo_number'] ?? null,              // wo_number
+                        $assignment['wo_description'] ?? null,         // wo_description
+                        $assignment['cp_cust_part'] ?? null,           // cp_cust_part (customer part number)
                         $customerName,                                 // cp_cust (customer name)
                         $performedBy                                   // consumed_by
                     ]);
