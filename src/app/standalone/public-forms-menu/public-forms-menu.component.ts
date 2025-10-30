@@ -149,6 +149,9 @@ export class PublicFormsMenuComponent implements OnInit, OnDestroy {
 
   navigateToForm(formId: string): void {
     switch (formId) {
+      case 'eyefi-workflow':
+        this.router.navigate(['/standalone/eyefi-workflow']);
+        break;
       case 'ul-usage':
         this.router.navigate(['/standalone/ul-usage']);
         break;

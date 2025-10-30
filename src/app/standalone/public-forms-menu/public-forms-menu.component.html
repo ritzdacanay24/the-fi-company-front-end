@@ -29,92 +29,24 @@
         
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
           
-          <!-- UL Usage Form Card -->
+          <!-- EyeFi Serial Workflow Card -->
           <div class="col">
             <div class="card shadow-sm">
-              <div class="card-img-top d-flex align-items-center justify-content-center bg-primary text-white" style="height: 200px;">
-                <i class="mdi mdi-tag-multiple-outline" style="font-size: 4rem;"></i>
+              <div class="card-img-top d-flex align-items-center justify-content-center text-white position-relative" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); overflow: hidden;">
+                <div class="position-absolute w-100 h-100" style="background: rgba(102, 126, 234, 0.1);"></div>
+                <i class="mdi mdi-timeline-check position-relative" style="font-size: 4rem; z-index: 1;"></i>
               </div>
               <div class="card-body">
-                <h5 class="card-title">UL Label Usage Form</h5>
-                <p class="card-text">Record and track UL label usage for compliance and inventory management. Quick data entry for label applications and work order tracking.</p>
+                <h5 class="card-title">EyeFi Serial Workflow</h5>
+                <p class="card-text">Guided step-by-step workflow for managing EyeFi serial number assignments. Select serial, assign UL label, and register customer in one streamlined process.</p>
                 <div class="d-flex justify-content-between align-items-center mt-4">
                   <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('ul-usage')">
-                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('eyefi-workflow')">
+                      <i class="mdi mdi-open-in-new me-1"></i>Open Workflow
                     </button>
                   </div>
                   <small class="text-body-secondary">
-                    <span class="badge bg-success">Active</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- IGT Serial Form Card -->
-          <div class="col">
-            <div class="card shadow-sm">
-              <div class="card-img-top d-flex align-items-center justify-content-center bg-info text-white" style="height: 200px;">
-                <i class="mdi mdi-barcode-scan" style="font-size: 4rem;"></i>
-              </div>
-              <div class="card-body">
-                <h5 class="card-title">IGT Serial Number Form</h5>
-                <p class="card-text">Register new IGT serial numbers and manage asset inventory. Streamlined form for quick serial number entry and categorization.</p>
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                  <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('igt-serial')">
-                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
-                    </button>
-                  </div>
-                  <small class="text-body-secondary">
-                    <span class="badge bg-success">Active</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- AGS Serial Form Card -->
-          <div class="col">
-            <div class="card shadow-sm">
-              <div class="card-img-top d-flex align-items-center justify-content-center bg-success text-white" style="height: 200px;">
-                <i class="mdi mdi-card-account-details-star" style="font-size: 4rem;"></i>
-              </div>
-              <div class="card-body">
-                <h5 class="card-title">AGS Serial Creation</h5>
-                <p class="card-text">Create and track AGS (American Gaming Systems) gaming machine assets with automated serial generation and EyeFi validation.</p>
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                  <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('ags-serial')">
-                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
-                    </button>
-                  </div>
-                  <small class="text-body-secondary">
-                    <span class="badge bg-success">Active</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SG Asset Form Card -->
-          <div class="col">
-            <div class="card shadow-sm">
-              <div class="card-img-top d-flex align-items-center justify-content-center bg-purple text-white" style="height: 200px;">
-                <i class="mdi mdi-package-variant-closed" style="font-size: 4rem;"></i>
-              </div>
-              <div class="card-body">
-                <h5 class="card-title">Light and Wonder Assets</h5>
-                <p class="card-text">Create and track Light and Wonder (Scientific Games) gaming machine assets with integrated EyeFi serial validation and QAD synchronization.</p>
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                  <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="navigateToForm('sg-asset')">
-                      <i class="mdi mdi-open-in-new me-1"></i>Open Form
-                    </button>
-                  </div>
-                  <small class="text-body-secondary">
-                    <span class="badge bg-success">Active</span>
+                    <span class="badge bg-info">New</span>
                   </small>
                 </div>
               </div>

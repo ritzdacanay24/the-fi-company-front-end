@@ -3,7 +3,7 @@
     <app-shared-header [pageTitle]="pageTitle" [pageDescription]="pageDescription" [pageIcon]="pageIcon"
         [isAuthenticated]="isAuthenticated" [currentUser]="currentUser" [hasValidUserImage]="hasValidUserImage"
         [sessionTimeRemaining]="getTimeRemainingFormatted()"
-        [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()" (extendSession)="extendSession()"
+        [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()"
         (logout)="logout()" (userImageError)="onUserImageError($event)" (goToFormsMenu)="goToFormsMenu()">
     </app-shared-header>
 
@@ -59,3 +59,74 @@
         </div>
     </footer>
 </div>
+
+<!-- Session Timeout Modal -->
+<ng-template #sessionTimeoutModal let-modal>
+    <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+            <i class="mdi mdi-clock-alert-outline me-2"></i>
+            Session Timeout
+        </h5>
+    </div>
+    <div class="modal-body">
+        <div class="text-center mb-4">
+            <!-- User Avatar -->
+            <div class="mb-3">
+                <img *ngIf="hasValidUserImage && currentUser?.image" 
+                     [src]="currentUser.image" 
+                     alt="User Avatar"
+                     class="rounded-circle"
+                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #ffc107;"
+                     (error)="onUserImageError($event)">
+                <div *ngIf="!hasValidUserImage || !currentUser?.image"
+                     class="rounded-circle bg-warning text-dark d-inline-flex align-items-center justify-content-center"
+                     style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; border: 3px solid #ffc107;">
+                    {{ (currentUser?.full_name || currentUser?.username || 'User')?.charAt(0)?.toUpperCase() }}
+                </div>
+            </div>
+            <!-- User Name -->
+            <h5 class="mb-2">{{ currentUser?.full_name || currentUser?.username || 'User' }}</h5>
+            <i class="mdi mdi-account-clock text-warning" style="font-size: 48px;"></i>
+        </div>
+        <div class="alert alert-warning">
+            <i class="mdi mdi-information me-2"></i>
+            Your session has been inactive for 15 minutes.
+        </div>
+        <p class="mb-4">
+            To continue working, please scan your card number again. Otherwise, you will be logged out.
+        </p>
+        <div class="form-group">
+            <label for="reauthCardNumber" class="form-label">
+                <i class="mdi mdi-card-account-details me-1"></i>
+                Card Number
+            </label>
+            <input 
+                type="password" 
+                class="form-control form-control-lg" 
+                id="reauthCardNumber"
+                [(ngModel)]="cardNumber"
+                placeholder="Scan or enter your card number"
+                [disabled]="isReauthenticating"
+                (keyup.enter)="reauthenticateWithCard()"
+                autofocus>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="logoutFromModal()"
+            [disabled]="isReauthenticating">
+            <i class="mdi mdi-logout me-1"></i>
+            Log Out
+        </button>
+        <button 
+            type="button" 
+            class="btn btn-primary"
+            (click)="reauthenticateWithCard()"
+            [disabled]="isReauthenticating || !cardNumber">
+            <i class="mdi mdi-check me-1" [class.mdi-spin]="isReauthenticating"></i>
+            {{ isReauthenticating ? 'Verifying...' : 'Continue Session' }}
+        </button>
+    </div>
+</ng-template>

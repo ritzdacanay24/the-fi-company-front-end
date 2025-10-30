@@ -64,16 +64,6 @@
   }
 }
 
-// Print styles
-@media print {
-  .standalone-igt-form {
-    .form-header,
-    footer {
-      display: none !important;
-    }
-    
-    .form-content {
-      padding-top: 0 !important;
-    }
-  }
+// Print preview section styling (visible on screen when in preview mode)
+.print-preview-section {
 }

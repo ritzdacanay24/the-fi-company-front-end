@@ -24,10 +24,12 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
           [class.is-invalid]="showInvalidMessage"
           [(ngModel)]="model"
           [ngbTypeahead]="search"
+          [resultTemplate]="rt"
           [resultFormatter]="formatter"
           [inputFormatter]="formatter"
           [placeholder]="placeholder"
           [disabled]="disabled"
+          container="body"
           (selectItem)="onSerialSelect($event)"
           (focus)="focus$.next($any($event).target.value)"
           (click)="click$.next($any($event).target.value)"
@@ -50,16 +52,22 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
         <div *ngIf="!result.isPlaceholder" class="d-flex align-items-center justify-content-between py-2">
           <div>
             <div class="fw-semibold text-dark">{{result.serial_number}}</div>
-            <small class="text-muted">{{result.product_model}}</small>
           </div>
           <span class="badge bg-{{getStatusBadgeClass(result.status)}} ms-3">
             {{result.status}}
           </span>
         </div>
-        <div *ngIf="result.isPlaceholder" class="py-3 text-center text-muted" style="cursor: default;">
+        <div *ngIf="result.isPlaceholder && !result.allowAdd" class="py-3 text-center text-muted" style="cursor: default;">
           <i class="mdi mdi-alert-circle-outline me-1"></i>
           <div>{{result.serial_number}}</div>
           <small>{{result.product_model}}</small>
+        </div>
+        <div *ngIf="result.isPlaceholder && result.allowAdd" class="py-3 text-center" style="cursor: default; background-color: #d1ecf1;">
+          <i class="mdi mdi-information text-info fs-5 mb-2"></i>
+          <div class="fw-semibold text-info">{{result.serial_number}}</div>
+          <small class="text-info">
+            <i class="mdi mdi-check-circle me-1"></i>{{result.product_model}}
+          </small>
         </div>
       </ng-template>
       
@@ -70,17 +78,18 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
         </div>
       </ng-template>
       
-      <div class="form-text" *ngIf="!selectedSerial && !isSearching">
+      <div class="form-text" *ngIf="showHelpText && !selectedSerial && !isSearching && !showNewSerialMessage">
         <i class="mdi mdi-information-outline me-1"></i>
-        Type to search for EyeFi serial numbers
+        <span *ngIf="!allowFreeText">Type to search for EyeFi serial numbers</span>
+        <span *ngIf="allowFreeText">Search existing or enter new serial number</span>
       </div>
       
-      <div class="form-text text-primary" *ngIf="isSearching">
+      <div class="form-text text-primary" *ngIf="showHelpText && isSearching">
         <i class="mdi mdi-loading mdi-spin me-1"></i>
         Searching...
       </div>
       
-      <div class="text-danger small mt-1" *ngIf="showInvalidMessage">
+      <div class="text-danger small mt-1" *ngIf="showHelpText && showInvalidMessage && !allowFreeText">
         <i class="mdi mdi-alert-circle-outline me-1"></i>
         Serial number not found in database. Please select from the dropdown.
       </div>
@@ -94,6 +103,17 @@ import { SerialNumberService } from '../../features/serial-number-management/ser
     
     .input-group .btn {
       border-left: 0;
+      margin-left: -1px;
+    }
+    
+    .input-group .btn-outline-secondary {
+      border-color: #ced4da;
+    }
+    
+    .input-group .btn-outline-secondary:hover {
+      background-color: #e9ecef;
+      border-color: #ced4da;
+      color: #212529;
     }
     
     ::ng-deep .dropdown-menu {
@@ -135,10 +155,12 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   @Input() placeholder: string = 'Search by Serial Number';
   @Input() required: boolean = false;
   @Input() showLabel: boolean = true;
+  @Input() showHelpText: boolean = true; // Show help text below input
   @Input() status: string = 'available';
   @Input() productModel: string = '';
   @Input() strictMode: boolean = true;
   @Input() excludeSerials: string[] = [];
+  @Input() allowFreeText: boolean = false; // Allow entering new serial numbers
   
   @Output() notifyParent = new EventEmitter<any>();
 
@@ -148,6 +170,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   selectedSerial: any = null;
   isSearching: boolean = false;
   showInvalidMessage: boolean = false;
+  showNewSerialMessage: boolean = false;
   
   focus$ = new Subject<string>();
   click$ = new Subject<string>();
@@ -174,12 +197,23 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
       map(results => {
         // If no results, return a placeholder object
         if (results.length === 0) {
-          return [{ 
-            serial_number: 'No results found', 
-            product_model: 'Try a different search term',
-            status: 'none',
-            isPlaceholder: true 
-          }];
+          // Different message based on allowFreeText mode
+          if (this.allowFreeText) {
+            return [{ 
+              serial_number: 'No results found in database', 
+              product_model: 'You can still enter this serial number (USED)',
+              status: 'new',
+              isPlaceholder: true,
+              allowAdd: true
+            }];
+          } else {
+            return [{ 
+              serial_number: 'No results found', 
+              product_model: 'Try a different search term',
+              status: 'none',
+              isPlaceholder: true 
+            }];
+          }
         }
         return results;
       }),
@@ -202,7 +236,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
   private async searchSerials(term: string): Promise<any[]> {
     try {
       const filters: any = {
-        limit: 10,
+        // limit: 30,
         sort: 'serial_number',
         order: 'asc'
       };
@@ -254,6 +288,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
       this.model = serial;
       this.selectedSerial = serial;
       this.showInvalidMessage = false;
+      this.showNewSerialMessage = false;
       this.onChange(serial.serial_number);
       this.onTouched();
       this.notifyParent.emit(serial);
@@ -277,18 +312,32 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
     // Check if the current model is a valid selection
     if (this.model && typeof this.model === 'string') {
       // User typed something but didn't select from dropdown
-      this.showInvalidMessage = true;
-      this.model = null;
-      this.selectedSerial = null;
-      this.onChange(null);
       
-      // Hide message after 5 seconds
-      setTimeout(() => {
+      if (this.allowFreeText) {
+        // Allow free text entry (for USED category)
+        // No messages shown - just accept the input
         this.showInvalidMessage = false;
-      }, 5000);
+        this.showNewSerialMessage = false;
+        this.selectedSerial = { serial_number: this.model };
+        this.onChange(this.model);
+        this.notifyParent.emit({ serial_number: this.model });
+      } else {
+        // Strict mode: Must select from dropdown
+        this.showInvalidMessage = true;
+        this.showNewSerialMessage = false;
+        this.model = null;
+        this.selectedSerial = null;
+        this.onChange(null);
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+          this.showInvalidMessage = false;
+        }, 5000);
+      }
     } else if (!this.model) {
       // Field is empty
       this.showInvalidMessage = false;
+      this.showNewSerialMessage = false;
       this.selectedSerial = null;
       this.onChange(null);
     } else {
@@ -301,6 +350,7 @@ export class EyefiSerialSearchNgSelectComponent implements OnInit, OnChanges, Co
     this.model = null;
     this.selectedSerial = null;
     this.showInvalidMessage = false;
+    this.showNewSerialMessage = false;
     this.onChange(null);
     this.onTouched();
     this.notifyParent.emit(null);

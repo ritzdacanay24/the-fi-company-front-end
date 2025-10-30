@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import moment from 'moment';
+import { NgxBarcode6Module } from 'ngx-barcode6';
 import { IgtFormComponent } from '../../pages/quality/igt/igt-form/igt-form.component';
 import { SerialNumberService } from '../../pages/quality/igt/services/serial-number.service';
 import { IgtAssetService } from '../../pages/quality/igt/services/igt-asset.service';
@@ -18,6 +19,7 @@ import { PublicFormWrapperComponent } from '../public-form-wrapper/public-form-w
     CommonModule, 
     FormsModule, 
     ReactiveFormsModule,
+    NgxBarcode6Module,
     IgtFormComponent,
     QadWoSearchComponent,
     PublicFormWrapperComponent
@@ -26,6 +28,13 @@ import { PublicFormWrapperComponent } from '../public-form-wrapper/public-form-w
 })
 export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
   @ViewChild(IgtFormComponent) igtFormComponent!: IgtFormComponent;
+  @ViewChild(PublicFormWrapperComponent) wrapperComponent!: PublicFormWrapperComponent;
+
+  // Input to determine if this form is embedded in another component (like workflow)
+  @Input() isEmbedded = false;
+  
+  // Output to emit form data to parent component (for embedded mode)
+  @Output() formSubmit = new EventEmitter<any>();
 
   // Authentication state
   isAuthenticated = false;
@@ -49,6 +58,12 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
   // Work order functionality
   selectedWorkOrderData: any = null;
 
+  // Print preview mode
+  showPrintPreview = false;
+
+  // Workflow data from eyefi-serial-workflow
+  pendingWorkflowData: any = null;
+
   constructor(
     private router: Router,
     private toastrService: ToastrService,
@@ -60,6 +75,43 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Authentication handled by wrapper component - no need to check here
     console.log('IGT Form component initialized - showSuccessMessage:', this.showSuccessMessage);
+    
+    // Check for workflow data from eyefi-serial-workflow
+    this.loadWorkflowData();
+    
+    // If embedded, auto-authenticate using current stored user
+    if (this.isEmbedded) {
+      this.autoAuthenticateWhenEmbedded();
+    }
+  }
+
+  private autoAuthenticateWhenEmbedded(): void {
+    // Get current user from auth service
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser) {
+      console.log('Auto-authenticating embedded form with current user:', currentUser);
+      this.onAuthenticationComplete(currentUser);
+    }
+  }
+
+  private loadWorkflowData(): void {
+    const workflowDataStr = sessionStorage.getItem('eyefiWorkflowData');
+    if (workflowDataStr) {
+      try {
+        const workflowData = JSON.parse(workflowDataStr);
+        console.log('Loading workflow data:', workflowData);
+        
+        // Store for later use when form is ready
+        this.pendingWorkflowData = workflowData;
+        
+        // Clear from session storage
+        sessionStorage.removeItem('eyefiWorkflowData');
+        
+        this.toastrService.info(`Pre-filling form with Serial: ${workflowData.serialNumber}`, 'Workflow Data Loaded');
+      } catch (error) {
+        console.error('Error parsing workflow data:', error);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -103,7 +155,41 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
         },
         { emitEvent: false }
       );
+      
+      // Apply workflow data if available
+      if (this.pendingWorkflowData) {
+        this.applyWorkflowDataToForm();
+      }
     }
+  }
+
+  private applyWorkflowDataToForm(): void {
+    if (!this.form || !this.pendingWorkflowData) {
+      return;
+    }
+
+    console.log('Applying workflow data to form:', this.pendingWorkflowData);
+
+    // Pre-fill the EyeFi serial number field (not the main serial_number field)
+    if (this.pendingWorkflowData.serialNumber) {
+      this.form.patchValue({
+        eyefi_serial_number: this.pendingWorkflowData.serialNumber
+      }, { emitEvent: false });
+      
+      console.log('Pre-filled EyeFi Serial Number:', this.pendingWorkflowData.serialNumber);
+    }
+
+    // Store additional workflow data for reference
+    if (this.pendingWorkflowData.ulNumber) {
+      console.log('UL Number from workflow:', this.pendingWorkflowData.ulNumber);
+    }
+
+    if (this.pendingWorkflowData.customer) {
+      console.log('Customer from workflow:', this.pendingWorkflowData.customer);
+    }
+
+    // Clear pending data after applying
+    this.pendingWorkflowData = null;
   }
 
   async loadSerialNumberStatistics(): Promise<void> {
@@ -151,6 +237,28 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // If embedded, emit form data to parent component instead of submitting directly
+    if (this.isEmbedded) {
+      console.log('Embedded mode: Emitting form data to parent workflow');
+      
+      // Prepare form data with work order information
+      const formData = { ...this.form.value };
+      
+      // Add work order data if selected
+      if (this.selectedWorkOrderData) {
+        formData.wo_number = this.selectedWorkOrderData.wo_nbr;
+        formData.wo_part = this.selectedWorkOrderData.wo_part || '';
+        formData.wo_description = this.selectedWorkOrderData.description || '';
+      }
+      
+      this.formSubmit.emit({
+        formValue: formData,
+        formValid: this.form.valid
+      });
+      return;
+    }
+
+    // Standalone mode: Handle submission directly
     // Check for available serial numbers
     if (this.availableSerialCount === 0) {
       this.toastrService.warning(
@@ -285,6 +393,145 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
     this.selectedWorkOrderData = null;
   }
 
+  printAssetDetails(): void {
+    if (!this.createdAssetData) {
+      console.error('No asset data to print');
+      return;
+    }
+
+    setTimeout(() => {
+      var printContents = document.getElementById('printSection').innerHTML;
+      var popupWin = window.open('', '_blank', 'width=1000,height=600');
+      popupWin.document.open();
+
+      popupWin.document.write(`
+        <html>
+          <head>
+            <title>IGT Asset Record</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+            <style>
+              @page {
+                size: portrait;
+                margin: 0.3in;
+              }
+              body {
+                font-family: Arial, sans-serif;
+                padding: 0;
+                margin: 0;
+              }
+              .print-header {
+                text-align: center;
+                margin-bottom: 1rem;
+              }
+              h1 {
+                font-size: 22pt;
+                font-weight: bold;
+                margin-bottom: 0.3rem;
+              }
+              .print-header p {
+                font-size: 10pt;
+                margin-bottom: 0.3rem;
+              }
+              .print-header hr {
+                margin: 0.5rem 0;
+              }
+              h3 {
+                font-size: 14pt;
+                font-weight: bold;
+                border-bottom: 1px solid #333;
+                padding-bottom: 0.3rem;
+                margin-top: 0.8rem;
+                margin-bottom: 0.5rem;
+              }
+              .row {
+                display: flex;
+                flex-wrap: wrap;
+                margin-bottom: 0.5rem;
+              }
+              .col-12 {
+                width: 100%;
+                padding: 0.2rem;
+              }
+              .col-md-6 {
+                width: 50%;
+                padding: 0.2rem;
+              }
+              .col-md-4 {
+                width: 33.333%;
+                padding: 0.2rem;
+              }
+              strong {
+                font-size: 9pt;
+                color: #666;
+                display: block;
+                margin-bottom: 0.25rem;
+              }
+              span {
+                font-size: 11pt;
+              }
+              .fs-5 {
+                font-size: 1.25rem;
+              }
+              .fw-bold {
+                font-weight: bold;
+              }
+              .border {
+                border: 1px solid #333 !important;
+              }
+              .bg-light {
+                background-color: #f8f9fa !important;
+              }
+              .p-4 {
+                padding: 0.5rem !important;
+              }
+              .mb-3 {
+                margin-bottom: 0.5rem !important;
+              }
+              .mb-4 {
+                margin-bottom: 0.8rem !important;
+              }
+              .text-center {
+                text-align: center;
+              }
+              .d-flex {
+                display: flex;
+              }
+              .flex-column {
+                flex-direction: column;
+              }
+              .align-items-center {
+                align-items: center;
+              }
+              hr {
+                border-top: 1px solid #333;
+                margin: 1rem 0;
+              }
+              .small, small {
+                font-size: 8pt;
+              }
+              .text-muted {
+                color: #666;
+              }
+              /* Hide preview mode banner when printing */
+              .d-print-none {
+                display: none !important;
+              }
+            </style>
+          </head>
+          <body onload="window.print();window.close()">${printContents}</body>
+        </html>`);
+
+      popupWin.document.close();
+
+      popupWin.onfocus = function () {
+        setTimeout(function () {
+          popupWin.focus();
+          popupWin.document.close();
+        }, 300);
+      };
+    }, 200);
+  }
+
   getCurrentTimestamp(): string {
     return new Date().toLocaleString();
   }
@@ -321,15 +568,57 @@ export class StandaloneIgtFormComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    // Clear authentication and navigate to forms menu
-    this.isAuthenticated = false;
-    this.currentUser = null;
-    this.hasValidUserImage = false;
-    this.router.navigate(['/forms']);
+    // Use wrapper component's logout method to properly clear authentication
+    if (this.wrapperComponent) {
+      this.wrapperComponent.logout();
+    } else {
+      // Fallback if wrapper component is not available
+      this.isAuthenticated = false;
+      this.currentUser = null;
+      this.hasValidUserImage = false;
+      this.router.navigate(['/forms']);
+    }
   }
 
   getCurrentYear(): number {
     return new Date().getFullYear();
+  }
+
+  // Test print with sample data - toggles preview mode
+  testPrint(): void {
+    if (this.showPrintPreview) {
+      // Close preview mode
+      this.showPrintPreview = false;
+      this.createdAssetData = null;
+      this.createdAssetId = null;
+    } else {
+      // Open preview mode with test data
+      this.showPrintPreview = true;
+      this.createdAssetData = {
+        id: 12345,
+        serial_number: 'EYE-TEST-001',
+        igt_part_number: 'IGT-PART-12345',
+        wo_number: 'WO-2025-001',
+        wo_part: 'PART-001',
+        wo_line: '10',
+        wo_description: 'Test Work Order Description - Gaming Cabinet Assembly',
+        inspector_name: 'Test Inspector',
+        inspector_signature: 'Test Signature',
+        tech_name: 'Test Technician',
+        time_stamp: new Date().toISOString().replace('T', ' ').split('.')[0],
+        comments: 'This is a test print to verify the print layout and styling. No actual record was created.',
+        message: 'Test asset created successfully!'
+      };
+      this.createdAssetId = '12345';
+      
+      // Scroll to print preview section
+      setTimeout(() => {
+        const printSection = document.querySelector('.print-preview-section');
+        if (printSection) {
+          printSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
   }
 
   // Work order functionality

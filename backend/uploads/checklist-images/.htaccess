@@ -1,0 +1,8 @@
+# Protect checklist images directory
+Options -Indexes
+
+# Deny direct access - images must be served through PHP
+<Files *>
+    Order Deny,Allow
+    Deny from all
+</Files>

@@ -177,6 +177,77 @@ export class SerialNumberService {
     return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
+  /**
+   * Get available serials using new availability views
+   * Checks BOTH serial_assignments (new) AND legacy tables (ul_label_usages, agsSerialGenerator, sgAssetGenerator)
+   */
+  async getAvailableSerialsFromViews(limit?: number): Promise<any> {
+    // Use relative path - ApiPrefixInterceptor will add the base URL
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_available_eyefi_serials');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getAvailableUlLabelsFromAPI(limit?: number): Promise<any> {
+    // Use NEW serial-availability API that excludes consumed ULs
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_available_ul_labels');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getAvailableEyefiSerialsFromAPI(limit?: number): Promise<any> {
+    // Use NEW serial-availability API
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_available_eyefi_serials');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getAvailableIgtSerialsFromAPI(limit?: number): Promise<any> {
+    // Use NEW serial-availability API
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_available_igt_serials');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getRecentlyUsedEyefiSerialsFromAPI(limit?: number): Promise<any> {
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_recently_used_eyefi_serials');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getRecentlyUsedUlLabelsFromAPI(limit?: number): Promise<any> {
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_recently_used_ul_labels');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
+  async getRecentlyUsedIgtSerialsFromAPI(limit?: number): Promise<any> {
+    const API_URL = 'serial-availability';
+    let params = new HttpParams().set('action', 'get_recently_used_igt_serials');
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    return await firstValueFrom(this.http.get(`${API_URL}/index.php`, { params }));
+  }
+
   async validateSerialNumber(serialNumber: string): Promise<any> {
     const params = new HttpParams()
       .set('action', 'validate')

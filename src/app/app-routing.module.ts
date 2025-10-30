@@ -48,6 +48,11 @@ const routes: Routes = [
     title: "UL Usage Entry"
   },
   { 
+    path: "standalone/eyefi-workflow", 
+    loadComponent: () => import("./standalone/eyefi-serial-workflow/eyefi-serial-workflow.component").then(c => c.EyefiSerialWorkflowComponent),
+    title: "EyeFi Serial Workflow"
+  },
+  { 
     path: "standalone/igt-serial", 
     loadComponent: () => import("./standalone/standalone-igt-form/standalone-igt-form.component").then(c => c.StandaloneIgtFormComponent),
     title: "IGT Serial Generator"
@@ -232,6 +237,22 @@ const routes: Routes = [
             (m) => m.SerialNumberManagementRoutingModule
           ),
       },
+    ],
+  },
+  // Serial Assignments Management
+  {
+    path: "serial-assignments",
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: "",
+        title: "Serial Assignments",
+        loadComponent: () =>
+          import("./features/serial-assignments/serial-assignments.component").then(
+            (c) => c.SerialAssignmentsComponent
+          ),
+      }
     ],
   },
   // Training Management routes

@@ -49,10 +49,19 @@ export class ULLabelService {
     return this.http.post(`${this.API_URL}/bulk-upload`, formData);
   }
 
-  // Search UL labels
-  searchULLabels(query: string): Observable<any> {
-    const params = new HttpParams().set('search', query);
-    return this.http.get(`${this.API_URL}/search`, { params });
+  // Search UL labels with filters
+  searchULLabels(searchQuery: string, additionalFilters?: any): Observable<any> {
+    let params = new HttpParams().set('search', searchQuery);
+    
+    if (additionalFilters) {
+      Object.keys(additionalFilters).forEach(key => {
+        if (additionalFilters[key] !== null && additionalFilters[key] !== undefined && additionalFilters[key] !== '') {
+          params = params.set(key, additionalFilters[key]);
+        }
+      });
+    }
+    
+    return this.http.get(`${this.API_URL}/index.php`, { params });
   }
 
   // UL Label Usage Operations
@@ -74,6 +83,12 @@ export class ULLabelService {
 
   deleteULLabelUsage(id: number): Observable<any> {
     return this.http.delete(`${this.API_URL}/usage.php?id=${id}`);
+  }
+
+  voidULLabelUsage(id: number, voidReason?: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/usage.php?id=${id}&action=void`, {
+      void_reason: voidReason
+    });
   }
 
   // Reporting

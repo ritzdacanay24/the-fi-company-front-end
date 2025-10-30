@@ -1,6 +1,9 @@
 <?php
-require_once '../config/database.php';
 
+require '/var/www/html/server/Databases/DatabaseEyefiV1.php';
+
+// Get the underlying PDO connection from Medoo
+$db = $database->pdo;
 /**
  * Photo Checklist Configuration API
  * Manages templates, instances, and configuration settings
@@ -9,9 +12,8 @@ class PhotoChecklistConfigAPI {
     private $conn;
     private $database;
 
-    public function __construct() {
-        $this->database = new Database();
-        $this->conn = $this->database->getConnection();
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
     /**
@@ -153,7 +155,9 @@ class PhotoChecklistConfigAPI {
                                'sample_images', ci.sample_images,
                                'is_required', ci.is_required,
                                'min_photos', COALESCE(JSON_EXTRACT(ci.photo_requirements, '$.min_photos'), 0),
-                               'max_photos', COALESCE(JSON_EXTRACT(ci.photo_requirements, '$.max_photos'), 10)
+                               'max_photos', COALESCE(JSON_EXTRACT(ci.photo_requirements, '$.max_photos'), 10),
+                               'parent_id', ci.parent_id,
+                               'level', ci.level
                            ) ORDER BY ci.order_index
                        ) as items
                 FROM checklist_templates ct
@@ -241,12 +245,14 @@ class PhotoChecklistConfigAPI {
                         $sampleImagesJson = json_encode($sampleImages);
                         error_log("Item $index sample_images JSON to insert: " . $sampleImagesJson);
                         
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         $success = $stmt->execute([
                             $templateId,
-                            $index + 1,
+                            $item['order_index'] ?? ($index + 1),
+                            $item['parent_id'] ?? null,
+                            $item['level'] ?? 0,
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
@@ -262,12 +268,14 @@ class PhotoChecklistConfigAPI {
                         }
                         error_log("Item $index sample_image_url to insert: " . $sampleImageUrl);
                         
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         $success = $stmt->execute([
                             $templateId,
-                            $index + 1,
+                            $item['order_index'] ?? ($index + 1),
+                            $item['parent_id'] ?? null,
+                            $item['level'] ?? 0,
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
@@ -340,8 +348,8 @@ class PhotoChecklistConfigAPI {
                     $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
                     
                     if ($hasSampleImagesColumn) {
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         $sampleImagesJson = json_encode($sampleImages);
                         
@@ -350,7 +358,9 @@ class PhotoChecklistConfigAPI {
                         
                         $stmt->execute([
                             $id,
-                            $index + 1,
+                            $item['order_index'] ?? ($index + 1),
+                            $item['parent_id'] ?? null,
+                            $item['level'] ?? 0,
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
@@ -364,13 +374,15 @@ class PhotoChecklistConfigAPI {
                             $sampleImageUrl = $sampleImages[0]['url'] ?? '';
                         }
                         
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
-                            $index + 1,
+                            $item['order_index'] ?? ($index + 1),
+                            $item['parent_id'] ?? null,
+                            $item['level'] ?? 0,
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
@@ -1104,6 +1116,6 @@ class PhotoChecklistConfigAPI {
 }
 
 // Initialize and handle request
-$api = new PhotoChecklistConfigAPI();
+$api = new PhotoChecklistConfigAPI($db);
 $api->handleRequest();
 ?>

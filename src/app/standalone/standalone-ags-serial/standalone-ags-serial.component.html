@@ -1,5 +1,6 @@
 <!-- Standalone AGS Serial Form -->
 <app-public-form-wrapper
+    *ngIf="!isEmbedded"
     pageTitle="AGS Serial Creation"
     pageDescription="Create and track AGS (American Gaming Systems) gaming machine assets with automated serial generation, EyeFi validation, and work order integration"
     pageIcon="mdi-card-account-details-star"
@@ -71,7 +72,11 @@
               </div>
               
               <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
-                <button class="btn btn-success btn-lg" (click)="createAnother()">
+                <button class="btn btn-success btn-lg" (click)="printLabel()">
+                  <i class="mdi mdi-printer me-2"></i>
+                  Print Label
+                </button>
+                <button class="btn btn-primary btn-lg" (click)="createAnother()">
                   <i class="mdi mdi-plus me-2"></i>
                   Create Another Serial
                 </button>
@@ -214,3 +219,23 @@
     </div>
   </div>
 </app-public-form-wrapper>
+
+<!-- Embedded mode: Form only (no wrapper, no cards, no submit button) -->
+<div *ngIf="isEmbedded">
+  <!-- Success Message for embedded mode -->
+  <div *ngIf="showSuccessMessage" class="alert alert-success">
+    <h4 class="alert-heading">AGS Serial Created Successfully!</h4>
+    <p *ngIf="createdAssetData?.generated_SG_asset">
+      AGS Serial: <strong class="badge bg-primary">{{ createdAssetData.generated_SG_asset }}</strong>
+    </p>
+    <button class="btn btn-primary" (click)="createAnother()">Create Another</button>
+  </div>
+
+  <!-- Pure form content for embedded mode (parent handles submission) -->
+  <div *ngIf="!showSuccessMessage">
+    <app-ags-serial-form
+      (setFormEmitter)="setFormEmitter($event)"
+      [submitted]="submitted">
+    </app-ags-serial-form>
+  </div>
+</div>

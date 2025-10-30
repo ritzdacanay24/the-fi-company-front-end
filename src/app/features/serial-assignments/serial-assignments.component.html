@@ -1,0 +1,447 @@
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item">
+            <a href="#" class="text-decoration-none" (click)="$event.preventDefault()">
+              <i class="mdi mdi-home-outline me-1"></i>Serial Management
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Serial Assignments
+          </li>
+        </ol>
+      </nav>
+      
+      <!-- Page Header with Context -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-clipboard-list-outline text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-primary">Serial Assignments</h2>
+              <p class="text-muted mb-0">View and manage all serial number assignments with EyeFi serials, UL labels, and asset tracking</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button 
+              type="button" 
+              class="btn btn-outline-success"
+              (click)="exportToCSV()" 
+              [disabled]="loading || assignments.length === 0"
+              title="Export assignments to CSV">
+              <i class="mdi mdi-download me-2"></i>Export
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              (click)="refresh()"
+              title="Refresh data">
+              <i class="mdi mdi-refresh me-2"></i>Refresh
+            </button>
+          </div>
+        </div>
+        
+        <div class="alert alert-primary border-primary border-opacity-25 bg-primary bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-primary me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-primary mb-2">Serial Assignment Overview</h6>
+              <p class="mb-0">
+                Track <strong>complete serial number assignments</strong> including EyeFi serials, UL labels, and asset numbers. 
+                Use void functionality to free resources or delete to permanently remove records.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="alert alert-danger" role="alert">
+        <i class="mdi mdi-alert-circle me-2"></i>
+        {{ error }}
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center flex-wrap gap-3">
+            
+            <!-- Summary Stats -->
+            <div class="d-flex gap-4 small text-muted">
+              <span>
+                <i class="mdi mdi-clipboard-list text-primary me-1"></i>
+                <strong>{{ filteredAssignments?.length || 0 }}</strong> Total
+              </span>
+              <span *ngIf="!loading">
+                <i class="mdi mdi-check-circle text-success me-1"></i>
+                <strong>{{ getActiveCount() }}</strong> Active
+              </span>
+              <span *ngIf="!loading">
+                <i class="mdi mdi-cancel text-danger me-1"></i>
+                <strong>{{ getVoidedCount() }}</strong> Voided
+              </span>
+            </div>
+            
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <div class="spinner-border spinner-border-sm text-primary" *ngIf="loading"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-0">
+          <ng-container *ngIf="!loading && filteredAssignments?.length; else noRecords">
+            <ag-grid-angular
+              class="ag-theme-quartz no-border"
+              style="width: 100%; height: calc(100vh - 400px);"
+              [rowData]="filteredAssignments"
+              [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions"
+              (gridReady)="onGridReady($event)"
+              [domLayout]="'normal'">
+            </ag-grid-angular>
+          </ng-container>
+          <ng-template #noRecords>
+            <div class="d-flex flex-column align-items-center justify-content-center p-5">
+              <div class="text-center" style="max-width: 500px;">
+                <div class="mb-4">
+                  <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                    <i class="mdi mdi-clipboard-search text-primary" style="font-size: 3rem;"></i>
+                  </div>
+                </div>
+                <h4 class="text-body-emphasis mb-3" *ngIf="loading">Loading Assignments...</h4>
+                <h4 class="text-body-emphasis mb-3" *ngIf="!loading && error">Error Loading Data</h4>
+                <h4 class="text-body-emphasis mb-3" *ngIf="!loading && !error">No Serial Assignments Found</h4>
+                <p class="text-muted mb-4" *ngIf="!loading && !error">
+                  No assignment records match your current criteria. Serial assignments track the complete lifecycle of EyeFi serials, UL labels, and asset numbers.
+                </p>
+                <div class="spinner-border text-primary" *ngIf="loading"></div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+        
+        <div class="card-footer bg-light text-muted d-flex align-items-center">
+          <i class="mdi mdi-information me-2"></i>
+          <span>Use action buttons to void assignments (frees resources) or delete permanently. Voided records can be restored.</span>
+          <div class="ms-auto">
+            <small>Total: {{ filteredAssignments?.length || 0 }} serial assignments</small>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Void Modal -->
+<div class="modal fade" [class.show]="showVoidModal" [style.display]="showVoidModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="mdi mdi-cancel me-2"></i>
+          Void Assignment
+        </h5>
+        <button type="button" class="btn-close" (click)="showVoidModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          <i class="mdi mdi-alert me-2"></i>
+          <strong>This will free up the EyeFi serial and UL label for reuse.</strong>
+          <br>
+          The asset number will remain in the system but orphaned.
+        </div>
+        
+        <div *ngIf="assignmentToVoid">
+          <p><strong>Assignment ID:</strong> {{ assignmentToVoid.unique_id }}</p>
+          <p><strong>EyeFi Serial:</strong> {{ assignmentToVoid.eyefi_serial_number }}</p>
+          <p><strong>UL Label:</strong> {{ assignmentToVoid.ul_number || 'N/A' }}</p>
+          <p><strong>Asset Number:</strong> {{ assignmentToVoid.part_number || 'N/A' }}</p>
+          <p><strong>Work Order:</strong> {{ assignmentToVoid.wo_number || assignmentToVoid.po_number || 'N/A' }}</p>
+        </div>
+        
+        <div class="mb-3">
+          <label for="voidReason" class="form-label">Reason for voiding <span class="text-danger">*</span></label>
+          <textarea 
+            id="voidReason" 
+            class="form-control" 
+            rows="3" 
+            [(ngModel)]="voidReason"
+            placeholder="e.g., Wrong work order, duplicate assignment, etc."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showVoidModal = false">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-warning" 
+          (click)="confirmVoid()" 
+          [disabled]="!voidReason || voidReason.trim().length === 0">
+          <i class="mdi mdi-cancel me-1"></i>
+          Void Assignment
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showVoidModal" *ngIf="showVoidModal"></div>
+
+<!-- Delete Modal -->
+<div class="modal fade" [class.show]="showDeleteModal" [style.display]="showDeleteModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-delete me-2"></i>
+          Delete Assignment
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="showDeleteModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger">
+          <i class="mdi mdi-alert me-2"></i>
+          <strong>Warning: This will permanently delete this assignment!</strong>
+          <br>
+          The EyeFi serial and UL label will be freed for reuse.
+          <br>
+          This action cannot be undone.
+        </div>
+        
+        <div *ngIf="assignmentToDelete">
+          <p><strong>Assignment ID:</strong> {{ assignmentToDelete.unique_id }}</p>
+          <p><strong>EyeFi Serial:</strong> {{ assignmentToDelete.eyefi_serial_number }}</p>
+          <p><strong>UL Label:</strong> {{ assignmentToDelete.ul_number || 'N/A' }}</p>
+          <p><strong>Asset Number:</strong> {{ assignmentToDelete.part_number || 'N/A' }}</p>
+          <p><strong>Work Order:</strong> {{ assignmentToDelete.wo_number || assignmentToDelete.po_number || 'N/A' }}</p>
+        </div>
+        
+        <div class="mb-3">
+          <label for="deleteReason" class="form-label">Reason for deletion <span class="text-danger">*</span></label>
+          <textarea 
+            id="deleteReason" 
+            class="form-control" 
+            rows="3" 
+            [(ngModel)]="deleteReason"
+            placeholder="e.g., Data entry error, test record, etc."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showDeleteModal = false">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-danger" 
+          (click)="confirmDelete()" 
+          [disabled]="!deleteReason || deleteReason.trim().length === 0">
+          <i class="mdi mdi-delete me-1"></i>
+          Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showDeleteModal" *ngIf="showDeleteModal"></div>
+
+<!-- ========================================
+     VERIFICATION MODAL (NEW)
+     ======================================== -->
+<div class="modal fade" [class.show]="showVerificationModal" [style.display]="showVerificationModal ? 'block' : 'none'" 
+     tabindex="-1" role="dialog" aria-labelledby="verificationModalLabel" *ngIf="showVerificationModal">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      
+      <!-- Header -->
+      <div class="modal-header bg-primary bg-gradient text-white">
+        <h5 class="modal-title" id="verificationModalLabel">
+          <i class="mdi mdi-qrcode me-2"></i>
+          Serial Number Verification
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeVerificationModal()"></button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        
+        <!-- Active Verification State -->
+        <div *ngIf="verificationStatus === 'active'">
+          
+          <!-- Timer -->
+          <div class="alert alert-info mb-3 text-center">
+            <h4 class="mb-0">
+              <i class="mdi mdi-clock-outline me-2"></i>
+              Session Time Remaining: <strong>{{ getTimeRemaining() }}</strong>
+            </h4>
+          </div>
+
+          <!-- Instructions -->
+          <div class="alert alert-primary border-primary bg-primary bg-opacity-10">
+            <h6 class="text-primary mb-2">
+              <i class="mdi mdi-information me-2"></i>
+              Instructions for Tablet User:
+            </h6>
+            <ol class="mb-0 ps-3">
+              <li>Open tablet companion app or scan QR code below</li>
+              <li>Enter the session ID or scan the QR code</li>
+              <li>Point camera at the physical serial number label</li>
+              <li>Capture photo - verification happens automatically</li>
+            </ol>
+          </div>
+
+          <!-- QR Code (placeholder - install angularx-qrcode to use real QR code) -->
+          <div class="text-center my-4">
+            <div class="border border-primary rounded p-4 d-inline-block bg-light">
+              <!-- Replace this with actual QR code component -->
+              <div class="bg-white p-3 border" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center;">
+                <div class="text-center">
+                  <i class="mdi mdi-qrcode display-1 text-muted"></i>
+                  <p class="small text-muted mb-0">Install angularx-qrcode</p>
+                  <p class="small text-muted mb-0">for QR code display</p>
+                </div>
+              </div>
+              <!-- Uncomment when angularx-qrcode is installed:
+              <qrcode 
+                [qrdata]="verificationQRData" 
+                [width]="300" 
+                [errorCorrectionLevel]="'M'">
+              </qrcode>
+              -->
+            </div>
+          </div>
+
+          <!-- Session Info -->
+          <div class="card bg-light mb-3">
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-1">Session ID:</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="text" class="form-control form-control-sm" [value]="currentVerificationSession?.id" readonly>
+                    <button class="btn btn-sm btn-outline-primary" (click)="copySessionId()" title="Copy to clipboard">
+                      <i class="mdi mdi-content-copy"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-1">Expected Serial:</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control bg-white" [value]="currentVerificationSession?.expected_serial" readonly>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label text-muted small mb-1">Tablet URL:</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="text" class="form-control form-control-sm" [value]="getTabletCompanionUrl()" readonly>
+                    <button class="btn btn-sm btn-outline-primary" (click)="copyTabletUrl()" title="Copy URL">
+                      <i class="mdi mdi-content-copy"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waiting Status -->
+          <div class="text-center py-3">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mb-1">Waiting for tablet to capture and verify serial...</p>
+            <small class="text-muted">This window will update automatically when verification completes.</small>
+          </div>
+
+        </div>
+
+        <!-- Verified State -->
+        <div *ngIf="verificationStatus === 'verified'" class="text-center py-4">
+          <div class="mb-4">
+            <i class="mdi mdi-check-circle text-success" style="font-size: 80px;"></i>
+          </div>
+          <h3 class="text-success mb-3">✅ Verification Successful!</h3>
+          <p class="lead">Serial number matches perfectly.</p>
+
+          <div class="card bg-light mx-auto" style="max-width: 500px;">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6 text-end text-muted">Expected Serial:</div>
+                <div class="col-6 text-start"><strong>{{ verificationResult?.expected_serial }}</strong></div>
+                
+                <div class="col-6 text-end text-muted">Captured Serial:</div>
+                <div class="col-6 text-start"><strong class="text-success">{{ verificationResult?.captured_serial }}</strong></div>
+
+                <div class="col-6 text-end text-muted" *ngIf="verificationResult?.ocr_confidence">OCR Confidence:</div>
+                <div class="col-6 text-start" *ngIf="verificationResult?.ocr_confidence"><strong>{{ verificationResult?.ocr_confidence }}%</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Show captured photo -->
+          <div class="mt-3" *ngIf="verificationResult?.photo_path">
+            <img [src]="'/backend/' + verificationResult.photo_path" 
+                 alt="Verification photo" 
+                 class="img-fluid border rounded"
+                 style="max-width: 400px;">
+          </div>
+        </div>
+
+        <!-- Failed State -->
+        <div *ngIf="verificationStatus === 'failed'" class="text-center py-4">
+          <div class="mb-4">
+            <i class="mdi mdi-alert-circle text-danger" style="font-size: 80px;"></i>
+          </div>
+          <h3 class="text-danger mb-3">❌ Verification Failed</h3>
+          <p class="lead">The captured serial does not match the expected value.</p>
+
+          <div class="card bg-light mx-auto" style="max-width: 500px;">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6 text-end text-muted">Expected Serial:</div>
+                <div class="col-6 text-start"><strong class="text-primary">{{ verificationResult?.expected_serial }}</strong></div>
+                
+                <div class="col-6 text-end text-muted">Captured Serial:</div>
+                <div class="col-6 text-start"><strong class="text-danger">{{ verificationResult?.captured_serial }}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Show captured photo -->
+          <div class="mt-3" *ngIf="verificationResult?.photo_path">
+            <img [src]="'/backend/' + verificationResult.photo_path" 
+                 alt="Verification photo" 
+                 class="img-fluid border rounded"
+                 style="max-width: 400px;">
+          </div>
+
+          <div class="alert alert-warning mt-3">
+            <i class="mdi mdi-alert me-2"></i>
+            Please verify the serial number manually or retry verification with the correct physical label.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeVerificationModal()">
+          <i class="mdi mdi-close me-1"></i>
+          {{ verificationStatus === 'active' ? 'Cancel' : 'Close' }}
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          *ngIf="verificationStatus === 'failed'"
+          (click)="retryVerification()">
+          <i class="mdi mdi-camera-retake me-1"></i>
+          Retry Verification
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showVerificationModal" *ngIf="showVerificationModal"></div>

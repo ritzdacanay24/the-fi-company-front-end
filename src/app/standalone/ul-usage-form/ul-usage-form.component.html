@@ -76,6 +76,10 @@
 
                             <!-- Action buttons -->
                             <div class="d-grid gap-3">
+                                <button class="btn btn-success" (click)="printULUsageRecords()">
+                                    <i class="mdi mdi-printer me-2"></i>
+                                    Print UL Usage Records
+                                </button>
                                 <button class="btn btn-primary " (click)="startNewULUsage()">
                                     <i class="mdi mdi-plus me-2"></i>
                                     Record Another UL Usage
@@ -140,6 +144,10 @@
 
                             <!-- Action buttons -->
                             <div class="d-grid gap-3">
+                                <button class="btn btn-success" (click)="printULUsageRecords()">
+                                    <i class="mdi mdi-printer me-2"></i>
+                                    Print UL Usage Records
+                                </button>
                                 <button class="btn btn-primary " (click)="startNewULUsage()">
                                     <i class="mdi mdi-plus me-2"></i>
                                     Record Another UL Usage
@@ -171,7 +179,7 @@
                                 <div class="mb-3">
                                     <h3 class="h5 mb-1">Work Order Information</h3>
                                     <p class="text-muted mb-0">
-                                        Search and select a work order number to associate with this UL usage recording.
+                                        Search and select a work order number to associate with this UL usage recording. This helps track which work orders the UL labels are used for.
                                     </p>
                                 </div>
 
@@ -655,11 +663,28 @@
                                     </div> -->
 
                                 <!-- Single UL Form -->
-                                <!-- Single UL Form (Only for Automatic Selection) -->
                                 <div *ngIf="selectionMethod === 'automatic' && assignedULNumbers.length === 1"
                                     class="single-ul-form">
                                     <div class="row g-3 mb-4">
-                                        <div class="col-md-8">
+                                        <!-- Regular text input for "Used" category -->
+                                        <div class="col-md-8" *ngIf="isUsedCategory()">
+                                            <label class="form-label fw-semibold">
+                                                <i class="mdi mdi-barcode me-1"></i>
+                                                Serial Number *
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                formControlName="serial_number"
+                                                class="form-control" 
+                                                placeholder="Enter serial number"
+                                                required>
+                                            <div class="form-text">
+                                                Enter the device serial number for {{ assignedULNumbers[0] }}
+                                            </div>
+                                        </div>
+
+                                        <!-- EyeFi serial search for "New" category -->
+                                        <div class="col-md-8" *ngIf="!isUsedCategory()">
                                             <app-eyefi-serial-search-ng 
                                                 formControlName="serial_number"
                                                 [form_label]="'Serial Number'" 
@@ -680,7 +705,7 @@
                                                 Quantity *
                                             </label>
                                             <input type="number" formControlName="quantity"
-                                                class="form-control form-control-lg" min="1" placeholder="1"
+                                                class="form-control" min="1" placeholder="1"
                                                 tabindex="-1">
                                             <div class="form-text">Number of units</div>
                                         </div>
@@ -693,7 +718,7 @@
                                                     Customer *
                                                 </label>
                                                 <input type="text" formControlName="customer"
-                                                    class="form-control form-control-lg"
+                                                    class="form-control"
                                                     placeholder="Customer name or company">
                                                 <div class="form-text">Customer receiving the device</div>
                                             </div>
@@ -706,7 +731,7 @@
                                                     Description *
                                                 </label>
                                                 <input type="text" formControlName="description"
-                                                    class="form-control form-control-lg"
+                                                    class="form-control"
                                                     placeholder="Device description">
                                                 <div class="form-text">Brief description of the device/component</div>
                                             </div>
@@ -740,7 +765,37 @@
                                         </div>
                                         <div class="form-content">
                                             <div class="row g-3">
-                                                <div class="col-md-8">
+                                                <!-- Regular text input for "Used" category -->
+                                                <div class="col-md-8" *ngIf="isUsedCategory()">
+                                                    <label class="form-label fw-semibold">
+                                                        <i class="mdi mdi-barcode me-1"></i>
+                                                        Serial Number *
+                                                    </label>
+                                                    <input 
+                                                        type="text" 
+                                                        [(ngModel)]="getBulkTransactionByUL(ulNumber).serial_number"
+                                                        [ngModelOptions]="{standalone: true}"
+                                                        [name]="'bulk_serial_' + i"
+                                                        class="form-control" 
+                                                        placeholder="Enter serial number"
+                                                        required>
+                                                    
+                                                    <!-- Duplicate Warning for this specific field -->
+                                                    <div *ngIf="isSerialNumberDuplicate(ulNumber, getBulkTransactionByUL(ulNumber).serial_number)" 
+                                                         class="alert alert-danger alert-sm mt-2 mb-0 py-2">
+                                                        <small>
+                                                            <i class="mdi mdi-alert-circle me-1"></i>
+                                                            <strong>Duplicate serial number!</strong> This serial is already used in another transaction.
+                                                        </small>
+                                                    </div>
+                                                    
+                                                    <div class="form-text" *ngIf="!isSerialNumberDuplicate(ulNumber, getBulkTransactionByUL(ulNumber).serial_number)">
+                                                        Enter the device serial number for {{ ulNumber }}
+                                                    </div>
+                                                </div>
+
+                                                <!-- EyeFi serial search for "New" category -->
+                                                <div class="col-md-8" *ngIf="!isUsedCategory()">
                                                     <app-eyefi-serial-search-ng 
                                                         [(ngModel)]="getBulkTransactionByUL(ulNumber).serial_number"
                                                         [ngModelOptions]="{standalone: true}"

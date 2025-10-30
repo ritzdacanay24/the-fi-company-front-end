@@ -44,7 +44,9 @@
               "node_modules/slick-carousel/slick/slick-theme.scss",
               "src/assets/scss/config/modern/bootstrap.scss",
               "src/assets/scss/config/modern/app.scss",
-              "src/assets/scss/icons.scss"
+              "src/assets/scss/icons.scss",
+              "node_modules/ag-grid-community/styles/ag-grid.css",
+              "node_modules/ag-grid-community/styles/ag-theme-alpine.css"
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
