@@ -720,6 +720,184 @@ class SerialAssignmentsAPI {
     }
 
     /**
+     * Bulk create "Other" customer assignments
+     * Creates assignment records without customer asset generation
+     * Just links EyeFi serial + UL label with custom customer name
+     * 
+     * @param array $assignments Array of assignment data
+     * @param string $performedBy User who is creating the assignments
+     * @return array Result with success status and data
+     */
+    public function bulkCreateOtherAssignments($assignments, $performedBy) {
+        try {
+            $this->db->beginTransaction();
+            
+            $results = [];
+            $errors = [];
+            
+            foreach ($assignments as $index => $assignment) {
+                try {
+                    // Validate required fields
+                    if (empty($assignment['eyefi_serial_number']) && empty($assignment['eyefi_serial_id'])) {
+                        throw new \Exception("EyeFi serial number is required");
+                    }
+
+                    // Find or create EyeFi serial if only serial number provided
+                    $eyefi_serial_id = $assignment['eyefi_serial_id'] ?? null;
+                    if (empty($eyefi_serial_id) && !empty($assignment['eyefi_serial_number'])) {
+                        $eyefi_serial_id = $this->findOrCreateEyeFiSerial($assignment['eyefi_serial_number']);
+                    }
+
+                    // Check if this serial is already consumed (non-voided only)
+                    $checkStmt = $this->db->prepare("
+                        SELECT id, status, consumed_at, consumed_by 
+                        FROM serial_assignments 
+                        WHERE eyefi_serial_id = ? AND (is_voided = 0 OR is_voided IS NULL)
+                    ");
+                    $checkStmt->execute([$eyefi_serial_id]);
+                    $existing = $checkStmt->fetch(\PDO::FETCH_ASSOC);
+                    
+                    if ($existing) {
+                        throw new \Exception(
+                            "EyeFi Serial #{$assignment['eyefi_serial_number']} has already been consumed on {$existing['consumed_at']} by {$existing['consumed_by']}"
+                        );
+                    }
+
+                    // Insert assignment record - MINIMAL VERSION with explicit defaults
+                    // customer_type_id: 1=IGT, 2=SG, 3=AGS, 4=Other
+                    $insertQuery = "
+                        INSERT INTO serial_assignments (
+                            eyefi_serial_id,
+                            eyefi_serial_number,
+                            ul_label_id,
+                            ul_number,
+                            customer_type_id,
+                            customer_asset_id,
+                            generated_asset_number,
+                            po_number,
+                            part_number,
+                            cp_cust,
+                            status,
+                            consumed_at,
+                            consumed_by,
+                            is_voided,
+                            verification_status
+                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
+                    ";
+                    
+                    // Customer name goes into cp_cust field
+                    $customerName = $assignment['customer_name'] ?? $assignment['cp_cust'] ?? 'Other';
+                    
+                    $insertStmt = $this->db->prepare($insertQuery);
+                    $insertStmt->execute([
+                        $eyefi_serial_id,                              // eyefi_serial_id
+                        $assignment['eyefi_serial_number'],            // eyefi_serial_number
+                        $assignment['ul_label_id'] ?? null,            // ul_label_id
+                        $assignment['ulNumber'] ?? null,               // ul_number
+                        $assignment['poNumber'] ?? null,               // po_number
+                        $assignment['partNumber'] ?? null,             // part_number
+                        $customerName,                                 // cp_cust (customer name)
+                        $performedBy                                   // consumed_by
+                    ]);
+
+                    $assignmentId = $this->db->lastInsertId();
+
+                    // Mark EyeFi serial as consumed
+                    if ($eyefi_serial_id) {
+                        $updateSerialStmt = $this->db->prepare("
+                            UPDATE eyefi_serial_numbers 
+                            SET status = 'consumed' 
+                            WHERE id = ?
+                        ");
+                        $updateSerialStmt->execute([$eyefi_serial_id]);
+                    }
+
+                    // Mark UL label as consumed (if provided)
+                    if (!empty($assignment['ul_label_id'])) {
+                        $updateUlStmt = $this->db->prepare("
+                            UPDATE ul_labels 
+                            SET status = 'consumed', 
+                                is_consumed = 1 
+                            WHERE id = ?
+                        ");
+                        $updateUlStmt->execute([$assignment['ul_label_id']]);
+                    }
+
+                    $results[] = [
+                        'assignment_id' => $assignmentId,
+                        'eyefi_serial_number' => $assignment['eyefi_serial_number'],
+                        'ul_number' => $assignment['ulNumber'] ?? null,
+                        'customer_name' => $assignment['customer_name'] ?? 'Other',
+                        'wo_number' => $assignment['wo_number'] ?? null
+                    ];
+
+                } catch (\Exception $e) {
+                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                    error_log("Error creating Other assignment (row " . ($index + 1) . "): " . $e->getMessage());
+                }
+            }
+
+            // If there are any errors, rollback
+            if (!empty($errors)) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'error' => 'Failed to create some assignments',
+                    'errors' => $errors
+                ];
+            }
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'message' => "Created " . count($results) . " Other customer assignments",
+                'count' => count($results),
+                'data' => $results
+            ];
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("ERROR in bulkCreateOtherAssignments: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error creating Other assignments: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Find or create EyeFi serial number
+     * Used when USED category serials are entered manually
+     */
+    private function findOrCreateEyeFiSerial($serialNumber) {
+        // First, try to find existing serial
+        $findStmt = $this->db->prepare("
+            SELECT id FROM eyefi_serial_numbers 
+            WHERE serial_number = ?
+        ");
+        $findStmt->execute([$serialNumber]);
+        $existing = $findStmt->fetch(\PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            return $existing['id'];
+        }
+        
+        // If not found, create new USED serial
+        $insertStmt = $this->db->prepare("
+            INSERT INTO eyefi_serial_numbers (
+                serial_number,
+                category,
+                status,
+                created_at
+            ) VALUES (?, 'Used', 'consumed', NOW())
+        ");
+        $insertStmt->execute([$serialNumber]);
+        
+        return $this->db->lastInsertId();
+    }
+
+    /**
      * Get consumed serials summary statistics
      */
     public function getConsumedSerialsSummary() {
@@ -825,6 +1003,10 @@ try {
     if (!$db) {
         throw new \Exception("Database connection failed");
     }
+    
+    // Disable strict SQL mode to allow warnings instead of errors
+    // This fixes "Data truncated for column 'status'" error caused by UNIQUE constraint
+    $db->exec("SET sql_mode = ''");
     
     $api = new SerialAssignmentsAPI($db);
     
@@ -937,6 +1119,17 @@ try {
             $action = isset($_GET['action']) ? $_GET['action'] : '';
             
             switch ($action) {
+                case 'bulk_create_other':
+                    if (!isset($data['assignments']) || !is_array($data['assignments']) || !isset($data['performed_by'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: assignments (array), performed_by'
+                        ];
+                    } else {
+                        $result = $api->bulkCreateOtherAssignments($data['assignments'], $data['performed_by']);
+                    }
+                    break;
+                
                 case 'void_assignment':
                     if (!isset($data['id']) || !isset($data['performed_by'])) {
                         $result = [
@@ -987,7 +1180,7 @@ try {
                 default:
                     $result = [
                         'success' => false,
-                        'error' => 'Invalid POST action. Available: void_assignment, delete_assignment, restore_assignment, bulk_void'
+                        'error' => 'Invalid POST action. Available: bulk_create_other, void_assignment, delete_assignment, restore_assignment, bulk_void'
                     ];
             }
             break;

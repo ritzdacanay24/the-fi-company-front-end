@@ -137,6 +137,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   quantity: number = 1;
   category: string = 'new'; // 'new' or 'used'
   ulRequired: boolean = true; // Toggle whether UL numbers are required
+  verificationEnabled: boolean = false; // Toggle to enable/disable verification process (default: disabled)
   
   // Step 3: Serial and UL assignments
   serialAssignments: Array<{
@@ -1450,7 +1451,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       // Otherwise, use the selected customer name directly (e.g., CHUGOL, KONGAM)
       const customerName = this.selectedCustomer === 'Other' ? this.customOtherCustomerName : this.selectedCustomer;
 
-      // For "Other" customer, we just create assignment records with no customer asset
+      // For "Other" customer, we create assignment records with no customer asset
       // This will mark EyeFi serials and UL labels as consumed/used
       const assignments = this.serialAssignments.map((assignment) => ({
         eyefi_serial_number: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
@@ -1482,19 +1483,31 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       console.log('👤 Customer Name:', customerName);
       console.log('👤 Created by:', userFullName);
 
-      // For now, just mark as successful locally
-      // TODO: Create backend API endpoint if needed to store these assignments
-      this.generatedAssets = this.serialAssignments.map((assignment, index) => ({
-        index,
-        serial: assignment.serial,
-        ulNumber: assignment.ulNumber,
-        asset: null,
-        assetNumber: 'N/A', // No asset number for Other customer
-        customerName: customerName
-      }));
+      // Call the backend API to create the assignments
+      const response: any = await this.serialAssignmentsService.bulkCreateOther(assignments, userFullName);
+      
+      console.log('✅ Bulk Other response:', response);
 
-      this.toastrService.success(`Created ${assignments.length} assignments for ${customerName}`);
-      console.log('✨ Created Other Assignments:', this.generatedAssets);
+      if (response?.success && response?.data && Array.isArray(response.data)) {
+        // Map response data to generatedAssets for display
+        this.generatedAssets = this.serialAssignments.map((assignment, index) => {
+          const createdAssignment = response.data[index];
+          return {
+            index,
+            serial: assignment.serial,
+            ulNumber: assignment.ulNumber,
+            asset: null,
+            assetNumber: 'N/A', // No asset number for Other customer
+            customerName: customerName,
+            assignmentId: createdAssignment?.assignment_id
+          };
+        });
+
+        this.toastrService.success(`Created ${response.count} assignments for ${customerName}`);
+        console.log('✨ Created Other Assignments:', this.generatedAssets);
+      } else {
+        throw new Error('Invalid response from bulk create API');
+      }
     } catch (error) {
       console.error('💥 Error creating Other assignments:', error);
       throw error;
@@ -2696,13 +2709,12 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
 
   /**
    * Check if verification is required
-   * ALL customers require physical verification for pre-loaded serials (NEW category)
+   * Verification only happens in NEW category when enabled
    * USED category doesn't require verification (manual entry)
    */
   requiresVerification(): boolean {
-    // Verification required for ALL customers in NEW category
-    // since EyeFi serials and UL labels are pre-loaded and need physical confirmation
-    return this.category === 'new';
+    // Verification required for NEW category only when the toggle is enabled
+    return this.category === 'new' && this.verificationEnabled;
   }
 
   /**

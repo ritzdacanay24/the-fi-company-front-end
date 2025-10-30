@@ -169,6 +169,19 @@ export class SerialAssignmentsService {
   }
 
   /**
+   * Bulk create "Other" customer assignments
+   * Creates assignment records without customer asset generation
+   */
+  async bulkCreateOther(assignments: any[], performedBy: string): Promise<any> {
+    const params = new HttpParams().set('action', 'bulk_create_other');
+    const body = { assignments, performed_by: performedBy };
+    
+    return await firstValueFrom(
+      this.http.post(`${this.API_URL}/index.php`, body, { params })
+    );
+  }
+
+  /**
    * Get audit trail for assignment(s)
    */
   async getAuditTrail(assignmentId?: number, limit: number = 100): Promise<any> {
