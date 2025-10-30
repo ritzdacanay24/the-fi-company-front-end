@@ -23,6 +23,12 @@ export class ULUsageReportComponent implements OnInit {
   isLoading = false;
   gridApi!: GridApi;
 
+  // Modal state
+  showVoidModal = false;
+  showDeleteModal = false;
+  selectedUsageId: number | null = null;
+  voidReason = '';
+
   // AG Grid Configuration
   columnDefs: ColDef[] = [
     {
@@ -91,6 +97,19 @@ export class ULUsageReportComponent implements OnInit {
       sortable: true,
       filter: true,
       width: 150
+    },
+    {
+      headerName: 'Status',
+      field: 'is_voided',
+      sortable: true,
+      filter: true,
+      width: 100,
+      cellRenderer: (params: any) => {
+        if (params.data.is_voided == 1 || params.data.is_voided === true) {
+          return '<span class="badge bg-danger">VOIDED</span>';
+        }
+        return '<span class="badge bg-success">ACTIVE</span>';
+      }
     },
     // {
     //   headerName: 'Customer',
@@ -172,18 +191,36 @@ export class ULUsageReportComponent implements OnInit {
     },
     {
       headerName: 'Actions',
-      width: 100,
+      width: 120,
       pinned: 'right',
+      cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' },
       cellRenderer: (params: any) => {
+        const isVoided = params.data.is_voided == 1 || params.data.is_voided === true;
+        
+        if (isVoided) {
+          return `
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline-success btn-sm action-btn" data-action="restore" data-id="${params.data.id}" title="Restore">
+                <i class="mdi mdi-restore"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm action-btn" data-action="delete" data-id="${params.data.id}" title="Delete">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          `;
+        }
+        
         return `
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-info btn-sm action-btn" data-action="edit" data-id="${params.data.id}">
-              <i class="mdi mdi-pencil"></i>
+          <div class="d-flex gap-1">
+            <button class="btn btn-outline-warning btn-sm action-btn" data-action="void" data-id="${params.data.id}" title="Void">
+              <i class="mdi mdi-cancel"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm action-btn" data-action="delete" data-id="${params.data.id}" title="Delete">
+              <i class="mdi mdi-delete"></i>
             </button>
           </div>
         `;
-      },
-      hide: true
+      }
     }
   ];
 
@@ -234,12 +271,28 @@ export class ULUsageReportComponent implements OnInit {
     if (eGridDiv) {
       eGridDiv.addEventListener('click', (e: Event) => {
         const target = e.target as HTMLElement;
-        if (target.classList.contains('action-btn')) {
-          const action = target.getAttribute('data-action');
-          const id = target.getAttribute('data-id');
+        const button = target.closest('.action-btn') as HTMLElement;
+        
+        if (button) {
+          const action = button.getAttribute('data-action');
+          const id = button.getAttribute('data-id');
 
-          if (action === 'edit' && id) {
-            this.editUsage(parseInt(id));
+          if (action && id) {
+            const usageId = parseInt(id);
+            switch (action) {
+              case 'void':
+                this.openVoidModal(usageId);
+                break;
+              case 'delete':
+                this.openDeleteModal(usageId);
+                break;
+              case 'restore':
+                this.restoreUsage(usageId);
+                break;
+              case 'edit':
+                this.editUsage(usageId);
+                break;
+            }
           }
         }
       });
@@ -394,5 +447,67 @@ export class ULUsageReportComponent implements OnInit {
 
   goToCreateUsage() {
     this.router.navigate(['/ul-usage']);
+  }
+
+  // Void functionality
+  openVoidModal(usageId: number): void {
+    this.selectedUsageId = usageId;
+    this.voidReason = '';
+    this.showVoidModal = true;
+  }
+
+  closeVoidModal(): void {
+    this.showVoidModal = false;
+    this.selectedUsageId = null;
+    this.voidReason = '';
+  }
+
+  confirmVoid(): void {
+    if (!this.selectedUsageId) return;
+
+    this.ulLabelService.voidULLabelUsage(this.selectedUsageId, this.voidReason).subscribe({
+      next: (response) => {
+        this.toastr.success('UL usage voided successfully. EyeFi serial and UL label freed.');
+        this.closeVoidModal();
+        this.loadUsageData();
+      },
+      error: (error) => {
+        console.error('Void error:', error);
+        this.toastr.error('Error voiding UL usage record');
+      }
+    });
+  }
+
+  // Delete functionality
+  openDeleteModal(usageId: number): void {
+    this.selectedUsageId = usageId;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.selectedUsageId = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.selectedUsageId) return;
+
+    this.ulLabelService.deleteULLabelUsage(this.selectedUsageId).subscribe({
+      next: (response) => {
+        this.toastr.success('UL usage record deleted successfully');
+        this.closeDeleteModal();
+        this.loadUsageData();
+      },
+      error: (error) => {
+        console.error('Delete error:', error);
+        this.toastr.error('Error deleting UL usage record');
+      }
+    });
+  }
+
+  // Restore functionality (un-void)
+  restoreUsage(usageId: number): void {
+    // TODO: Implement restore functionality
+    this.toastr.info('Restore functionality coming soon');
   }
 }

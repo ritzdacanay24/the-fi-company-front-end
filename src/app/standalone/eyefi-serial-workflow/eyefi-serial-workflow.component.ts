@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { NgbModal, NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { PublicFormWrapperComponent } from '../public-form-wrapper/public-form-wrapper.component';
 import { EyefiSerialSearchNgSelectComponent } from '@app/shared/eyefi-serial-search/eyefi-serial-search-ng-select.component';
 import { UlLabelSearchNgSelectComponent } from '@app/shared/ul-label-search/ul-label-search-ng-select.component';
@@ -21,6 +22,8 @@ import { AuthenticationService } from '@app/core/services/auth.service';
 import { MismatchReport } from './models/mismatch-report.model';
 import { MismatchReportService } from './services/mismatch-report.service';
 import { SerialSequenceDebugModalComponent } from '../serial-sequence-debug-modal/serial-sequence-debug-modal.component';
+import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
+import { interval, Subscription } from 'rxjs';
 
 interface WorkflowStep {
   id: number;
@@ -30,6 +33,24 @@ interface WorkflowStep {
   active: boolean;
 }
 
+// Verification interfaces
+interface VerificationSession {
+  session_id: string;
+  serial_assignment_id?: number;
+  expected_serial: string;
+  expected_ul?: string;
+  status: 'pending' | 'verified' | 'failed' | 'expired';
+  created_at: string;
+  expires_at: string;
+}
+
+interface VerificationResult {
+  success: boolean;
+  verified: boolean;
+  matched: boolean;
+  message?: string;
+}
+
 @Component({
   selector: 'app-eyefi-serial-workflow',
   standalone: true,
@@ -37,6 +58,7 @@ interface WorkflowStep {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    QRCodeComponent,
     PublicFormWrapperComponent,
     EyefiSerialSearchNgSelectComponent,
     UlLabelSearchNgSelectComponent,
@@ -52,6 +74,9 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   @ViewChild(PublicFormWrapperComponent) wrapperComponent!: PublicFormWrapperComponent;
   @ViewChild('confirmationModal') confirmationModal!: TemplateRef<any>;
   @ViewChild('mismatchReportModal') mismatchReportModal!: TemplateRef<any>;
+
+  // Workflow Session ID - links all serials in this workflow batch
+  workflowSessionId: string = '';
 
   // Authentication state
   isAuthenticated = false;
@@ -120,6 +145,11 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     isAutoPopulated: boolean; // Track if this was auto-populated
     manuallyChanged: boolean; // Track if user manually changed it
     isEditing: boolean; // Track if user is editing this row
+    verified: boolean; // Track if this serial has been physically verified
+    verificationStatus?: 'pending' | 'verified' | 'failed'; // Verification status
+    verificationPhoto?: string; // Path to verification photo
+    verifiedAt?: Date; // When verification completed
+    verifiedBy?: string; // Who verified it
   }> = [];
 
   // Step 4: Customer selection
@@ -249,6 +279,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
 
   // UI state
   isLoading = false;
+  autoSequenceInfoExpanded = false; // Track collapse/expand state for auto-sequence info
+  mismatchReportExpanded = false; // Track collapse/expand state for mismatch reporting section
   
   // Form submission state
   pendingFormData: any = null;
@@ -268,6 +300,17 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   // Set to TRUE for testing to use LAST serials/ULs
   private readonly USE_LAST_ITEMS_FOR_TESTING = false; // 🧪 CHANGE TO FALSE FOR PRODUCTION
 
+  // Verification state
+  currentVerificationSession: VerificationSession | null = null;
+  currentVerificationIndex: number | null = null;
+  verificationStatus: string = '';
+  isVerifying: boolean = false;
+  showVerificationModal: boolean = false;
+  verificationPollingSubscription: Subscription | null = null;
+  verificationSessionTimer: any = null;
+  verificationSessionExpiry: Date | null = null;
+  verificationProgress: { current: number; total: number } = { current: 0, total: 0 };
+
   constructor(
     private router: Router,
     private toastrService: ToastrService,
@@ -279,10 +322,15 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     private serialNumberService: SerialNumberService,
     private zebraLabelPrintModalService: ZebraLabelPrintModalService,
     private authenticationService: AuthenticationService,
-    private mismatchReportService: MismatchReportService
+    private mismatchReportService: MismatchReportService,
+    private serialAssignmentsService: SerialAssignmentsService
   ) {}
 
   ngOnInit(): void {
+    // Generate workflow session ID for tracking this batch
+    this.workflowSessionId = this.generateUUID();
+    console.log('🔐 Workflow Session ID:', this.workflowSessionId);
+    
     // Restore workflow state from sessionStorage if exists
     this.restoreWorkflowState();
     
@@ -303,6 +351,17 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   private extractNumericPart(ulNumber: string): number {
     const match = ulNumber.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
+  }
+
+  /**
+   * Generate UUID v4 for workflow session tracking
+   */
+  private generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   async loadAvailableULs(): Promise<void> {
@@ -475,6 +534,14 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       if (this.currentStep === 3) {
         this.currentStep++;
         this.updateStepStates();
+        
+        // 🔄 Refresh both EyeFi serials and UL numbers before auto-populating
+        // This ensures we have the latest available sequences from the database
+        // and prevents assigning already-consumed serials/ULs
+        console.log('🔄 Refreshing EyeFi serials and UL numbers before auto-population...');
+        await this.loadAvailableULs();
+        // Note: EyeFi serials are fetched fresh in performAutoPopulation() via API call
+        
         await this.autoPopulateSerials();
         this.saveWorkflowState(); // Save after populating
       }
@@ -486,6 +553,11 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         // Set current form type based on selected customer
         this.currentFormType = this.getCustomerFormComponent();
         console.log('🎯 Setting currentFormType:', this.currentFormType, 'for customer:', this.selectedCustomer);
+        
+        // 🔄 Refresh customer-specific serials before asset generation
+        // IGT, SG, and AGS assets are fetched fresh in handleAssetGeneration() via their respective API calls
+        // This ensures we have the latest available customer serial numbers
+        console.log('🔄 Refreshing customer assets for', this.selectedCustomer, '...');
         
         await this.handleAssetGeneration();
         this.saveWorkflowState(); // Save after generating assets
@@ -554,7 +626,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         // Step 4: All serial assignments must be filled
         // Handle both object (new category) and string (used category) serial values
         // UL is optional based on ulRequired flag
-        return this.serialAssignments.length === this.quantity &&
+        const allFilled = this.serialAssignments.length === this.quantity &&
                this.serialAssignments.every(a => {
                  // Extract serial number string from either object or string format
                  let serialValue = null;
@@ -570,6 +642,14 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
                  // If UL is required, check both serial and UL; otherwise just check serial
                  return this.ulRequired ? (hasSerial && hasUL) : hasSerial;
                });
+        
+        // For NEW category (pre-loaded serials), require verification for ALL customers
+        // USED category doesn't require verification (manual entry)
+        if (this.category === 'new') {
+          return allFilled && this.allSerialsVerified();
+        }
+        
+        return allFilled;
       default:
         return false;
     }
@@ -583,6 +663,11 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       isAutoPopulated: boolean; 
       manuallyChanged: boolean;
       isEditing: boolean;
+      verified: boolean;
+      verificationStatus?: 'pending' | 'verified' | 'failed';
+      verificationPhoto?: string;
+      verifiedAt?: Date;
+      verifiedBy?: string;
     }> = [];
     
     for (let i = 0; i < this.quantity; i++) {
@@ -596,7 +681,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           ulNumber: null,
           isAutoPopulated: false,
           manuallyChanged: false,
-          isEditing: false
+          isEditing: false,
+          verified: false
         });
       }
     }
@@ -955,7 +1041,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         ulNumber: availableUL,
         isAutoPopulated: true,
         manuallyChanged: false,
-        isEditing: false
+        isEditing: false,
+        verified: false
       };
 
       this.toastrService.success('Reset to auto-selected values');
@@ -1046,6 +1133,13 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     
     // Clear saved workflow state
     this.clearWorkflowState();
+    
+    // 🔄 REFRESH UL numbers to get latest available sequence
+    // This ensures we don't use stale/consumed ULs from previous batch
+    if (this.isAuthenticated) {
+      console.log('🔄 Refreshing UL numbers for new batch...');
+      this.loadAvailableULs();
+    }
     
     console.log('🔄 Workflow reset - ready for new batch');
   }
@@ -1159,7 +1253,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        sgPartNumber: this.workOrderDetails?.wo_part || '',
+        sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
         active: 1,
@@ -1227,7 +1321,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
         ulNumber: assignment.ulNumber?.ul_number || '',
         ul_label_id: assignment.ulNumber?.id || null,
-        sgPartNumber: this.workOrderDetails?.wo_part || '',
+        sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
         active: 1,
@@ -2593,6 +2687,515 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
       console.log('🗑️ Workflow state cleared from sessionStorage');
     } catch (error) {
       console.error('Failed to clear workflow state:', error);
+    }
+  }
+
+  // ============================
+  // SERIAL VERIFICATION METHODS
+  // ============================
+
+  /**
+   * Check if verification is required
+   * ALL customers require physical verification for pre-loaded serials (NEW category)
+   * USED category doesn't require verification (manual entry)
+   */
+  requiresVerification(): boolean {
+    // Verification required for ALL customers in NEW category
+    // since EyeFi serials and UL labels are pre-loaded and need physical confirmation
+    return this.category === 'new';
+  }
+
+  /**
+   * Check if all required serials have been verified
+   */
+  allSerialsVerified(): boolean {
+    if (!this.requiresVerification()) {
+      return true; // No verification required
+    }
+    return this.serialAssignments.every(a => a.verified === true);
+  }
+
+  /**
+   * Get count of verified serials
+   */
+  getVerifiedCount(): number {
+    return this.serialAssignments.filter(a => a.verified).length;
+  }
+
+  /**
+   * Check if any serials have been verified (for showing "Continue" button)
+   */
+  hasSomeVerified(): boolean {
+    return this.serialAssignments.some(a => a.verified);
+  }
+
+  /**
+   * Start batch verification process - send ALL serials at once for multi-photo capture
+   */
+  async startBatchVerification(): Promise<void> {
+    if (this.serialAssignments.length === 0) {
+      this.toastrService.warning('No serials to verify');
+      return;
+    }
+
+    // Get all unverified serials (both EyeFi and UL)
+    const unverifiedAssignments = this.serialAssignments.filter(a => !a.verified);
+    const unverifiedSerials: string[] = [];
+    
+    // Collect all serials that need verification
+    unverifiedAssignments.forEach(assignment => {
+      // Add EyeFi serial
+      const eyefiSerial = assignment.serial?.serial_number || assignment.serial;
+      if (eyefiSerial) {
+        unverifiedSerials.push(eyefiSerial);
+      }
+      
+      // Add UL serial if present
+      const ulSerial = assignment.ulNumber?.ul_number;
+      if (ulSerial) {
+        unverifiedSerials.push(ulSerial);
+      }
+    });
+
+    if (unverifiedSerials.length === 0) {
+      this.toastrService.info('All serials already verified');
+      return;
+    }
+
+    this.isVerifying = true;
+    this.showVerificationModal = true;
+    this.verificationStatus = 'Creating batch verification session...';
+    this.verificationProgress = {
+      current: 0,
+      total: unverifiedSerials.length
+    };
+
+    try {
+      console.log(`🔐 Starting BATCH verification for ${unverifiedSerials.length} serials:`, unverifiedSerials);
+
+      // Get UL number (assuming all serials in batch have same UL)
+      const ulNumber = this.serialAssignments[0]?.ulNumber?.ul_number || '';
+      const createdBy = this.currentUser?.name || 'User';
+
+      // Create ONE session with ALL serials
+      const sessionResponse = await this.serialAssignmentsService.createVerificationSession(
+        0, // Workflow mode (no DB ID yet)
+        unverifiedSerials, // Send array of serials
+        createdBy,
+        ulNumber,
+        this.workflowSessionId // Pass workflow session ID for tracking
+      );
+
+      if (!sessionResponse?.success || !sessionResponse?.session) {
+        throw new Error('Failed to create batch verification session');
+      }
+
+      this.currentVerificationSession = sessionResponse.session;
+      this.verificationSessionExpiry = new Date(sessionResponse.session.expires_at);
+      
+      // Update status
+      this.verificationStatus = `Waiting for tablet to capture ${unverifiedSerials.length} serial(s)...`;
+
+      console.log('✅ Batch verification session created:', this.currentVerificationSession);
+
+      // Start polling for verification result
+      this.startVerificationPolling();
+
+      // Start session timer
+      this.startSessionTimer();
+
+    } catch (error) {
+      console.error('❌ Error starting batch verification:', error);
+      this.toastrService.error('Failed to start batch verification');
+      this.isVerifying = false;
+      this.showVerificationModal = false;
+      this.currentVerificationSession = null;
+    }
+  }
+
+  /**
+   * Verify a single serial at the given index
+   */
+  async verifySerial(index: number): Promise<void> {
+    const assignment = this.serialAssignments[index];
+    if (!assignment) {
+      console.error('No assignment at index', index);
+      return;
+    }
+
+    // Check if already verified
+    if (assignment.verified) {
+      console.log(`Assignment ${index + 1} already verified, skipping`);
+      // Move to next unverified serial
+      const nextIndex = this.serialAssignments.findIndex((a, i) => i > index && !a.verified);
+      if (nextIndex !== -1) {
+        await this.verifySerial(nextIndex);
+      } else {
+        this.toastrService.success('All serials verified!');
+        this.showVerificationModal = false;
+      }
+      return;
+    }
+
+    this.currentVerificationIndex = index;
+    this.isVerifying = true;
+    this.showVerificationModal = true;
+    this.verificationStatus = 'Creating verification session...';
+
+    try {
+      // Extract serial number and UL number
+      const serialNumber = assignment.serial?.serial_number || assignment.serial;
+      const ulNumber = assignment.ulNumber?.ul_number || '';
+
+      console.log(`🔐 Starting verification for row ${index + 1}:`, {
+        serial: serialNumber,
+        ul: ulNumber
+      });
+
+      // Create verification session
+      // Note: assignment_id can be 0 or null for workflow verification (before DB save)
+      const createdBy = this.currentUser?.name || 'User';
+      const sessionResponse = await this.serialAssignmentsService.createVerificationSession(
+        index, // Temporary ID (0-based index) - backend will handle NULL/0 for workflow mode
+        serialNumber,
+        createdBy,
+        ulNumber // Also pass UL number for reference
+      );
+
+      if (!sessionResponse?.success || !sessionResponse?.session) {
+        throw new Error('Failed to create verification session');
+      }
+
+      this.currentVerificationSession = sessionResponse.session;
+      this.verificationSessionExpiry = new Date(sessionResponse.session.expires_at);
+      
+      // Update status
+      this.verificationStatus = 'Waiting for tablet verification...';
+      this.verificationProgress.current = index + 1;
+
+      console.log('✅ Verification session created:', this.currentVerificationSession);
+
+      // Start polling for verification result
+      this.startVerificationPolling();
+
+      // Start session timer
+      this.startSessionTimer();
+
+    } catch (error) {
+      console.error('❌ Error starting verification:', error);
+      this.toastrService.error('Failed to start verification');
+      this.isVerifying = false;
+      this.showVerificationModal = false;
+      this.currentVerificationSession = null;
+      this.currentVerificationIndex = null;
+    }
+  }
+
+  /**
+   * Start polling to check verification status
+   */
+  private startVerificationPolling(): void {
+    // Clear any existing polling
+    this.stopVerificationPolling();
+
+    // Poll every 1 second
+    this.verificationPollingSubscription = interval(1000).subscribe(() => {
+      this.checkVerificationStatus();
+    });
+  }
+
+  /**
+   * Stop polling
+   */
+  private stopVerificationPolling(): void {
+    if (this.verificationPollingSubscription) {
+      this.verificationPollingSubscription.unsubscribe();
+      this.verificationPollingSubscription = null;
+    }
+  }
+
+  /**
+   * Check current verification session status
+   */
+  private async checkVerificationStatus(): Promise<void> {
+    if (!this.currentVerificationSession) {
+      return;
+    }
+
+    try {
+      const response = await this.serialAssignmentsService.getVerificationSession(
+        this.currentVerificationSession.session_id
+      );
+
+      if (!response?.success || !response?.session) {
+        console.warn('Invalid session response');
+        return;
+      }
+
+      const session = response.session;
+      
+      // Update progress display
+      if (response.progress) {
+        this.verificationProgress = response.progress;
+        const { found, expected } = response.progress;
+        this.verificationStatus = `Captured ${found} of ${expected} serial(s)...`;
+      }
+
+      // Check if batch verification is complete (match_result === 'complete')
+      if (session.match_result === 'complete' && session.session_status === 'completed') {
+        this.stopVerificationPolling();
+        this.stopSessionTimer();
+        
+        // SUCCESS - All serials verified
+        this.handleBatchVerificationSuccess(session);
+      } 
+      // Check for expired session
+      else if (session.session_status === 'expired' || response.is_expired) {
+        this.stopVerificationPolling();
+        this.stopSessionTimer();
+        this.handleVerificationExpired();
+      }
+      // Check for partial matches - update UI but keep polling
+      else if (session.match_result === 'partial' && session.serials_found > 0) {
+        const { found, expected } = response.progress;
+        this.verificationStatus = `📸 Found ${found} of ${expected} serials. Take another photo for remaining serial(s)...`;
+      }
+
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    }
+  }
+  
+  /**
+   * Handle successful batch verification
+   */
+  private handleBatchVerificationSuccess(session: any): void {
+    console.log('✅ Batch verification complete!', session);
+    
+    // Mark all unverified assignments as verified
+    this.serialAssignments.forEach(assignment => {
+      if (!assignment.verified) {
+        const eyefiSerial = assignment.serial?.serial_number || assignment.serial;
+        const ulSerial = assignment.ulNumber?.ul_number;
+        
+        // Check if this assignment's serials were captured
+        const captured = session.captured_serials || [];
+        if ((eyefiSerial && captured.includes(eyefiSerial)) || (ulSerial && captured.includes(ulSerial))) {
+          assignment.verified = true;
+          assignment.verificationStatus = 'verified';
+          assignment.verifiedAt = new Date();
+          assignment.verifiedBy = this.currentUser?.name || 'User';
+        }
+      }
+    });
+
+    this.verificationStatus = `✅ Verified ${session.serials_found} serial(s)!`;
+    
+    this.toastrService.success(`All ${session.serials_found} serials verified successfully!`, 'Verification Complete');
+    
+    // Keep modal open briefly to show success
+    setTimeout(() => {
+      this.isVerifying = false;
+      this.showVerificationModal = false;
+      this.currentVerificationSession = null;
+    }, 2000);
+  }
+
+  /**
+   * Handle verification mismatch
+   */
+  private handleVerificationMismatch(session: any): void {
+    this.verificationStatus = 'Mismatch detected ✗';
+    
+    // Play error sound (optional)
+    this.playErrorSound();
+
+    // Show error message
+    this.toastrService.error(
+      `Physical serial does not match expected serial. Please check and report mismatch.`,
+      'Verification Failed',
+      { timeOut: 8000 }
+    );
+
+    console.error('❌ Verification mismatch:', session);
+
+    // Keep modal open so user can review and report mismatch
+    this.isVerifying = false;
+  }
+
+  /**
+   * Handle verification failure
+   */
+  private handleVerificationFailure(session: any): void {
+    this.verificationStatus = 'Verification failed ✗';
+    
+    this.toastrService.error(
+      session.message || 'Verification failed. Please try again.',
+      'Verification Failed'
+    );
+
+    console.error('❌ Verification failed:', session);
+    
+    this.isVerifying = false;
+  }
+
+  /**
+   * Handle session expiration
+   */
+  private handleVerificationExpired(): void {
+    this.verificationStatus = 'Session expired ⏱';
+    
+    this.toastrService.warning(
+      'Verification session expired (5 minutes). Please try again.',
+      'Session Expired'
+    );
+
+    console.warn('⏱ Verification session expired');
+    
+    this.isVerifying = false;
+  }
+
+  /**
+   * Retry verification for current assignment
+   */
+  async retryVerification(): Promise<void> {
+    if (this.currentVerificationIndex !== null) {
+      this.closeVerificationModal();
+      
+      // Wait a moment then restart
+      setTimeout(() => {
+        this.verifySerial(this.currentVerificationIndex!);
+      }, 500);
+    }
+  }
+
+  /**
+   * Skip verification for current assignment (not recommended)
+   */
+  skipVerification(): void {
+    if (confirm('Are you sure you want to skip verification for this serial? This is not recommended for IGT/ATI customers.')) {
+      this.closeVerificationModal();
+      
+      // Find next unverified serial
+      const nextIndex = this.serialAssignments.findIndex((a, i) => i > (this.currentVerificationIndex || 0) && !a.verified);
+      
+      if (nextIndex !== -1) {
+        setTimeout(() => {
+          this.verifySerial(nextIndex);
+        }, 500);
+      } else {
+        this.isVerifying = false;
+        this.toastrService.info('Verification process paused');
+      }
+    }
+  }
+
+  /**
+   * Close verification modal
+   */
+  closeVerificationModal(): void {
+    this.showVerificationModal = false;
+    this.stopVerificationPolling();
+    this.stopSessionTimer();
+    this.currentVerificationSession = null;
+    this.verificationStatus = '';
+  }
+
+  /**
+   * Start session expiry timer
+   */
+  private startSessionTimer(): void {
+    this.stopSessionTimer();
+    
+    // Update timer every second
+    this.verificationSessionTimer = setInterval(() => {
+      if (!this.verificationSessionExpiry) {
+        this.stopSessionTimer();
+        return;
+      }
+
+      const now = new Date().getTime();
+      const expiry = new Date(this.verificationSessionExpiry).getTime();
+      const remaining = expiry - now;
+
+      if (remaining <= 0) {
+        this.stopSessionTimer();
+        this.handleVerificationExpired();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Stop session timer
+   */
+  private stopSessionTimer(): void {
+    if (this.verificationSessionTimer) {
+      clearInterval(this.verificationSessionTimer);
+      this.verificationSessionTimer = null;
+    }
+  }
+
+  /**
+   * Get remaining time for verification session
+   */
+  getVerificationTimeRemaining(): string {
+    if (!this.verificationSessionExpiry) {
+      return '0:00';
+    }
+
+    const now = new Date().getTime();
+    const expiry = new Date(this.verificationSessionExpiry).getTime();
+    const remaining = Math.max(0, expiry - now);
+
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Generate QR code URL for tablet connection
+   */
+  getVerificationQRCodeUrl(): string {
+    if (!this.currentVerificationSession) {
+      return '';
+    }
+
+    const sessionId = this.currentVerificationSession.session_id;
+    
+    // Point to the tablet companion page
+    const tabletUrl = `https://dashboard.eye-fi.com/tasks/tablet-companion.html?session=${sessionId}`;
+    
+    return tabletUrl;
+  }
+
+  /**
+   * Play success sound
+   */
+  private playSuccessSound(): void {
+    try {
+      const audio = new Audio('/assets/sounds/success.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Ignore errors if sound file doesn't exist
+      });
+    } catch (error) {
+      // Ignore sound errors
+    }
+  }
+
+  /**
+   * Play error sound
+   */
+  private playErrorSound(): void {
+    try {
+      const audio = new Audio('/assets/sounds/error.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Ignore errors if sound file doesn't exist
+      });
+    } catch (error) {
+      // Ignore sound errors
     }
   }
 }

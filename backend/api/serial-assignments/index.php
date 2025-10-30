@@ -26,6 +26,12 @@ class SerialAssignmentsAPI {
 
     /**
      * Get all serial assignments with optional filters
+     * Uses vw_all_consumed_serials view to include ALL sources:
+     * - serial_assignments (new system)
+     * - ul_label_usages (legacy)
+     * - agsSerialGenerator (legacy)
+     * - sgAssetGenerator (legacy)
+     * - igt_serial_numbers (used only)
      */
     public function getAssignments($filters = []) {
         try {
@@ -34,43 +40,44 @@ class SerialAssignmentsAPI {
 
             // Build WHERE conditions based on filters
             if (!empty($filters['wo_number'])) {
-                $conditions[] = "sa.wo_number LIKE ?";
+                $conditions[] = "(v.wo_number LIKE ? OR v.po_number LIKE ?)";
+                $params[] = '%' . $filters['wo_number'] . '%';
                 $params[] = '%' . $filters['wo_number'] . '%';
             }
 
             if (!empty($filters['eyefi_serial_number'])) {
-                $conditions[] = "sa.eyefi_serial_number LIKE ?";
+                $conditions[] = "v.eyefi_serial_number LIKE ?";
                 $params[] = '%' . $filters['eyefi_serial_number'] . '%';
             }
 
             if (!empty($filters['ul_number'])) {
-                $conditions[] = "sa.ul_number LIKE ?";
+                $conditions[] = "v.ul_number LIKE ?";
                 $params[] = '%' . $filters['ul_number'] . '%';
             }
 
             if (!empty($filters['consumed_by'])) {
-                $conditions[] = "sa.consumed_by LIKE ?";
+                $conditions[] = "v.used_by LIKE ?";
                 $params[] = '%' . $filters['consumed_by'] . '%';
             }
 
             if (!empty($filters['date_from'])) {
-                $conditions[] = "DATE(sa.consumed_at) >= ?";
+                $conditions[] = "DATE(v.used_date) >= ?";
                 $params[] = $filters['date_from'];
             }
 
             if (!empty($filters['date_to'])) {
-                $conditions[] = "DATE(sa.consumed_at) <= ?";
+                $conditions[] = "DATE(v.used_date) <= ?";
                 $params[] = $filters['date_to'];
             }
 
             if (!empty($filters['status'])) {
-                $conditions[] = "sa.status = ?";
+                $conditions[] = "v.status = ?";
                 $params[] = $filters['status'];
             }
 
             // Filter voided assignments unless explicitly requested
             if (!isset($filters['include_voided']) || !$filters['include_voided']) {
-                $conditions[] = "(sa.is_voided = 0 OR sa.is_voided IS NULL)";
+                $conditions[] = "(v.is_voided = 0 OR v.is_voided IS NULL)";
             }
 
             $whereClause = implode(' AND ', $conditions);
@@ -82,31 +89,39 @@ class SerialAssignmentsAPI {
 
             // Get total count
             $countQuery = "SELECT COUNT(*) as total 
-                          FROM serial_assignments sa 
+                          FROM eyefidb.vw_all_consumed_serials v 
                           WHERE {$whereClause}";
             $countStmt = $this->db->prepare($countQuery);
             $countStmt->execute($params);
             $total = $countStmt->fetch(\PDO::FETCH_ASSOC)['total'];
 
-            // Get assignments
+            // Get assignments from comprehensive view
             $query = "SELECT 
-                        sa.id,
-                        sa.eyefi_serial_id,
-                        sa.eyefi_serial_number,
-                        sa.ul_label_id,
-                        sa.ul_number,
-                        sa.wo_number,
-                        sa.consumed_at,
-                        sa.consumed_by,
-                        sa.status,
-                        sa.created_at,
-                        sa.is_voided,
-                        sa.voided_by,
-                        sa.voided_at,
-                        sa.void_reason
-                      FROM serial_assignments sa
+                        v.unique_id,
+                        v.source_table,
+                        v.source_type,
+                        v.source_id as id,
+                        v.eyefi_serial_id,
+                        v.eyefi_serial_number,
+                        v.ul_label_id,
+                        v.ul_number,
+                        v.wo_number,
+                        v.po_number,
+                        v.used_date as consumed_at,
+                        v.used_by as consumed_by,
+                        v.status,
+                        v.created_at,
+                        v.is_voided,
+                        v.voided_by,
+                        v.voided_at,
+                        v.void_reason,
+                        v.part_number,
+                        v.wo_description,
+                        v.customer_part_number,
+                        v.customer_name
+                      FROM eyefidb.vw_all_consumed_serials v
                       WHERE {$whereClause}
-                      ORDER BY sa.consumed_at DESC, sa.id DESC
+                      ORDER BY v.used_date DESC, v.unique_id DESC
                       LIMIT {$limit} OFFSET {$offset}";
 
             $stmt = $this->db->prepare($query);
@@ -350,6 +365,19 @@ class SerialAssignmentsAPI {
             $freeSerialStmt = $this->db->prepare($freeSerialQuery);
             $freeSerialStmt->execute([$assignment['eyefi_serial_id']]);
 
+            // FREE UP THE UL LABEL - set back to available (if assigned)
+            if (!empty($assignment['ul_label_id'])) {
+                $freeUlQuery = "UPDATE ul_labels 
+                               SET status = 'available',
+                                   is_consumed = 0
+                               WHERE id = ?";
+                $freeUlStmt = $this->db->prepare($freeUlQuery);
+                $freeUlStmt->execute([$assignment['ul_label_id']]);
+            }
+
+            // Note: Customer assets (SG/AGS) cannot be "ungenerated" 
+            // They remain in the system but the assignment is voided
+
             // Create audit trail entry
             $auditQuery = "INSERT INTO serial_assignment_audit (
                             assignment_id,
@@ -366,9 +394,10 @@ class SerialAssignmentsAPI {
 
             return [
                 'success' => true,
-                'message' => 'Assignment voided and serial freed for reuse',
+                'message' => 'Assignment voided and serials freed for reuse',
                 'assignment_id' => $id,
-                'freed_serial' => $assignment['eyefi_serial_number']
+                'freed_eyefi_serial' => $assignment['eyefi_serial_number'],
+                'freed_ul_label' => $assignment['ul_number'] ?? null
             ];
         } catch (\Exception $e) {
             $this->db->rollBack();
@@ -480,6 +509,16 @@ class SerialAssignmentsAPI {
                                   WHERE id = ?";
             $consumeSerialStmt = $this->db->prepare($consumeSerialQuery);
             $consumeSerialStmt->execute([$assignment['eyefi_serial_id']]);
+
+            // MARK UL LABEL AS CONSUMED AGAIN (if assigned)
+            if (!empty($assignment['ul_label_id'])) {
+                $consumeUlQuery = "UPDATE ul_labels 
+                                  SET status = 'consumed',
+                                      is_consumed = 1
+                                  WHERE id = ?";
+                $consumeUlStmt = $this->db->prepare($consumeUlQuery);
+                $consumeUlStmt->execute([$assignment['ul_label_id']]);
+            }
 
             // Create audit trail entry
             $auditQuery = "INSERT INTO serial_assignment_audit (
@@ -597,6 +636,185 @@ class SerialAssignmentsAPI {
             ];
         }
     }
+
+    /**
+     * Get all consumed serials from all sources (comprehensive view)
+     * Includes: serial_assignments, ul_label_usages, agsSerialGenerator, sgAssetGenerator, used igt_serial_numbers
+     */
+    public function getAllConsumedSerials($filters = []) {
+        try {
+            $conditions = ["1=1"];
+            $params = [];
+
+            // Build WHERE conditions for filtering
+            if (!empty($filters['source_table'])) {
+                $conditions[] = "source_table = ?";
+                $params[] = $filters['source_table'];
+            }
+
+            if (!empty($filters['search'])) {
+                $search = '%' . $filters['search'] . '%';
+                $conditions[] = "(eyefi_serial_number LIKE ? OR ul_number LIKE ? OR igt_serial_number LIKE ? OR ags_serial_number LIKE ? OR sg_asset_number LIKE ? OR wo_number LIKE ? OR po_number LIKE ? OR used_by LIKE ?)";
+                $params = array_merge($params, [$search, $search, $search, $search, $search, $search, $search, $search]);
+            }
+
+            if (!empty($filters['used_by'])) {
+                $conditions[] = "used_by LIKE ?";
+                $params[] = '%' . $filters['used_by'] . '%';
+            }
+
+            if (!empty($filters['wo_number'])) {
+                $conditions[] = "(wo_number LIKE ? OR po_number LIKE ?)";
+                $woSearch = '%' . $filters['wo_number'] . '%';
+                $params = array_merge($params, [$woSearch, $woSearch]);
+            }
+
+            if (!empty($filters['date_from'])) {
+                $conditions[] = "DATE(used_date) >= ?";
+                $params[] = $filters['date_from'];
+            }
+
+            if (!empty($filters['date_to'])) {
+                $conditions[] = "DATE(used_date) <= ?";
+                $params[] = $filters['date_to'];
+            }
+
+            $whereClause = implode(' AND ', $conditions);
+
+            // Pagination
+            $page = isset($filters['page']) ? (int)$filters['page'] : 1;
+            $limit = isset($filters['limit']) ? (int)$filters['limit'] : 50;
+            $offset = ($page - 1) * $limit;
+
+            // Get total count
+            $countQuery = "SELECT COUNT(*) as total FROM vw_all_consumed_serials WHERE {$whereClause}";
+            $countStmt = $this->db->prepare($countQuery);
+            $countStmt->execute($params);
+            $total = $countStmt->fetch(\PDO::FETCH_ASSOC)['total'];
+
+            // Get data
+            $query = "SELECT * FROM vw_all_consumed_serials 
+                     WHERE {$whereClause}
+                     ORDER BY used_date DESC
+                     LIMIT {$limit} OFFSET {$offset}";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results,
+                'total' => (int)$total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => ceil($total / $limit)
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getAllConsumedSerials: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching consumed serials: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get consumed serials summary statistics
+     */
+    public function getConsumedSerialsSummary() {
+        try {
+            $query = "SELECT * FROM vw_consumed_serials_summary ORDER BY total_consumed DESC";
+            $stmt = $this->db->query($query);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getConsumedSerialsSummary: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching summary: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get daily consumption trend (last 30 days)
+     */
+    public function getDailyConsumptionTrend() {
+        try {
+            $query = "SELECT * FROM vw_daily_consumption_trend ORDER BY consumption_date DESC, source_table";
+            $stmt = $this->db->query($query);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getDailyConsumptionTrend: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching trend: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get user consumption activity
+     */
+    public function getUserConsumptionActivity() {
+        try {
+            $query = "SELECT * FROM vw_user_consumption_activity ORDER BY total_consumed DESC";
+            $stmt = $this->db->query($query);
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getUserConsumptionActivity: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching user activity: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get work order serial tracking
+     */
+    public function getWorkOrderSerials($workOrder = null) {
+        try {
+            if ($workOrder) {
+                $query = "SELECT * FROM vw_work_order_serials 
+                         WHERE work_order LIKE ?
+                         ORDER BY last_used DESC";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute(['%' . $workOrder . '%']);
+            } else {
+                $query = "SELECT * FROM vw_work_order_serials ORDER BY last_used DESC LIMIT 100";
+                $stmt = $this->db->query($query);
+            }
+            
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return [
+                'success' => true,
+                'data' => $results
+            ];
+        } catch (\Exception $e) {
+            error_log("ERROR in getWorkOrderSerials: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Error fetching work order serials: ' . $e->getMessage()
+            ];
+        }
+    }
 }
 
 // Initialize database connection and handle request
@@ -674,11 +892,42 @@ try {
                     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
                     $result = $api->getAuditTrail($assignmentId, $limit);
                     break;
+                
+                case 'get_all_consumed_serials':
+                    $filters = [
+                        'source_table' => $_GET['source_table'] ?? null,
+                        'search' => $_GET['search'] ?? null,
+                        'used_by' => $_GET['used_by'] ?? null,
+                        'wo_number' => $_GET['wo_number'] ?? null,
+                        'date_from' => $_GET['date_from'] ?? null,
+                        'date_to' => $_GET['date_to'] ?? null,
+                        'page' => $_GET['page'] ?? 1,
+                        'limit' => $_GET['limit'] ?? 50
+                    ];
+                    $result = $api->getAllConsumedSerials($filters);
+                    break;
+                
+                case 'get_consumed_summary':
+                    $result = $api->getConsumedSerialsSummary();
+                    break;
+                
+                case 'get_consumption_trend':
+                    $result = $api->getDailyConsumptionTrend();
+                    break;
+                
+                case 'get_user_activity':
+                    $result = $api->getUserConsumptionActivity();
+                    break;
+                
+                case 'get_work_order_serials':
+                    $workOrder = $_GET['work_order'] ?? null;
+                    $result = $api->getWorkOrderSerials($workOrder);
+                    break;
                     
                 default:
                     $result = [
                         'success' => false,
-                        'error' => 'Invalid action. Available actions: get_assignments, get_assignment, get_statistics, get_by_type, get_recent, search, get_audit_trail'
+                        'error' => 'Invalid action. Available actions: get_assignments, get_assignment, get_statistics, get_by_type, get_recent, search, get_audit_trail, get_all_consumed_serials, get_consumed_summary, get_consumption_trend, get_user_activity, get_work_order_serials'
                     ];
             }
             break;

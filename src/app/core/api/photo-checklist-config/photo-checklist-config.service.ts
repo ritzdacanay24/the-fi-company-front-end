@@ -44,6 +44,10 @@ export interface ChecklistItem {
   is_required: boolean;
   max_photos?: number;
   min_photos?: number;
+  // Hierarchical structure support
+  level?: number; // 0 = parent/root item, 1 = child/sub-item
+  parent_id?: number; // Reference to parent item's ID or order_index
+  children?: ChecklistItem[]; // Sub-items (e.g., multiple reference photos for one inspection item)
   // Photo submission data (when part of instance)
   file_name?: string;
   file_url?: string;

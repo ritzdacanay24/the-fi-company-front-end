@@ -3023,6 +3023,27 @@
   resolved "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-win32-x64/-/msgpackr-extract-win32-x64-3.0.3.tgz"
   integrity sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==
 
+"@napi-rs/canvas-win32-x64-msvc@0.1.81":
+  version "0.1.81"
+  resolved "https://registry.npmjs.org/@napi-rs/canvas-win32-x64-msvc/-/canvas-win32-x64-msvc-0.1.81.tgz"
+  integrity sha512-57ryVbhm/z7RE9/UVcS7mrLPdlayLesy+9U0Uf6epCoeSGrs99tfieCcgZWFbIgmByQ1AZnNtFI2N6huqDLlWQ==
+
+"@napi-rs/canvas@^0.1.80":
+  version "0.1.81"
+  resolved "https://registry.npmjs.org/@napi-rs/canvas/-/canvas-0.1.81.tgz"
+  integrity sha512-ReCjd5SYI/UKx/olaQLC4GtN6wUQGjlgHXs1lvUvWGXfBMR3Fxnik3cL+OxKN5ithNdoU0/GlCrdKcQDFh2XKQ==
+  optionalDependencies:
+    "@napi-rs/canvas-android-arm64" "0.1.81"
+    "@napi-rs/canvas-darwin-arm64" "0.1.81"
+    "@napi-rs/canvas-darwin-x64" "0.1.81"
+    "@napi-rs/canvas-linux-arm-gnueabihf" "0.1.81"
+    "@napi-rs/canvas-linux-arm64-gnu" "0.1.81"
+    "@napi-rs/canvas-linux-arm64-musl" "0.1.81"
+    "@napi-rs/canvas-linux-riscv64-gnu" "0.1.81"
+    "@napi-rs/canvas-linux-x64-gnu" "0.1.81"
+    "@napi-rs/canvas-linux-x64-musl" "0.1.81"
+    "@napi-rs/canvas-win32-x64-msvc" "0.1.81"
+
 "@ng-bootstrap/ng-bootstrap@17.0.0":
   version "17.0.0"
   resolved "https://registry.npmjs.org/@ng-bootstrap/ng-bootstrap/-/ng-bootstrap-17.0.0.tgz"
@@ -8712,6 +8733,13 @@ pbf@^3.2.1:
   dependencies:
     ieee754 "^1.1.12"
     resolve-protobuf-schema "^2.1.0"
+
+pdfjs-dist@^5.4.296:
+  version "5.4.296"
+  resolved "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-5.4.296.tgz"
+  integrity sha512-DlOzet0HO7OEnmUmB6wWGJrrdvbyJKftI1bhMitK7O2N8W2gc757yyYBbINy9IDafXAV9wmKr9t7xsTaNKRG5Q==
+  optionalDependencies:
+    "@napi-rs/canvas" "^0.1.80"
 
 performance-now@^2.1.0:
   version "2.1.0"

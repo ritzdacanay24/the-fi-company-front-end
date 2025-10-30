@@ -85,6 +85,12 @@ export class ULLabelService {
     return this.http.delete(`${this.API_URL}/usage.php?id=${id}`);
   }
 
+  voidULLabelUsage(id: number, voidReason?: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/usage.php?id=${id}&action=void`, {
+      void_reason: voidReason
+    });
+  }
+
   // Reporting
   getULLabelReport(startDate?: string, endDate?: string): Observable<any> {
     let params = new HttpParams();

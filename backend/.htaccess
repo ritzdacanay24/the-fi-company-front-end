@@ -1,0 +1,3 @@
+# Serve checklist images
+RewriteEngine On
+RewriteRule ^uploads/checklist-images/(.+)$ api/quality/get-checklist-image.php [L,QSA]

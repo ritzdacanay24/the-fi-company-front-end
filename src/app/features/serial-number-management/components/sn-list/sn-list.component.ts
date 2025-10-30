@@ -8,12 +8,13 @@ import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridApi, GridReadyEvent } from 'ag-grid-community';
 import moment from 'moment';
 import { ToastrService } from 'ngx-toastr';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 
 type SerialNumberStatus = 'available' | 'assigned' | 'shipped' | 'returned' | 'defective';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, AgGridModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, AgGridModule, NgbDropdownModule],
   selector: 'app-sn-list',
   templateUrl: './sn-list.component.html',
   styleUrls: ['./sn-list.component.scss']
@@ -198,17 +199,37 @@ export class SnListComponent implements OnInit {
       headerName: 'Actions',
       width: 100,
       pinned: 'right',
+      cellStyle: { 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        padding: '4px'
+      },
       cellRenderer: (params: any) => {
-        return `
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                    type="button" 
-                    data-action="menu" 
-                    data-serial="${params.data.serial_number}">
-              <i class="mdi mdi-dots-vertical"></i>
+        const status = params.data.status;
+        const isConsumed = status !== 'available';
+        
+        if (isConsumed) {
+          return `
+            <button class="btn btn-sm btn-warning" data-action="void" title="Void & Free Serial">
+              <i class="mdi mdi-cancel"></i>
             </button>
-          </div>
-        `;
+          `;
+        } else {
+          return `<span class="text-muted small">Available</span>`;
+        }
+      },
+      onCellClicked: (params: any) => {
+        const target = params.event.target as HTMLElement;
+        const button = target.closest('button');
+        
+        if (button) {
+          const action = button.getAttribute('data-action');
+          
+          if (action === 'void') {
+            this.voidSerial(params.data);
+          }
+        }
       }
     }
   ];
@@ -401,6 +422,31 @@ export class SnListComponent implements OnInit {
     console.log(`Bulk updating ${selected.length} items to ${newStatus}`);
     this.toastr.info(`Updating ${selected.length} serial numbers to ${newStatus}`);
     this.refreshData();
+  }
+
+  // Void serial to make it available again
+  async voidSerial(serialData: SerialNumber) {
+    if (!confirm(`Are you sure you want to void serial number ${serialData.serial_number}?\n\nThis will:\n• Set status back to 'available'\n• Remove assignment references\n• Allow the serial to be reused`)) {
+      return;
+    }
+
+    try {
+      // Update serial to available status
+      await this.serialNumberService.updateSerialNumber(serialData.id!, {
+        ...serialData,
+        status: 'available',
+        assigned_to_table: undefined,
+        assigned_to_id: undefined,
+        assigned_by: undefined,
+        assigned_at: undefined
+      });
+
+      this.toastr.success(`Serial ${serialData.serial_number} has been voided and is now available for reuse`);
+      this.refreshData();
+    } catch (error: any) {
+      console.error('Error voiding serial:', error);
+      this.toastr.error(error.message || 'Failed to void serial number');
+    }
   }
 
   // Export methods

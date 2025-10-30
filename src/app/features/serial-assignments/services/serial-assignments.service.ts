@@ -182,4 +182,131 @@ export class SerialAssignmentsService {
     
     return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
+
+  /**
+   * Get all consumed serials from all sources (comprehensive view)
+   * Includes: serial_assignments, ul_label_usages, agsSerialGenerator, sgAssetGenerator, used igt_serial_numbers
+   */
+  async getAllConsumedSerials(filters?: any): Promise<any> {
+    let params = new HttpParams().set('action', 'get_all_consumed_serials');
+    
+    if (filters) {
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+          params = params.set(key, filters[key].toString());
+        }
+      });
+    }
+    
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * Get consumed serials summary statistics
+   */
+  async getConsumedSerialsSummary(): Promise<any> {
+    const params = new HttpParams().set('action', 'get_consumed_summary');
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * Get daily consumption trend (last 30 days)
+   */
+  async getDailyConsumptionTrend(): Promise<any> {
+    const params = new HttpParams().set('action', 'get_consumption_trend');
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * Get user consumption activity
+   */
+  async getUserConsumptionActivity(): Promise<any> {
+    const params = new HttpParams().set('action', 'get_user_activity');
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * Get work order serial tracking
+   */
+  async getWorkOrderSerials(workOrder?: string): Promise<any> {
+    let params = new HttpParams().set('action', 'get_work_order_serials');
+    
+    if (workOrder) {
+      params = params.set('work_order', workOrder);
+    }
+    
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * VERIFICATION SYSTEM - Create verification session (supports batch mode)
+   */
+  async createVerificationSession(
+    assignmentId: number, 
+    expectedSerial: string | string[], // Can be single serial or array of serials for batch
+    createdBy: string,
+    expectedUl?: string,
+    workflowSessionId?: string // Add workflow session ID parameter
+  ): Promise<any> {
+    const body: any = {
+      assignment_id: assignmentId,
+      created_by: createdBy
+    };
+    
+    // Handle batch mode (array) or single mode (string)
+    if (Array.isArray(expectedSerial)) {
+      body.expected_serials = expectedSerial; // Batch mode
+    } else {
+      body.expected_serial = expectedSerial; // Single mode (backward compatibility)
+    }
+    
+    // Add UL number if provided
+    if (expectedUl) {
+      body.expected_ul = expectedUl;
+    }
+    
+    // Add workflow session ID if provided
+    if (workflowSessionId) {
+      body.workflow_session_id = workflowSessionId;
+    }
+    
+    return await firstValueFrom(
+      this.http.post('verification-session/create-session.php', body)
+    );
+  }
+
+  /**
+   * VERIFICATION SYSTEM - Get verification session status
+   */
+  async getVerificationSession(sessionId: string): Promise<any> {
+    const params = new HttpParams().set('session_id', sessionId);
+    return await firstValueFrom(
+      this.http.get('verification-session/get-session.php', { params })
+    );
+  }
+
+  /**
+   * VERIFICATION SYSTEM - Update verification session
+   */
+  async updateVerificationSession(
+    sessionId: string,
+    capturedSerial?: string,
+    matchResult?: string,
+    photoPath?: string,
+    errorMessage?: string,
+    performedBy?: string
+  ): Promise<any> {
+    const body = {
+      session_id: sessionId,
+      captured_serial: capturedSerial,
+      match_result: matchResult,
+      photo_path: photoPath,
+      error_message: errorMessage,
+      performed_by: performedBy
+    };
+    
+    return await firstValueFrom(
+      this.http.post('verification-session/update-session.php', body)
+    );
+  }
 }

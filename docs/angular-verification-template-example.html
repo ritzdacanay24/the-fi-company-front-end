@@ -1,0 +1,189 @@
+<!-- 
+  Example Angular Template Integration
+  Add this modal to your serial-assignments component template
+-->
+
+<!-- Verification Modal -->
+<div class="verification-modal-overlay" *ngIf="showVerificationModal" (click)="closeVerificationModal()">
+  <div class="verification-modal" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-qrcode"></i>
+        Serial Number Verification
+      </h2>
+      <button class="close-btn" (click)="closeVerificationModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Active Verification State -->
+    <div class="modal-body" *ngIf="verificationStatus === 'active'">
+      
+      <!-- Instructions -->
+      <div class="instruction-box">
+        <h3>📱 Instructions for Tablet User:</h3>
+        <ol>
+          <li>Open tablet companion app or scan QR code below</li>
+          <li>Enter the session ID or scan the QR code</li>
+          <li>Point camera at the physical serial number label</li>
+          <li>Capture photo - verification happens automatically</li>
+        </ol>
+      </div>
+
+      <!-- QR Code Display -->
+      <div class="qr-code-container">
+        <qrcode 
+          *ngIf="currentVerificationSession"
+          [qrdata]="getQRCodeData()" 
+          [width]="300" 
+          [errorCorrectionLevel]="'M'"
+          [elementType]="'canvas'">
+        </qrcode>
+      </div>
+
+      <!-- Session Info -->
+      <div class="session-info">
+        <div class="info-row">
+          <strong>Session ID:</strong>
+          <span class="session-id">{{ currentVerificationSession?.id }}</span>
+          <button class="copy-btn" (click)="copySessionId()" title="Copy to clipboard">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+        
+        <div class="info-row">
+          <strong>Expected Serial:</strong>
+          <span class="serial-number">{{ currentVerificationSession?.expected_serial }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Tablet URL:</strong>
+          <a [href]="getTabletCompanionUrl()" target="_blank">
+            {{ getTabletCompanionUrl() }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Waiting Status -->
+      <div class="waiting-status">
+        <div class="spinner"></div>
+        <p>Waiting for tablet to capture and verify serial...</p>
+        <small>This window will update automatically when verification completes.</small>
+      </div>
+
+    </div>
+
+    <!-- Verified State -->
+    <div class="modal-body" *ngIf="verificationStatus === 'verified'">
+      <div class="result-container success">
+        <i class="fas fa-check-circle"></i>
+        <h3>✅ Verification Successful!</h3>
+        <p>Serial number matches perfectly.</p>
+
+        <div class="result-details">
+          <div class="detail-row">
+            <strong>Expected Serial:</strong>
+            <span>{{ verificationResult?.expected_serial }}</span>
+          </div>
+          <div class="detail-row">
+            <strong>Captured Serial:</strong>
+            <span>{{ verificationResult?.captured_serial }}</span>
+          </div>
+        </div>
+
+        <!-- Show captured photo -->
+        <div class="photo-preview" *ngIf="verificationResult?.photo_path">
+          <img [src]="'/backend/' + verificationResult.photo_path" alt="Verification photo">
+        </div>
+
+        <button class="btn btn-primary" (click)="closeVerificationModal()">
+          <i class="fas fa-check"></i> Done
+        </button>
+      </div>
+    </div>
+
+    <!-- Failed State -->
+    <div class="modal-body" *ngIf="verificationStatus === 'failed'">
+      <div class="result-container error">
+        <i class="fas fa-times-circle"></i>
+        <h3>❌ Verification Failed</h3>
+        <p>The captured serial does not match the expected value.</p>
+
+        <div class="result-details">
+          <div class="detail-row mismatch">
+            <strong>Expected Serial:</strong>
+            <span class="expected">{{ verificationResult?.expected_serial }}</span>
+          </div>
+          <div class="detail-row mismatch">
+            <strong>Captured Serial:</strong>
+            <span class="captured">{{ verificationResult?.captured_serial }}</span>
+          </div>
+        </div>
+
+        <!-- Show captured photo -->
+        <div class="photo-preview" *ngIf="verificationResult?.photo_path">
+          <img [src]="'/backend/' + verificationResult.photo_path" alt="Verification photo">
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-warning" (click)="startSerialVerification(currentVerificationSession?.assignment_id, currentVerificationSession?.expected_serial)">
+            <i class="fas fa-redo"></i> Retry Verification
+          </button>
+          <button class="btn btn-secondary" (click)="closeVerificationModal()">
+            <i class="fas fa-times"></i> Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 
+  Add "Verify" button to assignment rows
+-->
+<div class="assignment-actions">
+  <!-- Existing action buttons -->
+  <button class="btn-action" (click)="editAssignment(assignment)">
+    <i class="fas fa-edit"></i> Edit
+  </button>
+  
+  <button class="btn-action" (click)="voidAssignment(assignment)">
+    <i class="fas fa-ban"></i> Void
+  </button>
+
+  <!-- NEW: Verify button (show if requires verification and not yet verified) -->
+  <button 
+    class="btn-action btn-verify" 
+    *ngIf="requiresVerification(assignment) && assignment.verification_status !== 'verified'"
+    (click)="startSerialVerification(assignment.id, assignment.eyefi_serial_number)"
+    [class.btn-warning]="assignment.verification_status === 'failed'">
+    <i class="fas fa-camera"></i> 
+    {{ assignment.verification_status === 'failed' ? 'Retry Verification' : 'Verify Serial' }}
+  </button>
+
+  <!-- Verification status badge -->
+  <span class="verification-badge" *ngIf="assignment.verification_status">
+    <span class="badge badge-success" *ngIf="assignment.verification_status === 'verified'">
+      <i class="fas fa-check"></i> Verified
+    </span>
+    <span class="badge badge-warning" *ngIf="assignment.verification_status === 'pending'">
+      <i class="fas fa-clock"></i> Pending
+    </span>
+    <span class="badge badge-danger" *ngIf="assignment.verification_status === 'failed'">
+      <i class="fas fa-exclamation-triangle"></i> Failed
+    </span>
+  </span>
+</div>
+
+<!-- 
+  Bulk verification button (for multiple assignments)
+-->
+<div class="bulk-actions" *ngIf="selectedAssignments.length > 0">
+  <button class="btn btn-primary" (click)="bulkVerifyAssignments(selectedAssignments)">
+    <i class="fas fa-camera"></i>
+    Verify {{ selectedAssignments.length }} Serials
+  </button>
+</div>

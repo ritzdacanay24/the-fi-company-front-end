@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Serial Verification - Tablet Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 15px;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .captured-preview {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .status-info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .serial-info {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .serial-info p {
+            margin-bottom: 8px;
+            font-size: 14px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .serial-info strong {
+            color: #667eea;
+        }
+        
+        .serial-info span {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .serial-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            letter-spacing: 2px;
+            margin: 10px 0;
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .qr-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .qr-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .session-timer {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .session-timer.warning {
+            color: #ed8936;
+        }
+
+        .session-timer.danger {
+            color: #f56565;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Serial Verification</h1>
+        <p>Tablet Companion App</p>
+    </div>
+
+    <div class="container">
+        <!-- Step 1: Enter Session ID -->
+        <div id="step-session" class="card">
+            <h2>📱 Connect to Desktop</h2>
+            <p style="margin-bottom: 15px;">Scan the QR code displayed on the desktop or enter the session ID manually:</p>
+            
+            <input type="text" id="sessionIdInput" class="qr-input" placeholder="Enter Session ID or scan QR code">
+            <button onclick="connectSession()" class="btn btn-primary">Connect</button>
+            
+            <div class="status status-info" style="margin-top: 15px;">
+                <strong>📌 Instructions:</strong>
+                <ol style="margin-top: 8px; margin-left: 20px;">
+                    <li>Look at the desktop screen for a QR code</li>
+                    <li>Enter the session ID shown below the QR code</li>
+                    <li>Tap "Connect" to start verification</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Step 2: Camera & Capture -->
+        <div id="step-camera" class="card hidden">
+            <h2>📸 Verify Serial Number</h2>
+            
+            <div class="session-timer" id="sessionTimer">Session Active</div>
+            
+            <div class="serial-info">
+                <p><strong>Expected Serial:</strong></p>
+                <div class="serial-display" id="expectedSerial">-</div>
+                <p><strong>Work Order:</strong> <span id="workOrder">-</span></p>
+            </div>
+
+            <div class="status status-info">
+                <strong>📋 Instructions:</strong><br>
+                1. Point camera at the physical serial number label<br>
+                2. Ensure serial is clearly visible and in focus<br>
+                3. Tap "Capture Photo" when ready
+            </div>
+
+            <div class="video-container">
+                <video id="video" autoplay playsinline></video>
+            </div>
+            <canvas id="canvas"></canvas>
+
+            <button onclick="capturePhoto()" id="captureBtn" class="btn btn-primary">📸 Capture Photo</button>
+            <button onclick="retake()" id="retakeBtn" class="btn btn-danger hidden">🔄 Retake</button>
+
+            <img id="capturedImage" class="captured-preview hidden" alt="Captured photo">
+        </div>
+
+        <!-- Step 3: Verification Result -->
+        <div id="step-result" class="card hidden">
+            <h2>✅ Verification Result</h2>
+            
+            <div id="resultStatus"></div>
+            
+            <div class="serial-info">
+                <p><strong>Expected:</strong> <span id="resultExpected">-</span></p>
+                <p><strong>Captured:</strong> <span id="resultCaptured">-</span></p>
+            </div>
+
+            <img id="resultImage" class="captured-preview" alt="Verification photo">
+
+            <button onclick="resetApp()" class="btn btn-primary">🔄 Verify Another Serial</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="step-loading" class="card hidden">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let sessionData = null;
+        let stream = null;
+        let timerInterval = null;
+        const API_BASE = '/server/Api';
+
+        // Auto-load session from URL parameter
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionParam = urlParams.get('session');
+            
+            if (sessionParam) {
+                // Auto-fill and connect
+                document.getElementById('sessionIdInput').value = sessionParam;
+                connectSession();
+            } else {
+                // Auto-focus session input
+                document.getElementById('sessionIdInput').focus();
+            }
+        });
+
+        async function connectSession() {
+            const input = document.getElementById('sessionIdInput').value.trim();
+            
+            if (!input) {
+                alert('Please enter a session ID');
+                return;
+            }
+
+            // Try to parse as QR code JSON first
+            try {
+                const qrData = JSON.parse(input);
+                sessionId = qrData.session_id;
+            } catch (e) {
+                // Not JSON, treat as plain session ID
+                sessionId = input;
+            }
+
+            showLoading('Connecting to session...');
+
+            try {
+                const response = await fetch(`${API_BASE}/verification-session/get-session.php?session_id=${sessionId}`);
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Server response:', text);
+                    throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+                }
+                
+                // Try to parse JSON
+                let data;
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    throw new Error(`Expected JSON but got: ${text.substring(0, 200)}`);
+                }
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to connect to session');
+                }
+
+                if (data.is_expired || data.seconds_remaining <= 0) {
+                    throw new Error('⏰ Session has expired!\n\nPlease generate a new QR code on the desktop.\nSessions expire after 5 minutes for security.');
+                }
+
+                if (data.session.session_status !== 'active') {
+                    throw new Error('Session is not active (status: ' + data.session.session_status + ')');
+                }
+
+                sessionData = data.session;
+                
+                hideLoading();
+                showCameraStep();
+                startCamera();
+                startTimer(data.seconds_remaining);
+
+            } catch (error) {
+                hideLoading();
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function showCameraStep() {
+            document.getElementById('step-session').classList.add('hidden');
+            document.getElementById('step-camera').classList.remove('hidden');
+            
+            // Handle batch verification (expected_serials is an array)
+            const expectedSerials = sessionData.expected_serials || [sessionData.expected_serial];
+            const serialsDisplay = expectedSerials.join(', ');
+            const serialsCount = expectedSerials.length;
+            
+            document.getElementById('expectedSerial').textContent = serialsDisplay;
+            document.getElementById('workOrder').textContent = sessionData.wo_number || 'Batch Verification';
+            
+            // Update instructions for batch
+            if (serialsCount > 1) {
+                const instructionEl = document.querySelector('#step-camera .status-info');
+                instructionEl.innerHTML = `
+                    <strong>📋 Batch Verification (${serialsCount} serials):</strong><br><br>
+                    <strong>✅ Multiple photos supported!</strong><br>
+                    Don't worry if all serials don't fit in one photo.<br><br>
+                    1. Point camera at as many serial numbers as possible<br>
+                    2. Ensure serials are clearly visible and in focus<br>
+                    3. Tap "Capture Photo" when ready<br>
+                    4. System will tell you how many were captured<br>
+                    5. Take additional photos until all ${serialsCount} serials are found<br><br>
+                    <strong>💡 Tip:</strong> Take photos of different sections of the label(s)
+                `;
+            }
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } 
+                });
+                document.getElementById('video').srcObject = stream;
+            } catch (error) {
+                alert('Cannot access camera: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        function startTimer(secondsRemaining) {
+            const timerEl = document.getElementById('sessionTimer');
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            let remaining = secondsRemaining;
+
+            timerInterval = setInterval(() => {
+                remaining--;
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = '⏰ Session Expired';
+                    timerEl.classList.add('danger');
+                    alert('Session has expired. Please generate a new QR code on the desktop.');
+                    resetApp();
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                timerEl.textContent = `⏱️ Time Remaining: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (remaining <= 30) {
+                    timerEl.classList.add('danger');
+                } else if (remaining <= 60) {
+                    timerEl.classList.add('warning');
+                }
+            }, 1000);
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const capturedImage = document.getElementById('capturedImage');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            capturedImage.src = dataUrl;
+            capturedImage.classList.remove('hidden');
+
+            document.getElementById('video').style.display = 'none';
+            document.getElementById('captureBtn').classList.add('hidden');
+            document.getElementById('retakeBtn').classList.remove('hidden');
+
+            stopCamera();
+
+            // Auto-upload
+            uploadPhoto(dataUrl);
+        }
+
+        function retake() {
+            document.getElementById('video').style.display = 'block';
+            document.getElementById('capturedImage').classList.add('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+
+            startCamera();
+        }
+
+        async function uploadPhoto(dataUrl) {
+            showLoading('Processing photo with OCR...');
+
+            try {
+                // Convert data URL to blob
+                const blob = await (await fetch(dataUrl)).blob();
+
+                const formData = new FormData();
+                formData.append('photo', blob, 'verification.jpg');
+                formData.append('session_id', sessionId);
+
+                // Use the new batch verification endpoint
+                const response = await fetch(`${API_BASE}/verification-session/submit-photo.php`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                hideLoading();
+
+                if (data.success) {
+                    showResult(data);
+                } else {
+                    alert('Verification error: ' + data.error);
+                    retake();
+                }
+
+            } catch (error) {
+                hideLoading();
+                alert('Upload error: ' + error.message);
+                console.error(error);
+                retake();
+            }
+        }
+
+        function showResult(data) {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            document.getElementById('step-camera').classList.add('hidden');
+            document.getElementById('step-result').classList.remove('hidden');
+
+            const statusEl = document.getElementById('resultStatus');
+            const isComplete = data.is_complete;
+            const progress = data.progress;
+
+            if (isComplete) {
+                statusEl.innerHTML = `
+                    <div class="status status-success">
+                        <strong>✅ ALL SERIALS VERIFIED!</strong><br>
+                        Successfully verified all ${progress.expected} serial(s)!
+                    </div>
+                `;
+                document.getElementById('resultExpected').textContent = data.captured_serials.join(', ');
+                document.getElementById('resultCaptured').textContent = `Photo ${data.photo_number}: Found ${data.new_matches.length} serial(s)`;
+                
+                // Show "Verify Another Serial" button for complete
+                document.querySelector('#step-result .btn').textContent = '🔄 Verify Another Serial';
+                document.querySelector('#step-result .btn').onclick = resetApp;
+            } else {
+                const missing = data.missing_serials.join(', ');
+                const missingCount = data.missing_serials.length;
+                statusEl.innerHTML = `
+                    <div class="status status-warning">
+                        <strong>📸 KEEP GOING - ${missingCount} MORE TO GO!</strong><br><br>
+                        <strong>Progress:</strong> Found ${progress.found} of ${progress.expected} serials (${progress.percentage}%)<br><br>
+                        <strong>✅ Already Captured:</strong><br>
+                        ${data.captured_serials.join(', ')}<br><br>
+                        <strong>⏳ Still Need:</strong><br>
+                        ${missing}<br><br>
+                        ${data.message}
+                    </div>
+                `;
+                document.getElementById('resultExpected').textContent = `Still need ${missingCount}: ${missing}`;
+                document.getElementById('resultCaptured').textContent = `This photo found: ${data.new_matches.join(', ') || 'None (already had these)'}`;
+                
+                // Show TWO buttons: "Continue" (take next photo) and "Retake" (redo this photo)
+                const resultCard = document.getElementById('step-result');
+                const buttonContainer = resultCard.querySelector('.btn').parentElement;
+                buttonContainer.innerHTML = `
+                    <button onclick="continueNextPhoto()" class="btn btn-primary">📸 Continue - Capture Next Photo</button>
+                    <button onclick="retakeLastPhoto()" class="btn btn-danger">🔄 Retake This Photo</button>
+                `;
+            }
+
+            document.getElementById('resultImage').src = document.getElementById('capturedImage').src;
+
+            // Play feedback sound
+            playSound(isComplete);
+        }
+
+        function playSound(isSuccess) {
+            // Simple beep using Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = isSuccess ? 800 : 400;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+        
+        /**
+         * Continue to take next photo of remaining serials
+         */
+        function continueNextPhoto() {
+            document.getElementById('step-result').classList.add('hidden');
+            showCameraStep();
+            startCamera();
+        }
+        
+        /**
+         * Retake the last photo (if OCR missed serials that were visible)
+         */
+        function retakeLastPhoto() {
+            document.getElementById('step-result').classList.add('hidden');
+            document.getElementById('step-camera').classList.remove('hidden');
+            
+            // Reset camera to take same shot again
+            document.getElementById('video').style.display = 'block';
+            document.getElementById('capturedImage').classList.add('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            
+            startCamera();
+        }
+
+        function showLoading(text) {
+            document.getElementById('step-session').classList.add('hidden');
+            document.getElementById('step-camera').classList.add('hidden');
+            document.getElementById('step-result').classList.add('hidden');
+            document.getElementById('step-loading').classList.remove('hidden');
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function hideLoading() {
+            document.getElementById('step-loading').classList.add('hidden');
+        }
+
+        function resetApp() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            stopCamera();
+            
+            sessionId = null;
+            sessionData = null;
+
+            document.getElementById('step-session').classList.remove('hidden');
+            document.getElementById('step-camera').classList.add('hidden');
+            document.getElementById('step-result').classList.add('hidden');
+            document.getElementById('sessionIdInput').value = '';
+            document.getElementById('sessionIdInput').focus();
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        });
+    </script>
+</body>
+</html>

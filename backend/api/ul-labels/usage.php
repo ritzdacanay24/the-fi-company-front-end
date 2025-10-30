@@ -211,6 +211,61 @@ class ULUsageAPI {
         }
     }
     
+    // Void usage record - frees the UL label and EyeFi serial
+    public function void($id, $void_reason = null) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // Get usage record details
+            $check_query = "SELECT ul_label_id, ul_number, eyefi_serial_number FROM " . $this->table . " WHERE id = ?";
+            $check_stmt = $this->conn->prepare($check_query);
+            $check_stmt->execute([$id]);
+            $usage = $check_stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$usage) {
+                $this->conn->rollBack();
+                return $this->response(false, null, "Usage record not found", "NOT_FOUND");
+            }
+            
+            // Mark usage as voided
+            $void_query = "UPDATE " . $this->table . " 
+                          SET is_voided = 1, void_reason = ?, void_date = NOW() 
+                          WHERE id = ?";
+            $void_stmt = $this->conn->prepare($void_query);
+            $void_stmt->execute([$void_reason, $id]);
+            
+            // Free the UL label (make it available again)
+            $free_ul_query = "UPDATE ul_labels 
+                             SET status = 'available', is_consumed = 0 
+                             WHERE ul_number = ?";
+            $free_ul_stmt = $this->conn->prepare($free_ul_query);
+            $free_ul_stmt->execute([$usage['ul_number']]);
+            
+            // Free the EyeFi serial number (make it available again)
+            $free_eyefi_query = "UPDATE eyefi_serial_numbers 
+                                SET status = 'available', 
+                                    assigned_to_table = NULL,
+                                    assigned_to_id = NULL,
+                                    assigned_by = NULL,
+                                    assigned_at = NULL
+                                WHERE serial_number = ?";
+            $free_eyefi_stmt = $this->conn->prepare($free_eyefi_query);
+            $free_eyefi_stmt->execute([$usage['eyefi_serial_number']]);
+            
+            $this->conn->commit();
+            
+            return $this->response(true, [
+                'id' => $id,
+                'freed_ul_label' => $usage['ul_number'],
+                'freed_eyefi_serial' => $usage['eyefi_serial_number']
+            ], "Usage record voided and resources freed successfully");
+            
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return $this->response(false, null, "Error voiding usage record: " . $e->getMessage(), "DATABASE_ERROR");
+        }
+    }
+    
     // Delete usage record
     public function delete($id) {
         try {
@@ -264,6 +319,7 @@ try {
     $api = new ULUsageAPI($db);
     $method = $_SERVER['REQUEST_METHOD'];
     $id = isset($_GET['id']) ? intval($_GET['id']) : null;
+    $action = isset($_GET['action']) ? $_GET['action'] : null;
     
     switch ($method) {
         case 'GET':
@@ -275,7 +331,13 @@ try {
             if (!$input) {
                 $result = ['success' => false, 'error' => 'INVALID_REQUEST', 'message' => 'Invalid JSON input'];
             } else {
-                $result = $api->create($input);
+                // Check if this is a void action
+                if ($action === 'void' && $id) {
+                    $void_reason = isset($input['void_reason']) ? $input['void_reason'] : null;
+                    $result = $api->void($id, $void_reason);
+                } else {
+                    $result = $api->create($input);
+                }
             }
             break;
             

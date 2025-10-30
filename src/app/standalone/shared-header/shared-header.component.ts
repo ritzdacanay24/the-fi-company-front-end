@@ -28,10 +28,17 @@ export class SharedHeaderComponent {
   constructor(private router: Router) {}
 
   getUserImageUrl(): string {
-    if (this.currentUser?.image_url) {
-      return this.currentUser.image_url;
+    // Support multiple possible image fields depending on which component provided the user
+    const img = this.currentUser?.image_url || this.currentUser?.image || this.currentUser?.avatar;
+    if (!img) return '';
+
+    // If it's already an absolute url, return as-is. Otherwise prefix with dashboard domain if available.
+    if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
+      return img;
     }
-    return '';
+
+    // Fallback: try to prefix with the known dashboard host
+    return `https://dashboard.eye-fi.com${img}`;
   }
 
   onExtendSession(): void {

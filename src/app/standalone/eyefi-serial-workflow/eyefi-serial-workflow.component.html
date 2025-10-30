@@ -457,13 +457,30 @@
                 </button>
               </div>
 
-              <!-- Auto-populate Info Alert -->
-              <div *ngIf="category === 'new'" class="alert alert-info bg-info bg-opacity-10 border-info mb-4">
-                <div class="d-flex align-items-start">
-                  <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
-                  <div>
-                    <strong><i class="mdi mdi-auto-fix"></i> Auto-Sequence Feature (NEW Category):</strong>
-                    <p class="mb-2 mt-2">
+              <!-- Auto-populate Info Alert - Collapsible -->
+              <div *ngIf="category === 'new'" class="mb-4">
+                <div class="alert alert-info bg-info bg-opacity-10 border-info mb-0">
+                  <div class="d-flex align-items-start justify-content-between">
+                    <div class="d-flex align-items-start flex-grow-1">
+                      <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                      <div class="flex-grow-1">
+                        <strong><i class="mdi mdi-auto-fix"></i> Auto-Sequence Feature (NEW Category)</strong>
+                        <p class="mb-0 mt-1 small">
+                          Serial numbers and UL labels auto-selected in sequence. 
+                          <a href="#" 
+                             class="text-primary fw-semibold text-decoration-none"
+                             (click)="$event.preventDefault(); autoSequenceInfoExpanded = !autoSequenceInfoExpanded">
+                            <i class="mdi" [class.mdi-chevron-down]="!autoSequenceInfoExpanded" [class.mdi-chevron-up]="autoSequenceInfoExpanded"></i> 
+                            {{ autoSequenceInfoExpanded ? 'Hide Details' : 'Read More' }}
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div *ngIf="autoSequenceInfoExpanded" class="mt-3" [@slideDown]>
+                    <hr class="my-2">
+                    <p class="mb-2 small">
                       The system has automatically selected the next {{ quantity }} available serial numbers and UL labels <strong>in sequential order</strong>. This sequence is maintained for inventory tracking integrity.
                     </p>
                     <ul class="mb-2 small">
@@ -471,7 +488,7 @@
                       <li><strong>If physical devices DON'T match:</strong> <span class="text-danger fw-semibold">DO NOT proceed.</span> Contact your supervisor or admin immediately.</li>
                       <li><strong>After admin fixes sequence:</strong> Click the <strong>"Refresh Sequence"</strong> button above to reload the corrected sequence without starting over.</li>
                     </ul>
-                    <div class="alert alert-warning mb-0 mt-3 py-2">
+                    <div class="alert alert-warning mb-0 mt-2 py-2">
                       <small>
                         <i class="mdi mdi-alert-outline me-1"></i>
                         <strong>Why no manual editing?</strong> Sequence integrity is critical for tracking. Mismatches indicate inventory issues that need investigation (mislabeling, incorrect receiving, etc.). Admins will correct the root cause rather than bypassing the sequence.
@@ -510,6 +527,7 @@
                         UL Label Number
                         <span *ngIf="!ulRequired" class="badge bg-warning ms-2" style="font-size: 0.7rem;">Optional</span>
                       </th>
+                      <th *ngIf="requiresVerification()" style="width: 120px;">Verification</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -578,12 +596,85 @@
                           </app-ul-label-search-ng>
                         </div>
                       </td>
+
+                      <!-- Verification Status Column (for all NEW category batches) -->
+                      <td *ngIf="requiresVerification()" class="text-center align-middle">
+                        <span *ngIf="assignment.verified" class="badge bg-success">
+                          <i class="mdi mdi-check-circle"></i> Verified
+                        </span>
+                        <span *ngIf="!assignment.verified && assignment.verificationStatus === 'failed'" class="badge bg-danger">
+                          <i class="mdi mdi-close-circle"></i> Failed
+                        </span>
+                        <span *ngIf="!assignment.verified && !assignment.verificationStatus" class="badge bg-warning">
+                          <i class="mdi mdi-clock-outline"></i> Pending
+                        </span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              <!-- Mismatch Instructions (NEW Category) -->
+              <!-- Verification Button (for ALL customers in NEW category) -->
+              <div *ngIf="requiresVerification()" class="alert alert-primary mt-4">
+                <div class="d-flex align-items-start">
+                  <i class="mdi mdi-security me-3 fs-3"></i>
+                  <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-2">
+                      <i class="mdi mdi-shield-check-outline me-1"></i>
+                      Physical Verification Required (All Pre-Loaded Serials)
+                    </h6>
+                    <p class="mb-3 small">
+                      Since EyeFi serials and UL labels were <strong>automatically pre-loaded from sequence</strong>, you must physically verify each serial number matches the actual device before proceeding. This prevents costly sequence mismatches.
+                    </p>
+                    
+                    <!-- Verification Progress -->
+                    <div *ngIf="verificationProgress.total > 0" class="mb-3">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">Verification Progress</small>
+                        <strong>{{ getVerifiedCount() }} / {{ serialAssignments.length }} verified</strong>
+                      </div>
+                      <div class="progress" style="height: 8px;">
+                        <div 
+                          class="progress-bar bg-success" 
+                          role="progressbar" 
+                          [style.width.%]="(getVerifiedCount() / serialAssignments.length) * 100">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                      <button 
+                        type="button" 
+                        class="btn btn-primary btn-lg"
+                        (click)="startBatchVerification()"
+                        [disabled]="isVerifying || allSerialsVerified()">
+                        <i class="mdi mdi-qrcode-scan me-2"></i>
+                        {{ allSerialsVerified() ? 'All Serials Verified ✓' : (isVerifying ? 'Verification In Progress...' : 'Start Verification') }}
+                      </button>
+                      
+                      <button 
+                        *ngIf="!allSerialsVerified() && hasSomeVerified()"
+                        type="button" 
+                        class="btn btn-outline-primary btn-lg"
+                        (click)="startBatchVerification()"
+                        [disabled]="isVerifying">
+                        <i class="mdi mdi-play me-2"></i>
+                        Continue Verification
+                      </button>
+                    </div>
+
+                    <div *ngIf="!allSerialsVerified()" class="mt-3">
+                      <small class="text-muted">
+                        <i class="mdi mdi-information-outline me-1"></i>
+                        <strong>Note:</strong> You cannot proceed to Step 5 until all serials are physically verified with a tablet device.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mismatch Instructions (NEW Category) - Collapsible -->
               <div *ngIf="category === 'new'" class="alert alert-danger mt-3">
                 <div class="d-flex align-items-start">
                   <i class="mdi mdi-alert-circle fs-3 me-3"></i>
@@ -592,29 +683,42 @@
                       <i class="mdi mdi-file-alert-outline me-1"></i>
                       Found a Mismatch Between Physical and System Sequence?
                     </h6>
-                    <p class="mb-2 small">
-                      <strong>STOP</strong> - Do not proceed with the workflow. Report the mismatch immediately so admin can investigate.
-                    </p>
-                    <ul class="mb-3 small">
-                      <li><strong>EyeFi Serial:</strong> What the system shows vs physical device</li>
-                      <li><strong>UL Label:</strong> What the system shows vs physical label</li>
-                      <li><strong>Row Number:</strong> Which position in the sequence</li>
-                      <li><strong>Work Order:</strong> {{ workOrderNumber }}</li>
-                    </ul>
-                    
-                    <!-- Report Mismatch Button -->
-                    <button 
-                      type="button" 
-                      class="btn btn-warning btn-lg w-100 mb-2"
-                      (click)="openMismatchReportModal('step4')">
-                      <i class="mdi mdi-file-alert me-2"></i>
-                      Report Sequence Mismatch
-                    </button>
-                    
                     <p class="mb-0 small">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      <strong>Why this matters:</strong> Sequence mismatches indicate inventory tracking issues (incorrect receiving, mislabeling, already consumed, etc.). Admin will investigate and correct the root cause to maintain data integrity.
+                      <strong>STOP</strong> - If your physical devices don't match the system sequence, report it immediately. 
+                      <a href="#" 
+                         class="text-white fw-semibold text-decoration-underline"
+                         (click)="$event.preventDefault(); mismatchReportExpanded = !mismatchReportExpanded">
+                        <i class="mdi" [class.mdi-chevron-down]="!mismatchReportExpanded" [class.mdi-chevron-up]="mismatchReportExpanded"></i> 
+                        {{ mismatchReportExpanded ? 'Hide Details' : 'Show Details' }}
+                      </a>
                     </p>
+                    
+                    <div *ngIf="mismatchReportExpanded" class="mt-3">
+                      <hr class="border-light my-3">
+                      <p class="mb-2 small">
+                        Report mismatches immediately so admin can investigate the root cause.
+                      </p>
+                      <ul class="mb-3 small">
+                        <li><strong>EyeFi Serial:</strong> What the system shows vs physical device</li>
+                        <li><strong>UL Label:</strong> What the system shows vs physical label</li>
+                        <li><strong>Row Number:</strong> Which position in the sequence</li>
+                        <li><strong>Work Order:</strong> {{ workOrderNumber }}</li>
+                      </ul>
+                      
+                      <!-- Report Mismatch Button -->
+                      <button 
+                        type="button" 
+                        class="btn btn-warning btn-lg w-100 mb-2"
+                        (click)="openMismatchReportModal('step4')">
+                        <i class="mdi mdi-file-alert me-2"></i>
+                        Report Sequence Mismatch
+                      </button>
+                      
+                      <p class="mb-0 small">
+                        <i class="mdi mdi-information-outline me-1"></i>
+                        <strong>Why this matters:</strong> Sequence mismatches indicate inventory tracking issues (incorrect receiving, mislabeling, already consumed, etc.). Admin will investigate and correct the root cause to maintain data integrity.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1013,13 +1117,13 @@
             <!-- Step 5: Submit buttons (only shown before submission) -->
             <div *ngIf="currentStep === 5 && !submissionComplete" class="d-flex gap-2">
               <!-- Test Submit Button -->
-              <button class="btn btn-warning" 
+              <!-- <button class="btn btn-warning" 
                       type="button" 
                       (click)="testSubmit()" 
                       [disabled]="isLoading">
                 <i class="mdi mdi-test-tube me-1"></i>
                 Test Submit (Preview)
-              </button>
+              </button> -->
               
               <!-- Real Submit Button -->
               <button class="btn btn-success btn" 
@@ -1513,3 +1617,164 @@
     </button>
   </div>
 </ng-template>
+
+<!-- Verification Modal -->
+<div *ngIf="showVerificationModal" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-qrcode-scan me-2"></i>
+          Physical Serial Verification
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeVerificationModal()"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Progress Indicator -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">Verifying Serial</small>
+            <strong class="text-primary">
+              {{ verificationProgress.current }} of {{ verificationProgress.total }}
+            </strong>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div 
+              class="progress-bar bg-primary progress-bar-striped progress-bar-animated" 
+              [style.width.%]="(verificationProgress.current / verificationProgress.total) * 100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Serial Being Verified -->
+        <div *ngIf="currentVerificationIndex !== null" class="alert alert-info mb-4">
+          <h6 class="mb-2">
+            <i class="mdi mdi-barcode me-2"></i>
+            Verifying Serial #{{ currentVerificationIndex + 1 }}
+          </h6>
+          <div class="row">
+            <div class="col-md-6">
+              <small class="text-muted d-block">EyeFi Serial:</small>
+              <strong>{{ serialAssignments[currentVerificationIndex].serial?.serial_number || serialAssignments[currentVerificationIndex].serial }}</strong>
+            </div>
+            <div class="col-md-6">
+              <small class="text-muted d-block">UL Label:</small>
+              <strong>{{ serialAssignments[currentVerificationIndex].ulNumber?.ul_number || 'N/A' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Code Display -->
+        <div *ngIf="currentVerificationSession && verificationStatus !== 'Verified ✓'" class="text-center mb-4">
+          <h6 class="mb-3">
+            <i class="mdi mdi-tablet me-2"></i>
+            Scan QR Code with Tablet
+          </h6>
+          
+          <!-- QR Code -->
+          <div class="bg-light p-4 rounded mx-auto" style="max-width: 300px;">
+            <div class="bg-white p-3 border border-2 rounded">
+              <!-- QR Code using angularx-qrcode -->
+              <qrcode 
+                [qrdata]="getVerificationQRCodeUrl()" 
+                [width]="250" 
+                [errorCorrectionLevel]="'M'"
+                [margin]="1"
+                [cssClass]="'qr-code-center'">
+              </qrcode>
+            </div>
+          </div>
+
+          <p class="text-muted small mt-3 mb-1">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Open camera app on tablet and scan QR code above
+          </p>
+          <p class="text-muted small mb-0">
+            Or visit: <code>{{ getVerificationQRCodeUrl() }}</code>
+          </p>
+        </div>
+
+        <!-- Status Message -->
+        <div class="text-center mb-4">
+          <div *ngIf="verificationStatus === 'Creating verification session...'" class="spinner-border text-primary mb-2"></div>
+          <div *ngIf="verificationStatus === 'Waiting for tablet verification...'" class="spinner-border text-primary mb-2"></div>
+          <div *ngIf="verificationStatus === 'Verified ✓'" class="text-success mb-2">
+            <i class="mdi mdi-check-circle" style="font-size: 48px;"></i>
+          </div>
+          <div *ngIf="verificationStatus === 'Mismatch detected ✗'" class="text-danger mb-2">
+            <i class="mdi mdi-alert-circle" style="font-size: 48px;"></i>
+          </div>
+          <div *ngIf="verificationStatus === 'Verification failed ✗'" class="text-danger mb-2">
+            <i class="mdi mdi-close-circle" style="font-size: 48px;"></i>
+          </div>
+          <div *ngIf="verificationStatus === 'Session expired ⏱'" class="text-warning mb-2">
+            <i class="mdi mdi-clock-alert" style="font-size: 48px;"></i>
+          </div>
+          
+          <p class="mb-0">
+            <strong>{{ verificationStatus }}</strong>
+          </p>
+        </div>
+
+        <!-- Session Timer -->
+        <div *ngIf="verificationSessionExpiry && verificationStatus === 'Waiting for tablet verification...'" class="alert alert-warning text-center">
+          <i class="mdi mdi-timer-sand me-2"></i>
+          <strong>Time Remaining:</strong> {{ getVerificationTimeRemaining() }}
+        </div>
+
+        <!-- Instructions -->
+        <div *ngIf="verificationStatus === 'Waiting for tablet verification...'" class="alert alert-secondary">
+          <h6 class="mb-2">
+            <i class="mdi mdi-help-circle-outline me-2"></i>
+            Instructions
+          </h6>
+          <ol class="mb-0 small">
+            <li>Open tablet camera app or browser</li>
+            <li>Scan the QR code above</li>
+            <li>Point tablet camera at physical serial number label</li>
+            <li>Capture photo of the serial number</li>
+            <li>Wait for system to verify (auto-detects number)</li>
+            <li>Result will appear here automatically</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="closeVerificationModal()"
+          [disabled]="isVerifying">
+          {{ verificationStatus === 'Verified ✓' ? 'Close' : 'Cancel' }}
+        </button>
+        
+        <button 
+          *ngIf="verificationStatus && verificationStatus !== 'Verified ✓' && verificationStatus !== 'Waiting for tablet verification...'"
+          type="button" 
+          class="btn btn-warning" 
+          (click)="retryVerification()">
+          <i class="mdi mdi-refresh me-1"></i>
+          Try Again
+        </button>
+
+        <button 
+          *ngIf="verificationStatus === 'Mismatch detected ✗'"
+          type="button" 
+          class="btn btn-danger" 
+          (click)="closeVerificationModal(); openMismatchReportModal('step4')">
+          <i class="mdi mdi-file-alert me-1"></i>
+          Report Mismatch
+        </button>
+
+        <button 
+          *ngIf="verificationStatus === 'Waiting for tablet verification...'"
+          type="button" 
+          class="btn btn-outline-secondary" 
+          (click)="skipVerification()">
+          Skip (Not Recommended)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
