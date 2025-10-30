@@ -778,14 +778,16 @@ class SerialAssignmentsAPI {
                             part_number,
                             wo_number,
                             wo_description,
+                            wo_qty_ord,
                             cp_cust_part,
                             cp_cust,
+                            inspector_name,
                             status,
                             consumed_at,
                             consumed_by,
                             is_voided,
                             verification_status
-                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
+                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
                     ";
                     
                     // Customer name goes into cp_cust field
@@ -801,8 +803,10 @@ class SerialAssignmentsAPI {
                         $assignment['partNumber'] ?? null,             // part_number
                         $assignment['wo_number'] ?? null,              // wo_number
                         $assignment['wo_description'] ?? null,         // wo_description
+                        $assignment['wo_qty_ord'] ?? null,             // wo_qty_ord (quantity ordered)
                         $assignment['cp_cust_part'] ?? null,           // cp_cust_part (customer part number)
                         $customerName,                                 // cp_cust (customer name)
+                        $performedBy,                                  // inspector_name
                         $performedBy                                   // consumed_by
                     ]);
 
