@@ -439,22 +439,25 @@
                           type="checkbox" 
                           id="verification-enabled"
                           [(ngModel)]="verificationEnabled"
-                          [disabled]="isLoading || category !== 'new'">
+                          [disabled]="isLoading">
                         <label class="form-check-label fw-semibold" for="verification-enabled">
                           <i class="mdi mdi-shield-check me-1"></i>
-                          Enable Physical Verification (NEW Category Only)
+                          Enable Physical Verification
                         </label>
                       </div>
                       <div class="form-text ms-4">
                         <i class="mdi mdi-information-outline me-1"></i>
                         <span *ngIf="verificationEnabled && category === 'new'" class="text-success">
-                          <strong>Verification enabled:</strong> You will be required to physically verify each pre-loaded serial number with a tablet device.
+                          <strong>Verification enabled:</strong> You will be required to physically verify each pre-loaded EyeFi serial number and UL label with a tablet device.
+                        </span>
+                        <span *ngIf="verificationEnabled && category === 'used'" class="text-success">
+                          <strong>Verification enabled:</strong> You will be required to physically verify each pre-loaded UL label with a tablet device (EyeFi serials are manually entered).
                         </span>
                         <span *ngIf="!verificationEnabled && category === 'new'" class="text-warning">
-                          <strong>Verification disabled:</strong> Pre-loaded serials can be submitted without physical verification.
+                          <strong>Verification disabled:</strong> Pre-loaded serials and UL labels can be submitted without physical verification.
                         </span>
-                        <span *ngIf="category === 'used'" class="text-muted">
-                          <strong>Not applicable:</strong> Verification is only available for NEW category (pre-loaded serials).
+                        <span *ngIf="!verificationEnabled && category === 'used'" class="text-warning">
+                          <strong>Verification disabled:</strong> Pre-loaded UL labels can be submitted without physical verification.
                         </span>
                       </div>
                     </div>
@@ -598,36 +601,20 @@
                       
                       <!-- UL Number Column -->
                       <td>
-                        <!-- NEW Category: Read-only (strict sequence) -->
-                        <div *ngIf="category === 'new'">
-                          <div *ngIf="assignment.ulNumber" class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                              <strong class="text-info">{{ assignment.ulNumber?.ul_number }}</strong>
-                              <span class="text-muted ms-2 small">- {{ assignment.ulNumber?.category }}</span>
-                              <span class="badge bg-success ms-2" style="font-size: 0.7rem;">
-                                <i class="mdi mdi-lock"></i> Sequence {{ i + 1 }}
-                              </span>
-                            </div>
-                          </div>
-                          <div *ngIf="!assignment.ulNumber && !ulRequired" class="text-muted fst-italic">
-                            <small>
-                              <i class="mdi mdi-minus-circle me-1"></i>No UL (Optional)
-                            </small>
+                        <!-- Both NEW and USED: Read-only (strict sequence) - UL labels are ALWAYS auto-populated -->
+                        <div *ngIf="assignment.ulNumber" class="d-flex align-items-center">
+                          <div class="flex-grow-1">
+                            <strong class="text-info">{{ assignment.ulNumber?.ul_number }}</strong>
+                            <span class="text-muted ms-2 small">- {{ assignment.ulNumber?.category }}</span>
+                            <span class="badge bg-success ms-2" style="font-size: 0.7rem;">
+                              <i class="mdi mdi-lock"></i> Sequence {{ i + 1 }}
+                            </span>
                           </div>
                         </div>
-
-                        <!-- USED Category: Editable (manual entry) -->
-                        <div *ngIf="category === 'used'">
-                          <app-ul-label-search-ng
-                            [category]="category"
-                            [status]="'available'"
-                            [showLabel]="false"
-                            [showHelpText]="false"
-                            [(ngModel)]="assignment.ulNumber"
-                            (notifyParent)="onULAssigned(i, $event)"
-                            [disabled]="isLoadingULs || isLoading"
-                            [placeholder]="ulRequired ? 'Search UL label number...' : 'Search UL label (optional)...'">
-                          </app-ul-label-search-ng>
+                        <div *ngIf="!assignment.ulNumber && !ulRequired" class="text-muted fst-italic">
+                          <small>
+                            <i class="mdi mdi-minus-circle me-1"></i>No UL (Optional)
+                          </small>
                         </div>
                       </td>
 
@@ -648,17 +635,21 @@
                 </table>
               </div>
 
-              <!-- Verification Button (for ALL customers in NEW category) -->
+              <!-- Verification Button -->
               <div *ngIf="requiresVerification()" class="alert alert-primary mt-4">
                 <div class="d-flex align-items-start">
                   <i class="mdi mdi-security me-3 fs-3"></i>
                   <div class="flex-grow-1">
                     <h6 class="alert-heading mb-2">
                       <i class="mdi mdi-shield-check-outline me-1"></i>
-                      Physical Verification Required (All Pre-Loaded Serials)
+                      <span *ngIf="category === 'new'">Physical Verification Required (EyeFi Serials + UL Labels)</span>
+                      <span *ngIf="category === 'used'">Physical Verification Required (UL Labels Only)</span>
                     </h6>
-                    <p class="mb-3 small">
+                    <p class="mb-3 small" *ngIf="category === 'new'">
                       Since EyeFi serials and UL labels were <strong>automatically pre-loaded from sequence</strong>, you must physically verify each serial number matches the actual device before proceeding. This prevents costly sequence mismatches.
+                    </p>
+                    <p class="mb-3 small" *ngIf="category === 'used'">
+                      Since UL labels were <strong>automatically pre-loaded from sequence</strong>, you must physically verify each UL label matches the actual device before proceeding. EyeFi serials are manually entered and do not require verification.
                     </p>
                     
                     <!-- Verification Progress -->

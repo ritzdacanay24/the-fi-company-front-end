@@ -22,16 +22,16 @@ import {
   providedIn: 'root'
 })
 export class MindeeService {
-  private readonly baseUrl = 'https://api-v2.mindee.net/v2';
+  private readonly baseUrl = 'https://api.mindee.net/v1';
   private readonly defaultRetries = 2;
   private readonly maxPollingAttempts = 60; // 60 attempts = 5 minutes with 5-second intervals
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Parse expense receipt using Mindee API V2
+   * Parse expense receipt using Mindee API V2 (Off-the-Shelf API)
    * @param file - The image file to analyze  
-   * @param modelId - Model ID for expense receipts (get from Mindee platform)
+   * @param modelId - Not used for off-the-shelf API
    * @param options - Optional request parameters
    * @returns Promise with parsed expense receipt data
    */
@@ -40,16 +40,15 @@ export class MindeeService {
     modelId?: string,
     options?: MindeeRequestOptions
   ): Promise<MindeeApiResponse<ExpenseReceiptPrediction>> {
-    // Use your specific expense receipt model ID if not provided  
-    const finalModelId = modelId || '8b1554d0-5762-4be9-a43c-ba5b9bf2f2c2';
-    
-    return this.enqueueInference(file, finalModelId, options);
+    // Use custom trained model with your model ID
+    const customModelId = 'c3254c99-5d36-4f4d-85b5-16066a62f865';
+    return this.enqueueInference<ExpenseReceiptPrediction>(file, customModelId, options);
   }
 
   /**
-   * Parse invoice using Mindee API V2
+   * Parse invoice using Mindee API V2 (Off-the-Shelf API)
    * @param file - The image/PDF file to analyze
-   * @param modelId - Model ID for invoices (get from Mindee platform)
+   * @param modelId - Not used for off-the-shelf API
    * @param options - Optional request parameters
    * @returns Promise with parsed invoice data
    */
@@ -58,8 +57,56 @@ export class MindeeService {
     modelId?: string,
     options?: MindeeRequestOptions
   ): Promise<MindeeApiResponse<InvoicePrediction>> {
-    const finalModelId = modelId || 'mindee/invoices';
-    return this.enqueueInference(file, finalModelId, options);
+    return this.parseDocument(file, 'invoices', 'v4', options);
+  }
+
+  /**
+   * Parse document using Mindee's off-the-shelf API
+   * @param file - The file to analyze
+   * @param productName - Product name (e.g., 'expense_receipts', 'invoices')
+   * @param version - API version (e.g., 'v5', 'v4')
+   * @param options - Optional request parameters
+   * @returns Promise with parsed document data
+   */
+  async parseDocument<T = any>(
+    file: File,
+    productName: string,
+    version: string,
+    options?: MindeeRequestOptions
+  ): Promise<MindeeApiResponse<T>> {
+    this.validateFile(file);
+
+    const formData = new FormData();
+    formData.append('document', file);
+
+    // Mindee off-the-shelf API endpoint format: /v1/products/{account}/{product}/{version}/predict
+    // For off-the-shelf products, account is 'mindee'
+    const url = `${this.baseUrl}/products/mindee/${productName}/${version}/predict`;
+    
+    console.log('Mindee API Request:', {
+      url,
+      productName,
+      version,
+      fileSize: file.size,
+      fileType: file.type
+    });
+    
+    try {
+      const response = await firstValueFrom(
+        this.http.post<MindeeApiResponse<T>>(url, formData, {
+          headers: this.buildHeaders()
+        }).pipe(
+          retry(this.defaultRetries),
+          catchError(this.handleError.bind(this))
+        )
+      );
+
+      console.log('Mindee API Response:', response);
+      return response;
+    } catch (error) {
+      console.error('Mindee API Error:', error);
+      throw this.handleError(error);
+    }
   }
 
   /**
@@ -110,7 +157,10 @@ export class MindeeService {
   ): Promise<any> {
     const formData = this.buildV2FormData(file, modelId, options);
     const headers = this.buildHeaders();
-    const url = `${this.baseUrl}/inferences/enqueue`;
+    const url = 'https://api-v2.mindee.net/v2/inferences/enqueue';
+
+    console.log('[Mindee] Enqueue URL:', url);
+    console.log('[Mindee] Model ID:', modelId);
 
     try {
       const response = await firstValueFrom(
@@ -135,7 +185,7 @@ export class MindeeService {
    */
   private async pollJobCompletion(jobId: string): Promise<any> {
     const headers = this.buildHeaders();
-    const url = `${this.baseUrl}/jobs/${jobId}`;
+    const url = `https://api-v2.mindee.net/v2/jobs/${jobId}`;
     
     let attempts = 0;
     
@@ -243,13 +293,13 @@ export class MindeeService {
   }
 
   /**
-   * Build proper HTTP headers for Mindee V2 API
+   * Build proper HTTP headers for Mindee API
    */
   private buildHeaders(): HttpHeaders {
     const apiKey = this.getApiKey();
     
     return new HttpHeaders({
-      'Authorization': apiKey  // V2 API uses direct API key
+      'Authorization': apiKey  // Just the raw API key
       // Note: Don't set Content-Type for FormData - let browser handle it
     });
   }
@@ -283,7 +333,8 @@ export class MindeeService {
    */
   private isValidApiKeyFormat(apiKey: string): boolean {
     // Mindee API keys typically start with 'md_' followed by alphanumeric characters
-    return /^md_[A-Za-z0-9]{20,}$/.test(apiKey);
+    // Relaxed validation to allow different key lengths
+    return /^md_[A-Za-z0-9_-]{10,}$/.test(apiKey);
   }
 
   /**

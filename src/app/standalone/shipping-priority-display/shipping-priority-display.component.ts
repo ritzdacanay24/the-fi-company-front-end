@@ -27,7 +27,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   currentTime: string = '';
   
   // Display mode options
-  displayMode: 'single' | 'top3' = 'single';
+  displayMode: 'single' | 'top3' = 'top3';
   
   // Subscriptions management
   private destroy$ = new Subject<void>();
@@ -102,7 +102,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
           this.displayMode = viewParam;
           console.log(`🔗 Display mode set from URL: ${this.displayMode}`);
         } else {
-          this.displayMode = 'single'; // default
+          this.displayMode = 'top3'; // default
           console.log('🔗 No valid view parameter, using default: single');
         }
         

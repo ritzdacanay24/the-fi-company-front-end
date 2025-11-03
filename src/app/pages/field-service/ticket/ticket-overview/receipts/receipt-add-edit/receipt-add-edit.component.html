@@ -1,27 +1,205 @@
 <div class="modal-header bg-primary bg-gradient border-bottom border-none position-relative overflow-hidden">
-  <h5 class="modal-title text-white d-flex align-items-center">
-    <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-      style="width: 2.5rem; height: 2.5rem;">
-      <i class="mdi mdi-receipt fs-4 text-white"></i>
-    </span>
-    {{id ? 'Edit' : 'Add'}} Receipt
-  </h5>
-  <!-- Transparent decorative icon on the right -->
-  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1;">
-    <i class="mdi mdi-receipt" style="font-size: 8rem; transform: rotate(15deg);"></i>
+  <div class="d-flex align-items-center justify-content-between w-100">
+    <!-- Left: Title -->
+    <h5 class="modal-title text-white d-flex align-items-center mb-0">
+      <span class="bg-white bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
+        style="width: 2.5rem; height: 2.5rem;">
+        <i class="mdi fs-4 text-white" [class.mdi-receipt]="!batchMode" [class.mdi-receipt-text-outline]="batchMode"></i>
+      </span>
+      {{id ? 'Edit' : (batchMode ? 'Batch Upload' : 'Add')}} Receipt{{batchMode ? 's' : ''}}
+    </h5>
+    
+    <!-- Right: Controls -->
+    <div class="d-flex align-items-center gap-3">
+      <div class="form-check form-switch form-switch-md mb-0" *ngIf="!id">
+        <input class="form-check-input" type="checkbox" id="batchModeSwitch" [(ngModel)]="batchMode" (change)="toggleBatchMode()">
+        <label class="form-check-label text-white small mb-0" for="batchModeSwitch">Batch</label>
+      </div>
+      <div class="form-check form-switch form-switch-md mb-0">
+        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="autoExtract">
+        <label class="form-check-label text-white small mb-0" for="flexSwitchCheckDefault">Auto Extract</label>
+      </div>
+      <button type="button" class="btn-close btn-close-white position-relative" style="z-index: 1;" (click)="dismiss()" aria-label="Close"></button>
+    </div>
   </div>
   
-  <div class="d-flex align-items-center gap-3 ms-auto">
-    <div class="form-check form-switch form-switch-md">
-      <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" [(ngModel)]="autoExtract">
-      <label class="form-check-label text-white small" for="flexSwitchCheckDefault">Auto Extract</label>
-    </div>
-    <button type="button" class="btn-close btn-close-white position-relative" style="z-index: 1;" (click)="dismiss()" aria-label="Close"></button>
+  <!-- Transparent decorative icon on the right -->
+  <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.1; pointer-events: none;">
+    <i class="mdi mdi-receipt" style="font-size: 8rem; transform: rotate(15deg);"></i>
   </div>
 </div>
 
+<style>
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  .receipt-batch-list {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .card-header:hover {
+    background-color: #f0f0f0 !important;
+  }
+</style>
+
 <div class="modal-body">
-  <form [formGroup]="form">
+  <!-- ========== BATCH MODE ========== -->
+  <div *ngIf="batchMode && !id">
+    <!-- Upload Section for Batch -->
+    <div class="text-center mb-4" *ngIf="batchReceipts.length === 0">
+      <div class="card border-2 border-dashed border-secondary rounded p-4">
+        <i class="mdi mdi-cloud-upload-outline text-muted mb-2" style="font-size: 2.5rem;"></i>
+        <h6 class="text-muted">Upload Multiple Receipts</h6>
+        <p class="text-muted small mb-0">Select multiple files at once or take photos one by one</p>
+      </div>
+    </div>
+
+    <!-- Upload Buttons for Batch -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex gap-2 justify-content-center">
+          <label class="btn btn-outline-primary flex-fill" for="batch-folder" style="max-width: 250px;">
+            <input type="file" class="d-none" accept="image/*" id="batch-folder" multiple
+              (change)="handleFileInput($any($event.target).files)">
+            <i class="mdi mdi-folder-multiple me-2"></i>Select Multiple
+          </label>
+          <label class="btn btn-primary flex-fill" for="batch-camera" style="max-width: 250px;">
+            <input capture="environment" type="file" accept="image/*" class="d-none" id="batch-camera" multiple
+              (change)="handleFileInput($any($event.target).files)">
+            <i class="mdi mdi-camera-plus me-2"></i>Take Multiple Photos
+          </label>
+        </div>
+        <small class="text-muted d-block text-center mt-2">
+          💡 Tip: Use "Select Multiple" to choose many files at once from your gallery
+        </small>
+      </div>
+    </div>
+
+    <!-- Processing Progress -->
+    <div class="alert alert-info border-0 mb-4" *ngIf="batchProcessingProgress.total > 0 && batchProcessingProgress.current < batchProcessingProgress.total">
+      <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+        <div class="flex-grow-1">
+          <strong>Processing receipts...</strong> {{batchProcessingProgress.current}} / {{batchProcessingProgress.total}}
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                 [style.width.%]="(batchProcessingProgress.current / batchProcessingProgress.total) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch Receipt List -->
+    <div class="receipt-batch-list" *ngIf="batchReceipts.length > 0">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0">
+          <i class="mdi mdi-receipt-text-check me-2"></i>
+          Receipts to Upload ({{batchReceipts.length}})
+        </h6>
+        <button class="btn btn-sm btn-outline-secondary" (click)="collapseAllReceipts()">
+          <i class="mdi mdi-unfold-less-horizontal me-1"></i>Collapse All
+        </button>
+      </div>
+
+      <!-- Individual Receipt Cards -->
+      <div *ngFor="let receipt of batchReceipts; let i = index" class="card mb-3 border" 
+           [class.border-danger]="!receipt.form.valid && receipt.form.touched"
+           [class.border-success]="receipt.form.valid">
+        
+        <!-- Receipt Header (Always Visible) -->
+        <div class="card-header bg-light d-flex align-items-center justify-content-between cursor-pointer" 
+             (click)="toggleBatchReceipt(i)">
+          <div class="d-flex align-items-center flex-grow-1">
+            <img [src]="receipt.url" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;" 
+                 *ngIf="receipt.url">
+            <div class="spinner-border spinner-border-sm me-3" *ngIf="receipt.isProcessing"></div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2">
+                <strong>Receipt #{{i + 1}}</strong>
+                <span class="badge bg-success" *ngIf="receipt.form.valid">✓ Valid</span>
+                <span class="badge bg-danger" *ngIf="!receipt.form.valid && receipt.form.touched">⚠ Incomplete</span>
+                <span class="badge bg-warning" *ngIf="receipt.isProcessing">Processing...</span>
+              </div>
+              <small class="text-muted d-block mt-1">
+                {{receipt.form.get('vendor_name')?.value || 'Unknown Vendor'}} - 
+                {{receipt.form.get('cost')?.value ? ('$' + receipt.form.get('cost')?.value) : 'No amount'}}
+              </small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeBatchReceipt(i); $event.stopPropagation()">
+              <i class="mdi mdi-delete"></i>
+            </button>
+            <i class="mdi" [class.mdi-chevron-down]="!receipt.isExpanded" [class.mdi-chevron-up]="receipt.isExpanded"></i>
+          </div>
+        </div>
+
+        <!-- Receipt Body (Expandable) -->
+        <div class="card-body" *ngIf="receipt.isExpanded" [@slideDown]>
+          <form [formGroup]="receipt.form">
+            <!-- Error Message -->
+            <div class="alert alert-warning border-0 mb-3" *ngIf="receipt.error">
+              <i class="mdi mdi-alert me-2"></i>{{receipt.error}}
+            </div>
+
+            <!-- Image Preview -->
+            <div class="text-center mb-3">
+              <img [src]="receipt.url" class="img-fluid rounded border" style="max-height: 200px;">
+            </div>
+
+            <!-- Form Fields -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">
+                  <i class="mdi mdi-currency-usd me-1"></i>Total Amount
+                  <span *ngIf="receipt.predictInfo" class="badge ms-2" 
+                        [class]="(receipt.predictInfo?.inference?.prediction?.total_incl?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
+                    {{(receipt.predictInfo?.inference?.prediction?.total_incl?.confidence * 100) || 0}}%
+                  </span>
+                </label>
+                <input type="tel" class="form-control" placeholder="Enter total amount" formControlName="cost">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">
+                  <i class="mdi mdi-bookmark me-1"></i>Category
+                </label>
+                <ng-select [items]="receiptOptions" formControlName="name" placeholder="Select category" [addTag]="true">
+                </ng-select>
+              </div>
+
+              <div class="col-12 mb-3">
+                <label class="form-label">
+                  <i class="mdi mdi-store me-1"></i>Vendor Name
+                </label>
+                <input type="search" class="form-control" placeholder="Ex) Lowes, Shell, Enterprise"
+                  formControlName="vendor_name">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">
+                  <i class="mdi mdi-calendar me-1"></i>Receipt Date
+                </label>
+                <input type="date" class="form-control" placeholder="Date" formControlName="date">
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label required">
+                  <i class="mdi mdi-clock me-1"></i>Receipt Time
+                </label>
+                <input step="600" type="time" class="form-control" placeholder="time" formControlName="time">
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SINGLE MODE (EXISTING) ========== -->
+  <form [formGroup]="form" *ngIf="!batchMode || id">
     <!-- Image Preview Section -->
     <div class="text-center mb-4" *ngIf="url || link">
       <div class="card border-2 border-dashed border-primary rounded p-3" style="max-width: 200px; margin: 0 auto;">
@@ -113,7 +291,7 @@
         <label class="form-label required d-flex align-items-center justify-content-between">
           <span><i class="mdi mdi-currency-usd me-1"></i>Total Amount</span>
           <span *ngIf="predictInfo" class="badge" 
-                [class]="predictInfo?.inference?.prediction?.total_incl?.confidence > 0.75 ? 'bg-success' : 'bg-warning'">
+                [class]="(predictInfo?.inference?.prediction?.total_incl?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
             {{(predictInfo?.inference?.prediction?.total_incl?.confidence * 100) || 0}}%
           </span>
         </label>
@@ -124,7 +302,7 @@
         <label class="form-label required d-flex align-items-center justify-content-between">
           <span><i class="mdi mdi-bookmark me-1"></i>Category</span>
           <span *ngIf="predictInfo" class="badge"
-                [class]="predictInfo?.inference?.prediction?.category?.confidence > 0.75 ? 'bg-success' : 'bg-warning'">
+                [class]="(predictInfo?.inference?.prediction?.category?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
             {{(predictInfo?.inference?.prediction?.category?.confidence * 100) || 0}}%
           </span>
         </label>
@@ -178,7 +356,7 @@
       <label class="form-label d-flex align-items-center justify-content-between">
         <span><i class="mdi mdi-store me-1"></i>Vendor Name</span>
         <span *ngIf="predictInfo" class="badge"
-              [class]="predictInfo?.inference?.prediction?.supplier?.confidence > 0.75 ? 'bg-success' : 'bg-warning'">
+              [class]="(predictInfo?.inference?.prediction?.supplier?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
           {{(predictInfo?.inference?.prediction?.supplier?.confidence * 100) || 0}}%
         </span>
       </label>
@@ -191,7 +369,7 @@
         <label class="form-label required d-flex align-items-center justify-content-between">
           <span><i class="mdi mdi-calendar me-1"></i>Receipt Date</span>
           <span *ngIf="predictInfo" class="badge"
-                [class]="predictInfo?.inference?.prediction?.date?.confidence > 0.75 ? 'bg-success' : 'bg-warning'">
+                [class]="(predictInfo?.inference?.prediction?.date?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
             {{(predictInfo?.inference?.prediction?.date?.confidence * 100) || 0}}%
           </span>
         </label>
@@ -201,7 +379,7 @@
         <label class="form-label required d-flex align-items-center justify-content-between">
           <span><i class="mdi mdi-clock me-1"></i>Receipt Time</span>
           <span *ngIf="predictInfo" class="badge"
-                [class]="predictInfo?.inference?.prediction?.time?.confidence > 0.75 ? 'bg-success' : 'bg-warning'">
+                [class]="(predictInfo?.inference?.prediction?.time?.confidence || 0) > 0.75 ? 'bg-success' : 'bg-warning'">
             {{(predictInfo?.inference?.prediction?.time?.confidence * 100) || 0}}%
           </span>
         </label>
@@ -211,17 +389,49 @@
   </form>
 </div>
 
-<div class="modal-footer bg-light border-top d-flex justify-content-between">
-  <small class="text-muted">
-    <i class="mdi mdi-shield-check me-1"></i>
-    Auto-extract powered by intelligent processing
-  </small>
-  <div>
-    <button (click)="deleteTripExpense()" type="button" class="btn btn-outline-danger me-2" *ngIf="id">
-      <i class="mdi mdi-delete me-1"></i> Delete
-    </button>
-    <button (click)="onSubmit()" type="button" class="btn btn-primary">
-      <i class="mdi mdi-content-save me-1"></i>Save
-    </button>
+<div class="modal-footer bg-light border-top">
+  <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+    <!-- Left: Status Info -->
+    <div class="d-flex flex-column gap-1">
+      <small class="text-muted">
+        <i class="mdi mdi-shield-check me-1"></i>Auto-extract powered by AI
+      </small>
+      <!-- Draft status indicator -->
+      <small class="text-info" *ngIf="batchMode && currentDraftName">
+        <i class="mdi mdi-content-save me-1"></i>Editing: <strong>{{currentDraftName}}</strong>
+      </small>
+      <small class="text-muted" *ngIf="batchMode && availableDrafts.length > 0 && !currentDraftName">
+        <i class="mdi mdi-folder-multiple-outline me-1"></i>{{availableDrafts.length}} draft(s) available
+      </small>
+    </div>
+
+    <!-- Right: Action Buttons -->
+    <div class="d-flex gap-2 flex-wrap">
+      <!-- Batch Mode Buttons -->
+      <ng-container *ngIf="batchMode && !id">
+        <button (click)="showDraftPicker()" type="button" class="btn btn-sm btn-outline-info" [disabled]="availableDrafts.length === 0">
+          <i class="mdi mdi-folder-open-outline me-1"></i>Load ({{availableDrafts.length}})
+        </button>
+        <button (click)="saveDraft()" type="button" class="btn btn-sm btn-outline-secondary" [disabled]="batchReceipts.length === 0">
+          <i class="mdi mdi-content-save-outline me-1"></i>Save
+        </button>
+        <button (click)="clearDraft()" type="button" class="btn btn-sm btn-outline-danger" [disabled]="availableDrafts.length === 0">
+          <i class="mdi mdi-delete-outline me-1"></i>Delete
+        </button>
+        <button (click)="submitBatchReceipts()" type="button" class="btn btn-sm btn-success" [disabled]="batchReceipts.length === 0">
+          <i class="mdi mdi-upload me-1"></i>Submit All ({{batchReceipts.length}})
+        </button>
+      </ng-container>
+
+      <!-- Single Mode Buttons -->
+      <ng-container *ngIf="!batchMode || id">
+        <button (click)="deleteTripExpense()" type="button" class="btn btn-sm btn-outline-danger" *ngIf="id">
+          <i class="mdi mdi-delete me-1"></i>Delete
+        </button>
+        <button (click)="onSubmit()" type="button" class="btn btn-sm btn-primary">
+          <i class="mdi mdi-content-save me-1"></i>Save
+        </button>
+      </ng-container>
+    </div>
   </div>
 </div>

@@ -120,6 +120,15 @@ export class UploadedReceiptComponent implements OnInit {
   copySuccessCount: number = 0;
   copyFiles: boolean = false;
 
+  // Draft management
+  private DRAFT_STORAGE_KEY = 'receipt_batch_drafts_';
+  availableDrafts: Array<{ 
+    name: string; 
+    timestamp: string; 
+    count: number;
+    createdBy?: { id: number; name: string; username: string };
+  }> = [];
+
   constructor(
     public activeOffcanvas: NgbActiveOffcanvas,
     public tripExpenseService: TripExpenseService,
@@ -134,17 +143,28 @@ export class UploadedReceiptComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    console.log('🎬 ngOnInit - fsId:', this.fsId, 'workOrderId:', this.workOrderId);
     this.getData();
+    this.loadAvailableDrafts();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["workOrderId"]) {
       this.workOrderId = changes["workOrderId"].currentValue;
       this.getData();
+      this.loadAvailableDrafts();
+    }
+    
+    // Also reload drafts when fsId changes (important for draft key generation)
+    if (changes["fsId"]) {
+      this.fsId = changes["fsId"].currentValue;
+      console.log('🆔 fsId changed to:', this.fsId);
+      this.loadAvailableDrafts();
     }
 
     if (changes["fsId"]?.currentValue) {
       this.justGetTransaction();
+      this.loadAvailableDrafts();
     }
   }
 
@@ -208,16 +228,61 @@ export class UploadedReceiptComponent implements OnInit {
 
       this.getTripExenses(this.data);
 
-      // Only update grid if it exists and has data
+      // Update grid with combined data (receipts + drafts)
       if (this.gridApi) {
-        this.gridApi.setGridOption('rowData', this.data);
-        this.setColumDef1();
+        this.updateGridWithDrafts();
       }
 
       this.loading = false;
     } catch (err) {
       this.loading = false;
     }
+  }
+
+  /**
+   * Update grid to include both receipts and drafts
+   * IMPORTANT: Update this.data directly because the template uses [rowData]="data" binding
+   */
+  private updateGridWithDrafts() {
+    const draftRows = this.getDraftRows();
+    
+    // Find the original receipt data (filter out any existing draft rows)
+    const originalReceipts = this.data.filter(row => !(row as any).isDraft);
+    
+    // Combine draft rows with original receipts
+    this.data = [
+      ...draftRows,
+      ...originalReceipts
+    ];
+    
+    console.log('🔍 updateGridWithDrafts called');
+    console.log('📊 Draft rows:', draftRows);
+    console.log('📊 Original receipts:', originalReceipts.length);
+    console.log('📊 Combined data count:', this.data.length);
+    console.log('📊 Available drafts:', this.availableDrafts);
+  }
+
+  /**
+   * Convert drafts to grid row format
+   */
+  private getDraftRows() {
+    console.log('🔄 getDraftRows called, availableDrafts:', this.availableDrafts);
+    return this.availableDrafts.map(draft => ({
+      isDraft: true,
+      draftName: draft.name,
+      name: '📁 DRAFT',
+      vendor_name: draft.name,
+      cost: 0,
+      created_date: draft.timestamp,
+      created_by_name: draft.createdBy?.name || 'Unknown',
+      date: draft.timestamp,
+      receiptCount: draft.count,
+      link: null,
+      // Add placeholder fields to prevent errors
+      id: `draft_${draft.name}`,
+      fileName: 'Draft',
+      time: null
+    }));
   }
 
   getTripExenses(data) {
@@ -415,9 +480,8 @@ export class UploadedReceiptComponent implements OnInit {
     this.gridApi = params.api;
     // Set initial column definitions and data when grid is ready
     this.setColumDef1();
-    if (this.data?.length) {
-      this.gridApi.setGridOption('rowData', this.data);
-    }
+    // Update grid with combined data (receipts + drafts)
+    this.updateGridWithDrafts();
   }
 
   gridOptions: GridOptions = {
@@ -538,7 +602,7 @@ export class UploadedReceiptComponent implements OnInit {
           suppressHeaderMenuButton: true,
           floatingFilter: false,
           pinned: isMobile() ? null : "left",
-          checkboxSelection: true,
+          checkboxSelection: (params) => !(params.data as any)?.isDraft, // Disable checkbox for drafts
         },
         {
           field: "copiedFromTicketId",
@@ -546,10 +610,20 @@ export class UploadedReceiptComponent implements OnInit {
           filter: "agMultiColumnFilter",
           minWidth: 140,
           cellRenderer: (params) => {
-            if (params.data.copiedFromTicketId) {
+            const data = params.data as any;
+            // Show draft badge for draft rows
+            if (data?.isDraft) {
+              return `
+                <span class="badge bg-warning text-dark" style="cursor: pointer;" title="Click row to open draft">
+                  <i class="ri-draft-line me-1"></i>DRAFT (${data.receiptCount} receipts)
+                </span>
+              `;
+            }
+            
+            if (data?.copiedFromTicketId) {
               return `
                 <span class="badge bg-info bg-opacity-10 text-info">
-                  <i class="ri-file-copy-line me-1"></i>Copied from #${params.data.copiedFromTicketId}
+                  <i class="ri-file-copy-line me-1"></i>Copied from #${data.copiedFromTicketId}
                 </span>
               `;
             }
@@ -562,42 +636,94 @@ export class UploadedReceiptComponent implements OnInit {
           suppressHeaderMenuButton: true,
           floatingFilter: false,
           filter: "agMultiColumnFilter",
-          cellRenderer: LinkImageRendererComponent,
-          cellRendererParams: {
-            onClick: (e) => this.viewReceipt(e),
-            iconName: "mdi mdi-view-list",
-            classColor: "text-info",
-          },
+          cellRenderer: (params) => {
+            const data = params.data as any;
+            // Show folder icon for drafts
+            if (data?.isDraft) {
+              return `
+                <div class="d-flex align-items-center justify-content-center" style="height: 100%;">
+                  <i class="ri-folder-open-line text-warning" style="font-size: 24px;"></i>
+                </div>
+              `;
+            }
+            // Use default image renderer for regular receipts
+            return data?.link ? `<img src="${data.link}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />` : '';
+          }
         },
         {
           field: "Edit",
           headerName: "Edit",
           filter: "agMultiColumnFilter",
-          cellRenderer: LinkRendererV2Component,
-          cellRendererParams: {
-            onClick: (e) => this.edit(e.rowData.id, null),
-            iconName: "mdi mdi-pencil",
-            classColor: "text-warning",
-            value: "Edit",
+          cellRenderer: (params) => {
+            const data = params.data as any;
+            // Show "Open" button for drafts
+            if (data?.isDraft) {
+              return `
+                <button class="btn btn-sm btn-warning" title="Open draft">
+                  <i class="mdi mdi-folder-open"></i> Open
+                </button>
+              `;
+            }
+            // Regular edit button for receipts
+            return `<button class="btn btn-sm btn-outline-warning" title="Edit"><i class="mdi mdi-pencil"></i></button>`;
           },
+          onCellClicked: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              this.openDraft(data.draftName);
+            } else {
+              this.edit(data.id, null);
+            }
+          }
         },
         {
           field: "vendor_name",
           headerName: "Vendor Name",
-          filter: "agMultiColumnFilter"
+          filter: "agMultiColumnFilter",
+          cellRenderer: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              return `<strong class="text-warning"><i class="ri-draft-line me-1"></i>${data.vendor_name}</strong>`;
+            }
+            return params.value;
+          }
         },
         {
           field: "cost",
           headerName: "Cost",
           filter: "agMultiColumnFilter",
-          valueFormatter: currencyFormatter,
+          valueFormatter: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              return '—'; // Show dash for drafts
+            }
+            return currencyFormatter(params);
+          },
         },
         {
           field: "date",
           headerName: "Receipt Date",
           filter: "agMultiColumnFilter",
+          cellRenderer: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              return `<small class="text-muted">Saved: ${new Date(data.created_date).toLocaleString()}</small>`;
+            }
+            return params.value;
+          }
         },
-        { field: "name", headerName: "Name", filter: "agMultiColumnFilter" },
+        { 
+          field: "name", 
+          headerName: "Name", 
+          filter: "agMultiColumnFilter",
+          cellRenderer: (params) => {
+            const data = params.data as any;
+            if (data?.isDraft) {
+              return '<span class="badge bg-warning text-dark">DRAFT</span>';
+            }
+            return params.value;
+          }
+        },
         {
           field: "time",
           headerName: "Receipt Time",
@@ -614,6 +740,18 @@ export class UploadedReceiptComponent implements OnInit {
           filter: "agMultiColumnFilter",
         },
       ],
+      // Add row styling for drafts
+      getRowStyle: (params) => {
+        const data = params.data as any;
+        if (data?.isDraft) {
+          return {
+            background: '#fff3cd',
+            fontWeight: '500',
+            cursor: 'pointer'
+          };
+        }
+        return null;
+      }
     });
   }
 
@@ -909,5 +1047,126 @@ export class UploadedReceiptComponent implements OnInit {
 
     console.log('Receipt Report:', reportData);
     // Could open a modal or generate a PDF report
+  }
+
+  /**
+   * Load available drafts for this ticket
+   */
+  loadAvailableDrafts() {
+    const draftKey = this.getDraftKey();
+    console.log('🔑 Draft key:', draftKey);
+    const draftsJson = localStorage.getItem(draftKey);
+    console.log('📦 Drafts JSON from localStorage:', draftsJson);
+    
+    if (!draftsJson) {
+      console.log('❌ No drafts found in localStorage');
+      this.availableDrafts = [];
+      if (this.gridApi) {
+        this.updateGridWithDrafts();
+      }
+      return;
+    }
+
+    try {
+      const drafts = JSON.parse(draftsJson);
+      console.log('✅ Parsed drafts:', drafts);
+      this.availableDrafts = Object.keys(drafts).map(name => ({
+        name: name,
+        timestamp: drafts[name].timestamp,
+        count: drafts[name].receipts.length,
+        createdBy: drafts[name].createdBy || { name: 'Unknown' }
+      })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      console.log('✅ Available drafts array:', this.availableDrafts);
+      
+      // Update grid to show drafts
+      if (this.gridApi) {
+        console.log('✅ Updating grid with drafts');
+        this.updateGridWithDrafts();
+      } else {
+        console.warn('⚠️ gridApi not available in loadAvailableDrafts');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load drafts:', error);
+      this.availableDrafts = [];
+    }
+  }
+
+  /**
+   * Get draft storage key - must match format in receipt-add-edit component
+   */
+  private getDraftKey(): string {
+    const key = `${this.DRAFT_STORAGE_KEY}${this.workOrderId || 'new'}`;
+    console.log('🔑 getDraftKey() - workOrderId:', this.workOrderId, 'key:', key);
+    return key;
+  }
+
+  /**
+   * Open receipt upload with specific draft loaded
+   */
+  openDraft(draftName: string) {
+    // Open the receipt add/edit modal in batch mode with the draft name
+    const modalRef = this.receiptAddEditService.open(
+      this.fsId,
+      this.workOrderId,
+      'batch', // typeOfClick - use 'batch' to indicate batch mode
+      null, // id (no specific receipt to edit)
+      draftName // Pass draft name as 5th parameter
+    );
+    
+    modalRef.result.then(
+      async () => {
+        await this.getData();
+        this.loadAvailableDrafts(); // Refresh drafts after modal closes
+      },
+      () => { } // Modal dismissed
+    );
+  }
+
+  /**
+   * Delete a specific draft
+   */
+  deleteDraft(draftName: string, event: Event) {
+    event.stopPropagation(); // Prevent opening the draft
+    
+    SweetAlert.confirm({
+      title: 'Delete Draft?',
+      text: `Are you sure you want to delete "${draftName}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it',
+      confirmButtonColor: '#dc3545',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) {
+        const draftKey = this.getDraftKey();
+        const draftsJson = localStorage.getItem(draftKey);
+        
+        if (!draftsJson) return;
+
+        try {
+          const drafts = JSON.parse(draftsJson);
+          delete drafts[draftName];
+          
+          if (Object.keys(drafts).length === 0) {
+            localStorage.removeItem(draftKey);
+          } else {
+            localStorage.setItem(draftKey, JSON.stringify(drafts));
+          }
+          
+          this.loadAvailableDrafts();
+          
+          SweetAlert.confirm({
+            title: 'Deleted!',
+            text: `"${draftName}" has been removed.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } catch (error) {
+          console.error('❌ Failed to delete draft:', error);
+        }
+      }
+    });
   }
 }

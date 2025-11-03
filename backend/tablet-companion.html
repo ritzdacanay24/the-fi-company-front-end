@@ -27,13 +27,14 @@
         }
 
         .header h1 {
-            font-size: 24px;
+            font-size: 32px;
             color: #667eea;
             margin-bottom: 5px;
+            font-weight: 700;
         }
 
         .header p {
-            font-size: 14px;
+            font-size: 18px;
             color: #666;
         }
 
@@ -52,9 +53,10 @@
         }
 
         .card h2 {
-            font-size: 18px;
+            font-size: 26px;
             margin-bottom: 15px;
             color: #667eea;
+            font-weight: 700;
         }
 
         .video-container {
@@ -64,6 +66,90 @@
             overflow: hidden;
             background: #000;
             margin-bottom: 15px;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .camera-overlay::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            border: 3px dashed rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+        }
+
+        .camera-overlay-text {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .camera-control-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .camera-control-btn:active {
+            background: #667eea;
+            color: white;
+        }
+
+        .camera-control-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .zoom-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
         }
 
         video {
@@ -84,11 +170,11 @@
 
         .btn {
             width: 100%;
-            padding: 15px;
+            padding: 20px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 10px;
@@ -121,10 +207,11 @@
         }
 
         .status {
-            padding: 12px;
+            padding: 16px;
             border-radius: 8px;
             margin-bottom: 15px;
-            font-size: 14px;
+            font-size: 17px;
+            line-height: 1.6;
         }
 
         .status-info {
@@ -156,9 +243,10 @@
 
         .serial-info p {
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: 18px;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            font-weight: 600;
         }
 
         .serial-info strong {
@@ -173,28 +261,31 @@
         }
 
         .serial-display {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
-            color: #667eea;
+            color: #1a202c;
             text-align: center;
-            padding: 15px;
-            background: #f7fafc;
+            padding: 20px;
+            background: #fff;
+            border: 3px solid #667eea;
             border-radius: 8px;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             margin: 10px 0;
             word-wrap: break-word;
             word-break: break-all;
             white-space: normal;
-            line-height: 1.4;
+            line-height: 1.5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .qr-input {
             width: 100%;
-            padding: 12px;
+            padding: 18px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 20px;
             margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .qr-input:focus {
@@ -228,10 +319,28 @@
 
         .session-timer {
             text-align: center;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             color: #667eea;
             margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+        
+        .tips-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .tips-box strong {
+            color: #856404;
+            font-size: 18px;
         }
 
         .session-timer.warning {
@@ -240,6 +349,17 @@
 
         .session-timer.danger {
             color: #f56565;
+        }
+
+        @keyframes focusPulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -280,15 +400,30 @@
                 <p><strong>Work Order:</strong> <span id="workOrder">-</span></p>
             </div>
 
-            <div class="status status-info">
-                <strong>📋 Instructions:</strong><br>
-                1. Point camera at the physical serial number label<br>
-                2. Ensure serial is clearly visible and in focus<br>
-                3. Tap "Capture Photo" when ready
+            <div class="tips-box">
+                <strong>� Tips for Glossy Labels:</strong><br>
+                • Move tablet to avoid light glare<br>
+                • Use zoom to get closer<br>
+                • Tap screen to focus on serial<br>
+                • Toggle flashlight if too dark
             </div>
 
-            <div class="video-container">
+            <div class="camera-controls">
+                <button onclick="toggleFlashlight()" id="flashBtn" class="camera-control-btn">💡 Flash: OFF</button>
+                <button onclick="switchCamera()" id="switchCameraBtn" class="camera-control-btn">🔄 Switch</button>
+            </div>
+
+            <div class="slider-label">
+                <span>Zoom</span>
+                <span id="zoomValue">1.0x</span>
+            </div>
+            <input type="range" min="1" max="3" step="0.1" value="1" class="zoom-slider" id="zoomSlider" oninput="adjustZoom(this.value)">
+
+            <div class="video-container" onclick="focusCamera(event)">
                 <video id="video" autoplay playsinline></video>
+                <div class="camera-overlay">
+                    <div class="camera-overlay-text">📍 Tap to focus • Center serial in frame</div>
+                </div>
             </div>
             <canvas id="canvas"></canvas>
 
@@ -328,6 +463,10 @@
         let sessionData = null;
         let stream = null;
         let timerInterval = null;
+        let currentTrack = null;
+        let currentZoom = 1;
+        let flashlightOn = false;
+        let currentFacingMode = 'environment';
         const API_BASE = '/server/Api';
 
         // Auto-load session from URL parameter
@@ -425,35 +564,145 @@
             
             // Update instructions for batch
             if (serialsCount > 1) {
-                const instructionEl = document.querySelector('#step-camera .status-info');
-                instructionEl.innerHTML = `
-                    <strong>📋 Batch Verification (${serialsCount} serials):</strong><br><br>
-                    <strong>✅ Multiple photos supported!</strong><br>
-                    Don't worry if all serials don't fit in one photo.<br><br>
-                    1. Point camera at as many serial numbers as possible<br>
-                    2. Ensure serials are clearly visible and in focus<br>
-                    3. Tap "Capture Photo" when ready<br>
-                    4. System will tell you how many were captured<br>
-                    5. Take additional photos until all ${serialsCount} serials are found<br><br>
-                    <strong>💡 Tip:</strong> Take photos of different sections of the label(s)
-                `;
+                const instructionEl = document.querySelector('#step-camera .tips-box');
+                if (instructionEl) {
+                    instructionEl.innerHTML = `
+                        <strong>📋 Batch Verification (${serialsCount} serials):</strong><br><br>
+                        <strong>✅ Multiple photos supported!</strong><br>
+                        Don't worry if all serials don't fit in one photo.<br><br>
+                        1. Point camera at as many serial numbers as possible<br>
+                        2. Use zoom and flashlight to see small text clearly<br>
+                        3. Tap "Capture Photo" when ready<br>
+                        4. System will tell you how many were captured<br>
+                        5. Take additional photos until all ${serialsCount} serials are found<br><br>
+                        <strong>💡 Tip:</strong> Take photos of different sections of the label(s)
+                    `;
+                }
             }
         }
 
         async function startCamera() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
+                const constraints = { 
                     video: { 
-                        facingMode: 'environment',
+                        facingMode: currentFacingMode,
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     } 
-                });
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentTrack = stream.getVideoTracks()[0];
+                
+                // Check capabilities
+                const capabilities = currentTrack.getCapabilities();
+                if (capabilities.zoom) {
+                    document.getElementById('zoomSlider').max = capabilities.zoom.max;
+                    document.getElementById('zoomSlider').min = capabilities.zoom.min;
+                }
+                
                 document.getElementById('video').srcObject = stream;
             } catch (error) {
                 alert('Cannot access camera: ' + error.message);
                 console.error(error);
             }
+        }
+
+        async function toggleFlashlight() {
+            if (!currentTrack) return;
+            
+            const capabilities = currentTrack.getCapabilities();
+            if (!capabilities.torch) {
+                alert('Flashlight not available on this camera');
+                return;
+            }
+
+            flashlightOn = !flashlightOn;
+            
+            try {
+                await currentTrack.applyConstraints({
+                    advanced: [{ torch: flashlightOn }]
+                });
+                
+                const flashBtn = document.getElementById('flashBtn');
+                flashBtn.textContent = flashlightOn ? '💡 Flash: ON' : '💡 Flash: OFF';
+                flashBtn.classList.toggle('active', flashlightOn);
+            } catch (error) {
+                console.error('Flashlight error:', error);
+                alert('Could not toggle flashlight');
+            }
+        }
+
+        async function adjustZoom(value) {
+            if (!currentTrack) return;
+            
+            const capabilities = currentTrack.getCapabilities();
+            if (!capabilities.zoom) return;
+
+            currentZoom = parseFloat(value);
+            document.getElementById('zoomValue').textContent = currentZoom.toFixed(1) + 'x';
+
+            try {
+                await currentTrack.applyConstraints({
+                    advanced: [{ zoom: currentZoom }]
+                });
+            } catch (error) {
+                console.error('Zoom error:', error);
+            }
+        }
+
+        async function focusCamera(event) {
+            if (!currentTrack) return;
+            
+            const capabilities = currentTrack.getCapabilities();
+            if (!capabilities.focusMode || !capabilities.focusMode.includes('manual')) {
+                return; // Auto-focus not available
+            }
+
+            const video = document.getElementById('video');
+            const rect = video.getBoundingClientRect();
+            const x = (event.clientX - rect.left) / rect.width;
+            const y = (event.clientY - rect.top) / rect.height;
+
+            try {
+                await currentTrack.applyConstraints({
+                    advanced: [{
+                        focusMode: 'manual',
+                        focusDistance: 0.5 // Approximate focus
+                    }]
+                });
+                
+                // Visual feedback
+                showFocusIndicator(event.clientX, event.clientY);
+            } catch (error) {
+                console.error('Focus error:', error);
+            }
+        }
+
+        function showFocusIndicator(x, y) {
+            const indicator = document.createElement('div');
+            indicator.style.position = 'fixed';
+            indicator.style.left = (x - 30) + 'px';
+            indicator.style.top = (y - 30) + 'px';
+            indicator.style.width = '60px';
+            indicator.style.height = '60px';
+            indicator.style.border = '3px solid #48bb78';
+            indicator.style.borderRadius = '50%';
+            indicator.style.pointerEvents = 'none';
+            indicator.style.zIndex = '1000';
+            indicator.style.animation = 'focusPulse 0.5s ease-out';
+            
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                indicator.remove();
+            }, 500);
+        }
+
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            stopCamera();
+            await startCamera();
         }
 
         function stopCamera() {
@@ -647,7 +896,14 @@
          */
         function continueNextPhoto() {
             document.getElementById('step-result').classList.add('hidden');
-            showCameraStep();
+            document.getElementById('step-camera').classList.remove('hidden');
+            
+            // Reset camera for next photo
+            document.getElementById('video').style.display = 'block';
+            document.getElementById('capturedImage').classList.add('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            
             startCamera();
         }
         

@@ -2713,8 +2713,10 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
    * USED category doesn't require verification (manual entry)
    */
   requiresVerification(): boolean {
-    // Verification required for NEW category only when the toggle is enabled
-    return this.category === 'new' && this.verificationEnabled;
+    // Verification is available for both NEW and USED categories when toggle is enabled
+    // NEW: Verifies both EyeFi serials and UL labels
+    // USED: Verifies only UL labels (EyeFi serials are manually entered)
+    return this.verificationEnabled;
   }
 
   /**
@@ -2750,19 +2752,23 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
       return;
     }
 
-    // Get all unverified serials (both EyeFi and UL)
+    // Get all unverified serials
     const unverifiedAssignments = this.serialAssignments.filter(a => !a.verified);
     const unverifiedSerials: string[] = [];
     
-    // Collect all serials that need verification
+    // Collect serials based on category
+    // NEW: Verify both EyeFi serials and UL numbers
+    // USED: Verify only UL numbers (EyeFi serials are manually entered)
     unverifiedAssignments.forEach(assignment => {
-      // Add EyeFi serial
-      const eyefiSerial = assignment.serial?.serial_number || assignment.serial;
-      if (eyefiSerial) {
-        unverifiedSerials.push(eyefiSerial);
+      if (this.category === 'new') {
+        // NEW category: Add EyeFi serial
+        const eyefiSerial = assignment.serial?.serial_number || assignment.serial;
+        if (eyefiSerial) {
+          unverifiedSerials.push(eyefiSerial);
+        }
       }
       
-      // Add UL serial if present
+      // Both categories: Add UL serial if present
       const ulSerial = assignment.ulNumber?.ul_number;
       if (ulSerial) {
         unverifiedSerials.push(ulSerial);

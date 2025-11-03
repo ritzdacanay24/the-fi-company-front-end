@@ -19,7 +19,7 @@ export class JwtInterceptor implements HttpInterceptor {
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
     // Skip JWT authentication for Mindee API calls
-    if (request.url.includes('api-v2.mindee.net')) {
+    if (request.url.includes('api.mindee.net') || request.url.includes('api-v2.mindee.net') || request.url.includes('api.mindee.com')) {
       return next.handle(request);
     }
 
