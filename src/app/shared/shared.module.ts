@@ -7,9 +7,6 @@ import {
   NgbModule,
 } from "@ng-bootstrap/ng-bootstrap";
 
-// Swiper Slider
-import { SlickCarouselModule } from "ngx-slick-carousel";
-
 // Counter
 import { CountUpModule } from "ngx-countup";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
@@ -46,7 +43,6 @@ import { AgGridModule } from "ag-grid-angular";
     NgbNavModule,
     NgbAccordionModule,
     NgbDropdownModule,
-    SlickCarouselModule,
     CountUpModule,
     NgbModule,
     FormsModule,

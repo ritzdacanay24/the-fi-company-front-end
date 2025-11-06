@@ -1,0 +1,135 @@
+.single-priority-view {
+  .current-priority-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+    
+    .card-header {
+      background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    }
+  }
+
+  .queue-sidebar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    
+    .card-header {
+      background: linear-gradient(135deg, #17a2b8, #138496) !important;
+    }
+  }
+
+  .order-item {
+    background-color: #f8f9fa;
+    border-color: #dee2e6 !important;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: #e9ecef;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .queue-item {
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background-color: #f8f9fa;
+    }
+    
+    &:last-child {
+      border-bottom: none !important;
+    }
+  }
+
+  .badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .status-badges {
+    .badge {
+      font-size: 0.75em;
+      padding: 0.25em 0.5em;
+    }
+  }
+
+  .queue-position {
+    .badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+  }
+
+  .orders-container {
+    max-height: 400px;
+    overflow-y: auto;
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+
+  .queue-container {
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 991.98px) {
+    .col-lg-4 {
+      margin-top: 1rem;
+    }
+    
+    .orders-container {
+      max-height: 300px;
+    }
+    
+    .queue-container {
+      max-height: 400px;
+    }
+  }
+  
+  @media (max-width: 767.98px) {
+    .order-item {
+      .row > .col-md-4 {
+        margin-top: 0.5rem;
+        text-align: left !important;
+      }
+    }
+  }
+}

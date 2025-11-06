@@ -1,0 +1,181 @@
+<div class="single-priority-view">
+  <!-- Current Priority Section -->
+  <div class="row mb-4" *ngIf="currentGroupedItem">
+    <div class="col-lg-8">
+      <div class="card current-priority-card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="mdi mdi-star"></i>
+            Current Priority: {{ currentGroupedItem.partNumber }}
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h5 class="text-primary">Priority Information</h5>
+              <table class="table table-sm">
+                <tr>
+                  <td><strong>Priority:</strong></td>
+                  <td>{{ currentGroupedItem.partNumber }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Total Orders:</strong></td>
+                  <td>{{ currentGroupedItem.orders.length }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Total Quantity:</strong></td>
+                  <td>{{ formatQuantity(currentGroupedItem.totalQuantity) }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Due Date:</strong></td>
+                  <td>{{ formatDate(currentGroupedItem.dueDate) }}</td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h5 class="text-success">Priority Indicators</h5>
+              <div class="badge-container">
+                <span *ngIf="hasCompletedOrders(currentGroupedItem.orders)" 
+                      class="badge bg-success me-2 mb-2">
+                  <i class="mdi mdi-check"></i> Completed Orders
+                </span>
+                <span *ngIf="hasHotOrders(currentGroupedItem.orders)" 
+                      class="badge bg-danger me-2 mb-2">
+                  <i class="mdi mdi-fire"></i> Hot Orders
+                </span>
+                <span *ngIf="hasLowInventoryOrders(currentGroupedItem.orders)" 
+                      class="badge bg-warning text-dark me-2 mb-2">
+                  <i class="mdi mdi-alert-triangle"></i> Low Inventory
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Priority Orders -->
+          <div class="mt-4">
+            <h5 class="text-info">
+              <i class="mdi mdi-format-list-numbered"></i>
+              Orders ({{ currentGroupedItem.orders.length }})
+            </h5>
+            <div class="orders-container">
+              <div *ngFor="let order of currentGroupedItem.orders; let i = index" 
+                   class="order-item mb-3 p-3 border rounded">
+                <div class="row">
+                  <div class="col-md-8">
+                    <h6 class="mb-2">
+                      <span class="badge bg-secondary me-2">#{{ i + 1 }}</span>
+                      {{ order['ORDNUM'] || 'N/A' }}
+                    </h6>
+                    <p class="mb-1">
+                      <strong>Part:</strong> {{ order['PARTNUM'] || 'N/A' }}
+                    </p>
+                    <p class="mb-1">
+                      <strong>Description:</strong> {{ truncateText(getPartDescription(order), 60) }}
+                    </p>
+                    <p class="mb-1">
+                      <strong>Customer:</strong> {{ order['COMPANY'] || 'N/A' }}
+                    </p>
+                  </div>
+                  <div class="col-md-4 text-end">
+                    <div class="quantity-info mb-2">
+                      <span class="badge bg-info">
+                        Qty: {{ formatQuantity(order.QTYOPEN || 0) }}
+                      </span>
+                    </div>
+                    <div class="status-badges">
+                      <span *ngIf="order.misc?.['userName'] === 'Shipping'" 
+                            class="badge bg-success mb-1 d-block">
+                        <i class="mdi mdi-check"></i> Completed
+                      </span>
+                      <span *ngIf="order.misc?.hot_order" 
+                            class="badge bg-danger mb-1 d-block">
+                        <i class="mdi mdi-fire"></i> Hot
+                      </span>
+                      <span *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" 
+                            class="badge bg-warning text-dark mb-1 d-block">
+                        <i class="mdi mdi-alert-triangle"></i> Low Stock
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue Sidebar -->
+    <div class="col-lg-4">
+      <div class="card queue-sidebar">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="mdi mdi-clock-outline"></i>
+            Next in Queue ({{ nextGroupedItems.length }})
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="queue-container" style="max-height: 600px; overflow-y: auto;">
+            <div *ngFor="let item of nextGroupedItems; let i = index" 
+                 class="queue-item p-3 border-bottom">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1 text-primary">
+                    {{ item.partNumber }}
+                  </h6>
+                  <p class="mb-1 small text-muted">
+                    {{ item.orders.length }} orders, {{ formatQuantity(item.totalQuantity) }} qty
+                  </p>
+                  <p class="mb-0 small">
+                    <i class="mdi mdi-calendar"></i>
+                    Due: {{ formatDate(item.dueDate) }}
+                  </p>
+                </div>
+                <div class="queue-position">
+                  <span class="badge bg-light text-dark">{{ i + 1 }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="nextGroupedItems.length === 0" class="text-center p-4 text-muted">
+              <i class="mdi mdi-inbox mdi-48px mb-2"></i>
+              <p>No items in queue</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Info -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="mdi mdi-information"></i>
+            Status
+          </h6>
+          <p class="small mb-1">
+            <strong>Current Time:</strong> {{ currentTime }}
+          </p>
+          <p class="small mb-0">
+            <strong>Last Updated:</strong> {{ lastUpdated }}
+          </p>
+          <button class="btn btn-outline-primary btn-sm mt-2 w-100" 
+                  (click)="onRefreshData()">
+            <i class="mdi mdi-refresh"></i>
+            Refresh Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Data State -->
+  <div *ngIf="!currentGroupedItem" class="text-center p-5">
+    <i class="mdi mdi-inbox mdi-72px text-muted mb-3"></i>
+    <h4 class="text-muted">No Priority Items</h4>
+    <p class="text-muted">No items are currently available for display.</p>
+    <button class="btn btn-primary" (click)="onRefreshData()">
+      <i class="mdi mdi-refresh"></i>
+      Refresh Data
+    </button>
+  </div>
+</div>

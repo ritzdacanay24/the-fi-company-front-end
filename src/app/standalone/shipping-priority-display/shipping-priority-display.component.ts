@@ -1,6 +1,8 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { Subscription, timer } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
@@ -9,11 +11,20 @@ import { Subject } from 'rxjs';
 import { PriorityDisplayService, PriorityDisplayData } from './services/priority-display.service';
 import { DisplayUtilsService } from './services/display-utils.service';
 
+// Components
+import { SinglePriorityViewComponent } from './components/single-priority-view/single-priority-view.component';
+import { MultiCardViewComponent } from './components/multi-card-view/multi-card-view.component';
+import { PrioritySettingsComponent } from './components/priority-settings/priority-settings.component';
+
 @Component({
   selector: 'app-standalone-shipping-priority-display',
   standalone: true,
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule,
+    SinglePriorityViewComponent,
+    MultiCardViewComponent,
+    PrioritySettingsComponent
   ],
   templateUrl: './shipping-priority-display.component.html',
   styleUrls: ['./shipping-priority-display.component.scss']
@@ -26,8 +37,29 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   // Current time display
   currentTime: string = '';
   
+  // Refresh countdown
+  nextRefreshTime: Date | null = null;
+  refreshCountdown: string = '';
+  
   // Display mode options
-  displayMode: 'single' | 'top3' = 'top3';
+  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
+  
+  // Card layout options
+  cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'traditional';
+  
+  // Coming Up Next configuration
+  showComingUpNext: boolean = true;
+  autoScrollEnabled: boolean = true;
+  scrollSpeed: number = 30; // seconds for one complete scroll cycle
+  
+  // Refresh overlay setting
+  showRefreshOverlay: boolean = false;
+  
+  // Offcanvas template reference
+  @ViewChild('settingsOffcanvas', { static: true }) settingsOffcanvas!: TemplateRef<any>;
+  
+  // Settings state
+  settingsOpen = false;
   
   // Subscriptions management
   private destroy$ = new Subject<void>();
@@ -35,14 +67,28 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   private refreshSubscription?: Subscription;
   
   // Auto-refresh configuration
-  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
+  refreshInterval: number = 300000; // Default 5 minutes
+  availableRefreshIntervals = [
+    { value: 10000, label: '10 seconds' },
+    { value: 20000, label: '20 seconds' },
+    { value: 30000, label: '30 seconds' },
+    { value: 60000, label: '1 minute' },
+    { value: 120000, label: '2 minutes' },
+    { value: 300000, label: '5 minutes' },
+    { value: 600000, label: '10 minutes' },
+    { value: 0, label: 'Manual only' }
+  ];
+
+  // Settings storage key
+  private readonly SETTINGS_STORAGE_KEY = 'shipping-priority-display-settings';
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private priorityDisplayService: PriorityDisplayService,
+    public priorityDisplayService: PriorityDisplayService,
     private displayUtils: DisplayUtilsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private offcanvasService: NgbOffcanvas
   ) {}
 
   ngOnInit(): void {
@@ -75,7 +121,10 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     // Add CSS class to body for full-screen styling
     document.body.classList.add('shipping-priority-display');
     
-    // Setup query parameter subscription for reactive updates
+    // Load settings from localStorage
+    this.loadSettingsFromStorage();
+    
+    // Setup query parameter subscription for reactive updates (keep for backward compatibility)
     this.setupQueryParamSubscription();
     
     // Setup time display
@@ -95,15 +144,28 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        const viewParam = params['view'] as 'single' | 'top3';
+        const viewParam = params['view'] as 'single' | 'top3' | 'top6' | 'grid';
+        const refreshParam = params['refresh'];
         console.log('🔗 Query params changed:', params);
         
-        if (viewParam && (viewParam === 'single' || viewParam === 'top3')) {
+        // Handle display mode
+        if (viewParam && ['single', 'top3', 'top6', 'grid'].includes(viewParam)) {
           this.displayMode = viewParam;
           console.log(`🔗 Display mode set from URL: ${this.displayMode}`);
         } else {
           this.displayMode = 'top3'; // default
-          console.log('🔗 No valid view parameter, using default: single');
+          console.log('🔗 No valid view parameter, using default: top3');
+        }
+        
+        // Handle refresh interval
+        if (refreshParam) {
+          const refreshValue = parseInt(refreshParam);
+          if (!isNaN(refreshValue) && refreshValue >= 0) {
+            this.refreshInterval = refreshValue;
+            console.log(`🔗 Refresh interval set from URL: ${this.refreshInterval/1000}s`);
+            // Restart auto-refresh with new interval
+            this.startAutoRefresh();
+          }
         }
         
         // Update the service with the current mode
@@ -119,22 +181,108 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.currentTime = this.displayUtils.formatCurrentTime();
+        this.updateRefreshCountdown();
       });
+  }
+
+  /**
+   * Update refresh countdown display
+   */
+  private updateRefreshCountdown(): void {
+    if (this.nextRefreshTime && this.refreshInterval > 0) {
+      const now = new Date();
+      const timeLeft = this.nextRefreshTime.getTime() - now.getTime();
+      
+      if (timeLeft > 0) {
+        const seconds = Math.ceil(timeLeft / 1000);
+        this.refreshCountdown = `${seconds}s`;
+      } else {
+        this.refreshCountdown = 'Now';
+      }
+    } else {
+      this.refreshCountdown = '';
+    }
   }
 
   /**
    * Setup auto-refresh functionality
    */
   private setupAutoRefresh(): void {
-    this.refreshSubscription = timer(this.REFRESH_INTERVAL, this.REFRESH_INTERVAL)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        console.log('🔄 Auto-refreshing priority data...');
-        console.log('🔄 Current display mode during auto-refresh:', this.displayMode);
-        // Ensure display mode is preserved during auto-refresh
-        this.priorityDisplayService.updateDisplayMode(this.displayMode);
-        this.priorityDisplayService.loadPriorityData();
+    this.startAutoRefresh();
+  }
+
+  /**
+   * Start auto-refresh with current interval
+   */
+  private startAutoRefresh(): void {
+    // Clear existing subscription
+    this.refreshSubscription?.unsubscribe();
+    this.nextRefreshTime = null;
+    this.refreshCountdown = '';
+    
+    // Only setup auto-refresh if interval is not 0 (manual only)
+    if (this.refreshInterval > 0) {
+      // Set next refresh time
+      this.nextRefreshTime = new Date(Date.now() + this.refreshInterval);
+      
+      this.refreshSubscription = timer(this.refreshInterval, this.refreshInterval)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
+          console.log(`🔄 Auto-refreshing priority data every ${this.refreshInterval/1000} seconds...`);
+          console.log('🔄 Current display mode during auto-refresh:', this.displayMode);
+          console.log('🔄 Show refresh overlay setting:', this.showRefreshOverlay);
+          
+          // Update next refresh time
+          this.nextRefreshTime = new Date(Date.now() + this.refreshInterval);
+          
+          // Ensure display mode is preserved during auto-refresh
+          this.priorityDisplayService.updateDisplayMode(this.displayMode);
+          // Pass showRefreshOverlay setting to control loading state
+          this.priorityDisplayService.loadPriorityData(this.showRefreshOverlay);
+        });
+      console.log(`✅ Auto-refresh started with ${this.refreshInterval/1000}s interval`);
+    } else {
+      console.log('🔄 Auto-refresh disabled - manual refresh only');
+    }
+  }
+
+  /**
+   * Change refresh interval and restart auto-refresh
+   */
+  onRefreshIntervalChange(newInterval: number): void {
+    console.log(`🔄 Changing refresh interval from ${this.refreshInterval/1000}s to ${newInterval/1000}s`);
+    this.refreshInterval = newInterval;
+    this.startAutoRefresh();
+    
+    // Save settings to localStorage
+    this.saveSettingsToStorage();
+    
+    // Update URL with refresh interval (for backward compatibility)
+    this.updateUrlWithRefreshInterval();
+    
+    // Manual refresh when changing interval to show immediate effect
+    if (newInterval > 0) {
+      this.refreshData();
+    }
+  }
+
+  /**
+   * Update URL with current refresh interval
+   */
+  private updateUrlWithRefreshInterval(): void {
+    try {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { 
+          view: this.displayMode,
+          refresh: this.refreshInterval 
+        },
+        queryParamsHandling: 'merge'
       });
+      console.log(`🔗 URL updated with refresh=${this.refreshInterval}`);
+    } catch (error) {
+      console.warn('⚠️ Failed to update URL with refresh interval:', error);
+    }
   }
 
   /**
@@ -147,7 +295,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
       
       // Set display mode BEFORE loading data
       this.priorityDisplayService.updateDisplayMode(this.displayMode);
-      await this.priorityDisplayService.loadPriorityData();
+      // Always show loading state for initial load
+      await this.priorityDisplayService.loadPriorityData(true);
       
       console.log('✅ Initial data load completed');
     } catch (error) {
@@ -163,19 +312,40 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     console.log('🔄 Current display mode during manual refresh:', this.displayMode);
     // Ensure display mode is preserved during manual refresh
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
-    await this.priorityDisplayService.loadPriorityData();
+    // Always show loading state for manual refresh
+    await this.priorityDisplayService.loadPriorityData(true);
   }
 
   /**
-   * Toggle between single and top3 display modes
+   * Toggle between different display modes
    */
   toggleDisplayMode(): void {
     const oldMode = this.displayMode;
-    this.displayMode = this.displayMode === 'single' ? 'top3' : 'single';
-    console.log(`🔄 Display mode changed from ${oldMode} to: ${this.displayMode}`);
-    console.log('🔗 URL before update:', window.location.href);
     
-    // Update URL with query parameter
+    // Cycle through all display modes
+    switch (this.displayMode) {
+      case 'single':
+        this.displayMode = 'top3';
+        break;
+      case 'top3':
+        this.displayMode = 'top6';
+        break;
+      case 'top6':
+        this.displayMode = 'grid';
+        break;
+      case 'grid':
+        this.displayMode = 'single';
+        break;
+      default:
+        this.displayMode = 'single';
+    }
+    
+    console.log(`🔄 Display mode changed from ${oldMode} to: ${this.displayMode}`);
+    
+    // Save settings to localStorage
+    this.saveSettingsToStorage();
+    
+    // Update URL with query parameter (for backward compatibility)
     this.updateUrlWithDisplayMode();
     
     // Update the service
@@ -189,10 +359,13 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     try {
       this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { view: this.displayMode },
+        queryParams: { 
+          view: this.displayMode,
+          refresh: this.refreshInterval 
+        },
         queryParamsHandling: 'merge'
       });
-      console.log(`� URL updated with view=${this.displayMode}`);
+      console.log(`🔗 URL updated with view=${this.displayMode} and refresh=${this.refreshInterval}`);
     } catch (error) {
       console.warn('⚠️ Failed to update URL with display mode:', error);
     }
@@ -203,7 +376,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
    */
   private restoreDisplayMode(): void {
     try {
-      const viewParam = this.route.snapshot.queryParams['view'] as 'single' | 'top3';
+      const viewParam = this.route.snapshot.queryParams['view'] as 'single' | 'top3' | 'top6' | 'grid';
       if (viewParam && (viewParam === 'single' || viewParam === 'top3')) {
         this.displayMode = viewParam;
         console.log(`� Display mode restored from URL: ${this.displayMode}`);
@@ -227,6 +400,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
       this.toggleDisplayMode();
     }
   }
+
+
 
   /**
    * Navigate back to main application
@@ -275,6 +450,19 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     return 'No description available';
   };
 
+  getUniqueCustomers = (item: any): string[] => {
+    const customerSet = new Set<string>();
+    
+    item.orders.forEach((order: any) => {
+      const customer = order.SO_CUST || order['COMPANY'] || order.CUSTNAME;
+      if (customer && customer !== 'N/A' && customer.trim()) {
+        customerSet.add(customer.trim());
+      }
+    });
+    
+    return Array.from(customerSet);
+  };
+
   getRecentComment = (order: any): string => {
     if (order.recent_comments?.comments_html) {
       // Strip HTML tags for display
@@ -300,4 +488,282 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     if (!value) return fallback;
     return value.toString();
   };
+
+  /**
+   * Check if any orders in the group are completed
+   */
+  hasCompletedOrders = (orders: any[]): boolean => {
+    return orders.some(order => order.misc?.['userName'] === 'Shipping');
+  };
+
+  /**
+   * Check if any orders in the group are hot orders
+   */
+  hasHotOrders = (orders: any[]): boolean => {
+    return orders.some(order => order.misc?.hot_order);
+  };
+
+  /**
+   * Check if any orders in the group have low inventory
+   */
+  hasLowInventoryOrders = (orders: any[]): boolean => {
+    return orders.some(order => order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0));
+  };
+
+  /**
+   * Get display mode name for UI
+   */
+  getDisplayModeName(): string {
+    switch (this.displayMode) {
+      case 'single': return 'Single View';
+      case 'top3': return 'Top 3';
+      case 'top6': return 'Top 6';
+      case 'grid': return 'Grid View';
+      default: return 'Single View';
+    }
+  }
+
+  /**
+   * Get next display mode name for toggle button
+   */
+  getNextDisplayModeName(): string {
+    switch (this.displayMode) {
+      case 'single': return 'Top 3';
+      case 'top3': return 'Top 6';
+      case 'top6': return 'Grid View';
+      case 'grid': return 'Single View';
+      default: return 'Top 3';
+    }
+  }
+
+  /**
+   * Get current refresh interval display text
+   */
+  getCurrentRefreshIntervalText(): string {
+    if (this.refreshInterval === 0) {
+      return 'Manual Only';
+    }
+    const seconds = this.refreshInterval / 1000;
+    if (seconds < 60) {
+      return `${seconds}s`;
+    } else {
+      const minutes = seconds / 60;
+      return `${minutes}m`;
+    }
+  }
+
+  /**
+   * Handle mouse enter on dropdown item
+   */
+  onMouseEnterDropdownItem(event: any, intervalValue: number): void {
+    const target = event.target as HTMLElement;
+    if (this.refreshInterval !== intervalValue) {
+      target.style.backgroundColor = '#495057';
+    }
+  }
+
+  /**
+   * Open settings offcanvas
+   */
+  openSettings(): void {
+    this.settingsOpen = true;
+    this.offcanvasService.open(this.settingsOffcanvas, {
+      position: 'end',
+      backdrop: true,
+      keyboard: true,
+      scroll: false
+    });
+  }
+
+  /**
+   * Load settings from localStorage
+   */
+  private loadSettingsFromStorage(): void {
+    try {
+      const savedSettings = localStorage.getItem(this.SETTINGS_STORAGE_KEY);
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        
+        // Load display mode
+        if (settings.displayMode && ['single', 'top3', 'top6', 'grid'].includes(settings.displayMode)) {
+          this.displayMode = settings.displayMode;
+        }
+        
+        // Load refresh interval
+        if (settings.refreshInterval !== undefined && settings.refreshInterval >= 0) {
+          this.refreshInterval = settings.refreshInterval;
+        }
+        
+        // Load card layout
+        if (settings.cardLayout && ['traditional', 'production', 'salesorder', 'compact', 'detailed', 'minimal', 'dashboard'].includes(settings.cardLayout)) {
+          this.cardLayout = settings.cardLayout;
+        }
+        
+        // Load coming up next settings
+        if (settings.showComingUpNext !== undefined) {
+          this.showComingUpNext = settings.showComingUpNext;
+        }
+        if (settings.autoScrollEnabled !== undefined) {
+          this.autoScrollEnabled = settings.autoScrollEnabled;
+        }
+        if (settings.scrollSpeed !== undefined && settings.scrollSpeed > 0) {
+          this.scrollSpeed = settings.scrollSpeed;
+        }
+        
+        // Load refresh overlay setting
+        if (settings.showRefreshOverlay !== undefined) {
+          this.showRefreshOverlay = settings.showRefreshOverlay;
+        }
+        
+        console.log('✅ Settings loaded from localStorage:', settings);
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to load settings from localStorage:', error);
+    }
+  }
+
+  /**
+   * Save settings to localStorage
+   */
+  saveSettingsToStorage(): void {
+    try {
+      const settings = {
+        displayMode: this.displayMode,
+        refreshInterval: this.refreshInterval,
+        cardLayout: this.cardLayout,
+        showComingUpNext: this.showComingUpNext,
+        autoScrollEnabled: this.autoScrollEnabled,
+        scrollSpeed: this.scrollSpeed,
+        showRefreshOverlay: this.showRefreshOverlay,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(this.SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      console.log('✅ Settings saved to localStorage:', settings);
+    } catch (error) {
+      console.warn('⚠️ Failed to save settings to localStorage:', error);
+    }
+  }
+
+  /**
+   * Change display mode from settings panel
+   */
+  changeDisplayMode(mode: string): void {
+    if (['single', 'top3', 'top6', 'grid'].includes(mode)) {
+      this.displayMode = mode as 'single' | 'top3' | 'top6' | 'grid';
+      this.priorityDisplayService.updateDisplayMode(this.displayMode);
+      this.saveSettingsToStorage();
+    }
+  }
+
+  /**
+   * Handle display mode change from settings component
+   */
+  onDisplayModeChange(mode: 'single' | 'top3' | 'top6' | 'grid'): void {
+    this.displayMode = mode;
+    this.priorityDisplayService.updateDisplayMode(this.displayMode);
+    this.saveSettingsToStorage();
+    this.updateUrlWithDisplayMode();
+  }
+
+  /**
+   * Handle card layout change from settings component
+   */
+  onCardLayoutChange(layout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'): void {
+    this.cardLayout = layout;
+    this.saveSettingsToStorage();
+  }
+
+  /**
+   * Handle coming up next settings change from settings component
+   */
+  onComingUpNextSettingsChange(settings: {showComingUpNext: boolean, autoScrollEnabled: boolean, scrollSpeed: number}): void {
+    this.showComingUpNext = settings.showComingUpNext;
+    this.autoScrollEnabled = settings.autoScrollEnabled;
+    this.scrollSpeed = settings.scrollSpeed;
+    this.saveSettingsToStorage();
+  }
+
+  /**
+   * Handle settings applied from settings component
+   */
+  onSettingsApplied(settings: { displayMode: 'single' | 'top3' | 'top6' | 'grid'; refreshInterval: number; cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'; showComingUpNext: boolean; autoScrollEnabled: boolean; scrollSpeed: number; showRefreshOverlay: boolean }): void {
+    this.displayMode = settings.displayMode;
+    this.refreshInterval = settings.refreshInterval;
+    this.cardLayout = settings.cardLayout;
+    this.showComingUpNext = settings.showComingUpNext;
+    this.autoScrollEnabled = settings.autoScrollEnabled;
+    this.scrollSpeed = settings.scrollSpeed;
+    this.showRefreshOverlay = settings.showRefreshOverlay;
+    this.priorityDisplayService.updateDisplayMode(this.displayMode);
+    this.startAutoRefresh();
+    this.saveSettingsToStorage();
+    this.updateUrlWithDisplayMode();
+  }
+
+  /**
+   * Handle settings component closed
+   */
+  onSettingsClosed(): void {
+    this.settingsOpen = false;
+  }
+
+  /**
+   * Get adaptive font size class based on part number length
+   */
+  getPartNumberFontClass(partNumber: string): string {
+    if (!partNumber) return 'fs-4';
+    
+    const length = partNumber.length;
+    if (length <= 10) return 'fs-2'; // Large font for short part numbers
+    if (length <= 15) return 'fs-3'; // Medium font
+    if (length <= 20) return 'fs-4'; // Smaller font
+    return 'fs-5'; // Smallest font for very long part numbers
+  }
+
+  /**
+   * Get responsive column class based on display mode
+   */
+  getCardColumnClass(): string {
+    switch (this.displayMode) {
+      case 'top3': return 'col-lg-4 col-md-6'; // 3 cards per row on large screens
+      case 'top6': return 'col-lg-4 col-md-6'; // 3 cards per row, showing 6 total (2 rows)
+      case 'grid': return 'col-lg-3 col-md-4 col-sm-6'; // 4 cards per row on large screens, more dense
+      default: return 'col-lg-4 col-md-6';
+    }
+  }
+
+  /**
+   * Get customer logo URL based on customer name
+   */
+  getCustomerLogo(customerName: string): string | null {
+    if (!customerName) return null;
+    
+    const customer = customerName.toLowerCase().trim();
+    
+    if (customer.includes('amegam')) {
+      return 'https://assets.talentronic.com/brands/employers/logos/000/279/189/logo.png?1582145902';
+    } else if (customer.includes('ati') || customer.includes('aristocrat')) {
+      return 'https://www.indiangaming.com/wp-content/uploads/2021/03/Aristocrat_Logo2-1024x323.jpg';
+    } else if (customer.includes('baltec')) {
+      return 'https://c.smartrecruiters.com/sr-careersite-image-prod/55920a6fe4b06ce952a5c887/060d5037-4f70-4dd7-9c31-d700f6c5b468?r=s3';
+    } else if (customer.includes('igt') || customer.includes('intgam') || customer.includes('international game technology')) {
+      return 'https://cdn.imgbin.com/19/15/1/imgbin-international-game-technology-i-g-t-australia-pty-ltd-portable-network-graphics-lottomatica-spa-social-campaign-iQga30i3JCuekwguEpeYSgfSg.jpg';
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get primary customer name from grouped item
+   */
+  getPrimaryCustomer(item: any): string {
+    if (!item || !item.orders || item.orders.length === 0) {
+      return '';
+    }
+    
+    // Get the first order's company name
+    const firstOrder = item.orders[0];
+    return firstOrder?.['COMPANY'] || firstOrder?.['SO_CUST'] || firstOrder?.['CUSTNAME'] || '';
+  }
 }

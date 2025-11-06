@@ -1,0 +1,1094 @@
+.multi-card-view {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  
+  // Ensure rows don't overflow
+  .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100%;
+  }
+  
+  // Card styling
+  .priority-card {
+    border-width: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    
+    &.refreshing {
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 10;
+        border-radius: inherit;
+        animation: pulse-opacity 1.5s infinite;
+      }
+      
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border: 2px solid #007bff;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        z-index: 11;
+        animation: spin 1s linear infinite;
+      }
+    }
+    
+    .card-header {
+      background-color: rgba(248, 249, 250, 0.8);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+      
+      .card-title {
+        color: #333;
+        font-weight: 600;
+      }
+      
+      // Executive Customer Branding - Centered
+      .customer-branding {
+        .executive-customer-logo {
+          width: 60px;
+          height: 45px;
+          border-radius: 8px;
+          object-fit: contain;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 6px;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+      }
+    }
+  }
+
+  // Loading overlay for card container
+  .loading-overlay {
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0) 100%);
+      z-index: 5;
+      animation: shimmer 1.5s infinite;
+      border-radius: 0.375rem;
+    }
+  }
+
+  // Animations
+  @keyframes pulse-opacity {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  // Priority badge colors
+  .border-danger {
+    border-color: #dc3545 !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  .border-warning {
+    border-color: #ffc107 !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  .border-info {
+    border-color: #17a2b8 !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  .border-success {
+    border-color: #28a745 !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  .border-secondary {
+    border-color: #6c757d !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  .border-primary {
+    border-color: #007bff !important;
+    
+    .card-header {
+      background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(248, 249, 250, 0.8));
+    }
+  }
+
+  // Stats styling
+  .stat-item {
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  // Orders preview styling
+  .orders-preview {
+    .order-preview {
+      padding: 0.5rem;
+      background-color: #f8f9fa;
+      border-radius: 0.375rem;
+      border: 1px solid #e9ecef;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background-color: #e9ecef;
+      }
+      
+      .order-info {
+        min-width: 0; // Allow text truncation
+        
+        .order-number {
+          color: #495057;
+          font-weight: 600;
+        }
+        
+        .order-part, .order-customer {
+          color: #6c757d;
+          font-size: 0.8rem;
+        }
+      }
+      
+      .order-actions {
+        flex-shrink: 0;
+        text-align: right;
+        
+        .badge {
+          font-size: 0.7rem;
+          padding: 0.25em 0.5em;
+        }
+        
+        .order-status-indicators {
+          font-size: 0.8rem;
+          
+          i {
+            opacity: 0.8;
+            
+            &:hover {
+              opacity: 1;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Executive Priority Ranking
+  .executive-priority-rank {
+    .priority-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+      border: 3px solid transparent;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+      
+      .priority-number {
+        font-size: 1.4rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 0.1rem;
+      }
+      
+      .priority-label {
+        font-size: 0.45rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+      
+      // Priority 1 - Gold Medal
+      &.priority-gold {
+        background: linear-gradient(135deg, #FFD700, #FFA500, #FF8C00);
+        color: #8B4513;
+        border-color: #DAA520;
+        box-shadow: 0 3px 12px rgba(255, 215, 0, 0.4), 0 0 0 2px rgba(255, 215, 0, 0.2);
+        
+        &::before {
+          content: '👑';
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          font-size: 1.2rem;
+          animation: crown-glow 2s infinite alternate;
+        }
+      }
+      
+      // Priority 2 - Silver Medal  
+      &.priority-silver {
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8, #808080);
+        color: #2F2F2F;
+        border-color: #A0A0A0;
+        box-shadow: 0 3px 12px rgba(192, 192, 192, 0.4);
+      }
+      
+      // Priority 3 - Bronze Medal
+      &.priority-bronze {
+        background: linear-gradient(135deg, #CD7F32, #B8860B, #A0522D);
+        color: #FFFFFF;
+        border-color: #8B4513;
+        box-shadow: 0 3px 12px rgba(205, 127, 50, 0.4);
+      }
+      
+      // Priority 4-5 - High Priority (Red)
+      &.priority-high {
+        background: linear-gradient(135deg, #FF6B6B, #FF5252, #F44336);
+        color: #FFFFFF;
+        border-color: #D32F2F;
+        box-shadow: 0 3px 12px rgba(255, 107, 107, 0.4);
+        animation: pulse-high 3s infinite;
+      }
+      
+      // Priority 6-10 - Medium Priority (Orange)
+      &.priority-medium {
+        background: linear-gradient(135deg, #FF9800, #F57C00, #E65100);
+        color: #FFFFFF;
+        border-color: #D84315;
+        box-shadow: 0 3px 12px rgba(255, 152, 0, 0.3);
+      }
+      
+      // Priority 11+ - Standard (Blue)
+      &.priority-standard {
+        background: linear-gradient(135deg, #2196F3, #1976D2, #1565C0);
+        color: #FFFFFF;
+        border-color: #0D47A1;
+        box-shadow: 0 3px 12px rgba(33, 150, 243, 0.3);
+      }
+    }
+  }
+
+  // Part Info styling
+  .part-info {
+    flex: 1;
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #2C3E50;
+      letter-spacing: 0.025em;
+      line-height: 1.2;
+    }
+    
+    .priority-subtitle {
+      font-size: 0.8rem;
+      color: #6C757D;
+      font-weight: 500;
+      line-height: 1.3;
+      margin-top: 0.25rem;
+    }
+  }
+
+  // Animations for priority circles
+  @keyframes crown-glow {
+    0% { 
+      filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.6));
+      transform: scale(1);
+    }
+    100% { 
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9));
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes pulse-high {
+    0%, 100% { 
+      box-shadow: 0 3px 12px rgba(255, 107, 107, 0.4);
+    }
+    50% { 
+      box-shadow: 0 3px 12px rgba(255, 107, 107, 0.4), 0 0 0 4px rgba(255, 107, 107, 0.2);
+    }
+  }
+
+  // Executive Customer Branding
+  .customer-branding {
+    .executive-logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      
+      .executive-customer-logo {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border: 2px solid #e9ecef;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 4px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+          border-color: #dee2e6;
+        }
+      }
+      
+      .customer-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #495057;
+        margin-top: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1;
+      }
+    }
+  }
+
+  // Executive Priority Status Indicators
+  .priority-status {
+    .status-indicators {
+      gap: 0.25rem;
+      
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.25px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        
+        i {
+          font-size: 0.8rem;
+        }
+        
+        &.completed {
+          background: linear-gradient(135deg, #d4edda, #c3e6cb);
+          color: #155724;
+          border: 1px solid #c3e6cb;
+        }
+        
+        &.urgent {
+          background: linear-gradient(135deg, #f8d7da, #f1b0b7);
+          color: #721c24;
+          border: 1px solid #f1b0b7;
+          animation: pulse-urgent 2s infinite;
+        }
+        
+        &.low-stock {
+          background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+          color: #856404;
+          border: 1px solid #ffeaa7;
+        }
+        
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+
+  @keyframes pulse-urgent {
+    0%, 100% { 
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    50% { 
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(220, 53, 69, 0.2);
+    }
+  }
+
+  // Priority badges in header (legacy support)
+  .priority-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    
+    .badge {
+      padding: 0.2em 0.4em;
+      font-size: 0.7rem;
+      
+      i {
+        font-size: 0.8em;
+      }
+    }
+  }
+
+  // Header actions
+  .header-actions {
+    display: flex;
+    align-items: center;
+    
+    .badge {
+      font-size: 0.8rem;
+    }
+  }
+
+  // Grid specific styling
+  &.grid-view {
+    .priority-card {
+      min-height: 300px;
+    }
+    
+    .stat-value {
+      font-size: 1.25rem !important;
+    }
+    
+    .orders-preview {
+      .order-preview {
+        padding: 0.375rem;
+        margin-bottom: 0.375rem !important;
+      }
+    }
+  }
+
+  // Card view specific styling
+  &.card-view {
+    .priority-card {
+      min-height: 350px;
+    }
+  }
+
+  // Empty state styling
+  .empty-state {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    border: 2px dashed #dee2e6;
+    margin: 2rem 0;
+  }
+
+  // Card footers
+  .card-footer {
+    background-color: rgba(248, 249, 250, 0.5);
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+    
+    .card-actions {
+      .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  // Card Layout Styles
+  .layout-traditional {
+    padding: 1.25rem;
+    
+    .traditional-layout {
+      .order-details {
+        .order-number {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #2c3e50;
+          margin-bottom: 0.75rem;
+        }
+        
+        .detail-summary {
+          .part-number {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+          }
+          
+          .customer {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+          }
+          
+          .ship-date {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 0.75rem;
+          }
+          
+          .status-badges {
+            .badge {
+              font-size: 0.75rem;
+              padding: 0.25em 0.5em;
+              
+              i {
+                font-size: 0.8em;
+                margin-right: 0.25em;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .layout-production {
+    padding: 1.25rem;
+    background: #ffffff;
+    
+    .production-layout {
+      .prod-header {
+        .prod-label {
+          color: #6c757d;
+          font-size: 0.7rem;
+          letter-spacing: 1px;
+          font-weight: 600;
+        }
+        
+        .part-number-title {
+          font-size: 1.25rem;
+          color: #0d6efd;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+        
+        .part-description {
+          font-size: 0.8rem;
+          line-height: 1.3;
+          color: #6c757d;
+        }
+      }
+      
+      .prod-quantity-box {
+        .prod-quantity-label {
+          color: #6c757d;
+          font-size: 0.7rem;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+          
+          i {
+            color: #6c757d;
+          }
+        }
+        
+        .quantity-display {
+          background: linear-gradient(135deg, #fd7e14, #ff8c00);
+          border-radius: 0.75rem;
+          padding: 1.25rem 1rem;
+          color: white;
+          box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3);
+          
+          .quantity-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+          }
+          
+          .quantity-units {
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0.9;
+          }
+        }
+      }
+      
+      .prod-orders-section,
+      .prod-customer-section {
+        .prod-info-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          
+          .prod-icon-wrapper {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            
+            i {
+              font-size: 1.1rem;
+            }
+          }
+          
+          .prod-info-content {
+            flex: 1;
+            
+            .prod-info-label {
+              color: #6c757d;
+              font-size: 0.7rem;
+              letter-spacing: 0.5px;
+              font-weight: 600;
+              margin-bottom: 0.25rem;
+            }
+            
+            .prod-info-value {
+              font-size: 0.9rem;
+              font-weight: 600;
+              color: #495057;
+              line-height: 1.2;
+            }
+          }
+        }
+      }
+      
+      .prod-status-section {
+        .badge {
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: 1.5rem;
+          
+          i {
+            font-size: 0.9em;
+          }
+        }
+      }
+    }
+  }
+
+  .layout-salesorder {
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    
+    .salesorder-layout {
+      .so-header {
+        text-align: center;
+        padding-bottom: 1.25rem;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 1.5rem;
+        
+        .so-label {
+          color: #6c757d;
+          font-size: 0.75rem;
+          letter-spacing: 1.2px;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        
+        .part-number-large {
+          font-size: 3.5rem;
+          color: #0d6efd;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          line-height: 1.1;
+          word-spacing: 0.1em;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          max-width: 100%;
+        }
+        
+        .part-description {
+          font-size: 1.4rem;
+          line-height: 1.3;
+          max-height: 3.6rem;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          color: #495057;
+          font-weight: 600;
+        }
+      }
+      
+      .so-content {
+        .so-orders {
+          .so-orders-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+          }
+          
+          .so-orders-list {
+            .so-item {
+              font-family: 'Courier New', monospace;
+              font-weight: 600;
+              color: #495057;
+              line-height: 1.3;
+              font-size: 1.1rem;
+            }
+          }
+        }
+        
+        .so-work-orders {
+          .wo-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+          }
+          
+          .wo-list {
+            .so-item {
+              font-family: 'Courier New', monospace;
+              font-weight: 600;
+              color: #495057;
+              line-height: 1.3;
+              font-size: 1.1rem;
+            }
+          }
+        }
+        
+        .so-quantity {
+          .quantity-box {
+            background: linear-gradient(135deg, #fd7e14, #ff8c00);
+            border-radius: 1rem;
+            padding: 1.5rem 1rem;
+            color: white;
+            box-shadow: 0 4px 15px rgba(253, 126, 20, 0.3);
+            display: inline-block;
+            min-width: 120px;
+            
+            .quantity-number {
+              font-size: 2.2rem;
+              font-weight: 900;
+              line-height: 1;
+              margin-bottom: 0.5rem;
+            }
+            
+            .quantity-label {
+              font-size: 0.85rem;
+              font-weight: 600;
+              letter-spacing: 1px;
+              opacity: 0.95;
+            }
+          }
+        }
+      }
+      
+      .so-customers {
+        .customers-label {
+          color: #6c757d;
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+        }
+        
+        .customers-list {
+          .customer-item {
+            color: #495057;
+            font-weight: 600;
+            line-height: 1.4;
+            font-size: 1.1rem;
+            
+            i {
+              color: #0d6efd;
+              font-size: 1.2rem;
+            }
+          }
+        }
+      }
+      
+      .so-status {
+        padding-top: 0.75rem;
+        border-top: 1px solid #e9ecef;
+        
+        .badge {
+          font-size: 0.7rem;
+          padding: 0.25em 0.5em;
+          
+          i {
+            font-size: 0.8em;
+            margin-right: 0.25em;
+          }
+        }
+      }
+    }
+  }
+
+  .layout-minimal {
+    padding: 1rem !important;
+    
+    .minimal-layout {
+      .part-number-large {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+      }
+      
+      .quantity-large {
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .layout-compact {
+    padding: 1rem;
+    
+    .customer-info {
+      padding: 0.5rem;
+      background-color: rgba(248, 249, 250, 0.5);
+      border-radius: 0.375rem;
+    }
+  }
+
+  .layout-detailed {
+    padding: 1.25rem;
+    
+    .orders-preview {
+      .order-preview {
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        border: 1px solid #e9ecef;
+        
+        &:hover {
+          background-color: #e9ecef;
+        }
+      }
+    }
+  }
+
+  .layout-dashboard {
+    padding: 1rem;
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      
+      .metric-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        border-radius: 0.5rem;
+        border: 1px solid #e9ecef;
+        
+        .metric-icon {
+          margin-right: 0.75rem;
+          font-size: 1.25rem;
+        }
+        
+        .metric-content {
+          .metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #495057;
+          }
+          
+          .metric-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+        }
+      }
+    }
+    
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      
+      .status-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        
+        i {
+          margin-right: 0.25rem;
+          font-size: 0.9rem;
+        }
+        
+        &.active {
+          background-color: #d1ecf1;
+          color: #0c5460;
+          border: 1px solid #bee5eb;
+          
+          &:first-child.active {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+          }
+          
+          &:last-child.active {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f1b0b7;
+          }
+        }
+      }
+    }
+    
+    .progress-section {
+      .progress {
+        border-radius: 0.5rem;
+        background-color: #e9ecef;
+        
+        .progress-bar {
+          border-radius: 0.5rem;
+          transition: width 0.3s ease;
+        }
+      }
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 1199.98px) {
+    &.grid-view {
+      .col-xl-3 {
+        flex: 0 0 auto;
+        width: 33.333333%;
+      }
+    }
+  }
+  
+  @media (max-width: 991.98px) {
+    .header-actions {
+      margin-top: 0.5rem;
+      
+      .badge, .btn {
+        font-size: 0.8rem;
+      }
+    }
+    
+    .priority-card {
+      min-height: auto !important;
+    }
+    
+    .stat-value {
+      font-size: 1.25rem !important;
+    }
+  }
+  
+  @media (max-width: 767.98px) {
+    .col-md-6 {
+      width: 100%;
+    }
+    
+    .header-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .priority-badges {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .orders-preview {
+      .order-preview {
+        .d-flex {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .order-actions {
+          margin-top: 0.25rem;
+          text-align: left;
+        }
+      }
+    }
+    
+    // Mobile adjustments for card layouts
+    .layout-dashboard {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        
+        .metric-item {
+          padding: 0.5rem;
+          
+          .metric-content {
+            .metric-value {
+              font-size: 1.1rem;
+            }
+          }
+        }
+      }
+      
+      .status-grid {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+      }
+    }
+    
+    .layout-detailed {
+      padding: 1rem;
+      
+      .orders-preview {
+        .order-preview {
+          padding: 0.5rem;
+        }
+      }
+    }
+    
+    .layout-minimal {
+      .minimal-layout {
+        .part-number-large {
+          font-size: 1rem;
+        }
+        
+        .quantity-large {
+          font-size: 1.5rem;
+        }
+      }
+    }
+  }
+}

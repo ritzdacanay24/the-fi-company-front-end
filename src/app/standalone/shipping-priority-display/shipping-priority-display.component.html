@@ -14,6 +14,13 @@
         <p class="lead mb-0">Real-time production priority display</p>
       </div>
 
+      <!-- Company Logo -->
+      <div class="company-logo-section">
+        <img src="https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png" 
+             alt="The Fi Company Logo" 
+             class="company-logo">
+      </div>
+
       <div class="header-right text-end">
         <div class="current-time">
           <h3 class="fw-bold mb-1">{{ currentTime }}</h3>
@@ -50,7 +57,9 @@
     </div>
 
     <!-- Main Content -->
-    <div *ngIf="!displayData.hasError" class="priority-content" [class.loading]="displayData.isLoading">
+    <div *ngIf="!displayData.hasError" class="priority-content" 
+         [class.loading]="displayData.isLoading"
+         [class.with-bottom-queue]="showComingUpNext && displayData.nextGroupedItems.length > 0">
 
       <!-- No Priority Orders -->
       <div *ngIf="!displayData.isLoading && !displayData.currentPriorityOrder && displayData.topThreePriorityOrders.length === 0"
@@ -66,323 +75,30 @@
       </div>
 
       <!-- Single Priority Display Mode with Sidebar Queue -->
-      <div *ngIf="displayMode === 'single' && displayData.currentPriorityOrder" class="current-priority-section">
-        <div class="row g-4">
-          
-          <!-- Main Current Priority (Left Column) -->
-          <div class="col-lg-8">
-            <div class="current-priority-card border shadow-sm bg-white">
-              
-              <!-- Clean Professional Header -->
-              <div class="card-header bg-primary text-white py-3 border-0">
-                <div class="d-flex align-items-center justify-content-between">
-                  <div class="d-flex align-items-center">
-                    <div class="me-3">
-                      <i class="mdi mdi-truck-fast fs-1"></i>
-                    </div>
-                    <div>
-                      <h3 class="mb-1 fw-bold text-white">NOW PROCESSING</h3>
-                      <div class="d-flex align-items-center gap-3">
-                        <span class="badge bg-light text-primary px-3 py-1 fw-bold">
-                          PRIORITY #{{ displayData.currentPriorityOrder.shipping_priority }}
-                        </span>
-                        <small class="text-light opacity-75">
-                          {{ formatDate(displayData.lastUpdated) }} • {{ currentTime }}
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <span class="badge px-3 py-2" 
-                         [class]="displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'bg-warning text-dark' : 'bg-success text-white'">
-                      <i class="mdi me-1" [class]="displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'mdi-clock' : 'mdi-check-circle'"></i>
-                      {{ displayData.currentPriorityOrder.misc?.['userName'] !== 'Shipping' ? 'IN PROGRESS' : 'COMPLETED' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+      <app-single-priority-view 
+        *ngIf="displayMode === 'single'"
+        [currentGroupedItem]="displayData.currentGroupedItem"
+        [nextGroupedItems]="displayData.nextGroupedItems"
+        [currentTime]="currentTime"
+        [lastUpdated]="displayData.lastUpdated"
+        (refreshRequested)="refreshData()">
+      </app-single-priority-view>
 
-              <!-- Warning Alert (if needed) -->
-              <div class="alert alert-warning border-0 rounded-0 mb-0" 
-                   *ngIf="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA'">
-                <div class="d-flex align-items-center justify-content-between">
-                  <div class="d-flex align-items-center">
-                    <i class="mdi mdi-alert-triangle me-2"></i>
-                    <div>
-                      <strong>DATA SYNCHRONIZATION ISSUE</strong>
-                      <small class="d-block text-muted">Priority order exists but shipping data is unavailable</small>
-                    </div>
-                  </div>
-                  <button class="btn btn-outline-warning btn-sm" (click)="refreshData()">
-                    <i class="mdi mdi-refresh me-1"></i>RETRY
-                  </button>
-                </div>
-              </div>
+      <!-- Multi-Card Priority Display Mode (Top 3, Top 6, Grid) -->
+      <app-multi-card-view 
+        *ngIf="displayMode !== 'single'"
+        [groupedItems]="displayData.topThreeGroupedItems"
+        [displayMode]="displayMode"
+        [cardLayout]="cardLayout"
+        [currentTime]="currentTime"
+        [lastUpdated]="displayData.lastUpdated"
+        [isRefreshing]="displayData.isLoading"
+        [showRefreshOverlay]="showRefreshOverlay"
+        (refreshRequested)="refreshData()">
+      </app-multi-card-view>
 
-              <!-- Main Content -->
-              <div class="card-body p-4">
-                
-                <!-- Order Number & Quantity -->
-                <div class="row align-items-center mb-4 pb-3 border-bottom">
-                  <div class="col-md-7">
-                    <div class="small text-muted text-uppercase fw-bold mb-1">Sales Order Number</div>
-                    <h1 class="display-6 fw-bold text-primary mb-0 font-monospace">
-                      {{ displayData.currentPriorityOrder.SOD_NBR }}-{{ displayData.currentPriorityOrder.SOD_LINE }}
-                    </h1>
-                  </div>
-                  <div class="col-md-5 text-center">
-                    <div class="small text-muted text-uppercase fw-bold mb-1">Quantity to Ship</div>
-                    <div class="display-5 fw-bold text-warning">
-                      {{ formatQuantity(displayData.currentPriorityOrder.QTYOPEN || displayData.currentPriorityOrder.SOD_QTY_ORD || displayData.currentPriorityOrder.SOD_QTY_TO_SHIP) }}
-                    </div>
-                    <div class="small text-muted fw-bold">UNITS</div>
-                  </div>
-                </div>
-
-                <!-- Information Table -->
-                <table class="table table-borderless mb-0">
-                  <tbody>
-                    <tr>
-                      <td class="py-2 text-muted text-uppercase fw-bold" style="width: 20%;">Part Number:</td>
-                      <td class="py-2 font-monospace fw-bold"
-                          [class]="displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'text-danger' : 'text-dark'">
-                        {{ displayData.currentPriorityOrder.SOD_PART === 'MISSING_DATA' ? 'DATA MISSING' : displayData.currentPriorityOrder.SOD_PART }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-2 text-muted text-uppercase fw-bold">Description:</td>
-                      <td class="py-2 text-dark">
-                        {{ truncateText(getPartDescription(displayData.currentPriorityOrder), 60) || 'Not Available' }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-2 text-muted text-uppercase fw-bold">Customer:</td>
-                      <td class="py-2 fw-bold"
-                          [class]="(displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' || displayData.currentPriorityOrder.CUSTNAME === 'MISSING_DATA') ? 'text-danger' : 'text-success'">
-                        {{ displayData.currentPriorityOrder.SO_CUST === 'MISSING_DATA' ? 'DATA MISSING' : (displayData.currentPriorityOrder.SO_CUST || displayData.currentPriorityOrder.CUSTNAME || 'NOT SPECIFIED') }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <!-- Critical Alerts -->
-                <div class="mt-4" 
-                     *ngIf="displayData.currentPriorityOrder.misc?.hot_order || (displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0))">
-                  <div class="d-flex gap-2 flex-wrap">
-                    <div class="alert alert-danger mb-0 py-2 px-3 d-flex align-items-center" 
-                         *ngIf="displayData.currentPriorityOrder.misc?.hot_order">
-                      <i class="mdi mdi-fire me-2"></i>
-                      <strong>HOT ORDER - EXPEDITE IMMEDIATELY</strong>
-                    </div>
-                    <!-- <div class="alert alert-warning mb-0 py-2 px-3 d-flex align-items-center" 
-                         *ngIf="displayData.currentPriorityOrder.LD_QTY_OH && displayData.currentPriorityOrder.LD_QTY_OH < (displayData.currentPriorityOrder.QTYOPEN || 0)">
-                      <i class="mdi mdi-alert-triangle me-2"></i>
-                      <strong>INSUFFICIENT INVENTORY</strong>
-                    </div> -->
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-          <!-- Queue Sidebar (Right Column) -->
-          <div class="col-lg-4">
-            <div class="queue-sidebar">
-              <div class="card border shadow-sm bg-white h-100">
-                <div class="card-header bg-light border-bottom">
-                  <h5 class="mb-0 fw-bold text-dark">
-                    <i class="mdi mdi-format-list-numbered me-2"></i>
-                    Coming Up Next
-                  </h5>
-                  <small class="text-muted">{{ displayData.nextPriorityOrders.length }} orders in queue</small>
-                </div>
-                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
-                  
-                  <!-- Queue Items -->
-                  <div *ngFor="let order of displayData.nextPriorityOrders; let i = index" class="queue-item border-bottom">
-                    <div class="p-3" [class.bg-light]="i % 2 === 0">
-                      <div class="d-flex align-items-start justify-content-between mb-2">
-                        <div class="flex-grow-1">
-                          <div class="fw-bold text-dark">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</div>
-                          <div class="small text-muted">Priority #{{ order.shipping_priority }}</div>
-                        </div>
-                        <div class="text-end">
-                          <div class="fw-bold text-warning">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP) }}</div>
-                          <div class="small text-muted">units</div>
-                        </div>
-                      </div>
-                      
-                      <div class="small mb-1">
-                        <strong class="text-primary">{{ order.SOD_PART }}</strong>
-                      </div>
-                      
-                      <div class="small text-muted mb-2" [title]="getPartDescription(order)">
-                        {{ truncateText(getPartDescription(order), 40) }}
-                      </div>
-                      
-                      <div class="d-flex align-items-center justify-content-between">
-                        <div class="small">
-                          <i class="mdi mdi-account text-muted me-1"></i>
-                          <span class="text-truncate">{{ truncateText(order.SO_CUST || order.CUSTNAME || 'N/A', 15) }}</span>
-                        </div>
-                        <div class="small text-muted">
-                          {{ formatDate(order.SOD_DUE_DATE || order.SOD_SHIP_DATE) }}
-                        </div>
-                      </div>
-                      
-                      <!-- Status Indicators -->
-                      <div class="mt-2" *ngIf="order.misc?.['userName'] === 'Shipping' || order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0))">
-                        <div class="d-flex gap-1">
-                          <span class="badge bg-success badge-sm" *ngIf="order.misc?.['userName'] === 'Shipping'">✅ DONE</span>
-                          <span class="badge bg-danger badge-sm" *ngIf="order.misc?.hot_order">🔥 HOT</span>
-                          <span class="badge bg-warning text-dark badge-sm" *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)">⚠️ LOW INV</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Empty State -->
-                  <div *ngIf="displayData.nextPriorityOrders.length === 0" class="p-4 text-center text-muted">
-                    <i class="mdi mdi-check-circle display-4 text-success"></i>
-                    <div class="mt-2">Queue is empty!</div>
-                  </div>
-                  
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top 3 Priority Display Mode -->
-      <div *ngIf="displayMode !== 'single'" class="top3-priority-section position-relative">
-        
-        <!-- Global Loading Overlay for entire section -->
-        <div *ngIf="displayData.isLoading" 
-             class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center" 
-             style="background: rgba(248, 249, 250, 0.8); z-index: 20; top: 0; left: 0; min-height: 300px; backdrop-filter: blur(2px);">
-          <div class="text-center">
-            <div class="spinner-border text-primary mb-2" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="text-muted small">Refreshing priority orders...</div>
-          </div>
-        </div>
-        
-        <!-- Loading State for Initial Load -->
-        <div *ngIf="!displayData.isLoading && displayData.topThreePriorityOrders.length === 0" class="loading-state text-center py-5">
-          <div class="text-center">
-            <i class="mdi mdi-clipboard-check display-4 text-muted"></i>
-            <h4 class="mt-3 text-muted">No Priority Orders</h4>
-            <p class="text-muted">All orders are currently being processed</p>
-          </div>
-        </div>
-        
-        <!-- Top 3 Cards - Keep visible during refresh -->
-        <div class="row g-4">
-          <div class="col-lg-4 col-md-6" *ngFor="let order of displayData.topThreePriorityOrders; let i = index">
-            <div class="priority-card-enterprise position-relative" [class]="getPriorityRankClass(i)">
-              
-              <!-- Professional Header with Gradient -->
-              <div class="card-header-enterprise">
-                <div class="priority-rank-indicator">
-                  <span class="rank-number">{{ i + 1 }}</span>
-                </div>
-                <div class="header-content">
-                  <h4 class="rank-title text-white">{{ getPriorityRankText(i) }}</h4>
-                  <span class="priority-badge" [class]="getPriorityBadgeClass(order.shipping_priority)">
-                    <i class="mdi mdi-star me-1"></i>Priority {{ order.shipping_priority }}
-                  </span>
-                </div>
-                <div class="status-indicator">
-                  <span class="status-dot" [class]="order.misc?.['userName'] === 'Shipping' ? 'completed' : 'pending'"></span>
-                </div>
-              </div>
-
-              <!-- Card Body with Enhanced Layout -->
-              <div class="card-body-enterprise">
-                <!-- Order Header -->
-                <div class="order-header-section">
-                  <div class="order-number-display-warehouse">
-                    <span class="order-label-warehouse">Sales Order</span>
-                    <h1 class="order-number-warehouse">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</h1>
-                  </div>
-                </div>
-                
-                <!-- Primary Information Grid -->
-                <div class="info-grid">
-                  <div class="info-section part-section">
-                    <div class="info-label">
-                      <i class="mdi mdi-package-variant me-1"></i>Part Number
-                    </div>
-                    <div class="part-number-display" [title]="order.SOD_PART">
-                      {{ order.SOD_PART }}
-                    </div>
-                    <div class="part-description" [title]="getPartDescription(order)">
-                      {{ truncateText(getPartDescription(order), 40) }}
-                    </div>
-                  </div>
-                  
-                  <div class="info-section quantity-section">
-                    <div class="info-label">
-                      <i class="mdi mdi-cube-outline me-1"></i>Quantity
-                    </div>
-                    <div class="quantity-display-enterprise">
-                      <span class="quantity-number">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP) }}</span>
-                      <span class="quantity-unit">units</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Secondary Information -->
-                <div class="secondary-info-grid">
-                  <div class="info-item">
-                    <div class="info-icon">
-                      <i class="mdi mdi-account-outline"></i>
-                    </div>
-                    <div class="info-content">
-                      <div class="info-label-small">Customer</div>
-                      <div class="info-value" [title]="order.SO_CUST || order.CUSTNAME || 'N/A'">
-                        {{ truncateText(order.SO_CUST || order.CUSTNAME || 'N/A', 20) }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Status Badge Section -->
-                <div class="status-badge-section">
-                  <span [class]="getStatusBadgeClass(order.STATUS)" class="status-badge-enterprise">
-                    <i class="mdi mdi-information-outline me-1"></i>{{ order.STATUS }}
-                  </span>
-                </div>
-
-                <!-- Critical Alerts -->
-                <div class="alerts-section"
-                  *ngIf="order.misc?.hot_order || (order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)) || order.misc?.['userName'] === 'Shipping'">
-                  <div class="alert-badges">
-                    <span class="alert-badge completed" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed - Shipped">
-                      <i class="mdi mdi-check-circle-outline"></i>
-                      <span>Completed</span>
-                    </span>
-                    <span class="alert-badge hot" *ngIf="order.misc?.hot_order" title="Hot Order - Expedite">
-                      <i class="mdi mdi-fire"></i>
-                      <span>Hot Order</span>
-                    </span>
-                    <span class="alert-badge warning" *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" title="Insufficient Inventory">
-                      <i class="mdi mdi-alert-circle-outline"></i>
-                      <span>Low Inventory</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Next Orders Queue - Hidden in single mode (now using sidebar) -->
-      <div *ngIf="displayMode !== 'single' && displayData.nextPriorityOrders.length > 0" class="next-orders-section">
+      <!-- Coming Up Next Queue - Auto-scrolling horizontal display -->
+      <div *ngIf="showComingUpNext && displayData.nextGroupedItems.length > 0" class="next-orders-section fixed-bottom-queue">
         <div class="section-header">
           <h3>
             <i class="mdi mdi-format-list-numbered me-2"></i>
@@ -390,34 +106,39 @@
           </h3>
         </div>
 
-        <div class="next-orders-scroll-container">
-          <div class="next-orders-horizontal" *ngFor="let order of displayData.nextPriorityOrders; let i = index">
-            <div class="next-order-card">
-              <div class="card-body p-3">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <span class="order-number small">{{ order.SOD_NBR }}-{{ order.SOD_LINE }}</span>
-                  <span [class]="getPriorityBadgeClass(order.shipping_priority)" class="badge-sm">
-                    #{{ order.shipping_priority }}
-                  </span>
-                </div>
-                <p class="part-number mb-1 text-truncate" [title]="order.SOD_PART">{{ order.SOD_PART }}</p>
-                <p class="customer small text-muted mb-1 text-truncate"
-                  [title]="order.SO_CUST || order.CUSTNAME || 'N/A'">
-                  {{ order.SO_CUST || order.CUSTNAME || 'N/A' }}
-                </p>
-                <div class="d-flex align-items-center justify-content-between">
-                  <small class="text-muted">{{ formatQuantity(order.QTYOPEN || order.SOD_QTY_ORD ||
-                    order.SOD_QTY_TO_SHIP) }} open</small>
-                  <div class="status-indicators">
-                    <span class="badge bg-success badge-xs" *ngIf="order.misc?.['userName'] === 'Shipping'" title="Completed">✅</span>
-                    <span class="badge bg-danger badge-xs" *ngIf="order.misc?.hot_order" title="Hot Order">🔥</span>
-                    <span class="badge bg-warning badge-xs"
-                      *ngIf="order.LD_QTY_OH && order.LD_QTY_OH < (order.QTYOPEN || 0)" title="Low Inventory">⚠️</span>
+        <div class="infinite-scroll-wrapper">
+          <div class="carousel-track"
+               [class.auto-scroll]="autoScrollEnabled"
+               [style.animation-duration]="scrollSpeed + 's'"
+               [style.animation-play-state]="autoScrollEnabled ? 'running' : 'paused'"
+               #scrollContainer>
+              <!-- Triple the cards for true infinite scroll -->
+              <ng-container *ngFor="let repeat of [1,2,3]">
+                <div class="next-order-card" *ngFor="let groupedItem of displayData.nextGroupedItems; let i = index" [class.has-logo]="getCustomerLogo(getPrimaryCustomer(groupedItem))">
+                  <!-- Background Logo -->
+                  <div class="card-background-logo" *ngIf="getCustomerLogo(getPrimaryCustomer(groupedItem))">
+                    <img [src]="getCustomerLogo(getPrimaryCustomer(groupedItem))" 
+                         [alt]="getPrimaryCustomer(groupedItem) + ' logo'"
+                         class="background-logo-img">
+                  </div>
+                  <div class="card-body p-2">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <span class="order-count small">{{ groupedItem.orders.length }} order{{ groupedItem.orders.length > 1 ? 's' : '' }}</span>
+                      <span class="badge bg-primary badge-sm">
+                        #{{ groupedItem.priority }}
+                      </span>
+                    </div>
+                    <p class="part-number mb-2 text-truncate fw-bold" [title]="groupedItem.partNumber">{{ groupedItem.partNumber }}</p>
+                    <div class="status-indicators text-center">
+                      <span class="badge bg-success badge-xs me-1" *ngIf="hasCompletedOrders(groupedItem.orders)" title="Has Completed Orders">✅</span>
+                      <span class="badge bg-danger badge-xs me-1" *ngIf="hasHotOrders(groupedItem.orders)" title="Hot Orders">🔥</span>
+                      <span class="badge bg-warning badge-xs" *ngIf="hasLowInventoryOrders(groupedItem.orders)" title="Low Inventory">⚠️</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </ng-container>
           </div>
+        </div>
         </div>
       </div>
 
@@ -478,28 +199,54 @@
           </div>
         </div>
       </div> -->
-    </div>
-
-    <!-- Controls Section -->
-    <div class="controls-section">
-      <div class="d-flex align-items-center justify-content-center gap-3">
-        <!-- Display Mode Toggle -->
-        <button class="btn btn-outline-light" (click)="toggleDisplayMode()">
-          <i class="mdi mdi-view-{{ displayMode === 'single' ? 'grid' : 'sequential' }} me-2"></i>
-          {{ displayMode === 'single' ? 'Show Top 3' : 'Single View' }}
-        </button>
-        <button class="btn btn-outline-light" (click)="refreshData()">
-          <i class="mdi mdi-refresh me-2"></i>
-          Refresh Data
-        </button>
-        <button class="btn btn-outline-light" (click)="goToDashboard()">
-          <i class="mdi mdi-arrow-left me-2"></i>
-          Back to Dashboard
-        </button>
-        <small class="text-muted">Press <kbd>Space</kbd> to toggle display mode</small>
-      </div>
-    </div>
 
   </ng-container>
 
 </div>
+
+  <!-- Floating Settings Button -->
+  <button class="btn btn-primary floating-settings-btn shadow-lg" 
+          (click)="openSettings()"
+          title="Display Settings"
+          [style]="{
+            'position': 'fixed',
+            'bottom': '20px',
+            'right': '20px',
+            'z-index': '1050',
+            'width': '60px',
+            'height': '60px',
+            'border-radius': '50%',
+            'display': 'flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+            'transition': 'all 0.3s ease',
+            'animation': 'pulse 2s infinite'
+          }"
+          (mouseenter)="$any($event.target).style.transform = 'scale(1.1)'"
+          (mouseleave)="$any($event.target).style.transform = 'scale(1)'">
+    <i class="mdi mdi-cog fs-4" 
+       [style]="{ 'transition': 'transform 0.3s ease' }"
+       (mouseenter)="$any($event.target).style.transform = 'rotate(90deg)'"
+       (mouseleave)="$any($event.target).style.transform = 'rotate(0deg)'"></i>
+  </button>
+
+<!-- Settings Offcanvas Template -->
+<ng-template #settingsOffcanvas let-offcanvas>
+  <app-priority-settings
+    [displayMode]="displayMode"
+    [refreshInterval]="refreshInterval"
+    [refreshCountdown]="refreshCountdown"
+    [cardLayout]="cardLayout"
+    [showComingUpNext]="showComingUpNext"
+    [autoScrollEnabled]="autoScrollEnabled"
+    [scrollSpeed]="scrollSpeed"
+    [showRefreshOverlay]="showRefreshOverlay"
+    (displayModeChange)="onDisplayModeChange($event)"
+    (refreshIntervalChange)="onRefreshIntervalChange($event)"
+    (cardLayoutChange)="onCardLayoutChange($event)"
+    (comingUpNextSettingsChange)="onComingUpNextSettingsChange($event)"
+    (refreshRequested)="refreshData()"
+    (settingsApplied)="onSettingsApplied($event); offcanvas.close()"
+    (closed)="offcanvas.close()">
+  </app-priority-settings>
+</ng-template>

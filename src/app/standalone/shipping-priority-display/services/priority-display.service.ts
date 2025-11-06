@@ -100,11 +100,26 @@ export interface ShippingOrder {
   [key: string]: any;
 }
 
+export interface GroupedPriorityItem {
+  partNumber: string;
+  priority: number;
+  totalQuantity: number;
+  orders: ShippingOrder[];
+  dueDate?: string;
+  status?: string;
+  customerName?: string;
+}
+
 export interface PriorityDisplayData {
   currentPriorityOrder: ShippingOrder | null;
   topThreePriorityOrders: ShippingOrder[];
   nextPriorityOrders: ShippingOrder[];
   allPriorityOrders: ShippingOrder[];
+  // New grouped data for part number display
+  groupedPriorityItems: GroupedPriorityItem[];
+  currentGroupedItem: GroupedPriorityItem | null;
+  topThreeGroupedItems: GroupedPriorityItem[];
+  nextGroupedItems: GroupedPriorityItem[];
   statusCount: {
     pastDue: number;
     todayDue: number;
@@ -127,6 +142,10 @@ export class PriorityDisplayService {
     topThreePriorityOrders: [],
     nextPriorityOrders: [],
     allPriorityOrders: [],
+    groupedPriorityItems: [],
+    currentGroupedItem: null,
+    topThreeGroupedItems: [],
+    nextGroupedItems: [],
     statusCount: { pastDue: 0, todayDue: 0, futureDue: 0 },
     isLoading: false,
     hasError: false,
@@ -137,7 +156,7 @@ export class PriorityDisplayService {
   public readonly displayData$ = this._displayData$.asObservable();
 
   // Track current display mode
-  private currentDisplayMode: 'single' | 'top3' = 'single';
+  private currentDisplayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
 
   constructor(
     private api: MasterSchedulingService,
@@ -152,10 +171,12 @@ export class PriorityDisplayService {
   /**
    * Load priority data and update the display
    */
-  async loadPriorityData(): Promise<void> {
+  async loadPriorityData(showLoadingState: boolean = true): Promise<void> {
     try {
-      // Set loading state without clearing existing data
-      this.setLoadingState(true);
+      // Set loading state without clearing existing data - only if requested
+      if (showLoadingState) {
+        this.setLoadingState(true);
+      }
 
       // Setup WebSocket connection on first load
       if (!this.isWebSocketSetup) {
@@ -199,7 +220,7 @@ export class PriorityDisplayService {
   /**
    * Update display mode and recalculate display data
    */
-  updateDisplayMode(mode: 'single' | 'top3'): void {
+  updateDisplayMode(mode: 'single' | 'top3' | 'top6' | 'grid'): void {
     console.log(`🔄 Setting display mode to: ${mode}`);
     this.currentDisplayMode = mode;
     
@@ -374,25 +395,109 @@ export class PriorityDisplayService {
   }
 
   /**
+   * Group orders by part number across all priority levels
+   */
+  private groupOrdersByPartNumber(orders: ShippingOrder[]): GroupedPriorityItem[] {
+    const grouped = new Map<string, GroupedPriorityItem>();
+
+    orders.forEach(order => {
+      const partNumber = order.SOD_PART || 'Unknown Part';
+      const priority = order.shipping_priority || 999;
+      // Use only part number as key to group across all priority levels
+      const key = partNumber;
+
+      if (grouped.has(key)) {
+        const existing = grouped.get(key)!;
+        existing.orders.push(order);
+        // Use QTYOPEN as the primary quantity field, fallback to SOD_QTY_ORD
+        existing.totalQuantity += (order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0);
+        // Keep the highest priority (lowest number) for this part
+        if (priority < existing.priority) {
+          existing.priority = priority;
+        }
+        // Update customer name logic - check if we have multiple customers
+        const newCustomerName = order.SO_CUST || order.CUSTNAME || 'Unknown Customer';
+        if (existing.customerName !== newCustomerName) {
+          existing.customerName = 'Multiple Customers';
+        }
+      } else {
+        // Get customer name - prefer SO_CUST over CUSTNAME
+        const customerName = order.SO_CUST || order.CUSTNAME || 'Unknown Customer';
+        
+        grouped.set(key, {
+          partNumber,
+          priority,
+          totalQuantity: order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0,
+          orders: [order],
+          dueDate: order.SOD_SHIP_DATE || order.SOD_DUE_DATE,
+          status: order.STATUS,
+          customerName: customerName
+        });
+      }
+    });
+
+    // Convert map to array and sort by lowest priority number (highest priority first)
+    return Array.from(grouped.values()).sort((a, b) => a.priority - b.priority);
+  }
+
+  /**
    * Calculate display data based on mode
    */
-  private calculateDisplayData(allOrders: ShippingOrder[], mode: 'single' | 'top3') {
+  private calculateDisplayData(allOrders: ShippingOrder[], mode: 'single' | 'top3' | 'top6' | 'grid') {
     const sortedOrders = [...allOrders].sort((a, b) => 
       (a.shipping_priority || 999) - (b.shipping_priority || 999)
     );
 
-    if (mode === 'single') {
-      return {
-        currentPriorityOrder: sortedOrders.length > 0 ? sortedOrders[0] : null,
-        topThreePriorityOrders: [],
-        nextPriorityOrders: sortedOrders.slice(1, 10) // Show up to 9 next orders
-      };
-    } else {
-      return {
-        currentPriorityOrder: null,
-        topThreePriorityOrders: sortedOrders.slice(0, 3),
-        nextPriorityOrders: sortedOrders.slice(3, 10) // Show up to 7 next orders after top 3
-      };
+    // Generate grouped data for part number display
+    const groupedItems = this.groupOrdersByPartNumber(sortedOrders);
+
+    switch (mode) {
+      case 'single':
+        return {
+          currentPriorityOrder: sortedOrders.length > 0 ? sortedOrders[0] : null,
+          topThreePriorityOrders: [],
+          nextPriorityOrders: sortedOrders.slice(1, 10),
+          groupedPriorityItems: groupedItems,
+          currentGroupedItem: groupedItems.length > 0 ? groupedItems[0] : null,
+          topThreeGroupedItems: [],
+          nextGroupedItems: groupedItems.slice(1, 10)
+        };
+      
+      case 'top3':
+        return {
+          currentPriorityOrder: null,
+          topThreePriorityOrders: sortedOrders.slice(0, 3),
+          nextPriorityOrders: sortedOrders.slice(3, 10),
+          groupedPriorityItems: groupedItems,
+          currentGroupedItem: null,
+          topThreeGroupedItems: groupedItems.slice(0, 3),
+          nextGroupedItems: groupedItems.slice(3, 10)
+        };
+      
+      case 'top6':
+        return {
+          currentPriorityOrder: null,
+          topThreePriorityOrders: sortedOrders.slice(0, 6), // Reuse this array for 6 items
+          nextPriorityOrders: sortedOrders.slice(6, 15),
+          groupedPriorityItems: groupedItems,
+          currentGroupedItem: null,
+          topThreeGroupedItems: groupedItems.slice(0, 6), // Reuse this array for 6 items
+          nextGroupedItems: groupedItems.slice(6, 15)
+        };
+      
+      case 'grid':
+        return {
+          currentPriorityOrder: null,
+          topThreePriorityOrders: sortedOrders.slice(0, 12), // Show up to 12 in grid
+          nextPriorityOrders: [],
+          groupedPriorityItems: groupedItems,
+          currentGroupedItem: null,
+          topThreeGroupedItems: groupedItems.slice(0, 12), // Show up to 12 in grid
+          nextGroupedItems: []
+        };
+      
+      default:
+        return this.calculateDisplayData(allOrders, 'single');
     }
   }
 
