@@ -109,6 +109,187 @@
     </div>
   </div>
 
+  <!-- Theme Settings -->
+  <div class="settings-section mb-4">
+    <h5 class="settings-title">
+      <i class="mdi mdi-theme-light-dark me-2 text-primary"></i>
+      Theme & LED Protection
+    </h5>
+    <p class="text-muted small mb-3">Configure theme and automatic switching to prevent LED screen burn-in</p>
+    
+    <div class="card">
+      <div class="card-body p-3">
+        <!-- Current Theme Display -->
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="text-center">
+              <i class="mdi mdi-brightness-6 fs-3" 
+                 [class.text-warning]="currentTheme === 'light'"
+                 [class.text-info]="currentTheme === 'dark'"></i>
+              <div class="small text-muted">Current Theme</div>
+              <div class="fw-bold">{{ getCurrentThemeLabel() }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-center">
+              <i class="mdi mdi-timer-outline fs-3"
+                 [class.text-success]="autoSwitchEnabled"
+                 [class.text-muted]="!autoSwitchEnabled"></i>
+              <div class="small text-muted">Auto Switch</div>
+              <div class="fw-bold">{{ autoSwitchEnabled ? getSwitchIntervalLabel() : 'Disabled' }}</div>
+              <div class="small text-primary" *ngIf="autoSwitchEnabled && switchCountdown">
+                Next: {{ switchCountdown }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Theme Toggle -->
+        <div class="mb-3">
+          <label class="form-label small fw-bold">
+            <i class="mdi mdi-palette me-1"></i>
+            Theme Selection
+          </label>
+          <div class="row g-2">
+            <div class="col-4" *ngFor="let theme of getAvailableThemes()">
+              <button class="btn w-100 theme-btn" 
+                      [class.active]="currentTheme === theme.value"
+                      [class.btn-warning]="theme.value === 'light' && currentTheme === theme.value"
+                      [class.btn-outline-warning]="theme.value === 'light' && currentTheme !== theme.value"
+                      [class.btn-dark]="theme.value === 'dark' && currentTheme === theme.value"
+                      [class.btn-outline-dark]="theme.value === 'dark' && currentTheme !== theme.value"
+                      [class.btn-primary]="(theme.value === 'dark-vibrant' || theme.value === 'midnight' || theme.value === 'neon') && currentTheme === theme.value"
+                      [class.btn-outline-primary]="(theme.value === 'dark-vibrant' || theme.value === 'midnight' || theme.value === 'neon') && currentTheme !== theme.value"
+                      (click)="onManualThemeChange(theme.value)"
+                      [title]="theme.label">
+                <span class="theme-icon">{{ theme.icon }}</span>
+                <div class="theme-label">{{ theme.label }}</div>
+              </button>
+            </div>
+          </div>
+          <div class="form-text small">Choose your preferred color theme</div>
+        </div>
+
+        <!-- Auto-Switch Settings -->
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" 
+                 type="checkbox" 
+                 id="autoSwitchEnabled"
+                 [(ngModel)]="autoSwitchEnabled"
+                 (change)="onAutoSwitchToggle()">
+          <label class="form-check-label" for="autoSwitchEnabled">
+            <i class="mdi mdi-autorenew me-1"></i>
+            Enable Automatic Theme Switching
+          </label>
+          <div class="form-text small">
+            <i class="mdi mdi-shield-check me-1 text-success"></i>
+            Prevents LED screen burn-in by alternating themes
+          </div>
+        </div>
+
+        <!-- Switch Interval Settings -->
+        <div *ngIf="autoSwitchEnabled" class="mb-3">
+          <label for="switchInterval" class="form-label small fw-bold">
+            <i class="mdi mdi-clock-outline me-1"></i>
+            Switch Interval
+          </label>
+          <select class="form-select"
+                  id="switchInterval"
+                  [(ngModel)]="switchIntervalMinutes"
+                  (change)="onSwitchIntervalChange(switchIntervalMinutes)">
+            <option *ngFor="let interval of getThemeIntervalOptions()" 
+                    [value]="interval.value">
+              {{ interval.label }}
+            </option>
+          </select>
+          <div class="form-text small">How often to automatically switch between light and dark themes</div>
+        </div>
+
+        <!-- LED Protection Info -->
+        <div class="alert alert-info p-2 mb-0" *ngIf="autoSwitchEnabled">
+          <i class="mdi mdi-information me-1"></i>
+          <small>
+            <strong>LED Protection Active:</strong> Theme will automatically switch every {{ getSwitchIntervalLabel().toLowerCase() }} 
+            to prevent static content burn-in on LED displays.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zoom Settings -->
+  <div class="settings-section mb-4">
+    <h5 class="settings-title">
+      <i class="mdi mdi-magnify me-2 text-primary"></i>
+      Display Zoom
+    </h5>
+    <p class="text-muted small mb-3">Adjust the display size for better visibility on different screens</p>
+    
+    <div class="card">
+      <div class="card-body p-3">
+        <!-- Current Zoom Display -->
+        <div class="text-center mb-3">
+          <i class="mdi mdi-magnify fs-3 text-primary"></i>
+          <div class="small text-muted">Current Zoom</div>
+          <div class="fw-bold">{{ getCurrentZoomLabel() }}</div>
+        </div>
+
+        <!-- Quick Zoom Controls -->
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <button class="btn btn-outline-secondary w-100" 
+                    (click)="onZoomOut()">
+              <i class="mdi mdi-magnify-minus"></i>
+              <small class="d-block">Zoom Out</small>
+            </button>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-outline-primary w-100" 
+                    (click)="onResetZoom()">
+              <i class="mdi mdi-magnify"></i>
+              <small class="d-block">Reset</small>
+            </button>
+          </div>
+          <div class="col-4">
+            <button class="btn btn-outline-secondary w-100" 
+                    (click)="onZoomIn()">
+              <i class="mdi mdi-magnify-plus"></i>
+              <small class="d-block">Zoom In</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Zoom Level Selector -->
+        <div class="mb-3">
+          <label for="zoomLevel" class="form-label small fw-bold">
+            <i class="mdi mdi-tune-vertical me-1"></i>
+            Precise Zoom Level
+          </label>
+          <select class="form-select"
+                  id="zoomLevel"
+                  [(ngModel)]="zoomLevel"
+                  (change)="onZoomChange(zoomLevel)">
+            <option *ngFor="let zoom of getZoomLevelOptions()" 
+                    [value]="zoom.value">
+              {{ zoom.label }}
+            </option>
+          </select>
+          <div class="form-text small">Select exact zoom level for optimal viewing</div>
+        </div>
+
+        <!-- Zoom Info -->
+        <div class="alert alert-light p-2 mb-0">
+          <i class="mdi mdi-information me-1"></i>
+          <small>
+            <strong>Zoom Guide:</strong> 
+            Use smaller zoom (75-90%) for overview on large screens, 
+            larger zoom (125-200%) for detailed viewing or LED displays.
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Refresh Overlay Settings -->
   <div class="settings-section mb-4">
     <h5 class="settings-title">

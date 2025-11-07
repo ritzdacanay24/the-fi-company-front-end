@@ -86,7 +86,7 @@
 }
 
 .offcanvas-header {
-  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  background: #007bff !important;
   position: relative;
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -111,7 +111,7 @@
     left: 0;
     right: 0;
     height: 20px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+    background: rgba(255, 255, 255, 1);
     z-index: 5;
     pointer-events: none;
     margin: -1.5rem -1.5rem 0 -1.5rem;
@@ -124,7 +124,7 @@
     left: 0;
     right: 0;
     height: 20px;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+    background: rgba(255, 255, 255, 1);
     z-index: 5;
     pointer-events: none;
     margin: 0 -1.5rem -2rem -1.5rem;
@@ -165,11 +165,11 @@
     font-weight: 500;
     
     &.btn-primary {
-      background: linear-gradient(135deg, #007bff, #0056b3);
+      background: #007bff;
       border: none;
       
       &:hover {
-        background: linear-gradient(135deg, #0056b3, #004085);
+        background: #0056b3;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
       }
@@ -189,7 +189,7 @@
   border: 1px solid #e9ecef;
   
   .card-body {
-    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    background: #f8f9fa;
   }
   
   i {
@@ -283,6 +283,44 @@
         margin-bottom: 1rem;
       }
     }
+  }
+}
+
+// Theme button styling
+.theme-btn {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  
+  .theme-icon {
+    font-size: 1.5rem;
+    display: block;
+  }
+  
+  .theme-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  &.active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-width: 2px;
   }
 }
 

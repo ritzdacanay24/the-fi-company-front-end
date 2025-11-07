@@ -398,6 +398,9 @@ export class PriorityDisplayService {
    * Group orders by part number across all priority levels
    */
   private groupOrdersByPartNumber(orders: ShippingOrder[]): GroupedPriorityItem[] {
+    console.log('📦 Grouping orders by part number...');
+    console.log('📊 Total orders to group:', orders.length);
+    
     const grouped = new Map<string, GroupedPriorityItem>();
 
     orders.forEach(order => {
@@ -409,6 +412,7 @@ export class PriorityDisplayService {
       if (grouped.has(key)) {
         const existing = grouped.get(key)!;
         existing.orders.push(order);
+        console.log(`  ➕ Added order to existing group: ${partNumber} (now has ${existing.orders.length} orders)`);
         // Use QTYOPEN as the primary quantity field, fallback to SOD_QTY_ORD
         existing.totalQuantity += (order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0);
         // Keep the highest priority (lowest number) for this part
@@ -421,6 +425,7 @@ export class PriorityDisplayService {
           existing.customerName = 'Multiple Customers';
         }
       } else {
+        console.log(`  ✨ Created new group: ${partNumber}`);
         // Get customer name - prefer SO_CUST over CUSTNAME
         const customerName = order.SO_CUST || order.CUSTNAME || 'Unknown Customer';
         
@@ -437,7 +442,11 @@ export class PriorityDisplayService {
     });
 
     // Convert map to array and sort by lowest priority number (highest priority first)
-    return Array.from(grouped.values()).sort((a, b) => a.priority - b.priority);
+    const result = Array.from(grouped.values()).sort((a, b) => a.priority - b.priority);
+    console.log('✅ Grouped result:', result.length, 'unique part numbers');
+    console.log('📋 Group details:', result.map(g => `${g.partNumber} (${g.orders.length} orders)`));
+    
+    return result;
   }
 
   /**

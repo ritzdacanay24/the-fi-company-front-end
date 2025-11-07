@@ -1,4 +1,4 @@
-<div class="multi-card-view" [ngClass]="containerClass">
+<div class="multi-card-view" [ngClass]="containerClass" [attr.data-theme]="currentTheme">
   <!-- Header Section -->
   <!-- <div class="row mb-4">
     <div class="col-12">
@@ -95,7 +95,7 @@
             <div class="prod-header text-center mb-3">
               <!-- <div class="prod-label text-uppercase small text-muted fw-bold mb-1">PART NUMBER</div> -->
               <h2 class="part-number-title text-primary fw-bold mb-2">{{ item.partNumber }}</h2>
-              <p class="part-description text-muted small mb-0">{{ getPartDescription(item) }}</p>
+              <p class="part-description text-light small mb-0">{{ getPartDescription(item) }}</p>
             </div>
             
             <!-- Large Quantity Box -->
@@ -128,7 +128,7 @@
                 <div class="prod-icon-wrapper bg-primary" *ngIf="!getCustomerLogo(getPrimaryCustomer(item))">
                   <i class="mdi mdi-account text-white"></i>
                 </div>
-                <div class="prod-icon-wrapper bg-white border" 
+                <div class="prod-icon-wrapper bg-body border" 
                      *ngIf="getCustomerLogo(getPrimaryCustomer(item))"
                      style="padding: 4px;">
                   <img [src]="getCustomerLogo(getPrimaryCustomer(item))" 
@@ -161,7 +161,7 @@
             
             <!-- Status Badge -->
             <div class="prod-status-section text-center">
-              <span *ngIf="hasHotOrders(item.orders)" class="badge bg-warning text-dark px-3 py-2">
+              <span *ngIf="hasHotOrders(item.orders)" class="badge bg-warning text-body px-3 py-2">
                 <i class="mdi mdi-clock-alert-outline me-1"></i>Due Today
               </span>
               <span *ngIf="!hasHotOrders(item.orders)" class="badge bg-success text-white px-3 py-2">
@@ -186,7 +186,7 @@
                       SALES ORDERS ({{ item.orders.length }} total)
                     </div>
                     <div class="so-orders-list">
-                      <div *ngFor="let order of item.orders.slice(0, 4)" class="so-item small mb-0 text-dark">
+                      <div *ngFor="let order of item.orders.slice(0, 4)" class="so-item small mb-0 text-body">
                         {{ order['SOD_NBR'] || order['ORDNUM'] || 'N/A' }}-{{ order['SOD_LINE'] || order['ORDLINE'] || '1' }}
                       </div>
                       <div *ngIf="item.orders.length > 4" class="so-item small text-muted">
@@ -199,7 +199,7 @@
                       WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }} ({{ getWorkOrderNumbers(item).length }} total)
                     </div>
                     <div class="wo-list">
-                      <div *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 4)" class="so-item small mb-0 text-dark">
+                      <div *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 4)" class="so-item small mb-0 text-body">
                         {{ wo }}
                       </div>
                       <div *ngIf="getWorkOrderNumbers(item).length > 4" class="so-item small text-muted">
@@ -240,7 +240,7 @@
             </div>
             
             <div class="so-status mt-2" *ngIf="hasHotOrders(item.orders)">
-              <span *ngIf="hasHotOrders(item.orders)" class="badge bg-warning text-dark me-1">
+              <span *ngIf="hasHotOrders(item.orders)" class="badge bg-warning text-body me-1">
                 <i class="mdi mdi-fire"></i> Due Today
               </span>
             </div>
@@ -326,7 +326,7 @@
                       </div>
                     </div>
                     <div class="order-actions">
-                      <span class="badge bg-light text-dark small">
+                      <span class="badge bg-secondary small">
                         {{ formatQuantity(order.QTYOPEN || 0) }}
                       </span>
                       <div class="order-status-indicators mt-1">

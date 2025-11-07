@@ -113,6 +113,7 @@
     "ngx-nestable": "^0.9.4",
     "ngx-pipes": "^3.2.2",
     "ngx-quill": "^18.0.0",
+    "ngx-slick-carousel": "^20.0.0",
     "ngx-slickjs": "^1.5.2",
     "ngx-slider-v2": "^17.0.0",
     "ngx-toastr": "^19.0.0",

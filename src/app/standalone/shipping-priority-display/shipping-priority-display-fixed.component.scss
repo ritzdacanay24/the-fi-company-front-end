@@ -7,13 +7,13 @@
 }
 
 .shipping-priority-container {
-  height: 100vh;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
-  overflow: hidden;
+  // height: 100vh;
+  // background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  // color: white;
+  // display: flex;
+  // flex-direction: column;
+  // padding: 2rem;
+  // overflow: hidden;
 }
 
 /* Header Section */
@@ -141,7 +141,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   
   .card-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.15);
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   }
@@ -208,7 +208,7 @@
     
     &.priority-1 {
       .card-header {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
+        background: #FFD700;
         color: #333;
       }
       border-color: #FFD700;
@@ -216,7 +216,7 @@
     
     &.priority-2 {
       .card-header {
-        background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+        background: #C0C0C0;
         color: #333;
       }
       border-color: #C0C0C0;
@@ -224,7 +224,7 @@
     
     &.priority-3 {
       .card-header {
-        background: linear-gradient(135deg, #CD7F32, #B8860B);
+        background: #CD7F32;
         color: white;
       }
       border-color: #CD7F32;
@@ -390,28 +390,28 @@
   border-radius: 1.5rem;
   
   &.bg-danger {
-    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    background: #dc3545 !important;
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
   }
   
   &.bg-warning {
-    background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+    background: #ffc107 !important;
     color: #333 !important;
     box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
   }
   
   &.bg-success {
-    background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    background: #28a745 !important;
     box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
   }
   
   &.bg-info {
-    background: linear-gradient(135deg, #17a2b8, #138496) !important;
+    background: #17a2b8 !important;
     box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
   }
   
   &.bg-secondary {
-    background: linear-gradient(135deg, #6c757d, #545b62) !important;
+    background: #6c757d !important;
     box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
   }
 }
@@ -603,37 +603,37 @@
 
 /* Priority badge colors */
 .priority-badge-1 {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
+  background: #FFD700;
   color: #333;
   border: 1px solid #FFD700;
 }
 
 .priority-badge-2 {
-  background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+  background: #C0C0C0;
   color: #333;
   border: 1px solid #C0C0C0;
 }
 
 .priority-badge-3 {
-  background: linear-gradient(135deg, #CD7F32, #B8860B);
+  background: #CD7F32;
   color: white;
   border: 1px solid #CD7F32;
 }
 
 .priority-badge-high {
-  background: linear-gradient(135deg, #dc3545, #c82333);
+  background: #dc3545;
   color: white;
   border: 1px solid #dc3545;
 }
 
 .priority-badge-medium {
-  background: linear-gradient(135deg, #ffc107, #e0a800);
+  background: #ffc107;
   color: #333;
   border: 1px solid #ffc107;
 }
 
 .priority-badge-low {
-  background: linear-gradient(135deg, #28a745, #1e7e34);
+  background: #28a745;
   color: white;
   border: 1px solid #28a745;
 }

@@ -16,8 +16,8 @@
 
       <!-- Company Logo -->
       <div class="company-logo-section">
-        <img src="https://the-fi-company.com/wp-content/uploads/2024/09/The-Fi-Company-Logo-Blue-1.png" 
-             alt="The Fi Company Logo" 
+        <img src="../../../assets/images/the-fi.png" 
+             alt="Business Logo" 
              class="company-logo">
       </div>
 
@@ -37,7 +37,7 @@
     <!-- Loading Indicator (Non-blocking) -->
     <div *ngIf="displayData.isLoading" class="loading-indicator">
       <div class="d-flex align-items-center justify-content-center">
-        <div class="spinner-border text-light me-2" style="width: 1.5rem; height: 1.5rem;" role="status">
+        <div class="spinner-border text-light me-2 loading-spinner" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
         <small>Refreshing data...</small>
@@ -106,37 +106,71 @@
           </h3>
         </div>
 
-        <div class="infinite-scroll-wrapper">
-          <div class="carousel-track"
-               [class.auto-scroll]="autoScrollEnabled"
-               [style.animation-duration]="scrollSpeed + 's'"
-               [style.animation-play-state]="autoScrollEnabled ? 'running' : 'paused'"
-               #scrollContainer>
-              <!-- Triple the cards for true infinite scroll -->
-              <ng-container *ngFor="let repeat of [1,2,3]">
-                <div class="next-order-card" *ngFor="let groupedItem of displayData.nextGroupedItems; let i = index" [class.has-logo]="getCustomerLogo(getPrimaryCustomer(groupedItem))">
-                  <!-- Background Logo -->
-                  <div class="card-background-logo" *ngIf="getCustomerLogo(getPrimaryCustomer(groupedItem))">
-                    <img [src]="getCustomerLogo(getPrimaryCustomer(groupedItem))" 
-                         [alt]="getPrimaryCustomer(groupedItem) + ' logo'"
-                         class="background-logo-img">
-                  </div>
-                  <div class="card-body p-2">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                      <span class="order-count small">{{ groupedItem.orders.length }} order{{ groupedItem.orders.length > 1 ? 's' : '' }}</span>
-                      <span class="badge bg-primary badge-sm">
-                        #{{ groupedItem.priority }}
-                      </span>
-                    </div>
-                    <p class="part-number mb-2 text-truncate fw-bold" [title]="groupedItem.partNumber">{{ groupedItem.partNumber }}</p>
-                    <div class="status-indicators text-center">
-                      <span class="badge bg-success badge-xs me-1" *ngIf="hasCompletedOrders(groupedItem.orders)" title="Has Completed Orders">✅</span>
-                      <span class="badge bg-danger badge-xs me-1" *ngIf="hasHotOrders(groupedItem.orders)" title="Hot Orders">🔥</span>
-                      <span class="badge bg-warning badge-xs" *ngIf="hasLowInventoryOrders(groupedItem.orders)" title="Low Inventory">⚠️</span>
+        <div class="d-flex align-items-center gap-3">
+          <!-- FIXED NEXT CARD - First item, always visible on the left -->
+          <div *ngIf="displayData.nextGroupedItems.length > 0" class="next-card-fixed">
+            <div class="next-order-card next-in-line">
+              <div class="card-body p-1">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <span class="order-count small">{{ displayData.nextGroupedItems[0].orders.length }} order{{ displayData.nextGroupedItems[0].orders.length > 1 ? 's' : '' }}</span>
+                  <span class="badge bg-warning badge-sm text-dark fw-bold">
+                    ⭐ NEXT
+                  </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <p class="part-number mb-0 text-truncate fw-bold flex-grow-1" [title]="displayData.nextGroupedItems[0].partNumber">
+                    {{ displayData.nextGroupedItems[0].partNumber }}
+                  </p>
+                  <img *ngIf="getCustomerLogo(getPrimaryCustomer(displayData.nextGroupedItems[0]))" 
+                       [src]="getCustomerLogo(getPrimaryCustomer(displayData.nextGroupedItems[0]))" 
+                       [alt]="getPrimaryCustomer(displayData.nextGroupedItems[0]) + ' logo'"
+                       class="inline-logo ms-2">
+                </div>
+                <div class="status-indicators text-center">
+                  <span class="badge bg-success badge-xs me-1" *ngIf="hasCompletedOrders(displayData.nextGroupedItems[0].orders)" title="Has Completed Orders">✅</span>
+                  <span class="badge bg-danger badge-xs me-1" *ngIf="hasHotOrders(displayData.nextGroupedItems[0].orders)" title="Hot Orders">🔥</span>
+                  <span class="badge bg-warning badge-xs" *ngIf="hasLowInventoryOrders(displayData.nextGroupedItems[0].orders)" title="Low Inventory">⚠️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CAROUSEL - Remaining items (all items including first, for continuous scrolling) -->
+          <div class="slick-carousel-wrapper flex-grow-1" *ngIf="displayData.nextGroupedItems.length > 0">
+            <ngx-slick-carousel 
+              class="carousel" 
+              [config]="slickConfig"
+              (init)="onCarouselInit($event)"
+              (afterChange)="onSlideChange($event)"
+              #slickModal="slick-carousel">
+              <!-- Duplicate items for better infinite scrolling -->
+              <ng-container *ngFor="let repetition of [1,2,3]">
+                <div ngxSlickItem *ngFor="let groupedItem of displayData.nextGroupedItems; let i = index" class="slide">
+                  <div class="next-order-card">
+                    <div class="card-body p-1">
+                      <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="order-count small">{{ groupedItem.orders.length }} order{{ groupedItem.orders.length > 1 ? 's' : '' }}</span>
+                        <span class="badge badge-sm bg-primary">
+                          #{{ displayData.topThreeGroupedItems.length + i + 1 }}
+                        </span>
+                      </div>
+                      <div class="d-flex align-items-center justify-content-between mb-1">
+                        <p class="part-number mb-0 text-truncate fw-bold flex-grow-1" [title]="groupedItem.partNumber">{{ groupedItem.partNumber }}</p>
+                        <img *ngIf="getCustomerLogo(getPrimaryCustomer(groupedItem))" 
+                             [src]="getCustomerLogo(getPrimaryCustomer(groupedItem))" 
+                             [alt]="getPrimaryCustomer(groupedItem) + ' logo'"
+                             class="inline-logo ms-2">
+                      </div>
+                      <div class="status-indicators text-center">
+                        <span class="badge bg-success badge-xs me-1" *ngIf="hasCompletedOrders(groupedItem.orders)" title="Has Completed Orders">✅</span>
+                        <span class="badge bg-danger badge-xs me-1" *ngIf="hasHotOrders(groupedItem.orders)" title="Hot Orders">🔥</span>
+                        <span class="badge bg-warning badge-xs" *ngIf="hasLowInventoryOrders(groupedItem.orders)" title="Low Inventory">⚠️</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </ng-container>
+            </ngx-slick-carousel>
           </div>
         </div>
         </div>

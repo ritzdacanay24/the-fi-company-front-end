@@ -1,5 +1,362 @@
 /* Shipping Priority Display Styles */
 
+// ====================================
+// THEME SYSTEM - Multiple Color Modes
+// ====================================
+
+// Light Theme (Default)
+:host,
+:host-context([data-theme="light"]) {
+  // Background colors
+  --bg-primary: #f8f9fa;
+  --bg-secondary: rgba(30, 41, 59, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-header: #667eea;
+  
+  // Text colors
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-white: #ffffff;
+  
+  // Border colors
+  --border-color: rgba(255, 255, 255, 0.2);
+  --border-card: rgba(0, 0, 0, 0.1);
+  
+  // Badge colors
+  --badge-warning-bg: #ffc107;
+  --badge-warning-text: #000;
+  --badge-primary-bg: #0d6efd;
+  --badge-primary-text: #fff;
+  --badge-success-bg: #198754;
+  --badge-success-text: #fff;
+  --badge-danger-bg: #dc3545;
+  --badge-danger-text: #fff;
+  
+  // Special highlights
+  --highlight-next: #ff6b35;
+  --highlight-next-shadow: rgba(255, 107, 53, 0.3);
+}
+
+// Dark Theme (Original - Blue/Purple tones)
+:host-context([data-theme="dark"]),
+[data-theme="dark"] {
+  // Background colors
+  --bg-primary: #1a1d21;
+  --bg-secondary: rgba(45, 55, 72, 0.95);
+  --bg-card: rgba(45, 55, 72, 0.95);
+  --bg-header: #434343;
+  
+  // Text colors
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e0;
+  --text-muted: #a0aec0;
+  --text-white: #ffffff;
+  
+  // Border colors
+  --border-color: rgba(255, 255, 255, 0.2);
+  --border-card: rgba(255, 255, 255, 0.1);
+  
+  // Badge colors
+  --badge-warning-bg: #f59e0b;
+  --badge-warning-text: #000;
+  --badge-primary-bg: #3182ce;
+  --badge-primary-text: #fff;
+  --badge-success-bg: #10b981;
+  --badge-success-text: #fff;
+  --badge-danger-bg: #ef4444;
+  --badge-danger-text: #fff;
+  
+  // Special highlights
+  --highlight-next: #ff6b35;
+  --highlight-next-shadow: rgba(255, 107, 53, 0.4);
+}
+
+// Dark Vibrant Theme (New - Colorful with better contrast)
+:host-context([data-theme="dark-vibrant"]),
+[data-theme="dark-vibrant"] {
+  // Background colors - Richer dark tones
+  --bg-primary: #0f172a;
+  --bg-secondary: rgba(15, 23, 42, 0.98);
+  --bg-card: #1e293b;
+  --bg-header: #6366f1;
+  
+  // Text colors - Brighter for better contrast
+  --text-primary: #f1f5f9;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-white: #ffffff;
+  
+  // Border colors - Subtle glow
+  --border-color: rgba(99, 102, 241, 0.2);
+  --border-card: rgba(99, 102, 241, 0.15);
+  
+  // Badge colors - Vibrant and eye-catching
+  --badge-warning-bg: #fbbf24;
+  --badge-warning-text: #000;
+  --badge-primary-bg: #6366f1;
+  --badge-primary-text: #fff;
+  --badge-success-bg: #22c55e;
+  --badge-success-text: #000;
+  --badge-danger-bg: #f43f5e;
+  --badge-danger-text: #fff;
+  
+  // Special highlights - Brighter orange
+  --highlight-next: #fb923c;
+  --highlight-next-shadow: rgba(251, 146, 60, 0.5);
+}
+
+// Midnight Blue Theme (New - Professional dark with blue accents)
+:host-context([data-theme="midnight"]),
+[data-theme="midnight"] {
+  // Background colors - Deep blue tones
+  --bg-primary: #0a0e27;
+  --bg-secondary: rgba(10, 14, 39, 0.98);
+  --bg-card: #1a1f3a;
+  --bg-header: #1e3a8a;
+  
+  // Text colors - Blue-tinted whites
+  --text-primary: #f0f9ff;
+  --text-secondary: #dbeafe;
+  --text-muted: #93c5fd;
+  --text-white: #ffffff;
+  
+  // Border colors - Blue glow
+  --border-color: rgba(59, 130, 246, 0.3);
+  --border-card: rgba(59, 130, 246, 0.2);
+  
+  // Badge colors - Blue-centric palette
+  --badge-warning-bg: #fbbf24;
+  --badge-warning-text: #000;
+  --badge-primary-bg: #3b82f6;
+  --badge-primary-text: #fff;
+  --badge-success-bg: #10b981;
+  --badge-success-text: #fff;
+  --badge-danger-bg: #ef4444;
+  --badge-danger-text: #fff;
+  
+  // Special highlights - Cyan accent
+  --highlight-next: #06b6d4;
+  --highlight-next-shadow: rgba(6, 182, 212, 0.5);
+}
+
+// Neon Dark Theme (New - High contrast with neon accents)
+:host-context([data-theme="neon"]),
+[data-theme="neon"] {
+  // Background colors - Pure black
+  --bg-primary: #000000;
+  --bg-secondary: rgba(0, 0, 0, 0.98);
+  --bg-card: #0a0a0a;
+  --bg-header: #00ff88;
+  
+  // Text colors - Bright whites
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
+  --text-muted: #a3a3a3;
+  --text-white: #ffffff;
+  
+  // Border colors - Neon glow
+  --border-color: rgba(0, 255, 136, 0.3);
+  --border-card: rgba(0, 255, 136, 0.2);
+  
+  // Badge colors - Neon style
+  --badge-warning-bg: #facc15;
+  --badge-warning-text: #000;
+  --badge-primary-bg: #00d4ff;
+  --badge-primary-text: #000;
+  --badge-success-bg: #00ff88;
+  --badge-success-text: #000;
+  --badge-danger-bg: #ff0080;
+  --badge-danger-text: #fff;
+  
+  // Special highlights - Neon green
+  --highlight-next: #00ff88;
+  --highlight-next-shadow: rgba(0, 255, 136, 0.6);
+}
+
+// Bootstrap Dark Theme (Bootstrap 5.3 compatible)
+:host-context([data-theme="bootstrap-dark"]),
+[data-theme="bootstrap-dark"] {
+  // Background colors - Bootstrap dark palette
+  --bg-primary: #212529;
+  --bg-secondary: #343a40;
+  --bg-card: #2b3035;
+  --bg-header: rgba(52, 58, 64, 0.85); // Semi-transparent header
+  
+  // Text colors - Bootstrap dark text
+  --text-primary: #dee2e6;
+  --text-secondary: rgba(222, 226, 230, 0.75);
+  --text-muted: rgba(222, 226, 230, 0.5);
+  --text-white: #ffffff;
+  
+  // Border colors - Bootstrap dark borders (transparent/minimal)
+  --border-color: transparent;
+  --border-card: transparent;
+  
+  // Badge colors - Bootstrap semantic colors (muted for dark mode)
+  --badge-warning-bg: #ca8a04;
+  --badge-warning-text: #fef3c7;
+  --badge-primary-bg: #1d4ed8;
+  --badge-primary-text: #dbeafe;
+  --badge-success-bg: #15803d;
+  --badge-success-text: #d1fae5;
+  --badge-danger-bg: #b91c1c;
+  --badge-danger-text: #fee2e2;
+  
+  // Special highlights - Bootstrap link colors
+  --highlight-next: #6ea8fe;
+  --highlight-next-shadow: rgba(110, 168, 254, 0.4);
+  
+  // Professional abstract background for header
+  .priority-header {
+    position: relative;
+    overflow: hidden;
+    background: rgba(52, 58, 64, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    border: none !important; // Remove border completely
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    
+    // Abstract geometric pattern overlay
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(110, 168, 254, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(13, 110, 253, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(52, 58, 64, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    // Subtle animated shimmer effect
+    &::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.03) 50%,
+        transparent 70%
+      );
+      animation: shimmer 15s infinite linear;
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    // Ensure content is above the background
+    > * {
+      position: relative;
+      z-index: 1;
+    }
+  }
+  
+  // Remove border from company logo section
+  .company-logo-section {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    
+    .company-logo {
+      border: none !important;
+    }
+  }
+  
+  // Remove all text shadows and box shadows for clean flat design
+  .priority-number,
+  .priority-label,
+  .badge,
+  .position-badge,
+  h1, h2, h3, h4, h5, h6 {
+    text-shadow: none !important;
+  }
+  
+  .priority-circle,
+  .executive-priority-rank,
+  .priority-badge {
+    box-shadow: none !important;
+  }
+
+  // Remove shadow from NEXT card and carousel cards
+  .next-order-card {
+    box-shadow: none !important;
+    
+    &:hover {
+      box-shadow: none !important;
+    }
+    
+    &.next-in-line {
+      box-shadow: none !important;
+      
+      &:hover {
+        box-shadow: none !important;
+      }
+    }
+  }
+}
+
+// Shimmer animation keyframes
+@keyframes shimmer {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+// ====================================
+// DARK MODE SUPPORT (Legacy)
+// ====================================
+
+// Apply dark mode styling to the entire component
+:host-context([data-bs-theme="dark"]) {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+// Global dark mode styles for this component
+[data-bs-theme="dark"],
+:host-context([data-bs-theme="dark"]),
+html[data-bs-theme="dark"],
+body[data-bs-theme="dark"] {
+  --bs-primary: #3182ce !important;
+  --bs-secondary: #4a5568 !important;
+  --bs-body-bg: #1a1d21 !important;
+  --bs-body-color: #e2e8f0 !important;
+  --bs-border-color: #4a5568 !important;
+  
+  background-color: #1a1d21 !important;
+  color: #e2e8f0 !important;
+  
+  // Fix any white backgrounds
+  .bg-white,
+  .bg-light {
+    background-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+  }
+  
+  // Fix text colors
+  .text-dark {
+    color: #e2e8f0 !important;
+  }
+  
+  .text-muted {
+    color: #a0aec0 !important;
+  }
+  
+  .text-white {
+    color: #e2e8f0 !important;
+  }
+}
+
 /* Prevent horizontal overflow */
 * {
   box-sizing: border-box;
@@ -46,8 +403,8 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   min-height: 100vh;
   width: 100%;
   max-width: 100vw;
-  background: linear-gradient(135deg, #2563eb 0%, #1e293b 100%);
-  color: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   padding: 1rem;
@@ -56,35 +413,51 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   box-sizing: border-box;
 }
 
+// Dark mode override - using higher specificity and important
+:host-context([data-bs-theme="dark"]) .shipping-priority-container,
+[data-bs-theme="dark"] .shipping-priority-container,
+html[data-bs-theme="dark"] .shipping-priority-container,
+body[data-bs-theme="dark"] .shipping-priority-container {
+  background: var(--bs-body-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
 /* Header Section */
 .priority-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-header);
   backdrop-filter: blur(10px);
   border-radius: 1rem;
   padding: 1rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-color);
   box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-// Company Logo Section
+// Company Logo Section  
 .company-logo-section {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: visible;
   
   .company-logo {
-    height: 60px;
-    max-width: 200px;
+    width: 300px;
     object-fit: contain;
     filter: brightness(1.1) contrast(1.05);
     transition: all 0.3s ease;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     
     &:hover {
-      transform: scale(1.05);
+      transform: translate(-50%, -50%) scale(1.05);
       filter: brightness(1.2) contrast(1.1);
     }
   }
@@ -123,6 +496,11 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   z-index: 1000;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  .loading-spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
   
   small {
     color: rgba(255, 255, 255, 0.9);
@@ -213,7 +591,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   border: 1px solid rgba(255, 255, 255, 0.3);
   
   .card-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.15);
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   }
@@ -342,7 +720,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
     
     &.priority-1 {
       .card-header {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
+        background: #FFD700;
         color: #333;
       }
       border-color: #FFD700;
@@ -350,7 +728,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
     
     &.priority-2 {
       .card-header {
-        background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+        background: #C0C0C0;
         color: #333;
       }
       border-color: #C0C0C0;
@@ -358,7 +736,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
     
     &.priority-3 {
       .card-header {
-        background: linear-gradient(135deg, #CD7F32, #B8860B);
+        background: #CD7F32;
         color: white;
       }
       border-color: #CD7F32;
@@ -392,7 +770,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
         
         .part-number {
           font-weight: 600;
-          color: #495057;
+          // color: #495057;
         }
         
         .customer {
@@ -416,10 +794,10 @@ h1, h2, h3, h4, h5, h6, p, span, div {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(30, 41, 59, 0.95);
+    background: var(--bg-secondary);
     backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem 1rem; // Reduced from 1rem
     z-index: 999;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     overflow: hidden; /* Prevent any scrollbars */
@@ -427,15 +805,43 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   }
   
   .section-header h3 {
-    color: white;
+    color: var(--text-white);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
+    margin-bottom: 0.5rem; // Reduced from 1rem
+    font-size: 1.1rem; // Reduced from 1.2rem
+  }
+  
+  // Horizontal flex container for fixed card + carousel
+  .d-flex {
+    display: flex;
+    
+    &.align-items-center {
+      align-items: center;
+    }
+    
+    &.gap-3 {
+      gap: 1rem;
+    }
+  }
+  
+  .flex-grow-1 {
+    flex-grow: 1;
   }
   
   .infinite-scroll-wrapper {
     overflow: hidden;
     width: 100%;
+  }
+  
+  // Fixed NEXT card styling
+  .next-card-fixed {
+    flex: 0 0 280px;
+    min-width: 280px;
+    max-width: 280px;
+    
+    .next-order-card {
+      margin: 0;
+    }
   }
 
   .carousel-track {
@@ -485,21 +891,37 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   }
   
   .next-order-card {
-    background: rgba(255, 255, 255, 0.95);
-    color: #333;
+    background: var(--bg-card);
+    color: var(--text-primary);
     border-radius: 0.75rem;
     overflow: hidden;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    height: 110px;
+    height: 95px !important; // Increased from 85px and added !important
+    min-height: 95px !important; // Added min-height
+    max-height: 95px !important; // Added max-height
     position: relative;
     min-width: 250px;
     max-width: 250px;
     flex-shrink: 0;
+    display: flex; // Added to ensure proper height enforcement
+    flex-direction: column; // Added
+    border: 1px solid var(--border-card);
     
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    // NEXT IN LINE - First card with special border
+    &.next-in-line {
+      border: 3px solid var(--highlight-next) !important;
+      box-shadow: 0 0 0 2px var(--highlight-next-shadow), 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+      animation: pulse-next-in-line 2s ease-in-out infinite;
+      
+      &:hover {
+        box-shadow: 0 0 0 2px var(--highlight-next-shadow), 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+      }
     }
     
     // Background Logo
@@ -524,38 +946,81 @@ h1, h2, h3, h4, h5, h6, p, span, div {
       opacity: 0.15;
     }
     
+    // Inline logo styling (floated to the right of part number)
+    .inline-logo {
+      width: 40px; // Reduced from 50px
+      height: 28px; // Reduced from 35px
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    
     .card-body {
       display: flex;
       flex-direction: column;
       height: 100%;
-      justify-content: space-between;
+      justify-content: flex-start; // Changed from space-between to flex-start for consistent spacing
+      padding: 0.5rem !important; // Increased from 0.25rem
+      gap: 0.25rem; // Added gap between sections
       
       .order-count {
         font-weight: 600;
-        color: #2c3e50;
+        // color: #2c3e50;
         font-size: 0.85rem;
+        line-height: 1.2;
+        height: 18px; // Fixed height
+        display: flex;
+        align-items: center;
+        flex-shrink: 0; // Prevent shrinking
       }
       
       .part-number {
         font-weight: 700;
-        color: #495057;
-        font-size: 1rem;
+        // color: #495057;
+        font-size: 0.95rem; // Slightly reduced
         line-height: 1.2;
-        flex-grow: 1;
+        height: 22px; // Fixed height
         display: flex;
         align-items: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 0; // Prevent shrinking
       }
       
       .status-indicators {
-        min-height: 20px;
+        height: 18px; // Fixed height
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.25rem;
+        flex-shrink: 0; // Prevent shrinking
         
         .badge-xs {
           font-size: 0.65rem;
           padding: 0.15em 0.3em;
+        }
+      }
+      
+      // Theme-aware badge colors for "Coming Up Next" section
+      .badge {
+        &.bg-warning {
+          background-color: var(--badge-warning-bg, #ffc107) !important;
+          color: var(--badge-warning-text, #000) !important;
+        }
+        
+        &.bg-primary {
+          background-color: var(--badge-primary-bg, #0d6efd) !important;
+          color: var(--badge-primary-text, #fff) !important;
+        }
+        
+        &.bg-success {
+          background-color: var(--badge-success-bg, #198754) !important;
+          color: var(--badge-success-text, #fff) !important;
+        }
+        
+        &.bg-danger {
+          background-color: var(--badge-danger-bg, #dc3545) !important;
+          color: var(--badge-danger-text, #fff) !important;
         }
       }
     }
@@ -569,6 +1034,16 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   100% {
     /* Move by exactly 1/3 of content since we have 3 sets */
     transform: translateX(calc(-100% / 3));
+  }
+}
+
+/* Pulse animation for next-in-line card */
+@keyframes pulse-next-in-line {
+  0%, 100% {
+    box-shadow: 0 0 0 2px var(--highlight-next-shadow), 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--highlight-next-shadow), 0 8px 20px var(--highlight-next-shadow);
   }
 }
 
@@ -650,28 +1125,28 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   border-radius: 1.5rem;
   
   &.bg-danger {
-    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    background: #dc3545 !important;
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
   }
   
   &.bg-warning {
-    background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+    background: #ffc107 !important;
     color: #333 !important;
     box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
   }
   
   &.bg-success {
-    background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    background: #28a745 !important;
     box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
   }
   
   &.bg-info {
-    background: linear-gradient(135deg, #17a2b8, #138496) !important;
+    background: #17a2b8 !important;
     box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
   }
   
   &.bg-secondary {
-    background: linear-gradient(135deg, #6c757d, #545b62) !important;
+    background: #6c757d !important;
     box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
   }
 }
@@ -863,37 +1338,37 @@ h1, h2, h3, h4, h5, h6, p, span, div {
 
 /* Priority badge colors */
 .priority-badge-1 {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
+  background: #FFD700;
   color: #333;
   border: 1px solid #FFD700;
 }
 
 .priority-badge-2 {
-  background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+  background: #C0C0C0;
   color: #333;
   border: 1px solid #C0C0C0;
 }
 
 .priority-badge-3 {
-  background: linear-gradient(135deg, #CD7F32, #B8860B);
+  background: #CD7F32;
   color: white;
   border: 1px solid #CD7F32;
 }
 
 .priority-badge-high {
-  background: linear-gradient(135deg, #dc3545, #c82333);
+  background: #dc3545;
   color: white;
   border: 1px solid #dc3545;
 }
 
 .priority-badge-medium {
-  background: linear-gradient(135deg, #ffc107, #e0a800);
+  background: #ffc107;
   color: #333;
   border: 1px solid #ffc107;
 }
 
 .priority-badge-low {
-  background: linear-gradient(135deg, #28a745, #1e7e34);
+  background: #28a745;
   color: white;
   border: 1px solid #28a745;
 }
@@ -1048,27 +1523,27 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   &.rank-1 {
     border-left: 4px solid #3b82f6;
     .card-header-enterprise {
-      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+      background: #3b82f6;
     }
   }
 
   &.rank-2 {
     border-left: 4px solid #64748b;
     .card-header-enterprise {
-      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      background: #3b82f6;
     }
   }
 
   &.rank-3 {
     border-left: 4px solid #374151;
     .card-header-enterprise {
-      background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+      background: #3b82f6;
     }
   }
 }
 
 .card-header-enterprise {
-  background: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
+  background: #3b82f6;
   color: white;
   padding: 1rem 1.25rem;
   display: flex;
@@ -1174,7 +1649,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
     // Warehouse floor display - much larger
     .order-number-display-warehouse {
       text-align: center;
-      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+      background: #3b82f6;
       border-radius: 12px;
       padding: 1.5rem;
       border: 2px solid #e2e8f0;
@@ -1266,7 +1741,7 @@ h1, h2, h3, h4, h5, h6, p, span, div {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        background: linear-gradient(135deg, #fed7aa 0%, #f6ad55 100%);
+        background: #3b82f6;
         border-radius: 10px;
         padding: 1rem;
         border: 2px solid #f6ad55;
@@ -1372,25 +1847,25 @@ h1, h2, h3, h4, h5, h6, p, span, div {
       border: 1px solid;
       
       &.badge-success {
-        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        background: #3b82f6;
         border-color: #38a169;
         color: white;
       }
 
       &.badge-warning {
-        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        background: #3b82f6;
         border-color: #dd6b20;
         color: white;
       }
 
       &.badge-danger {
-        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        background: #3b82f6;
         border-color: #e53e3e;
         color: white;
       }
 
       &.badge-secondary {
-        background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+        background: #3b82f6;
         border-color: #718096;
         color: white;
       }
@@ -1429,20 +1904,20 @@ h1, h2, h3, h4, h5, h6, p, span, div {
         }
 
         &.completed {
-          background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+          background: #3b82f6;
           border-color: #38a169;
           color: white;
         }
 
         &.hot {
-          background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+          background: #3b82f6;
           border-color: #e53e3e;
           color: white;
           animation: pulse-hot 2s infinite;
         }
 
         &.warning {
-          background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+          background: #3b82f6;
           border-color: #dd6b20;
           color: white;
         }
@@ -1717,6 +2192,284 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   }
 }
 
+// ====================================
+// DARK MODE OVERRIDES FOR ALL COMPONENTS
+// ====================================
+
+[data-bs-theme="dark"] {
+  .shipping-priority-container {
+    background: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+  }
+  
+  .priority-header {
+    background: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+    backdrop-filter: none !important;
+    
+    h1, p, .lead {
+      color: var(--bs-body-color) !important;
+    }
+    
+    .current-time h3, .current-time p {
+      color: var(--bs-body-color) !important;
+    }
+  }
+  
+  .next-orders-section {
+    &.fixed-bottom-queue {
+      background: var(--bs-body-bg) !important;
+      border-top: 1px solid var(--bs-border-color) !important;
+    }
+    
+    .section-header h3 {
+      color: var(--bs-body-color) !important;
+    }
+    
+    .next-order-card {
+      background: var(--bs-body-bg) !important;
+      color: var(--bs-body-color) !important;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+      
+      &:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+      }
+      
+      // Dark mode next-in-line styling
+      &.next-in-line {
+        border: 3px solid #ff8c42 !important;
+        box-shadow: 0 0 0 2px rgba(255, 140, 66, 0.4), 0 5px 15px rgba(0, 0, 0, 0.4) !important;
+        
+        &:hover {
+          box-shadow: 0 0 0 2px rgba(255, 140, 66, 0.6), 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+        }
+      }
+      
+      .part-number {
+        color: var(--bs-body-color) !important;
+      }
+      
+      .order-count {
+        // color: rgba(224, 232, 240, 0.8) !important;
+      }
+      
+      // Fix part descriptions and other text visibility
+      .part-description,
+      .customer,
+      .ship-date,
+      .due-date {
+        color: rgba(224, 232, 240, 0.9) !important;
+      }
+      
+      .badge {
+        &.bg-primary {
+          background-color: #3182ce !important;
+        }
+        &.bg-success {
+          background-color: #38a169 !important;
+        }
+        &.bg-danger {
+          background-color: #e53e3e !important;
+        }
+        &.bg-warning {
+          background-color: #d69e2e !important;
+          color: #1a202c !important;
+        }
+      }
+    }
+    
+    // Fix scrollbar in dark mode
+    .carousel-track:not(.auto-scroll) {
+      &::-webkit-scrollbar-track {
+        background: rgba(45, 55, 72, 0.3) !important;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: rgba(74, 85, 104, 0.5) !important;
+        
+        &:hover {
+          background: rgba(74, 85, 104, 0.7) !important;
+        }
+      }
+    }
+  }
+  
+  // Fix any other white backgrounds
+  .bg-white,
+  .bg-light {
+    background-color: var(--bs-secondary) !important;
+    color: var(--bs-body-color) !important;
+  }
+  
+  // Fix summary cards and other components
+  .summary-card,
+  .stat-card {
+    background: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border: 1px solid var(--bs-border-color) !important;
+  }
+  
+  // Fix any hardcoded text colors
+  .text-white {
+    color: var(--bs-body-color) !important;
+  }
+  
+  .text-muted {
+    color: rgba(224, 232, 240, 0.8) !important;
+  }
+  
+  // Fix all text in cards to be more visible
+  .part-description,
+  .customer,
+  .ship-date,
+  .due-date,
+  .detail-summary .customer,
+  .detail-summary .ship-date,
+  .info-label,
+  .info-value,
+  .order-count {
+    // color: rgba(224, 232, 240, 0.9) !important;
+  }
+  
+  // Fix specific gray text colors
+  .text-secondary,
+  .text-dark {
+    color: rgba(224, 232, 240, 0.9) !important;
+  }
+  
+  // Force dark mode on all child components
+  app-multi-card-view,
+  app-priority-settings {
+    background-color: inherit !important;
+    color: inherit !important;
+  }
+  
+  // Override any Bootstrap default that might interfere
+  .card,
+  .card-body,
+  .card-header,
+  .card-footer {
+    background-color: var(--bs-body-bg) !important;
+    background: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+  }
+  
+  // Fix all priority cards
+  .priority-card,
+  .current-priority-card,
+  .priority-card-enterprise {
+    background: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+    
+    .card-header {
+      background: var(--bs-secondary) !important;
+      color: var(--bs-body-color) !important;
+    }
+  }
+  
+  // Fix specific hardcoded blue backgrounds
+  .card-header-enterprise {
+    background: var(--bs-secondary) !important;
+    color: var(--bs-body-color) !important;
+  }
+  
+  // Fix enterprise card priority rank backgrounds
+  .priority-card-enterprise {
+    &.rank-1 .card-header-enterprise {
+      background: var(--bs-secondary) !important;
+    }
+    &.rank-2 .card-header-enterprise {
+      background: var(--bs-secondary) !important;
+    }
+    &.rank-3 .card-header-enterprise {
+      background: var(--bs-secondary) !important;
+    }
+  }
+  
+  // Fix ALL bg-primary classes in dark mode
+  .bg-primary {
+    background-color: var(--bs-primary) !important;
+    background: var(--bs-primary) !important;
+  }
+  
+  // Fix ALL text-primary classes in dark mode
+  .text-primary {
+    color: var(--bs-primary) !important;
+  }
+  
+  // Override Bootstrap primary color utility classes
+  .prod-icon-wrapper.bg-primary,
+  .metric-icon.bg-primary,
+  .icon-wrapper.bg-primary {
+    background-color: var(--bs-primary) !important;
+    background: var(--bs-primary) !important;
+  }
+  
+  // Fix blue icon backgrounds
+  .prod-icon-wrapper,
+  .metric-icon,
+  .icon-wrapper,
+  .info-icon {
+    &[style*="background: #2563eb"],
+    &[style*="background-color: #2563eb"] {
+      background: var(--bs-primary) !important;
+    }
+  }
+  
+  // Fix specific hardcoded icon background
+  .info-icon {
+    background: var(--bs-primary) !important;
+  }
+  
+  // Force override any inline blue styles
+  *[style*="background: #2563eb"] {
+    background: var(--bs-primary) !important;
+  }
+  
+  *[style*="background-color: #2563eb"] {
+    background-color: var(--bs-primary) !important;
+  }
+  
+  // NUCLEAR OPTION: Override ALL gradient backgrounds with extreme specificity
+  .multi-card-view .border-danger .card-header,
+  .multi-card-view .border-warning .card-header,
+  .multi-card-view .border-success .card-header,
+  .multi-card-view .border-info .card-header,
+  .multi-card-view .border-primary .card-header,
+  app-multi-card-view .border-danger .card-header,
+  app-multi-card-view .border-warning .card-header,
+  app-multi-card-view .border-success .card-header,
+  app-multi-card-view .border-info .card-header,
+  app-multi-card-view .border-primary .card-header {
+    background: var(--bs-body-bg) !important;
+    background-color: var(--bs-body-bg) !important;
+    background-image: none !important;
+    color: var(--bs-body-color) !important;
+  }
+  
+  // Override ALL linear gradients in card headers
+  .card-header[style*="linear-gradient"],
+  *[style*="linear-gradient"] .card-header,
+  .card-header {
+    background: var(--bs-body-bg) !important;
+    background-color: var(--bs-body-bg) !important;
+    background-image: none !important;
+    color: var(--bs-body-color) !important;
+  }
+  
+  // Target the specific problematic gradient
+  *[style*="rgba(220, 53, 69, 0.1)"],
+  *[style*="rgba(248, 249, 250, 0.8)"] {
+    background: var(--bs-body-bg) !important;
+    background-color: var(--bs-body-bg) !important;
+    background-image: none !important;
+    color: var(--bs-body-color) !important;
+  }
+}
+
 /* Pulse animation for floating button */
 @keyframes pulse {
   0% {
@@ -1727,5 +2480,88 @@ h1, h2, h3, h4, h5, h6, p, span, div {
   }
   100% {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+// ====================================
+// SLICK CAROUSEL INTEGRATION STYLES
+// ====================================
+
+.slick-carousel-wrapper {
+  width: 100%;
+  
+  .carousel {
+    width: 100%;
+    
+    .slick-list {
+      padding: 0 10px;
+    }
+    
+    .slick-track {
+      display: flex;
+      align-items: stretch;
+    }
+    
+    .slide {
+      padding: 0 10px;
+      height: auto;
+      
+      .next-order-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        width: calc(100% - 20px);
+        max-width: none;
+      }
+    }
+    
+    // Arrow styling
+    .slick-arrow {
+      width: 40px;
+      height: 40px;
+      z-index: 10;
+      
+      &::before {
+        font-size: 20px;
+        color: #6c757d;
+      }
+      
+      &:hover::before {
+        color: #007bff;
+      }
+    }
+    
+    .slick-prev {
+      left: -45px;
+    }
+    
+    .slick-next {
+      right: -45px;
+    }
+    
+    // Hide arrows on small screens
+    @media (max-width: 768px) {
+      .slick-arrow {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// Dark mode styling for slick carousel
+[data-bs-theme="dark"] {
+  .slick-carousel-wrapper {
+    .carousel {
+      .slick-arrow {
+        &::before {
+          color: #a0aec0;
+        }
+        
+        &:hover::before {
+          color: #63b3ed;
+        }
+      }
+    }
   }
 }

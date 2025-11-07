@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { ThemeManagementService, ThemeSettings } from '../../services/theme-management.service';
+import { Subscription } from 'rxjs';
 
 export interface RefreshInterval {
   value: number;
@@ -16,6 +18,11 @@ export interface DisplaySettings {
   autoScrollEnabled: boolean;
   scrollSpeed: number;
   showRefreshOverlay: boolean;
+  // Theme settings
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark';
+  autoSwitchEnabled: boolean;
+  switchIntervalMinutes: number;
+  zoomLevel: number;
 }
 
 export interface CardLayout {
@@ -32,7 +39,7 @@ export interface CardLayout {
   templateUrl: './priority-settings.component.html',
   styleUrls: ['./priority-settings.component.scss']
 })
-export class PrioritySettingsComponent implements OnInit {
+export class PrioritySettingsComponent implements OnInit, OnDestroy {
   @Input() displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
   @Input() refreshInterval: number = 300000; // 5 minutes
   @Input() refreshCountdown: string = '';
@@ -43,6 +50,25 @@ export class PrioritySettingsComponent implements OnInit {
   @Input() scrollSpeed: number = 30;
   @Input() showRefreshOverlay: boolean = false;
 
+  // Theme-related properties
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
+  autoSwitchEnabled: boolean = false;
+  switchIntervalMinutes: number = 30;
+  switchCountdown: string = '';
+  zoomLevel: number = 100;
+  
+  availableThemes = [
+    { value: 'light' as const, label: 'Light Mode', icon: '☀️' },
+    { value: 'dark' as const, label: 'Dark Mode', icon: '🌙' },
+    { value: 'dark-vibrant' as const, label: 'Dark Vibrant', icon: '🎨' },
+    { value: 'midnight' as const, label: 'Midnight Blue', icon: '🌊' },
+    { value: 'neon' as const, label: 'Neon Dark', icon: '⚡' },
+    { value: 'bootstrap-dark' as const, label: 'Bootstrap Dark', icon: '🅱️' }
+  ];
+  
+  private themeSubscription?: Subscription;
+  private countdownSubscription?: Subscription;
+
   @Output() displayModeChange = new EventEmitter<'single' | 'top3' | 'top6' | 'grid'>();
   @Output() refreshIntervalChange = new EventEmitter<number>();
   @Output() cardLayoutChange = new EventEmitter<'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'>();
@@ -50,6 +76,8 @@ export class PrioritySettingsComponent implements OnInit {
   @Output() settingsApplied = new EventEmitter<DisplaySettings>();
   @Output() closed = new EventEmitter<void>();
   @Output() comingUpNextSettingsChange = new EventEmitter<{showComingUpNext: boolean, autoScrollEnabled: boolean, scrollSpeed: number}>();
+  @Output() themeChanged = new EventEmitter<'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark'>();
+  @Output() themeSettingsChanged = new EventEmitter<ThemeSettings>();
 
   private offcanvasRef: any;
 
@@ -135,10 +163,20 @@ export class PrioritySettingsComponent implements OnInit {
     }
   ];
 
-  constructor() {}
+  constructor(private themeService: ThemeManagementService) {}
 
   ngOnInit(): void {
     this.loadSettingsFromStorage();
+    this.initializeThemeSubscriptions();
+  }
+
+  ngOnDestroy(): void {
+    if (this.themeSubscription) {
+      this.themeSubscription.unsubscribe();
+    }
+    if (this.countdownSubscription) {
+      this.countdownSubscription.unsubscribe();
+    }
   }
 
   onDisplayModeChange(mode: string): void {
@@ -171,7 +209,11 @@ export class PrioritySettingsComponent implements OnInit {
       showComingUpNext: this.showComingUpNext,
       autoScrollEnabled: this.autoScrollEnabled,
       scrollSpeed: this.scrollSpeed,
-      showRefreshOverlay: this.showRefreshOverlay
+      showRefreshOverlay: this.showRefreshOverlay,
+      currentTheme: this.currentTheme,
+      autoSwitchEnabled: this.autoSwitchEnabled,
+      switchIntervalMinutes: this.switchIntervalMinutes,
+      zoomLevel: this.zoomLevel
     });
   }
 
@@ -211,7 +253,11 @@ export class PrioritySettingsComponent implements OnInit {
       showComingUpNext: this.showComingUpNext,
       autoScrollEnabled: this.autoScrollEnabled,
       scrollSpeed: this.scrollSpeed,
-      showRefreshOverlay: this.showRefreshOverlay
+      showRefreshOverlay: this.showRefreshOverlay,
+      currentTheme: this.currentTheme,
+      autoSwitchEnabled: this.autoSwitchEnabled,
+      switchIntervalMinutes: this.switchIntervalMinutes,
+      zoomLevel: this.zoomLevel
     };
     this.settingsApplied.emit(settings);
     this.onRefreshData();
@@ -219,6 +265,81 @@ export class PrioritySettingsComponent implements OnInit {
 
   onClose(): void {
     this.closed.emit();
+  }
+
+  // Theme Management Methods
+  onThemeToggle(): void {
+    this.themeService.toggleTheme();
+  }
+
+  onManualThemeChange(theme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark'): void {
+    this.currentTheme = theme;
+    this.themeService.setTheme(theme, true);
+    this.themeChanged.emit(theme);
+    this.saveSettingsToStorage();
+  }
+
+  onAutoSwitchToggle(): void {
+    // Don't toggle the value here since ngModel already handles it
+    // Just update the service with the current value
+    this.themeService.setAutoSwitchEnabled(this.autoSwitchEnabled);
+    this.saveSettingsToStorage();
+  }
+
+  onSwitchIntervalChange(minutes: number): void {
+    this.switchIntervalMinutes = minutes;
+    this.themeService.setAutoSwitchInterval(minutes);
+    this.saveSettingsToStorage();
+  }
+
+  getThemeIntervalOptions() {
+    return this.themeService.availableIntervals;
+  }
+
+  getCurrentThemeLabel(): string {
+    const theme = this.availableThemes.find(t => t.value === this.currentTheme);
+    return theme ? theme.label : 'Unknown Theme';
+  }
+
+  getAvailableThemes() {
+    return this.availableThemes;
+  }
+
+  getSwitchIntervalLabel(): string {
+    const interval = this.themeService.availableIntervals.find(i => i.value === this.switchIntervalMinutes);
+    return interval ? interval.label : 'Custom';
+  }
+
+  resetThemeSettings(): void {
+    this.themeService.resetToDefaults();
+  }
+
+  // Zoom Control Methods
+  onZoomChange(zoomLevel: number): void {
+    this.zoomLevel = zoomLevel;
+    this.themeService.setZoomLevel(zoomLevel);
+    this.saveSettingsToStorage();
+  }
+
+  onZoomIn(): void {
+    this.themeService.zoomIn();
+  }
+
+  onZoomOut(): void {
+    this.themeService.zoomOut();
+  }
+
+  onResetZoom(): void {
+    this.themeService.resetZoom();
+  }
+
+  getZoomLevelOptions() {
+    return this.themeService.availableZoomLevels;
+  }
+
+  getCurrentZoomLabel(): string {
+    const zoom = this.themeService.availableZoomLevels.find(z => z.value === this.zoomLevel);
+    return zoom ? zoom.label : `${this.zoomLevel}%`;
   }
 
   private loadSettingsFromStorage(): void {
@@ -247,6 +368,19 @@ export class PrioritySettingsComponent implements OnInit {
         if (settings.showRefreshOverlay !== undefined) {
           this.showRefreshOverlay = settings.showRefreshOverlay;
         }
+        // Load theme settings
+        if (settings.currentTheme) {
+          this.currentTheme = settings.currentTheme;
+        }
+        if (settings.autoSwitchEnabled !== undefined) {
+          this.autoSwitchEnabled = settings.autoSwitchEnabled;
+        }
+        if (settings.switchIntervalMinutes !== undefined) {
+          this.switchIntervalMinutes = settings.switchIntervalMinutes;
+        }
+        if (settings.zoomLevel !== undefined) {
+          this.zoomLevel = settings.zoomLevel;
+        }
       }
     } catch (error) {
       console.warn('Failed to load settings from localStorage:', error);
@@ -263,11 +397,30 @@ export class PrioritySettingsComponent implements OnInit {
         autoScrollEnabled: this.autoScrollEnabled,
         scrollSpeed: this.scrollSpeed,
         showRefreshOverlay: this.showRefreshOverlay,
+        currentTheme: this.currentTheme,
+        autoSwitchEnabled: this.autoSwitchEnabled,
+        switchIntervalMinutes: this.switchIntervalMinutes,
+        zoomLevel: this.zoomLevel,
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('priority-display-settings', JSON.stringify(settings));
     } catch (error) {
       console.warn('Failed to save settings to localStorage:', error);
     }
+  }
+
+  private initializeThemeSubscriptions(): void {
+    // Subscribe to theme settings changes
+    this.themeSubscription = this.themeService.themeSettings$.subscribe(settings => {
+      this.currentTheme = settings.currentTheme;
+      this.autoSwitchEnabled = settings.autoSwitchEnabled;
+      this.switchIntervalMinutes = settings.switchIntervalMinutes;
+      this.zoomLevel = settings.zoomLevel;
+    });
+
+    // Subscribe to countdown updates
+    this.countdownSubscription = this.themeService.switchCountdown$.subscribe(countdown => {
+      this.switchCountdown = countdown;
+    });
   }
 }

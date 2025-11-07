@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef, HostListener, TemplateRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -6,10 +6,12 @@ import { NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { Subscription, timer } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
+import { SlickCarouselModule } from 'ngx-slick-carousel';
 
 // Services
 import { PriorityDisplayService, PriorityDisplayData } from './services/priority-display.service';
 import { DisplayUtilsService } from './services/display-utils.service';
+import { ThemeManagementService, ThemeSettings } from './services/theme-management.service';
 
 // Components
 import { SinglePriorityViewComponent } from './components/single-priority-view/single-priority-view.component';
@@ -22,6 +24,7 @@ import { PrioritySettingsComponent } from './components/priority-settings/priori
   imports: [
     CommonModule,
     FormsModule,
+    SlickCarouselModule,
     SinglePriorityViewComponent,
     MultiCardViewComponent,
     PrioritySettingsComponent
@@ -29,7 +32,7 @@ import { PrioritySettingsComponent } from './components/priority-settings/priori
   templateUrl: './shipping-priority-display.component.html',
   styleUrls: ['./shipping-priority-display.component.scss']
 })
-export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDestroy {
+export class StandaloneShippingPriorityDisplayComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // Reactive data stream
   displayData$ = this.priorityDisplayService.displayData$;
@@ -52,11 +55,84 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   autoScrollEnabled: boolean = true;
   scrollSpeed: number = 30; // seconds for one complete scroll cycle
   
+  // Slick Carousel configuration - optimized for smooth auto-scrolling
+  slickConfig = {
+    "slidesToShow": 7,
+    "slidesToScroll": 1,
+    "autoplay": true,
+    "autoplaySpeed": 1500,
+    "infinite": true,
+    "arrows": false,
+    "dots": false,
+    "pauseOnHover": false,
+    "pauseOnFocus": false,
+    "speed": 600,
+    "centerMode": false,
+    "variableWidth": false,
+    "cssEase": "linear",
+    "waitForAnimate": false,
+    "responsive": [
+      {
+        "breakpoint": 1200,
+        "settings": {
+          "slidesToShow": 5,
+          "slidesToScroll": 1,
+          "autoplay": true,
+          "infinite": true,
+          "arrows": false,
+          "autoplaySpeed": 1500
+        }
+      },
+      {
+        "breakpoint": 768,
+        "settings": {
+          "slidesToShow": 3,
+          "slidesToScroll": 1,
+          "autoplay": true,
+          "infinite": true,
+          "arrows": false,
+          "autoplaySpeed": 1500
+        }
+      },
+      {
+        "breakpoint": 480,
+        "settings": {
+          "slidesToShow": 2,
+          "slidesToScroll": 1,
+          "autoplay": true,
+          "infinite": true,
+          "arrows": false,
+          "autoplaySpeed": 1500
+        }
+      }
+    ]
+  };
+  
   // Refresh overlay setting
   showRefreshOverlay: boolean = false;
   
+  // Theme management
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
+  autoSwitchEnabled: boolean = false;
+  switchIntervalMinutes: number = 30;
+  switchCountdown: string = '';
+  zoomLevel: number = 100;
+  
+  // Available themes
+  availableThemes = [
+    { value: 'light', label: 'Light Mode', icon: '☀️' },
+    { value: 'dark', label: 'Dark Mode', icon: '🌙' },
+    { value: 'dark-vibrant', label: 'Dark Vibrant', icon: '🎨' },
+    { value: 'midnight', label: 'Midnight Blue', icon: '🌊' },
+    { value: 'neon', label: 'Neon Dark', icon: '⚡' },
+    { value: 'bootstrap-dark', label: 'Bootstrap Dark', icon: '🅱️' }
+  ];
+  
   // Offcanvas template reference
   @ViewChild('settingsOffcanvas', { static: true }) settingsOffcanvas!: TemplateRef<any>;
+  
+  // Slick carousel reference
+  @ViewChild('slickModal', { static: false}) slickModal: any;
   
   // Settings state
   settingsOpen = false;
@@ -65,6 +141,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
   private destroy$ = new Subject<void>();
   private timeSubscription?: Subscription;
   private refreshSubscription?: Subscription;
+  private themeSubscription?: Subscription;
   
   // Auto-refresh configuration
   refreshInterval: number = 300000; // Default 5 minutes
@@ -88,7 +165,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     public priorityDisplayService: PriorityDisplayService,
     private displayUtils: DisplayUtilsService,
     private cdr: ChangeDetectorRef,
-    private offcanvasService: NgbOffcanvas
+    private offcanvasService: NgbOffcanvas,
+    private themeService: ThemeManagementService
   ) {}
 
   ngOnInit(): void {
@@ -96,6 +174,66 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     console.log('🔗 Current URL:', window.location.href);
     console.log('🔗 Current query params:', this.route.snapshot.queryParams);
     this.initializeComponent();
+  }
+
+  ngAfterViewInit(): void {
+    // Update initial carousel config based on settings
+    this.updateSlickConfig();
+    
+    // Start carousel after view init with longer delay to ensure DOM is ready
+    setTimeout(() => {
+      this.initializeCarousel();
+    }, 2000);
+  }
+
+  /**
+   * Initialize and start carousel
+   */
+  private initializeCarousel(): void {
+    if (this.autoScrollEnabled && this.slickModal) {
+      try {
+        console.log('🎠 Initializing carousel...');
+        
+        // Force re-initialize the carousel
+        this.slickModal.unslick();
+        
+        setTimeout(() => {
+          this.slickModal.initSlick();
+          this.startCarousel();
+        }, 500);
+      } catch (error) {
+        console.log('🎠 Error initializing carousel, trying direct start:', error);
+        this.startCarousel();
+      }
+    }
+  }
+
+  /**
+   * Start or restart carousel
+   */
+  private startCarousel(): void {
+    if (this.slickModal && this.autoScrollEnabled) {
+      try {
+        console.log('🎠 Starting carousel autoplay...');
+        
+        // Force autoplay
+        this.slickModal.slickPlay();
+        
+        // Double-check autoplay is working
+        setTimeout(() => {
+          if (this.slickModal) {
+            this.slickModal.slickPlay();
+            console.log('🎠 Carousel autoplay confirmed');
+          }
+        }, 1000);
+        
+        console.log('🎠 Carousel started successfully');
+      } catch (error) {
+        console.log('🎠 Error starting carousel:', error);
+      }
+    } else {
+      console.log('🎠 Carousel not enabled or not initialized');
+    }
   }
 
   ngOnDestroy(): void {
@@ -106,6 +244,10 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     // Clean up subscriptions
     this.timeSubscription?.unsubscribe();
     this.refreshSubscription?.unsubscribe();
+    this.themeSubscription?.unsubscribe();
+    
+    // Clean up theme service
+    this.themeService.destroy();
     
     // Remove CSS class from body
     document.body.classList.remove('shipping-priority-display');
@@ -126,6 +268,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     
     // Setup query parameter subscription for reactive updates (keep for backward compatibility)
     this.setupQueryParamSubscription();
+    
+    // Setup theme subscriptions
+    this.setupThemeSubscriptions();
     
     // Setup time display
     this.setupTimeDisplay();
@@ -681,7 +826,99 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     this.showComingUpNext = settings.showComingUpNext;
     this.autoScrollEnabled = settings.autoScrollEnabled;
     this.scrollSpeed = settings.scrollSpeed;
+    
+    // Update the slick config object directly
+    this.updateSlickConfig();
+    
+    // Control carousel based on settings
+    setTimeout(() => {
+      if (this.autoScrollEnabled && this.slickModal) {
+        console.log('🎠 Restarting carousel with new settings...');
+        try {
+          // Force restart
+          this.slickModal.unslick();
+          setTimeout(() => {
+            this.slickModal.initSlick();
+            this.slickModal.slickPlay();
+            console.log('🎠 Carousel restarted successfully');
+          }, 500);
+        } catch (error) {
+          console.log('🎠 Error restarting carousel:', error);
+          this.startCarousel();
+        }
+      } else if (this.slickModal) {
+        try {
+          this.slickModal.slickPause();
+          console.log('🎠 Carousel paused');
+        } catch (error) {
+          console.log('🎠 Error pausing carousel:', error);
+        }
+      }
+    }, 500);
+    
     this.saveSettingsToStorage();
+  }
+
+  /**
+   * Update slick configuration
+   */
+  private updateSlickConfig(): void {
+    // Update configuration object
+    this.slickConfig = {
+      ...this.slickConfig,
+      "autoplay": this.autoScrollEnabled,
+      "autoplaySpeed": Math.max(2000, (this.scrollSpeed || 30) * 100)
+    };
+    
+    console.log('🎠 Updated slick config:', this.slickConfig);
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Handle slide change events
+   */
+  onSlideChange(event: any): void {
+    console.log('🎠 Slide changed:', event);
+  }
+
+  /**
+   * Handle carousel initialization
+   */
+  onCarouselInit(event: any): void {
+    console.log('🎠 ========================================');
+    console.log('🎠 Carousel initialized!');
+    console.log('🎠 Event:', event);
+    console.log('🎠 Slick modal:', this.slickModal);
+    console.log('🎠 Auto scroll enabled:', this.autoScrollEnabled);
+    console.log('🎠 Config:', this.slickConfig);
+    
+    // Check data availability and show what's being displayed
+    this.priorityDisplayService.displayData$.subscribe(displayData => {
+      console.log('🎠 Total NEXT items:', displayData.nextGroupedItems.length);
+      console.log('🎠 NEXT items data:');
+      displayData.nextGroupedItems.forEach((item, index) => {
+        console.log(`  [${index}] Part: ${item.partNumber}, Orders: ${item.orders.length}, Priority: ${item.priority}`);
+      });
+      
+      if (displayData.nextGroupedItems.length <= 1) {
+        console.warn('🎠 ⚠️ Not enough items for carousel! Need at least 2 items, got:', displayData.nextGroupedItems.length);
+      }
+    }).unsubscribe();
+    
+    // Force start autoplay after a short delay
+    setTimeout(() => {
+      if (this.slickModal && this.autoScrollEnabled) {
+        console.log('🎠 Forcing autoplay start...');
+        try {
+          this.slickModal.slickPlay();
+          console.log('🎠 ✅ Autoplay started successfully');
+        } catch (error) {
+          console.error('🎠 ❌ Error starting autoplay:', error);
+        }
+      }
+    }, 500);
   }
 
   /**
@@ -747,6 +984,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
       return 'https://www.indiangaming.com/wp-content/uploads/2021/03/Aristocrat_Logo2-1024x323.jpg';
     } else if (customer.includes('baltec')) {
       return 'https://c.smartrecruiters.com/sr-careersite-image-prod/55920a6fe4b06ce952a5c887/060d5037-4f70-4dd7-9c31-d700f6c5b468?r=s3';
+    } else if (customer.includes('incred') || customer.includes('incredible')) {
+      return 'assets/images/companies/incred-logo.svg';
     } else if (customer.includes('igt') || customer.includes('intgam') || customer.includes('international game technology')) {
       return 'https://cdn.imgbin.com/19/15/1/imgbin-international-game-technology-i-g-t-australia-pty-ltd-portable-network-graphics-lottomatica-spa-social-campaign-iQga30i3JCuekwguEpeYSgfSg.jpg';
     }
@@ -765,5 +1004,68 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, OnDes
     // Get the first order's company name
     const firstOrder = item.orders[0];
     return firstOrder?.['COMPANY'] || firstOrder?.['SO_CUST'] || firstOrder?.['CUSTNAME'] || '';
+  }
+
+  /**
+   * Setup theme subscriptions
+   */
+  private setupThemeSubscriptions(): void {
+    // Subscribe to theme settings changes
+    this.themeSubscription = this.themeService.themeSettings$.subscribe(settings => {
+      this.currentTheme = settings.currentTheme;
+      this.autoSwitchEnabled = settings.autoSwitchEnabled;
+      this.switchIntervalMinutes = settings.switchIntervalMinutes;
+      this.zoomLevel = settings.zoomLevel;
+    });
+
+    // Subscribe to countdown updates
+    this.themeService.switchCountdown$.subscribe(countdown => {
+      this.switchCountdown = countdown;
+    });
+
+    // Initialize theme based on current settings
+    const currentSettings = this.themeService.getCurrentSettings();
+    this.currentTheme = currentSettings.currentTheme;
+    this.autoSwitchEnabled = currentSettings.autoSwitchEnabled;
+    this.switchIntervalMinutes = currentSettings.switchIntervalMinutes;
+    this.zoomLevel = currentSettings.zoomLevel;
+  }
+
+  /**
+   * Get the sequential queue position for a "Coming Up Next" item
+   * This shows the correct position in the overall production flow with continuous rolling sequence
+   */
+  getQueuePosition(globalIndex: number, nextGroupedItemsLength: number): number {
+    // Calculate how many items are currently displayed based on display mode
+    let currentlyDisplayedCount = 0;
+    
+    switch (this.displayMode) {
+      case 'single':
+        currentlyDisplayedCount = 1;
+        break;
+      case 'top3':
+        currentlyDisplayedCount = 3;
+        break;
+      case 'top6':
+        currentlyDisplayedCount = 6;
+        break;
+      case 'grid':
+        currentlyDisplayedCount = 12; // Grid shows up to 12
+        break;
+      default:
+        currentlyDisplayedCount = 1;
+        break;
+    }
+    
+    // For infinite scroll: create a continuous rolling sequence
+    // The globalIndex spans across all 3 repetitions (0 to nextGroupedItemsLength * 3 - 1)
+    const actualIndex = globalIndex % nextGroupedItemsLength;
+    const repetitionNumber = Math.floor(globalIndex / nextGroupedItemsLength);
+    
+    // Create a rolling sequence that continues beyond the original queue length
+    const basePosition = currentlyDisplayedCount + actualIndex + 1;
+    const rollingPosition = basePosition + (repetitionNumber * nextGroupedItemsLength);
+    
+    return rollingPosition;
   }
 }

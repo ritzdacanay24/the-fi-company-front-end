@@ -1,6 +1,8 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GroupedPriorityItem } from '../../services/priority-display.service';
+import { ThemeManagementService } from '../../services/theme-management.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-multi-card-view',
@@ -9,7 +11,7 @@ import { GroupedPriorityItem } from '../../services/priority-display.service';
   templateUrl: './multi-card-view.component.html',
   styleUrls: ['./multi-card-view.component.scss']
 })
-export class MultiCardViewComponent {
+export class MultiCardViewComponent implements OnInit, OnDestroy {
   @Input() groupedItems: GroupedPriorityItem[] = [];
   @Input() displayMode: 'top3' | 'top6' | 'grid' = 'top3';
   @Input() cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'traditional';
@@ -19,6 +21,29 @@ export class MultiCardViewComponent {
   @Input() showRefreshOverlay: boolean = true;
 
   @Output() refreshRequested = new EventEmitter<void>();
+
+  // Theme-related properties
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
+  private themeSubscription?: Subscription;
+
+  constructor(private themeService: ThemeManagementService) {}
+
+  ngOnInit(): void {
+    // Subscribe to theme changes
+    this.themeSubscription = this.themeService.themeSettings$.subscribe(settings => {
+      this.currentTheme = settings.currentTheme;
+    });
+
+    // Initialize theme based on current settings
+    const currentSettings = this.themeService.getCurrentSettings();
+    this.currentTheme = currentSettings.currentTheme;
+  }
+
+  ngOnDestroy(): void {
+    if (this.themeSubscription) {
+      this.themeSubscription.unsubscribe();
+    }
+  }
 
   get displayedItems(): GroupedPriorityItem[] {
     switch (this.displayMode) {
@@ -47,7 +72,9 @@ export class MultiCardViewComponent {
   }
 
   get containerClass(): string {
-    return this.displayMode === 'grid' ? 'grid-view' : 'card-view';
+    const baseClass = this.displayMode === 'grid' ? 'grid-view' : 'card-view';
+    const themeClass = this.currentTheme === 'dark' ? 'theme-dark' : 'theme-light';
+    return `${baseClass} ${themeClass} burn-in-prevention`;
   }
 
   // Utility methods - these will be moved to a shared service later
@@ -187,6 +214,8 @@ export class MultiCardViewComponent {
       return 'https://www.indiangaming.com/wp-content/uploads/2021/03/Aristocrat_Logo2-1024x323.jpg';
     } else if (customer.includes('baltec')) {
       return 'https://c.smartrecruiters.com/sr-careersite-image-prod/55920a6fe4b06ce952a5c887/060d5037-4f70-4dd7-9c31-d700f6c5b468?r=s3';
+    } else if (customer.includes('incred') || customer.includes('incredible')) {
+      return 'assets/images/companies/incred-logo.svg';
     } else if (customer.includes('igt') || customer.includes('intgam') || customer.includes('international game technology')) {
       return 'https://cdn.imgbin.com/19/15/1/imgbin-international-game-technology-i-g-t-australia-pty-ltd-portable-network-graphics-lottomatica-spa-social-campaign-iQga30i3JCuekwguEpeYSgfSg.jpg';
     }

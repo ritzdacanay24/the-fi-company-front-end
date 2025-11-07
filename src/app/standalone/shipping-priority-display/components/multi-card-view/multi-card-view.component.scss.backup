@@ -10,17 +10,6 @@
 
 // Global dark mode styles for Bootstrap theme
 [data-bs-theme="dark"] {
-  // Bootstrap CSS variables for dark mode
-  --bs-body-bg: #1a1d21;
-  --bs-body-color: #e2e8f0;
-  --bs-secondary-bg: #2d3748;
-  --bs-secondary-color: #a0aec0;
-  --bs-tertiary-bg: #4a5568;
-  --bs-border-color: #4a5568;
-  --bs-dark: #2d3748;
-  --bs-light: #e2e8f0;
-  --bs-secondary: #4a5568;
-  
   background-color: #1a1d21 !important;
   color: #e2e8f0 !important;
 
@@ -39,166 +28,19 @@
     color: #a0aec0 !important;
   }
 
-  // Ensure all containers have proper dark background
+  // Fix layout and white sections - comprehensive coverage
+  *,
+  div,
+  section,
+  main,
+  article,
+  aside,
   .container,
   .container-fluid,
-  .row {
-    background-color: inherit;
-  }
-}
-
-// Bootstrap Dark Theme - matches Bootstrap 5.3 dark mode
-:host-context([data-theme="bootstrap-dark"]),
-[data-theme="bootstrap-dark"] {
-  // Bootstrap CSS variables
-  --bs-body-bg: #212529;
-  --bs-body-color: #dee2e6;
-  --bs-secondary-bg: #343a40;
-  --bs-secondary-color: rgba(222, 226, 230, 0.75);
-  --bs-tertiary-bg: #2b3035;
-  --bs-border-color: transparent;
-  --bs-border-color-translucent: transparent;
-  
-  background-color: #212529 !important;
-  color: #dee2e6 !important;
-
-  // Fix white sections and backgrounds
-  .bg-white,
-  .bg-light {
-    background-color: #343a40 !important;
-    color: #dee2e6 !important;
-  }
-
-  .text-dark {
-    color: #dee2e6 !important;
-  }
-
-  .text-muted {
-    color: rgba(222, 226, 230, 0.5) !important;
-  }
-
-  .text-body {
-    color: #dee2e6 !important;
-  }
-
-  // Sales Order and Work Order sections
-  .so-orders,
-  .so-work-orders {
-    .so-orders-label,
-    .wo-label {
-      color: #adb5bd !important; // Lighter muted color for labels
-    }
-    
-    .so-item {
-      color: #dee2e6 !important; // Bright text for order numbers
-      
-      &.text-muted {
-        color: #adb5bd !important; // Lighter for "more orders" text
-      }
-    }
-  }
-
-  // Customers section
-  .so-customers {
-    .customers-label {
-      color: #adb5bd !important;
-    }
-    
-    .customer-item {
-      color: #dee2e6 !important;
-    }
-  }
-
-  // Remove shadow from orange units badges
-  .quantity-display,
-  .quantity-box {
-    box-shadow: none !important;
-  }
-
-  // Cards use tertiary background
-  .priority-card {
-    background-color: #2b3035 !important;
-    color: #dee2e6 !important;
-    border: none !important;
-    border-color: transparent !important;
-    
-    .card-header {
-      background-color: #343a40 !important;
-      border-bottom: none !important;
-      border-bottom-color: transparent !important;
-      
-      .card-title {
-        color: #dee2e6 !important;
-      }
-    }
-    
-    .card-body {
-      color: #dee2e6 !important;
-    }
-  }
-
-  // Priority badges - clean flat design without shadows
-  .executive-priority-rank {
-    .priority-circle {
-      box-shadow: none !important;
-      border: 2px solid transparent !important;
-      
-      &:hover {
-        box-shadow: none !important;
-      }
-      
-      // Gold - muted dark mode gold
-      &.priority-gold {
-        background: #ca8a04 !important;
-        color: #fef3c7 !important;
-        border-color: #a16207 !important;
-        box-shadow: none !important;
-        
-        &::before {
-          display: none; // Remove crown emoji
-        }
-      }
-      
-      // Silver - muted dark mode silver
-      &.priority-silver {
-        background: #71717a !important;
-        color: #f4f4f5 !important;
-        border-color: #52525b !important;
-        box-shadow: none !important;
-      }
-      
-      // Bronze - muted dark mode bronze
-      &.priority-bronze {
-        background: #92400e !important;
-        color: #fef3c7 !important;
-        border-color: #78350f !important;
-        box-shadow: none !important;
-      }
-      
-      // High priority - muted red
-      &.priority-high {
-        background: #b91c1c !important;
-        color: #fee2e2 !important;
-        border-color: #991b1b !important;
-        box-shadow: none !important;
-      }
-      
-      // Medium priority - muted orange
-      &.priority-medium {
-        background: #c2410c !important;
-        color: #fed7aa !important;
-        border-color: #9a3412 !important;
-        box-shadow: none !important;
-      }
-      
-      // Low priority - muted blue
-      &.priority-low {
-        background: #1e40af !important;
-        color: #dbeafe !important;
-        border-color: #1e3a8a !important;
-        box-shadow: none !important;
-      }
-    }
+  .row,
+  .col,
+  [class*="col-"] {
+    background-color: inherit !important;
   }
 
   // Ensure all containers have proper dark background
@@ -264,8 +106,8 @@
     }
     
     .card-header {
-      background-color: var(--bs-secondary-bg, rgba(248, 249, 250, 0.8));
-      border-bottom: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
+      background-color: rgba(248, 249, 250, 0.8);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.125);
       
       .card-title {
         color: #333;
@@ -298,7 +140,10 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255, 255, 255, 0.3);
+      background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(255, 255, 255, 0) 100%);
       z-index: 5;
       animation: shimmer 1.5s infinite;
       border-radius: 0.375rem;
@@ -326,7 +171,7 @@
     border-color: #dc3545 !important;
     
     .card-header {
-      background: rgba(220, 53, 69, 0.1);
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -334,7 +179,7 @@
     border-color: #ffc107 !important;
     
     .card-header {
-      background: rgba(255, 193, 7, 0.1);
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -342,7 +187,7 @@
     border-color: #17a2b8 !important;
     
     .card-header {
-      background: rgba(23, 162, 184, 0.1);
+      background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -350,7 +195,7 @@
     border-color: #28a745 !important;
     
     .card-header {
-      background: rgba(40, 167, 69, 0.1);
+      background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -358,7 +203,7 @@
     border-color: #6c757d !important;
     
     .card-header {
-      background: rgba(108, 117, 125, 0.1);
+      background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -366,7 +211,7 @@
     border-color: #007bff !important;
     
     .card-header {
-      background: rgba(0, 123, 255, 0.1);
+      background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(248, 249, 250, 0.8));
     }
   }
 
@@ -475,7 +320,7 @@
       
       // Priority 1 - Gold Medal
       &.priority-gold {
-        background: #FFD700;
+        background: linear-gradient(135deg, #FFD700, #FFA500, #FF8C00);
         color: #8B4513;
         border-color: #DAA520;
         box-shadow: 0 3px 12px rgba(255, 215, 0, 0.4), 0 0 0 2px rgba(255, 215, 0, 0.2);
@@ -492,7 +337,7 @@
       
       // Priority 2 - Silver Medal  
       &.priority-silver {
-        background: #C0C0C0;
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8, #808080);
         color: #2F2F2F;
         border-color: #A0A0A0;
         box-shadow: 0 3px 12px rgba(192, 192, 192, 0.4);
@@ -500,7 +345,7 @@
       
       // Priority 3 - Bronze Medal
       &.priority-bronze {
-        background: #CD7F32;
+        background: linear-gradient(135deg, #CD7F32, #B8860B, #A0522D);
         color: #FFFFFF;
         border-color: #8B4513;
         box-shadow: 0 3px 12px rgba(205, 127, 50, 0.4);
@@ -508,7 +353,7 @@
       
       // Priority 4-5 - High Priority (Red)
       &.priority-high {
-        background: #FF6B6B;
+        background: linear-gradient(135deg, #FF6B6B, #FF5252, #F44336);
         color: #FFFFFF;
         border-color: #D32F2F;
         box-shadow: 0 3px 12px rgba(255, 107, 107, 0.4);
@@ -517,7 +362,7 @@
       
       // Priority 6-10 - Medium Priority (Orange)
       &.priority-medium {
-        background: #FF9800;
+        background: linear-gradient(135deg, #FF9800, #F57C00, #E65100);
         color: #FFFFFF;
         border-color: #D84315;
         box-shadow: 0 3px 12px rgba(255, 152, 0, 0.3);
@@ -525,7 +370,7 @@
       
       // Priority 11+ - Standard (Blue)
       &.priority-standard {
-        background: #2196F3;
+        background: linear-gradient(135deg, #2196F3, #1976D2, #1565C0);
         color: #FFFFFF;
         border-color: #0D47A1;
         box-shadow: 0 3px 12px rgba(33, 150, 243, 0.3);
@@ -588,8 +433,8 @@
         height: 48px;
         object-fit: contain;
         border-radius: 8px;
-        background: var(--bs-body-bg, rgba(255, 255, 255, 0.95));
-        border: 2px solid var(--bs-border-color, #e9ecef);
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border: 2px solid #e9ecef;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         padding: 4px;
         transition: all 0.3s ease;
@@ -634,20 +479,20 @@
         }
         
         &.completed {
-          background: #d4edda;
+          background: linear-gradient(135deg, #d4edda, #c3e6cb);
           color: #155724;
           border: 1px solid #c3e6cb;
         }
         
         &.urgent {
-          background: #f8d7da;
+          background: linear-gradient(135deg, #f8d7da, #f1b0b7);
           color: #721c24;
           border: 1px solid #f1b0b7;
           animation: pulse-urgent 2s infinite;
         }
         
         &.low-stock {
-          background: #fff3cd;
+          background: linear-gradient(135deg, #fff3cd, #ffeaa7);
           color: #856404;
           border: 1px solid #ffeaa7;
         }
@@ -792,7 +637,7 @@
 
   .layout-production {
     padding: 1.25rem;
-    // Removed hardcoded white background to allow dark mode theming
+    background: #ffffff;
     
     .production-layout {
       .prod-header {
@@ -813,7 +658,7 @@
         .part-description {
           font-size: 0.8rem;
           line-height: 1.3;
-          // color: #6c757d;
+          color: #6c757d;
         }
       }
       
@@ -830,7 +675,7 @@
         }
         
         .quantity-display {
-          background: #fd7e14;
+          background: linear-gradient(135deg, #fd7e14, #ff8c00);
           border-radius: 0.75rem;
           padding: 1.25rem 1rem;
           color: white;
@@ -910,7 +755,7 @@
 
   .layout-salesorder {
     padding: 1.25rem;
-    // Removed hardcoded white background to allow dark mode theming
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     
     .salesorder-layout {
       .so-header {
@@ -948,7 +793,7 @@
           -webkit-line-clamp: 2;
           line-clamp: 2;
           -webkit-box-orient: vertical;
-          // color: #495057;
+          color: #495057;
           font-weight: 600;
         }
       }
@@ -994,7 +839,7 @@
         
         .so-quantity {
           .quantity-box {
-            background: #fd7e14;
+            background: linear-gradient(135deg, #fd7e14, #ff8c00);
             border-radius: 1rem;
             padding: 1.5rem 1rem;
             color: white;
@@ -1092,12 +937,12 @@
     .orders-preview {
       .order-preview {
         padding: 0.75rem;
-        background-color: var(--bs-secondary-bg, #f8f9fa);
+        background-color: #f8f9fa;
         border-radius: 0.375rem;
-        border: 1px solid var(--bs-border-color, #e9ecef);
+        border: 1px solid #e9ecef;
         
         &:hover {
-          background-color: var(--bs-tertiary-bg, #e9ecef);
+          background-color: #e9ecef;
         }
       }
     }
@@ -1115,9 +960,9 @@
         display: flex;
         align-items: center;
         padding: 0.75rem;
-        background: var(--bs-secondary-bg, #f8f9fa);
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
         border-radius: 0.5rem;
-        border: 1px solid var(--bs-border-color, #e9ecef);
+        border: 1px solid #e9ecef;
         
         .metric-icon {
           margin-right: 0.75rem;
@@ -1311,15 +1156,13 @@
 .multi-card-view[data-theme="dark"] {
   
   .priority-card {
-    background-color: var(--bs-body-bg, #2d3748) !important; // Match header background
+    background-color: var(--bs-dark) !important;
     color: var(--bs-light) !important;
-    border-color: var(--bs-border-color, #4a5568) !important; // Use consistent border
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important; // Enhanced shadow for depth
-    
+    border-color: var(--bs-secondary) !important;
     .card-header {
-      background-color: var(--bs-secondary-bg, #374151) !important; // Slightly darker than card body
+      background-color: var(--bs-secondary) !important;
       color: var(--bs-light) !important;
-      border-bottom-color: var(--bs-border-color, #4a5568) !important;
+      border-bottom-color: var(--bs-secondary) !important;
     }
 
     .card-body {
@@ -1327,50 +1170,105 @@
     }
 
     .card-footer {
-      background-color: var(--bs-secondary-bg, #374151) !important; // Match header background
+      background-color: var(--bs-secondary) !important;
       color: var(--bs-light) !important;
-      border-top-color: var(--bs-border-color, #4a5568) !important;
+      border-top-color: var(--bs-secondary) !important;
     }
 
-    // Priority badge colors for dark mode
-    .priority-badge {
+    // Simplified text colors for dark mode
+    .text-muted {
+      color: var(--bs-secondary-color) !important;
+    }
+
+    .stat-value {
+      color: var(--bs-light) !important;
+    }
+
+    .stat-label {
+      color: var(--bs-secondary-color) !important;
+    }
+
+    // Orders and previews
+    .order-preview,
+    .metric-item {
+      background-color: var(--bs-secondary) !important;
+      color: var(--bs-light) !important;
+      border-color: var(--bs-border-color) !important;
+      
+      &:hover {
+        background-color: var(--bs-border-color) !important;
+      }
+    }
+
+    // Status items
+    .status-item {
+      background-color: var(--bs-secondary) !important;
+      color: var(--bs-secondary-color) !important;
+      border-color: var(--bs-border-color) !important;
+    }
+  }
+
+  // Loading overlay for dark mode
+  .loading-overlay {
+    &::before {
+      background: linear-gradient(90deg, 
+        rgba(0, 0, 0, 0) 0%, 
+        rgba(0, 0, 0, 0.3) 50%, 
+        rgba(0, 0, 0, 0) 100%);
+    }
+  }
+
+  // Empty state for dark mode
+  .empty-state {
+    background-color: var(--bs-secondary) !important;
+    color: var(--bs-secondary-color) !important;
+    border-color: var(--bs-border-color) !important;
+  }
+}
+
+// ====================================
+// SIMPLIFIED DARK MODE SECTION END
+// ====================================
+
+// ====================================
+// ZOOM FUNCTIONALITY STYLES
       &.priority-gold {
-        background: #D69E2E;
+        background: linear-gradient(135deg, #B7791F, #D69E2E, #F6AD55);
         color: #1A202C;
         border-color: #D69E2E;
         box-shadow: 0 3px 12px rgba(183, 121, 31, 0.4), 0 0 0 2px rgba(214, 158, 46, 0.2);
       }
       
       &.priority-silver {
-        background: #A0AEC0;
+        background: linear-gradient(135deg, #718096, #A0AEC0, #CBD5E0);
         color: #1A202C;
         border-color: #A0AEC0;
         box-shadow: 0 3px 10px rgba(113, 128, 150, 0.3), 0 0 0 2px rgba(160, 174, 192, 0.2);
       }
       
       &.priority-bronze {
-        background: #DD6B20;
+        background: linear-gradient(135deg, #C05621, #DD6B20, #ED8936);
         color: #1A202C;
         border-color: #DD6B20;
         box-shadow: 0 3px 10px rgba(192, 86, 33, 0.3), 0 0 0 2px rgba(221, 107, 32, 0.2);
       }
       
       &.priority-high {
-        background: #E53E3E;
+        background: linear-gradient(135deg, #C53030, #E53E3E, #FC8181);
         color: #1A202C;
         border-color: #E53E3E;
         box-shadow: 0 2px 8px rgba(197, 48, 48, 0.3);
       }
       
       &.priority-medium {
-        background: #D69E2E;
+        background: linear-gradient(135deg, #D69E2E, #F6AD55, #FBBF24);
         color: #1A202C;
         border-color: #F6AD55;
         box-shadow: 0 2px 8px rgba(214, 158, 46, 0.3);
       }
       
       &.priority-standard {
-        background: #718096;
+        background: linear-gradient(135deg, #4A5568, #718096, #A0AEC0);
         color: #E2E8F0;
         border-color: #718096;
         box-shadow: 0 2px 6px rgba(74, 85, 104, 0.3);
@@ -1463,7 +1361,7 @@
 
     // Metric items for dark mode
     .metric-item {
-      background: #4A5568;
+      background: linear-gradient(135deg, #4A5568, #2D3748);
       border-color: #718096;
       
       .metric-content {
@@ -1530,7 +1428,7 @@
     }
 
     &.layout-production {
-      background: var(--bs-body-bg, #2d3748) !important; // Use consistent background
+      background: #2D3748;
       
       .production-layout {
         .prod-header {
@@ -1543,7 +1441,7 @@
           }
           
           .part-description {
-            // color: #A0AEC0;
+            color: #A0AEC0;
           }
         }
       }
@@ -1562,7 +1460,7 @@
       
       .so-quantity {
         .quantity-display {
-          background: #D69E2E;
+          background: linear-gradient(135deg, #D69E2E, #F6AD55);
           color: #1A202C;
           box-shadow: 0 4px 15px rgba(214, 158, 46, 0.3);
         }
@@ -1620,7 +1518,7 @@
     &.layout-dashboard {
       .metrics-grid {
         .metric-item {
-          background: #4A5568;
+          background: linear-gradient(135deg, #4A5568, #2D3748);
           border-color: #718096;
         }
       }
@@ -1630,42 +1528,18 @@
   // Loading overlay for dark mode
   .loading-overlay {
     &::before {
-      background: rgba(45, 55, 72, 0.3);
+      background: linear-gradient(90deg, 
+        rgba(45, 55, 72, 0) 0%, 
+        rgba(45, 55, 72, 0.3) 50%, 
+        rgba(45, 55, 72, 0) 100%);
     }
   }
 
   // Empty state for dark mode
   .empty-state {
-    background-color: var(--bs-secondary, #4A5568) !important;
-    border-color: var(--bs-border-color, #718096) !important;
-    color: var(--bs-secondary-color, #A0AEC0) !important;
-  }
-
-  // COMPREHENSIVE DARK MODE OVERRIDES - Fix all hardcoded backgrounds
-  // Ensure ALL layout types have consistent card backgrounds
-  .layout-salesorder,
-  .layout-production,
-  .layout-traditional,
-  .layout-compact,
-  .layout-detailed,
-  .layout-minimal,
-  .layout-dashboard {
-    background: var(--bs-body-bg, #2d3748) !important;
-    
-    .card-header {
-      background-color: var(--bs-secondary-bg, #374151) !important;
-      background: var(--bs-secondary-bg, #374151) !important;
-    }
-  }
-
-  // Override any remaining hardcoded white/light backgrounds
-  * {
-    &[style*="background: #f"],
-    &[style*="background-color: #f"],
-    &[style*="background: rgb(248"],
-    &[style*="background: rgba(248"] {
-      background: var(--bs-body-bg, #2d3748) !important;
-    }
+    background-color: #4A5568;
+    border-color: #718096;
+    color: #A0AEC0;
   }
 
   // Border color variants for dark mode
@@ -1673,7 +1547,7 @@
     border-color: #D69E2E !important;
     
     .card-header {
-      background: rgba(214, 158, 46, 0.2);
+      background: linear-gradient(135deg, rgba(214, 158, 46, 0.2), rgba(45, 55, 72, 0.8));
     }
   }
 
@@ -1681,7 +1555,7 @@
     border-color: #3182CE !important;
     
     .card-header {
-      background: rgba(49, 130, 206, 0.2);
+      background: linear-gradient(135deg, rgba(49, 130, 206, 0.2), rgba(45, 55, 72, 0.8));
     }
   }
 
@@ -1689,7 +1563,7 @@
     border-color: #38A169 !important;
     
     .card-header {
-      background: rgba(56, 161, 105, 0.2);
+      background: linear-gradient(135deg, rgba(56, 161, 105, 0.2), rgba(45, 55, 72, 0.8));
     }
   }
 
@@ -1697,7 +1571,7 @@
     border-color: #718096 !important;
     
     .card-header {
-      background: rgba(113, 128, 150, 0.2);
+      background: linear-gradient(135deg, rgba(113, 128, 150, 0.2), rgba(45, 55, 72, 0.8));
     }
   }
 
@@ -1705,7 +1579,7 @@
     border-color: #3182CE !important;
     
     .card-header {
-      background: rgba(49, 130, 206, 0.2);
+      background: linear-gradient(135deg, rgba(49, 130, 206, 0.2), rgba(45, 55, 72, 0.8));
     }
   }
 
@@ -2020,60 +1894,5 @@
   100% {
     transform: scale(1);
     opacity: 0.7;
-  }
-}
-
-// ====================================
-// DARK MODE OVERRIDES
-// ====================================
-
-[data-bs-theme="dark"] {
-  // FINAL OVERRIDE: Ensure ALL cards have consistent backgrounds
-  .multi-card-view .priority-card {
-    background: var(--bs-body-bg, #2d3748) !important;
-    color: var(--bs-body-color, #e2e8f0) !important;
-    border-color: var(--bs-border-color, #4a5568) !important;
-    
-    .card-header {
-      background: var(--bs-secondary-bg, #374151) !important;
-      color: var(--bs-body-color, #e2e8f0) !important;
-    }
-    
-    .card-body {
-      background: var(--bs-body-bg, #2d3748) !important;
-      color: var(--bs-body-color, #e2e8f0) !important;
-    }
-    
-    .card-footer {
-      background: var(--bs-secondary-bg, #374151) !important;
-      color: var(--bs-body-color, #e2e8f0) !important;
-    }
-    
-    // Override any layout-specific backgrounds
-    &.layout-production,
-    &.layout-salesorder,
-    &.layout-traditional,
-    &.layout-compact,
-    &.layout-detailed,
-    &.layout-minimal,
-    &.layout-dashboard {
-      background: var(--bs-body-bg, #2d3748) !important;
-    }
-  }
-  
-  // Ensure all generic cards also follow the same pattern
-  .card {
-    background: var(--bs-body-bg, #2d3748) !important;
-    color: var(--bs-body-color, #e2e8f0) !important;
-    border-color: var(--bs-border-color, #4a5568) !important;
-  }
-  
-  // Fix any text visibility issues
-  .text-muted {
-    color: rgba(224, 232, 240, 0.8) !important;
-  }
-  
-  .text-dark {
-    color: var(--bs-body-color, #e2e8f0) !important;
   }
 }
