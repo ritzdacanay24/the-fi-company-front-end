@@ -121,15 +121,24 @@ export class PdfParserService {
         console.log('🔍 DEBUG - Position data check:', (response as any).debug);
       }
       
-      // TODO: Enable file storage once tested
-      // For now, use base64 directly for immediate functionality
-      // const base64Images = response.images.map(img => img.url);
-      // const fileUrls = await this.saveImagesToFiles(base64Images);
+      // Convert base64 images to file URLs for consistency
+      const base64Images = response.images.map(img => img.url);
+      console.log(`📸 Converting ${base64Images.length} base64 images to file URLs...`);
+      const fileUrls = await this.saveImagesToFiles(base64Images);
       
-      // Return both flat URLs and grouped data with base64
+      // Update groups with file URLs instead of base64
+      const updatedGroups = response.imageGroups?.map((group: any) => ({
+        ...group,
+        images: group.images?.map((img: any, idx: number) => ({
+          ...img,
+          url: fileUrls[response.images.findIndex((ri: any) => ri.url === img.url)] || img.url
+        }))
+      })) || [];
+      
+      // Return file URLs and updated groups
       return {
-        images: response.images.map(img => img.url),
-        groups: response.imageGroups || []
+        images: fileUrls,
+        groups: updatedGroups
       };
       
     } catch (error) {
@@ -165,8 +174,8 @@ export class PdfParserService {
       
       console.log(`✅ Saved ${response.count} images to disk`);
       
-      // Return file URLs (backend will serve these via get-checklist-image.php)
-      return response.images.map(img => `/backend/${img.path}`);
+      // Return file URLs (relative paths for frontend)
+      return response.images.map(img => `/${img.path}`);
       
     } catch (error) {
       console.error('❌ Error saving images to files:', error);

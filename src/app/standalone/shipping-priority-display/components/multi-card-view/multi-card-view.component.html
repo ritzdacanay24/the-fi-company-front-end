@@ -43,12 +43,17 @@
           </div>
           
           <div class="header-right d-flex align-items-center gap-3">
-            <!-- Customer Logo -->
-            <div class="customer-branding" *ngIf="getCustomerLogo(getPrimaryCustomer(item))">
-              <img [src]="getCustomerLogo(getPrimaryCustomer(item))" 
+            <!-- Customer Logo or Name -->
+            <div class="customer-branding">
+              <img *ngIf="getCustomerLogo(getPrimaryCustomer(item))"
+                   [src]="getCustomerLogo(getPrimaryCustomer(item))" 
                    [alt]="getPrimaryCustomer(item) + ' logo'"
                    class="executive-customer-logo"
                    [title]="getPrimaryCustomer(item)">
+              <div *ngIf="!getCustomerLogo(getPrimaryCustomer(item))" 
+                   class="customer-name-badge">
+                <span class="fw-bold">{{ getPrimaryCustomer(item) }}</span>
+              </div>
             </div>
             <!-- Priority Status Indicators -->
             <div class="priority-status">
@@ -92,81 +97,63 @@
           <!-- Production Card Layout -->
           <div *ngIf="cardLayout === 'production'" class="production-layout">
             <!-- Header with Part Number -->
-            <div class="prod-header text-center mb-3">
-              <!-- <div class="prod-label text-uppercase small text-muted fw-bold mb-1">PART NUMBER</div> -->
-              <h2 class="part-number-title text-primary fw-bold mb-2">{{ item.partNumber }}</h2>
+            <div class="prod-header text-center mb-2 pb-2 border-bottom-separator">
+              <h2 class="part-number-title text-primary fw-bold mb-1">{{ item.partNumber }}</h2>
               <p class="part-description text-light small mb-0">{{ getPartDescription(item) }}</p>
             </div>
             
-            <!-- Large Quantity Box -->
-            <div class="prod-quantity-box text-center mb-3">
-              <div class="prod-quantity-label text-uppercase small text-muted fw-bold mb-1">
-                <i class="mdi mdi-cube-outline me-1"></i>TOTAL QUANTITY
-              </div>
-              <div class="quantity-display">
-                <div class="quantity-number">{{ formatQuantity(item.totalQuantity) }}</div>
-                <div class="quantity-units">UNITS</div>
-              </div>
-            </div>
-            
-            <!-- Orders Count -->
-            <div class="prod-orders-section mb-3">
-              <div class="prod-info-item">
-                <div class="prod-icon-wrapper bg-primary">
-                  <i class="mdi mdi-format-list-numbered text-white"></i>
-                </div>
-                <div class="prod-info-content">
-                  <div class="prod-info-label text-uppercase small text-muted fw-bold">ORDERS COUNT</div>
-                  <div class="prod-info-value">{{ item.orders.length }} Order{{ item.orders.length !== 1 ? 's' : '' }}</div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Customer -->
-            <div class="prod-customer-section mb-3">
-              <div class="prod-info-item">
-                <div class="prod-icon-wrapper bg-primary" *ngIf="!getCustomerLogo(getPrimaryCustomer(item))">
-                  <i class="mdi mdi-account text-white"></i>
-                </div>
-                <div class="prod-icon-wrapper bg-body border" 
-                     *ngIf="getCustomerLogo(getPrimaryCustomer(item))"
-                     style="padding: 4px;">
-                  <img [src]="getCustomerLogo(getPrimaryCustomer(item))" 
-                       [alt]="getPrimaryCustomer(item) + ' logo'"
-                       style="width: 24px; height: 24px; object-fit: contain;">
-                </div>
-                <div class="prod-info-content">
-                  <div class="prod-info-label text-uppercase small text-muted fw-bold">CUSTOMER</div>
-                  <div class="prod-info-value">{{ getPrimaryCustomer(item) }}</div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Work Orders -->
-            <div class="prod-wo-section mb-3" *ngIf="getWorkOrderNumbers(item).length > 0">
-              <div class="prod-info-item">
-                <div class="prod-icon-wrapper bg-secondary">
-                  <i class="mdi mdi-wrench text-white"></i>
-                </div>
-                <div class="prod-info-content">
-                  <div class="prod-info-label text-uppercase small text-muted fw-bold">
-                    WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }}
-                  </div>
-                  <div class="prod-info-value">
-                    <div *ngFor="let wo of getWorkOrderNumbers(item)">{{ wo }}</div>
+            <!-- Compact Three-Column Layout -->
+            <div class="row g-2 mb-2">
+              <!-- Left Column: Quantity Box -->
+              <div class="col-4">
+                <div class="prod-quantity-box-compact text-center">
+                  <div class="quantity-display-compact">
+                    <div class="quantity-number-compact">{{ formatQuantity(item.totalQuantity) }}</div>
+                    <div class="quantity-units-compact">UNITS</div>
                   </div>
                 </div>
               </div>
+              
+              <!-- Middle Column: Customer -->
+              <div class="col-4">
+                <div class="prod-customer-box-compact text-center">
+                  <img *ngIf="getCustomerLogo(getPrimaryCustomer(item))"
+                       [src]="getCustomerLogo(getPrimaryCustomer(item))" 
+                       [alt]="getPrimaryCustomer(item)"
+                       class="customer-logo-compact mb-1">
+                  <div class="customer-icon-compact mb-1" *ngIf="!getCustomerLogo(getPrimaryCustomer(item))">
+                    <i class="mdi mdi-account"></i>
+                  </div>
+                  <div class="customer-name-compact text-truncate">{{ getPrimaryCustomer(item) }}</div>
+                  <div class="customer-label-compact">CUSTOMER</div>
+                </div>
+              </div>
+              
+              <!-- Right Column: Orders Count -->
+              <div class="col-4">
+                <div class="prod-info-box-compact text-center">
+                  <div class="info-icon-compact">
+                    <i class="mdi mdi-format-list-numbered"></i>
+                  </div>
+                  <div class="info-value-compact">{{ item.orders.length }}</div>
+                  <div class="info-label-compact">ORDER{{ item.orders.length !== 1 ? 'S' : '' }}</div>
+                </div>
+              </div>
             </div>
             
-            <!-- Status Badge -->
-            <div class="prod-status-section text-center">
-              <span *ngIf="hasHotOrders(item.orders)" class="badge bg-warning text-body px-3 py-2">
-                <i class="mdi mdi-clock-alert-outline me-1"></i>Due Today
-              </span>
-              <span *ngIf="!hasHotOrders(item.orders)" class="badge bg-success text-white px-3 py-2">
-                <i class="mdi mdi-clock-check-outline me-1"></i>Future Order
-              </span>
+            <!-- Work Orders - Compact List -->
+            <div class="prod-details-compact" *ngIf="getWorkOrderNumbers(item).length > 0">
+              <!-- Work Orders -->
+              <div class="detail-row-compact d-flex align-items-start mb-1">
+                <div class="detail-icon-compact me-2">
+                  <i class="mdi mdi-wrench"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <small class="text-muted d-block">WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }}</small>
+                  <strong class="d-block" *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 2)">{{ wo }}</strong>
+                  <small class="text-muted" *ngIf="getWorkOrderNumbers(item).length > 2">+{{ getWorkOrderNumbers(item).length - 2 }} more</small>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -180,7 +167,7 @@
             
             <div class="so-content">
               <div class="row">
-                <div class="col-6">
+                <div class="col-4">
                   <div class="so-orders">
                     <div class="so-orders-label text-uppercase small text-muted fw-bold mb-2">
                       SALES ORDERS ({{ item.orders.length }} total)
@@ -194,20 +181,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="so-work-orders mt-3" *ngIf="getWorkOrderNumbers(item).length > 0">
-                    <div class="wo-label text-uppercase small text-muted fw-bold mb-2">
-                      WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }} ({{ getWorkOrderNumbers(item).length }} total)
-                    </div>
-                    <div class="wo-list">
-                      <div *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 4)" class="so-item small mb-0 text-body">
-                        {{ wo }}
-                      </div>
-                      <div *ngIf="getWorkOrderNumbers(item).length > 4" class="so-item small text-muted">
-                        +{{ getWorkOrderNumbers(item).length - 4 }} more work orders
-                      </div>
-                    </div>
-                  </div>
-                  <div class="so-customers mt-3">
+                  <!-- <div class="so-customers mt-3">
                     <div class="customers-label text-uppercase small text-muted fw-bold mb-2">CUSTOMERS</div>
                     <div class="customers-list">
                       <div *ngFor="let customer of getUniqueCustomers(item).slice(0, 2)" class="customer-item small text-muted mb-0 d-flex align-items-center">
@@ -224,9 +198,25 @@
                         +{{ getUniqueCustomers(item).length - 2 }} more customers
                       </div>
                     </div>
+                  </div> -->
+                </div>
+                <div class="col-4 text-center">
+                  
+                  <div class="so-work-orders" *ngIf="getWorkOrderNumbers(item).length > 0">
+                    <div class="wo-label text-uppercase small text-muted fw-bold mb-2">
+                      WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }} ({{ getWorkOrderNumbers(item).length }} total)
+                    </div>
+                    <div class="wo-list">
+                      <div *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 4)" class="so-item small mb-0 text-body">
+                        {{ wo }}
+                      </div>
+                      <div *ngIf="getWorkOrderNumbers(item).length > 4" class="so-item small text-muted">
+                        +{{ getWorkOrderNumbers(item).length - 4 }} more work orders
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="col-6 text-end">
+                <div class="col-4 text-end">
                   <div class="so-quantity text-end">
                     <div class="quantity-box text-center">
                       <div class="quantity-number">{{ formatQuantity(item.totalQuantity) }}</div>
@@ -408,7 +398,7 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="displayedItems.length === 0" class="empty-state text-center py-5">
+  <!-- <div *ngIf="displayedItems.length === 0" class="empty-state text-center py-5">
     <i class="mdi mdi-inbox mdi-72px text-muted mb-3"></i>
     <h4 class="text-muted">No Priority Items</h4>
     <p class="text-muted">No items are currently available for display.</p>
@@ -416,7 +406,7 @@
       <i class="mdi mdi-refresh"></i>
       Refresh Data
     </button>
-  </div>
+  </div> -->
 
   <!-- Status Bar -->
   <!-- <div class="row mt-4" *ngIf="displayedItems.length > 0">

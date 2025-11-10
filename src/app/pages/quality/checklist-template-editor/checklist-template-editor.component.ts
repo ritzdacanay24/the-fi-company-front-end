@@ -72,6 +72,9 @@ interface SampleImage {
                 <h2 class="mb-1 text-primary">{{editingTemplate ? 'Edit Checklist Template' : 'Create Checklist Template'}}</h2>
                 <p class="text-muted mb-0" *ngIf="editingTemplate">
                   {{editingTemplate.name}} - Version {{editingTemplate.version}}
+                  <span *ngIf="lastSavedAt" class="badge bg-success ms-2">
+                    <i class="mdi mdi-check-circle me-1"></i>Auto-saved at {{lastSavedAt | date:'shortTime'}}
+                  </span>
                 </p>
                 <p class="text-muted mb-0" *ngIf="!editingTemplate">
                   Create a new photo checklist template with customizable inspection items
@@ -80,13 +83,26 @@ interface SampleImage {
             </div>
             
             <!-- Versioning Warning for Editing Existing Template -->
-            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate">
+            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate && !autoSaveEnabled">
               <div class="d-flex align-items-start">
                 <i class="mdi mdi-alert text-warning me-3 mt-1 fs-5"></i>
                 <div>
                   <h6 class="alert-heading text-warning mb-2">Version Notice</h6>
                   <p class="mb-2">
                     Editing this template will create a <strong>new version</strong>. Previous versions will remain available for reference.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Auto-Save Info for Imported Templates -->
+            <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert" *ngIf="autoSaveEnabled">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
+                <div>
+                  <h6 class="alert-heading text-info mb-2">Auto-Save Enabled</h6>
+                  <p class="mb-0">
+                    Your changes are being <strong>automatically saved</strong> as you edit. You can continue making changes and they will be saved every few seconds.
                   </p>
                 </div>
               </div>
@@ -225,7 +241,6 @@ interface SampleImage {
                        [class.border-start]="item.get('level')?.value === 1"
                        [class.border-4]="item.get('level')?.value === 1"
                        [class.border-primary]="item.get('level')?.value === 1"
-                       [class.opacity-50]="item.get('level')?.value === 1"
                        cdkDrag>
                     
                     <!-- Drag Preview (what you see while dragging) -->
@@ -645,6 +660,7 @@ interface SampleImage {
       opacity: 0.4;
       border: 2px dashed #0d6efd;
       background: #f8f9fa;
+      min-height: 100px;
     }
     
     /* Visual feedback for hierarchy */
@@ -654,7 +670,23 @@ interface SampleImage {
     }
     
     .card[class*="ms-4"] {
-      transition: margin-left 0.3s ease;
+      transition: margin-left 0.3s ease, background-color 0.3s ease;
+    }
+    
+    /* Drag and drop visual hints */
+    .cdk-drop-list-dragging .card[class*="ms-4"] {
+      /* Highlight child items during drag to show they can be re-parented */
+      background: rgba(13, 110, 253, 0.05);
+    }
+    
+    .cdk-drop-list-dragging .card:not([class*="ms-4"]) {
+      /* Highlight parent items as valid drop zones */
+      background: rgba(25, 135, 84, 0.05);
+    }
+    
+    /* Visual indicator for drag over parent */
+    .cdk-drag-placeholder + .card:not([class*="ms-4"]) {
+      border-top: 3px solid #198754;
     }
   `]
 })
@@ -677,6 +709,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   
   // Sample image management - single image per item
   sampleImages: { [itemIndex: number]: SampleImage | null } = {};
+  
+  // Auto-save functionality
+  autoSaveEnabled = false;
+  lastSavedAt: Date | null = null;
+  private autoSaveTimeout: any = null;
 
   constructor(
     private fb: FormBuilder,
@@ -698,6 +735,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (templateId) {
       this.loadTemplate(parseInt(templateId));
     }
+    
+    // Enable auto-save after form changes (with 3 second debounce)
+    this.templateForm.valueChanges.subscribe(() => {
+      if (this.autoSaveEnabled && this.editingTemplate) {
+        this.scheduleAutoSave();
+      }
+    });
   }
 
   createTemplateForm(): FormGroup {
@@ -903,11 +947,14 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       }
     }
     
-    // Create new sub-item
+    // Calculate the new sub-item's order_index (e.g., 5.1, 5.2, 5.3)
+    const newOrderIndex = parentOrderIndex + ((childCount + 1) * 0.1);
+    
+    // Create new sub-item with proper form group structure
     const subItem = this.fb.group({
       title: [`Sub-item ${childCount + 1}`, Validators.required],
       description: [''],
-      order_index: [parentOrderIndex + ((childCount + 1) * 0.1)], // e.g., 5.1, 5.2, 5.3
+      order_index: [newOrderIndex],
       is_required: [true],
       sample_image_url: [null],
       level: [1], // Child level
@@ -918,7 +965,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         lighting: [''],
         focus: [''],
         min_photos: [1],
-        max_photos: [1]
+        max_photos: [5]
       })
     });
     
@@ -938,6 +985,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     this.showRequirements.splice(insertIndex, 0, false);
     
     console.log(`✓ Added sub-item at index ${insertIndex} under parent ${parentIndex}`);
+    console.log(`  - Title: ${subItem.get('title')?.value}`);
+    console.log(`  - Order Index: ${newOrderIndex}`);
+    console.log(`  - Parent ID: ${parentOrderIndex}`);
+    console.log(`  - Level: 1`);
+    
+    // Trigger change detection to ensure UI updates
+    this.cdr.detectChanges();
   }
 
   removeItem(index: number): void {
@@ -996,72 +1050,117 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     const movedItem = this.items.at(previousIndex);
     const movedLevel = movedItem.get('level')?.value || 0;
-    const movedParentId = movedItem.get('parent_id')?.value;
+    const movedOrderIndex = movedItem.get('order_index')?.value;
+    
+    // Debug: Log the item being moved
+    console.log('🔄 Moving item:', {
+      from: previousIndex,
+      to: currentIndex,
+      title: movedItem.get('title')?.value,
+      description: movedItem.get('description')?.value,
+      level: movedLevel
+    });
     
     // Move the item in the array
     moveItemInArray(this.items.controls, previousIndex, currentIndex);
     moveItemInArray(this.showRequirements, previousIndex, currentIndex);
     
-    // If moving a child item, check if it should be re-parented
-    if (movedLevel === 1) {
-      // Find what item is now above and below the dropped position
-      const itemAbove = currentIndex > 0 ? this.items.at(currentIndex - 1) : null;
-      const itemBelow = currentIndex < this.items.length - 1 ? this.items.at(currentIndex + 1) : null;
+    // Also move sample images to match the new indices
+    const movedImage = this.sampleImages[previousIndex];
+    const tempImages = { ...this.sampleImages };
+    this.sampleImages = {};
+    
+    // Rebuild sample images dictionary with updated indices
+    Object.keys(tempImages).forEach(key => {
+      const oldIndex = parseInt(key);
+      let newIndex = oldIndex;
       
-      const aboveLevel = itemAbove?.get('level')?.value || 0;
-      const belowLevel = itemBelow?.get('level')?.value || 0;
-      const aboveParentId = itemAbove?.get('parent_id')?.value;
-      const aboveOrderIndex = itemAbove?.get('order_index')?.value;
-      
-      // Determine the new parent
-      let newParentId = movedParentId;
-      
-      if (aboveLevel === 0) {
-        // Dropped right after a parent item - become its child
-        newParentId = Math.floor(aboveOrderIndex);
-      } else if (aboveLevel === 1) {
-        // Dropped after another child - use its parent
-        newParentId = aboveParentId;
-      } else if (itemAbove === null && belowLevel === 0) {
-        // Dropped at the top, before a parent - convert to parent
-        movedItem.get('level')?.setValue(0);
-        movedItem.get('parent_id')?.setValue(null);
+      if (oldIndex === previousIndex) {
+        // This is the moved item
+        newIndex = currentIndex;
+      } else if (previousIndex < currentIndex) {
+        // Item moved down - shift items between old and new position up
+        if (oldIndex > previousIndex && oldIndex <= currentIndex) {
+          newIndex = oldIndex - 1;
+        }
+      } else {
+        // Item moved up - shift items between new and old position down
+        if (oldIndex >= currentIndex && oldIndex < previousIndex) {
+          newIndex = oldIndex + 1;
+        }
       }
       
-      // Update parent if it changed
-      if (newParentId !== movedParentId) {
-        movedItem.get('parent_id')?.setValue(newParentId);
-      }
+      this.sampleImages[newIndex] = tempImages[oldIndex];
+    });
+    
+    // Check what's around the dropped position to determine new parent
+    const itemAbove = currentIndex > 0 ? this.items.at(currentIndex - 1) : null;
+    const itemBelow = currentIndex < this.items.length - 1 ? this.items.at(currentIndex + 1) : null;
+    
+    const aboveLevel = itemAbove?.get('level')?.value || 0;
+    const belowLevel = itemBelow?.get('level')?.value || 0;
+    const aboveOrderIndex = itemAbove?.get('order_index')?.value;
+    const aboveParentId = itemAbove?.get('parent_id')?.value;
+    
+    // Smart re-parenting based on drop position
+    if (itemAbove === null) {
+      // Dropped at the very top - convert to parent
+      movedItem.get('level')?.setValue(0);
+      movedItem.get('parent_id')?.setValue(null);
+      console.log('✓ Dropped at top - converted to parent');
+    } else if (aboveLevel === 0 && (belowLevel === 1 || itemBelow === null)) {
+      // Dropped right after a parent (and before its children or end of list) - become its child
+      const newParentId = Math.floor(aboveOrderIndex);
+      movedItem.get('level')?.setValue(1);
+      movedItem.get('parent_id')?.setValue(newParentId);
+      console.log(`✓ Dropped after parent ${newParentId} - became its child`);
+    } else if (aboveLevel === 1) {
+      // Dropped after another child - adopt the same parent
+      movedItem.get('level')?.setValue(1);
+      movedItem.get('parent_id')?.setValue(aboveParentId);
+      console.log(`✓ Dropped after child - adopted parent ${aboveParentId}`);
+    } else if (aboveLevel === 0 && belowLevel === 0) {
+      // Dropped between two parents - become a parent
+      movedItem.get('level')?.setValue(0);
+      movedItem.get('parent_id')?.setValue(null);
+      console.log('✓ Dropped between parents - converted to parent');
     }
+    
+    // Debug: Verify item data after re-parenting
+    console.log('✓ After re-parenting:', {
+      title: movedItem.get('title')?.value,
+      description: movedItem.get('description')?.value,
+      level: movedItem.get('level')?.value,
+      parent_id: movedItem.get('parent_id')?.value
+    });
     
     // If moving a parent item, also move all its children
     if (movedLevel === 0) {
-      const movedOrderIndex = Math.floor(movedItem.get('order_index')?.value || 0);
-      const children: number[] = [];
+      const movedItemOrderIndex = Math.floor(movedOrderIndex);
+      const children: { index: number, control: any }[] = [];
       
-      // Find all children of the moved parent
+      // Find all children of the moved parent (before the move)
       this.items.controls.forEach((item, index) => {
-        if (item.get('parent_id')?.value === movedOrderIndex && index !== currentIndex) {
-          children.push(index);
+        if (item.get('parent_id')?.value === movedItemOrderIndex && index !== currentIndex) {
+          children.push({ index, control: item });
         }
       });
       
       // Move children to be right after their parent
       if (children.length > 0) {
-        // Sort children by their current position (descending to avoid index issues)
-        children.sort((a, b) => b - a);
+        console.log(`Moving ${children.length} children with parent`);
         
-        let insertPosition = currentIndex + 1;
-        children.reverse().forEach(childIndex => {
-          if (childIndex > currentIndex) {
-            // Child was after parent, adjust index
-            moveItemInArray(this.items.controls, childIndex, insertPosition);
-            moveItemInArray(this.showRequirements, childIndex, insertPosition);
-          } else {
-            // Child was before parent
-            moveItemInArray(this.items.controls, childIndex, insertPosition);
-            moveItemInArray(this.showRequirements, childIndex, insertPosition);
-            insertPosition++;
+        // Sort by current position (descending) to avoid index conflicts
+        children.sort((a, b) => b.index - a.index);
+        
+        // Move each child to right after parent
+        children.forEach((child, i) => {
+          const targetIndex = currentIndex + 1 + i;
+          const currentChildIndex = this.items.controls.indexOf(child.control);
+          
+          if (currentChildIndex !== targetIndex) {
+            moveItemInArray(this.items.controls, currentChildIndex, targetIndex);
+            moveItemInArray(this.showRequirements, currentChildIndex, targetIndex);
           }
         });
       }
@@ -1069,6 +1168,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Recalculate order_index for all items to maintain proper sequence
     this.recalculateOrderIndices();
+    
+    // Trigger change detection
+    this.cdr.detectChanges();
   }
   
   /**
@@ -1076,31 +1178,59 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    */
   private recalculateOrderIndices(): void {
     let currentParentIndex = 1;
-    let childCounter = 0;
-    let lastParentId: number | null = null;
+    const parentOrderMap = new Map<number, number>(); // Maps old parent_id to new order_index
+    const childCounters = new Map<number, number>(); // Tracks child count per parent
     
     this.items.controls.forEach((control, index) => {
       const level = control.get('level')?.value || 0;
       const parentId = control.get('parent_id')?.value;
       
       if (level === 0) {
-        // Parent item - whole number
+        // Parent item - assign whole number and track mapping
+        const oldOrderIndex = control.get('order_index')?.value;
         control.get('order_index')?.setValue(currentParentIndex);
-        currentParentIndex++;
-        childCounter = 0;
-        lastParentId = currentParentIndex - 1;
-      } else {
-        // Child item - decimal
-        if (parentId !== lastParentId) {
-          // Parent changed, reset child counter
-          childCounter = 0;
-          lastParentId = parentId;
+        
+        // Map old parent order to new parent order for children
+        if (oldOrderIndex) {
+          parentOrderMap.set(Math.floor(oldOrderIndex), currentParentIndex);
         }
-        childCounter++;
-        const orderIndex = parentId + (childCounter / 10);
+        
+        currentParentIndex++;
+        console.log(`📍 Parent item ${index} → order_index: ${currentParentIndex - 1}`);
+      } else {
+        // Child item - decimal based on parent's current order_index
+        // Find the parent's current order_index
+        let parentOrderIndex = parentId;
+        
+        // Look for the parent in our items array
+        for (let i = 0; i < this.items.controls.length; i++) {
+          const item = this.items.at(i);
+          const itemLevel = item.get('level')?.value || 0;
+          const itemOrderIndex = item.get('order_index')?.value;
+          
+          if (itemLevel === 0 && Math.floor(itemOrderIndex) === parentId) {
+            parentOrderIndex = itemOrderIndex;
+            break;
+          }
+        }
+        
+        // Update parent_id to match current parent order if needed
+        if (parentOrderIndex !== parentId) {
+          control.get('parent_id')?.setValue(parentOrderIndex);
+        }
+        
+        // Count children for this parent
+        const childCount = childCounters.get(parentOrderIndex) || 0;
+        childCounters.set(parentOrderIndex, childCount + 1);
+        
+        const orderIndex = parentOrderIndex + ((childCount + 1) / 10);
         control.get('order_index')?.setValue(orderIndex);
+        
+        console.log(`  📎 Child item ${index} → parent: ${parentOrderIndex}, order_index: ${orderIndex.toFixed(1)}`);
       }
     });
+    
+    console.log('✓ Order indices recalculated');
   }
   
   /**
@@ -1132,11 +1262,54 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   getSampleImage(itemIndex: number): SampleImage | null {
-    return this.sampleImages[itemIndex] || null;
+    const sampleImage = this.sampleImages[itemIndex] || null;
+    
+    // Convert relative URLs to absolute URLs
+    if (sampleImage && sampleImage.url) {
+      sampleImage.url = this.getAbsoluteImageUrl(sampleImage.url);
+    }
+    
+    return sampleImage;
   }
 
   hasSampleImage(itemIndex: number): boolean {
     return this.sampleImages[itemIndex] != null;
+  }
+
+  /**
+   * Convert relative image URLs to absolute URLs
+   * If the URL is already absolute (starts with http/https), return as-is
+   * Otherwise, prepend the base URL
+   */
+  private getAbsoluteImageUrl(url: string): string {
+    if (!url) return url;
+    
+    // If already absolute, return as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If relative, prepend base URL
+    const baseUrl = 'https://dashboard.eye-fi.com';
+    // Remove leading slash if present to avoid double slashes
+    const cleanUrl = url.startsWith('/') ? url : '/' + url;
+    
+    return baseUrl + cleanUrl;
+  }
+
+  /**
+   * Calculate the next version number for a template
+   * Examples: "1.0" -> "1.1", "2.5" -> "2.6", "3.9" -> "3.10"
+   */
+  private getNextVersion(currentVersion: string): string {
+    if (!currentVersion) return '1.0';
+    
+    const parts = currentVersion.split('.');
+    const major = parseInt(parts[0]) || 1;
+    const minor = parseInt(parts[1]) || 0;
+    
+    // Increment minor version
+    return `${major}.${minor + 1}`;
   }
 
   /**
@@ -1345,11 +1518,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Remove the form control field since it's not part of the database schema
     delete templateData.quality_document_id;
     
+    // Log each item to debug sub-item data
     templateData.items = templateData.items.map((item: any, index: number) => {
-      console.log(`Item ${index} sample image URL:`, {
+      console.log(`Item ${index}:`, {
         title: item.title,
+        description: item.description,
+        order_index: item.order_index,
+        level: item.level,
+        parent_id: item.parent_id,
+        is_required: item.is_required,
         sample_image_url: item.sample_image_url,
-        has_sample_image: !!item.sample_image_url
+        has_photo_requirements: !!item.photo_requirements
       });
       
       return item; // No transformation needed now
@@ -1368,10 +1547,23 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('Final template data to save:', templateData);
     console.log('Exact JSON payload being sent:', JSON.stringify(templateData, null, 2));
 
-    // Add timeout to prevent indefinite hanging
-    const saveRequest = this.editingTemplate 
-      ? this.configService.updateTemplate(this.editingTemplate.id, templateData)
-      : this.configService.createTemplate(templateData);
+    // When editing a template, create a new version instead of updating
+    if (this.editingTemplate) {
+      // Increment the version for the new template
+      const currentVersion = this.editingTemplate.version || '1.0';
+      const newVersion = this.getNextVersion(currentVersion);
+      templateData.version = newVersion;
+      
+      // Update the name to include the new version if not already present
+      if (!templateData.name.includes(`v${newVersion}`)) {
+        templateData.name = `${templateData.name} (v${newVersion})`;
+      }
+      
+      console.log(`Creating new version: ${newVersion} from existing template ${this.editingTemplate.id}`);
+    }
+
+    // Always use createTemplate to create a new version
+    const saveRequest = this.configService.createTemplate(templateData);
 
     // Add timeout wrapper
     const timeoutId = setTimeout(() => {
@@ -1386,13 +1578,15 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         console.log('Template saved successfully:', response);
         this.saving = false;
         
-        // Show success message and stay on current page for edits
+        // Show success message
         if (this.editingTemplate) {
-          alert('Template updated successfully!');
-          // Optionally reload the template to reflect any server-side changes
-          // this.loadTemplate(this.editingTemplate.id);
+          const newVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
+          alert(`New version (v${newVersion}) created successfully!`);
+          // Navigate back to template manager to see the new version
+          this.router.navigate(['/quality/template-manager']);
         } else {
           // For new templates, navigate to template manager
+          alert('Template created successfully!');
           this.router.navigate(['/quality/template-manager']);
         }
       },
@@ -1454,7 +1648,12 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       // Close modal
       this.modalService.dismissAll();
       
-      alert(`Successfully imported ${parsedTemplate.items.length} items from ${file.name}`);
+      // Automatically save the imported template as a draft (with small delay to ensure form is populated)
+      setTimeout(() => {
+        this.saveImportedTemplate();
+      }, 100);
+      
+      alert(`Successfully imported and saved ${parsedTemplate.items.length} items from ${file.name}`);
     } catch (error: any) {
       console.error('Import error:', error);
       this.importError = error.message || 'Failed to import file. Please check the format and try again.';
@@ -1478,11 +1677,119 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
     this.populateFormFromImport(parsedTemplate);
     
+    // Automatically save the manually created template as a draft (with small delay to ensure form is populated)
+    setTimeout(() => {
+      this.saveImportedTemplate();
+    }, 100);
+    
     alert(`Successfully created template with ${parsedTemplate.items.length} items`);
+  }
+
+  /**
+   * Automatically save imported template as a draft to the server
+   */
+  private saveImportedTemplate(): void {
+    if (this.templateForm.invalid) {
+      console.warn('Template form is invalid, cannot auto-save');
+      console.log('Form errors:', this.templateForm.errors);
+      console.log('Form status:', this.templateForm.status);
+      return;
+    }
+
+    console.log('Auto-saving imported template...');
+    
+    const templateData = this.templateForm.value;
+    
+    console.log('📊 Template data before save:');
+    console.log('  - Name:', templateData.name);
+    console.log('  - Category:', templateData.category);
+    console.log('  - Items array:', templateData.items);
+    console.log('  - Items count:', templateData.items?.length || 0);
+    console.log('  - Form items controls:', this.items.controls.length);
+    
+    // Remove quality_document_id as it's not part of the database schema
+    delete templateData.quality_document_id;
+    
+    templateData.items = templateData.items.map((item: any) => item);
+    
+    console.log('📤 Sending to backend:', JSON.stringify(templateData, null, 2));
+
+    // Save to server
+    this.configService.createTemplate(templateData).subscribe({
+      next: (response) => {
+        console.log('✓ Imported template auto-saved successfully:', response);
+        
+        // Update the URL to reflect that we're now editing an existing template
+        if (response && response.template_id) {
+          console.log('✓ Template ID:', response.template_id);
+          
+          // Reload the template from the server to get the full data
+          this.loadTemplate(response.template_id);
+          
+          // Update the URL without reloading the page
+          this.router.navigate(['/quality/template-editor', response.template_id], { replaceUrl: true });
+          
+          // Enable auto-save after initial import save
+          this.autoSaveEnabled = true;
+        }
+      },
+      error: (error) => {
+        console.error('✗ Failed to auto-save imported template:', error);
+        // Don't show error alert here since the user can still manually save
+        // Just log the error for debugging
+      }
+    });
+  }
+
+  /**
+   * Schedule an auto-save after user stops editing (debounced)
+   */
+  private scheduleAutoSave(): void {
+    // Clear any existing timeout
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+    }
+
+    // Schedule new auto-save after 3 seconds of inactivity
+    this.autoSaveTimeout = setTimeout(() => {
+      this.performAutoSave();
+    }, 3000);
+  }
+
+  /**
+   * Perform auto-save of current template state
+   */
+  private performAutoSave(): void {
+    if (!this.editingTemplate || this.templateForm.invalid || this.saving) {
+      return;
+    }
+
+    console.log('📝 Auto-saving template changes...');
+
+    const templateData = this.templateForm.value;
+    
+    // Remove quality_document_id as it's not part of the database schema
+    delete templateData.quality_document_id;
+    
+    templateData.items = templateData.items.map((item: any) => item);
+
+    // Update existing template
+    this.configService.updateTemplate(this.editingTemplate.id, templateData).subscribe({
+      next: (response) => {
+        this.lastSavedAt = new Date();
+        console.log('✓ Auto-save successful at', this.lastSavedAt.toLocaleTimeString());
+      },
+      error: (error) => {
+        console.error('✗ Auto-save failed:', error);
+        // Silently fail - user can still manually save
+      }
+    });
   }
 
   private populateFormFromImport(parsedTemplate: any): void {
     console.log('🔍 populateFormFromImport called with:', parsedTemplate);
+    console.log('   - Template name:', parsedTemplate.name);
+    console.log('   - Items to import:', parsedTemplate.items?.length || 0);
     
     // Clear existing items and sample images
     while (this.items.length > 0) {
@@ -1500,29 +1807,41 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       product_type: parsedTemplate.product_type || '',
       is_active: true
     });
+    
+    console.log('✓ Basic template info populated');
+    console.log('   - Form items array length BEFORE adding:', this.items.length);
 
     // Add all items (recursively process children if present)
-    parsedTemplate.items.forEach((item: any, index: number) => {
-      this.addItemToForm(item, index);
-      
-      // Process children if present
-      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
-        console.log(`   📂 Item ${index + 1} has ${item.children.length} children - processing...`);
-        item.children.forEach((childItem: any, childIndex: number) => {
-          const childFormIndex = this.items.length;
-          this.addItemToForm(childItem, childFormIndex, item.order_index);
-        });
-      }
-    });
+    if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
+      console.log(`📝 Processing ${parsedTemplate.items.length} items...`);
+      parsedTemplate.items.forEach((item: any, index: number) => {
+        console.log(`   Adding item ${index + 1}: ${item.title}`);
+        this.addItemToForm(item, index);
+        
+        // Process children if present
+        if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+          console.log(`   📂 Item ${index + 1} has ${item.children.length} children - processing...`);
+          item.children.forEach((childItem: any, childIndex: number) => {
+            const childFormIndex = this.items.length;
+            console.log(`      Adding child item: ${childItem.title}`);
+            this.addItemToForm(childItem, childFormIndex, item.order_index);
+          });
+        }
+      });
+    } else {
+      console.warn('⚠️ No items array found in parsedTemplate!');
+    }
 
     // Initialize showRequirements array
     this.showRequirements = new Array(this.items.length).fill(false);
 
     console.log('\n📊 Import Summary:');
-    console.log('   - Total items:', this.items.length);
+    console.log('   - Total items in form:', this.items.length);
+    console.log('   - Items FormArray controls:', this.items.controls.length);
     console.log('   - Sample images dictionary:', this.sampleImages);
     console.log('   - Sample images count:', Object.keys(this.sampleImages).length);
-    console.log('   - Form value:', this.templateForm.value);
+    console.log('   - Full form value:', this.templateForm.value);
+    console.log('   - Items array in form:', this.templateForm.value.items);
     
     // Trigger change detection to update UI
     this.cdr.detectChanges();

@@ -228,25 +228,32 @@ class PhotoChecklistConfigAPI {
                 foreach ($data['items'] as $index => $item) {
                     error_log("Inserting item $index for template ID $templateId: " . json_encode($item));
                     
-                    // Debug: Log sample_images data specifically
-                    $sampleImages = $item['sample_images'] ?? [];
-                    error_log("Item $index sample_images data: " . json_encode($sampleImages, JSON_PRETTY_PRINT));
-                    error_log("Item $index sample_images type: " . gettype($sampleImages));
-                    error_log("Item $index sample_images count: " . (is_array($sampleImages) ? count($sampleImages) : 'not array'));
+                    // Get sample image URL from frontend (single string format)
+                    $sampleImageUrl = $item['sample_image_url'] ?? '';
+                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
                     
-                    // Check if sample_images column exists, if not use sample_image_url
+                    // Check if sample_images column exists for backward compatibility
                     $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
                     $checkStmt = $this->conn->prepare($checkColumnSql);
                     $checkStmt->execute();
                     $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
                     
                     if ($hasSampleImagesColumn) {
-                        error_log("Using sample_images column for item $index");
-                        $sampleImagesJson = json_encode($sampleImages);
-                        error_log("Item $index sample_images JSON to insert: " . $sampleImagesJson);
+                        // Store in both columns for compatibility
+                        $sampleImagesArray = [];
+                        if (!empty($sampleImageUrl)) {
+                            $sampleImagesArray = [[
+                                'url' => $sampleImageUrl,
+                                'label' => 'Sample Image',
+                                'description' => '',
+                                'type' => 'photo',
+                                'is_primary' => true,
+                                'order_index' => 0
+                            ]];
+                        }
                         
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         $success = $stmt->execute([
                             $templateId,
@@ -256,18 +263,14 @@ class PhotoChecklistConfigAPI {
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
-                            $sampleImagesJson,
+                            $sampleImageUrl,
+                            json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                    } else {
-                        error_log("Using sample_image_url column for item $index (fallback)");
-                        // Fallback to old sample_image_url column - use first image URL if available
-                        $sampleImageUrl = '';
-                        if (!empty($sampleImages) && is_array($sampleImages)) {
-                            $sampleImageUrl = $sampleImages[0]['url'] ?? '';
-                        }
-                        error_log("Item $index sample_image_url to insert: " . $sampleImageUrl);
                         
+                        error_log("Item $index saved with both sample_image_url and sample_images");
+                    } else {
+                        // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
@@ -283,7 +286,7 @@ class PhotoChecklistConfigAPI {
                             $item['is_required'] ?? true
                         ]);
                         
-                        error_log("Item $index using fallback sample_image_url: " . $sampleImageUrl);
+                        error_log("Item $index saved with sample_image_url only");
                     }
                     
                     if (!$success) {
@@ -314,10 +317,10 @@ class PhotoChecklistConfigAPI {
         $this->conn->beginTransaction();
         
         try {
-            // Update template
+            // Update template (removed is_active = 1 check to allow updating inactive templates)
             $sql = "UPDATE checklist_templates 
-                    SET name = ?, description = ?, part_number = ?, product_type = ?, category = ?, version = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ? AND is_active = 1";
+                    SET name = ?, description = ?, part_number = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 $data['name'],
@@ -325,7 +328,7 @@ class PhotoChecklistConfigAPI {
                 $data['part_number'] ?? '',
                 $data['product_type'] ?? '',
                 $data['category'] ?? 'quality_control',
-                $data['version'] ?? '1.0',
+                $data['is_active'] ?? true,
                 $id
             ]);
             
@@ -337,24 +340,36 @@ class PhotoChecklistConfigAPI {
             // Insert updated items
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $index => $item) {
-                    // Debug: Log each item's sample_images
-                    $sampleImages = $item['sample_images'] ?? [];
-                    error_log("Item $index sample_images: " . json_encode($sampleImages, JSON_PRETTY_PRINT));
+                    // Get sample image URL from frontend (single string format)
+                    $sampleImageUrl = $item['sample_image_url'] ?? '';
                     
-                    // Check if sample_images column exists, if not use sample_image_url
+                    // Debug: Log what we received
+                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
+                    
+                    // Check if sample_images column exists for backward compatibility
                     $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
                     $checkStmt = $this->conn->prepare($checkColumnSql);
                     $checkStmt->execute();
                     $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
                     
+                    // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $this->conn->prepare($sql);
-                        $sampleImagesJson = json_encode($sampleImages);
+                        // Store in both columns for compatibility
+                        $sampleImagesArray = [];
+                        if (!empty($sampleImageUrl)) {
+                            $sampleImagesArray = [[
+                                'url' => $sampleImageUrl,
+                                'label' => 'Sample Image',
+                                'description' => '',
+                                'type' => 'photo',
+                                'is_primary' => true,
+                                'order_index' => 0
+                            ]];
+                        }
                         
-                        // Debug: Log the JSON that will be saved
-                        error_log("Item $index sample_images JSON to save: " . $sampleImagesJson);
+                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
@@ -364,16 +379,14 @@ class PhotoChecklistConfigAPI {
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
-                            $sampleImagesJson,
+                            $sampleImageUrl,
+                            json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                    } else {
-                        // Fallback to old sample_image_url column - use first image URL if available
-                        $sampleImageUrl = '';
-                        if (!empty($sampleImages) && is_array($sampleImages)) {
-                            $sampleImageUrl = $sampleImages[0]['url'] ?? '';
-                        }
                         
+                        error_log("Item $index saved with both sample_image_url and sample_images");
+                    } else {
+                        // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
@@ -390,7 +403,7 @@ class PhotoChecklistConfigAPI {
                             $item['is_required'] ?? true
                         ]);
                         
-                        error_log("Item $index using fallback sample_image_url: " . $sampleImageUrl);
+                        error_log("Item $index saved with sample_image_url only");
                     }
                 }
             }

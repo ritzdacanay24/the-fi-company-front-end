@@ -165,12 +165,18 @@ export class PhotoChecklistConfigService {
     return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}`);
   }
 
-  createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number}> {
-    return this.http.post<{success: boolean, template_id: number}>(
+  createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, debug?: any}> {
+    return this.http.post<{success: boolean, template_id: number, debug?: any}>(
       `${this.baseUrl}?request=templates`, 
       template
     ).pipe(
-      tap(() => this.getTemplates().subscribe()) // Refresh templates list
+      tap((response) => {
+        console.log('Backend response:', response);
+        if (response.debug) {
+          console.log('🐛 Debug info from backend:', response.debug);
+        }
+        this.getTemplates().subscribe();
+      })
     );
   }
 

@@ -1,5 +1,5 @@
 <?php
-require_once '../config/database.php';
+use EyefiDb\Databases\DatabaseEyefi as DatabaseEyefi;
 
 /**
  * Photo Checklist Configuration API
@@ -10,8 +10,8 @@ class PhotoChecklistConfigAPI {
     private $database;
 
     public function __construct() {
-        $this->database = new Database();
-        $this->conn = $this->database->getConnection();
+	$db_connect = new DatabaseEyefi();
+	$this->conn = $db_connect->getConnection();
     }
 
     /**
@@ -134,45 +134,70 @@ class PhotoChecklistConfigAPI {
     }
 
     public function getTemplate($id) {
-        $sql = "SELECT ct.*, 
-                       GROUP_CONCAT(
-                           JSON_OBJECT(
-                               'id', ci.id,
-                               'order_index', ci.order_index,
-                               'title', ci.title,
-                               'description', ci.description,
-                               'photo_requirements', ci.photo_requirements,
-                               'sample_image_url', ci.sample_image_url,
-                               'is_required', ci.is_required
-                           ) ORDER BY ci.order_index
-                       ) as items
-                FROM checklist_templates ct
-                LEFT JOIN checklist_items ci ON ct.id = ci.template_id
-                WHERE ct.id = ? AND ct.is_active = 1
-                GROUP BY ct.id";
+        // Get template basic info
+        $sql = "SELECT * FROM checklist_templates WHERE id = ? AND is_active = 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$id]);
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$template) {
+            return null;
+        }
+        
+        // Get items separately
+        $sql = "SELECT id, template_id, order_index, parent_id, level, title, description, 
+                       photo_requirements, sample_image_url, is_required, created_at, updated_at
+                FROM checklist_items 
+                WHERE template_id = ? 
+                ORDER BY order_index";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        if ($result && $result['items']) {
-            $result['items'] = json_decode('[' . $result['items'] . ']', true);
-        } else {
-            $result['items'] = [];
+        // Parse photo_requirements JSON for each item
+        foreach ($items as &$item) {
+            if ($item['photo_requirements']) {
+                $item['photo_requirements'] = json_decode($item['photo_requirements'], true);
+            } else {
+                $item['photo_requirements'] = [];
+            }
+            
+            // Convert is_required to boolean
+            $item['is_required'] = (bool)$item['is_required'];
+            
+            // Convert numeric fields
+            $item['order_index'] = (float)$item['order_index'];
+            $item['level'] = (int)$item['level'];
+            $item['parent_id'] = $item['parent_id'] ? (int)$item['parent_id'] : null;
         }
         
-        return $result;
+        $template['items'] = $items;
+        
+        error_log("getTemplate($id) returning " . count($items) . " items");
+        
+        return $template;
     }
 
     public function createTemplate() {
         $data = json_decode(file_get_contents('php://input'), true);
         
+        // Debug logging
+        error_log("createTemplate called with data: " . json_encode($data));
+        error_log("Items count: " . (isset($data['items']) ? count($data['items']) : 0));
+        
+        // Check if items exist and are not empty
+        if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
+            error_log("WARNING: No items received or items array is empty!");
+            error_log("Data received: " . print_r($data, true));
+        }
+        
         $this->conn->beginTransaction();
         
         try {
-            // Insert template
-            $sql = "INSERT INTO checklist_templates (name, description, part_number, product_type, category, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
+            // Insert template (including version for new version creation)
+            $sql = "INSERT INTO checklist_templates (name, description, part_number, product_type, category, version, is_active, created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 $data['name'],
@@ -180,34 +205,65 @@ class PhotoChecklistConfigAPI {
                 $data['part_number'] ?? '',
                 $data['product_type'] ?? '',
                 $data['category'] ?? 'quality_control',
+                $data['version'] ?? '1.0',
+                isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1,
                 $data['created_by'] ?? null
             ]);
             
             $templateId = $this->conn->lastInsertId();
+            error_log("Template created with ID: " . $templateId . " with version: " . ($data['version'] ?? '1.0'));
             
             // Insert items
             if (!empty($data['items'])) {
+                error_log("Inserting " . count($data['items']) . " items");
                 foreach ($data['items'] as $index => $item) {
-                    $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    error_log("Processing item $index: " . json_encode($item));
+                    $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required, level, parent_id) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     $stmt = $this->conn->prepare($sql);
                     $stmt->execute([
                         $templateId,
-                        $index + 1,
-                        $item['title'],
+                        $item['order_index'] ?? ($index + 1),
+                        $item['title'] ?? '',
                         $item['description'] ?? '',
                         json_encode($item['photo_requirements'] ?? []),
-                        $item['sample_image_url'] ?? '',
-                        $item['is_required'] ?? true
+                        $item['sample_image_url'] ?? null,
+                        isset($item['is_required']) ? ($item['is_required'] ? 1 : 0) : 1,
+                        $item['level'] ?? 0,
+                        $item['parent_id'] ?? null
                     ]);
+                    error_log("Item $index inserted successfully");
                 }
+            } else {
+                error_log("WARNING: No items to insert!");
             }
             
             $this->conn->commit();
-            return ['success' => true, 'template_id' => $templateId];
+            error_log("Transaction committed successfully");
+            
+            // Verify items were actually inserted
+            $verifyStmt = $this->conn->prepare("SELECT COUNT(*) as count FROM checklist_items WHERE template_id = ?");
+            $verifyStmt->execute([$templateId]);
+            $itemCount = $verifyStmt->fetch(PDO::FETCH_ASSOC)['count'];
+            error_log("Items in database after commit: " . $itemCount);
+            
+            // Return success with debug info
+            return [
+                'success' => true, 
+                'template_id' => $templateId,
+                'debug' => [
+                    'items_received' => isset($data['items']) ? count($data['items']) : 0,
+                    'items_in_database' => (int)$itemCount,
+                    'items_array_exists' => isset($data['items']),
+                    'items_is_array' => isset($data['items']) && is_array($data['items']),
+                    'items_empty' => isset($data['items']) && empty($data['items'])
+                ]
+            ];
             
         } catch (Exception $e) {
             $this->conn->rollback();
+            error_log("ERROR in createTemplate: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             throw $e;
         }
     }
@@ -241,17 +297,19 @@ class PhotoChecklistConfigAPI {
             // Insert updated items
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $index => $item) {
-                    $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    $sql = "INSERT INTO checklist_items (template_id, order_index, title, description, photo_requirements, sample_image_url, is_required, level, parent_id) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     $stmt = $this->conn->prepare($sql);
                     $stmt->execute([
                         $id,
-                        $index + 1,
-                        $item['title'],
+                        $item['order_index'] ?? ($index + 1),
+                        $item['title'] ?? '',
                         $item['description'] ?? '',
                         json_encode($item['photo_requirements'] ?? []),
-                        $item['sample_image_url'] ?? '',
-                        $item['is_required'] ?? true
+                        $item['sample_image_url'] ?? null,
+                        isset($item['is_required']) ? ($item['is_required'] ? 1 : 0) : 1,
+                        $item['level'] ?? 0,
+                        $item['parent_id'] ?? null
                     ]);
                 }
             }

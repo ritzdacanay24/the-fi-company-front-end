@@ -217,7 +217,7 @@ export class MultiCardViewComponent implements OnInit, OnDestroy {
     } else if (customer.includes('incred') || customer.includes('incredible')) {
       return 'assets/images/companies/incred-logo.svg';
     } else if (customer.includes('igt') || customer.includes('intgam') || customer.includes('international game technology')) {
-      return 'https://cdn.imgbin.com/19/15/1/imgbin-international-game-technology-i-g-t-australia-pty-ltd-portable-network-graphics-lottomatica-spa-social-campaign-iQga30i3JCuekwguEpeYSgfSg.jpg';
+      return 'assets/images/companies/igt-logo.svg';
     }
     
     return null;

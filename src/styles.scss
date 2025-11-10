@@ -20,6 +20,15 @@
   font-family: Aptos;
 }
 
+
+    .slick-track {
+      display: flex !important;
+      align-items: stretch;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      left: 0 !important;
+    }
+
 // Design system - restrained, professional palette
 // Use these variables throughout component SCSS to avoid a rainbow of ad-hoc colors
 $color-primary: #255f9e; // muted professional blue

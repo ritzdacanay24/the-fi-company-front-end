@@ -399,12 +399,13 @@ export class ThemeManagementService {
       const savedSettings = localStorage.getItem(this.THEME_STORAGE_KEY);
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
+        const validThemes = ['light', 'dark', 'dark-vibrant', 'midnight', 'neon', 'bootstrap-dark'];
         // Validate and merge with defaults
         const validatedSettings: ThemeSettings = {
           ...this.defaultSettings,
           ...settings,
           // Ensure valid theme value
-          currentTheme: ['light', 'dark'].includes(settings.currentTheme) ? settings.currentTheme : 'light'
+          currentTheme: validThemes.includes(settings.currentTheme) ? settings.currentTheme : 'light'
         };
         
         this._themeSettings$.next(validatedSettings);
