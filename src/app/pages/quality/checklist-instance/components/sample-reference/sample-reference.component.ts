@@ -28,7 +28,13 @@ export class SampleReferenceComponent {
   }
 
   getSamplePhotoUrl(photo: string): string {
-    return photo.startsWith('http') ? photo : `http://10.0.0.120:8080/${photo}`;
+    if (!photo) return '';
+    if (photo.startsWith('http')) {
+      return photo;
+    }
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = photo.startsWith('/') ? photo.substring(1) : photo;
+    return `https://dashboard.eye-fi.com/${cleanPath}`;
   }
 
   hasMultiplePhotos(): boolean {

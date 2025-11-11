@@ -353,10 +353,10 @@
                     <div class="col-md-4" *ngIf="photo.sampleImageUrl">
                       <label class="form-label small fw-bold">Sample Reference</label>
                       <div class="text-center">
-                        <img [src]="photo.sampleImageUrl"
+                        <img [src]="getPhotoUrl(photo.sampleImageUrl)"
                              class="img-fluid rounded border"
                              style="max-height: 200px; cursor: pointer;"
-                             (click)="openPreviewModal(photo.sampleImageUrl)"
+                             (click)="openPreviewModal(getPhotoUrl(photo.sampleImageUrl))"
                              [alt]="'Sample for ' + photo.itemTitle">
                       </div>
                     </div>
@@ -472,10 +472,10 @@
                   <div *ngIf="photo.sampleImageUrl; else noSample">
                     <label class="form-label fw-bold">Sample Reference</label>
                     <div class="text-center">
-                      <img [src]="photo.sampleImageUrl"
+                      <img [src]="getPhotoUrl(photo.sampleImageUrl)"
                            class="img-fluid rounded border"
                            style="max-height: 250px; cursor: pointer;"
-                           (click)="openPreviewModal(photo.sampleImageUrl)"
+                           (click)="openPreviewModal(getPhotoUrl(photo.sampleImageUrl))"
                            [alt]="'Sample reference for ' + photo.itemTitle">
                     </div>
                     

@@ -144,49 +144,65 @@ class PhotoChecklistConfigAPI {
     }
 
     public function getTemplate($id) {
-        $sql = "SELECT ct.*, 
-                       GROUP_CONCAT(
-                           JSON_OBJECT(
-                               'id', ci.id,
-                               'order_index', ci.order_index,
-                               'title', ci.title,
-                               'description', ci.description,
-                               'photo_requirements', ci.photo_requirements,
-                               'sample_images', ci.sample_images,
-                               'is_required', ci.is_required,
-                               'min_photos', COALESCE(JSON_EXTRACT(ci.photo_requirements, '$.min_photos'), 0),
-                               'max_photos', COALESCE(JSON_EXTRACT(ci.photo_requirements, '$.max_photos'), 10),
-                               'parent_id', ci.parent_id,
-                               'level', ci.level
-                           ) ORDER BY ci.order_index
-                       ) as items
-                FROM checklist_templates ct
-                LEFT JOIN checklist_items ci ON ct.id = ci.template_id
-                WHERE ct.id = ? AND ct.is_active = 1
-                GROUP BY ct.id";
-        
+        // First get the template
+        $sql = "SELECT * FROM checklist_templates WHERE id = ? AND is_active = 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result && $result['items']) {
-            $result['items'] = json_decode('[' . $result['items'] . ']', true);
-            
-            // Parse sample_images JSON for each item
-            if (is_array($result['items'])) {
-                foreach ($result['items'] as &$item) {
-                    if (isset($item['sample_images']) && is_string($item['sample_images'])) {
-                        $item['sample_images'] = json_decode($item['sample_images'], true) ?: [];
-                    } else {
-                        $item['sample_images'] = [];
-                    }
-                }
-                unset($item); // Break reference
-            }
-        } else {
-            $result['items'] = [];
+        if (!$result) {
+            return null;
         }
         
+        // Then get items separately with proper ordering
+        $sql = "SELECT id, template_id, order_index, parent_id, level, title, description,
+                       photo_requirements, sample_images, sample_image_url, is_required
+                FROM checklist_items
+                WHERE template_id = ?
+                ORDER BY 
+                    CASE 
+                        WHEN level = 0 OR level IS NULL THEN order_index 
+                        ELSE parent_id + 0.001 * order_index 
+                    END,
+                    level,
+                    order_index";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$id]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Parse JSON fields for each item
+        if (is_array($items)) {
+            foreach ($items as &$item) {
+                // Parse photo_requirements
+                if (isset($item['photo_requirements']) && is_string($item['photo_requirements'])) {
+                    $item['photo_requirements'] = json_decode($item['photo_requirements'], true) ?: [];
+                } else if (!isset($item['photo_requirements'])) {
+                    $item['photo_requirements'] = [];
+                }
+                
+                // Parse sample_images
+                if (isset($item['sample_images']) && is_string($item['sample_images'])) {
+                    $item['sample_images'] = json_decode($item['sample_images'], true) ?: [];
+                } else {
+                    $item['sample_images'] = [];
+                }
+                
+                // Ensure numeric types
+                $item['level'] = isset($item['level']) ? (int)$item['level'] : 0;
+                $item['parent_id'] = isset($item['parent_id']) ? (int)$item['parent_id'] : null;
+                $item['id'] = (int)$item['id'];
+                $item['order_index'] = (float)$item['order_index'];
+                $item['is_required'] = (bool)$item['is_required'];
+                
+                // Extract min/max photos from photo_requirements
+                $item['min_photos'] = isset($item['photo_requirements']['min_photos']) ? $item['photo_requirements']['min_photos'] : 0;
+                $item['max_photos'] = isset($item['photo_requirements']['max_photos']) ? $item['photo_requirements']['max_photos'] : 10;
+            }
+            unset($item); // Break reference
+        }
+        
+        $result['items'] = $items;
         return $result;
     }
 
@@ -609,14 +625,21 @@ class PhotoChecklistConfigAPI {
             return null;
         }
         
-        // Get checklist items with photos
+        // Get checklist items with photos - order hierarchically
         $sql = "SELECT citm.*, 
                        ps.id as photo_id, ps.file_name, ps.file_url, ps.file_type, ps.created_at as photo_created_at,
                        ps.is_approved, ps.review_notes
                 FROM checklist_items citm
                 LEFT JOIN photo_submissions ps ON citm.id = ps.item_id AND ps.instance_id = ?
                 WHERE citm.template_id = ?
-                ORDER BY citm.order_index, ps.created_at";
+                ORDER BY 
+                    CASE 
+                        WHEN citm.level = 0 OR citm.level IS NULL THEN citm.order_index 
+                        ELSE citm.parent_id + 0.001 * citm.order_index 
+                    END,
+                    citm.level,
+                    citm.order_index,
+                    ps.created_at";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id, $instance['template_id']]);
@@ -628,15 +651,23 @@ class PhotoChecklistConfigAPI {
             $itemId = $row['id'];
             
             if (!isset($items[$itemId])) {
+                // Parse photo_requirements if it's a JSON string
+                $photoRequirements = $row['photo_requirements'];
+                if (is_string($photoRequirements)) {
+                    $photoRequirements = json_decode($photoRequirements, true) ?: [];
+                }
+                
                 $items[$itemId] = [
-                    'id' => $row['id'],
-                    'template_id' => $row['template_id'],
-                    'order_index' => $row['order_index'],
+                    'id' => (int)$row['id'],
+                    'template_id' => (int)$row['template_id'],
+                    'order_index' => (int)$row['order_index'],
                     'title' => $row['title'],
                     'description' => $row['description'],
-                    'photo_requirements' => $row['photo_requirements'],
+                    'photo_requirements' => $photoRequirements,
                     'sample_image_url' => $row['sample_image_url'],
-                    'is_required' => $row['is_required'],
+                    'is_required' => (bool)$row['is_required'],
+                    'level' => isset($row['level']) ? (int)$row['level'] : 0,
+                    'parent_id' => isset($row['parent_id']) ? (int)$row['parent_id'] : null,
                     'photos' => []
                 ];
             }
@@ -784,12 +815,12 @@ class PhotoChecklistConfigAPI {
         
         // Generate unique filename
         $extension = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
-        $fileName = 'photo_' . $instanceId . '_' . $itemId . '_' . time() . '.' . $extension;
-        $uploadPath = '../uploads/photos/' . $fileName;
+        $fileName = 'submission_' . $instanceId . '_' . $itemId . '_' . time() . '.' . $extension;
+        $uploadPath = '../../../attachments/photo-submissions/' . $fileName;
         
         // Create directory if it doesn't exist
-        if (!file_exists('../uploads/photos/')) {
-            mkdir('../uploads/photos/', 0755, true);
+        if (!file_exists('../../../attachments/photo-submissions/')) {
+            mkdir('../../../attachments/photo-submissions/', 0755, true);
         }
         
         if (move_uploaded_file($uploadedFile['tmp_name'], $uploadPath)) {
@@ -808,7 +839,7 @@ class PhotoChecklistConfigAPI {
                 $itemId,
                 $fileName,
                 $uploadPath,
-                '/uploads/photos/' . $fileName,
+                '/attachments/photo-submissions/' . $fileName,
                 strpos($uploadedFile['type'], 'video') !== false ? 'video' : 'image',
                 $uploadedFile['size'],
                 $uploadedFile['type']
@@ -820,7 +851,7 @@ class PhotoChecklistConfigAPI {
             // Log action
             $this->logAction($instanceId, 'photo_added', null, ['item_id' => $itemId, 'file_name' => $fileName]);
             
-            return ['success' => true, 'file_url' => '/uploads/photos/' . $fileName];
+            return ['success' => true, 'file_url' => '/attachments/photo-submissions/' . $fileName];
         } else {
             throw new Exception('Failed to upload file');
         }

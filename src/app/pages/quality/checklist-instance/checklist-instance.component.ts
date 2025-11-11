@@ -264,14 +264,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
     
     this.itemProgress = this.template.items.map((item, index) => {
-      console.log(`Item ${index}:`, item, 'ID:', item.id, 'Type:', typeof item.id);
-      
       // Validate that the item has a valid ID
       if (!item.id || item.id === null || item.id === undefined) {
-        console.error(`Item ${index} has invalid ID:`, item.id, 'Item:', item);
-        // Assign a temporary ID based on index if missing
+        console.error(`Item ${index} has invalid ID:`, item.id);
         item.id = index + 1;
-        console.warn(`Assigned temporary ID ${item.id} to item ${index}`);
       }
       
       // Find the corresponding instance item first to get the correct ID for database operations
@@ -280,49 +276,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       
       // Only try to match if we have instance items
       if (this.instance?.items && Array.isArray(this.instance.items) && this.instance.items.length > 0) {
-        // Strategy 1: Match by template_item_id field
+        // Strategy 1: Match by direct ID (instance item id should match template item id)
         instanceItem = this.instance.items.find((instItem: any) => 
-          String((instItem as any).template_item_id) === String(item.id)
+          String(instItem.id) === String(item.id)
         );
         
-        // Strategy 2: Match by item_id field  
+        // Strategy 2: Match by template_item_id field (if backend provides it)
+        if (!instanceItem) {
+          instanceItem = this.instance.items.find((instItem: any) => 
+            String((instItem as any).template_item_id) === String(item.id)
+          );
+        }
+        
+        // Strategy 3: Match by item_id field (if backend provides it)
         if (!instanceItem) {
           instanceItem = this.instance.items.find((instItem: any) => 
             String((instItem as any).item_id) === String(item.id)
           );
         }
         
-        // Strategy 3: Match by order_index (assuming same order)
-        if (!instanceItem) {
-          instanceItem = this.instance.items[index];
-        }
-        
-        // Strategy 4: Match by direct ID (if template and instance use same IDs)
-        if (!instanceItem) {
-          instanceItem = this.instance.items.find((instItem: any) => 
-            String(instItem.id) === String(item.id)
-          );
-        }
-        
-        console.log(`Looking for template item ${item.id} in instance items using multiple strategies:`);
-        console.log('Available instance items:', this.instance.items.map(i => ({ 
-          id: i.id, 
-          template_item_id: (i as any).template_item_id,
-          item_id: (i as any).item_id,
-          order_index: (i as any).order_index,
-          title: (i as any).title
-        })));
-        console.log(`Found instanceItem:`, instanceItem);
-      } else {
-        console.log('No instance items available - this is a new checklist or empty instance');
+        // Matching complete
       }
       
       // Use the instance item ID for database operations, fallback to template ID
       // Create a compound unique ID using instance_id + item_id to ensure uniqueness
-      const baseItemId = instanceItem?.id || item.id;
+      // IMPORTANT: Use the template item ID (item.id) for database operations, not instanceItem.id
+      const baseItemId = item.id;  // This is the checklist_items.id from the template
       const itemId = `${this.instanceId}_${baseItemId}`;
-      console.log(`Using compound item ID: ${itemId} (instance: ${this.instanceId}, base item: ${baseItemId}) for template item ${item.id} at index ${index}`);
       
+      // Store the base item ID for later use in photo operations
+      (item as any).baseItemId = baseItemId;
       const existingPhotos: string[] = [];
       let isCompleted = false;
       let completedAt: Date | undefined = undefined;
@@ -507,7 +490,30 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     console.log('Template items:', this.template?.items?.map(i => ({ id: i.id, title: i.title })));
 
     // Get the actual database item ID for API calls
-    const dbItemId = progressItem ? (progressItem.item as any).baseItemId || progressItem.item.id : itemId;
+    // Extract base item ID from compound ID (format: "instanceId_baseItemId")
+    let dbItemId: number;
+    if (progressItem) {
+      const progressItemId = progressItem.item.id as string | number;
+      const extractedBaseId = (progressItem.item as any).baseItemId || 
+                              (typeof progressItemId === 'string' && progressItemId.includes('_') 
+                                ? parseInt(progressItemId.split('_')[1]) 
+                                : Number(progressItemId));
+      dbItemId = extractedBaseId;
+      
+      console.log('=== ITEM ID EXTRACTION DEBUG ===');
+      console.log('User selected itemId parameter:', itemId);
+      console.log('progressItem.item.id:', progressItemId);
+      console.log('progressItem.item.baseItemId:', (progressItem.item as any).baseItemId);
+      console.log('Extracted dbItemId:', dbItemId);
+      console.log('progressItem.item.title:', progressItem.item.title);
+      console.log('progressItem.item.level:', progressItem.item.level);
+      console.log('progressItem.item.parent_id:', progressItem.item.parent_id);
+      console.log('progressItem.item.order_index:', progressItem.item.order_index);
+      console.log('=================================');
+      console.log('🚀 ABOUT TO UPLOAD TO ITEM_ID:', dbItemId, '- Item Title:', progressItem.item.title);
+    } else {
+      dbItemId = numericItemId;
+    }
     console.log('Using database item ID for API calls:', dbItemId, 'Type:', typeof dbItemId);
 
     // Additional validation before starting upload
@@ -713,8 +719,70 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (this.isReviewMode) {
       return this.itemProgress;
     }
+    
     const currentIndex = this.currentStep - 1;
-    return this.itemProgress[currentIndex] ? [this.itemProgress[currentIndex]] : [];
+    const currentItem = this.itemProgress[currentIndex];
+    
+    if (!currentItem) {
+      return [];
+    }
+    
+    // If current item is a sub-item, skip it (it will be shown with its parent)
+    if (currentItem.item.level === 1) {
+      return [];
+    }
+    
+    // If current item is a parent (level 0), return it along with all its children
+    const itemsToShow: ChecklistItemProgress[] = [currentItem];
+    
+    // Debug logging
+    // console.log('=== getCurrentItemsToShow DEBUG ===');
+    // console.log('Current parent item:', {
+    //   id: currentItem.item.id,
+    //   order_index: currentItem.item.order_index,
+    //   level: currentItem.item.level,
+    //   title: currentItem.item.title
+    // });
+    
+    // Find all sub-items that belong to this parent
+    // Sub-items have parent_id matching the current item's order_index or id
+    for (let i = currentIndex + 1; i < this.itemProgress.length; i++) {
+      const nextItem = this.itemProgress[i];
+      
+      // console.log(`Checking item ${i}:`, {
+      //   id: nextItem.item.id,
+      //   order_index: nextItem.item.order_index,
+      //   parent_id: nextItem.item.parent_id,
+      //   level: nextItem.item.level,
+      //   title: nextItem.item.title,
+      //   'parent_id type': typeof nextItem.item.parent_id,
+      //   'order_index type': typeof currentItem.item.order_index,
+      //   'parent_id == order_index': nextItem.item.parent_id == currentItem.item.order_index,
+      //   'parent_id === order_index': nextItem.item.parent_id === currentItem.item.order_index
+      // });
+      
+      // Stop when we hit another parent item
+      if (nextItem.item.level === 0 || !nextItem.item.level) {
+        // console.log('Stopping - found next parent item');
+        break;
+      }
+      
+      // Check if this sub-item belongs to the current parent
+      // parent_id typically matches the parent's order_index
+      if (nextItem.item.level === 1 && 
+          (nextItem.item.parent_id === currentItem.item.order_index || 
+           nextItem.item.parent_id === currentItem.item.baseItemId)) {
+        // console.log('✓ MATCH - Adding sub-item:', nextItem.item.title);
+        itemsToShow.push(nextItem);
+      } else {
+        // console.log('✗ NO MATCH - Skipping');
+      }
+    }
+    
+    // console.log('Total items to show:', itemsToShow.length);
+    // console.log('=== END DEBUG ===');
+    
+    return itemsToShow;
   }
 
   goBack(): void {
@@ -765,10 +833,39 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       }
       
       // Find the instance item to get the actual photo object with ID
-      // Extract the base item ID from compound ID for instance item lookup
-      const baseItemId = (itemProgress.item as any).baseItemId || itemProgress.item.id;
-      const instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.id) === String(baseItemId));
-      console.log('Looking for instance item with baseItemId:', baseItemId);
+      // Extract the base item ID from compound ID (format: "instanceId_baseItemId")
+      const progressItemId = itemProgress.item.id as string | number;
+      const baseItemId = (itemProgress.item as any).baseItemId || 
+                         (typeof progressItemId === 'string' && progressItemId.includes('_') 
+                           ? parseInt(progressItemId.split('_')[1]) 
+                           : progressItemId);
+      
+      console.log('=== REMOVE PHOTO DEBUG ===');
+      console.log('progressItemId:', progressItemId);
+      console.log('baseItemId:', baseItemId);
+      console.log('Available instance items:', this.instance?.items?.map((i: any) => ({ 
+        id: i.id, 
+        item_id: i.item_id,
+        template_item_id: i.template_item_id,
+        title: i.title 
+      })));
+      
+      // Try multiple strategies to find the instance item
+      let instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.id) === String(baseItemId));
+      
+      // If not found, try matching by item_id field
+      if (!instanceItem) {
+        instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.item_id) === String(baseItemId));
+      }
+      
+      // If not found, try matching by template_item_id field
+      if (!instanceItem) {
+        instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.template_item_id) === String(baseItemId));
+      }
+      
+      console.log('Looking for instance item - item.id:', progressItemId, 'baseItemId:', baseItemId);
+      console.log('Found instanceItem:', instanceItem);
+      console.log('==========================');
       console.log('Found instanceItem:', instanceItem);
       
       if (instanceItem && (instanceItem as any).photos && Array.isArray((instanceItem as any).photos)) {
@@ -827,10 +924,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         console.log('Found itemProgress with', itemProgress.photos.length, 'photos');
         
         // Find the instance item to get the actual photo objects with IDs
-        // Extract the base item ID from compound ID for instance item lookup
-        const baseItemId = (itemProgress.item as any).baseItemId || itemProgress.item.id;
-        const instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.id) === String(baseItemId));
-        console.log('Looking for instance item with baseItemId:', baseItemId);
+        // Extract the base item ID from compound ID (format: "instanceId_baseItemId")
+        const progressItemId = itemProgress.item.id as string | number;
+        const baseItemId = (itemProgress.item as any).baseItemId || 
+                           (typeof progressItemId === 'string' && progressItemId.includes('_') 
+                             ? parseInt(progressItemId.split('_')[1]) 
+                             : progressItemId);
+        
+        // Try multiple strategies to find the instance item
+        let instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.id) === String(baseItemId));
+        
+        // If not found, try matching by item_id field
+        if (!instanceItem) {
+          instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.item_id) === String(baseItemId));
+        }
+        
+        // If not found, try matching by template_item_id field
+        if (!instanceItem) {
+          instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.template_item_id) === String(baseItemId));
+        }
+        
+        console.log('Looking for instance item - item.id:', progressItemId, 'baseItemId:', baseItemId);
         console.log('Found instanceItem:', instanceItem);
         
         if (instanceItem && (instanceItem as any).photos && Array.isArray((instanceItem as any).photos)) {
@@ -1042,7 +1156,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   getTotalItemsCount(): number {
-    return this.itemProgress.length;
+    // Only count parent items (level 0) since sub-items are shown with their parent
+    return this.itemProgress.filter(p => p.item.level === 0 || !p.item.level).length;
   }
 
   goToItem(itemNumber: number): void {
@@ -1052,12 +1167,32 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   nextItem(): void {
     if (this.currentStep < this.getTotalItemsCount()) {
       this.currentStep++;
+      
+      // Skip sub-items since they're shown with their parent
+      while (this.currentStep <= this.getTotalItemsCount()) {
+        const nextItemProgress = this.itemProgress[this.currentStep - 1];
+        if (nextItemProgress && nextItemProgress.item.level === 1) {
+          this.currentStep++;
+        } else {
+          break;
+        }
+      }
     }
   }
 
   previousItem(): void {
     if (this.currentStep > 1) {
       this.currentStep--;
+      
+      // Skip sub-items since they're shown with their parent
+      while (this.currentStep > 0) {
+        const prevItemProgress = this.itemProgress[this.currentStep - 1];
+        if (prevItemProgress && prevItemProgress.item.level === 1) {
+          this.currentStep--;
+        } else {
+          break;
+        }
+      }
     }
   }
 
@@ -1068,6 +1203,57 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   getCurrentItemIndex(): number {
     return this.currentStep;
+  }
+
+  /**
+   * Get hierarchical label for an item (e.g., "Item 1", "Sub-item 1.1")
+   */
+  getItemLabel(progress: ChecklistItemProgress): string {
+    const index = this.itemProgress.indexOf(progress);
+    
+    if (progress.item.level === 1) {
+      // Sub-item: find parent and calculate sub-item number
+      const parentId = progress.item.parent_id;
+      const parentIndex = this.itemProgress.findIndex(p => 
+        p.item.id === parentId || p.item.baseItemId === parentId
+      );
+      
+      if (parentIndex !== -1) {
+        // Count how many sub-items of this parent came before this one
+        let subItemNumber = 1;
+        for (let i = parentIndex + 1; i < index; i++) {
+          if (this.itemProgress[i].item.level === 1 && 
+              (this.itemProgress[i].item.parent_id === parentId)) {
+            subItemNumber++;
+          }
+        }
+        return `Sub-item ${parentIndex + 1}.${subItemNumber}`;
+      }
+      return `Sub-item ${index + 1}`;
+    }
+    
+    // Parent item: count only parent items before this one
+    let parentItemNumber = 1;
+    for (let i = 0; i < index; i++) {
+      if (this.itemProgress[i].item.level === 0 || !this.itemProgress[i].item.level) {
+        parentItemNumber++;
+      }
+    }
+    return `Item ${parentItemNumber}`;
+  }
+
+  /**
+   * Check if item is a parent/root item
+   */
+  isParentItem(progress: ChecklistItemProgress): boolean {
+    return progress.item.level === 0 || !progress.item.level;
+  }
+
+  /**
+   * Check if item is a sub-item
+   */
+  isSubItem(progress: ChecklistItemProgress): boolean {
+    return progress.item.level === 1;
   }
 
   isFirstItem(): boolean {
@@ -1374,12 +1560,24 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   /**
    * Get photo URL with proper base path
    */
-  getPhotoUrl(photo: string): string {
-    if (photo.startsWith('http')) {
-      return photo;
+  getPhotoUrl(photo: string | any): string {
+    // Handle both string URLs and photo objects with file_url property
+    let photoUrl: string;
+    
+    if (typeof photo === 'string') {
+      photoUrl = photo;
+    } else if (photo && typeof photo === 'object' && photo.file_url) {
+      photoUrl = photo.file_url;
+    } else {
+      console.warn('Invalid photo format:', photo);
+      return '';
+    }
+    
+    if (photoUrl.startsWith('http')) {
+      return photoUrl;
     }
     // Remove leading slash if present to avoid double slashes
-    const cleanPath = photo.startsWith('/') ? photo.substring(1) : photo;
+    const cleanPath = photoUrl.startsWith('/') ? photoUrl.substring(1) : photoUrl;
     return `https://dashboard.eye-fi.com/${cleanPath}`;
   }
 
@@ -1394,16 +1592,160 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Delete photo handler for photo section component
    */
   deletePhoto(photoUrl: string, itemId: number | string): void {
+    if (!confirm('Are you sure you want to remove this photo?')) {
+      return;
+    }
+
     const progress = this.itemProgress.find(p => 
       String(p.item.id) === String(itemId)
     );
     
-    if (progress) {
-      const photoIndex = progress.photos.findIndex(photo => photo === photoUrl);
-      if (photoIndex !== -1) {
+    if (!progress) {
+      console.error('Item progress not found for itemId:', itemId);
+      return;
+    }
+
+    const photoIndex = progress.photos.findIndex(photo => photo === photoUrl);
+    if (photoIndex === -1) {
+      console.error('Photo not found in progress.photos:', photoUrl);
+      return;
+    }
+
+    // Find the instance item to get the actual photo object with ID
+    // Extract the base item ID from compound ID (format: "instanceId_baseItemId")
+    const progressItemId = progress.item.id as string | number;
+    const baseItemId = (progress.item as any).baseItemId || 
+                       (typeof progressItemId === 'string' && progressItemId.includes('_') 
+                         ? parseInt(progressItemId.split('_')[1]) 
+                         : progressItemId);
+    
+    console.log('=== DELETE PHOTO DEBUG ===');
+    console.log('Trying to delete photo from itemId:', itemId);
+    console.log('progressItemId:', progressItemId);
+    console.log('baseItemId:', baseItemId);
+    console.log('Available instance items:', this.instance?.items?.map((i: any) => ({ 
+      id: i.id, 
+      item_id: i.item_id,
+      template_item_id: i.template_item_id,
+      title: i.title 
+    })));
+    
+    // Try multiple strategies to find the instance item
+    let instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.id) === String(baseItemId));
+    
+    // If not found, try matching by item_id field
+    if (!instanceItem) {
+      instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.item_id) === String(baseItemId));
+    }
+    
+    // If not found, try matching by template_item_id field
+    if (!instanceItem) {
+      instanceItem = this.instance?.items?.find((instItem: any) => String(instItem.template_item_id) === String(baseItemId));
+    }
+    
+
+    if (instanceItem && (instanceItem as any).photos && Array.isArray((instanceItem as any).photos)) {
+      const photosData = (instanceItem as any).photos;
+      
+      if (photoIndex < photosData.length && photosData[photoIndex]?.id) {
+        const photoToDelete = photosData[photoIndex];
+        
+        // Delete from server
+        this.photoChecklistService.deletePhoto(photoToDelete.id).subscribe({
+          next: (response) => {
+            
+            // Remove from local arrays
+            progress.photos.splice(photoIndex, 1);
+            photosData.splice(photoIndex, 1);
+            
+            // Update completion status
+            this.updateCompletionStatus(progress);
+            
+            // Force change detection
+            this.cdr.detectChanges();
+            
+            // Reinitialize carousels after removing photos
+            setTimeout(() => {
+              this.initializeCarousels();
+            }, 100);
+          },
+          error: (error) => {
+            alert('Error deleting photo. Please try again.');
+          }
+        });
+      } else {
+        
+        // Try to find photo by matching URL in all instance items
+        let foundPhoto: any = null;
+        if (this.instance?.items) {
+          for (const instItem of this.instance.items) {
+            if ((instItem as any).photos && Array.isArray((instItem as any).photos)) {
+              foundPhoto = (instItem as any).photos.find((p: any) => p.file_url === photoUrl);
+              if (foundPhoto) {
+                break;
+              }
+            }
+          }
+        }
+        
+        if (foundPhoto && foundPhoto.id) {
+          // Delete from server
+          this.photoChecklistService.deletePhoto(foundPhoto.id).subscribe({
+            next: (response) => {
+              progress.photos.splice(photoIndex, 1);
+              this.updateCompletionStatus(progress);
+              this.cdr.detectChanges();
+              setTimeout(() => {
+                this.initializeCarousels();
+              }, 100);
+            },
+            error: (error) => {
+              alert('Error deleting photo. Please try again.');
+            }
+          });
+        } else {
+          // Just remove from UI if we can't find the photo ID
+          progress.photos.splice(photoIndex, 1);
+          this.updateCompletionStatus(progress);
+          this.cdr.detectChanges();
+        }
+        this.updateCompletionStatus(progress);
+        this.cdr.detectChanges();
+      }
+    } else {
+      
+      // Try to find photo by matching URL in all instance items
+      let foundPhoto: any = null;
+      if (this.instance?.items) {
+        for (const instItem of this.instance.items) {
+          if ((instItem as any).photos && Array.isArray((instItem as any).photos)) {
+            foundPhoto = (instItem as any).photos.find((p: any) => p.file_url === photoUrl);
+            if (foundPhoto) {
+              break;
+            }
+          }
+        }
+      }
+      
+      if (foundPhoto && foundPhoto.id) {
+        // Delete from server
+        this.photoChecklistService.deletePhoto(foundPhoto.id).subscribe({
+          next: (response) => {
+            progress.photos.splice(photoIndex, 1);
+            this.updateCompletionStatus(progress);
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.initializeCarousels();
+            }, 100);
+          },
+          error: (error) => {
+            alert('Error deleting photo. Please try again.');
+          }
+        });
+      } else {
         progress.photos.splice(photoIndex, 1);
         this.updateCompletionStatus(progress);
-        this.saveProgressSilently();
+        this.cdr.detectChanges();
       }
     }
   }

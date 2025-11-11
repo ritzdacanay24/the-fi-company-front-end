@@ -23,7 +23,7 @@
   </div> -->
 
   <!-- Cards Grid -->
-  <div class="row g-3" *ngIf="displayedItems.length > 0">
+  <div class="row gx-3" *ngIf="displayedItems.length > 0">
     <div *ngFor="let item of displayedItems; let i = index" 
          [ngClass]="cardClass" 
          class="mb-3"
@@ -172,12 +172,18 @@
                     <div class="so-orders-label text-uppercase small text-muted fw-bold mb-2">
                       SALES ORDERS ({{ item.orders.length }} total)
                     </div>
-                    <div class="so-orders-list">
-                      <div *ngFor="let order of item.orders.slice(0, 4)" class="so-item small mb-0 text-body">
-                        {{ order['SOD_NBR'] || order['ORDNUM'] || 'N/A' }}-{{ order['SOD_LINE'] || order['ORDLINE'] || '1' }}
-                      </div>
-                      <div *ngIf="item.orders.length > 4" class="so-item small text-muted">
-                        +{{ item.orders.length - 4 }} more orders
+                    <!-- Auto-scroll only if more than 5 orders -->
+                    <div class="so-orders-list" [class.auto-scroll-container]="item.orders.length > 5">
+                      <div class="scroll-content">
+                        <div *ngFor="let order of item.orders" class="so-item small mb-0 text-body">
+                          {{ order['SOD_NBR'] || order['ORDNUM'] || 'N/A' }}-{{ order['SOD_LINE'] || order['ORDLINE'] || '1' }}
+                        </div>
+                        <!-- Duplicate for seamless loop - only if scrolling -->
+                        <div *ngIf="item.orders.length > 5">
+                          <div *ngFor="let order of item.orders" class="so-item small mb-0 text-body">
+                            {{ order['SOD_NBR'] || order['ORDNUM'] || 'N/A' }}-{{ order['SOD_LINE'] || order['ORDLINE'] || '1' }}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -206,12 +212,18 @@
                     <div class="wo-label text-uppercase small text-muted fw-bold mb-2">
                       WORK ORDER{{ getWorkOrderNumbers(item).length > 1 ? 'S' : '' }} ({{ getWorkOrderNumbers(item).length }} total)
                     </div>
-                    <div class="wo-list">
-                      <div *ngFor="let wo of getWorkOrderNumbers(item).slice(0, 4)" class="so-item small mb-0 text-body">
-                        {{ wo }}
-                      </div>
-                      <div *ngIf="getWorkOrderNumbers(item).length > 4" class="so-item small text-muted">
-                        +{{ getWorkOrderNumbers(item).length - 4 }} more work orders
+                    <!-- Auto-scroll only if more than 5 work orders -->
+                    <div class="wo-list" [class.auto-scroll-container]="getWorkOrderNumbers(item).length > 5">
+                      <div class="scroll-content">
+                        <div *ngFor="let wo of getWorkOrderNumbers(item)" class="so-item small mb-0 text-body">
+                          {{ wo }}
+                        </div>
+                        <!-- Duplicate for seamless loop - only if scrolling -->
+                        <div *ngIf="getWorkOrderNumbers(item).length > 5">
+                          <div *ngFor="let wo of getWorkOrderNumbers(item)" class="so-item small mb-0 text-body">
+                            {{ wo }}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

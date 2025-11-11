@@ -1554,12 +1554,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       const newVersion = this.getNextVersion(currentVersion);
       templateData.version = newVersion;
       
-      // Update the name to include the new version if not already present
-      if (!templateData.name.includes(`v${newVersion}`)) {
-        templateData.name = `${templateData.name} (v${newVersion})`;
-      }
+      // IMPORTANT: Pass the source template ID to maintain parent/group relationships
+      templateData.source_template_id = this.editingTemplate.id;
+      
+      // Clean the name - remove any existing version suffixes before adding the new one
+      let cleanName = templateData.name;
+      // Remove all version patterns like (v1.0), (v1.1), etc.
+      cleanName = cleanName.replace(/\s*\(v\d+\.\d+\)\s*/g, '').trim();
+      // Add the new version
+      templateData.name = `${cleanName} (v${newVersion})`;
       
       console.log(`Creating new version: ${newVersion} from existing template ${this.editingTemplate.id}`);
+      console.log(`source_template_id set to: ${templateData.source_template_id}`);
+      console.log(`Cleaned name from "${this.editingTemplate.name}" to "${templateData.name}"`);
     }
 
     // Always use createTemplate to create a new version

@@ -15,9 +15,12 @@ export interface ChecklistTemplate {
   product_type: string;
   category: 'quality_control' | 'installation' | 'maintenance' | 'inspection';
   version: string;
+  template_group_id?: number; // Groups all versions of the same template family
+  parent_template_id?: number; // Direct parent template ID for version lineage
   is_active: boolean;
   active_instances?: number;
   item_count?: number;
+  version_count?: number; // Number of versions in this template family
   items?: ChecklistItem[];
   created_at: string;
   updated_at: string;

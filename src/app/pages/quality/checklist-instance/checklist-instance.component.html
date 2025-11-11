@@ -77,18 +77,34 @@
           
           <!-- Photo Taking Mode -->
           <div *ngIf="!isReviewMode">
-            <div *ngFor="let progress of getCurrentItemsToShow(); let i = index">
+            <div *ngFor="let progress of getCurrentItemsToShow(); let i = index; let first = first">
+              
+              <!-- Separator between parent and sub-items -->
+              <div *ngIf="i > 0 && progress.item.level === 1 && first" class="my-4">
+                <div class="border-top pt-3">
+                  <h6 class="text-muted text-uppercase small mb-3">
+                    <i class="mdi mdi-subdirectory-arrow-right me-2"></i>Related Sub-items
+                  </h6>
+                </div>
+              </div>
               
               <!-- Task Description - Inline -->
-              <div class="mb-4" *ngIf="progress.item">
-                <div class="p-3 rounded border-start border-primary border-4 bg-light bg-opacity-50">
+              <div class="mb-4" *ngIf="progress.item"
+                   [class.ms-4]="progress.item.level === 1"
+                   [class.mt-4]="i > 0 && progress.item.level === 1">
+                <div class="p-3 rounded border-start border-primary border-4 bg-light bg-opacity-50"
+                     [class.border-secondary]="progress.item.level === 1">
                   <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="text-primary mb-1">
-                      <i class="mdi mdi-clipboard-text me-2"></i>
+                    <h5 class="mb-1"
+                        [class.text-primary]="progress.item.level === 0 || !progress.item.level"
+                        [class.text-secondary]="progress.item.level === 1">
+                      <i class="mdi mdi-subdirectory-arrow-right me-2" *ngIf="progress.item.level === 1"></i>
+                      <i class="mdi mdi-clipboard-text me-2" *ngIf="progress.item.level === 0 || !progress.item.level"></i>
+                      <span *ngIf="progress.item.level === 1" class="badge bg-secondary me-2">Sub-item</span>
                       {{progress.item.title}}
                     </h5>
-                    <span class="badge bg-primary">
-                      Item {{getCurrentItemIndex()}} of {{getTotalItemsCount()}}
+                    <span class="badge bg-primary" *ngIf="progress.item.level === 0 || !progress.item.level">
+                      {{getItemLabel(progress)}} of {{getTotalItemsCount()}}
                     </span>
                   </div>
                   <p class="text-muted mb-0" *ngIf="progress.item.description">
@@ -194,7 +210,7 @@
                          style="min-height: 280px; display: flex; flex-direction: column; justify-content: center;"
                          *ngIf="progress.item.sample_image_url; else noSampleImage">
                       <div class="text-center">
-                        <img [src]="progress.item.sample_image_url" 
+                        <img [src]="getPhotoUrl(progress.item.sample_image_url)" 
                              class="img-fluid rounded shadow-sm" 
                              style="max-height: 200px; object-fit: contain;"
                              [alt]="'Sample reference for ' + progress.item.title"
@@ -238,7 +254,11 @@
             <div class="border rounded">
               <div class="border-bottom p-4" 
                    *ngFor="let progress of itemProgress; let i = index"
-                   [class.bg-success-subtle]="progress.completed">
+                   [class.bg-success-subtle]="progress.completed"
+                   [class.ms-4]="progress.item.level === 1"
+                   [class.border-start]="progress.item.level === 1"
+                   [class.border-primary]="progress.item.level === 1"
+                   [class.border-3]="progress.item.level === 1">
                 
                 <!-- Item Header -->
                 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -248,7 +268,11 @@
                       <i class="mdi mdi-circle-outline text-muted fs-4" *ngIf="!progress.completed"></i>
                     </div>
                     <div>
-                      <h6 class="mb-1 fw-semibold">Task {{i + 1}}: {{progress.item?.title}}</h6>
+                      <h6 class="mb-1 fw-semibold">
+                        <i class="mdi mdi-subdirectory-arrow-right me-2" *ngIf="progress.item.level === 1"></i>
+                        <span *ngIf="progress.item.level === 1" class="badge bg-secondary me-2">Sub-item</span>
+                        {{getItemLabel(progress)}}: {{progress.item?.title}}
+                      </h6>
                       <p class="text-muted small mb-0" *ngIf="progress.item?.description">
                         {{progress.item.description}}
                       </p>

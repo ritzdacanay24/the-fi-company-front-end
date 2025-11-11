@@ -12,7 +12,7 @@
     <div *ngIf="getCurrentSamplePhoto(); else noSampleImages">
       <div class="position-relative">
         <div class="ratio ratio-16x9 rounded overflow-hidden shadow-sm bg-light">
-          <img [src]="getCurrentSamplePhoto()!" 
+          <img [src]="getSamplePhotoUrl(getCurrentSamplePhoto()!)" 
                class="object-fit-cover"
                alt="Sample reference image"
                loading="lazy">

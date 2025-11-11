@@ -462,4 +462,17 @@ export class ChecklistAuditComponent implements OnInit {
       minute: '2-digit'
     });
   }
+
+  /**
+   * Get full URL for photo, handling both absolute and relative paths
+   */
+  getPhotoUrl(photo: string): string {
+    if (!photo) return '';
+    if (photo.startsWith('http')) {
+      return photo;
+    }
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = photo.startsWith('/') ? photo.substring(1) : photo;
+    return `https://dashboard.eye-fi.com/${cleanPath}`;
+  }
 }

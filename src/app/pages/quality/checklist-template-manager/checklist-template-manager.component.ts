@@ -157,55 +157,142 @@ interface SampleImage {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let template of getFilteredTemplates(); trackBy: trackByTemplateId" 
-                          class="align-middle">
-                        <td>
-                          <div class="d-flex gap-1 align-items-center justify-content-center">
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    (click)="viewTemplate(template)"
-                                    title="View Template">
-                              <i class="mdi mdi-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" 
-                                    (click)="editTemplate(template)"
-                                    title="Edit Template">
-                              <i class="mdi mdi-pencil"></i>
-                            </button>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="fw-semibold">{{template.name}}</div>
-                        </td>
-                        <td>
-                          <span class="badge bg-primary">{{template.category | titlecase}}</span>
-                        </td>
-                        <td>
-                          <span class="text-muted">{{template.description || 'No description available'}}</span>
-                        </td>
-                        <td>
-                          <code *ngIf="template.part_number">{{template.part_number}}</code>
-                          <span class="text-muted" *ngIf="!template.part_number">-</span>
-                        </td>
-                        <td>
-                          <div class="text-center">
-                            <div class="fw-semibold">{{template.item_count || 0}}</div>
-                            <small class="text-muted">items</small>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge bg-secondary">v{{template.version}}</span>
-                        </td>
-                        <td>
-                          <span class="badge" [class]="template.is_active ? 'bg-success' : 'bg-danger'">
-                            {{template.is_active ? 'Active' : 'Inactive'}}
-                          </span>
-                        </td>
-                        <td>
-                          <small class="text-muted">
-                            {{template.created_at | date:'MMM d, y'}}
-                          </small>
-                        </td>
-                      </tr>
+                      <ng-container *ngFor="let group of getGroupedTemplates() | keyvalue; trackBy: trackByGroupId">
+                        <ng-container *ngIf="group.value && group.value.length > 0">
+                          <!-- Latest Version (Main Row) -->
+                          <tr class="align-middle" 
+                              [class.table-primary]="group.value.length > 1"
+                              [style.border-left]="group.value.length > 1 ? '4px solid #0d6efd' : 'none'">
+                            <td>
+                              <div class="d-flex gap-1 align-items-center justify-content-center">
+                                <!-- Expand/Collapse Button for version groups -->
+                                <button 
+                                  *ngIf="group.value.length > 1"
+                                  class="btn btn-sm btn-outline-secondary" 
+                                  (click)="toggleGroup(group.key)"
+                                  title="{{isGroupExpanded(group.key) ? 'Hide' : 'Show'}} older versions">
+                                  <i class="mdi" [class.mdi-chevron-down]="!isGroupExpanded(group.key)" 
+                                     [class.mdi-chevron-up]="isGroupExpanded(group.key)"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        (click)="viewTemplate(getLatestVersion(group.value))"
+                                        title="View Template">
+                                  <i class="mdi mdi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        (click)="editTemplate(getLatestVersion(group.value))"
+                                        title="Edit Template">
+                                  <i class="mdi mdi-pencil"></i>
+                                </button>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="d-flex align-items-center">
+                                <div>
+                                  <div class="fw-semibold">{{getLatestVersion(group.value).name}}</div>
+                                  <small class="text-muted" *ngIf="group.value.length > 1">
+                                    <i class="mdi mdi-history me-1"></i>
+                                    {{group.value.length}} version{{group.value.length > 1 ? 's' : ''}} available
+                                  </small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span class="badge bg-primary">{{getLatestVersion(group.value).category | titlecase}}</span>
+                            </td>
+                            <td>
+                              <span class="text-muted">{{getLatestVersion(group.value).description || 'No description available'}}</span>
+                            </td>
+                            <td>
+                              <code *ngIf="getLatestVersion(group.value).part_number">{{getLatestVersion(group.value).part_number}}</code>
+                              <span class="text-muted" *ngIf="!getLatestVersion(group.value).part_number">-</span>
+                            </td>
+                            <td>
+                              <div class="text-center">
+                                <div class="fw-semibold">{{getLatestVersion(group.value).item_count || 0}}</div>
+                                <small class="text-muted">items</small>
+                              </div>
+                            </td>
+                            <td>
+                              <span class="badge bg-success bg-gradient">
+                                <i class="mdi mdi-check-circle me-1"></i>
+                                v{{getLatestVersion(group.value).version}}
+                              </span>
+                            </td>
+                            <td>
+                              <span class="badge" [class]="getLatestVersion(group.value).is_active ? 'bg-success' : 'bg-danger'">
+                                {{getLatestVersion(group.value).is_active ? 'Active' : 'Inactive'}}
+                              </span>
+                            </td>
+                            <td>
+                              <small class="text-muted">
+                                {{getLatestVersion(group.value).created_at | date:'MMM d, y'}}
+                              </small>
+                            </td>
+                          </tr>
+
+                          <!-- Older Versions (Expandable Rows) -->
+                          <ng-container *ngIf="isGroupExpanded(group.key) && getOlderVersions(group.value).length > 0">
+                            <tr *ngFor="let template of getOlderVersions(group.value); let i = index" 
+                                class="align-middle bg-light"
+                                style="border-left: 4px solid #6c757d;">
+                              <td>
+                                <div class="d-flex gap-1 align-items-center justify-content-center">
+                                  <div style="width: 32px;"></div> <!-- Spacer for alignment -->
+                                  <button class="btn btn-sm btn-outline-primary" 
+                                          (click)="viewTemplate(template)"
+                                          title="View Template">
+                                    <i class="mdi mdi-eye"></i>
+                                  </button>
+                                  <button class="btn btn-sm btn-outline-secondary" 
+                                          (click)="editTemplate(template)"
+                                          title="Edit Template">
+                                    <i class="mdi mdi-pencil"></i>
+                                  </button>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center">
+                                  <i class="mdi mdi-subdirectory-arrow-right text-muted me-2"></i>
+                                  <div>
+                                    <div class="fw-normal">{{template.name}}</div>
+                                    <small class="text-muted">Previous version</small>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <span class="badge bg-secondary bg-opacity-75">{{template.category | titlecase}}</span>
+                              </td>
+                              <td>
+                                <span class="text-muted small">{{template.description || 'No description available'}}</span>
+                              </td>
+                              <td>
+                                <code *ngIf="template.part_number" class="small">{{template.part_number}}</code>
+                                <span class="text-muted" *ngIf="!template.part_number">-</span>
+                              </td>
+                              <td>
+                                <div class="text-center">
+                                  <div class="small">{{template.item_count || 0}}</div>
+                                  <small class="text-muted" style="font-size: 0.7rem;">items</small>
+                                </div>
+                              </td>
+                              <td>
+                                <span class="badge bg-secondary">v{{template.version}}</span>
+                              </td>
+                              <td>
+                                <span class="badge bg-secondary bg-opacity-50">
+                                  {{template.is_active ? 'Active' : 'Inactive'}}
+                                </span>
+                              </td>
+                              <td>
+                                <small class="text-muted small">
+                                  {{template.created_at | date:'MMM d, y'}}
+                                </small>
+                              </td>
+                            </tr>
+                          </ng-container>
+                        </ng-container>
+                      </ng-container>
                     </tbody>
                   </table>
                 </div>
@@ -1927,6 +2014,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   // Enhanced template properties
   templates: ChecklistTemplate[] = [];
   templateFamilies: Map<string, ChecklistTemplate[]> = new Map();
+  expandedGroups: Set<number> = new Set(); // Track which template groups are expanded
   
   loading = false;
   saving = false;
@@ -2926,6 +3014,10 @@ Enter choice (1-4):`;
     }).length;
   }
 
+  trackByGroupId(index: number, item: any): number {
+    return item.key; // The group ID from keyvalue pipe
+  }
+
   trackByTemplateId(index: number, template: ChecklistTemplate): number {
     return template.id;
   }
@@ -2977,6 +3069,55 @@ Enter choice (1-4):`;
 
       return true;
     });
+  }
+
+  // Group templates by template_group_id
+  getGroupedTemplates(): Map<number, ChecklistTemplate[]> {
+    const filtered = this.getFilteredTemplates();
+    const grouped = new Map<number, ChecklistTemplate[]>();
+    
+    filtered.forEach(template => {
+      const groupId = template.template_group_id || template.id;
+      if (!grouped.has(groupId)) {
+        grouped.set(groupId, []);
+      }
+      grouped.get(groupId)!.push(template);
+    });
+    
+    // Sort each group by version (descending - newest first)
+    grouped.forEach((templates, groupId) => {
+      templates.sort((a, b) => {
+        // Parse versions like "1.0", "1.1", "2.0"
+        const versionA = parseFloat(a.version || '0');
+        const versionB = parseFloat(b.version || '0');
+        return versionB - versionA; // Descending order
+      });
+    });
+    
+    return grouped;
+  }
+
+  // Get the latest version of a template group
+  getLatestVersion(templates: ChecklistTemplate[]): ChecklistTemplate {
+    return templates[0]; // Already sorted by version descending
+  }
+
+  // Get older versions (excluding the latest)
+  getOlderVersions(templates: ChecklistTemplate[]): ChecklistTemplate[] {
+    return templates.slice(1);
+  }
+
+  // Toggle group expansion
+  toggleGroup(groupId: number): void {
+    if (this.expandedGroups.has(groupId)) {
+      this.expandedGroups.delete(groupId);
+    } else {
+      this.expandedGroups.add(groupId);
+    }
+  }
+
+  isGroupExpanded(groupId: number): boolean {
+    return this.expandedGroups.has(groupId);
   }
 
   onTemplateSearch(): void {

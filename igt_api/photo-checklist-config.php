@@ -120,13 +120,16 @@ class PhotoChecklistConfigAPI {
     public function getTemplates() {
         $sql = "SELECT ct.*, 
                        COUNT(ci.id) as active_instances,
-                       COUNT(cit.id) as item_count
+                       COUNT(cit.id) as item_count,
+                       (SELECT COUNT(*) FROM checklist_templates ct2 
+                        WHERE ct2.template_group_id = ct.template_group_id 
+                        AND ct2.is_active = 1) as version_count
                 FROM checklist_templates ct
                 LEFT JOIN checklist_instances ci ON ct.id = ci.template_id AND ci.status != 'completed'
                 LEFT JOIN checklist_items cit ON ct.id = cit.template_id
                 WHERE ct.is_active = 1
                 GROUP BY ct.id
-                ORDER BY ct.created_at DESC";
+                ORDER BY ct.template_group_id, ct.version DESC, ct.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
@@ -144,12 +147,19 @@ class PhotoChecklistConfigAPI {
             return null;
         }
         
-        // Get items separately
+        // Get items separately - order by level first (parents before children), then order_index
+        // This ensures parent items appear before their sub-items
         $sql = "SELECT id, template_id, order_index, parent_id, level, title, description, 
                        photo_requirements, sample_image_url, is_required, created_at, updated_at
                 FROM checklist_items 
                 WHERE template_id = ? 
-                ORDER BY order_index";
+                ORDER BY 
+                    CASE 
+                        WHEN level = 0 OR level IS NULL THEN order_index 
+                        ELSE parent_id + 0.001 * order_index 
+                    END,
+                    level,
+                    order_index";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
@@ -185,6 +195,7 @@ class PhotoChecklistConfigAPI {
         // Debug logging
         error_log("createTemplate called with data: " . json_encode($data));
         error_log("Items count: " . (isset($data['items']) ? count($data['items']) : 0));
+        error_log("source_template_id: " . (isset($data['source_template_id']) ? $data['source_template_id'] : 'NOT SET'));
         
         // Check if items exist and are not empty
         if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
@@ -195,9 +206,30 @@ class PhotoChecklistConfigAPI {
         $this->conn->beginTransaction();
         
         try {
-            // Insert template (including version for new version creation)
-            $sql = "INSERT INTO checklist_templates (name, description, part_number, product_type, category, version, is_active, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            // Determine template_group_id and parent_template_id
+            // If source_template_id is provided, copy its template_group_id and set parent_template_id (creating a new version)
+            // Otherwise, use a temporary value (0) and update it to the new template's ID after insertion
+            $templateGroupId = 0; // Temporary placeholder for new templates
+            $parentTemplateId = null;
+            $isNewTemplateFamily = true;
+            
+            if (isset($data['source_template_id']) && $data['source_template_id']) {
+                // Get the parent template's group ID
+                $sql = "SELECT template_group_id FROM checklist_templates WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([$data['source_template_id']]);
+                $parentTemplate = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($parentTemplate) {
+                    $templateGroupId = $parentTemplate['template_group_id'];
+                    $parentTemplateId = $data['source_template_id']; // Track the direct parent
+                    $isNewTemplateFamily = false;
+                    error_log("Creating new version - parent_template_id: " . $parentTemplateId . ", template_group_id: " . $templateGroupId);
+                }
+            }
+            
+            // Insert template (including version, template_group_id, and parent_template_id)
+            $sql = "INSERT INTO checklist_templates (name, description, part_number, product_type, category, version, template_group_id, parent_template_id, is_active, created_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 $data['name'],
@@ -206,12 +238,31 @@ class PhotoChecklistConfigAPI {
                 $data['product_type'] ?? '',
                 $data['category'] ?? 'quality_control',
                 $data['version'] ?? '1.0',
+                $templateGroupId, // Will be 0 for new templates, updated below
+                $parentTemplateId, // Will be NULL for first version, set to parent ID for new versions
                 isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1,
                 $data['created_by'] ?? null
             ]);
             
             $templateId = $this->conn->lastInsertId();
             error_log("Template created with ID: " . $templateId . " with version: " . ($data['version'] ?? '1.0'));
+            error_log("Inserted with: template_group_id=" . $templateGroupId . ", parent_template_id=" . ($parentTemplateId ?? 'NULL'));
+            
+            // If this is a new template (not a version), set template_group_id to its own ID
+            if ($isNewTemplateFamily) {
+                $sql = "UPDATE checklist_templates SET template_group_id = ? WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([$templateId, $templateId]);
+                error_log("New template family - set template_group_id to self: " . $templateId . ", parent_template_id: NULL (first version)");
+            } else {
+                error_log("New version of existing template - template_group_id: " . $templateGroupId . ", parent_template_id: " . $parentTemplateId);
+            }
+            
+            // Verify what was actually saved
+            $verifyTemplateStmt = $this->conn->prepare("SELECT template_group_id, parent_template_id FROM checklist_templates WHERE id = ?");
+            $verifyTemplateStmt->execute([$templateId]);
+            $savedTemplate = $verifyTemplateStmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Verified saved values: template_group_id=" . $savedTemplate['template_group_id'] . ", parent_template_id=" . ($savedTemplate['parent_template_id'] ?? 'NULL'));
             
             // Insert items
             if (!empty($data['items'])) {
@@ -274,7 +325,7 @@ class PhotoChecklistConfigAPI {
         $this->conn->beginTransaction();
         
         try {
-            // Update template
+            // Update template (preserving template_group_id - it should not change on updates)
             $sql = "UPDATE checklist_templates 
                     SET name = ?, description = ?, part_number = ?, product_type = ?, category = ?, version = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ? AND is_active = 1";
@@ -288,6 +339,8 @@ class PhotoChecklistConfigAPI {
                 $data['version'] ?? '1.0',
                 $id
             ]);
+            
+            error_log("Template $id updated - template_group_id preserved");
             
             // Delete existing items
             $sql = "DELETE FROM checklist_items WHERE template_id = ?";
@@ -418,20 +471,68 @@ class PhotoChecklistConfigAPI {
             return null;
         }
         
-        // Get checklist items with photos
+        // Get checklist items with photos - order hierarchically
         $sql = "SELECT citm.*, 
-                       ps.file_name, ps.file_url, ps.file_type, ps.created_at as photo_created_at,
+                       ps.id as photo_id, ps.file_name, ps.file_url, ps.file_type, ps.created_at as photo_created_at,
                        ps.is_approved, ps.review_notes
                 FROM checklist_items citm
                 LEFT JOIN photo_submissions ps ON citm.id = ps.item_id AND ps.instance_id = ?
                 WHERE citm.template_id = ?
-                ORDER BY citm.order_index";
+                ORDER BY 
+                    CASE 
+                        WHEN citm.level = 0 OR citm.level IS NULL THEN citm.order_index 
+                        ELSE citm.parent_id + 0.001 * citm.order_index 
+                    END,
+                    citm.level,
+                    citm.order_index,
+                    ps.created_at";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id, $instance['template_id']]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $instance['items'] = $items;
+        // Group photos by item
+        $items = [];
+        foreach ($results as $row) {
+            $itemId = $row['id'];
+            
+            if (!isset($items[$itemId])) {
+                // Parse photo_requirements if it's a JSON string
+                $photoRequirements = $row['photo_requirements'];
+                if (is_string($photoRequirements)) {
+                    $photoRequirements = json_decode($photoRequirements, true) ?: [];
+                }
+                
+                $items[$itemId] = [
+                    'id' => (int)$row['id'],
+                    'template_id' => (int)$row['template_id'],
+                    'order_index' => (int)$row['order_index'],
+                    'title' => $row['title'],
+                    'description' => $row['description'],
+                    'photo_requirements' => $photoRequirements,
+                    'sample_image_url' => $row['sample_image_url'],
+                    'is_required' => (bool)$row['is_required'],
+                    'level' => isset($row['level']) ? (int)$row['level'] : 0,
+                    'parent_id' => isset($row['parent_id']) ? (int)$row['parent_id'] : null,
+                    'photos' => []
+                ];
+            }
+            
+            // Add photo if exists
+            if ($row['photo_id']) {
+                $items[$itemId]['photos'][] = [
+                    'id' => $row['photo_id'],
+                    'file_name' => $row['file_name'],
+                    'file_url' => $row['file_url'],
+                    'file_type' => $row['file_type'],
+                    'created_at' => $row['photo_created_at'],
+                    'is_approved' => $row['is_approved'],
+                    'review_notes' => $row['review_notes']
+                ];
+            }
+        }
+        
+        $instance['items'] = array_values($items);
         return $instance;
     }
 
@@ -554,12 +655,12 @@ class PhotoChecklistConfigAPI {
         
         // Generate unique filename
         $extension = pathinfo($uploadedFile['name'], PATHINFO_EXTENSION);
-        $fileName = 'photo_' . $instanceId . '_' . $itemId . '_' . time() . '.' . $extension;
-        $uploadPath = '../uploads/photos/' . $fileName;
+        $fileName = 'submission_' . $instanceId . '_' . $itemId . '_' . time() . '.' . $extension;
+        $uploadPath = '../attachments/photo-submissions/' . $fileName;
         
         // Create directory if it doesn't exist
-        if (!file_exists('../uploads/photos/')) {
-            mkdir('../uploads/photos/', 0755, true);
+        if (!file_exists('../attachments/photo-submissions/')) {
+            mkdir('../attachments/photo-submissions/', 0755, true);
         }
         
         if (move_uploaded_file($uploadedFile['tmp_name'], $uploadPath)) {
@@ -578,7 +679,7 @@ class PhotoChecklistConfigAPI {
                 $itemId,
                 $fileName,
                 $uploadPath,
-                '/uploads/photos/' . $fileName,
+                '/attachments/photo-submissions/' . $fileName,
                 strpos($uploadedFile['type'], 'video') !== false ? 'video' : 'image',
                 $uploadedFile['size'],
                 $uploadedFile['type']
@@ -590,7 +691,7 @@ class PhotoChecklistConfigAPI {
             // Log action
             $this->logAction($instanceId, 'photo_added', null, ['item_id' => $itemId, 'file_name' => $fileName]);
             
-            return ['success' => true, 'file_url' => '/uploads/photos/' . $fileName];
+            return ['success' => true, 'file_url' => '/attachments/photo-submissions/' . $fileName];
         } else {
             throw new Exception('Failed to upload file');
         }
