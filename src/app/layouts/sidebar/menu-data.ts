@@ -471,13 +471,28 @@ export const MENU_DATA: MenuItem[] = [
                 label: "Photo Checklist",
                 icon: "las la-camera",
                 isCollapsed: true,
+                activatedRoutes: "/quality/checklist/*",
                 subItems: [
                     {
-                        label: "Checklists",
+                        label: "Dashboard",
                         link: "/quality/checklist",
-                        description: "Manage Photo Checklists",
+                        description: "Checklist Dashboard & Instances",
                         icon: "las la-clipboard-list",
-                        activatedRoutes: "/quality/checklist/*"
+                        activatedRoutes: "/quality/checklist"
+                    },
+                    {
+                        label: "Audit & Search",
+                        link: "/quality/checklist/audit",
+                        description: "Historical Checklist Search",
+                        icon: "las la-search",
+                        activatedRoutes: "/quality/checklist/audit"
+                    },
+                    {
+                        label: "Template Manager",
+                        link: "/quality/checklist/template-manager",
+                        description: "Manage Checklist Templates",
+                        icon: "las la-th-list",
+                        activatedRoutes: "/quality/checklist/template-manager"
                     },
                     {
                         label: "Control Photos",

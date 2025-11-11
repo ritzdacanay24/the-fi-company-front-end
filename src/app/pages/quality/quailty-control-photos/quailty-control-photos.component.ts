@@ -180,7 +180,7 @@ export class QuailtyControlPhotosComponent implements OnInit {
 
   openChecklistInstance(instanceId: number) {
     // Navigate to the checklist instance page with query parameters
-    this.router.navigate(['/quality/checklist-instance'], { queryParams: { id: instanceId } });
+    this.router.navigate(['/quality/checklist/instance'], { queryParams: { id: instanceId } });
   }
 
   ngOnInit(): void {

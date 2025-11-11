@@ -177,7 +177,7 @@ export class ChecklistComponent implements OnInit {
         this.photoChecklistService.createInstance(instanceData).subscribe({
             next: (response) => {
                 // API returns { success: boolean, instance_id: number }
-                this.router.navigate(['../checklist-instance'], {
+                this.router.navigate(['./instance'], {
                     relativeTo: this.route,
                     queryParams: { id: response.instance_id }
                 });
@@ -201,7 +201,7 @@ export class ChecklistComponent implements OnInit {
     }
 
     openChecklistInstance(instance: ChecklistInstance): void {
-        this.router.navigate(['../checklist-instance'], {
+        this.router.navigate(['./instance'], {
             queryParams: { id: instance.id },
             relativeTo: this.route
         });

@@ -1590,11 +1590,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           const newVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
           alert(`New version (v${newVersion}) created successfully!`);
           // Navigate back to template manager to see the new version
-          this.router.navigate(['/quality/template-manager']);
+          this.router.navigate(['/quality/checklist/template-manager']);
         } else {
           // For new templates, navigate to template manager
           alert('Template created successfully!');
-          this.router.navigate(['/quality/template-manager']);
+          this.router.navigate(['/quality/checklist/template-manager']);
         }
       },
       error: (error) => {
@@ -1619,7 +1619,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/quality/template-manager']);
+    this.router.navigate(['/quality/checklist/template-manager']);
   }
 
   // Import functionality
@@ -1734,7 +1734,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           this.loadTemplate(response.template_id);
           
           // Update the URL without reloading the page
-          this.router.navigate(['/quality/template-editor', response.template_id], { replaceUrl: true });
+          this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
           
           // Enable auto-save after initial import save
           this.autoSaveEnabled = true;

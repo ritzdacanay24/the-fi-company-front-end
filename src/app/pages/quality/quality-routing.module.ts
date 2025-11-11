@@ -12,31 +12,40 @@ const routes: Routes = [
   },
   {
     path: "checklist",
-    loadComponent: () => import('./checklist/checklist.component').then(c => c.ChecklistComponent),
+    loadChildren: () =>
+      import("./checklist/checklist-routing.module").then(
+        (m) => m.ChecklistRoutingModule
+      ),
+    runGuardsAndResolvers: "always",
   },
+  // Backwards compatibility redirects for old URLs
   {
     path: "checklist-instance",
-    loadComponent: () => import('./checklist-instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
+    redirectTo: "checklist/instance",
+    pathMatch: "full"
   },
   {
     path: "checklist-audit",
-    loadComponent: () => import('./checklist-audit/checklist-audit.component').then(c => c.ChecklistAuditComponent),
+    redirectTo: "checklist/audit",
+    pathMatch: "full"
+  },
+  {
+    path: "template-manager",
+    redirectTo: "checklist/template-manager",
+    pathMatch: "full"
+  },
+  {
+    path: "template-editor",
+    redirectTo: "checklist/template-editor",
+    pathMatch: "full"
+  },
+  {
+    path: "template-editor/:id",
+    redirectTo: "checklist/template-editor/:id"
   },
   {
     path: "quality-control-photos",
     component: QuailtyControlPhotosComponent,
-  },
-  {
-    path: "template-manager",
-    loadComponent: () => import('./checklist-template-manager/checklist-template-manager.component').then(c => c.ChecklistTemplateManagerComponent),
-  },
-  {
-    path: "template-editor",
-    loadComponent: () => import('./checklist-template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
-  },
-  {
-    path: "template-editor/:id",
-    loadComponent: () => import('./checklist-template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
   },
   {
     path: "version-control",
