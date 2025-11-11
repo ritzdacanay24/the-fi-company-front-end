@@ -455,13 +455,13 @@ interface SampleImage {
                             <div class="position-relative me-3">
                               <img [src]="getSafeImageUrl(i)"
                                    class="img-thumbnail"
-                                   style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;"
+                                   style="width: 120px; height: 120px; object-fit: contain; cursor: pointer; background: white;"
                                    [alt]="getSampleImage(i)?.label || 'Sample image'"
                                    (click)="previewSampleImage(i)"
                                    (error)="onSampleImageError(i)"
                                    (load)="onSampleImageLoad(i)">
                               <ng-container *ngIf="!getSampleImage(i)?.url">
-                                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 80px; height: 80px;">
+                                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 120px; height: 120px;">
                                   <i class="mdi mdi-image-off text-muted" style="font-size: 2rem;"></i>
                                 </div>
                               </ng-container>
@@ -640,6 +640,23 @@ interface SampleImage {
       </div>
     </ng-template>
 
+    <!-- Image Preview Modal -->
+    <ng-template #imagePreviewModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Sample Image Preview</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img [src]="previewImageUrl" 
+             class="img-fluid" 
+             style="max-height: 70vh; max-width: 100%; object-fit: contain;"
+             alt="Sample image preview">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+      </div>
+    </ng-template>
+
     <!-- Sample Image Upload Modal (keeping existing modal for now) -->
     <!-- Add your existing modal templates here -->
   `,
@@ -711,6 +728,7 @@ interface SampleImage {
 })
 export class ChecklistTemplateEditorComponent implements OnInit {
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
+  @ViewChild('imagePreviewModal') imagePreviewModalRef!: TemplateRef<any>;
   
   templateForm: FormGroup;
   editingTemplate: ChecklistTemplate | null = null;
@@ -729,6 +747,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   
   // Sample image management - single image per item
   sampleImages: { [itemIndex: number]: SampleImage | null } = {};
+  
+  // Image preview
+  previewImageUrl: string | null = null;
   
   // Auto-save functionality
   autoSaveEnabled = false;
@@ -1559,25 +1580,47 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    * @returns Blob object
    */
   private dataUrlToBlob(dataUrl: string): Blob {
-    // Split the data URL
-    const parts = dataUrl.split(',');
-    const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
-    const base64 = parts[1];
-    
-    // Decode base64
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    try {
+      // Split the data URL
+      const parts = dataUrl.split(',');
+      if (parts.length !== 2) {
+        throw new Error(`Invalid data URL format - expected 2 parts, got ${parts.length}`);
+      }
+      
+      const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+      const base64 = parts[1];
+      
+      if (!base64 || base64.length < 100) {
+        throw new Error(`Data URL base64 part is too short: ${base64?.length} chars`);
+      }
+      
+      // Decode base64
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      console.log(`✓ Converted data URL to Blob: ${mime}, ${bytes.length} bytes`);
+      
+      return new Blob([bytes], { type: mime });
+    } catch (error) {
+      console.error('❌ Failed to convert data URL to Blob:', error);
+      console.error('Data URL preview:', dataUrl.substring(0, 200));
+      throw error;
     }
-    
-    return new Blob([bytes], { type: mime });
   }
 
   previewSampleImage(itemIndex: number): void {
-    // TODO: Implement image preview
-    console.log('Preview image for item', itemIndex);
+    const sampleImage = this.getSampleImage(itemIndex);
+    if (sampleImage?.url) {
+      this.previewImageUrl = sampleImage.url;
+      this.modalService.open(this.imagePreviewModalRef, { 
+        size: 'lg',
+        centered: true
+      });
+    }
   }
 
   removeSampleImage(itemIndex: number): void {
@@ -1596,18 +1639,21 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   onSampleImageError(itemIndex: number): void {
-    // Handle image load error - only log warning, not full details
+    // Handle image load error
     const sampleImage = this.getSampleImage(itemIndex);
+    console.error(`Failed to load image for item ${itemIndex + 1}:`, sampleImage?.url);
+    
+    // If this is a data URL, try to upload it
     if (sampleImage?.url?.startsWith('data:')) {
-      console.warn(`⚠️ Failed to load image for item ${itemIndex} (data URL, length: ${sampleImage.url.length})`);
-    } else {
-      console.warn(`⚠️ Failed to load image for item ${itemIndex}:`, sampleImage?.url);
+      console.warn('Image is still a data URL - attempting to upload...');
+      this.convertDataUrlToUpload(itemIndex, sampleImage.url).catch(err => {
+        console.error('Failed to upload image:', err);
+      });
     }
   }
 
   onSampleImageLoad(itemIndex: number): void {
-    // Silent success - only log if needed for debugging
-    // console.log(`✅ Image loaded for item ${itemIndex}`);
+    // Image loaded successfully
   }
 
   saveTemplate(): void {
@@ -1985,10 +2031,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
     // Initialize showRequirements array
     this.showRequirements = new Array(this.items.length).fill(false);
-
-    console.log('\n📊 Import Summary:');
-    console.log(`   - Total items: ${this.items.length}`);
-    console.log(`   - Sample images loaded: ${Object.keys(this.sampleImages).length}`);
     
     // Trigger change detection to update UI
     this.cdr.detectChanges();

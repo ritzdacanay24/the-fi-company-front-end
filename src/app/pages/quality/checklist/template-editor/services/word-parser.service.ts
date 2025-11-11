@@ -61,8 +61,6 @@ export class WordParserService {
       // Reset counter for each parse
       this.imageConversionCount = 0;
       
-      console.log('📄 Starting Word document parsing...');
-      
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
       
@@ -70,6 +68,8 @@ export class WordParserService {
       const result = await mammoth.convertToHtml(
         { arrayBuffer },
         {
+          includeDefaultStyleMap: true,
+          includeEmbeddedStyleMap: true,
           convertImage: mammoth.images.imgElement((image) => {
             return image.read("base64").then((imageBuffer) => {
               // Increment counter
@@ -84,22 +84,6 @@ export class WordParserService {
               // Construct the data URL
               const dataUrl = `data:${contentType};base64,${cleanBase64}`;
               
-              // Only log first few images to prevent freeze
-              if (this.imageConversionCount <= this.MAX_IMAGE_LOGS) {
-                console.log(`🖼️ Image ${this.imageConversionCount}:`, {
-                  contentType,
-                  base64Length: cleanBase64.length,
-                  dataUrlLength: dataUrl.length
-                });
-                
-                // Warn if truncated
-                if (cleanBase64.length < 1000) {
-                  console.warn(`⚠️ Image ${this.imageConversionCount} appears truncated (only ${cleanBase64.length} chars)`);
-                }
-              } else if (this.imageConversionCount === this.MAX_IMAGE_LOGS + 1) {
-                console.log(`ℹ️ Processing ${this.imageConversionCount}+ images (logging suppressed for performance)...`);
-              }
-              
               return {
                 src: dataUrl
               };
@@ -108,54 +92,8 @@ export class WordParserService {
         }
       );
 
-      console.log('✅ Word document converted to HTML');
-      console.log('📝 Extracted HTML length:', result.value.length);
-      
-      // Check if HTML contains complete data URLs by searching for src attributes
-      const srcMatches = result.value.match(/src="data:image\/[^"]+"/g);
-      if (srcMatches && srcMatches.length > 0) {
-        console.log(`🖼️ Found ${srcMatches.length} data URL(s) in raw HTML`);
-        srcMatches.slice(0, 3).forEach((match, idx) => {
-          const dataUrl = match.substring(5, match.length - 1); // Remove 'src="' and '"'
-          console.log(`   Data URL ${idx + 1} length in raw HTML: ${dataUrl.length} chars`);
-        });
-      }
-      
-      if (result.messages && result.messages.length > 0) {
-        console.warn('⚠️ Conversion warnings:', result.messages);
-      }
-      
-      // DEBUG: Check for images in HTML
-      const tempDoc = new DOMParser().parseFromString(result.value, 'text/html');
-      const images = tempDoc.querySelectorAll('img');
-      console.log(`🖼️ Total <img> tags found after DOM parsing: ${images.length}`);
-      
-      if (images.length > 0 && images.length <= 3) {
-        // Only log first 3 images
-        images.forEach((img, idx) => {
-          const isDataUrl = img.src?.startsWith('data:');
-          console.log(`   Image ${idx + 1} after DOM parsing:`, {
-            isDataUrl,
-            srcLength: img.src?.length || 0,
-            mimeType: isDataUrl ? img.src.split(';')[0].split(':')[1] : 'N/A'
-          });
-        });
-      } else if (images.length > 3) {
-        console.log(`   ℹ️ ${images.length} images found (only showing first 3)`);
-      }
-
       // Parse the HTML to extract structured data
       const template = this.parseHtmlToTemplate(result.value, file.name);
-      
-      // DEBUG: Log the full parsed template
-      console.log('\n📦 ===== FULL PARSED TEMPLATE =====');
-      console.log(JSON.stringify(template, null, 2));
-      console.log('📦 ===== END PARSED TEMPLATE =====\n');
-      
-      console.log('✅ Successfully parsed Word document');
-      console.log(`   - Template: ${template.name}`);
-      console.log(`   - Items: ${template.items.length}`);
-      console.log(`   - Images: ${template.items.reduce((sum, item) => sum + (item.sample_images?.length || 0), 0)}`);
 
       return template;
     } catch (error) {
@@ -220,14 +158,44 @@ export class WordParserService {
   }
 
   /**
-   * Extract description (first paragraph after title)
+   * Extract description - generate a summary based on document content
    */
   private extractDescription(doc: Document): string {
-    const firstP = doc.querySelector('p');
-    if (firstP && firstP.textContent?.trim()) {
-      return firstP.textContent.trim();
+    const allText = doc.body.textContent || '';
+    
+    // Look for common description patterns
+    // 1. Try to find product/part info at the top
+    const lines = allText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    // 2. Look for quality inspection related text
+    if (allText.toLowerCase().includes('quality') || allText.toLowerCase().includes('inspection')) {
+      const itemCount = (allText.match(/\b\d+\b/g) || []).length;
+      const hasLabels = allText.toLowerCase().includes('label');
+      const hasConnections = allText.toLowerCase().includes('connection');
+      const hasSoftware = allText.toLowerCase().includes('software');
+      
+      let description = 'Quality inspection checklist';
+      const features: string[] = [];
+      
+      if (hasLabels) features.push('label verification');
+      if (hasConnections) features.push('connection testing');
+      if (hasSoftware) features.push('software validation');
+      
+      if (features.length > 0) {
+        description += ' including ' + features.join(', ');
+      }
+      
+      return description + '.';
     }
-    return '';
+    
+    // 3. Fallback: Use first meaningful paragraph
+    const firstP = doc.querySelector('p');
+    if (firstP && firstP.textContent?.trim() && firstP.textContent.trim().length > 20) {
+      return firstP.textContent.trim().substring(0, 200);
+    }
+    
+    // 4. Final fallback
+    return 'Inspection checklist document';
   }
 
   /**
@@ -246,17 +214,49 @@ export class WordParserService {
     
     // Look for "The Fi Company P/N" or "Customer P/N" in tables
     const tables = doc.querySelectorAll('table');
-    tables.forEach((table) => {
+    
+    tables.forEach((table, tableIndex) => {
       const rows = table.querySelectorAll('tr');
-      rows.forEach((row) => {
-        const cells = row.querySelectorAll('td, th');
-        const cellTexts = Array.from(cells).map(c => c.textContent?.trim() || '');
+      
+      // Check if this is a 2-row metadata table (row 1 = headers, row 2 = values)
+      if (rows.length === 2) {
+        const headerRow = rows[0];
+        const valueRow = rows[1];
+        const headerCells = headerRow.querySelectorAll('td, th');
+        const valueCells = valueRow.querySelectorAll('td, th');
+        const headerTexts = Array.from(headerCells).map(c => c.textContent?.trim() || '');
+        const valueTexts = Array.from(valueCells).map(c => c.textContent?.trim() || '');
+        
+        // Match headers to values
+        headerTexts.forEach((header, index) => {
+          const value = valueTexts[index] || '';
+          
+          // Check for Fi Company P/N
+          if (header.toLowerCase().includes('fi company p/n') && value) {
+            metadata.part_number = value;
+          }
+          
+          // Check for Description
+          if (header.toLowerCase().includes('description') && value && !value.toLowerCase().includes('customer')) {
+            metadata.product_type = value;
+          }
+        });
+      } else {
+        // Multi-row table - check each row for inline patterns
+        rows.forEach((row) => {
+          const cells = row.querySelectorAll('td, th');
+          const cellTexts = Array.from(cells).map(c => c.textContent?.trim() || '');
         
         // Check for Fi Company P/N
         cellTexts.forEach((text, index) => {
-          if (text.toLowerCase().includes('fi company p/n') || text.toLowerCase().includes('the fi company p/n')) {
-            // Next cell should have the part number
-            if (index + 1 < cellTexts.length) {
+          // Pattern 1: "The Fi Company P/N: VALUE" in same cell
+          if (text.toLowerCase().includes('fi company p/n')) {
+            const match = text.match(/(?:the\s+)?fi\s+company\s+p\/n\s*[:\s]+([A-Z0-9\-]+)/i);
+            if (match && match[1]) {
+              metadata.part_number = match[1].trim();
+            }
+            // Pattern 2: Next cell has the value
+            else if (index + 1 < cellTexts.length) {
               const pn = cellTexts[index + 1].trim();
               if (pn && pn.length > 0 && !pn.toLowerCase().includes('description')) {
                 metadata.part_number = pn;
@@ -266,7 +266,16 @@ export class WordParserService {
           
           // Check for Description field (product type)
           if (text.toLowerCase().includes('description:')) {
-            if (index + 1 < cellTexts.length) {
+            // Pattern 1: "Description: VALUE" in same cell
+            const match = text.match(/description\s*[:\s]+(.+)/i);
+            if (match && match[1]) {
+              const desc = match[1].trim();
+              if (desc && desc.length > 3 && !desc.toLowerCase().includes('customer')) {
+                metadata.product_type = desc;
+              }
+            }
+            // Pattern 2: Next cell has the value
+            else if (index + 1 < cellTexts.length) {
               const desc = cellTexts[index + 1].trim();
               if (desc && desc.length > 0 && !desc.toLowerCase().includes('customer')) {
                 metadata.product_type = desc;
@@ -274,14 +283,22 @@ export class WordParserService {
             }
           }
         });
-      });
+        });
+      }
     });
     
-    // Part number patterns (fallback)
+    // Part number patterns (fallback) - look for common Fi Company part number formats
     if (!metadata.part_number) {
-      const partMatch = allText.match(/(?:Part\s*(?:Number|#)?|P\/N)[:\s]+([A-Z0-9\-]+)/i);
-      if (partMatch) {
-        metadata.part_number = partMatch[1].trim();
+      // Pattern 1: Standard format like VWL-03505-310, CTO-03532-310
+      const fiPartMatch = allText.match(/\b([A-Z]{2,4}-\d{5}-\d{3})\b/);
+      if (fiPartMatch) {
+        metadata.part_number = fiPartMatch[1].trim();
+      } else {
+        // Pattern 2: Generic P/N format
+        const partMatch = allText.match(/(?:Part\s*(?:Number|#)?|P\/N)[:\s]+([A-Z0-9\-]+)/i);
+        if (partMatch) {
+          metadata.part_number = partMatch[1].trim();
+        }
       }
     }
 
@@ -317,21 +334,16 @@ export class WordParserService {
     // Strategy 1: Extract from tables FIRST (most common for quality checklists)
     const tables = doc.querySelectorAll('table');
     if (tables.length > 0) {
-      console.log(`📊 Found ${tables.length} table(s), attempting table-based extraction...`);
-      
       let totalRowsProcessed = 0;
       let totalRowsSkipped = 0;
       
       tables.forEach((table, tableIndex) => {
         const rows = table.querySelectorAll('tr');
-        console.log(`   Table ${tableIndex + 1} has ${rows.length} rows`);
         
         // Check if this table is the main checklist table (has "Critical to Quality" and "Pictures" columns)
         const headerRow = rows[0];
         const headerCells = headerRow?.querySelectorAll('td, th');
         const headerTexts = Array.from(headerCells || []).map(c => c.textContent?.trim().toLowerCase() || '');
-        
-        console.log(`   📋 Table ${tableIndex + 1} header texts:`, headerTexts);
         
         const isChecklistTable = headerTexts.some(t => 
           (t.includes('critical') && t.includes('quality')) || 
@@ -343,14 +355,7 @@ export class WordParserService {
         const mightBeItemTable = firstCellText && !isNaN(parseInt(firstCellText)) && parseInt(firstCellText) > 0;
         
         if (!isChecklistTable && !mightBeItemTable) {
-          console.log(`   ⚠️ Table ${tableIndex + 1} appears to be metadata/header table, skipping...`);
           return; // Skip this table (header/metadata table)
-        }
-        
-        if (isChecklistTable) {
-          console.log(`   ✓ Table ${tableIndex + 1} identified as checklist table`);
-        } else if (mightBeItemTable) {
-          console.log(`   ✓ Table ${tableIndex + 1} identified as single-item table (starts with number: ${firstCellText})`);
         }
         
         rows.forEach((row, rowIndex) => {
@@ -367,8 +372,6 @@ export class WordParserService {
       
       // If we successfully extracted items from tables, return them
       if (items.length > 0) {
-        console.log(`✅ Successfully extracted ${items.length} items from table(s)`);
-        console.log(`   📊 Summary: ${totalRowsProcessed} rows processed, ${totalRowsSkipped} rows skipped`);
         return items;
       }
     }
@@ -376,8 +379,6 @@ export class WordParserService {
     // Strategy 2: Extract from numbered/bullet lists
     const lists = doc.querySelectorAll('ol, ul');
     if (lists.length > 0) {
-      console.log(`📝 Found ${lists.length} list(s), attempting list-based extraction...`);
-      
       lists.forEach((list) => {
         const listItems = list.querySelectorAll('li');
         listItems.forEach((li) => {
@@ -390,7 +391,6 @@ export class WordParserService {
       });
       
       if (items.length > 0) {
-        console.log(`✅ Successfully extracted ${items.length} items from list(s)`);
         return items;
       }
     }
@@ -398,8 +398,6 @@ export class WordParserService {
     // Strategy 3: Extract from headings + paragraphs
     const headings = doc.querySelectorAll('h2, h3, h4');
     if (headings.length > 0) {
-      console.log(`📑 Found ${headings.length} heading(s), attempting heading-based extraction...`);
-      
       headings.forEach((heading) => {
         const item = this.parseHeadingItem(heading, orderIndex);
         if (item) {
@@ -409,13 +407,11 @@ export class WordParserService {
       });
       
       if (items.length > 0) {
-        console.log(`✅ Successfully extracted ${items.length} items from heading(s)`);
         return items;
       }
     }
 
     // Strategy 4: Fallback - parse all paragraphs
-    console.log('⚠️ No structured content found, falling back to paragraph extraction...');
     const paragraphs = doc.querySelectorAll('p');
     paragraphs.forEach((p) => {
       const text = p.textContent?.trim();
@@ -431,7 +427,6 @@ export class WordParserService {
       }
     });
 
-    console.log(`✅ Extracted ${items.length} items using fallback method`);
     return items;
   }
 
@@ -552,14 +547,8 @@ export class WordParserService {
     const isNumberedItem = !isNaN(itemNumber) && itemNumber > 0 && firstCellText.length <= 3;
     
     if (!isNumberedItem) {
-      // Log what we're skipping for debugging
-      if (firstCellText && firstCellText !== 'No' && firstCellText !== 'No.' && !firstCellText.toLowerCase().includes('item')) {
-        console.log(`   ⚠️ Skipping row with first cell: "${firstCellText}" (not a valid item number)`);
-      }
       return null;
     }
-
-    console.log(`   ✓ Processing item ${itemNumber}: "${firstCellText}"`);
 
     // For numbered items:
     // Cell 0: Item number (1, 2, etc.)
@@ -639,8 +628,6 @@ export class WordParserService {
 
     if (images.length > 1) {
       // Multiple images: Create parent item (no image) + child items (one image each)
-      console.log(`   ℹ️ Item ${itemNumber} has ${images.length} images - creating sub-items`);
-      
       children = images.map((image, imgIndex) => ({
         title: image.label || image.description || `Image ${imgIndex + 1}`,
         description: description, // Inherit parent's description
@@ -804,16 +791,11 @@ export class WordParserService {
     const testImg = new Image();
     
     testImg.onload = () => {
-      console.log(`   ✅ Image ${imageNumber} data URL is valid and can be loaded`, {
-        width: testImg.width,
-        height: testImg.height
-      });
+      // Image loaded successfully (silent)
     };
     
     testImg.onerror = (error) => {
-      console.error(`   ❌ Image ${imageNumber} data URL failed to load:`, error);
-      console.error(`      Data URL length: ${dataUrl.length}`);
-      console.error(`      Data URL prefix: ${dataUrl.substring(0, 100)}`);
+      console.error(`Image ${imageNumber} data URL failed to load:`, error);
     };
     
     testImg.src = dataUrl;
