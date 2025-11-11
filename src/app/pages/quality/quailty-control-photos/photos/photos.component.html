@@ -55,7 +55,7 @@
                 <i class="mdi mdi-clipboard-text me-2"></i>
                 Photo Task {{viewIndex}} of {{getTotal()}}
               </h6>
-              <p class="card-text mb-0">{{det.checklist}}</p>
+              <div class="card-text mb-0" [innerHTML]="det.checklist"></div>
               
               <!-- Progress Indicator -->
               <div class="mt-2">
@@ -240,7 +240,7 @@
                           <a href="javascript:void(0)" 
                              (click)="goTo(ii);review()" 
                              class="text-decoration-none">
-                            {{det.checklist}}
+                            <span [innerHTML]="det.checklist"></span>
                           </a>
                         </td>
                         <td class="text-center p-3">
@@ -295,7 +295,7 @@
                       <a href="javascript:void(0)" 
                          (click)="goTo(ii);review()" 
                          class="text-decoration-none">
-                        {{det.checklist}}
+                        <span [innerHTML]="det.checklist"></span>
                       </a>
                     </h6>
                     <span class="badge" [class]="det.photo ? 'bg-success' : 'bg-danger'">

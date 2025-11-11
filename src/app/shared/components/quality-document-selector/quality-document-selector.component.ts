@@ -270,12 +270,8 @@ export class QualityDocumentSelectorComponent implements OnInit, ControlValueAcc
 
     this.qualityService.getDocuments(params).subscribe({
       next: (documents) => {
-        console.log('✅ Quality Document Selector - Documents received:', documents);
-        console.log('📊 Number of documents:', documents?.length || 0);
         this.documents = documents;
         this.applyFilters();
-        console.log('🔽 Filtered documents for dropdown:', this.filteredDocuments);
-        console.log('📊 Number of filtered documents:', this.filteredDocuments?.length || 0);
         this.loading = false;
       },
       error: (error) => {
@@ -288,76 +284,47 @@ export class QualityDocumentSelectorComponent implements OnInit, ControlValueAcc
 
   // Filter Logic
   applyFilters() {
-    console.log('🔄 Quality Document Selector - Applying filters...');
-    console.log('📋 Input filters:', {
-      allowedTypes: this.allowedTypes,
-      allowedCategories: this.allowedCategories,
-      showOnlyApproved: this.showOnlyApproved,
-      selectedType: this.selectedType,
-      selectedCategory: this.selectedCategory
-    });
-    
     this.filteredDocuments = this.documents.filter(doc => {
-      console.log(`🔍 Processing document: ${doc.document_number}`, doc);
-      
       const docType = this.getDocumentType(doc);
       const docCategory = this.getDocumentCategory(doc);
       
       // User-selected type filter from dropdown
       if (this.selectedType && docType !== this.selectedType) {
-        console.log(`❌ Document ${doc.document_number} filtered out by selected type (${docType} !== ${this.selectedType})`);
         return false;
       }
       
       // User-selected category filter from dropdown
       if (this.selectedCategory && docCategory !== this.selectedCategory) {
-        console.log(`❌ Document ${doc.document_number} filtered out by selected category (${docCategory} !== ${this.selectedCategory})`);
         return false;
       }
       
       // Component input allowedTypes filter (restrictions from parent component)
-      if (this.allowedTypes.length > 0) {
-        console.log(`📝 Document type: "${docType}" (from prefix: "${doc.prefix}")`);
-        console.log(`✅ Type allowed by component?`, this.allowedTypes.includes(docType));
-        if (!this.allowedTypes.includes(docType)) {
-          console.log(`❌ Document ${doc.document_number} filtered out by component allowedTypes`);
-          return false;
-        }
+      if (this.allowedTypes.length > 0 && !this.allowedTypes.includes(docType)) {
+        return false;
       }
       
       // Component input allowedCategories filter (restrictions from parent component)
-      if (this.allowedCategories.length > 0) {
-        console.log(`🏷️ Document category: "${docCategory}"`);
-        console.log(`✅ Category allowed by component?`, this.allowedCategories.includes(docCategory));
-        if (!this.allowedCategories.includes(docCategory)) {
-          console.log(`❌ Document ${doc.document_number} filtered out by component allowedCategories`);
-          return false;
-        }
+      if (this.allowedCategories.length > 0 && !this.allowedCategories.includes(docCategory)) {
+        return false;
       }
       
       // Status filter for approved documents
       if (this.showOnlyApproved && doc.status !== 'approved') {
-        console.log(`❌ Document ${doc.document_number} filtered out by status (${doc.status})`);
         return false;
       }
       
-      console.log(`✅ Document ${doc.document_number} passed all filters`);
       return true;
     });
-    
-    console.log('🎯 Final filtered documents:', this.filteredDocuments);
   }
 
   // Event Handlers
   onTypeChange() {
-    console.log('🔄 Type filter changed to:', this.selectedType);
     this.selectedDocumentId = '';
     this.selectedDocument = null;
     this.applyFilters(); // Filter existing documents instead of reloading
   }
 
   onCategoryChange() {
-    console.log('🔄 Category filter changed to:', this.selectedCategory);
     this.selectedDocumentId = '';
     this.selectedDocument = null;
     this.applyFilters(); // Filter existing documents instead of reloading

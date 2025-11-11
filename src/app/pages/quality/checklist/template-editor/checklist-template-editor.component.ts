@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Va
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -11,6 +12,7 @@ import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
 import { PdfParserService } from './services/pdf-parser.service';
+import { WordParserService } from './services/word-parser.service';
 
 interface SampleImage {
   id?: string;
@@ -325,11 +327,27 @@ interface SampleImage {
                       </div>
 
                       <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" formControlName="description" rows="2" placeholder="Enter item description"></textarea>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">Description</label>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleDescriptionPreview(i)">
+                            <i class="mdi" [class.mdi-eye]="!showDescriptionPreview[i]" [class.mdi-code-tags]="showDescriptionPreview[i]"></i>
+                            {{showDescriptionPreview[i] ? 'Edit HTML' : 'Preview'}}
+                          </button>
+                        </div>
+                        <textarea 
+                          *ngIf="!showDescriptionPreview[i]"
+                          class="form-control" 
+                          formControlName="description" 
+                          rows="4" 
+                          placeholder="Enter item description (HTML supported)"></textarea>
+                        <div 
+                          *ngIf="showDescriptionPreview[i]"
+                          class="border rounded p-3 bg-light"
+                          style="min-height: 100px;"
+                          [innerHTML]="item.get('description')?.value || ''"></div>
                         <div class="form-text">
                           <i class="mdi mdi-information-outline me-1"></i>
-                          Detailed instructions for this inspection item.
+                          Detailed instructions for this inspection item. HTML formatting is preserved from Word import.
                         </div>
                       </div>
 
@@ -435,7 +453,7 @@ interface SampleImage {
                           
                           <div *ngIf="hasSampleImage(i)" class="d-flex align-items-center">
                             <div class="position-relative me-3">
-                              <img [src]="getSampleImage(i)?.url"
+                              <img [src]="getSafeImageUrl(i)"
                                    class="img-thumbnail"
                                    style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;"
                                    [alt]="getSampleImage(i)?.label || 'Sample image'"
@@ -544,24 +562,25 @@ interface SampleImage {
           <i class="mdi mdi-information me-2"></i>
           <strong>Import Options:</strong>
           <ul class="mb-0 mt-2">
-            <li>Upload a PDF checklist form to auto-extract items</li>
-            <li>Upload a CSV file with checklist data</li>
-            <li>Manually specify the number of items to create</li>
+            <li><strong>Word Document (.docx)</strong> - <span class="badge bg-success">Recommended</span> - Best extraction quality with reliable text and image parsing</li>
+            <li>PDF (.pdf) - May require manual review due to extraction limitations</li>
+            <li>CSV (.csv) - Simple text-based import</li>
+            <li>Manual creation - Specify number of items to create</li>
           </ul>
         </div>
 
         <!-- File Upload Section -->
         <div class="mb-4">
-          <label class="form-label">Upload File (PDF or CSV)</label>
+          <label class="form-label">Upload File</label>
           <input 
             type="file" 
             class="form-control" 
-            accept=".pdf,.csv"
+            accept=".docx,.doc,.pdf,.csv"
             (change)="onImportFileSelected($event)"
             #fileInput>
           <div class="form-text">
-            <i class="mdi mdi-information-outline me-1"></i>
-            Supported formats: PDF (.pdf), CSV (.csv)
+            <i class="mdi mdi-lightbulb-on-outline me-1 text-success"></i>
+            <strong>Tip:</strong> Word documents (.docx) provide the best import results with proper structure, formatting, and images.
           </div>
         </div>
 
@@ -699,6 +718,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   loading = false;
   uploadingImage = false;
   showRequirements: boolean[] = [];
+  showDescriptionPreview: boolean[] = [];
   selectedQualityDocument: QualityDocumentSelection | null = null;
   
   // Import functionality
@@ -725,7 +745,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     private uploadService: UploadService,
     private photoUploadService: PhotoChecklistUploadService,
     private cdr: ChangeDetectorRef,
-    private pdfParser: PdfParserService
+    private pdfParser: PdfParserService,
+    private wordParser: WordParserService,
+    private sanitizer: DomSanitizer
   ) {
     this.templateForm = this.createTemplateForm();
   }
@@ -805,6 +827,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       template.items.forEach((item, index) => {
         this.items.push(this.createItemFormGroup(item));
         this.showRequirements[index] = false;
+        this.showDescriptionPreview[index] = true; // Default to preview mode
         
         // Load sample image if it exists - check both new and old formats
         if (item.sample_image_url) {
@@ -826,7 +849,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
             const sampleImageControl = itemFormGroup.get('sample_image_url');
             if (sampleImageControl) {
               sampleImageControl.setValue(item.sample_image_url);
-              console.log(`Loaded sample image URL for item ${index}:`, item.sample_image_url);
             }
           }
         } else if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
@@ -848,7 +870,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
             const sampleImageControl = itemFormGroup.get('sample_image_url');
             if (sampleImageControl) {
               sampleImageControl.setValue(item.sample_images[0].url);
-              console.log(`Loaded sample image URL for item ${index}:`, item.sample_images[0].url);
             }
           }
         }
@@ -886,7 +907,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Determine sample image URL
     let sampleImageUrl: string | null = null;
     
-    // Check if item has sample_images array (from PDF import)
+    // Check if item has sample_images array (from PDF/Word import)
     if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
       // Use the first (or primary) image
       const primaryImage = item.sample_images.find((img: any) => img.is_primary) || item.sample_images[0];
@@ -903,6 +924,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         order_index: 0,
         status: 'loaded'
       };
+      
+      // Trigger change detection
+      this.cdr.detectChanges();
     }
     
     itemGroup.patchValue({
@@ -924,11 +948,16 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     });
     
     this.items.push(itemGroup);
+    
+    // Default to showing preview for descriptions (especially for imported items with HTML)
+    this.showDescriptionPreview[formIndex] = true;
   }
 
   addItem(): void {
+    const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
     this.showRequirements.push(false);
+    this.showDescriptionPreview.push(true); // Default to preview mode
   }
 
   /**
@@ -983,6 +1012,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     this.items.insert(insertIndex, subItem);
     this.showRequirements.splice(insertIndex, 0, false);
+    this.showDescriptionPreview.splice(insertIndex, 0, true); // Default to preview mode
     
     console.log(`✓ Added sub-item at index ${insertIndex} under parent ${parentIndex}`);
     console.log(`  - Title: ${subItem.get('title')?.value}`);
@@ -1038,6 +1068,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   toggleRequirements(index: number): void {
     this.showRequirements[index] = !this.showRequirements[index];
+  }
+
+  toggleDescriptionPreview(index: number): void {
+    this.showDescriptionPreview[index] = !this.showDescriptionPreview[index];
   }
 
   dropItem(event: CdkDragDrop<string[]>): void {
@@ -1264,12 +1298,31 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   getSampleImage(itemIndex: number): SampleImage | null {
     const sampleImage = this.sampleImages[itemIndex] || null;
     
-    // Convert relative URLs to absolute URLs
-    if (sampleImage && sampleImage.url) {
+    // Convert relative URLs to absolute URLs (but skip data URLs)
+    if (sampleImage && sampleImage.url && !sampleImage.url.startsWith('data:')) {
       sampleImage.url = this.getAbsoluteImageUrl(sampleImage.url);
     }
     
     return sampleImage;
+  }
+
+  /**
+   * Get a sanitized image URL that's safe to use in [src] binding
+   * Angular blocks data URLs by default for security, so we need to bypass that
+   */
+  getSafeImageUrl(itemIndex: number): SafeUrl | string | null {
+    const sampleImage = this.getSampleImage(itemIndex);
+    if (!sampleImage?.url) {
+      return null;
+    }
+    
+    // For data URLs, sanitize them to bypass Angular security
+    if (sampleImage.url.startsWith('data:')) {
+      return this.sanitizer.bypassSecurityTrustUrl(sampleImage.url);
+    }
+    
+    // For regular URLs, return as-is
+    return sampleImage.url;
   }
 
   hasSampleImage(itemIndex: number): boolean {
@@ -1472,6 +1525,56 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
   }
 
+  /**
+   * Convert a data URL (from Word import) to an uploaded file
+   * @param itemIndex - The item index in the form array
+   * @param dataUrl - The base64 data URL to convert
+   */
+  private async convertDataUrlToUpload(itemIndex: number, dataUrl: string): Promise<void> {
+    try {
+      // Convert data URL to Blob
+      const blob = this.dataUrlToBlob(dataUrl);
+      
+      // Determine file extension from MIME type
+      const mimeType = dataUrl.split(';')[0].split(':')[1];
+      const extension = mimeType.split('/')[1];
+      const filename = `imported-image-${Date.now()}-${itemIndex}.${extension}`;
+      
+      // Convert Blob to File
+      const file = new File([blob], filename, { type: mimeType });
+      
+      // Upload using the existing upload function
+      await this.uploadSampleImage(itemIndex, file);
+      
+      console.log(`✅ Converted and uploaded data URL for item ${itemIndex + 1}`);
+    } catch (error) {
+      console.error(`❌ Failed to convert/upload data URL for item ${itemIndex + 1}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert a data URL string to a Blob object
+   * @param dataUrl - The data URL to convert
+   * @returns Blob object
+   */
+  private dataUrlToBlob(dataUrl: string): Blob {
+    // Split the data URL
+    const parts = dataUrl.split(',');
+    const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const base64 = parts[1];
+    
+    // Decode base64
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    return new Blob([bytes], { type: mime });
+  }
+
   previewSampleImage(itemIndex: number): void {
     // TODO: Implement image preview
     console.log('Preview image for item', itemIndex);
@@ -1493,13 +1596,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   onSampleImageError(itemIndex: number): void {
-    // Handle image load error
-    console.log('Image load error for item', itemIndex);
+    // Handle image load error - only log warning, not full details
+    const sampleImage = this.getSampleImage(itemIndex);
+    if (sampleImage?.url?.startsWith('data:')) {
+      console.warn(`⚠️ Failed to load image for item ${itemIndex} (data URL, length: ${sampleImage.url.length})`);
+    } else {
+      console.warn(`⚠️ Failed to load image for item ${itemIndex}:`, sampleImage?.url);
+    }
   }
 
   onSampleImageLoad(itemIndex: number): void {
-    // Handle image load success
-    console.log('Image loaded successfully for item', itemIndex);
+    // Silent success - only log if needed for debugging
+    // console.log(`✅ Image loaded for item ${itemIndex}`);
   }
 
   saveTemplate(): void {
@@ -1641,12 +1749,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     try {
       let parsedTemplate;
 
-      if (file.name.toLowerCase().endsWith('.pdf')) {
+      if (file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc')) {
+        console.log('📄 Importing from Word document...');
+        parsedTemplate = await this.wordParser.parseWordToTemplate(file);
+      } else if (file.name.toLowerCase().endsWith('.pdf')) {
+        console.log('📕 Importing from PDF...');
         parsedTemplate = await this.pdfParser.parsePdfToTemplate(file);
       } else if (file.name.toLowerCase().endsWith('.csv')) {
+        console.log('📊 Importing from CSV...');
         parsedTemplate = await this.pdfParser.parseCsvToTemplate(file);
       } else {
-        throw new Error('Unsupported file format. Please upload a PDF or CSV file.');
+        throw new Error('Unsupported file format. Please upload a Word (.docx), PDF, or CSV file.');
       }
 
       // Populate the form with parsed data
@@ -1694,32 +1807,63 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   /**
    * Automatically save imported template as a draft to the server
+   * Uploads any data URL images to the server first
    */
-  private saveImportedTemplate(): void {
+  private async saveImportedTemplate(): Promise<void> {
     if (this.templateForm.invalid) {
       console.warn('Template form is invalid, cannot auto-save');
-      console.log('Form errors:', this.templateForm.errors);
-      console.log('Form status:', this.templateForm.status);
       return;
     }
 
     console.log('Auto-saving imported template...');
+    console.log('📤 Processing imported images...');
+    
+    // First, upload any data URL images to the server
+    const uploadPromises: Promise<void>[] = [];
+    
+    this.items.controls.forEach((control, index) => {
+      const itemFormGroup = control as FormGroup;
+      const sampleImageUrl = itemFormGroup.get('sample_image_url')?.value;
+      
+      // Check if this is a data URL (from Word import)
+      if (sampleImageUrl && sampleImageUrl.startsWith('data:')) {
+        console.log(`   Item ${index + 1}: Converting data URL to uploaded image...`);
+        uploadPromises.push(this.convertDataUrlToUpload(index, sampleImageUrl));
+      }
+    });
+    
+    // Wait for all uploads to complete
+    if (uploadPromises.length > 0) {
+      console.log(`⏳ Uploading ${uploadPromises.length} image(s)...`);
+      try {
+        await Promise.all(uploadPromises);
+        console.log('✅ All images uploaded successfully');
+      } catch (error) {
+        console.error('❌ Some images failed to upload:', error);
+        alert('Some images could not be uploaded. The template will be saved without those images.');
+      }
+    }
     
     const templateData = this.templateForm.value;
     
-    console.log('📊 Template data before save:');
-    console.log('  - Name:', templateData.name);
-    console.log('  - Category:', templateData.category);
-    console.log('  - Items array:', templateData.items);
-    console.log('  - Items count:', templateData.items?.length || 0);
-    console.log('  - Form items controls:', this.items.controls.length);
+    // Log summary instead of full data to avoid console spam
+    const itemsWithImages = templateData.items.filter((item: any) => item.sample_image_url).length;
+    console.log('📤 Sending template to backend:', {
+      name: templateData.name,
+      totalItems: templateData.items.length,
+      itemsWithImages,
+      category: templateData.category
+    });
     
-    // Remove quality_document_id as it's not part of the database schema
-    delete templateData.quality_document_id;
-    
-    templateData.items = templateData.items.map((item: any) => item);
-    
-    console.log('📤 Sending to backend:', JSON.stringify(templateData, null, 2));
+    // Check for potentially truncated data URLs
+    templateData.items.forEach((item: any, idx: number) => {
+      if (item.sample_image_url && item.sample_image_url.startsWith('data:')) {
+        const urlLength = item.sample_image_url.length;
+        if (urlLength < 1000) {
+          console.warn(`⚠️ Item ${idx + 1} has suspiciously short data URL (${urlLength} chars) - may be truncated!`);
+        }
+      }
+    });
 
     // Save to server
     this.configService.createTemplate(templateData).subscribe({
@@ -1843,16 +1987,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     this.showRequirements = new Array(this.items.length).fill(false);
 
     console.log('\n📊 Import Summary:');
-    console.log('   - Total items in form:', this.items.length);
-    console.log('   - Items FormArray controls:', this.items.controls.length);
-    console.log('   - Sample images dictionary:', this.sampleImages);
-    console.log('   - Sample images count:', Object.keys(this.sampleImages).length);
-    console.log('   - Full form value:', this.templateForm.value);
-    console.log('   - Items array in form:', this.templateForm.value.items);
+    console.log(`   - Total items: ${this.items.length}`);
+    console.log(`   - Sample images loaded: ${Object.keys(this.sampleImages).length}`);
     
     // Trigger change detection to update UI
     this.cdr.detectChanges();
-    console.log('✓ Change detection triggered');
   }
 }
 

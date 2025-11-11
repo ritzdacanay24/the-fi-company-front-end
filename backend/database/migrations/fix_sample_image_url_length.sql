@@ -1,0 +1,11 @@
+-- NOTE: This migration is NOT NEEDED
+-- The application now uploads images from Word imports instead of storing data URLs
+-- Images are uploaded to the server and only the URL path is stored
+-- VARCHAR(500) is sufficient for server URLs like: /uploads/checklist/images/image123.jpg
+--
+-- Original issue: Was trying to store base64 data URLs directly in database
+-- Solution: Convert data URLs to File objects and upload them first
+-- See: convertDataUrlToUpload() in checklist-template-editor.component.ts
+--
+-- If you already ran this migration, it's harmless but you can optionally revert:
+-- ALTER TABLE checklist_items MODIFY COLUMN sample_image_url VARCHAR(500);
