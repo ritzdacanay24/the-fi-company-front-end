@@ -8,6 +8,31 @@
       <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="dismiss()"></button>
     </div>
     
+    <!-- Template Metadata Display -->
+    <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="checkList && checkList[0]">
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].part_number">
+        <i class="mdi mdi-barcode me-1"></i>Part: {{checkList[0].part_number}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].customer_part_number">
+        <i class="mdi mdi-account-box me-1"></i>Customer P/N: {{checkList[0].customer_part_number}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].revision">
+        <i class="mdi mdi-file-document me-1"></i>Rev: {{checkList[0].revision}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].revision_number">
+        <i class="mdi mdi-counter me-1"></i>Rev #: {{checkList[0].revision_number}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].review_date">
+        <i class="mdi mdi-calendar me-1"></i>{{checkList[0].review_date}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].revised_by">
+        <i class="mdi mdi-account-edit me-1"></i>By: {{checkList[0].revised_by}}
+      </span>
+      <span class="badge bg-light text-primary" *ngIf="checkList[0].original_filename">
+        <i class="mdi mdi-file-word me-1"></i>{{checkList[0].original_filename}}
+      </span>
+    </div>
+    
     <!-- Progress Tracking -->
     <div class="d-flex align-items-center justify-content-between text-white-75">
       <small>Progress: {{currentPhotoCount}} of {{requiredPhotoCount}} photos</small>

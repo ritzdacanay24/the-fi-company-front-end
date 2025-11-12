@@ -66,7 +66,18 @@ export class PhotosComponent implements OnInit {
   }
 
   // In your component class, ensure checkList is typed properly:
-  checkList: { details: ChecklistDetail[]; name: string }[] = [];
+  checkList: { 
+    details: ChecklistDetail[]; 
+    name: string;
+    part_number?: string;
+    customer_part_number?: string;
+    revision?: string;
+    original_filename?: string;
+    review_date?: string;
+    revision_number?: string;
+    revision_details?: string;
+    revised_by?: string;
+  }[] = [];
 
 
 

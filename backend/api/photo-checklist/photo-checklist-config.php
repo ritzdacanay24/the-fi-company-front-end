@@ -126,16 +126,22 @@ class PhotoChecklistConfigAPI {
     // ==============================================
 
     public function getTemplates() {
-        $sql = "SELECT ct.id, ct.name, ct.description, ct.part_number, ct.product_type, 
-                       ct.category, ct.version, ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
+        $sql = "SELECT ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number, 
+                       ct.revision, ct.original_filename, ct.review_date, ct.revision_number, 
+                       ct.revision_details, ct.revised_by, ct.product_type, 
+                       ct.category, ct.version, ct.parent_template_id, ct.template_group_id, 
+                       ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
                        COUNT(DISTINCT ci.id) as active_instances,
                        COUNT(DISTINCT cit.id) as item_count
                 FROM checklist_templates ct
                 LEFT JOIN checklist_instances ci ON ct.id = ci.template_id AND ci.status != 'completed'
                 LEFT JOIN checklist_items cit ON ct.id = cit.template_id
                 WHERE ct.is_active = 1
-                GROUP BY ct.id, ct.name, ct.description, ct.part_number, ct.product_type, 
-                         ct.category, ct.version, ct.is_active, ct.created_by, ct.created_at, ct.updated_at
+                GROUP BY ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number, 
+                         ct.revision, ct.original_filename, ct.review_date, ct.revision_number,
+                         ct.revision_details, ct.revised_by, ct.product_type, 
+                         ct.category, ct.version, ct.parent_template_id, ct.template_group_id,
+                         ct.is_active, ct.created_by, ct.created_at, ct.updated_at
                 ORDER BY ct.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);
@@ -215,18 +221,90 @@ class PhotoChecklistConfigAPI {
         $this->conn->beginTransaction();
         
         try {
-            // Insert template
-            $sql = "INSERT INTO checklist_templates (name, description, part_number, product_type, category, created_by) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
-            $stmt = $this->conn->prepare($sql);
-            $success = $stmt->execute([
-                $data['name'],
-                $data['description'] ?? '',
-                $data['part_number'] ?? '',
-                $data['product_type'] ?? '',
-                $data['category'] ?? 'quality_control',
-                $data['created_by'] ?? null
-            ]);
+            // Handle versioning - if source_template_id is provided, this is a new version
+            $parentTemplateId = null;
+            $templateGroupId = null;
+            $version = $data['version'] ?? '1.0';
+            
+            if (isset($data['source_template_id']) && !empty($data['source_template_id'])) {
+                $sourceTemplateId = $data['source_template_id'];
+                error_log("Creating new version from source template ID: $sourceTemplateId");
+                
+                // Get the source template to inherit group ID
+                $sql = "SELECT template_group_id, is_active FROM checklist_templates WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([$sourceTemplateId]);
+                $sourceTemplate = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($sourceTemplate) {
+                    $parentTemplateId = $sourceTemplateId;
+                    $templateGroupId = $sourceTemplate['template_group_id'];
+                    
+                    // Deactivate the previous version (only if it's currently active)
+                    if ($sourceTemplate['is_active']) {
+                        $sql = "UPDATE checklist_templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute([$sourceTemplateId]);
+                        error_log("Deactivated previous version (template ID: $sourceTemplateId)");
+                    }
+                } else {
+                    error_log("Warning: Source template $sourceTemplateId not found, creating as new template");
+                }
+            }
+            
+            // For new templates (not versions), we need to insert without template_group_id first,
+            // then update it to its own ID. Use a temporary value of 0 or omit if nullable.
+            if ($templateGroupId === null) {
+                // Insert template without template_group_id (omit from INSERT for new templates)
+                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, created_by, is_active) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                $stmt = $this->conn->prepare($sql);
+                $success = $stmt->execute([
+                    $data['name'],
+                    $data['description'] ?? '',
+                    $data['part_number'] ?? '',
+                    $data['customer_part_number'] ?? null,
+                    $data['revision'] ?? null,
+                    $data['original_filename'] ?? null,
+                    $data['review_date'] ?? null,
+                    $data['revision_number'] ?? null,
+                    $data['revision_details'] ?? null,
+                    $data['revised_by'] ?? null,
+                    $data['product_type'] ?? '',
+                    $data['category'] ?? 'quality_control',
+                    $version,
+                    $parentTemplateId,
+                    $data['created_by'] ?? null
+                ]);
+            } else {
+                // Insert template with versioning fields and metadata (for versions)
+                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, template_group_id, created_by, is_active) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                $stmt = $this->conn->prepare($sql);
+                $success = $stmt->execute([
+                    $data['name'],
+                    $data['description'] ?? '',
+                    $data['part_number'] ?? '',
+                    $data['customer_part_number'] ?? null,
+                    $data['revision'] ?? null,
+                    $data['original_filename'] ?? null,
+                    $data['review_date'] ?? null,
+                    $data['revision_number'] ?? null,
+                    $data['revision_details'] ?? null,
+                    $data['revised_by'] ?? null,
+                    $data['product_type'] ?? '',
+                    $data['category'] ?? 'quality_control',
+                    $version,
+                    $parentTemplateId,
+                    $templateGroupId,
+                    $data['created_by'] ?? null
+                ]);
+            }
+                    $parentTemplateId,
+                    $templateGroupId,
+                    $data['created_by'] ?? null
+                ]);
+            }
             
             if (!$success) {
                 throw new Exception("Failed to insert template: " . implode(", ", $stmt->errorInfo()));
@@ -237,6 +315,14 @@ class PhotoChecklistConfigAPI {
             
             if (!$templateId) {
                 throw new Exception("Failed to get template ID after insert");
+            }
+            
+            // If this is a brand new template (not a version), set template_group_id to its own ID
+            if ($templateGroupId === null) {
+                $sql = "UPDATE checklist_templates SET template_group_id = ? WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([$templateId, $templateId]);
+                error_log("Set template_group_id = $templateId for new template");
             }
             
             // Insert items
@@ -335,13 +421,20 @@ class PhotoChecklistConfigAPI {
         try {
             // Update template (removed is_active = 1 check to allow updating inactive templates)
             $sql = "UPDATE checklist_templates 
-                    SET name = ?, description = ?, part_number = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                    SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 $data['name'],
                 $data['description'] ?? '',
                 $data['part_number'] ?? '',
+                $data['customer_part_number'] ?? null,
+                $data['revision'] ?? null,
+                $data['original_filename'] ?? null,
+                $data['review_date'] ?? null,
+                $data['revision_number'] ?? null,
+                $data['revision_details'] ?? null,
+                $data['revised_by'] ?? null,
                 $data['product_type'] ?? '',
                 $data['category'] ?? 'quality_control',
                 $data['is_active'] ?? true,

@@ -12,6 +12,13 @@ export interface ChecklistTemplate {
   name: string;
   description: string;
   part_number: string;
+  customer_part_number?: string; // Customer's part number from Word import
+  revision?: string; // Revision number from Word import
+  original_filename?: string; // Original Word document filename
+  review_date?: string; // Review/revision date
+  revision_number?: string; // Formal revision number
+  revision_details?: string; // Details about what changed in this revision
+  revised_by?: string; // Person who made the revision
   product_type: string;
   category: 'quality_control' | 'installation' | 'maintenance' | 'inspection';
   version: string;

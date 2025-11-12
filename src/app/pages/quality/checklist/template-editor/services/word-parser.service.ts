@@ -35,6 +35,13 @@ interface ParsedTemplate {
   category?: string;
   part_number?: string;
   product_type?: string;
+  customer_part_number?: string;
+  revision?: string;
+  original_filename?: string;
+  review_date?: string;
+  revision_number?: string;
+  revision_details?: string;
+  revised_by?: string;
   items: ParsedChecklistItem[];
 }
 
@@ -120,13 +127,20 @@ export class WordParserService {
       name: this.extractTemplateName(doc, filename),
       description: this.extractDescription(doc),
       category: 'quality_control',
-      items: []
+      items: [],
+      original_filename: filename
     };
 
     // Extract metadata from document
     const metadata = this.extractMetadata(doc);
     if (metadata.part_number) template.part_number = metadata.part_number;
     if (metadata.product_type) template.product_type = metadata.product_type;
+    if (metadata.customer_part_number) template.customer_part_number = metadata.customer_part_number;
+    if (metadata.revision) template.revision = metadata.revision;
+    if (metadata.review_date) template.review_date = metadata.review_date;
+    if (metadata.revision_number) template.revision_number = metadata.revision_number;
+    if (metadata.revision_details) template.revision_details = metadata.revision_details;
+    if (metadata.revised_by) template.revised_by = metadata.revised_by;
 
     // Extract checklist items from document structure
     template.items = this.extractChecklistItems(doc);
@@ -206,8 +220,26 @@ export class WordParserService {
    * - Tables with metadata (header tables before checklist)
    * - The Fi Company P/N, Customer P/N fields
    */
-  private extractMetadata(doc: Document): { part_number?: string; product_type?: string } {
-    const metadata: { part_number?: string; product_type?: string } = {};
+  private extractMetadata(doc: Document): { 
+    part_number?: string; 
+    product_type?: string; 
+    customer_part_number?: string; 
+    revision?: string;
+    review_date?: string;
+    revision_number?: string;
+    revision_details?: string;
+    revised_by?: string;
+  } {
+    const metadata: { 
+      part_number?: string; 
+      product_type?: string; 
+      customer_part_number?: string; 
+      revision?: string;
+      review_date?: string;
+      revision_number?: string;
+      revision_details?: string;
+      revised_by?: string;
+    } = {};
     
     // Search all text for patterns
     const allText = doc.body.textContent || '';
@@ -230,15 +262,42 @@ export class WordParserService {
         // Match headers to values
         headerTexts.forEach((header, index) => {
           const value = valueTexts[index] || '';
+          const headerLower = header.toLowerCase();
           
           // Check for Fi Company P/N
-          if (header.toLowerCase().includes('fi company p/n') && value) {
+          if (headerLower.includes('fi company p/n') && value) {
             metadata.part_number = value;
           }
-          
+
+          // Check for Customer P/N
+          if (headerLower.includes('customer p/n') && value) {
+            metadata.customer_part_number = value;
+          }
+
           // Check for Description
-          if (header.toLowerCase().includes('description') && value && !value.toLowerCase().includes('customer')) {
+          if (headerLower.includes('description') && value && !value.toLowerCase().includes('customer')) {
             metadata.product_type = value;
+          }
+
+          // Check for Revised By (must check BEFORE generic revision)
+          if ((headerLower.includes('revised by') || headerLower.includes('author') || headerLower.includes('prepared by') || headerLower.includes('created by')) && value) {
+            metadata.revised_by = value;
+          }
+          // Check for Review/Revision Date (must check BEFORE generic revision)
+          else if ((headerLower.includes('review date') || headerLower.includes('revision date') || headerLower.includes('rev. date') || headerLower.includes('date')) && value && !headerLower.includes('by')) {
+            metadata.review_date = value;
+          }
+          // Check for Revision Number (must check BEFORE generic revision)
+          else if ((headerLower.includes('revision number') || headerLower.includes('rev number') || headerLower.includes('rev #') || headerLower.includes('rev.')) && value) {
+            metadata.revision_number = value;
+          }
+          // Check for Revision Details/Description (must check BEFORE generic revision)
+          else if ((headerLower.includes('revision detail') || headerLower.includes('rev detail') || headerLower.includes('revision description') || headerLower.includes('changes') || headerLower.includes('revision:')) && value) {
+            metadata.revision_details = value;
+          }
+          // Check for generic Revision field (last priority)
+          else if ((headerLower === 'revision' || headerLower === 'rev' || (headerLower.includes('rev') && !headerLower.includes('by') && !headerLower.includes('date') && !headerLower.includes('detail'))) && value) {
+            metadata.revision = value;
           }
         });
       } else {
@@ -246,43 +305,91 @@ export class WordParserService {
         rows.forEach((row) => {
           const cells = row.querySelectorAll('td, th');
           const cellTexts = Array.from(cells).map(c => c.textContent?.trim() || '');
-        
-        // Check for Fi Company P/N
-        cellTexts.forEach((text, index) => {
-          // Pattern 1: "The Fi Company P/N: VALUE" in same cell
-          if (text.toLowerCase().includes('fi company p/n')) {
-            const match = text.match(/(?:the\s+)?fi\s+company\s+p\/n\s*[:\s]+([A-Z0-9\-]+)/i);
-            if (match && match[1]) {
-              metadata.part_number = match[1].trim();
-            }
-            // Pattern 2: Next cell has the value
-            else if (index + 1 < cellTexts.length) {
-              const pn = cellTexts[index + 1].trim();
-              if (pn && pn.length > 0 && !pn.toLowerCase().includes('description')) {
-                metadata.part_number = pn;
+
+          cellTexts.forEach((text, index) => {
+            const textLower = text.toLowerCase();
+            const nextValue = index + 1 < cellTexts.length ? cellTexts[index + 1].trim() : '';
+
+            // Pattern 1: "The Fi Company P/N: VALUE" in same cell
+            if (textLower.includes('fi company p/n')) {
+              const match = text.match(/(?:the\s+)?fi\s+company\s+p\/n\s*[:\s]+([A-Z0-9\-]+)/i);
+              if (match && match[1]) {
+                metadata.part_number = match[1].trim();
+              }
+              // Pattern 2: Next cell has the value
+              else if (nextValue && !nextValue.toLowerCase().includes('description')) {
+                metadata.part_number = nextValue;
               }
             }
-          }
-          
-          // Check for Description field (product type)
-          if (text.toLowerCase().includes('description:')) {
-            // Pattern 1: "Description: VALUE" in same cell
-            const match = text.match(/description\s*[:\s]+(.+)/i);
-            if (match && match[1]) {
-              const desc = match[1].trim();
-              if (desc && desc.length > 3 && !desc.toLowerCase().includes('customer')) {
-                metadata.product_type = desc;
+
+            // Customer P/N detection
+            if (textLower.includes('customer p/n') || textLower.includes('customer pn')) {
+              if (nextValue && !nextValue.toLowerCase().includes('fi company')) {
+                metadata.customer_part_number = nextValue;
               }
             }
-            // Pattern 2: Next cell has the value
-            else if (index + 1 < cellTexts.length) {
-              const desc = cellTexts[index + 1].trim();
-              if (desc && desc.length > 0 && !desc.toLowerCase().includes('customer')) {
-                metadata.product_type = desc;
+
+            // PRIORITY-ORDERED REVISION FIELDS (specific fields BEFORE generic revision)
+            
+            // 1. Revised By / Author / Prepared By (FIRST PRIORITY)
+            if ((textLower.includes('revised by') || textLower.includes('author') || textLower.includes('prepared by') || textLower.includes('created by')) && !metadata.revised_by) {
+              const match = text.match(/(?:revised\s+by|author|prepared\s+by|created\s+by)\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                metadata.revised_by = match[1].trim();
+              } else if (nextValue) {
+                metadata.revised_by = nextValue;
               }
             }
-          }
-        });
+            // 2. Review/Revision Date (SECOND PRIORITY)
+            else if ((textLower.includes('review date') || textLower.includes('revision date') || textLower.includes('rev. date') || (textLower === 'date' || textLower.includes('date:'))) && !textLower.includes('by') && !metadata.review_date) {
+              const match = text.match(/(?:review\s+date|revision\s+date|rev\.\s+date|date)\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                metadata.review_date = match[1].trim();
+              } else if (nextValue) {
+                metadata.review_date = nextValue;
+              }
+            }
+            // 3. Revision Number (THIRD PRIORITY)
+            else if ((textLower.includes('revision number') || textLower.includes('rev number') || textLower.includes('rev #') || textLower.includes('rev.')) && !metadata.revision_number) {
+              const match = text.match(/(?:revision\s+number|rev\s+number|rev\s+#|rev\.)\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                metadata.revision_number = match[1].trim();
+              } else if (nextValue) {
+                metadata.revision_number = nextValue;
+              }
+            }
+            // 4. Revision Details/Changes (FOURTH PRIORITY)
+            else if ((textLower.includes('revision detail') || textLower.includes('rev detail') || textLower.includes('revision description') || textLower.includes('changes') || textLower === 'revision:') && !metadata.revision_details) {
+              const match = text.match(/(?:revision\s+detail|rev\s+detail|revision\s+description|changes|revision:)\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                metadata.revision_details = match[1].trim();
+              } else if (nextValue) {
+                metadata.revision_details = nextValue;
+              }
+            }
+            // 5. Generic Revision field (LAST PRIORITY - only if exact match)
+            else if ((textLower === 'revision' || textLower === 'rev' || textLower === 'revision:' || textLower === 'rev:') && !metadata.revision) {
+              const match = text.match(/(?:revision|rev)\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                metadata.revision = match[1].trim();
+              } else if (nextValue) {
+                metadata.revision = nextValue;
+              }
+            }
+
+            // Description field (product type)
+            if (textLower.includes('description:') || textLower === 'description') {
+              const match = text.match(/description\s*[:\s]+(.+)/i);
+              if (match && match[1]) {
+                const desc = match[1].trim();
+                if (desc && desc.length > 3 && !desc.toLowerCase().includes('customer')) {
+                  metadata.product_type = desc;
+                }
+              } else if (nextValue && nextValue.length > 0 && !nextValue.toLowerCase().includes('customer')) {
+                metadata.product_type = nextValue;
+              }
+            }
+          });
         });
       }
     });

@@ -794,6 +794,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       description: [''],
       part_number: [''],
       product_type: [''],
+      customer_part_number: [''],
+      revision: [''],
+      original_filename: [''],
+      review_date: [''],
+      revision_number: [''],
+      revision_details: [''],
+      revised_by: [''],
       is_active: [true],
       quality_document_id: [null], // Add quality document field
       items: this.fb.array([])
@@ -826,6 +833,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       category: template.category,
       description: template.description,
       part_number: template.part_number,
+      customer_part_number: template.customer_part_number,
+      revision: template.revision,
+      original_filename: template.original_filename,
+      review_date: template.review_date,
+      revision_number: template.revision_number,
+      revision_details: template.revision_details,
+      revised_by: template.revised_by,
       product_type: template.product_type,
       is_active: template.is_active,
       quality_document_id: template.quality_document_metadata?.document_id || null
@@ -2002,6 +2016,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       description: parsedTemplate.description || '',
       part_number: parsedTemplate.part_number || '',
       product_type: parsedTemplate.product_type || '',
+      customer_part_number: parsedTemplate.customer_part_number || '',
+      revision: parsedTemplate.revision || '',
+      original_filename: parsedTemplate.original_filename || '',
       is_active: true
     });
     
