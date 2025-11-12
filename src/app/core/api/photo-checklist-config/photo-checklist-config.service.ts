@@ -207,6 +207,101 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  // Get version history for a template group
+  getTemplateHistory(groupId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}?request=template_history&group_id=${groupId}`
+    );
+  }
+
+  // Get version changes for a specific template
+  getTemplateVersionChanges(templateId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}?request=template_history&template_id=${templateId}`
+    );
+  }
+
+  // Compare two templates and get changes
+  compareTemplates(sourceId: number, targetId: number): Observable<any> {
+    return this.http.get<any>(
+      `${this.baseUrl}?request=compare_templates&source_id=${sourceId}&target_id=${targetId}`
+    );
+  }
+
+  // ==============================================
+  // Document Control Integration
+  // ==============================================
+
+  /**
+   * Create a new checklist document with initial revision (Rev 1)
+   * This integrates the template with the quality documents system
+   */
+  createChecklistDocument(data: {
+    prefix: string;
+    title: string;
+    description?: string;
+    department: 'QA' | 'ENG' | 'OPS' | 'MAINT';
+    category: string;
+    template_id: number;
+    created_by: string;
+    revision_description: string;
+  }): Observable<{
+    success: boolean;
+    document_id: number;
+    document_number: string;
+    revision_id: number;
+    revision_number: number;
+    message: string;
+  }> {
+    return this.http.post<any>(
+      'checklist-document-control/?action=create-document',
+      data
+    );
+  }
+
+  /**
+   * Create a new revision for an existing checklist document
+   * Called when editing a template that already has a document number
+   */
+  createChecklistRevision(data: {
+    document_id: number;
+    template_id: number;
+    revision_description: string;
+    changes_summary?: string;
+    items_added?: number;
+    items_removed?: number;
+    items_modified?: number;
+    changes_detail?: any;
+    created_by: string;
+  }): Observable<{
+    success: boolean;
+    revision_id: number;
+    revision_number: number;
+    document_number: string;
+    message: string;
+  }> {
+    return this.http.post<any>(
+      'checklist-document-control/?action=create-revision',
+      data
+    );
+  }
+
+  /**
+   * Approve a checklist revision
+   */
+  approveChecklistRevision(data: {
+    revision_id: number;
+    approved_by: string;
+  }): Observable<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.http.post<any>(
+      'checklist-document-control/?action=approve-revision',
+      data
+    );
+  }
+
   // ==============================================
   // Instance Management
   // ==============================================

@@ -13,6 +13,7 @@ import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
 import { PdfParserService } from './services/pdf-parser.service';
 import { WordParserService } from './services/word-parser.service';
+import { VersionChangesDialogComponent } from './components/version-changes-dialog.component';
 
 interface SampleImage {
   id?: string;
@@ -74,6 +75,10 @@ interface SampleImage {
                 <h2 class="mb-1 text-primary">{{editingTemplate ? 'Edit Checklist Template' : 'Create Checklist Template'}}</h2>
                 <p class="text-muted mb-0" *ngIf="editingTemplate">
                   {{editingTemplate.name}} - Version {{editingTemplate.version}}
+                  <span *ngIf="editingTemplate.quality_document_metadata" class="badge bg-info text-dark ms-2">
+                    <i class="mdi mdi-file-document me-1"></i>
+                    {{editingTemplate.quality_document_metadata.document_number}}, Rev {{editingTemplate.quality_document_metadata.revision_number}}
+                  </span>
                   <span *ngIf="lastSavedAt" class="badge bg-success ms-2">
                     <i class="mdi mdi-check-circle me-1"></i>Auto-saved at {{lastSavedAt | date:'shortTime'}}
                   </span>
@@ -914,6 +919,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   createItemFormGroup(item?: ChecklistItem): FormGroup {
     return this.fb.group({
+      id: [item?.id || null], // Include ID for change detection
       title: [item?.title || '', Validators.required],
       description: [item?.description || ''],
       is_required: [item?.is_required || false],
@@ -1715,8 +1721,253 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('Final template data to save:', templateData);
     console.log('Exact JSON payload being sent:', JSON.stringify(templateData, null, 2));
 
-    // When editing a template, create a new version instead of updating
+    // When editing a template, detect changes and show dialog
     if (this.editingTemplate) {
+      this.saving = false; // Reset while we show the dialog
+      
+      // Detect changes by comparing form data with original template
+      const changes = this.detectTemplateChanges(this.editingTemplate, templateData);
+      
+      console.log('Detected changes:', changes);
+      
+      // If no changes detected, skip the dialog
+      if (!changes.has_changes) {
+        alert('No changes detected.');
+        return;
+      }
+
+      // Show the version changes dialog using NgbModal
+      const modalRef = this.modalService.open(VersionChangesDialogComponent, {
+        size: 'lg',
+        backdrop: 'static',
+        scrollable: true
+      });
+      
+      // Pass data to the modal component via @Input properties
+      modalRef.componentInstance.changes = changes;
+      modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
+      modalRef.componentInstance.templateName = this.editingTemplate.name;
+
+      modalRef.result.then(
+        (result) => {
+          console.log('User decision:', result);
+          
+          if (result.action === 'create-version') {
+            // Always create new version with user's notes and revision description
+            this.proceedWithSave(templateData, true, changes, result.revisionDescription, result.notes);
+          }
+          // Note: No 'update-current' option - all changes create new versions
+        },
+        (reason) => {
+          // Modal dismissed (cancel)
+          console.log('Dialog dismissed:', reason);
+        }
+      );
+    } else {
+      // New template - no change detection needed
+      this.proceedWithSave(templateData, false);
+    }
+  }
+
+  private detectTemplateChanges(originalTemplate: any, newData: any): any {
+    const changes: any = {
+      has_changes: false,
+      field_changes: [],
+      items_added: [],
+      items_removed: [],
+      items_modified: []
+    };
+
+    // Compare metadata fields
+    const fieldsToCheck = [
+      { key: 'name', label: 'Template Name' },
+      { key: 'description', label: 'Description' },
+      { key: 'part_number', label: 'Part Number' },
+      { key: 'product_type', label: 'Product Type' },
+      { key: 'category', label: 'Category' },
+      { key: 'is_active', label: 'Active Status' }
+    ];
+
+    for (const field of fieldsToCheck) {
+      const oldValue = originalTemplate[field.key];
+      const newValue = newData[field.key];
+      
+      if (oldValue !== newValue) {
+        changes.has_changes = true;
+        changes.field_changes.push({
+          field: field.label,
+          old_value: oldValue,
+          new_value: newValue
+        });
+      }
+    }
+
+    // Compare items using a SIMPLE approach:
+    // 1. Items from DB have 'id' - use that as the key
+    // 2. Match old and new by ID
+    // 3. If old item's ID not found in new items = REMOVED
+    // 4. Compare only items with matching IDs for changes
+    const oldItems = originalTemplate.items || [];
+    const newItems = newData.items || [];
+
+    console.log('🔍 Starting item comparison:', {
+      oldCount: oldItems.length,
+      newCount: newItems.length
+    });
+
+    // Build a map of NEW items by their ID (from form's hidden id field)
+    const newItemsById = new Map<number, any>();
+    newItems.forEach((item: any) => {
+      if (item.id) {
+        newItemsById.set(item.id, item);
+      }
+    });
+
+    console.log('📋 New items with IDs:', Array.from(newItemsById.keys()));
+
+    // Check each OLD item
+    oldItems.forEach((oldItem: any) => {
+      if (!oldItem.id) {
+        console.warn('⚠️ Old item missing ID:', oldItem.title);
+        return; // Skip items without IDs
+      }
+
+      const newItem = newItemsById.get(oldItem.id);
+      
+      if (!newItem) {
+        // Old item not found in new items = DELETED
+        changes.has_changes = true;
+        changes.items_removed.push({
+          title: oldItem.title,
+          order_index: oldItem.order_index
+        });
+        console.log('❌ Item removed:', oldItem.title, '(ID:', oldItem.id, ')');
+      } else {
+        // Item exists in both - check for modifications
+        const itemChanges = this.compareItems(oldItem, newItem);
+        if (itemChanges.length > 0) {
+          changes.has_changes = true;
+          changes.items_modified.push({
+            title: newItem.title,
+            changes: itemChanges
+          });
+          console.log('✏️ Item modified:', newItem.title, '(ID:', newItem.id, ')', itemChanges.length, 'changes');
+        }
+        
+        // Remove from map so we can detect additions later
+        newItemsById.delete(oldItem.id);
+      }
+    });
+
+    // Any items left in newItemsById are NEW (don't exist in old items)
+    if (newItemsById.size > 0) {
+      newItemsById.forEach((newItem) => {
+        changes.has_changes = true;
+        changes.items_added.push({
+          title: newItem.title,
+          order_index: newItem.order_index
+        });
+        console.log('➕ Item added:', newItem.title);
+      });
+    }
+
+    console.log('✅ Comparison complete:', {
+      removed: changes.items_removed.length,
+      added: changes.items_added.length,
+      modified: changes.items_modified.length
+    });
+
+    return changes;
+  }
+
+  private generateItemKey(item: any): string {
+    // Use title + order_index as unique key
+    return `${item.title}_${item.order_index}`;
+  }
+
+  private compareItems(oldItem: any, newItem: any): any[] {
+    const itemChanges = [];
+    // Compare fields that represent content or order changes
+    const fieldsToCheck = [
+      { key: 'title', label: 'Title' },
+      { key: 'description', label: 'Description' },
+      { key: 'is_required', label: 'Required' },
+      { key: 'sample_image_url', label: 'Sample Image' },
+      { key: 'photo_requirements', label: 'Photo Requirements' },
+      { key: 'order_index', label: 'Position' },        // Track reordering
+      { key: 'level', label: 'Hierarchy Level' },       // Track parent/child changes
+      { key: 'parent_id', label: 'Parent Item' }        // Track hierarchy changes
+    ];
+
+    for (const field of fieldsToCheck) {
+      const oldValue = oldItem[field.key];
+      const newValue = newItem[field.key];
+
+      // Skip if both are empty
+      if (this.isEmptyValue(oldValue) && this.isEmptyValue(newValue)) {
+        continue;
+      }
+
+      // For objects (like photo_requirements), use normalized comparison
+      if (typeof oldValue === 'object' && oldValue !== null && typeof newValue === 'object' && newValue !== null) {
+        const oldJson = this.sortedStringify(this.normalizeValue(oldValue));
+        const newJson = this.sortedStringify(this.normalizeValue(newValue));
+        
+        if (oldJson !== newJson) {
+          itemChanges.push({
+            field: field.label,
+            old_value: oldValue,
+            new_value: newValue
+          });
+        }
+      } 
+      // For primitives (strings, numbers, booleans)
+      else if (oldValue !== newValue) {
+        itemChanges.push({
+          field: field.label,
+          old_value: oldValue,
+          new_value: newValue
+        });
+      }
+    }
+
+    return itemChanges;
+  }
+
+  private isEmptyValue(value: any): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'object') {
+      if (Array.isArray(value)) return value.length === 0;
+      return Object.keys(value).length === 0;
+    }
+    if (typeof value === 'string') return value.trim() === '';
+    return false;
+  }
+
+  private normalizeValue(value: any): any {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'object' && Object.keys(value).length === 0) return null;
+    return value;
+  }
+
+  private sortedStringify(obj: any): string {
+    if (obj === null || obj === undefined) return 'null';
+    if (typeof obj !== 'object') return JSON.stringify(obj);
+    if (Array.isArray(obj)) return JSON.stringify(obj.map(item => this.sortedStringify(item)));
+    
+    // Sort object keys alphabetically before stringifying
+    const sortedObj: any = {};
+    Object.keys(obj).sort().forEach(key => {
+      sortedObj[key] = obj[key];
+    });
+    return JSON.stringify(sortedObj);
+  }
+
+  private proceedWithSave(templateData: any, createVersion: boolean, changes?: any, revisionDescription?: string, versionNotes?: string): void {
+    this.saving = true;
+
+    // When creating a new version
+    if (createVersion && this.editingTemplate) {
       // Increment the version for the new template
       const currentVersion = this.editingTemplate.version || '1.0';
       const newVersion = this.getNextVersion(currentVersion);
@@ -1724,6 +1975,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       
       // IMPORTANT: Pass the source template ID to maintain parent/group relationships
       templateData.source_template_id = this.editingTemplate.id;
+      
+      // Add version notes if provided
+      if (versionNotes) {
+        templateData.version_notes = versionNotes;
+      }
       
       // Clean the name - remove any existing version suffixes before adding the new one
       let cleanName = templateData.name;
@@ -1735,10 +1991,16 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       console.log(`Creating new version: ${newVersion} from existing template ${this.editingTemplate.id}`);
       console.log(`source_template_id set to: ${templateData.source_template_id}`);
       console.log(`Cleaned name from "${this.editingTemplate.name}" to "${templateData.name}"`);
+    } else if (this.editingTemplate) {
+      // Updating current version - use updateTemplate instead
+      console.log(`Updating current version: ${this.editingTemplate.version}`);
+      templateData.id = this.editingTemplate.id;
     }
 
-    // Always use createTemplate to create a new version
-    const saveRequest = this.configService.createTemplate(templateData);
+    // Choose the appropriate API call
+    const saveRequest = (createVersion || !this.editingTemplate) 
+      ? this.configService.createTemplate(templateData)
+      : this.configService.updateTemplate(this.editingTemplate.id, templateData);
 
     // Add timeout wrapper
     const timeoutId = setTimeout(() => {
@@ -1748,20 +2010,42 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }, 30000);
 
     saveRequest.subscribe({
-      next: (response) => {
+      next: (response: any) => {
         clearTimeout(timeoutId);
         console.log('Template saved successfully:', response);
-        this.saving = false;
         
-        // Show success message
-        if (this.editingTemplate) {
-          const newVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
-          alert(`New version (v${newVersion}) created successfully!`);
-          // Navigate back to template manager to see the new version
-          this.router.navigate(['/quality/checklist/template-manager']);
+        // Get the template ID (either from response or existing template)
+        const templateId = response.template_id || this.editingTemplate?.id;
+        
+        if (!templateId) {
+          console.error('No template ID available');
+          this.saving = false;
+          alert('Error: Template ID not available');
+          return;
+        }
+
+        // After saving template, integrate with document control system
+        if (createVersion && this.editingTemplate && changes && revisionDescription) {
+          // Editing existing template - create new revision if it has a document
+          if (this.editingTemplate.quality_document_metadata?.document_id) {
+            this.createRevision(
+              this.editingTemplate.quality_document_metadata.document_id,
+              templateId,
+              revisionDescription,
+              changes,
+              versionNotes
+            );
+          } else {
+            // First time creating document for existing template
+            this.createDocument(templateId, templateData.name, revisionDescription, templateData);
+          }
+        } else if (!this.editingTemplate) {
+          // New template - create document
+          this.createDocument(templateId, templateData.name, 'Initial revision', templateData);
         } else {
-          // For new templates, navigate to template manager
-          alert('Template created successfully!');
+          // Direct update without revision tracking (shouldn't happen with current flow)
+          this.saving = false;
+          alert('Template updated successfully!');
           this.router.navigate(['/quality/checklist/template-manager']);
         }
       },
@@ -1784,6 +2068,100 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         alert('Error saving template: ' + errorMessage);
       }
     });
+  }
+
+  /**
+   * Create a new checklist document (first time)
+   */
+  private createDocument(templateId: number, title: string, revisionDescription: string, templateData: any): void {
+    const documentData = {
+      prefix: 'QA-CHK',
+      title: title,
+      description: templateData.description || '',
+      department: 'QA' as const,
+      category: templateData.category || 'quality_control',
+      template_id: templateId,
+      created_by: 'current_user', // TODO: Get from auth service
+      revision_description: revisionDescription
+    };
+
+    this.configService.createChecklistDocument(documentData).subscribe({
+      next: (result) => {
+        console.log('Document created:', result);
+        this.saving = false;
+        alert(`✓ Document created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
+        this.router.navigate(['/quality/checklist/template-manager']);
+      },
+      error: (error) => {
+        console.error('Error creating document:', error);
+        this.saving = false;
+        alert('Template saved but failed to create document control entry: ' + (error.error?.error || error.message));
+        this.router.navigate(['/quality/checklist/template-manager']);
+      }
+    });
+  }
+
+  /**
+   * Create a new revision for existing document
+   */
+  private createRevision(documentId: number, templateId: number, revisionDescription: string, changes: any, notes?: string): void {
+    // Calculate change counts
+    const items_added = changes.items_added?.length || 0;
+    const items_removed = changes.items_removed?.length || 0;
+    const items_modified = changes.items_modified?.length || 0;
+
+    const revisionData = {
+      document_id: documentId,
+      template_id: templateId,
+      revision_description: revisionDescription,
+      changes_summary: this.generateChangesSummary(changes),
+      items_added: items_added,
+      items_removed: items_removed,
+      items_modified: items_modified,
+      changes_detail: changes, // Full change object as JSON
+      created_by: 'current_user' // TODO: Get from auth service
+    };
+
+    if (notes) {
+      (revisionData as any).notes = notes;
+    }
+
+    this.configService.createChecklistRevision(revisionData).subscribe({
+      next: (result) => {
+        console.log('Revision created:', result);
+        this.saving = false;
+        alert(`✓ Revision created: ${result.document_number}, Rev ${result.revision_number}\n\n${result.message}`);
+        this.router.navigate(['/quality/checklist/template-manager']);
+      },
+      error: (error) => {
+        console.error('Error creating revision:', error);
+        this.saving = false;
+        alert('Template saved but failed to create revision: ' + (error.error?.error || error.message));
+        this.router.navigate(['/quality/checklist/template-manager']);
+      }
+    });
+  }
+
+  /**
+   * Generate a human-readable changes summary
+   */
+  private generateChangesSummary(changes: any): string {
+    const parts = [];
+    
+    if (changes.field_changes?.length) {
+      parts.push(`${changes.field_changes.length} field change(s)`);
+    }
+    if (changes.items_added?.length) {
+      parts.push(`${changes.items_added.length} item(s) added`);
+    }
+    if (changes.items_removed?.length) {
+      parts.push(`${changes.items_removed.length} item(s) removed`);
+    }
+    if (changes.items_modified?.length) {
+      parts.push(`${changes.items_modified.length} item(s) modified`);
+    }
+    
+    return parts.join(', ') || 'No significant changes';
   }
 
   cancel(): void {

@@ -47,7 +47,6 @@ export class MaterialRequestCreateComponent {
     this.form = $event;
     this.form.patchValue({
       main: {
-        createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
         dueDate: moment().format('YYYY-MM-DD'),
         createdBy: this.authenticationService.currentUserValue.id,
         requestor: this.authenticationService.currentUserValue.full_name,
@@ -85,14 +84,16 @@ export class MaterialRequestCreateComponent {
 
     try {
       this.isLoading = true;
-      let { insertId } = await this.api.create(this.form.value);
+      let { insertId } = await this.api.create({
+        createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+        ...this.form.value
+      });
 
       this.isLoading = false;
       this.toastrService.success('Successfully Created');
 
       this.form.reset({
         main: {
-          createdDate: moment().format('YYYY-MM-DD HH:mm:ss'),
           createdBy: this.authenticationService.currentUserValue.id,
           requestor: this.authenticationService.currentUserValue.full_name,
           active: 1,

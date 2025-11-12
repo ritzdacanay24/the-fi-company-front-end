@@ -10,11 +10,11 @@ import { SharedModule } from '@app/shared/shared.module';
 @Component({
   standalone:true, 
   imports:[SharedModule],
-  selector: 'app-quailty-control-photos',
-  templateUrl: './quailty-control-photos.component.html',
-  styleUrls: ['./quailty-control-photos.component.scss']
+  selector: 'app-checklist-execution',
+  templateUrl: './checklist-execution.component.html',
+  styleUrls: ['./checklist-execution.component.scss']
 })
-export class QuailtyControlPhotosComponent implements OnInit {
+export class ChecklistExecutionComponent implements OnInit {
 
   // Updated to use dynamic data instead of hardcoded
   checklistTemplates: ChecklistTemplate[] = [];

@@ -2,7 +2,7 @@ import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
 import { NgbNavModule } from "@ng-bootstrap/ng-bootstrap";
 import { AccessGuard } from "@app/core/guards/access.guard";
-import { QuailtyControlPhotosComponent } from "./quailty-control-photos/quailty-control-photos.component";
+import { ChecklistExecutionComponent } from "./checklist/execution/checklist-execution.component";
 
 const routes: Routes = [
   {
@@ -43,9 +43,11 @@ const routes: Routes = [
     path: "template-editor/:id",
     redirectTo: "checklist/template-editor/:id"
   },
+  // Legacy route - redirect to new location
   {
     path: "quality-control-photos",
-    component: QuailtyControlPhotosComponent,
+    redirectTo: "checklist/execution",
+    pathMatch: "full"
   },
   {
     path: "version-control",

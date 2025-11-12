@@ -1,4 +1,4 @@
-import { QuailtyControlPhotosComponent } from './quailty-control-photos.component';
+import { ChecklistExecutionComponent } from './checklist-execution.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PhotosModule } from './photos/photos.module';
@@ -15,4 +15,4 @@ import { SharedModule } from '@app/shared/shared.module';
     ReactiveFormsModule,
   ],
 })
-export class QuailtyControlPhotosModule { }
+export class ChecklistExecutionModule { }

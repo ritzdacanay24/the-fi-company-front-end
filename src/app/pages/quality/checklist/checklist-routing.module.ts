@@ -7,6 +7,10 @@ const routes: Routes = [
     loadComponent: () => import('./checklist.component').then(c => c.ChecklistComponent),
   },
   {
+    path: "execution",
+    loadComponent: () => import('./execution/checklist-execution.component').then(c => c.ChecklistExecutionComponent),
+  },
+  {
     path: "instance",
     loadComponent: () => import('./instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
   },

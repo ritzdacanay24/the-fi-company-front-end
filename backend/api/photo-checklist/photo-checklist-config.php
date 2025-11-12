@@ -1,6 +1,7 @@
 <?php
 
 require '/var/www/html/server/Databases/DatabaseEyefiV1.php';
+require __DIR__ . '/TemplateChangeTracker.php';
 
 // Get the underlying PDO connection from Medoo
 $db = $database->pdo;
@@ -52,6 +53,22 @@ class PhotoChecklistConfigAPI {
                         echo json_encode($this->updateTemplate($id));
                     } elseif ($method === 'DELETE' && $id) {
                         echo json_encode($this->deleteTemplate($id));
+                    }
+                    break;
+
+                case 'template_history':
+                    $groupId = $_GET['group_id'] ?? null;
+                    $templateId = $_GET['template_id'] ?? null;
+                    if ($method === 'GET' && ($groupId || $templateId)) {
+                        echo json_encode($this->getTemplateHistory($groupId, $templateId));
+                    }
+                    break;
+
+                case 'compare_templates':
+                    $sourceId = $_GET['source_id'] ?? null;
+                    $targetId = $_GET['target_id'] ?? null;
+                    if ($method === 'GET' && $sourceId && $targetId) {
+                        echo json_encode($this->compareTemplates($sourceId, $targetId));
                     }
                     break;
 
@@ -131,9 +148,16 @@ class PhotoChecklistConfigAPI {
                        ct.revision_details, ct.revised_by, ct.product_type, 
                        ct.category, ct.version, ct.parent_template_id, ct.template_group_id, 
                        ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
+                       qd.id as qd_id,
+                       qd.document_number,
+                       qd.title as qd_title,
+                       qr.id as qr_id,
+                       qr.revision_number,
                        COUNT(DISTINCT ci.id) as active_instances,
                        COUNT(DISTINCT cit.id) as item_count
                 FROM checklist_templates ct
+                LEFT JOIN quality_documents qd ON qd.id = ct.quality_document_id
+                LEFT JOIN quality_revisions qr ON qr.id = ct.quality_revision_id
                 LEFT JOIN checklist_instances ci ON ct.id = ci.template_id AND ci.status != 'completed'
                 LEFT JOIN checklist_items cit ON ct.id = cit.template_id
                 WHERE ct.is_active = 1
@@ -141,17 +165,50 @@ class PhotoChecklistConfigAPI {
                          ct.revision, ct.original_filename, ct.review_date, ct.revision_number,
                          ct.revision_details, ct.revised_by, ct.product_type, 
                          ct.category, ct.version, ct.parent_template_id, ct.template_group_id,
-                         ct.is_active, ct.created_by, ct.created_at, ct.updated_at
+                         ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
+                         qd.id, qd.document_number, qd.title, qr.id, qr.revision_number
                 ORDER BY ct.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Add quality_document_metadata to each template
+        foreach ($results as &$template) {
+            if ($template['qd_id']) {
+                $template['quality_document_metadata'] = [
+                    'document_id' => (int)$template['qd_id'],
+                    'revision_id' => (int)$template['qr_id'],
+                    'document_number' => $template['document_number'],
+                    'revision_number' => (int)$template['revision_number'],
+                    'title' => $template['qd_title'],
+                    'version_string' => $template['document_number'] . ', Rev ' . $template['revision_number']
+                ];
+            } else {
+                $template['quality_document_metadata'] = null;
+            }
+            
+            // Remove the joined fields from root level
+            unset($template['qd_id'], $template['document_number'], $template['qd_title'], 
+                  $template['qr_id'], $template['revision_number']);
+        }
+        
+        return $results;
     }
 
     public function getTemplate($id) {
-        // First get the template
-        $sql = "SELECT * FROM checklist_templates WHERE id = ? AND is_active = 1";
+        // First get the template with quality document metadata
+        $sql = "SELECT ct.*,
+                       qd.id as qd_id,
+                       qd.document_number,
+                       qd.title as qd_title,
+                       qr.id as qr_id,
+                       qr.revision_number,
+                       qr.description as qr_description
+                FROM checklist_templates ct
+                LEFT JOIN quality_documents qd ON qd.id = ct.quality_document_id
+                LEFT JOIN quality_revisions qr ON qr.id = ct.quality_revision_id
+                WHERE ct.id = ? AND ct.is_active = 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -159,6 +216,24 @@ class PhotoChecklistConfigAPI {
         if (!$result) {
             return null;
         }
+        
+        // Build quality_document_metadata object if document exists
+        if ($result['qd_id']) {
+            $result['quality_document_metadata'] = [
+                'document_id' => (int)$result['qd_id'],
+                'revision_id' => (int)$result['qr_id'],
+                'document_number' => $result['document_number'],
+                'revision_number' => (int)$result['revision_number'],
+                'title' => $result['qd_title'],
+                'version_string' => $result['document_number'] . ', Rev ' . $result['revision_number']
+            ];
+        } else {
+            $result['quality_document_metadata'] = null;
+        }
+        
+        // Remove the joined fields from root level
+        unset($result['qd_id'], $result['document_number'], $result['qd_title'], 
+              $result['qr_id'], $result['revision_number'], $result['qr_description']);
         
         // Then get items separately with proper ordering
         $sql = "SELECT id, template_id, order_index, parent_id, level, title, description,
@@ -300,12 +375,7 @@ class PhotoChecklistConfigAPI {
                     $data['created_by'] ?? null
                 ]);
             }
-                    $parentTemplateId,
-                    $templateGroupId,
-                    $data['created_by'] ?? null
-                ]);
-            }
-            
+
             if (!$success) {
                 throw new Exception("Failed to insert template: " . implode(", ", $stmt->errorInfo()));
             }
@@ -1249,6 +1319,57 @@ class PhotoChecklistConfigAPI {
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    // ==============================================
+    // Version History & Change Tracking Methods
+    // ==============================================
+
+    /**
+     * Get version history for a template group or specific template
+     */
+    public function getTemplateHistory($groupId = null, $templateId = null) {
+        $tracker = new TemplateChangeTracker($this->conn);
+        
+        if ($groupId) {
+            return $tracker->getChangeHistory($groupId);
+        } elseif ($templateId) {
+            return $tracker->getVersionChanges($templateId);
+        }
+        
+        return ['error' => 'Either group_id or template_id is required'];
+    }
+
+    /**
+     * Compare two templates and show differences
+     */
+    public function compareTemplates($sourceId, $targetId) {
+        $tracker = new TemplateChangeTracker($this->conn);
+        
+        $sourceTemplate = $this->getTemplate($sourceId);
+        $targetTemplate = $this->getTemplate($targetId);
+        
+        if (!$sourceTemplate || !$targetTemplate) {
+            return ['error' => 'One or both templates not found'];
+        }
+        
+        $changes = $tracker->detectChanges($sourceTemplate, $targetTemplate);
+        $summary = $tracker->generateSummary($changes);
+        
+        return [
+            'source' => [
+                'id' => $sourceId,
+                'name' => $sourceTemplate['name'],
+                'version' => $sourceTemplate['version']
+            ],
+            'target' => [
+                'id' => $targetId,
+                'name' => $targetTemplate['name'],
+                'version' => $targetTemplate['version']
+            ],
+            'changes' => $changes,
+            'summary' => $summary
+        ];
     }
 }
 
