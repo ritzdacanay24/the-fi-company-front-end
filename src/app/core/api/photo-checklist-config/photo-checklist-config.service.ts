@@ -302,6 +302,15 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  /**
+   * Get revision history for a document
+   */
+  getRevisionHistory(documentId: number): Observable<any[]> {
+    return this.http.get<any[]>(
+      `checklist-document-control/?action=get-revision-history&document_id=${documentId}`
+    );
+  }
+
   // ==============================================
   // Instance Management
   // ==============================================

@@ -49,6 +49,13 @@ try {
             handleApproveRevision($db);
             break;
             
+        case 'get-revision-history':
+            if ($method !== 'GET') {
+                throw new Exception('Method not allowed', 405);
+            }
+            handleGetRevisionHistory($db);
+            break;
+            
         default:
             throw new Exception('Invalid action', 400);
     }
@@ -219,3 +226,56 @@ function handleApproveRevision($db) {
         'message' => 'Revision approved successfully'
     ]);
 }
+
+/**
+ * Get revision history for a document
+ */
+function handleGetRevisionHistory($db) {
+    // Validate required parameter
+    if (!isset($_GET['document_id'])) {
+        throw new Exception('Missing required parameter: document_id', 400);
+    }
+    
+    $documentId = (int)$_GET['document_id'];
+    
+    // Fetch revision history from the view
+    $stmt = $db->prepare("
+        SELECT 
+            qr.id as revision_id,
+            qr.revision_number,
+            qr.description,
+            qr.changes_summary,
+            qr.items_added,
+            qr.items_removed,
+            qr.items_modified,
+            qr.changes_detail,
+            qr.status,
+            qr.is_current,
+            qr.created_by,
+            qr.created_at,
+            qr.approved_by,
+            qr.approved_at,
+            qr.template_id,
+            ct.name as template_name
+        FROM quality_revisions qr
+        LEFT JOIN checklist_templates ct ON ct.id = qr.template_id
+        WHERE qr.document_id = ?
+        ORDER BY qr.revision_number DESC
+    ");
+    
+    $stmt->execute([$documentId]);
+    $revisions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Parse changes_detail JSON for each revision
+    foreach ($revisions as &$revision) {
+        if ($revision['changes_detail']) {
+            // Parse JSON if it's a string
+            if (is_string($revision['changes_detail'])) {
+                $revision['changes_detail'] = json_decode($revision['changes_detail'], true);
+            }
+        }
+    }
+    
+    echo json_encode($revisions);
+}
+

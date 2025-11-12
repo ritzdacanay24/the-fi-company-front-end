@@ -184,6 +184,12 @@ interface SampleImage {
                                         title="Edit Template">
                                   <i class="mdi mdi-pencil"></i>
                                 </button>
+                                <button *ngIf="getLatestVersion(group.value).quality_document_metadata"
+                                        class="btn btn-sm btn-outline-info" 
+                                        (click)="viewRevisionHistory(getLatestVersion(group.value))"
+                                        title="View Revision History">
+                                  <i class="mdi mdi-history"></i>
+                                </button>
                               </div>
                             </td>
                             <td>
@@ -248,6 +254,12 @@ interface SampleImage {
                                           (click)="editTemplate(template)"
                                           title="Edit Template">
                                     <i class="mdi mdi-pencil"></i>
+                                  </button>
+                                  <button *ngIf="template.quality_document_metadata"
+                                          class="btn btn-sm btn-outline-info" 
+                                          (click)="viewRevisionHistory(template)"
+                                          title="View Revision History">
+                                    <i class="mdi mdi-history"></i>
                                   </button>
                                 </div>
                               </td>
@@ -1550,6 +1562,216 @@ interface SampleImage {
         </div>
       </div>
     </ng-template>
+
+    <!-- Revision History Modal -->
+    <ng-template #revisionHistoryModal let-modal>
+      <div class="modal-header bg-info bg-opacity-10">
+        <h5 class="modal-title">
+          <i class="mdi mdi-history me-2"></i>
+          Revision History
+        </h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss()" [attr.aria-label]="'Close'"></button>
+      </div>
+      
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <!-- Document Info -->
+        <div class="alert alert-info mb-4" *ngIf="selectedRevisionTemplate">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-file-document fs-4 me-3"></i>
+            <div>
+              <h6 class="mb-1">{{selectedRevisionTemplate.quality_document_metadata?.document_number}}</h6>
+              <div class="small text-muted">{{selectedRevisionTemplate.name}}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="loadingRevisions" class="text-center py-5">
+          <div class="spinner-border text-primary mb-3" role="status"></div>
+          <p class="text-muted">Loading revision history...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="revisionHistoryError" class="alert alert-danger">
+          <i class="mdi mdi-alert me-2"></i>
+          {{revisionHistoryError}}
+        </div>
+
+        <!-- Revision Timeline -->
+        <div *ngIf="!loadingRevisions && revisionHistory?.length" class="revision-timeline">
+          <div *ngFor="let revision of revisionHistory; let i = index; let isFirst = first" 
+               class="revision-item mb-4">
+            
+            <!-- Timeline Connector -->
+            <div class="d-flex">
+              <div class="timeline-indicator">
+                <div class="timeline-dot" [class.bg-success]="revision.is_current" [class.bg-secondary]="!revision.is_current">
+                  <i class="mdi mdi-check text-white" *ngIf="revision.is_current"></i>
+                  <span class="text-white small" *ngIf="!revision.is_current">{{revision.revision_number}}</span>
+                </div>
+                <div class="timeline-line" *ngIf="!isFirst"></div>
+              </div>
+              
+              <!-- Revision Content -->
+              <div class="flex-fill ms-3 card" [class.border-success]="revision.is_current">
+                <div class="card-header" [class.bg-success]="revision.is_current" [class.bg-opacity-10]="revision.is_current">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        Rev {{revision.revision_number}}
+                        <span class="badge bg-success ms-2" *ngIf="revision.is_current">Current</span>
+                        <span class="badge bg-warning text-dark ms-2" *ngIf="revision.status === 'pending'">Pending Approval</span>
+                        <span class="badge bg-secondary ms-2" *ngIf="revision.status === 'superseded'">Superseded</span>
+                      </h6>
+                      <div class="small text-muted">
+                        <i class="mdi mdi-calendar me-1"></i>
+                        {{revision.created_at | date:'MMM d, y h:mm a'}}
+                        <span class="ms-3">
+                          <i class="mdi mdi-account me-1"></i>
+                          {{revision.created_by}}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="card-body">
+                  <!-- Revision Description -->
+                  <div class="mb-3">
+                    <div class="fw-semibold mb-1">Description:</div>
+                    <p class="mb-0">{{revision.description || 'No description provided'}}</p>
+                  </div>
+
+                  <!-- Change Summary -->
+                  <div class="mb-3" *ngIf="revision.changes_summary">
+                    <div class="fw-semibold mb-1">Changes Summary:</div>
+                    <p class="mb-0 small">{{revision.changes_summary}}</p>
+                  </div>
+
+                  <!-- Change Statistics -->
+                  <div class="d-flex gap-3 mb-3" *ngIf="revision.items_added || revision.items_removed || revision.items_modified">
+                    <div *ngIf="revision.items_added > 0" class="small">
+                      <i class="mdi mdi-plus-circle text-success me-1"></i>
+                      <strong>{{revision.items_added}}</strong> added
+                    </div>
+                    <div *ngIf="revision.items_removed > 0" class="small">
+                      <i class="mdi mdi-minus-circle text-danger me-1"></i>
+                      <strong>{{revision.items_removed}}</strong> removed
+                    </div>
+                    <div *ngIf="revision.items_modified > 0" class="small">
+                      <i class="mdi mdi-pencil text-warning me-1"></i>
+                      <strong>{{revision.items_modified}}</strong> modified
+                    </div>
+                  </div>
+
+                  <!-- Detailed Changes (Expandable) -->
+                  <div *ngIf="revision.changes_detail">
+                    <button class="btn btn-sm btn-outline-secondary w-100" 
+                            (click)="toggleRevisionDetails(i)"
+                            type="button">
+                      <i class="mdi" [class.mdi-chevron-down]="!isRevisionDetailsExpanded(i)" 
+                         [class.mdi-chevron-up]="isRevisionDetailsExpanded(i)"></i>
+                      {{isRevisionDetailsExpanded(i) ? 'Hide' : 'Show'}} Detailed Changes
+                    </button>
+                    
+                    <div *ngIf="isRevisionDetailsExpanded(i)" class="mt-3 p-3 bg-light rounded">
+                      <!-- Items Added -->
+                      <div *ngIf="getRevisionDetailsArray(revision, 'items_added')?.length" class="mb-3">
+                        <h6 class="text-success mb-2">
+                          <i class="mdi mdi-plus-circle me-1"></i>Items Added ({{getRevisionDetailsArray(revision, 'items_added').length}})
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                          <li *ngFor="let item of getRevisionDetailsArray(revision, 'items_added')" 
+                              class="mb-2 ps-3 border-start border-success border-3">
+                            <div class="fw-semibold">{{item.title}}</div>
+                            <div class="small text-muted" *ngIf="item.description">{{item.description}}</div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <!-- Items Removed -->
+                      <div *ngIf="getRevisionDetailsArray(revision, 'items_removed')?.length" class="mb-3">
+                        <h6 class="text-danger mb-2">
+                          <i class="mdi mdi-minus-circle me-1"></i>Items Removed ({{getRevisionDetailsArray(revision, 'items_removed').length}})
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                          <li *ngFor="let item of getRevisionDetailsArray(revision, 'items_removed')" 
+                              class="mb-2 ps-3 border-start border-danger border-3 text-decoration-line-through">
+                            <div class="fw-semibold">{{item.title}}</div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <!-- Items Modified -->
+                      <div *ngIf="getRevisionDetailsArray(revision, 'items_modified')?.length" class="mb-3">
+                        <h6 class="text-warning mb-2">
+                          <i class="mdi mdi-pencil me-1"></i>Items Modified ({{getRevisionDetailsArray(revision, 'items_modified').length}})
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                          <li *ngFor="let item of getRevisionDetailsArray(revision, 'items_modified')" 
+                              class="mb-3 ps-3 border-start border-warning border-3">
+                            <div class="fw-semibold mb-1">{{item.title}}</div>
+                            <div class="small" *ngIf="item.changes?.length">
+                              <div *ngFor="let change of item.changes" class="mb-1">
+                                <span class="text-muted">{{formatFieldName(change.field)}}:</span>
+                                <span class="text-danger text-decoration-line-through">{{formatValue(change.old_value)}}</span>
+                                →
+                                <span class="text-success fw-semibold">{{formatValue(change.new_value)}}</span>
+                              </div>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <!-- Field Changes -->
+                      <div *ngIf="getRevisionDetailsArray(revision, 'field_changes')?.length" class="mb-3">
+                        <h6 class="text-primary mb-2">
+                          <i class="mdi mdi-form-textbox me-1"></i>Field Changes ({{getRevisionDetailsArray(revision, 'field_changes').length}})
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                          <li *ngFor="let change of getRevisionDetailsArray(revision, 'field_changes')" 
+                              class="mb-2 ps-3 border-start border-primary border-3">
+                            <div class="small">
+                              <span class="fw-semibold">{{formatFieldName(change.field)}}:</span>
+                              <div class="ms-2">
+                                <span class="text-danger text-decoration-line-through">{{formatValue(change.old_value)}}</span>
+                                →
+                                <span class="text-success fw-semibold">{{formatValue(change.new_value)}}</span>
+                              </div>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Approval Info -->
+                  <div *ngIf="revision.approved_by" class="mt-3 pt-3 border-top">
+                    <div class="small text-success">
+                      <i class="mdi mdi-check-circle me-1"></i>
+                      Approved by {{revision.approved_by}} on {{revision.approved_at | date:'MMM d, y h:mm a'}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Revisions -->
+        <div *ngIf="!loadingRevisions && !revisionHistory?.length && !revisionHistoryError" 
+             class="text-center py-5 text-muted">
+          <i class="mdi mdi-history fs-1 mb-3"></i>
+          <p>No revision history available</p>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.close()">
+          Close
+        </button>
+      </div>
+    </ng-template>
   `,
   styles: [`
     .template-card {
@@ -1644,6 +1866,48 @@ interface SampleImage {
       border-left: 4px solid #17a2b8;
       background-color: #f8f9fa;
       border-color: #e9ecef;
+    }
+    
+    /* Revision History Timeline Styles */
+    .revision-timeline {
+      position: relative;
+    }
+    
+    .revision-item {
+      position: relative;
+    }
+    
+    .timeline-indicator {
+      position: relative;
+      width: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .timeline-dot {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.875rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 2;
+    }
+    
+    .timeline-line {
+      width: 2px;
+      background: linear-gradient(to bottom, #dee2e6, transparent);
+      position: absolute;
+      top: 40px;
+      bottom: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
     }
     
     .bg-light.rounded {
@@ -2003,6 +2267,7 @@ interface SampleImage {
 export class ChecklistTemplateManagerComponent implements OnInit {
   @ViewChild('versionHistoryModal') versionHistoryModal!: TemplateRef<any>;
   @ViewChild('versionComparisonModal') versionComparisonModal!: TemplateRef<any>;
+  @ViewChild('revisionHistoryModal') revisionHistoryModal!: TemplateRef<any>;
 
   // Version tracking properties
   selectedTemplateFamily: ChecklistTemplate | null = null;
@@ -2010,6 +2275,13 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   loadingVersionHistory = false;
   comparisonVersions: ChecklistTemplate[] = [];
   comparisonChanges: any[] = [];
+  
+  // Revision history properties
+  selectedRevisionTemplate: ChecklistTemplate | null = null;
+  revisionHistory: any[] = [];
+  loadingRevisions = false;
+  revisionHistoryError: string | null = null;
+  expandedRevisionDetails: Set<number> = new Set();
 
   // Enhanced template properties
   templates: ChecklistTemplate[] = [];
@@ -2190,6 +2462,107 @@ export class ChecklistTemplateManagerComponent implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * View revision history for a template with document control
+   */
+  viewRevisionHistory(template: ChecklistTemplate): void {
+    if (!template.quality_document_metadata?.document_id) {
+      alert('This template does not have document control enabled.');
+      return;
+    }
+
+    this.selectedRevisionTemplate = template;
+    this.loadingRevisions = true;
+    this.revisionHistoryError = null;
+    this.revisionHistory = [];
+    this.expandedRevisionDetails.clear();
+
+    // Open modal
+    const modalRef = this.modalService.open(this.revisionHistoryModal, {
+      size: 'xl',
+      backdrop: 'static',
+      scrollable: true
+    });
+
+    // Fetch revision history from the view
+    this.configService.getRevisionHistory(template.quality_document_metadata.document_id).subscribe({
+      next: (revisions: any[]) => {
+        this.revisionHistory = revisions.sort((a, b) => b.revision_number - a.revision_number);
+        this.loadingRevisions = false;
+        console.log('Loaded revisions:', this.revisionHistory);
+      },
+      error: (error) => {
+        console.error('Error loading revision history:', error);
+        this.revisionHistoryError = 'Failed to load revision history: ' + (error.error?.error || error.message);
+        this.loadingRevisions = false;
+      }
+    });
+  }
+
+  /**
+   * Toggle expansion of revision details
+   */
+  toggleRevisionDetails(index: number): void {
+    if (this.expandedRevisionDetails.has(index)) {
+      this.expandedRevisionDetails.delete(index);
+    } else {
+      this.expandedRevisionDetails.add(index);
+    }
+  }
+
+  /**
+   * Check if revision details are expanded
+   */
+  isRevisionDetailsExpanded(index: number): boolean {
+    return this.expandedRevisionDetails.has(index);
+  }
+
+  /**
+   * Get array from revision details (handles JSON parsing)
+   */
+  getRevisionDetailsArray(revision: any, field: string): any[] {
+    if (!revision.changes_detail) {
+      return [];
+    }
+
+    try {
+      const details = typeof revision.changes_detail === 'string' 
+        ? JSON.parse(revision.changes_detail) 
+        : revision.changes_detail;
+      
+      return details[field] || [];
+    } catch (error) {
+      console.error('Error parsing changes_detail:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Format field name for display
+   */
+  formatFieldName(field: string): string {
+    return field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  /**
+   * Format value for display
+   */
+  formatValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '(empty)';
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    }
+    const str = String(value);
+    return str.length > 100 ? str.substring(0, 100) + '...' : str;
   }
 
   saveTemplate(): void {
