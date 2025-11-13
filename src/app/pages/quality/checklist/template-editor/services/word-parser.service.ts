@@ -123,16 +123,29 @@ export class WordParserService {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
+    // Extract metadata from document first (to get category)
+    const metadata = this.extractMetadata(doc);
+    
+    console.log('📊 Extracted metadata:', metadata);
+
+    const extractedDescription = this.extractDescription(doc);
+    console.log('📝 Extracted description:', extractedDescription);
+
     const template: ParsedTemplate = {
       name: this.extractTemplateName(doc, filename),
-      description: this.extractDescription(doc),
-      category: 'quality_control',
+      description: extractedDescription,
+      category: metadata.category || 'quality_control', // Use extracted category or default
       items: [],
       original_filename: filename
     };
+    
+    console.log('📋 Template before applying metadata:', {
+      name: template.name,
+      description: template.description,
+      category: template.category
+    });
 
-    // Extract metadata from document
-    const metadata = this.extractMetadata(doc);
+    // Apply other metadata to template
     if (metadata.part_number) template.part_number = metadata.part_number;
     if (metadata.product_type) template.product_type = metadata.product_type;
     if (metadata.customer_part_number) template.customer_part_number = metadata.customer_part_number;
@@ -141,6 +154,14 @@ export class WordParserService {
     if (metadata.revision_number) template.revision_number = metadata.revision_number;
     if (metadata.revision_details) template.revision_details = metadata.revision_details;
     if (metadata.revised_by) template.revised_by = metadata.revised_by;
+    
+    console.log('✅ Final template after applying metadata:', {
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      product_type: template.product_type,
+      part_number: template.part_number
+    });
 
     // Extract checklist items from document structure
     template.items = this.extractChecklistItems(doc);
@@ -213,10 +234,11 @@ export class WordParserService {
   }
 
   /**
-   * Extract metadata (part number, product type) from document
+   * Extract metadata (part number, product type, category) from document
    * Looks for patterns like:
    * - "Part Number: ABC123"
    * - "Product: Widget XYZ"
+   * - "Category: installation"
    * - Tables with metadata (header tables before checklist)
    * - The Fi Company P/N, Customer P/N fields
    */
@@ -229,6 +251,7 @@ export class WordParserService {
     revision_number?: string;
     revision_details?: string;
     revised_by?: string;
+    category?: string;
   } {
     const metadata: { 
       part_number?: string; 
@@ -239,6 +262,7 @@ export class WordParserService {
       revision_number?: string;
       revision_details?: string;
       revised_by?: string;
+      category?: string;
     } = {};
     
     // Search all text for patterns
@@ -249,6 +273,23 @@ export class WordParserService {
     
     tables.forEach((table, tableIndex) => {
       const rows = table.querySelectorAll('tr');
+      
+      // Check if this is a checklist items table (skip for metadata extraction)
+      // Checklist tables have columns like: No, Process Steps, Category, Critical to Quality, Pictures
+      const firstRow = rows[0];
+      const firstRowCells = firstRow?.querySelectorAll('td, th');
+      const firstRowTexts = Array.from(firstRowCells || []).map(c => c.textContent?.trim().toLowerCase() || '');
+      
+      const isChecklistTable = firstRowTexts.some(t => 
+        (t.includes('critical') && t.includes('quality')) || 
+        t.includes('pictures') ||
+        (t.includes('process') && t.includes('steps'))
+      );
+      
+      // Skip checklist tables - we only want metadata tables here
+      if (isChecklistTable) {
+        return;
+      }
       
       // Check if this is a 2-row metadata table (row 1 = headers, row 2 = values)
       if (rows.length === 2) {
@@ -274,9 +315,50 @@ export class WordParserService {
             metadata.customer_part_number = value;
           }
 
-          // Check for Description
-          if (headerLower.includes('description') && value && !value.toLowerCase().includes('customer')) {
-            metadata.product_type = value;
+          // Check for Category (check BEFORE Description to avoid confusion)
+          // ONLY extract category from metadata tables, NOT from checklist item tables
+          // Only process if we have Fi Company P/N or Customer P/N in the same row (confirms it's metadata)
+          if (headerLower.includes('category') && value && !headerLower.includes('description')) {
+            // Check if this is actually a metadata table by looking for P/N fields
+            const hasPartNumberField = headerTexts.some(h => 
+              h.toLowerCase().includes('fi company p/n') || 
+              h.toLowerCase().includes('customer p/n')
+            );
+            
+            // Only extract category if this is clearly a metadata table
+            if (hasPartNumberField) {
+              // Normalize category value to match dropdown options
+              const categoryLower = value.toLowerCase().trim();
+              if (categoryLower.includes('quality') || categoryLower.includes('control')) {
+                metadata.category = 'quality_control';
+              } else if (categoryLower.includes('install')) {
+                metadata.category = 'installation';
+              } else if (categoryLower.includes('maintain')) {
+                metadata.category = 'maintenance';
+              } else if (categoryLower.includes('inspect')) {
+                metadata.category = 'inspection';
+              } else {
+                // Try exact match
+                const validCategories = ['quality_control', 'installation', 'maintenance', 'inspection'];
+                if (validCategories.includes(categoryLower)) {
+                  metadata.category = categoryLower as any;
+                }
+              }
+            }
+          }
+
+          // Check for Description (but NOT if it's the Category field)
+          // ONLY extract from tables with P/N fields (metadata tables)
+          if (headerLower.includes('description') && !headerLower.includes('category') && value && !value.toLowerCase().includes('customer')) {
+            // Verify this is a metadata table
+            const hasPartNumberField = headerTexts.some(h => 
+              h.toLowerCase().includes('fi company p/n') || 
+              h.toLowerCase().includes('customer p/n')
+            );
+            
+            if (hasPartNumberField) {
+              metadata.product_type = value;
+            }
           }
 
           // Check for Revised By (must check BEFORE generic revision)
@@ -377,8 +459,39 @@ export class WordParserService {
               }
             }
 
-            // Description field (product type)
-            if (textLower.includes('description:') || textLower === 'description') {
+            // Category field (check BEFORE Description)
+            if ((textLower.includes('category:') || textLower === 'category') && !textLower.includes('description') && !metadata.category) {
+              const match = text.match(/category\s*[:\s]+(.+)/i);
+              let categoryValue = '';
+              if (match && match[1]) {
+                categoryValue = match[1].trim();
+              } else if (nextValue) {
+                categoryValue = nextValue;
+              }
+              
+              if (categoryValue) {
+                // Normalize category value to match dropdown options
+                const categoryLower = categoryValue.toLowerCase().trim();
+                if (categoryLower.includes('quality') || categoryLower.includes('control')) {
+                  metadata.category = 'quality_control';
+                } else if (categoryLower.includes('install')) {
+                  metadata.category = 'installation';
+                } else if (categoryLower.includes('maintain')) {
+                  metadata.category = 'maintenance';
+                } else if (categoryLower.includes('inspect')) {
+                  metadata.category = 'inspection';
+                } else {
+                  // Try exact match
+                  const validCategories = ['quality_control', 'installation', 'maintenance', 'inspection'];
+                  if (validCategories.includes(categoryLower)) {
+                    metadata.category = categoryLower as any;
+                  }
+                }
+              }
+            }
+
+            // Description field (product type) - but NOT if it's the Category field
+            if ((textLower.includes('description:') || textLower === 'description') && !textLower.includes('category')) {
               const match = text.match(/description\s*[:\s]+(.+)/i);
               if (match && match[1]) {
                 const desc = match[1].trim();
@@ -452,9 +565,12 @@ export class WordParserService {
         const headerCells = headerRow?.querySelectorAll('td, th');
         const headerTexts = Array.from(headerCells || []).map(c => c.textContent?.trim().toLowerCase() || '');
         
+        console.log(`\n📋 Table ${tableIndex + 1}: Analyzing ${rows.length} rows...`);
+        
         const isChecklistTable = headerTexts.some(t => 
           (t.includes('critical') && t.includes('quality')) || 
-          t.includes('pictures')
+          t.includes('pictures') ||
+          t.includes('process')
         );
         
         // Check if the first cell might be an item number (for tables where each item is in its own table)
@@ -462,23 +578,46 @@ export class WordParserService {
         const mightBeItemTable = firstCellText && !isNaN(parseInt(firstCellText)) && parseInt(firstCellText) > 0;
         
         if (!isChecklistTable && !mightBeItemTable) {
+          console.log(`   ⏭️ Skipping table ${tableIndex + 1} (not a checklist table)`);
           return; // Skip this table (header/metadata table)
         }
         
-        rows.forEach((row, rowIndex) => {
-          const item = this.parseTableRow(row, orderIndex);
+        console.log(`   ✓ Processing table ${tableIndex + 1} as checklist table`);
+        
+        // Skip the first row if it's a header row (contains column names, not item numbers)
+        const startRow = headerTexts.some(t => t === 'no' || t.includes('process') || t.includes('critical')) ? 1 : 0;
+        console.log(`   Starting from row ${startRow} (${startRow === 1 ? 'skipping header' : 'no header detected'})`);
+        
+        for (let rowIndex = startRow; rowIndex < rows.length; rowIndex++) {
+          const row = rows[rowIndex];
+          // Pass header row to parseTableRow for dynamic column detection
+          const item = this.parseTableRow(row, orderIndex, headerRow);
           if (item) {
             items.push(item);
             orderIndex++;
             totalRowsProcessed++;
+            
+            // If item has children, add them to the flat items array right after parent
+            if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+              console.log(`✓ Item ${item.order_index}: Creating ${item.children.length} sub-items`);
+              item.children.forEach((child: ParsedChecklistItem) => {
+                items.push(child);
+              });
+              // Remove children from parent since we've flattened them
+              delete item.children;
+            }
           } else {
             totalRowsSkipped++;
           }
-        });
+        }
+        
+        console.log(`   📊 Table ${tableIndex + 1} summary: ${totalRowsProcessed} items extracted, ${totalRowsSkipped} rows skipped\n`);
       });
       
       // If we successfully extracted items from tables, return them
       if (items.length > 0) {
+        const subItemCount = items.filter(i => i.level === 1).length;
+        console.log(`✅ Returning ${items.length} total items (${subItemCount} sub-items)`);
         return items;
       }
     }
@@ -633,13 +772,11 @@ export class WordParserService {
 
   /**
    * Parse a table row into checklist item
-   * Handles common checklist table formats:
-   * - Column 1: Item Number (1, 2, 3) in red circles
-   * - Column 2: Process Steps (usually "In process")
-   * - Column 3: Critical to Quality (Description with bullet points)
-   * - Column 4: Pictures (Sample Images)
+   * Handles common checklist table formats with dynamic column detection:
+   * - No | Process Steps | [Category] | Critical to Quality | Pictures
+   * The Category column is optional - method detects column positions dynamically
    */
-  private parseTableRow(row: HTMLTableRowElement, orderIndex: number): ParsedChecklistItem | null {
+  private parseTableRow(row: HTMLTableRowElement, orderIndex: number, headerRow?: HTMLTableRowElement): ParsedChecklistItem | null {
     const cells = row.querySelectorAll('td, th');
     if (cells.length === 0) {
       return null;
@@ -650,49 +787,156 @@ export class WordParserService {
     const firstCellText = firstCell?.textContent?.trim() || '';
     
     // Check if first cell contains a number (1, 2, 3, etc.) - these are the actual checklist items
-    const itemNumber = parseInt(firstCellText);
-    const isNumberedItem = !isNaN(itemNumber) && itemNumber > 0 && firstCellText.length <= 3;
+    const itemNumberFromDoc = parseInt(firstCellText);
+    const isNumberedItem = !isNaN(itemNumberFromDoc) && itemNumberFromDoc > 0 && firstCellText.length <= 3;
     
     if (!isNumberedItem) {
+      console.log(`   ⏭️ Skipping row (first cell: "${firstCellText}" is not a valid item number)`);
       return null;
     }
 
-    // For numbered items:
-    // Cell 0: Item number (1, 2, etc.)
-    // Cell 1: Process Steps (usually "In process")
-    // Cell 2: Critical to Quality (this is the description)
-    // Cell 3: Pictures (images)
+    // Use orderIndex (sequential counter) instead of itemNumberFromDoc to avoid duplicates
+    const itemNumber = orderIndex;
+    console.log(`\n   ━━━ Processing Item ${itemNumber} (doc number: ${itemNumberFromDoc}) ━━━`);
+    console.log(`   Row has ${cells.length} cells:`, Array.from(cells).map((c, i) => {
+      const text = c.textContent?.trim().substring(0, 30) || '';
+      const imgCount = c.querySelectorAll('img').length;
+      return `[${i}] ${text}${imgCount > 0 ? ` [${imgCount} img]` : ''}`;
+    }));
 
-    // Extract description from "Critical to Quality" column (typically cell 2)
-    const descriptionCell = cells.length > 2 ? cells[2] : cells.length > 1 ? cells[1] : null;
-    let description = '';
+    // Dynamically find ALL column positions by looking at header row
+    let processStepsIndex = -1;  // NEW: Detect "Process Steps" column for title
+    let categoryIndex = -1;       // NEW: Optional "Category" column
+    let criticalToQualityIndex = -1;
+    let picturesIndex = -1;
+    
+    if (headerRow) {
+      const headerCells = headerRow.querySelectorAll('td, th');
+      console.log(`🔍 Analyzing header row:`, 
+        Array.from(headerCells).map((c, i) => `[${i}] ${c.textContent?.trim()}`));
+      
+      Array.from(headerCells).forEach((headerCell, index) => {
+        const headerText = headerCell.textContent?.trim().toLowerCase() || '';
+        
+        // Detect "No" column (should be index 0)
+        if (headerText.includes('no') && index === 0) {
+          console.log(`✓ Found "No" at column ${index}`);
+        }
+        
+        // Detect "Process Steps" column (usually index 1)
+        if (headerText.includes('process') && headerText.includes('step')) {
+          processStepsIndex = index;
+          console.log(`✓ Found "Process Steps" at column ${index}`);
+        }
+        
+        // Detect "Category" column (optional, usually index 2 if present)
+        if (headerText === 'category' || headerText.includes('category') && !headerText.includes('description')) {
+          categoryIndex = index;
+          console.log(`✓ Found "Category" at column ${index}`);
+        }
+        
+        // Detect "Critical to Quality" column
+        if (headerText.includes('critical') && headerText.includes('quality')) {
+          criticalToQualityIndex = index;
+          console.log(`✓ Found "Critical to Quality" at column ${index}`);
+        }
+        
+        // Detect "Pictures" column
+        if (headerText.includes('pictures') || headerText.includes('picture')) {
+          picturesIndex = index;
+          console.log(`✓ Found "Pictures" at column ${index}`);
+        }
+      });
+    } else {
+      console.warn('⚠️ No header row found for this table');
+    }
+    
+    // Fallback detection if header row doesn't exist or columns weren't found
+    if (processStepsIndex === -1) {
+      // "Process Steps" is typically column 1 (after "No")
+      processStepsIndex = 1;
+      console.log(`⚠️ Using fallback: Process Steps at column ${processStepsIndex}`);
+    }
+    
+    if (criticalToQualityIndex === -1) {
+      console.log(`🔎 Critical to Quality not found in header, searching cells for item ${itemNumber}...`);
+      console.log(`   Available cells:`, Array.from(cells).map((c, i) => {
+        const text = c.textContent?.trim().substring(0, 30) || '';
+        const hasImg = c.querySelectorAll('img').length > 0;
+        return `[${i}] ${text}${hasImg ? ' [HAS IMAGE]' : ''}`;
+      }));
+      
+      // Search cells for the one with substantial text content (likely Critical to Quality)
+      // Start searching from column 2 or 3 (skip No, Process Steps, and possibly Category)
+      const searchStartIndex = categoryIndex > 0 ? categoryIndex + 1 : 2;
+      for (let i = searchStartIndex; i < cells.length; i++) {
+        const cellText = cells[i].textContent?.trim() || '';
+        const hasImages = cells[i].querySelectorAll('img').length > 0;
+        
+        // If cell has substantial text and no images, it's likely Critical to Quality
+        if (cellText.length > 20 && !hasImages) {
+          criticalToQualityIndex = i;
+          console.log(`✓ Found Critical to Quality at cell ${i} (has ${cellText.length} chars, no images)`);
+          break;
+        }
+      }
+      
+      // If still not found, estimate based on table structure
+      if (criticalToQualityIndex === -1) {
+        // If category column exists (3+ non-picture columns), use index 3, else use index 2
+        criticalToQualityIndex = categoryIndex > 0 ? 3 : 2;
+        console.log(`⚠️ Using estimated fallback: column ${criticalToQualityIndex} (category exists: ${categoryIndex > 0})`);
+      }
+    }
+
+    // Extract title from "Process Steps" column
+    const titleCell = processStepsIndex >= 0 && processStepsIndex < cells.length 
+      ? cells[processStepsIndex] 
+      : null;
     let title = '';
+    
+    if (titleCell) {
+      title = titleCell.textContent?.trim() || '';
+      console.log(`📝 Item ${itemNumber}: Using column ${processStepsIndex} (Process Steps) for title: "${title.substring(0, 50)}..."`);
+    }
+
+    // Extract description from "Critical to Quality" column
+    const descriptionCell = criticalToQualityIndex >= 0 && criticalToQualityIndex < cells.length 
+      ? cells[criticalToQualityIndex] 
+      : null;
+    let description = '';
     
     if (descriptionCell) {
       // Use innerHTML to preserve formatting (bold, bullets, lists, etc.)
       const descHTML = descriptionCell.innerHTML?.trim() || '';
       description = descHTML;
       
-      // Use textContent for title (plain text)
-      const descText = descriptionCell.textContent?.trim() || '';
-      const firstSentence = descText.split(/[.!?\n]/)[0].trim();
-      title = firstSentence.substring(0, 100);
+      console.log(`📝 Item ${itemNumber}: Using column ${criticalToQualityIndex} (Critical to Quality) for description`);
+      console.log(`   Description length: ${description.length} chars`);
     }
     
-    // If still no title, use generic
+    // If still no title, try to extract from description or use generic
     if (!title || title.length < 3) {
-      title = `Inspection Item ${itemNumber}`;
+      if (description) {
+        const descText = descriptionCell?.textContent?.trim() || '';
+        const firstSentence = descText.split(/[.!?\n]/)[0].trim();
+        title = firstSentence.substring(0, 100);
+      } else {
+        title = `Inspection Item ${itemNumber}`;
+      }
     }
 
-    // Extract images from "Pictures" column (search all cells since column order may vary)
+    // Extract images from "Pictures" column (or search all cells if Pictures column not found)
     const images: SampleImage[] = [];
     
-    // Check each cell for images (starting from cell 2 onwards, skipping item number and process steps)
-    for (let cellIdx = 2; cellIdx < cells.length; cellIdx++) {
-      const cell = cells[cellIdx];
-      const imgElements = cell.querySelectorAll('img');
-      
-      if (imgElements.length > 0) {
+    if (picturesIndex >= 0) {
+      // We know exactly where the Pictures column is
+      console.log(`📷 Looking for images in Pictures column (index ${picturesIndex})`);
+      const picturesCell = cells[picturesIndex];
+      if (picturesCell) {
+        const imgElements = picturesCell.querySelectorAll('img');
+        console.log(`   Found ${imgElements.length} image(s) in Pictures column`);
+        
         imgElements.forEach((img, idx) => {
           const isDataUrl = img.src?.startsWith('data:') || false;
           const isValidDataUrl = isDataUrl && img.src.includes('base64,') && img.src.split('base64,')[1]?.length > 0;
@@ -723,10 +967,62 @@ export class WordParserService {
               order_index: images.length,
               type: 'photo'
             });
+            console.log(`   ✓ Added image ${images.length}: ${img.alt || 'unnamed'}`);
           }
         });
       }
+    } else {
+      // Pictures column not found - search all cells after the description column
+      console.log(`📷 Pictures column not detected, searching all cells after description...`);
+      const startIdx = criticalToQualityIndex >= 0 ? criticalToQualityIndex + 1 : 2;
+      
+      for (let cellIdx = startIdx; cellIdx < cells.length; cellIdx++) {
+        const cell = cells[cellIdx];
+        const imgElements = cell.querySelectorAll('img');
+        
+        if (imgElements.length > 0) {
+          console.log(`   Found ${imgElements.length} image(s) in column ${cellIdx}`);
+          imgElements.forEach((img, idx) => {
+            const isDataUrl = img.src?.startsWith('data:') || false;
+            const isValidDataUrl = isDataUrl && img.src.includes('base64,') && img.src.split('base64,')[1]?.length > 0;
+            
+            // Validate the image source
+            if (img.src && img.src !== '' && !img.src.includes('placeholder')) {
+              // For data URLs, ensure they're properly formatted
+              if (isDataUrl && !isValidDataUrl) {
+                console.warn(`⚠️ Invalid data URL format for image in item ${itemNumber}`);
+                return;
+              }
+              
+              // Sanitize the data URL if needed
+              let cleanSrc = img.src;
+              if (isDataUrl) {
+                // Remove any potential whitespace in the base64 part
+                const [header, base64Data] = img.src.split('base64,');
+                if (base64Data) {
+                  cleanSrc = `${header}base64,${base64Data.replace(/\s/g, '')}`;
+                }
+              }
+              
+              images.push({
+                url: cleanSrc,
+                label: img.alt || `Sample Image ${images.length + 1}`,
+                description: img.title || '',
+                is_primary: images.length === 0,
+                order_index: images.length,
+                type: 'photo'
+              });
+              console.log(`   ✓ Added image ${images.length}: ${img.alt || 'unnamed'}`);
+            }
+          });
+        }
+      }
     }
+
+    console.log(`📊 Item ${itemNumber} extraction summary:`);
+    console.log(`   - Title: "${title.substring(0, 50)}${title.length > 50 ? '...' : ''}"`);
+    console.log(`   - Description length: ${description.length} chars`);
+    console.log(`   - Images found: ${images.length}`);
 
     // If we have multiple images (more than 1), create sub-items
     // Otherwise, just attach the single image to the main item
@@ -734,32 +1030,44 @@ export class WordParserService {
     let mainItemImages: SampleImage[] | undefined = undefined;
 
     if (images.length > 1) {
-      // Multiple images: Create parent item (no image) + child items (one image each)
+      // Multiple images: Create child items (one image each)
+      // Each child will have one image, parent will have none
       children = images.map((image, imgIndex) => ({
-        title: image.label || image.description || `Image ${imgIndex + 1}`,
+        title: image.label || image.description || `Sample Image ${imgIndex + 1}`,
         description: description, // Inherit parent's description
-        order_index: itemNumber + ((imgIndex + 1) / 100), // 9.01, 9.02, 9.03, etc.
+        order_index: itemNumber + ((imgIndex + 1) / 100), // 3.01, 3.02, 3.03, etc.
         is_required: true,
-        level: 1,
+        level: 1, // Mark as sub-item
+        parent_id: itemNumber, // Reference the parent's order_index (e.g., 3)
         sample_images: [image], // Each child gets one image
         photo_requirements: this.extractPhotoRequirements(description)
       }));
       
-      // Parent item has no image
+      // Parent item has no image (images distributed to children)
       mainItemImages = undefined;
+      
+      console.log(`📸 Created ${children.length} sub-items for item ${itemNumber}:`);
+      children.forEach((child, idx) => {
+        console.log(`   - Sub-item ${idx + 1}: order=${child.order_index}, parent_id=${child.parent_id}, level=${child.level}`);
+      });
     } else {
       // Single image or no image: Attach to main item
       mainItemImages = images.length > 0 ? images : undefined;
+      console.log(`📸 Attached ${images.length} image(s) directly to item ${itemNumber}`);
     }
 
-    const item = {
+    // Always create the main parent item
+    // If we have children, this parent will have no images but will contain the description/title
+    // If no children, this item may have 0-1 images attached directly
+    const item: ParsedChecklistItem = {
       title,
       description,
-      order_index: itemNumber, // Use the actual item number from the document
+      order_index: itemNumber, // Use the actual item number from the document (e.g., 3)
       is_required: true,
-      level: 0,
+      level: 0, // Always mark parent as level 0
+      parent_id: null, // Parent items have no parent_id
       sample_images: mainItemImages,
-      children: children,
+      children: children, // Include children array if we have sub-items
       photo_requirements: this.extractPhotoRequirements(description)
     };
 

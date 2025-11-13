@@ -1,0 +1,75 @@
+.cursor-pointer {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.badge-sm {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.reference-thumbnail {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-color: #0d6efd !important;
+  }
+}
+
+.reference-thumbnail-container {
+  &:hover {
+    z-index: 10;
+  }
+}
+
+// Full checklist modal styles
+.modal-fullscreen {
+  .modal-body {
+    .table {
+      font-size: 0.9rem;
+
+      thead {
+        th {
+          font-weight: 600;
+          background-color: #f8f9fa;
+          border-bottom: 2px solid #dee2e6;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+      }
+
+      tbody {
+        tr {
+          transition: background-color 0.2s ease;
+
+          &.table-primary {
+            background-color: rgba(13, 110, 253, 0.1) !important;
+            border-left: 3px solid #0d6efd;
+          }
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+          }
+        }
+      }
+
+      .img-thumbnail {
+        border: 2px solid #dee2e6;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+
+        &:hover {
+          transform: scale(1.1);
+          border-color: #0d6efd;
+          z-index: 5;
+        }
+      }
+    }
+  }
+}

@@ -73,6 +73,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   notesSaving = false;
   notesLastSaved: Date | null = null;
 
+  // Image preview modal
+  showImagePreview = false;
+  previewImageUrl: string = '';
+
+  // Full checklist overview modal
+  showFullChecklistModal = false;
+
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
     return this.stateService.getItemProgress();
@@ -98,7 +105,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.route.queryParams.subscribe(params => {
       console.log('Query params subscription triggered:', params);
       const idParam = params['id'];
+      const stepParam = params['step'];
       console.log('Instance ID from query params:', idParam, 'Type:', typeof idParam);
+      console.log('Step from query params:', stepParam);
       
       if (idParam) {
         this.instanceId = +idParam;
@@ -106,6 +115,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         
         if (this.instanceId && !isNaN(this.instanceId) && this.instanceId > 0) {
           console.log('Valid instanceId, loading instance...');
+          
+          // Restore step if provided
+          if (stepParam && !isNaN(+stepParam)) {
+            this.currentStep = +stepParam;
+            console.log('Restored step:', this.currentStep);
+          }
+          
           this.loadInstance();
         } else {
           console.error('Invalid instance ID:', idParam, 'Parsed:', this.instanceId);
@@ -602,6 +618,60 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  markAsVerified(): void {
+    // Get current progress item based on currentStep
+    const progress = this.itemProgress[this.currentStep - 1];
+    if (!progress) return;
+
+    // Mark as completed without requiring photos (for optional photo items)
+    this.stateService.updateItemProgress(progress.item.id, {
+      completed: true,
+      completedAt: new Date(),
+      notes: progress.notes || 'Verified without photos'
+    });
+    this.saveProgress();
+    
+    // Auto-advance to next step if available
+    if (this.currentStep < this.itemProgress.length) {
+      setTimeout(() => {
+        this.currentStep++;
+        this.updateUrlWithCurrentStep();
+      }, 300);
+    }
+  }
+
+  toggleVerification(): void {
+    // Get current progress item based on currentStep
+    const progress = this.itemProgress[this.currentStep - 1];
+    if (!progress) return;
+
+    if (progress.completed) {
+      // Unmark verification - reset to incomplete
+      this.stateService.updateItemProgress(progress.item.id, {
+        completed: false,
+        completedAt: undefined,
+        notes: progress.notes || ''
+      });
+    } else {
+      // Mark as completed without requiring photos
+      this.stateService.updateItemProgress(progress.item.id, {
+        completed: true,
+        completedAt: new Date(),
+        notes: progress.notes || 'Verified without photos'
+      });
+      
+      // Auto-advance to next step if available
+      if (this.currentStep < this.itemProgress.length) {
+        setTimeout(() => {
+          this.currentStep++;
+          this.updateUrlWithCurrentStep();
+        }, 300);
+      }
+    }
+    
+    this.saveProgress();
+  }
+
   removePhoto(itemId: number | string, photoIndex: number): void {
     if (!confirm('Are you sure you want to remove this photo?')) return;
 
@@ -679,7 +749,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   previewImage(imageUrl: string): void {
     if (imageUrl) {
-      window.open(imageUrl, '_blank');
+      this.previewImageUrl = imageUrl;
+      this.showImagePreview = true;
+    }
+  }
+
+  closeImagePreview(): void {
+    this.showImagePreview = false;
+    this.previewImageUrl = '';
+  }
+
+  openImageInNewTab(): void {
+    if (this.previewImageUrl) {
+      window.open(this.previewImageUrl, '_blank');
     }
   }
 
@@ -1129,6 +1211,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   navigateToPhotoMode(itemIndex: number): void {
     this.isReviewMode = false;
     this.currentStep = itemIndex + 1; // Convert 0-based index to 1-based step
+    this.updateUrlWithCurrentStep();
+  }
+
+  /**
+   * Update URL with current step for persistence
+   */
+  private updateUrlWithCurrentStep(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { id: this.instanceId, step: this.currentStep },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   /**
@@ -1137,5 +1232,44 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   onSampleImageError(event: any): void {
     console.warn('Failed to load sample image:', event.target.src);
     event.target.style.display = 'none';
+  }
+
+  /**
+   * Full checklist modal methods
+   */
+  openFullChecklistModal(): void {
+    this.showFullChecklistModal = true;
+  }
+
+  closeFullChecklistModal(): void {
+    this.showFullChecklistModal = false;
+  }
+
+  navigateToItemFromModal(index: number): void {
+    this.closeFullChecklistModal();
+    this.navigateToPhotoMode(index);
+  }
+
+  /**
+   * Format value based on item type
+   */
+  formatValue(notes: string): string {
+    return notes || '-';
+  }
+
+  /**
+   * Get status badge class
+   */
+  getStatusBadgeClass(progress: ChecklistItemProgress): string {
+    if (progress.completed || progress.photos.length > 0) return 'bg-success';
+    return 'bg-secondary';
+  }
+
+  /**
+   * Get status text
+   */
+  getStatusText(progress: ChecklistItemProgress): string {
+    if (progress.completed || progress.photos.length > 0) return 'Completed';
+    return 'Pending';
   }
 }

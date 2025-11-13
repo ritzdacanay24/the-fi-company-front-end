@@ -271,7 +271,7 @@ class PhotoChecklistConfigAPI {
                 
                 // Ensure numeric types
                 $item['level'] = isset($item['level']) ? (int)$item['level'] : 0;
-                $item['parent_id'] = isset($item['parent_id']) ? (int)$item['parent_id'] : null;
+                $item['parent_id'] = isset($item['parent_id']) ? (float)$item['parent_id'] : null;
                 $item['id'] = (int)$item['id'];
                 $item['order_index'] = (float)$item['order_index'];
                 $item['is_required'] = (bool)$item['is_required'];
@@ -283,8 +283,165 @@ class PhotoChecklistConfigAPI {
             unset($item); // Break reference
         }
         
-        $result['items'] = $items;
+        // Nest child items under their parents
+        $result['items'] = $this->nestItems($items);
         return $result;
+    }
+
+    /**
+     * Nest child items under their parent items
+     * @param array $items Flat array of items
+     * @return array Nested array with children
+     */
+    private function nestItems($items) {
+        if (!is_array($items) || empty($items)) {
+            return [];
+        }
+        
+        error_log("🔍 nestItems: Processing " . count($items) . " items");
+        
+        $itemsByOrderIndex = [];
+        $parentItems = [];
+        
+        // First pass: index all items by order_index and separate parents from children
+        foreach ($items as $item) {
+            $orderIndex = $item['order_index'];
+            $itemsByOrderIndex[$orderIndex] = $item;
+            
+            // Initialize children array for all items
+            $itemsByOrderIndex[$orderIndex]['children'] = [];
+            
+            // Check if this is a parent item (level 0 or no level)
+            if ($item['level'] == 0 || !isset($item['level'])) {
+                $parentItems[] = $orderIndex;
+            } else {
+                error_log("   Child item found: order_index={$orderIndex}, parent_id={$item['parent_id']}, title={$item['title']}");
+            }
+        }
+        
+        error_log("   Found " . count($parentItems) . " parent items");
+        
+        // Second pass: nest children under parents using order_index
+        foreach ($itemsByOrderIndex as $orderIndex => $item) {
+            // If this item has a parent_id, find parent by order_index and add child
+            if (isset($item['parent_id']) && $item['parent_id'] && isset($itemsByOrderIndex[$item['parent_id']])) {
+                $parentOrderIndex = $item['parent_id'];
+                $itemsByOrderIndex[$parentOrderIndex]['children'][] = $itemsByOrderIndex[$orderIndex];
+                error_log("   ✓ Nested child {$orderIndex} under parent {$parentOrderIndex}");
+            } elseif (isset($item['parent_id']) && $item['parent_id']) {
+                error_log("   ⚠️ WARNING: Child {$orderIndex} has parent_id={$item['parent_id']} but parent not found!");
+            }
+        }
+        
+        // Third pass: build final result with only parent items (children are nested)
+        $result = [];
+        foreach ($parentItems as $parentOrderIndex) {
+            $item = $itemsByOrderIndex[$parentOrderIndex];
+            
+            $childCount = count($item['children']);
+            if ($childCount > 0) {
+                error_log("   Parent {$parentOrderIndex} has {$childCount} children");
+            }
+            
+            // Remove children array if it's empty
+            if (empty($item['children'])) {
+                unset($item['children']);
+            } else {
+                // Sort children by order_index
+                usort($item['children'], function($a, $b) {
+                    return $a['order_index'] <=> $b['order_index'];
+                });
+            }
+            
+            $result[] = $item;
+        }
+        
+        // Sort parent items by order_index
+        usort($result, function($a, $b) {
+            return $a['order_index'] <=> $b['order_index'];
+        });
+        
+        error_log("   Returning " . count($result) . " parent items (with nested children)");
+        
+        return $result;
+    }
+
+    /**
+     * Validate sample images array
+     * Ensures only 1 primary sample image and max 5 reference images
+     * 
+     * @param array $sampleImages Array of sample image objects
+     * @return array [bool success, string error_message]
+     */
+    private function validateSampleImages($sampleImages) {
+        if (empty($sampleImages) || !is_array($sampleImages)) {
+            return [true, '']; // Empty is valid
+        }
+
+        $primaryCount = 0;
+        $referenceCount = 0;
+
+        foreach ($sampleImages as $image) {
+            // Ensure image_type is set (default to 'reference' if not specified)
+            $imageType = $image['image_type'] ?? 'reference';
+            $isPrimary = $image['is_primary'] ?? false;
+
+            // Count primary sample images
+            if ($isPrimary && $imageType === 'sample') {
+                $primaryCount++;
+            }
+
+            // Count reference images (any image that's not the primary sample)
+            if (!$isPrimary || $imageType !== 'sample') {
+                $referenceCount++;
+            }
+        }
+
+        // Validation rules
+        if ($primaryCount > 1) {
+            return [false, 'Only one primary sample image is allowed per checklist item'];
+        }
+
+        if ($referenceCount > 5) {
+            return [false, 'Maximum of 5 reference images allowed per checklist item'];
+        }
+
+        $totalImages = count($sampleImages);
+        if ($totalImages > 6) {
+            return [false, 'Maximum of 6 total images allowed (1 sample + 5 reference)'];
+        }
+
+        return [true, ''];
+    }
+
+    /**
+     * Normalize sample images array
+     * Ensures all images have required fields including image_type
+     * 
+     * @param array $sampleImages Array of sample image objects
+     * @return array Normalized array
+     */
+    private function normalizeSampleImages($sampleImages) {
+        if (empty($sampleImages) || !is_array($sampleImages)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($sampleImages as $index => $image) {
+            $isPrimary = $image['is_primary'] ?? false;
+            
+            $normalized[] = [
+                'url' => $image['url'] ?? '',
+                'label' => $image['label'] ?? ($isPrimary ? 'Primary Sample Image' : 'Reference Image'),
+                'description' => $image['description'] ?? '',
+                'type' => $image['type'] ?? 'photo',
+                'image_type' => $image['image_type'] ?? ($isPrimary ? 'sample' : 'reference'),
+                'is_primary' => $isPrimary,
+                'order_index' => $image['order_index'] ?? $index
+            ];
+        }
+
+        return $normalized;
     }
 
     public function createTemplate() {
@@ -397,6 +554,15 @@ class PhotoChecklistConfigAPI {
             
             // Insert items
             if (!empty($data['items'])) {
+                error_log("🔍 BACKEND RECEIVED " . count($data['items']) . " items to insert");
+                $subItemCount = 0;
+                foreach ($data['items'] as $testItem) {
+                    if (isset($testItem['level']) && $testItem['level'] == 1) {
+                        $subItemCount++;
+                    }
+                }
+                error_log("🔍 Sub-items (level=1) in received data: $subItemCount");
+                
                 foreach ($data['items'] as $index => $item) {
                     error_log("Inserting item $index for template ID $templateId: " . json_encode($item));
                     
@@ -411,18 +577,39 @@ class PhotoChecklistConfigAPI {
                     $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
                     
                     if ($hasSampleImagesColumn) {
-                        // Store in both columns for compatibility
+                        // Prepare sample images array
                         $sampleImagesArray = [];
-                        if (!empty($sampleImageUrl)) {
+                        
+                        // If sample_images is provided in the item data, use it
+                        if (isset($item['sample_images']) && is_array($item['sample_images'])) {
+                            $sampleImagesArray = $item['sample_images'];
+                        } 
+                        // Otherwise, create from sample_image_url for backward compatibility
+                        elseif (!empty($sampleImageUrl)) {
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
-                                'label' => 'Sample Image',
+                                'label' => 'Primary Sample Image',
                                 'description' => '',
                                 'type' => 'photo',
+                                'image_type' => 'sample',
                                 'is_primary' => true,
                                 'order_index' => 0
                             ]];
                         }
+                        
+                        // Validate sample images
+                        list($isValid, $errorMessage) = $this->validateSampleImages($sampleImagesArray);
+                        if (!$isValid) {
+                            throw new Exception("Item '$index': $errorMessage");
+                        }
+                        
+                        // Normalize sample images
+                        $sampleImagesArray = $this->normalizeSampleImages($sampleImagesArray);
+                        
+                        // DEBUG: Log the exact values being inserted
+                        $parentIdValue = $item['parent_id'] ?? null;
+                        $levelValue = $item['level'] ?? 0;
+                        error_log("🔍 INSERTING item $index: parent_id=$parentIdValue, level=$levelValue, title={$item['title']}");
                         
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -430,8 +617,8 @@ class PhotoChecklistConfigAPI {
                         $success = $stmt->execute([
                             $templateId,
                             $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
+                            $parentIdValue,
+                            $levelValue,
                             $item['title'],
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
@@ -440,7 +627,13 @@ class PhotoChecklistConfigAPI {
                             $item['is_required'] ?? true
                         ]);
                         
-                        error_log("Item $index saved with both sample_image_url and sample_images");
+                        if (!$success) {
+                            error_log("❌ FAILED to insert item $index: " . json_encode($stmt->errorInfo()));
+                        } else {
+                            error_log("✅ SUCCESS: Item $index inserted with parent_id=$parentIdValue, level=$levelValue");
+                        }
+                        
+                        error_log("Item $index saved with validated sample_images: " . json_encode($sampleImagesArray));
                     } else {
                         // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
@@ -823,14 +1016,14 @@ class PhotoChecklistConfigAPI {
                 $items[$itemId] = [
                     'id' => (int)$row['id'],
                     'template_id' => (int)$row['template_id'],
-                    'order_index' => (int)$row['order_index'],
+                    'order_index' => (float)$row['order_index'],
                     'title' => $row['title'],
                     'description' => $row['description'],
                     'photo_requirements' => $photoRequirements,
                     'sample_image_url' => $row['sample_image_url'],
                     'is_required' => (bool)$row['is_required'],
                     'level' => isset($row['level']) ? (int)$row['level'] : 0,
-                    'parent_id' => isset($row['parent_id']) ? (int)$row['parent_id'] : null,
+                    'parent_id' => isset($row['parent_id']) ? (float)$row['parent_id'] : null,
                     'photos' => []
                 ];
             }

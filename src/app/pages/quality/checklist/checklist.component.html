@@ -620,78 +620,201 @@
           </div>
           <div class="card-body p-0">
             <div class="list-group list-group-flush" *ngIf="selectedTemplate.items && selectedTemplate.items.length > 0">
-              <div class="list-group-item" *ngFor="let item of selectedTemplate.items; let i = index">
-                <div class="d-flex align-items-start">
-                  <div class="flex-shrink-0 me-3">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                         style="width: 32px; height: 32px; font-size: 0.875rem; font-weight: 600;">
-                      {{i + 1}}
+              <!-- Parent items -->
+              <ng-container *ngFor="let item of selectedTemplate.items; let i = index">
+                <div class="list-group-item">
+                  <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                           style="width: 32px; height: 32px; font-size: 0.875rem; font-weight: 600;">
+                        {{i + 1}}
+                      </div>
                     </div>
-                  </div>
-                  <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                      <h6 class="mb-0">{{item.title}}</h6>
-                      <span class="badge bg-danger" *ngIf="item.is_required">Required</span>
-                    </div>
-                    <p class="text-muted mb-2" *ngIf="item.description">{{item.description}}</p>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">{{item.title}}</h6>
+                        <span class="badge bg-danger" *ngIf="item.is_required">Required</span>
+                      </div>
+                      <div class="text-muted mb-2" *ngIf="item.description" [innerHTML]="item.description"></div>
                     
-                    <!-- Photo Requirements -->
-                    <div class="row g-2 mb-2" *ngIf="item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
-                      <div class="col-auto" *ngIf="item.photo_requirements.angle">
-                        <small class="badge bg-light text-dark">
-                          <i class="mdi mdi-camera-metering-spot me-1"></i>
-                          {{item.photo_requirements.angle | titlecase}}
-                        </small>
+                      <!-- Photo Requirements -->
+                      <div class="row g-2 mb-2" *ngIf="item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
+                        <div class="col-auto" *ngIf="item.photo_requirements.angle">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-camera-metering-spot me-1"></i>
+                            {{item.photo_requirements.angle | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="item.photo_requirements.distance">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-arrow-expand-all me-1"></i>
+                            {{item.photo_requirements.distance | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="item.photo_requirements.lighting">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-lightbulb me-1"></i>
+                            {{item.photo_requirements.lighting | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="item.photo_requirements.focus">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-target me-1"></i>
+                            {{item.photo_requirements.focus}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="item.max_photos || item.min_photos">
+                          <small class="badge bg-info text-white">
+                            <i class="mdi mdi-camera me-1"></i>
+                            {{getPhotoLimitText(item)}}
+                          </small>
+                        </div>
                       </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.distance">
-                        <small class="badge bg-light text-dark">
-                          <i class="mdi mdi-arrow-expand-all me-1"></i>
-                          {{item.photo_requirements.distance | titlecase}}
-                        </small>
-                      </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.lighting">
-                        <small class="badge bg-light text-dark">
-                          <i class="mdi mdi-lightbulb me-1"></i>
-                          {{item.photo_requirements.lighting | titlecase}}
-                        </small>
-                      </div>
-                      <div class="col-auto" *ngIf="item.photo_requirements.focus">
-                        <small class="badge bg-light text-dark">
-                          <i class="mdi mdi-target me-1"></i>
-                          {{item.photo_requirements.focus}}
-                        </small>
-                      </div>
-                      <div class="col-auto" *ngIf="item.max_photos || item.min_photos">
-                        <small class="badge bg-info text-white">
-                          <i class="mdi mdi-camera me-1"></i>
-                          {{getPhotoLimitText(item)}}
-                        </small>
-                      </div>
-                    </div>
 
-                    <!-- Sample Images -->
-                    <div class="mt-2" *ngIf="item.sample_images && item.sample_images.length > 0">
-                      <small class="text-muted d-block mb-2">
-                        <i class="mdi mdi-image me-1"></i>
-                        Sample Image{{ item.sample_images.length > 1 ? 's' : '' }}:
-                        <span *ngIf="item.sample_images.length > 1" class="badge bg-secondary ms-1">{{ item.sample_images.length }}</span>
-                      </small>
-                      
-                      <!-- Display the primary image or first image only -->
-                      <ng-container *ngFor="let sampleImage of item.sample_images; let first = first">
-                        <img *ngIf="sampleImage.is_primary || (first && !hasPrimaryImage(item.sample_images))"
-                             [src]="sampleImage.url" 
-                             class="img-thumbnail"
-                             style="max-width: 200px; max-height: 120px; object-fit: cover; cursor: pointer;"
-                             [alt]="sampleImage.label || ('Sample image for ' + item.title)"
-                             [title]="sampleImage.label || 'Sample Image'"
-                             (click)="previewImage(sampleImage.url)"
-                             (error)="$any($event).target.style.display='none'">
-                      </ng-container>
+                      <!-- Primary Sample Image & Reference Images -->
+                      <div class="mt-2" *ngIf="item.sample_images && item.sample_images.length > 0">
+                        <!-- Primary Sample Image -->
+                        <ng-container *ngFor="let sampleImage of item.sample_images">
+                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
+                               class="mb-3 p-3 border border-primary rounded bg-light">
+                            <div class="d-flex align-items-center mb-2">
+                              <i class="mdi mdi-target text-primary me-2"></i>
+                              <strong class="text-primary">Match This Photo</strong>
+                              <span class="badge bg-primary ms-auto">Primary Sample</span>
+                            </div>
+                            <img [src]="sampleImage.url" 
+                                 class="img-thumbnail border-primary"
+                                 style="max-width: 250px; max-height: 180px; object-fit: contain; cursor: pointer; border-width: 3px !important;"
+                                 [alt]="sampleImage.label || 'Primary sample image'"
+                                 [title]="sampleImage.label || 'Primary Sample Image'"
+                                 (click)="previewImage(sampleImage.url)"
+                                 (error)="$any($event).target.style.display='none'">
+                            <p class="mb-0 mt-2 small text-muted">
+                              <i class="mdi mdi-information-outline me-1"></i>
+                              Users should replicate this exact photo
+                            </p>
+                          </div>
+                        </ng-container>
+                        
+                        <!-- Reference Images -->
+                        <ng-container *ngIf="getReferenceImages(item.sample_images).length > 0">
+                          <div class="mb-2">
+                            <div class="d-flex align-items-center mb-2">
+                              <i class="mdi mdi-image-multiple text-secondary me-2"></i>
+                              <strong class="text-secondary">Additional Reference Images</strong>
+                              <span class="badge bg-secondary ms-2">{{ getReferenceImages(item.sample_images).length }}</span>
+                            </div>
+                          </div>
+                          <div class="row g-2 p-2 border rounded bg-white">
+                            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(item.sample_images)">
+                              <div class="text-center">
+                                <img [src]="refImage.url" 
+                                     class="img-thumbnail"
+                                     style="width: 100%; height: 100px; object-fit: cover; cursor: pointer;"
+                                     [alt]="refImage.label || 'Reference image'"
+                                     [title]="refImage.label || 'Reference Image'"
+                                     (click)="previewImage(refImage.url)"
+                                     (error)="$any($event).target.style.display='none'">
+                                <small class="d-block mt-1 text-muted">{{ refImage.label || refImage.image_type }}</small>
+                              </div>
+                            </div>
+                          </div>
+                        </ng-container>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+                
+                <!-- Child/nested items -->
+                <ng-container *ngIf="item.children && item.children.length > 0">
+                  <div class="list-group-item ms-4 border-start border-primary border-3 bg-light" 
+                       *ngFor="let child of item.children; let j = index">
+                  <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 me-3">
+                      <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center"
+                           style="width: 28px; height: 28px; font-size: 0.75rem; font-weight: 600;">
+                        {{i + 1}}.{{j + 1}}
+                      </div>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0 fs-6">
+                          <i class="mdi mdi-subdirectory-arrow-right me-1 text-primary"></i>
+                          {{child.title}}
+                        </h6>
+                        <span class="badge bg-danger" *ngIf="child.is_required">Required</span>
+                      </div>
+                      <div class="text-muted mb-2 small" *ngIf="child.description" [innerHTML]="child.description"></div>
+                      
+                      <!-- Photo Requirements for child -->
+                      <div class="row g-2 mb-2" *ngIf="child.photo_requirements && hasPhotoRequirements(child.photo_requirements)">
+                        <div class="col-auto" *ngIf="child.photo_requirements.angle">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-camera-metering-spot me-1"></i>
+                            {{child.photo_requirements.angle | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="child.photo_requirements.distance">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-arrow-expand-all me-1"></i>
+                            {{child.photo_requirements.distance | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="child.photo_requirements.lighting">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-lightbulb me-1"></i>
+                            {{child.photo_requirements.lighting | titlecase}}
+                          </small>
+                        </div>
+                        <div class="col-auto" *ngIf="child.max_photos || child.min_photos">
+                          <small class="badge bg-info text-white">
+                            <i class="mdi mdi-camera me-1"></i>
+                            {{getPhotoLimitText(child)}}
+                          </small>
+                        </div>
+                      </div>
+
+                      <!-- Primary Sample Image & Reference Images for child -->
+                      <div class="mt-2" *ngIf="child.sample_images && child.sample_images.length > 0">
+                        <!-- Primary Sample Image -->
+                        <ng-container *ngFor="let sampleImage of child.sample_images">
+                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
+                               class="mb-2 p-2 border border-info rounded" style="background-color: #f0f8ff;">
+                            <div class="d-flex align-items-center mb-1">
+                              <small class="text-info fw-bold">
+                                <i class="mdi mdi-target me-1"></i>Match This
+                              </small>
+                              <span class="badge bg-info ms-auto" style="font-size: 0.65rem;">Primary</span>
+                            </div>
+                            <img [src]="sampleImage.url" 
+                                 class="img-thumbnail border-info"
+                                 style="max-width: 150px; max-height: 100px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
+                                 [alt]="sampleImage.label || 'Primary sample'"
+                                 (click)="previewImage(sampleImage.url)"
+                                 (error)="$any($event).target.style.display='none'">
+                          </div>
+                        </ng-container>
+                        
+                        <!-- Reference Images -->
+                        <ng-container *ngIf="getReferenceImages(child.sample_images).length > 0">
+                          <div class="row g-1">
+                            <div class="col-6" *ngFor="let refImage of getReferenceImages(child.sample_images)">
+                              <img [src]="refImage.url" 
+                                   class="img-thumbnail"
+                                   style="width: 100%; height: 60px; object-fit: cover; cursor: pointer;"
+                                   [alt]="refImage.label || 'Reference'"
+                                   [title]="refImage.label || 'Reference Image'"
+                                   (click)="previewImage(refImage.url)"
+                                   (error)="$any($event).target.style.display='none'">
+                            </div>
+                          </div>
+                        </ng-container>
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+                </ng-container>
+              </ng-container>
             </div>
             
             <!-- Empty State -->

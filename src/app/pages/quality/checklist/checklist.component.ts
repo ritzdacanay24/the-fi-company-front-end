@@ -124,6 +124,10 @@ export class ChecklistComponent implements OnInit {
         if (!template.items || template.items.length === 0) {
             this.photoChecklistService.getTemplate(template.id).subscribe({
                 next: (fullTemplate) => {
+                    console.log('Template data received:', fullTemplate);
+                    console.log('Number of items:', fullTemplate.items?.length);
+                    console.log('First item:', fullTemplate.items?.[0]);
+                    console.log('First item children:', fullTemplate.items?.[0]?.children);
                     this.selectedTemplate = fullTemplate;
                     this.showPreviewModal = true;
                 },
@@ -133,6 +137,8 @@ export class ChecklistComponent implements OnInit {
                 }
             });
         } else {
+            console.log('Using cached template:', template);
+            console.log('Cached template items:', template.items);
             this.selectedTemplate = template;
             this.showPreviewModal = true;
         }
@@ -373,6 +379,13 @@ export class ChecklistComponent implements OnInit {
 
     hasPrimaryImage(sampleImages: any[]): boolean {
         return sampleImages && sampleImages.some(img => img.is_primary);
+    }
+
+    getReferenceImages(sampleImages: any[]): any[] {
+        if (!sampleImages || !Array.isArray(sampleImages)) {
+            return [];
+        }
+        return sampleImages.filter(img => !img.is_primary || img.image_type !== 'sample');
     }
 
     // ==============================================

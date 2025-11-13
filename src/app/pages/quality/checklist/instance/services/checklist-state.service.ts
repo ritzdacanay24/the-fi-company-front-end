@@ -91,8 +91,17 @@ export class ChecklistStateService {
     const item = this.findItemProgress(itemId);
     if (!item) return;
 
+    const newPhotos = [...item.photos, photoUrl];
+    
+    // Check if item should be marked as completed
+    // For photo items, if min_photos requirement is met
+    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const shouldComplete = newPhotos.length >= minPhotos;
+
     this.updateItemProgress(itemId, {
-      photos: [...item.photos, photoUrl]
+      photos: newPhotos,
+      completed: shouldComplete,
+      completedAt: shouldComplete && !item.completedAt ? new Date() : item.completedAt
     });
   }
 
@@ -106,7 +115,15 @@ export class ChecklistStateService {
     const photos = [...item.photos];
     photos.splice(photoIndex, 1);
     
-    this.updateItemProgress(itemId, { photos });
+    // Check if item should still be marked as completed
+    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const shouldComplete = photos.length >= minPhotos;
+    
+    this.updateItemProgress(itemId, { 
+      photos,
+      completed: shouldComplete,
+      completedAt: shouldComplete ? item.completedAt : undefined
+    });
   }
 
   /**
@@ -117,7 +134,16 @@ export class ChecklistStateService {
     if (!item) return;
 
     const photos = item.photos.filter(p => p !== photoUrl);
-    this.updateItemProgress(itemId, { photos });
+    
+    // Check if item should still be marked as completed
+    const minPhotos = item.item.photo_requirements?.min_photos || 1;
+    const shouldComplete = photos.length >= minPhotos;
+    
+    this.updateItemProgress(itemId, { 
+      photos,
+      completed: shouldComplete,
+      completedAt: shouldComplete ? item.completedAt : undefined
+    });
   }
 
   /**

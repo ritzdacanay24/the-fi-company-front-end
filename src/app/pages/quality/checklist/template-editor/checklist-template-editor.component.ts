@@ -21,6 +21,7 @@ interface SampleImage {
   label?: string;
   description?: string;
   type?: 'photo' | 'drawing' | 'bom' | 'schematic' | 'reference' | 'diagram';
+  image_type?: 'sample' | 'reference' | 'defect_example' | 'diagram';  // NEW: categorization for display
   is_primary: boolean;
   order_index: number;
   status?: 'loading' | 'loaded' | 'error';
@@ -358,15 +359,11 @@ interface SampleImage {
 
                       <!-- Photo Requirements -->
                       <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="mb-2">
                           <label class="form-label mb-0">Photo Requirements</label>
-                          <button type="button" class="btn  btn-outline-primary" (click)="toggleRequirements(i)">
-                            <i class="mdi" [class.mdi-chevron-down]="!showRequirements[i]" [class.mdi-chevron-up]="showRequirements[i]"></i>
-                            {{showRequirements[i] ? 'Hide' : 'Show'}} Requirements
-                          </button>
                         </div>
 
-                        <div *ngIf="showRequirements[i]" class="border rounded p-3 bg-light">
+                        <div class="border rounded p-3 bg-light">
                             <div formGroupName="photo_requirements">
                               <div class="row mb-3">
                                 <div class="col-md-3 mb-3">
@@ -439,53 +436,131 @@ interface SampleImage {
                                   </div>
                                 </div>
                               </div>
+                              
+                              <div class="row">
+                                <div class="col-md-12 mb-3">
+                                  <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'picture-required-' + i">
+                                    <label class="form-check-label" [for]="'picture-required-' + i">
+                                      <strong>Picture Required</strong>
+                                    </label>
+                                  </div>
+                                  <div class="form-text">
+                                    <i class="mdi mdi-information-outline me-1"></i>
+                                    When enabled, users must take a photo. When disabled, users can simply confirm the item without capturing a photo.
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <!-- Sample Images -->
+                        <!-- Primary Sample Image -->
                         <div class="mb-3">
                           <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label mb-0">Sample Image</label>
-                            <button type="button" class="btn  btn-outline-primary" 
-                                    (click)="openSampleImageUpload(i)"
+                            <div>
+                              <label class="form-label mb-0">Primary Sample Image</label>
+                              <small class="d-block text-muted">The main image users should replicate when taking photos</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary" 
+                                    (click)="openPrimarySampleImageUpload(i)"
                                     [disabled]="uploadingImage">
                               <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasSampleImage(i)" [class.mdi-image-edit]="hasSampleImage(i)"></i>
-                              {{uploadingImage ? 'Uploading...' : (hasSampleImage(i) ? 'Replace Image' : 'Add Sample Image')}}
+                              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(i)" [class.mdi-image-edit]="hasPrimarySampleImage(i)"></i>
+                              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(i) ? 'Replace' : 'Add Sample')}}
                             </button>
                           </div>
                           
-                          <div *ngIf="hasSampleImage(i)" class="d-flex align-items-center">
+                          <div *ngIf="hasPrimarySampleImage(i)" class="d-flex align-items-center border rounded p-3 bg-light">
                             <div class="position-relative me-3">
-                              <img [src]="getSafeImageUrl(i)"
-                                   class="img-thumbnail"
-                                   style="width: 120px; height: 120px; object-fit: contain; cursor: pointer; background: white;"
-                                   [alt]="getSampleImage(i)?.label || 'Sample image'"
+                              <img [src]="getPrimarySampleImageUrl(i)"
+                                   class="img-thumbnail border-primary"
+                                   style="width: 150px; height: 150px; object-fit: contain; cursor: pointer; background: white; border-width: 3px !important;"
+                                   [alt]="getPrimarySampleImage(i)?.label || 'Primary sample image'"
                                    (click)="previewSampleImage(i)"
                                    (error)="onSampleImageError(i)"
                                    (load)="onSampleImageLoad(i)">
-                              <ng-container *ngIf="!getSampleImage(i)?.url">
-                                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 120px; height: 120px;">
-                                  <i class="mdi mdi-image-off text-muted" style="font-size: 2rem;"></i>
-                                </div>
-                              </ng-container>
+                              <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1">
+                                Primary
+                              </span>
                               <button type="button"
-                                      class="btn  btn-danger position-absolute top-0 end-0"
-                                      style="transform: translate(50%, -50%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
-                                      (click)="removeSampleImage(i)">
-                                <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
+                                      class="btn btn-danger position-absolute top-0 end-0"
+                                      style="transform: translate(50%, -50%); width: 24px; height: 24px; padding: 0; border-radius: 50%;"
+                                      (click)="removePrimarySampleImage(i)">
+                                <i class="mdi mdi-close" style="font-size: 0.8rem;"></i>
                               </button>
                             </div>
-                            <div>
-                              <small class="text-muted">{{getSampleImage(i)?.label || 'Sample Image'}}</small>
-                              <span *ngIf="!getSampleImage(i)?.url" class="text-danger ms-2">Image not available</span>
+                            <div class="flex-grow-1">
+                              <div class="d-flex align-items-start mb-2">
+                                <i class="mdi mdi-target text-primary me-2 mt-1"></i>
+                                <div>
+                                  <strong>Match This Photo</strong>
+                                  <p class="mb-0 text-muted small">Users will compare their captured photo against this image</p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           
-                          <div *ngIf="!hasSampleImage(i)" class="text-muted text-center py-3 border rounded bg-light">
-                            <i class="mdi mdi-image-outline mb-2" style="font-size: 2rem;"></i>
-                            <p class="mb-0">No sample image added</p>
+                          <div *ngIf="!hasPrimarySampleImage(i)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
+                            <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
+                            <p class="mb-0"><strong>No primary sample image</strong></p>
+                            <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
+                          </div>
+                        </div>
+
+                        <!-- Reference Images -->
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                              <label class="form-label mb-0">Reference Images</label>
+                              <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                    (click)="openReferenceImageUpload(i)"
+                                    [disabled]="uploadingImage || getReferenceImageCount(i) >= 5">
+                              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
+                              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
+                              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(i)}}/5</span>
+                            </button>
+                          </div>
+                          
+                          <!-- Reference Images Grid -->
+                          <div *ngIf="getReferenceImages(i).length > 0" class="row g-2">
+                            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(i); let refIdx = index">
+                              <div class="position-relative border rounded p-2 bg-white">
+                                <img [src]="refImage.url"
+                                     class="img-thumbnail w-100"
+                                     style="height: 100px; object-fit: cover; cursor: pointer;"
+                                     [alt]="refImage.label || 'Reference image'"
+                                     (click)="previewReferenceImage(i, refIdx)">
+                                <button type="button"
+                                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                                        style="transform: translate(25%, -25%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
+                                        (click)="removeReferenceImage(i, refIdx)">
+                                  <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
+                                </button>
+                                <div class="mt-1">
+                                  <input type="text" 
+                                         class="form-control form-control-sm" 
+                                         placeholder="Label (optional)"
+                                         [(ngModel)]="refImage.label"
+                                         [ngModelOptions]="{standalone: true}">
+                                  <select class="form-select form-select-sm mt-1" 
+                                          [(ngModel)]="refImage.image_type"
+                                          [ngModelOptions]="{standalone: true}">
+                                    <option value="reference">Reference</option>
+                                    <option value="defect_example">Defect Example</option>
+                                    <option value="diagram">Diagram</option>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div *ngIf="getReferenceImages(i).length === 0" class="text-muted text-center py-3 border rounded bg-light">
+                            <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0 small">No reference images added</p>
                           </div>
                         </div>
                       </div>
@@ -740,7 +815,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   saving = false;
   loading = false;
   uploadingImage = false;
-  showRequirements: boolean[] = [];
   showDescriptionPreview: boolean[] = [];
   selectedQualityDocument: QualityDocumentSelection | null = null;
   
@@ -751,7 +825,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   importManualItemCount = 5;
   
   // Sample image management - single image per item
-  sampleImages: { [itemIndex: number]: SampleImage | null } = {};
+  sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null } = {};
   
   // Image preview
   previewImageUrl: string | null = null;
@@ -862,22 +936,62 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
     this.sampleImages = {};
 
-    // Add template items and their sample images
+    // Flatten items if backend returns nested structure (children inside parents)
+    let flattenedItems: any[] = [];
     if (template.items) {
-      template.items.forEach((item, index) => {
+      template.items.forEach((item: any) => {
+        flattenedItems.push(item);
+        // If item has children array, flatten them into main array
+        if (item.children && Array.isArray(item.children)) {
+          item.children.forEach((child: any) => {
+            flattenedItems.push(child);
+          });
+        }
+      });
+    }
+
+    console.log(`📋 Loading template with ${template.items?.length || 0} parent items, flattened to ${flattenedItems.length} total items`);
+
+    // Add template items and their sample images
+    if (flattenedItems.length > 0) {
+      flattenedItems.forEach((item, index) => {
         this.items.push(this.createItemFormGroup(item));
-        this.showRequirements[index] = false;
         this.showDescriptionPreview[index] = true; // Default to preview mode
         
-        // Load sample image if it exists - check both new and old formats
-        if (item.sample_image_url) {
-          // New format: direct URL
+        // Load sample images - handle both array format and single URL
+        if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
+          // Array format: Load all images (primary + references)
+          const loadedImages: SampleImage[] = item.sample_images.map((img: any, imgIndex: number) => ({
+            id: `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${imgIndex}`,
+            url: img.url,
+            label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${imgIndex}`),
+            description: img.description || '',
+            type: img.type || 'photo',
+            image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
+            is_primary: img.is_primary || false,
+            order_index: img.order_index || imgIndex,
+            status: 'loaded' as const
+          }));
+          
+          this.sampleImages[index] = loadedImages;
+          
+          // Update the form control with all images
+          const itemFormGroup = this.items.at(index) as FormGroup;
+          if (itemFormGroup) {
+            itemFormGroup.patchValue({
+              sample_image_url: item.sample_image_url || loadedImages.find(img => img.is_primary)?.url || loadedImages[0]?.url,
+              sample_images: loadedImages
+            });
+          }
+        } else if (item.sample_image_url) {
+          // Single URL format: Just the primary image
           this.sampleImages[index] = {
             id: `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             url: item.sample_image_url,
             label: 'Sample Image',
             description: '',
             type: 'photo',
+            image_type: 'sample',
             is_primary: true,
             order_index: 0,
             status: 'loaded' as const
@@ -886,31 +1000,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           // Update the form control with the loaded sample image URL
           const itemFormGroup = this.items.at(index) as FormGroup;
           if (itemFormGroup) {
-            const sampleImageControl = itemFormGroup.get('sample_image_url');
-            if (sampleImageControl) {
-              sampleImageControl.setValue(item.sample_image_url);
-            }
-          }
-        } else if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
-          // Old format: array of images (backward compatibility)
-          this.sampleImages[index] = {
-            id: `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            url: item.sample_images[0].url,
-            label: item.sample_images[0].label || 'Sample Image',
-            description: item.sample_images[0].description || '',
-            type: item.sample_images[0].type || 'photo',
-            is_primary: true,
-            order_index: 0,
-            status: 'loaded' as const
-          };
-          
-          // Update the form control with the loaded sample image URL
-          const itemFormGroup = this.items.at(index) as FormGroup;
-          if (itemFormGroup) {
-            const sampleImageControl = itemFormGroup.get('sample_image_url');
-            if (sampleImageControl) {
-              sampleImageControl.setValue(item.sample_images[0].url);
-            }
+            itemFormGroup.patchValue({
+              sample_image_url: item.sample_image_url,
+              sample_images: [this.sampleImages[index] as SampleImage]
+            });
           }
         }
       });
@@ -930,9 +1023,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         lighting: [item?.photo_requirements?.lighting || ''],
         focus: [item?.photo_requirements?.focus || ''],
         min_photos: [item?.photo_requirements?.min_photos || null],
-        max_photos: [item?.photo_requirements?.max_photos || null]
+        max_photos: [item?.photo_requirements?.max_photos || null],
+        picture_required: [item?.photo_requirements?.picture_required !== undefined ? item?.photo_requirements?.picture_required : true] // Default to true
       }),
       sample_image_url: [item?.sample_image_url || item?.sample_images?.[0]?.url || null], // Use sample_image_url or first sample_images URL
+      sample_images: [item?.sample_images || null], // NEW: Array of all sample/reference images
       level: [item?.level || 0], // 0 = parent, 1 = child
       parent_id: [item?.parent_id || null] // Reference to parent item
     });
@@ -997,7 +1092,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   addItem(): void {
     const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
-    this.showRequirements.push(false);
     this.showDescriptionPreview.push(true); // Default to preview mode
   }
 
@@ -1027,6 +1121,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       order_index: [newOrderIndex],
       is_required: [true],
       sample_image_url: [null],
+      sample_images: [null], // NEW: Array of all sample/reference images
       level: [1], // Child level
       parent_id: [parentOrderIndex],
       photo_requirements: this.fb.group({
@@ -1035,7 +1130,8 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         lighting: [''],
         focus: [''],
         min_photos: [1],
-        max_photos: [5]
+        max_photos: [5],
+        picture_required: [true] // Default to true
       })
     });
     
@@ -1052,7 +1148,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
     
     this.items.insert(insertIndex, subItem);
-    this.showRequirements.splice(insertIndex, 0, false);
     this.showDescriptionPreview.splice(insertIndex, 0, true); // Default to preview mode
     
     console.log(`✓ Added sub-item at index ${insertIndex} under parent ${parentIndex}`);
@@ -1082,7 +1177,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       // Remove children first (in reverse order to maintain indices)
       childIndicesToRemove.reverse().forEach(childIndex => {
         this.items.removeAt(childIndex);
-        this.showRequirements.splice(childIndex, 1);
         delete this.sampleImages[childIndex];
       });
       
@@ -1091,7 +1185,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Remove the item itself
     this.items.removeAt(index);
-    this.showRequirements.splice(index, 1);
     delete this.sampleImages[index];
     
     // Rebuild sample images dictionary with updated indices
@@ -1105,10 +1198,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         this.sampleImages[oldIndex] = tempImages[oldIndex];
       }
     });
-  }
-
-  toggleRequirements(index: number): void {
-    this.showRequirements[index] = !this.showRequirements[index];
   }
 
   toggleDescriptionPreview(index: number): void {
@@ -1138,7 +1227,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Move the item in the array
     moveItemInArray(this.items.controls, previousIndex, currentIndex);
-    moveItemInArray(this.showRequirements, previousIndex, currentIndex);
     
     // Also move sample images to match the new indices
     const movedImage = this.sampleImages[previousIndex];
@@ -1235,7 +1323,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           
           if (currentChildIndex !== targetIndex) {
             moveItemInArray(this.items.controls, currentChildIndex, targetIndex);
-            moveItemInArray(this.showRequirements, currentChildIndex, targetIndex);
           }
         });
       }
@@ -1339,7 +1426,20 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   getSampleImage(itemIndex: number): SampleImage | null {
     const sampleImage = this.sampleImages[itemIndex] || null;
     
-    // Convert relative URLs to absolute URLs (but skip data URLs)
+    // If it's an array, return the primary or first image for backward compatibility
+    if (Array.isArray(sampleImage)) {
+      const primary = sampleImage.find(img => img.is_primary);
+      const firstImage = primary || sampleImage[0] || null;
+      
+      // Convert relative URLs to absolute URLs (but skip data URLs)
+      if (firstImage && firstImage.url && !firstImage.url.startsWith('data:')) {
+        firstImage.url = this.getAbsoluteImageUrl(firstImage.url);
+      }
+      
+      return firstImage;
+    }
+    
+    // Single image - convert relative URLs to absolute URLs (but skip data URLs)
     if (sampleImage && sampleImage.url && !sampleImage.url.startsWith('data:')) {
       sampleImage.url = this.getAbsoluteImageUrl(sampleImage.url);
     }
@@ -1633,9 +1733,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   previewSampleImage(itemIndex: number): void {
-    const sampleImage = this.getSampleImage(itemIndex);
-    if (sampleImage?.url) {
-      this.previewImageUrl = sampleImage.url;
+    const primaryImage = this.getPrimarySampleImage(itemIndex);
+    if (primaryImage?.url) {
+      this.previewImageUrl = primaryImage.url;
       this.modalService.open(this.imagePreviewModalRef, { 
         size: 'lg',
         centered: true
@@ -1676,6 +1776,287 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Image loaded successfully
   }
 
+  // ============================================
+  // Primary Sample Image Methods
+  // ============================================
+  
+  hasPrimarySampleImage(itemIndex: number): boolean {
+    const images = this.sampleImages[itemIndex];
+    if (!Array.isArray(images)) {
+      return !!images; // Legacy single image
+    }
+    return images.some(img => img.is_primary && img.image_type === 'sample');
+  }
+
+  getPrimarySampleImage(itemIndex: number): SampleImage | null {
+    const images = this.sampleImages[itemIndex];
+    if (!Array.isArray(images)) {
+      return images || null; // Legacy single image
+    }
+    return images.find(img => img.is_primary && img.image_type === 'sample') || null;
+  }
+
+  getPrimarySampleImageUrl(itemIndex: number): SafeUrl | string | null {
+    const primaryImage = this.getPrimarySampleImage(itemIndex);
+    if (!primaryImage?.url) return null;
+    
+    if (primaryImage.url.startsWith('data:')) {
+      return this.sanitizer.bypassSecurityTrustUrl(primaryImage.url);
+    }
+    return this.getAbsoluteImageUrl(primaryImage.url);
+  }
+
+  openPrimarySampleImageUpload(itemIndex: number): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = async (event: any) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        try {
+          await this.uploadPrimarySampleImage(itemIndex, file);
+        } catch (error) {
+          console.error('Upload failed:', error);
+        }
+      } else {
+        alert('Please select an image file (JPG, PNG, GIF, WebP)');
+      }
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  }
+
+  async uploadPrimarySampleImage(itemIndex: number, file: File): Promise<void> {
+    this.uploadingImage = true;
+    
+    try {
+      const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-primary`);
+      
+      if (response.success && response.url) {
+        const newPrimaryImage: SampleImage = {
+          url: response.url,
+          label: 'Primary Sample Image',
+          description: 'This is what users should replicate',
+          type: 'photo',
+          image_type: 'sample',
+          is_primary: true,
+          order_index: 0,
+          status: 'loaded'
+        };
+        
+        // Update sample images array
+        let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
+        let imageArray: SampleImage[] = [];
+        
+        if (!images) {
+          imageArray = [];
+        } else if (Array.isArray(images)) {
+          imageArray = images;
+        } else {
+          imageArray = [images];
+        }
+        
+        // Remove old primary sample if exists
+        imageArray = imageArray.filter(img => !(img.is_primary && img.image_type === 'sample'));
+        
+        // Add new primary sample at the start
+        imageArray.unshift(newPrimaryImage);
+        
+        this.sampleImages[itemIndex] = imageArray;
+        
+        // Update form control
+        const item = this.items.at(itemIndex);
+        item.patchValue({
+          sample_image_url: response.url,
+          sample_images: imageArray
+        });
+        
+        // Mark form as dirty to detect changes
+        item.markAsDirty();
+        this.templateForm.markAsDirty();
+        
+        console.log('Primary sample image uploaded successfully', imageArray);
+      }
+    } catch (error) {
+      console.error('Error uploading primary sample image:', error);
+      alert('Error uploading image. Please try again.');
+    } finally {
+      this.uploadingImage = false;
+    }
+  }
+
+  removePrimarySampleImage(itemIndex: number): void {
+    let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
+    let imageArray: SampleImage[] = [];
+    
+    if (!images) {
+      this.sampleImages[itemIndex] = null;
+      return;
+    }
+    
+    if (Array.isArray(images)) {
+      // Remove primary sample
+      imageArray = images.filter(img => !(img.is_primary && img.image_type === 'sample'));
+      this.sampleImages[itemIndex] = imageArray.length > 0 ? imageArray : null;
+    } else {
+      this.sampleImages[itemIndex] = null;
+    }
+    
+    // Update form
+    const item = this.items.at(itemIndex);
+    const remainingImages = this.sampleImages[itemIndex];
+    item.patchValue({
+      sample_image_url: '',
+      sample_images: remainingImages
+    });
+  }
+
+  // ============================================
+  // Reference Images Methods
+  // ============================================
+  
+  getReferenceImages(itemIndex: number): SampleImage[] {
+    const images = this.sampleImages[itemIndex];
+    if (!Array.isArray(images)) {
+      return [];
+    }
+    return images.filter(img => !img.is_primary || img.image_type !== 'sample');
+  }
+
+  getReferenceImageCount(itemIndex: number): number {
+    return this.getReferenceImages(itemIndex).length;
+  }
+
+  openReferenceImageUpload(itemIndex: number): void {
+    if (this.getReferenceImageCount(itemIndex) >= 5) {
+      alert('Maximum of 5 reference images allowed');
+      return;
+    }
+    
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = async (event: any) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        try {
+          await this.uploadReferenceImage(itemIndex, file);
+        } catch (error) {
+          console.error('Upload failed:', error);
+        }
+      } else {
+        alert('Please select an image file');
+      }
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  }
+
+  async uploadReferenceImage(itemIndex: number, file: File): Promise<void> {
+    if (this.getReferenceImageCount(itemIndex) >= 5) {
+      alert('Maximum of 5 reference images allowed');
+      return;
+    }
+    
+    this.uploadingImage = true;
+    
+    try {
+      const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-ref-${Date.now()}`);
+      
+      if (response.success && response.url) {
+        const newReferenceImage: SampleImage = {
+          url: response.url,
+          label: `Reference ${this.getReferenceImageCount(itemIndex) + 1}`,
+          description: '',
+          type: 'photo',
+          image_type: 'reference',
+          is_primary: false,
+          order_index: this.getReferenceImageCount(itemIndex) + 1,
+          status: 'loaded'
+        };
+        
+        // Update sample images array
+        let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
+        let imageArray: SampleImage[] = [];
+        
+        if (!images) {
+          imageArray = [];
+        } else if (Array.isArray(images)) {
+          imageArray = images;
+        } else {
+          // Legacy single image - ensure it's marked as primary sample before converting to array
+          const legacyImage = images;
+          legacyImage.is_primary = true;
+          legacyImage.image_type = 'sample';
+          imageArray = [legacyImage];
+        }
+        
+        imageArray.push(newReferenceImage);
+        this.sampleImages[itemIndex] = imageArray;
+        
+        // Update form control
+        const item = this.items.at(itemIndex);
+        item.patchValue({
+          sample_images: imageArray
+        });
+        
+        // Mark form as dirty to detect changes
+        item.markAsDirty();
+        this.templateForm.markAsDirty();
+        
+        console.log('Reference image uploaded successfully', imageArray);
+      }
+    } catch (error) {
+      console.error('Error uploading reference image:', error);
+      alert('Error uploading image. Please try again.');
+    } finally {
+      this.uploadingImage = false;
+    }
+  }
+
+  removeReferenceImage(itemIndex: number, refImageIndex: number): void {
+    let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
+    if (!Array.isArray(images)) return;
+    
+    const refImages = this.getReferenceImages(itemIndex);
+    const imageToRemove = refImages[refImageIndex];
+    
+    // Remove the specific reference image
+    const filteredImages: SampleImage[] = images.filter((img: SampleImage) => img !== imageToRemove);
+    
+    this.sampleImages[itemIndex] = filteredImages.length > 0 ? filteredImages : null;
+    
+    // Update form
+    const item = this.items.at(itemIndex);
+    item.patchValue({
+      sample_images: this.sampleImages[itemIndex]
+    });
+    
+    // Mark form as dirty to detect changes
+    item.markAsDirty();
+    this.templateForm.markAsDirty();
+  }
+
+  previewReferenceImage(itemIndex: number, refImageIndex: number): void {
+    const refImages = this.getReferenceImages(itemIndex);
+    const image = refImages[refImageIndex];
+    if (image?.url) {
+      this.previewImageUrl = image.url;
+      this.modalService.open(this.imagePreviewModalRef, { 
+        size: 'lg',
+        centered: true
+      });
+    }
+  }
+
   saveTemplate(): void {
     if (this.templateForm.invalid) {
       this.templateForm.markAllAsTouched();
@@ -1683,6 +2064,16 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
 
     this.saving = true;
+    
+    // DEBUG: Check FormArray directly before serialization
+    console.log('🔍 FormArray length:', this.items.length);
+    console.log('🔍 FormArray controls:', this.items.controls.map((c: any, i: number) => ({
+      index: i,
+      title: c.value.title,
+      level: c.value.level,
+      parent_id: c.value.parent_id
+    })));
+    
     const templateData = this.templateForm.value;
 
     console.log('Raw template form value:', templateData);
@@ -1893,6 +2284,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       { key: 'description', label: 'Description' },
       { key: 'is_required', label: 'Required' },
       { key: 'sample_image_url', label: 'Sample Image' },
+      { key: 'sample_images', label: 'Sample & Reference Images' }, // Track all images (primary + references)
       { key: 'photo_requirements', label: 'Photo Requirements' },
       { key: 'order_index', label: 'Position' },        // Track reordering
       { key: 'level', label: 'Hierarchy Level' },       // Track parent/child changes
@@ -2001,6 +2393,15 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     const saveRequest = (createVersion || !this.editingTemplate) 
       ? this.configService.createTemplate(templateData)
       : this.configService.updateTemplate(this.editingTemplate.id, templateData);
+
+    // DEBUG: Simplified logging
+    const subItemCount = templateData.items?.filter((i: any) => i.level === 1).length || 0;
+    console.log('🚀 API PAYLOAD:', {
+      total: templateData.items?.length || 0,
+      parents: (templateData.items?.length || 0) - subItemCount,
+      subItems: subItemCount,
+      hasSubItems: subItemCount > 0
+    });
 
     // Add timeout wrapper
     const timeoutId = setTimeout(() => {
@@ -2284,6 +2685,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     const templateData = this.templateForm.value;
     
+    // DEBUG: Log first 5 items to see their parent_id and level values
+    console.log('🔍 FIRST 5 ITEMS IN TEMPLATEDATA:');
+    templateData.items.slice(0, 5).forEach((item: any, idx: number) => {
+      console.log(`  [${idx}] title="${item.title}" order=${item.order_index} parent_id=${item.parent_id} level=${item.level}`);
+    });
+    
+    // DEBUG: Verify sub-items are in the data being auto-saved
+    console.log('🔍 AUTO-SAVE CHECK:', {
+      totalItemsInForm: this.items.length,
+      totalItemsInData: templateData.items.length,
+      subItemsInData: templateData.items.filter((i: any) => i.level === 1).length
+    });
+    
     // Log summary instead of full data to avoid console spam
     const itemsWithImages = templateData.items.filter((item: any) => item.sample_image_url).length;
     console.log('📤 Sending template to backend:', {
@@ -2380,6 +2794,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('   - Template name:', parsedTemplate.name);
     console.log('   - Items to import:', parsedTemplate.items?.length || 0);
     
+    // Log the structure of items array
+    if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
+      const parentCount = parsedTemplate.items.filter((i: any) => i.level === 0).length;
+      const childCount = parsedTemplate.items.filter((i: any) => i.level === 1).length;
+      console.log(`   - Parent items: ${parentCount}, Sub-items: ${childCount}`);
+      
+      parsedTemplate.items.forEach((item: any, idx: number) => {
+        if (item.level === 1) {
+          console.log(`   [${idx}] 🔗 Sub-item: order=${item.order_index}, parent_id=${item.parent_id}, level=${item.level}`);
+        }
+      });
+    }
+    
     // Clear existing items and sample images
     while (this.items.length > 0) {
       this.items.removeAt(0);
@@ -2403,29 +2830,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('✓ Basic template info populated');
     console.log('   - Form items array length BEFORE adding:', this.items.length);
 
-    // Add all items (recursively process children if present)
+    // Add all items (already flattened by parser - no need to process children)
     if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
-      console.log(`📝 Processing ${parsedTemplate.items.length} items...`);
+      console.log(`📝 Processing ${parsedTemplate.items.length} items (including sub-items)...`);
       parsedTemplate.items.forEach((item: any, index: number) => {
-        console.log(`   Adding item ${index + 1}: ${item.title}`);
+        const levelLabel = item.level === 1 ? ` (sub-item, parent_id: ${item.parent_id})` : '';
+        console.log(`   Adding item ${index + 1}: ${item.title}${levelLabel}`);
         this.addItemToForm(item, index);
-        
-        // Process children if present
-        if (item.children && Array.isArray(item.children) && item.children.length > 0) {
-          console.log(`   📂 Item ${index + 1} has ${item.children.length} children - processing...`);
-          item.children.forEach((childItem: any, childIndex: number) => {
-            const childFormIndex = this.items.length;
-            console.log(`      Adding child item: ${childItem.title}`);
-            this.addItemToForm(childItem, childFormIndex, item.order_index);
-          });
-        }
       });
     } else {
       console.warn('⚠️ No items array found in parsedTemplate!');
     }
-
-    // Initialize showRequirements array
-    this.showRequirements = new Array(this.items.length).fill(false);
     
     // Trigger change detection to update UI
     this.cdr.detectChanges();

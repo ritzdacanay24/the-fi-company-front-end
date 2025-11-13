@@ -52,10 +52,17 @@
           <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
             <i class="mdi mdi-clipboard-check text-white fs-4"></i>
           </div>
-          <div>
+          <div class="flex-grow-1">
             <h2 class="mb-1 text-primary">{{template?.name || 'Checklist Instance'}}</h2>
             <p class="text-muted mb-0">Progress: {{getCompletedItemsCount()}} of {{getTotalItemsCount()}} items completed</p>
           </div>
+          <button 
+            type="button" 
+            class="btn btn-outline-primary"
+            (click)="openFullChecklistModal()"
+            title="View Full Checklist Table">
+            <i class="mdi mdi-table me-2"></i>Full View
+          </button>
         </div>
         
         <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert" 
@@ -67,6 +74,56 @@
               <p class="mb-2">
                 Checklist {{instance?.status}} on: {{instance?.updated_at | date:'medium'}}
               </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work Order Information Card -->
+        <div class="card shadow-sm border-0 mb-4" *ngIf="instance">
+          <div class="card-body p-4">
+            <h5 class="card-title mb-3">
+              <i class="mdi mdi-information-outline me-2"></i>
+              Work Order Information
+            </h5>
+            <div class="row g-3">
+              <div class="col-md-3 col-sm-6" *ngIf="instance.work_order_number">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Work Order</small>
+                  <span class="text-primary fw-bold">{{ instance.work_order_number }}</span>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6" *ngIf="instance.part_number">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Part Number</small>
+                  <span class="text-dark">{{ instance.part_number }}</span>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6" *ngIf="instance.serial_number">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Serial Number</small>
+                  <span class="text-dark">{{ instance.serial_number }}</span>
+                </div>
+              </div>
+              <div class="col-md-3 col-sm-6" *ngIf="instance.operator_name">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Operator</small>
+                  <span class="text-dark">{{ instance.operator_name }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-2" *ngIf="template?.version || template?.description">
+              <div class="col-md-3 col-sm-6" *ngIf="template?.version">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Template Version</small>
+                  <span class="text-muted">{{ template.version }}</span>
+                </div>
+              </div>
+              <div class="col-md-9 col-sm-6" *ngIf="template?.description">
+                <div class="d-flex flex-column">
+                  <small class="text-muted text-uppercase fw-semibold mb-1">Description</small>
+                  <span class="text-muted small">{{ template.description }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -107,17 +164,52 @@
                       {{getItemLabel(progress)}} of {{getTotalItemsCount()}}
                     </span>
                   </div>
-                  <p class="text-muted mb-0" *ngIf="progress.item.description">
-                    {{progress.item.description}}
-                  </p>
+                  <div class="text-muted mb-0" *ngIf="progress.item.description" [innerHTML]="progress.item.description"></div>
+                </div>
+              </div>
+
+              <!-- Reference Images Section (Below Description, excluding primary) - Small Avatar Style -->
+              <div class="mb-4" *ngIf="progress.item.sample_images && progress.item.sample_images.length > 1">
+                <h6 class="text-info mb-3">
+                  <i class="mdi mdi-image-multiple me-2"></i>Reference Images
+                  <span class="badge bg-info ms-2">
+                    {{progress.item.sample_images.length - 1}} additional image{{(progress.item.sample_images.length - 1) > 1 ? 's' : ''}}
+                  </span>
+                </h6>
+                
+                <!-- Multiple Reference Images as Small Thumbnails (excluding primary) -->
+                <div class="d-flex flex-wrap gap-2">
+                  <div *ngFor="let sampleImage of progress.item.sample_images; let idx = index">
+                    <!-- Skip the primary image (index 0) -->
+                    <div *ngIf="idx > 0" 
+                         class="reference-thumbnail-container position-relative"
+                         [title]="sampleImage.label || 'Reference image ' + idx">
+                      <img [src]="getPhotoUrl(sampleImage.url)" 
+                           class="reference-thumbnail rounded border border-2 border-info cursor-pointer" 
+                           style="width: 80px; height: 80px; object-fit: cover;"
+                           [alt]="sampleImage.label || 'Reference image ' + idx"
+                           (error)="onSampleImageError($event)"
+                           (click)="previewImage(getPhotoUrl(sampleImage.url))">
+                      <span *ngIf="sampleImage.type" 
+                            class="position-absolute bottom-0 start-0 badge badge-sm m-1" 
+                            style="font-size: 0.65rem;"
+                            [class.bg-primary]="sampleImage.type === 'photo'"
+                            [class.bg-info]="sampleImage.type === 'drawing'"
+                            [class.bg-success]="sampleImage.type === 'bom'"
+                            [class.bg-warning]="sampleImage.type === 'schematic'"
+                            [class.bg-secondary]="sampleImage.type === 'reference' || sampleImage.type === 'diagram'">
+                        {{sampleImage.type}}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Side-by-Side Layout for Photos and Sample -->
               <div class="row g-4 mb-4">
                 
-                <!-- Photo Requirements Info Bar (spans both columns) -->
-                <div class="col-12" *ngIf="progress.item.photo_requirements">
+                <!-- Photo Requirements Info Bar (spans both columns) - Only show when pictures required -->
+                <div class="col-12" *ngIf="progress.item.photo_requirements && progress.item.photo_requirements.picture_required">
                   <div class="border rounded p-2 bg-info bg-opacity-10 border-info border-opacity-25">
                     <div class="row g-2 small text-info-emphasis">
                       <div class="col-auto" *ngIf="progress.item.photo_requirements.min_photos || progress.item.min_photos">
@@ -144,8 +236,27 @@
                   </div>
                 </div>
 
-                <!-- Photo Section - Inline -->
-                <div class="col-md-6">
+                <!-- Optional Photo Verification (when photos not required) -->
+                <div class="col-12" *ngIf="progress.item.photo_requirements && !progress.item.photo_requirements.picture_required && (!progress.photos || progress.photos.length === 0)">
+                  <div class="alert mb-0 d-flex align-items-center justify-content-between"
+                       [ngClass]="progress.completed ? 'alert-success' : 'alert-info'">
+                    <div>
+                      <i class="mdi me-2" [ngClass]="progress.completed ? 'mdi-check-circle' : 'mdi-information-outline'"></i>
+                      <strong>Photos are optional for this item.</strong> 
+                      <span *ngIf="!progress.completed">You can verify completion without taking photos.</span>
+                      <span *ngIf="progress.completed">This item has been verified without photos.</span>
+                    </div>
+                    <button class="btn btn-sm" 
+                            [ngClass]="progress.completed ? 'btn-outline-warning' : 'btn-success'"
+                            (click)="toggleVerification()">
+                      <i class="mdi me-1" [ngClass]="progress.completed ? 'mdi-close-circle' : 'mdi-check-circle'"></i>
+                      {{ progress.completed ? 'Unmark Verified' : 'Mark as Verified' }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Photo Section - Inline (Only show when pictures required OR photos already exist) -->
+                <div class="col-md-6" *ngIf="progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0)">
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-camera me-2"></i>Take Photo
@@ -198,25 +309,31 @@
                   </div>
                 </div>
 
-                <!-- Sample Reference Section - Inline -->
-                <div class="col-md-6">
+                <!-- Sample Reference Section - Primary Image Only (Only show when pictures required OR photos already exist) -->
+                <div class="col-md-6" *ngIf="progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0)">
                   <div class="h-100">
                     <h6 class="text-primary mb-3">
                       <i class="mdi mdi-image-multiple me-2"></i>Sample Reference
                     </h6>
                     
-                    <!-- Sample Image Display -->
+                    <!-- Primary Sample Image Display -->
                     <div class="border rounded p-3" 
                          style="min-height: 280px; display: flex; flex-direction: column; justify-content: center;"
-                         *ngIf="progress.item.sample_image_url; else noSampleImage">
+                         *ngIf="progress.item.sample_images && progress.item.sample_images.length > 0; else noSampleImage">
                       <div class="text-center">
-                        <img [src]="getPhotoUrl(progress.item.sample_image_url)" 
-                             class="img-fluid rounded shadow-sm" 
+                        <img [src]="getPhotoUrl(progress.item.sample_images[0].url)" 
+                             class="img-fluid rounded shadow-sm cursor-pointer" 
                              style="max-height: 200px; object-fit: contain;"
-                             [alt]="'Sample reference for ' + progress.item.title"
-                             (error)="onSampleImageError($event)">
-                        <div class="mt-2">
-                          <small class="text-muted">Reference image for this checklist item</small>
+                             [alt]="progress.item.sample_images[0].label || 'Sample reference for ' + progress.item.title"
+                             (error)="onSampleImageError($event)"
+                             (click)="previewImage(getPhotoUrl(progress.item.sample_images[0].url))">
+                        <div class="mt-2" *ngIf="progress.item.sample_images[0].label || progress.item.sample_images[0].description">
+                          <small class="text-muted d-block" *ngIf="progress.item.sample_images[0].label">
+                            <strong>{{progress.item.sample_images[0].label}}</strong>
+                          </small>
+                          <small class="text-muted" *ngIf="progress.item.sample_images[0].description">
+                            {{progress.item.sample_images[0].description}}
+                          </small>
                         </div>
                       </div>
                     </div>
@@ -273,9 +390,7 @@
                         <span *ngIf="progress.item.level === 1" class="badge bg-secondary me-2">Sub-item</span>
                         {{getItemLabel(progress)}}: {{progress.item?.title}}
                       </h6>
-                      <p class="text-muted small mb-0" *ngIf="progress.item?.description">
-                        {{progress.item.description}}
-                      </p>
+                      <div class="text-muted small mb-0" *ngIf="progress.item?.description" [innerHTML]="progress.item.description"></div>
                     </div>
                   </div>
                   <div class="d-flex align-items-center gap-2">
@@ -371,6 +486,151 @@
         </div>
       </div>
       
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade show" 
+     *ngIf="showImagePreview" 
+     style="display: block; background: rgba(0,0,0,0.8);"
+     (click)="closeImagePreview()">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-header border-0 pb-0">
+        <button 
+          type="button" 
+          class="btn-close btn-close-white ms-auto"
+          (click)="closeImagePreview()"
+          aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body text-center p-4" (click)="$event.stopPropagation()">
+        <img 
+          [src]="previewImageUrl" 
+          class="img-fluid rounded shadow-lg" 
+          style="max-height: 80vh; max-width: 100%; object-fit: contain;"
+          alt="Preview image">
+      </div>
+      <div class="modal-footer border-0 justify-content-center pt-0">
+        <button 
+          type="button" 
+          class="btn btn-light btn-sm"
+          (click)="openImageInNewTab()">
+          <i class="mdi mdi-open-in-new me-1"></i>Open in New Tab
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary btn-sm"
+          (click)="closeImagePreview()">
+          <i class="mdi mdi-close me-1"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Checklist Overview Modal -->
+<div class="modal fade show" 
+     *ngIf="showFullChecklistModal" 
+     style="display: block; background: rgba(0,0,0,0.5);"
+     (click)="closeFullChecklistModal()">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-clipboard-list-outline me-2"></i>
+          Full Checklist Overview - {{ template?.name }}
+        </h5>
+        <button 
+          type="button" 
+          class="btn-close btn-close-white"
+          (click)="closeFullChecklistModal()"
+          aria-label="Close">
+        </button>
+      </div>
+      <div class="modal-body p-4" style="overflow-x: auto;">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 50px;" class="text-center">#</th>
+                <th style="width: 300px;">Task</th>
+                <th style="width: 250px;">Description</th>
+                <th style="width: 120px;" class="text-center">Status</th>
+                <th style="width: 200px;">Photos</th>
+                <th style="width: 250px;">Notes</th>
+                <th style="width: 100px;" class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let progress of itemProgress; let i = index"
+                  [class.table-primary]="currentStep === i + 1">
+                <td class="text-center fw-bold">{{ i + 1 }}</td>
+                <td>
+                  <div class="fw-semibold">{{ progress.item.title }}</div>
+                  <span class="badge bg-danger badge-sm mt-1" *ngIf="progress.item.is_required">Required</span>
+                </td>
+                <td>
+                  <div class="small text-muted" style="max-height: 60px; overflow-y: auto;">
+                    <div [innerHTML]="progress.item.description || 'N/A'"></div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge" [ngClass]="getStatusBadgeClass(progress)">
+                    {{ getStatusText(progress) }}
+                  </span>
+                  <div class="small text-muted mt-1" *ngIf="progress.photos.length > 0">
+                    {{ progress.photos.length }} photo(s)
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-2" *ngIf="progress.photos.length > 0">
+                    <div *ngFor="let photo of progress.photos; let photoIdx = index" class="position-relative">
+                      <img 
+                        [src]="getPhotoUrl(photo)" 
+                        class="img-thumbnail cursor-pointer"
+                        style="width: 60px; height: 60px; object-fit: cover;"
+                        alt="Photo"
+                        (click)="previewImage(getPhotoUrl(photo))"
+                        [title]="'Photo ' + (photoIdx + 1)">
+                    </div>
+                  </div>
+                  <span class="text-muted small fst-italic" *ngIf="progress.photos.length === 0">No photos taken</span>
+                </td>
+                <td>
+                  <div class="small" style="max-height: 60px; overflow-y: auto;" 
+                       [title]="progress.notes || ''">
+                    {{ progress.notes || '-' }}
+                  </div>
+                </td>
+                <td class="text-center">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="navigateToItemFromModal(i)"
+                    title="Go to this item">
+                    <i class="mdi mdi-arrow-right"></i>
+                    Go
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="me-auto">
+          <strong>Progress:</strong> {{ getCompletedItemsCount() }} of {{ getTotalItemsCount() }} items completed 
+          ({{ ((getCompletedItemsCount() / getTotalItemsCount()) * 100).toFixed(0) }}%)
+        </div>
+        <button 
+          type="button" 
+          class="btn btn-secondary"
+          (click)="closeFullChecklistModal()">
+          <i class="mdi mdi-close me-2"></i>Close
+        </button>
+      </div>
     </div>
   </div>
 </div>
