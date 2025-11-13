@@ -271,7 +271,7 @@ class PhotoChecklistConfigAPI {
                 
                 // Ensure numeric types
                 $item['level'] = isset($item['level']) ? (int)$item['level'] : 0;
-                $item['parent_id'] = isset($item['parent_id']) ? (float)$item['parent_id'] : null;
+                $item['parent_id'] = isset($item['parent_id']) ? (int)$item['parent_id'] : null;
                 $item['id'] = (int)$item['id'];
                 $item['order_index'] = (float)$item['order_index'];
                 $item['is_required'] = (bool)$item['is_required'];
@@ -300,68 +300,72 @@ class PhotoChecklistConfigAPI {
         
         error_log("🔍 nestItems: Processing " . count($items) . " items");
         
-        $itemsByOrderIndex = [];
-        $parentItems = [];
+        $itemsById = [];
+        $rootItems = [];
         
-        // First pass: index all items by order_index and separate parents from children
+        // First pass: index all items by their ID
         foreach ($items as $item) {
-            $orderIndex = $item['order_index'];
-            $itemsByOrderIndex[$orderIndex] = $item;
+            $itemId = $item['id'];
+            $itemsById[$itemId] = $item;
             
             // Initialize children array for all items
-            $itemsByOrderIndex[$orderIndex]['children'] = [];
+            $itemsById[$itemId]['children'] = [];
             
-            // Check if this is a parent item (level 0 or no level)
-            if ($item['level'] == 0 || !isset($item['level'])) {
-                $parentItems[] = $orderIndex;
+            error_log("   Item indexed: id={$itemId}, order_index={$item['order_index']}, parent_id={$item['parent_id']}, level={$item['level']}, title={$item['title']}");
+        }
+        
+        error_log("   Indexed " . count($itemsById) . " items by ID");
+        
+        // Second pass: nest children under parents using parent_id (which refers to parent's ID)
+        foreach ($itemsById as $itemId => $item) {
+            $parentId = $item['parent_id'];
+            $level = $item['level'];
+            
+            // If this is a root item (level 0 or no parent_id)
+            if ($level == 0 || $parentId === null || $parentId === 0) {
+                $rootItems[] = $itemId;
+                error_log("   Root item: id={$itemId}, order_index={$item['order_index']}");
+            } 
+            // If this item has a parent, nest it under the parent
+            elseif (isset($itemsById[$parentId])) {
+                $itemsById[$parentId]['children'][] = $itemsById[$itemId];
+                error_log("   ✓ Nested child id={$itemId} under parent id={$parentId}");
             } else {
-                error_log("   Child item found: order_index={$orderIndex}, parent_id={$item['parent_id']}, title={$item['title']}");
+                error_log("   ⚠️ WARNING: Child id={$itemId} has parent_id={$parentId} but parent not found!");
+                // Treat as root item if parent not found
+                $rootItems[] = $itemId;
             }
         }
         
-        error_log("   Found " . count($parentItems) . " parent items");
+        error_log("   Found " . count($rootItems) . " root items");
         
-        // Second pass: nest children under parents using order_index
-        foreach ($itemsByOrderIndex as $orderIndex => $item) {
-            // If this item has a parent_id, find parent by order_index and add child
-            if (isset($item['parent_id']) && $item['parent_id'] && isset($itemsByOrderIndex[$item['parent_id']])) {
-                $parentOrderIndex = $item['parent_id'];
-                $itemsByOrderIndex[$parentOrderIndex]['children'][] = $itemsByOrderIndex[$orderIndex];
-                error_log("   ✓ Nested child {$orderIndex} under parent {$parentOrderIndex}");
-            } elseif (isset($item['parent_id']) && $item['parent_id']) {
-                error_log("   ⚠️ WARNING: Child {$orderIndex} has parent_id={$item['parent_id']} but parent not found!");
-            }
-        }
-        
-        // Third pass: build final result with only parent items (children are nested)
+        // Third pass: build final result with only root items (children are already nested)
         $result = [];
-        foreach ($parentItems as $parentOrderIndex) {
-            $item = $itemsByOrderIndex[$parentOrderIndex];
+        foreach ($rootItems as $rootId) {
+            $item = $itemsById[$rootId];
             
             $childCount = count($item['children']);
             if ($childCount > 0) {
-                error_log("   Parent {$parentOrderIndex} has {$childCount} children");
-            }
-            
-            // Remove children array if it's empty
-            if (empty($item['children'])) {
-                unset($item['children']);
-            } else {
+                error_log("   Root item id={$rootId} has {$childCount} children");
+                
                 // Sort children by order_index
                 usort($item['children'], function($a, $b) {
                     return $a['order_index'] <=> $b['order_index'];
                 });
+            } else {
+                // Remove empty children array
+                unset($item['children']);
             }
             
             $result[] = $item;
         }
         
-        // Sort parent items by order_index
+        // Sort root items by order_index
         usort($result, function($a, $b) {
             return $a['order_index'] <=> $b['order_index'];
         });
         
-        error_log("   Returning " . count($result) . " parent items (with nested children)");
+        error_log("   Returning " . count($result) . " root items (with nested children)");
         
         return $result;
     }
@@ -1016,14 +1020,14 @@ class PhotoChecklistConfigAPI {
                 $items[$itemId] = [
                     'id' => (int)$row['id'],
                     'template_id' => (int)$row['template_id'],
-                    'order_index' => (float)$row['order_index'],
+                    'order_index' => (int)$row['order_index'],
                     'title' => $row['title'],
                     'description' => $row['description'],
                     'photo_requirements' => $photoRequirements,
                     'sample_image_url' => $row['sample_image_url'],
                     'is_required' => (bool)$row['is_required'],
                     'level' => isset($row['level']) ? (int)$row['level'] : 0,
-                    'parent_id' => isset($row['parent_id']) ? (float)$row['parent_id'] : null,
+                    'parent_id' => isset($row['parent_id']) ? (int)$row['parent_id'] : null,
                     'photos' => []
                 ];
             }
