@@ -556,40 +556,45 @@ class PhotoChecklistConfigAPI {
                 error_log("Set template_group_id = $templateId for new template");
             }
             
-            // Insert items
+            // Insert items with TWO-PASS approach to handle parent_id mapping
             if (!empty($data['items'])) {
-                error_log("🔍 BACKEND RECEIVED " . count($data['items']) . " items to insert");
-                $subItemCount = 0;
-                foreach ($data['items'] as $testItem) {
-                    if (isset($testItem['level']) && $testItem['level'] == 1) {
-                        $subItemCount++;
-                    }
-                }
-                error_log("🔍 Sub-items (level=1) in received data: $subItemCount");
+                error_log("🔵 createTemplate: Starting to insert " . count($data['items']) . " items");
                 
+                // Check if sample_images column exists once (moved outside loop for efficiency)
+                $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
+                $checkStmt = $this->conn->prepare($checkColumnSql);
+                $checkStmt->execute();
+                $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
+                
+                // TWO-PASS APPROACH:
+                // Pass 1: Insert ALL items, build order_index → database_id map
+                // Pass 2: Update child items' parent_id from order_index to actual database ID
+                
+                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
+                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
+                
+                // PASS 1: Insert all items with NULL parent_id
                 foreach ($data['items'] as $index => $item) {
-                    error_log("Inserting item $index for template ID $templateId: " . json_encode($item));
+                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    $level = $item['level'] ?? 0;
+                    $title = $item['title'];
+                    
+                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
+                    $parentOrderIndex = null;
+                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
+                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    }
+                    
+                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
                     
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
-                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
                     
-                    // Check if sample_images column exists for backward compatibility
-                    $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
-                    $checkStmt = $this->conn->prepare($checkColumnSql);
-                    $checkStmt->execute();
-                    $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
-                    
+                    // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        // Prepare sample images array
+                        // Store in both columns for compatibility
                         $sampleImagesArray = [];
-                        
-                        // If sample_images is provided in the item data, use it
-                        if (isset($item['sample_images']) && is_array($item['sample_images'])) {
-                            $sampleImagesArray = $item['sample_images'];
-                        } 
-                        // Otherwise, create from sample_image_url for backward compatibility
-                        elseif (!empty($sampleImageUrl)) {
+                        if (!empty($sampleImageUrl)) {
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
                                 'label' => 'Primary Sample Image',
@@ -601,75 +606,105 @@ class PhotoChecklistConfigAPI {
                             ]];
                         }
                         
-                        // Validate sample images
-                        list($isValid, $errorMessage) = $this->validateSampleImages($sampleImagesArray);
-                        if (!$isValid) {
-                            throw new Exception("Item '$index': $errorMessage");
-                        }
-                        
-                        // Normalize sample images
-                        $sampleImagesArray = $this->normalizeSampleImages($sampleImagesArray);
-                        
-                        // DEBUG: Log the exact values being inserted
-                        $parentIdValue = $item['parent_id'] ?? null;
-                        $levelValue = $item['level'] ?? 0;
-                        error_log("🔍 INSERTING item $index: parent_id=$parentIdValue, level=$levelValue, title={$item['title']}");
-                        
+                        // Insert with NULL parent_id initially
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
-                        $success = $stmt->execute([
+                        
+                        $stmt->execute([
                             $templateId,
-                            $item['order_index'] ?? ($index + 1),
-                            $parentIdValue,
-                            $levelValue,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                        
-                        if (!$success) {
-                            error_log("❌ FAILED to insert item $index: " . json_encode($stmt->errorInfo()));
-                        } else {
-                            error_log("✅ SUCCESS: Item $index inserted with parent_id=$parentIdValue, level=$levelValue");
-                        }
-                        
-                        error_log("Item $index saved with validated sample_images: " . json_encode($sampleImagesArray));
                     } else {
                         // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
-                        $success = $stmt->execute([
+                        
+                        $stmt->execute([
                             $templateId,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with sample_image_url only");
                     }
                     
-                    if (!$success) {
-                        error_log("Failed to insert item $index. SQL Error: " . implode(", ", $stmt->errorInfo()));
-                        error_log("Failed SQL was for template_id: $templateId, item data: " . json_encode($item));
-                        throw new Exception("Failed to insert item $index: " . implode(", ", $stmt->errorInfo()));
-                    } else {
-                        error_log("Successfully inserted item $index for template $templateId");
+                    // Get the database ID for this item
+                    $dbId = $this->conn->lastInsertId();
+                    
+                    // Map order_index → database_id (use string keys to avoid float/int issues)
+                    $mapKey = (string)$orderIndex;
+                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    
+                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    
+                    // If this is a child item (has parent), track it for updating
+                    if ($parentOrderIndex !== null) {
+                        $itemsToUpdate[] = [
+                            'db_id' => $dbId,
+                            'parent_order_index' => $parentOrderIndex
+                        ];
+                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
                     }
                 }
+                
+                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
+                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
+                
+                // PASS 2: Update child items' parent_id to actual database IDs
+                foreach ($itemsToUpdate as $update) {
+                    $parentOrderIndex = $update['parent_order_index'];
+                    $childDbId = $update['db_id'];
+                    
+                    // Convert to string key for consistent lookup
+                    $lookupKey = (string)$parentOrderIndex;
+                    
+                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
+                    
+                    // Look up the actual database ID for the parent
+                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
+                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
+                        
+                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
+                        
+                        // Update the child item's parent_id
+                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute([$parentDbId, $childDbId]);
+                    } else {
+                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
+                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
+                    }
+                }
+                
+                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
             }
             
             $this->conn->commit();
-            return ['success' => true, 'template_id' => $templateId];
+            
+            // Return detailed info for debugging (visible in browser Network tab)
+            return [
+                'success' => true, 
+                'template_id' => $templateId,
+                'debug_info' => [
+                    'items_received' => count($data['items']),
+                    'items_inserted' => count($orderIndexToDbIdMap),
+                    'child_items_updated' => count($itemsToUpdate),
+                    'order_index_map' => $orderIndexToDbIdMap,
+                    'message' => 'Check database to verify all items saved with correct parent_id'
+                ]
+            ];
             
         } catch (Exception $e) {
             $this->conn->rollback();
@@ -713,20 +748,39 @@ class PhotoChecklistConfigAPI {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$id]);
             
-            // Insert updated items
+            // Insert updated items with TWO-PASS approach (same as createTemplate)
             if (!empty($data['items'])) {
+                error_log("🔵 updateTemplate: Starting to insert " . count($data['items']) . " items");
+                
+                // Check if sample_images column exists once (moved outside loop for efficiency)
+                $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
+                $checkStmt = $this->conn->prepare($checkColumnSql);
+                $checkStmt->execute();
+                $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
+                
+                // TWO-PASS APPROACH:
+                // Pass 1: Insert ALL items, build order_index → database_id map
+                // Pass 2: Update child items' parent_id from order_index to actual database ID
+                
+                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
+                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
+                
+                // PASS 1: Insert all items with NULL parent_id
                 foreach ($data['items'] as $index => $item) {
+                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    $level = $item['level'] ?? 0;
+                    $title = $item['title'];
+                    
+                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
+                    $parentOrderIndex = null;
+                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
+                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    }
+                    
+                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
+                    
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
-                    
-                    // Debug: Log what we received
-                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
-                    
-                    // Check if sample_images column exists for backward compatibility
-                    $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
-                    $checkStmt = $this->conn->prepare($checkColumnSql);
-                    $checkStmt->execute();
-                    $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
                     
                     // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
@@ -743,45 +797,89 @@ class PhotoChecklistConfigAPI {
                             ]];
                         }
                         
+                        // Insert with NULL parent_id initially
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with both sample_image_url and sample_images");
                     } else {
                         // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with sample_image_url only");
+                    }
+                    
+                    // Get the database ID for this item
+                    $dbId = $this->conn->lastInsertId();
+                    
+                    // Map order_index → database_id (use string keys to avoid float/int issues)
+                    $mapKey = (string)$orderIndex;
+                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    
+                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    
+                    // If this is a child item (has parent), track it for updating
+                    if ($parentOrderIndex !== null) {
+                        $itemsToUpdate[] = [
+                            'db_id' => $dbId,
+                            'parent_order_index' => $parentOrderIndex
+                        ];
+                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
                     }
                 }
+                
+                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
+                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
+                
+                // PASS 2: Update child items' parent_id to actual database IDs
+                foreach ($itemsToUpdate as $update) {
+                    $parentOrderIndex = $update['parent_order_index'];
+                    $childDbId = $update['db_id'];
+                    
+                    // Convert to string key for consistent lookup
+                    $lookupKey = (string)$parentOrderIndex;
+                    
+                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
+                    
+                    // Look up the actual database ID for the parent
+                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
+                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
+                        
+                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
+                        
+                        // Update the child item's parent_id
+                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute([$parentDbId, $childDbId]);
+                    } else {
+                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
+                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
+                    }
+                }
+                
+                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
             }
             
             $this->conn->commit();
