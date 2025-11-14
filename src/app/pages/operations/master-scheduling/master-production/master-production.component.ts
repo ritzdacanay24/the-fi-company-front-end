@@ -24,7 +24,6 @@ import {
   highlightRowView,
   isEmpty,
 } from "src/assets/js/util";
-import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import { KanbanAddModalService } from "@app/pages/operations/master-scheduling/work-order-tracker/work-order-tracker-add-modal/work-order-tracker-add-modal.component";
 import { WebsocketService } from "@app/core/services/websocket.service";
 import { ColDef, GridApi, GridOptions } from "ag-grid-community";
@@ -32,6 +31,7 @@ import { LinkRendererV2Component } from "@app/shared/ag-grid/cell-renderers/link
 import { CommentsRendererV2Component } from "@app/shared/ag-grid/comments-renderer-v2/comments-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { PickSheetRendererV2Component } from "@app/shared/ag-grid/pick-sheet-renderer-v2/pick-sheet-renderer.component";
+import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 
 const MASTER_PRODUCTION = "MASTER_PRODUCTION";
 const WORK_ORDER_ROUTING = "Work Order Routing";
@@ -92,7 +92,9 @@ export class MasterProductionComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+    // Component initialization
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes["data"]) {

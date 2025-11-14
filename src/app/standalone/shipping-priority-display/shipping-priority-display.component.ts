@@ -55,6 +55,9 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   autoScrollEnabled: boolean = true;
   scrollSpeed: number = 30; // seconds for one complete scroll cycle
   
+  // Priority type toggle
+  priorityType: 'shipping' | 'kanban' = 'kanban'; // Default to kanban
+  
   // Slick Carousel configuration - optimized for smooth auto-scrolling
   slickConfig = {
     "slidesToShow": 7,
@@ -437,11 +440,11 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     try {
       console.log('🚀 Loading initial priority data...');
       console.log('🚀 Initial display mode from URL:', this.displayMode);
+      console.log('🚀 Initial priority type:', this.priorityType);
       
-      // Set display mode BEFORE loading data
+      // Set display mode and priority type BEFORE loading data
       this.priorityDisplayService.updateDisplayMode(this.displayMode);
-      // Always show loading state for initial load
-      await this.priorityDisplayService.loadPriorityData(true);
+      await this.priorityDisplayService.updatePriorityType(this.priorityType);
       
       console.log('✅ Initial data load completed');
     } catch (error) {
@@ -546,7 +549,26 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     }
   }
 
+  /**
+   * Toggle between shipping and kanban priorities
+   */
+  async togglePriorityType(): Promise<void> {
+    this.priorityType = this.priorityType === 'shipping' ? 'kanban' : 'shipping';
+    console.log(`🔄 Priority type toggled to: ${this.priorityType}`);
+    
+    // Save settings
+    this.saveSettingsToStorage();
+    
+    // Update service and reload data
+    await this.priorityDisplayService.updatePriorityType(this.priorityType);
+  }
 
+  /**
+   * Get display name for current priority type
+   */
+  getPriorityTypeDisplayName(): string {
+    return this.priorityType === 'kanban' ? 'Kanban Priorities' : 'Shipping Priorities';
+  }
 
   /**
    * Navigate back to main application
@@ -760,6 +782,11 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
           this.showRefreshOverlay = settings.showRefreshOverlay;
         }
         
+        // Load priority type setting
+        if (settings.priorityType && ['shipping', 'kanban'].includes(settings.priorityType)) {
+          this.priorityType = settings.priorityType;
+        }
+        
         console.log('✅ Settings loaded from localStorage:', settings);
       }
     } catch (error) {
@@ -780,6 +807,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         autoScrollEnabled: this.autoScrollEnabled,
         scrollSpeed: this.scrollSpeed,
         showRefreshOverlay: this.showRefreshOverlay,
+        priorityType: this.priorityType,
         lastUpdated: new Date().toISOString()
       };
       

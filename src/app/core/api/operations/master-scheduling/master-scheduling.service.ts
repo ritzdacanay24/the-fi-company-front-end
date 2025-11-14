@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@environments/environment';
 
 // Interfaces for type safety
-interface ShippingPriorityRequest {
+interface PriorityRequest {
   orderId: any;
   salesOrderNumber: string;
   salesOrderLine?: string;
@@ -13,13 +13,17 @@ interface ShippingPriorityRequest {
   notes?: string;
 }
 
-interface ShippingPriorityResponse {
+interface PriorityResponse {
   success: boolean;
   message: string;
   orderId?: any;
   priority?: number;
   data?: any[];
 }
+
+// Backwards compatibility
+interface ShippingPriorityRequest extends PriorityRequest {}
+interface ShippingPriorityResponse extends PriorityResponse {}
 
 let url = 'operations/master-scheduling';
 
@@ -35,8 +39,14 @@ export class MasterSchedulingService extends DataService<any> {
   // Real API endpoint for shipping priorities
   private shippingPriorityApiUrl = 'shipping-priorities';
   
+  // Real API endpoint for kanban priorities
+  private kanbanPriorityApiUrl = 'kanban-priorities';
+  
   // Mock data storage for shipping priorities
   private mockPriorities: Map<string, any> = new Map();
+  
+  // Mock data storage for kanban priorities
+  private mockKanbanPriorities: Map<string, any> = new Map();
 
   constructor(http: HttpClient) {
     super(url, http);
@@ -513,6 +523,367 @@ export class MasterSchedulingService extends DataService<any> {
           });
           
           console.log('🧪 Mock priorities reordered successfully');
+          resolve({
+            success: true,
+            message: 'Priorities reordered successfully',
+            data: null
+          });
+        } catch (error) {
+          resolve({
+            success: false,
+            message: 'Failed to reorder priorities',
+            data: null
+          });
+        }
+      }, 100);
+    });
+  }
+
+  // =============================================================================
+  // KANBAN PRIORITY METHODS
+  // =============================================================================
+
+  /**
+   * Update kanban priority for an order
+   */
+  updateKanbanPriority(params: PriorityRequest) {
+    if (this.useMockData) {
+      return this.updateKanbanPriorityMock(params);
+    } else {
+      return this.updateKanbanPriorityAPI(params);
+    }
+  }
+
+  /**
+   * Get all kanban priorities
+   */
+  getKanbanPriorities() {
+    if (this.useMockData) {
+      return this.getKanbanPrioritiesMock();
+    } else {
+      return this.getKanbanPrioritiesAPI();
+    }
+  }
+
+  /**
+   * Remove kanban priority
+   */
+  removeKanbanPriority(orderId: any) {
+    if (this.useMockData) {
+      return this.removeKanbanPriorityMock(orderId);
+    } else {
+      return this.removeKanbanPriorityAPI(orderId);
+    }
+  }
+
+  /**
+   * Bulk reorder kanban priorities (for drag-and-drop)
+   */
+  reorderKanbanPriorities(priorityUpdates: Array<{id: string, priority_level: number}>) {
+    if (this.useMockData) {
+      return this.reorderKanbanPrioritiesMock(priorityUpdates);
+    } else {
+      return this.reorderKanbanPrioritiesAPI(priorityUpdates);
+    }
+  }
+
+  // KANBAN PRIORITY - REAL API METHODS
+
+  private async updateKanbanPriorityAPI(params: PriorityRequest): Promise<PriorityResponse> {
+    try {
+      console.log('🌐 Making REAL API call to update kanban priority:', params);
+      
+      // First, check if priority already exists for this order
+      const existingPriorities = await this.getKanbanPrioritiesAPI();
+      const existingPriority = existingPriorities.data?.find(p => p.order_id === params.orderId);
+      
+      if (params.priority === 0) {
+        // Remove priority
+        if (existingPriority) {
+          return await this.removeKanbanPriorityAPI(params.orderId);
+        } else {
+          return {
+            success: true,
+            message: 'Priority already removed',
+            data: null
+          };
+        }
+      }
+      
+      // Check for priority conflicts (another order with same priority)
+      const conflictingPriority = existingPriorities.data?.find(
+        p => p.priority_level === params.priority && p.order_id !== params.orderId
+      );
+      
+      if (conflictingPriority) {
+        return {
+          success: false,
+          message: `Priority ${params.priority} is already assigned to order ${conflictingPriority.order_id}`,
+          data: null
+        };
+      }
+
+      let response;
+      
+      if (existingPriority) {
+        // Move existing priority via server-side atomic endpoint
+        const requestBody = {
+          order_id: params.orderId,
+          sales_order_number: params.salesOrderNumber,
+          sales_order_line: params.salesOrderLine,
+          priority: params.priority,
+          notes: params.notes,
+          updated_by: this.getCurrentUser(),
+          created_by: existingPriority.created_by
+        };
+
+        response = await firstValueFrom(
+          this.http.post<any>(`${this.kanbanPriorityApiUrl}/?action=apply_change`, requestBody)
+        );
+      } else {
+        // Create new priority via atomic endpoint (this will shift existing priorities)
+        const requestBody = {
+          order_id: params.orderId,
+          sales_order_number: params.salesOrderNumber,
+          sales_order_line: params.salesOrderLine,
+          priority: params.priority,
+          notes: params.notes,
+          created_by: this.getCurrentUser(),
+          updated_by: this.getCurrentUser()
+        };
+
+        response = await firstValueFrom(
+          this.http.post<any>(`${this.kanbanPriorityApiUrl}/?action=apply_change`, requestBody)
+        );
+      }
+
+      console.log('✅ Real API response:', response);
+      return {
+        success: response.success || false,
+        message: response.message || 'Priority updated',
+        data: response.data || null
+      };
+    } catch (error: any) {
+      console.error('❌ Real API error:', error);
+      return {
+        success: false,
+        message: error.error?.error || error.message || 'Failed to update priority',
+        data: null
+      };
+    }
+  }
+
+  private async getKanbanPrioritiesAPI(): Promise<PriorityResponse> {
+    try {
+      console.log('🌐 Making REAL API call to get kanban priorities');
+      
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.kanbanPriorityApiUrl}/`)
+      );
+
+      console.log('✅ Real API kanban priorities retrieved:', response.data?.length || 0);
+      return {
+        success: response.success || false,
+        message: response.message || 'Priorities retrieved',
+        data: response.data || []
+      };
+    } catch (error: any) {
+      console.error('❌ Real API error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to get priorities',
+        data: []
+      };
+    }
+  }
+
+  private async removeKanbanPriorityAPI(orderId: any): Promise<PriorityResponse> {
+    try {
+      console.log('🌐 Making REAL API call to remove kanban priority:', orderId);
+      
+      // For real API, we need to find the priority ID first
+      const prioritiesResponse = await this.getKanbanPrioritiesAPI();
+      if (!prioritiesResponse.success) {
+        throw new Error('Failed to get priorities for removal');
+      }
+
+      const priority = prioritiesResponse.data?.find(p => p.order_id === orderId);
+      if (!priority) {
+        return {
+          success: true,
+          message: 'Priority not found (already removed)',
+          data: null
+        };
+      }
+
+      // Use atomic apply_change endpoint to remove and resequence
+      const requestBody = {
+        order_id: orderId,
+        priority: 0,
+        updated_by: this.getCurrentUser()
+      };
+
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.kanbanPriorityApiUrl}/?action=apply_change`, requestBody)
+      );
+
+      console.log('✅ Real API kanban priority removed:', response);
+      return {
+        success: response.success || false,
+        message: response.message || 'Priority removed',
+        data: null
+      };
+    } catch (error: any) {
+      console.error('❌ Real API error:', error);
+      return {
+        success: false,
+        message: error.error?.error || error.message || 'Failed to remove priority',
+        data: null
+      };
+    }
+  }
+
+  private async reorderKanbanPrioritiesAPI(priorityUpdates: Array<{id: string, priority_level: number}>): Promise<PriorityResponse> {
+    try {
+      console.log('🌐 Making REAL API call to reorder kanban priorities:', priorityUpdates);
+      
+      // The priorityUpdates array should already contain database IDs from the frontend
+      const requestBody = {
+        priorities: priorityUpdates,
+        updated_by: this.getCurrentUser()
+      };
+
+      const response = await firstValueFrom(
+        this.http.post<any>(`${this.kanbanPriorityApiUrl}/?action=reorder`, requestBody)
+      );
+
+      console.log('✅ Real API kanban reorder response:', response);
+      return {
+        success: response.success || false,
+        message: response.message || 'Priorities reordered',
+        data: response.data || null
+      };
+    } catch (error: any) {
+      console.error('❌ Real API kanban reorder error:', error);
+      return {
+        success: false,
+        message: error.error?.error || error.message || 'Failed to reorder priorities',
+        data: null
+      };
+    }
+  }
+
+  // KANBAN PRIORITY - MOCK API METHODS
+
+  private updateKanbanPriorityMock(params: PriorityRequest) {
+    return new Promise<PriorityResponse>((resolve) => {
+      setTimeout(() => {
+        try {
+          const orderId = params.orderId;
+          
+          console.log('🧪 Mock API call - updating kanban priority:', params);
+          
+          // Check for duplicate priority (excluding current order)
+          const existingOrderWithPriority = Array.from(this.mockKanbanPriorities.values())
+            .find(p => p.priority_level === params.priority && p.order_id !== orderId);
+          
+          if (existingOrderWithPriority && params.priority > 0) {
+            resolve({
+              success: false,
+              message: `Priority ${params.priority} is already assigned to order ${existingOrderWithPriority.order_id}`,
+              data: null
+            });
+          } else {
+            // Update or create priority
+            if (params.priority > 0) {
+              this.mockKanbanPriorities.set(orderId, {
+                order_id: orderId,
+                sales_order_number: params.salesOrderNumber,
+                sales_order_line: params.salesOrderLine,
+                priority_level: params.priority,
+                notes: params.notes || '',
+                created_at: new Date().toISOString(),
+                created_by: 'mock_user',
+                updated_at: new Date().toISOString(),
+                updated_by: 'mock_user',
+                is_active: true
+              });
+              
+              console.log('🧪 Mock Kanban Priority Updated:', {
+                orderId,
+                priority: params.priority,
+                totalPriorities: this.mockKanbanPriorities.size
+              });
+            } else {
+              // Remove priority if set to 0
+              this.mockKanbanPriorities.delete(orderId);
+              console.log('🧪 Mock Kanban Priority Removed:', orderId);
+            }
+            
+            resolve({
+              success: true,
+              message: 'Priority updated successfully',
+              data: this.mockKanbanPriorities.get(orderId) || null
+            });
+          }
+        } catch (error) {
+          resolve({
+            success: false,
+            message: 'Failed to update priority',
+            data: null
+          });
+        }
+      }, 100);
+    });
+  }
+
+  private getKanbanPrioritiesMock() {
+    return new Promise<PriorityResponse>((resolve) => {
+      setTimeout(() => {
+        const priorities = Array.from(this.mockKanbanPriorities.values());
+        console.log('🧪 Mock Kanban Priorities Retrieved:', priorities.length);
+        resolve({
+          success: true,
+          message: 'Priorities retrieved successfully',
+          data: priorities
+        });
+      }, 50);
+    });
+  }
+
+  private removeKanbanPriorityMock(orderId: any) {
+    return new Promise<PriorityResponse>((resolve) => {
+      setTimeout(() => {
+        const existed = this.mockKanbanPriorities.has(orderId);
+        this.mockKanbanPriorities.delete(orderId);
+        console.log('🧪 Mock Kanban Priority Removed:', orderId, 'existed:', existed);
+        
+        resolve({
+          success: true,
+          message: 'Priority removed successfully',
+          data: null
+        });
+      }, 50);
+    });
+  }
+
+  private reorderKanbanPrioritiesMock(priorityUpdates: Array<{id: string, priority_level: number}>) {
+    return new Promise<PriorityResponse>((resolve) => {
+      setTimeout(() => {
+        try {
+          console.log('🧪 Mock API call - reordering kanban priorities:', priorityUpdates);
+          
+          // Update priorities in mock storage
+          priorityUpdates.forEach(update => {
+            const existingPriority = this.mockKanbanPriorities.get(update.id);
+            if (existingPriority) {
+              existingPriority.priority_level = update.priority_level;
+              existingPriority.updated_at = new Date().toISOString();
+              existingPriority.updated_by = 'mock_user';
+            }
+          });
+          
+          console.log('🧪 Mock kanban priorities reordered successfully');
           resolve({
             success: true,
             message: 'Priorities reordered successfully',

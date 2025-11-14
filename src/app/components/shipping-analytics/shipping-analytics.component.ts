@@ -18,9 +18,9 @@ import {
   ApexTitleSubtitle
 } from 'ng-apexcharts';
 import { ShippingDataService, ShippingOrder, ShippingAnalytics } from '../../services/shipping-data.service';
-import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { MasterSchedulingService } from '@app/core/api/operations/master-scheduling/master-scheduling.service';
 
 export type ChartOptions = {
   series: ApexAxisChartSeries | ApexNonAxisChartSeries;
