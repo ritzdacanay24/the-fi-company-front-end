@@ -176,20 +176,81 @@ export class WordParserService {
    * - Or filename
    */
   private extractTemplateName(doc: Document, filename: string): string {
-    // Try h1 first
+    // Try h1 first (but exclude if it looks like an item title)
     const h1 = doc.querySelector('h1');
     if (h1 && h1.textContent?.trim()) {
-      return h1.textContent.trim();
+      const text = h1.textContent.trim();
+      // Exclude if it looks like an item number/title (e.g., "1", "1.", "Label", single word < 4 chars)
+      if (!this.looksLikeItemTitle(text)) {
+        return text;
+      }
     }
 
-    // Try strong/bold at top
+    // Try for title-like elements (elements with "title" in class or that look like titles)
+    const titleElements = doc.querySelectorAll('p.title, div.title, span.title, p:first-of-type');
+    for (const el of Array.from(titleElements)) {
+      const text = el.textContent?.trim();
+      if (text && text.length > 10 && !this.looksLikeItemTitle(text)) {
+        return text;
+      }
+    }
+
+    // Try strong/bold at top (but only if it's substantial text)
     const strong = doc.querySelector('strong, b');
     if (strong && strong.textContent?.trim()) {
-      return strong.textContent.trim();
+      const text = strong.textContent.trim();
+      // Only use if it's more than 4 characters and doesn't look like an item number
+      if (text.length > 4 && !this.looksLikeItemTitle(text)) {
+        return text;
+      }
     }
 
-    // Fallback to filename
-    return filename.replace(/\.(docx|doc)$/i, '');
+    // Fallback to filename (cleaned up)
+    return this.cleanFilename(filename);
+  }
+
+  /**
+   * Check if text looks like an item title rather than a template name
+   */
+  private looksLikeItemTitle(text: string): boolean {
+    // Single number or number with period (e.g., "1", "1.")
+    if (/^\d+\.?$/.test(text)) {
+      return true;
+    }
+    
+    // Very short single words (likely item labels)
+    if (text.length < 4 && /^[A-Za-z]+$/.test(text)) {
+      return true;
+    }
+    
+    // Common item-specific words that shouldn't be template names
+    const itemKeywords = ['label', 'check', 'verify', 'inspect', 'test', 'review'];
+    if (itemKeywords.includes(text.toLowerCase())) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Clean up filename to make a nice template name
+   */
+  private cleanFilename(filename: string): string {
+    // Remove extension
+    let name = filename.replace(/\.(docx|doc|pdf|csv)$/i, '');
+    
+    // Replace underscores and hyphens with spaces
+    name = name.replace(/[_-]/g, ' ');
+    
+    // Capitalize first letter of each word
+    name = name.replace(/\b\w/g, char => char.toUpperCase());
+    
+    // If still too short or looks generic, add context
+    if (name.length < 5 || /^(doc|file|checklist)$/i.test(name)) {
+      name = 'Imported Checklist Template - ' + name;
+    }
+    
+    return name;
   }
 
   /**

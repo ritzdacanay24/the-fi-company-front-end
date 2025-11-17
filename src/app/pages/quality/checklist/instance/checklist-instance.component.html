@@ -129,7 +129,7 @@
         </div>
       </div>
 
-      <div class="card shadow-sm border-0">
+      <div class="card shadow-sm border-0" style="margin-bottom: 80px;">
         <div class="card-body p-4">
           
           <!-- Photo Taking Mode -->
@@ -428,8 +428,9 @@
           </div>
         </div>
         
-        <!-- Card Footer with Controls -->
-        <div class="card-footer bg-light border-top d-flex justify-content-between align-items-center p-3">
+        <!-- Card Footer with Controls - Fixed at Bottom -->
+        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center p-3 shadow-lg"
+             style="position: fixed; bottom: 0; left: auto; right: 0; z-index: 1030; max-width: calc(100% - 240px); margin-left: 240px;">
           
           <!-- Photo Mode: Navigation Controls -->
           <div *ngIf="!isReviewMode">

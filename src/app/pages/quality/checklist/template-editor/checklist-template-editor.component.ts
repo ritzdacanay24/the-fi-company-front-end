@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { QuillModule, QuillModules } from 'ngx-quill';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -13,7 +14,7 @@ import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
 import { PdfParserService } from './services/pdf-parser.service';
 import { WordParserService } from './services/word-parser.service';
-import { VersionChangesDialogComponent } from './components/version-changes-dialog.component';
+import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
 
 interface SampleImage {
   id?: string;
@@ -30,7 +31,7 @@ interface SampleImage {
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule, QuillModule],
   template: `
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -191,7 +192,14 @@ interface SampleImage {
                 <div class="row">
                   <div class="col-12 mb-3">
                     <label class="form-label">Description</label>
-                    <textarea class="form-control" formControlName="description" rows="3" placeholder="Enter template description"></textarea>
+                    <div class="border rounded">
+                      <quill-editor 
+                        formControlName="description" 
+                        [modules]="quillConfig"
+                        placeholder="Enter template description"
+                        [styles]="{height: '150px'}">
+                      </quill-editor>
+                    </div>
                     <div class="form-text">
                       <i class="mdi mdi-information-outline me-1"></i>
                       Detailed description of what this template covers.
@@ -333,27 +341,18 @@ interface SampleImage {
                       </div>
 
                       <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                          <label class="form-label mb-0">Description</label>
-                          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleDescriptionPreview(i)">
-                            <i class="mdi" [class.mdi-eye]="!showDescriptionPreview[i]" [class.mdi-code-tags]="showDescriptionPreview[i]"></i>
-                            {{showDescriptionPreview[i] ? 'Edit HTML' : 'Preview'}}
-                          </button>
+                        <label class="form-label">Description</label>
+                        <div class="border rounded">
+                          <quill-editor 
+                            formControlName="description" 
+                            [modules]="quillConfig"
+                            placeholder="Enter item description (supports rich text formatting)"
+                            [styles]="{height: '200px'}">
+                          </quill-editor>
                         </div>
-                        <textarea 
-                          *ngIf="!showDescriptionPreview[i]"
-                          class="form-control" 
-                          formControlName="description" 
-                          rows="4" 
-                          placeholder="Enter item description (HTML supported)"></textarea>
-                        <div 
-                          *ngIf="showDescriptionPreview[i]"
-                          class="border rounded p-3 bg-light"
-                          style="min-height: 100px;"
-                          [innerHTML]="item.get('description')?.value || ''"></div>
                         <div class="form-text">
                           <i class="mdi mdi-information-outline me-1"></i>
-                          Detailed instructions for this inspection item. HTML formatting is preserved from Word import.
+                          Detailed instructions for this inspection item. Rich text formatting is supported.
                         </div>
                       </div>
 
@@ -815,7 +814,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   saving = false;
   loading = false;
   uploadingImage = false;
-  showDescriptionPreview: boolean[] = [];
   selectedQualityDocument: QualityDocumentSelection | null = null;
   
   // Import functionality
@@ -834,6 +832,20 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   autoSaveEnabled = false;
   lastSavedAt: Date | null = null;
   private autoSaveTimeout: any = null;
+  
+  // Quill editor configuration
+  quillConfig: QuillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link', 'image'],
+      ['clean']
+    ]
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -955,8 +967,14 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Add template items and their sample images
     if (flattenedItems.length > 0) {
       flattenedItems.forEach((item, index) => {
+        // DEBUG: Check if item has ID before adding to form
+        console.log(`Loading item ${index}:`, {
+          id: item.id,
+          title: item.title,
+          hasId: !!item.id
+        });
+        
         this.items.push(this.createItemFormGroup(item));
-        this.showDescriptionPreview[index] = true; // Default to preview mode
         
         // Load sample images - handle both array format and single URL
         if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
@@ -1042,9 +1060,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Determine sample image URL
     let sampleImageUrl: string | null = null;
+    let hasImages = false;
     
     // Check if item has sample_images array (from PDF/Word import)
     if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
+      hasImages = true;
       // Use the first (or primary) image
       const primaryImage = item.sample_images.find((img: any) => img.is_primary) || item.sample_images[0];
       sampleImageUrl = primaryImage.url;
@@ -1079,20 +1099,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         lighting: item.photo_requirements?.lighting || '',
         focus: item.photo_requirements?.focus || '',
         min_photos: item.photo_requirements?.min_photos || 1,
-        max_photos: item.photo_requirements?.max_photos || 5
+        max_photos: item.photo_requirements?.max_photos || 5,
+        picture_required: hasImages // Set to false if no images, true if images exist
       }
     });
     
     this.items.push(itemGroup);
-    
-    // Default to showing preview for descriptions (especially for imported items with HTML)
-    this.showDescriptionPreview[formIndex] = true;
   }
 
   addItem(): void {
     const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
-    this.showDescriptionPreview.push(true); // Default to preview mode
   }
 
   /**
@@ -1148,7 +1165,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
     
     this.items.insert(insertIndex, subItem);
-    this.showDescriptionPreview.splice(insertIndex, 0, true); // Default to preview mode
     
     console.log(`✓ Added sub-item at index ${insertIndex} under parent ${parentIndex}`);
     console.log(`  - Title: ${subItem.get('title')?.value}`);
@@ -1198,10 +1214,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         this.sampleImages[oldIndex] = tempImages[oldIndex];
       }
     });
-  }
-
-  toggleDescriptionPreview(index: number): void {
-    this.showDescriptionPreview[index] = !this.showDescriptionPreview[index];
   }
 
   dropItem(event: CdkDragDrop<string[]>): void {
@@ -2079,6 +2091,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('Raw template form value:', templateData);
     console.log('Selected quality document:', this.selectedQualityDocument);
     
+    // Ensure is_active is a proper boolean (convert from checkbox value if needed)
+    if (typeof templateData.is_active !== 'boolean') {
+      templateData.is_active = !!templateData.is_active;
+    }
+    
     // Note: Quality document relationship is handled separately from template creation
     // Remove the form control field since it's not part of the database schema
     delete templateData.quality_document_id;
@@ -2112,50 +2129,36 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('Final template data to save:', templateData);
     console.log('Exact JSON payload being sent:', JSON.stringify(templateData, null, 2));
 
-    // When editing a template, detect changes and show dialog
+    // When editing a template, ask user to describe changes
     if (this.editingTemplate) {
       this.saving = false; // Reset while we show the dialog
       
-      // Detect changes by comparing form data with original template
-      const changes = this.detectTemplateChanges(this.editingTemplate, templateData);
-      
-      console.log('Detected changes:', changes);
-      
-      // If no changes detected, skip the dialog
-      if (!changes.has_changes) {
-        alert('No changes detected.');
-        return;
-      }
-
-      // Show the version changes dialog using NgbModal
-      const modalRef = this.modalService.open(VersionChangesDialogComponent, {
+      // Show the revision description dialog
+      const modalRef = this.modalService.open(RevisionDescriptionDialogComponent, {
         size: 'lg',
         backdrop: 'static',
-        scrollable: true
+        keyboard: false
       });
       
-      // Pass data to the modal component via @Input properties
-      modalRef.componentInstance.changes = changes;
-      modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
+      // Pass data to the modal
       modalRef.componentInstance.templateName = this.editingTemplate.name;
+      modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
+      modalRef.componentInstance.nextVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
 
       modalRef.result.then(
         (result) => {
-          console.log('User decision:', result);
+          console.log('User provided revision description:', result);
           
-          if (result.action === 'create-version') {
-            // Always create new version with user's notes and revision description
-            this.proceedWithSave(templateData, true, changes, result.revisionDescription, result.notes);
-          }
-          // Note: No 'update-current' option - all changes create new versions
+          // Create new version with user's description
+          this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes);
         },
         (reason) => {
           // Modal dismissed (cancel)
-          console.log('Dialog dismissed:', reason);
+          console.log('Save cancelled by user:', reason);
         }
       );
     } else {
-      // New template - no change detection needed
+      // New template - no revision needed
       this.proceedWithSave(templateData, false);
     }
   }
@@ -2183,12 +2186,16 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       const oldValue = originalTemplate[field.key];
       const newValue = newData[field.key];
       
-      if (oldValue !== newValue) {
+      // Normalize boolean values (database may store as 1/0, form uses true/false)
+      const normalizedOld = field.key === 'is_active' ? !!oldValue : oldValue;
+      const normalizedNew = field.key === 'is_active' ? !!newValue : newValue;
+      
+      if (normalizedOld !== normalizedNew) {
         changes.has_changes = true;
         changes.field_changes.push({
           field: field.label,
-          old_value: oldValue,
-          new_value: newValue
+          old_value: normalizedOld,
+          new_value: normalizedNew
         });
       }
     }
@@ -2208,13 +2215,26 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
     // Build a map of NEW items by their ID (from form's hidden id field)
     const newItemsById = new Map<number, any>();
+    let newItemsWithoutId = 0;
     newItems.forEach((item: any) => {
       if (item.id) {
         newItemsById.set(item.id, item);
+      } else {
+        newItemsWithoutId++;
+        console.warn('⚠️ New item missing ID:', item.title);
       }
     });
 
     console.log('📋 New items with IDs:', Array.from(newItemsById.keys()));
+    console.log('📋 New items WITHOUT IDs:', newItemsWithoutId);
+    
+    // If ALL new items are missing IDs, this is likely a data issue - skip item comparison
+    if (newItemsWithoutId === newItems.length && newItems.length > 0) {
+      console.error('❌ All new items are missing IDs - cannot perform proper comparison. Skipping item diff.');
+      console.error('   This usually means the form is not properly preserving item IDs from the database.');
+      // Still compare metadata fields, but skip item-level changes
+      return changes;
+    }
 
     // Check each OLD item
     oldItems.forEach((oldItem: any) => {
@@ -2300,8 +2320,24 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         continue;
       }
 
+      // Special handling for sample_images array - normalize before comparing
+      if (field.key === 'sample_images') {
+        const normalizedOld = this.normalizeSampleImages(oldValue);
+        const normalizedNew = this.normalizeSampleImages(newValue);
+        
+        const oldJson = this.sortedStringify(normalizedOld);
+        const newJson = this.sortedStringify(normalizedNew);
+        
+        if (oldJson !== newJson) {
+          itemChanges.push({
+            field: field.label,
+            old_value: normalizedOld,
+            new_value: normalizedNew
+          });
+        }
+      }
       // For objects (like photo_requirements), use normalized comparison
-      if (typeof oldValue === 'object' && oldValue !== null && typeof newValue === 'object' && newValue !== null) {
+      else if (typeof oldValue === 'object' && oldValue !== null && typeof newValue === 'object' && newValue !== null) {
         const oldJson = this.sortedStringify(this.normalizeValue(oldValue));
         const newJson = this.sortedStringify(this.normalizeValue(newValue));
         
@@ -2324,6 +2360,27 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
 
     return itemChanges;
+  }
+
+  /**
+   * Normalize sample images for comparison by keeping only relevant fields
+   * Removes UI-specific fields like 'id', 'status' that don't affect actual data
+   */
+  private normalizeSampleImages(images: any): any {
+    if (!images || !Array.isArray(images)) {
+      return null;
+    }
+    
+    // Keep only the essential fields for comparison
+    return images.map(img => ({
+      url: img.url,
+      label: img.label || '',
+      description: img.description || '',
+      type: img.type || 'photo',
+      image_type: img.image_type || 'sample',
+      is_primary: !!img.is_primary,
+      order_index: img.order_index || 0
+    }));
   }
 
   private isEmptyValue(value: any): boolean {
@@ -2426,14 +2483,14 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         }
 
         // After saving template, integrate with document control system
-        if (createVersion && this.editingTemplate && changes && revisionDescription) {
+        if (createVersion && this.editingTemplate && revisionDescription) {
           // Editing existing template - create new revision if it has a document
           if (this.editingTemplate.quality_document_metadata?.document_id) {
             this.createRevision(
               this.editingTemplate.quality_document_metadata.document_id,
               templateId,
               revisionDescription,
-              changes,
+              null, // No automatic change detection
               versionNotes
             );
           } else {
@@ -2506,20 +2563,20 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    * Create a new revision for existing document
    */
   private createRevision(documentId: number, templateId: number, revisionDescription: string, changes: any, notes?: string): void {
-    // Calculate change counts
-    const items_added = changes.items_added?.length || 0;
-    const items_removed = changes.items_removed?.length || 0;
-    const items_modified = changes.items_modified?.length || 0;
+    // Calculate change counts (use 0 if no changes provided)
+    const items_added = changes?.items_added?.length || 0;
+    const items_removed = changes?.items_removed?.length || 0;
+    const items_modified = changes?.items_modified?.length || 0;
 
     const revisionData = {
       document_id: documentId,
       template_id: templateId,
       revision_description: revisionDescription,
-      changes_summary: this.generateChangesSummary(changes),
+      changes_summary: changes ? this.generateChangesSummary(changes) : revisionDescription,
       items_added: items_added,
       items_removed: items_removed,
       items_modified: items_modified,
-      changes_detail: changes, // Full change object as JSON
+      changes_detail: changes || {}, // Full change object as JSON (empty if no automatic detection)
       created_by: 'current_user' // TODO: Get from auth service
     };
 
@@ -2547,6 +2604,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    * Generate a human-readable changes summary
    */
   private generateChangesSummary(changes: any): string {
+    if (!changes) {
+      return 'Template updated';
+    }
+    
     const parts = [];
     
     if (changes.field_changes?.length) {
