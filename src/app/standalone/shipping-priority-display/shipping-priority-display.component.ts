@@ -45,10 +45,10 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   refreshCountdown: string = '';
   
   // Display mode options
-  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
+  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'top6';
   
   // Card layout options
-  cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'traditional';
+  cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'salesorder';
   
   // Coming Up Next configuration
   showComingUpNext: boolean = true;
@@ -56,7 +56,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   scrollSpeed: number = 30; // seconds for one complete scroll cycle
   
   // Priority type toggle
-  priorityType: 'shipping' | 'kanban' = 'kanban'; // Default to kanban
+  priorityType: 'shipping' | 'kanban' = 'shipping'; // Default to shipping
   
   // Slick Carousel configuration - optimized for smooth auto-scrolling
   slickConfig = {
@@ -115,7 +115,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   showRefreshOverlay: boolean = false;
   
   // Theme management
-  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'bootstrap-dark';
   autoSwitchEnabled: boolean = false;
   switchIntervalMinutes: number = 30;
   switchCountdown: string = '';
@@ -552,8 +552,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   /**
    * Toggle between shipping and kanban priorities
    */
-  async togglePriorityType(): Promise<void> {
-    this.priorityType = this.priorityType === 'shipping' ? 'kanban' : 'shipping';
+  async togglePriorityType(newType?: 'kanban' | 'shipping'): Promise<void> {
+    this.priorityType = newType ?? (this.priorityType === 'shipping' ? 'kanban' : 'shipping');
     console.log(`🔄 Priority type toggled to: ${this.priorityType}`);
     
     // Save settings
@@ -751,20 +751,22 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         
-        // Load display mode
+        // Load display mode (only if valid, otherwise keep component default)
         if (settings.displayMode && ['single', 'top3', 'top6', 'grid'].includes(settings.displayMode)) {
           this.displayMode = settings.displayMode;
         }
+        // If no saved displayMode, component default (top6) will be used
         
         // Load refresh interval
         if (settings.refreshInterval !== undefined && settings.refreshInterval >= 0) {
           this.refreshInterval = settings.refreshInterval;
         }
         
-        // Load card layout
+        // Load card layout (only if valid, otherwise keep component default)
         if (settings.cardLayout && ['traditional', 'production', 'salesorder', 'compact', 'detailed', 'minimal', 'dashboard'].includes(settings.cardLayout)) {
           this.cardLayout = settings.cardLayout;
         }
+        // If no saved cardLayout, component default (salesorder) will be used
         
         // Load coming up next settings
         if (settings.showComingUpNext !== undefined) {
@@ -782,12 +784,16 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
           this.showRefreshOverlay = settings.showRefreshOverlay;
         }
         
-        // Load priority type setting
+        // Load priority type setting (only if valid, otherwise keep component default)
         if (settings.priorityType && ['shipping', 'kanban'].includes(settings.priorityType)) {
           this.priorityType = settings.priorityType;
         }
+        // If no saved priorityType, component default (shipping) will be used
         
         console.log('✅ Settings loaded from localStorage:', settings);
+        console.log('📊 Final applied settings - displayMode:', this.displayMode, 'cardLayout:', this.cardLayout, 'priorityType:', this.priorityType);
+      } else {
+        console.log('📊 No saved settings found, using component defaults - displayMode:', this.displayMode, 'cardLayout:', this.cardLayout, 'priorityType:', this.priorityType);
       }
     } catch (error) {
       console.warn('⚠️ Failed to load settings from localStorage:', error);

@@ -13,10 +13,6 @@
         </h1>
         <p class="lead mb-0">
           {{ getPriorityTypeDisplayName() }} - Real-time production display
-          <!-- <button class="btn btn-sm btn-outline-light ms-3" (click)="togglePriorityType()">
-            <i class="mdi mdi-swap-horizontal me-1"></i>
-            Switch to {{ priorityType === 'kanban' ? 'Shipping' : 'Kanban' }}
-          </button> -->
         </p>
       </div>
 
@@ -260,10 +256,12 @@
     [autoScrollEnabled]="autoScrollEnabled"
     [scrollSpeed]="scrollSpeed"
     [showRefreshOverlay]="showRefreshOverlay"
+    [priorityType]="priorityType"
     (displayModeChange)="onDisplayModeChange($event)"
     (refreshIntervalChange)="onRefreshIntervalChange($event)"
     (cardLayoutChange)="onCardLayoutChange($event)"
     (comingUpNextSettingsChange)="onComingUpNextSettingsChange($event)"
+    (priorityTypeChange)="togglePriorityType($event)"
     (refreshRequested)="refreshData()"
     (settingsApplied)="onSettingsApplied($event); offcanvas.close()"
     (closed)="offcanvas.close()">

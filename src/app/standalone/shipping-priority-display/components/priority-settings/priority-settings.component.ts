@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { Router } from '@angular/router';
 import { ThemeManagementService, ThemeSettings } from '../../services/theme-management.service';
 import { Subscription } from 'rxjs';
 
@@ -49,6 +50,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   @Input() autoScrollEnabled: boolean = true;
   @Input() scrollSpeed: number = 30;
   @Input() showRefreshOverlay: boolean = false;
+  @Input() priorityType: 'kanban' | 'shipping' = 'kanban';
 
   // Theme-related properties
   currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
@@ -78,6 +80,7 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   @Output() comingUpNextSettingsChange = new EventEmitter<{showComingUpNext: boolean, autoScrollEnabled: boolean, scrollSpeed: number}>();
   @Output() themeChanged = new EventEmitter<'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark'>();
   @Output() themeSettingsChanged = new EventEmitter<ThemeSettings>();
+  @Output() priorityTypeChange = new EventEmitter<'kanban' | 'shipping'>();
 
   private offcanvasRef: any;
 
@@ -163,7 +166,10 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor(private themeService: ThemeManagementService) {}
+  constructor(
+    private themeService: ThemeManagementService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadSettingsFromStorage();
@@ -195,6 +201,12 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
   onCardLayoutChange(layout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'): void {
     this.cardLayout = layout;
     this.cardLayoutChange.emit(layout);
+    this.saveSettingsToStorage();
+  }
+
+  onPriorityTypeChange(type: 'kanban' | 'shipping'): void {
+    this.priorityType = type;
+    this.priorityTypeChange.emit(type);
     this.saveSettingsToStorage();
   }
 
@@ -261,6 +273,72 @@ export class PrioritySettingsComponent implements OnInit, OnDestroy {
     };
     this.settingsApplied.emit(settings);
     this.onRefreshData();
+  }
+
+  onResetToDefaults(): void {
+    if (confirm('Are you sure you want to reset all settings to default values? This will clear all saved preferences.')) {
+      // Set default values
+      this.displayMode = 'top6';
+      this.refreshInterval = 300000; // 5 minutes
+      this.cardLayout = 'salesorder';
+      this.showComingUpNext = true;
+      this.autoScrollEnabled = true;
+      this.scrollSpeed = 30;
+      this.showRefreshOverlay = false;
+      this.priorityType = 'shipping';
+      this.currentTheme = 'bootstrap-dark';
+      this.autoSwitchEnabled = false;
+      this.switchIntervalMinutes = 30;
+      this.zoomLevel = 100;
+
+      // Clear localStorage
+      localStorage.removeItem('shippingPriorityDisplaySettings');
+      
+      // Emit all changes
+      this.displayModeChange.emit(this.displayMode);
+      this.refreshIntervalChange.emit(this.refreshInterval);
+      this.cardLayoutChange.emit(this.cardLayout);
+      this.comingUpNextSettingsChange.emit({
+        showComingUpNext: this.showComingUpNext,
+        autoScrollEnabled: this.autoScrollEnabled,
+        scrollSpeed: this.scrollSpeed
+      });
+      this.priorityTypeChange.emit(this.priorityType);
+      
+      // Apply theme
+      this.themeService.setTheme(this.currentTheme);
+      this.themeService.setAutoSwitchEnabled(this.autoSwitchEnabled);
+      this.themeService.setAutoSwitchInterval(this.switchIntervalMinutes);
+      this.themeService.setZoomLevel(this.zoomLevel);
+      
+      // Clear URL parameters
+      this.router.navigate([], {
+        queryParams: {},
+        queryParamsHandling: 'merge'
+      });
+      
+      // Emit settings applied with all defaults
+      const defaultSettings: DisplaySettings = {
+        displayMode: this.displayMode,
+        refreshInterval: this.refreshInterval,
+        cardLayout: this.cardLayout,
+        showComingUpNext: this.showComingUpNext,
+        autoScrollEnabled: this.autoScrollEnabled,
+        scrollSpeed: this.scrollSpeed,
+        showRefreshOverlay: this.showRefreshOverlay,
+        currentTheme: this.currentTheme,
+        autoSwitchEnabled: this.autoSwitchEnabled,
+        switchIntervalMinutes: this.switchIntervalMinutes,
+        zoomLevel: this.zoomLevel
+      };
+      this.settingsApplied.emit(defaultSettings);
+      
+      // Save and refresh
+      this.saveSettingsToStorage();
+      this.onRefreshData();
+      
+      alert('Settings have been reset to defaults!');
+    }
   }
 
   onClose(): void {
