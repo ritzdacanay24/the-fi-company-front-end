@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ContinuityModalService } from '@app/pages/operations/labels/continuity-test-modal/continuity-test-modal.component';
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
     selector: 'app-checklist',
@@ -55,7 +56,8 @@ export class ChecklistComponent implements OnInit {
         public router: Router,
         private continuityModalService: ContinuityModalService,
         private placardModalService: PlacardModalService,
-        private photoChecklistService: PhotoChecklistConfigService
+        private photoChecklistService: PhotoChecklistConfigService,
+        private authService: AuthenticationService
     ) {
     }
 
@@ -171,13 +173,16 @@ export class ChecklistComponent implements OnInit {
             return;
         }
 
+        // Get current user information
+        const currentUser = this.authService.currentUser();
+        
         const instanceData = {
             template_id: template.id,
             work_order_number: workOrder,
             part_number: partNumber,
             serial_number: serialNumber,
-            operator_id: 1, // TODO: Get from current user
-            operator_name: 'Current User' // TODO: Get from current user
+            operator_id: currentUser?.id || null,
+            operator_name: currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Unknown User'
         };
 
         this.photoChecklistService.createInstance(instanceData).subscribe({

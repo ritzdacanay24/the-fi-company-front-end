@@ -166,14 +166,19 @@ export class ChecklistStateService {
   }
 
   /**
-   * Get completion percentage
+   * Get completion percentage based on PARENT items only
+   * Sub-items are considered part of their parent's completion
    */
   getCompletionPercentage(): number {
     const progress = this.itemProgressSubject.value;
     if (progress.length === 0) return 0;
     
-    const completed = progress.filter(p => p.completed).length;
-    return Math.round((completed / progress.length) * 100);
+    // Only count parent items (level 0 or undefined)
+    const parentItems = progress.filter(p => p.item.level === 0 || !p.item.level);
+    if (parentItems.length === 0) return 0;
+    
+    const completedParents = parentItems.filter(p => p.completed).length;
+    return Math.round((completedParents / parentItems.length) * 100);
   }
 
   /**
@@ -191,16 +196,27 @@ export class ChecklistStateService {
   }
 
   /**
-   * Get completed items count
+   * Get completed items count (PARENT items only)
+   * Matches the numerator used in getCompletionPercentage()
    */
   getCompletedItemsCount(): number {
-    return this.itemProgressSubject.value.filter(p => p.completed).length;
+    const parentItems = this.itemProgressSubject.value.filter(p => p.item.level === 0 || !p.item.level);
+    return parentItems.filter(p => p.completed).length;
   }
 
   /**
-   * Get total parent items count (excluding sub-items)
+   * Get total items count (PARENT items only)
+   * This should match the denominator used in getCompletionPercentage()
    */
   getTotalItemsCount(): number {
+    return this.itemProgressSubject.value.filter(p => p.item.level === 0 || !p.item.level).length;
+  }
+
+  /**
+   * Get total parent items count only (excluding sub-items)
+   * Used for navigation purposes
+   */
+  getTotalParentItemsCount(): number {
     return this.itemProgressSubject.value.filter(p => p.item.level === 0 || !p.item.level).length;
   }
 

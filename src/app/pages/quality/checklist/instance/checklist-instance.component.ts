@@ -2,16 +2,10 @@ import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { PhotoChecklistConfigService, ChecklistInstance, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { GlobalComponent } from '@app/global-component';
-
-// Import sub-components
-import { ChecklistHeaderComponent } from './components/checklist-header/checklist-header.component';
-import { TaskDescriptionComponent } from './components/task-description/task-description.component';
-import { PhotoSectionComponent } from './components/photo-section/photo-section.component';
-import { SampleReferenceComponent } from './components/sample-reference/sample-reference.component';
-import { ChecklistNavigationComponent } from './components/checklist-navigation/checklist-navigation.component';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 // Import services
 import { ChecklistStateService, ChecklistItemProgress } from './services/checklist-state.service';
@@ -27,12 +21,7 @@ import { InstanceItemMatcherService } from './services/instance-item-matcher.ser
     CommonModule, 
     FormsModule, 
     RouterModule,
-    NgbDropdownModule,
-    ChecklistHeaderComponent,
-    TaskDescriptionComponent,
-    PhotoSectionComponent,
-    SampleReferenceComponent,
-    ChecklistNavigationComponent
+    NgbDropdownModule
   ],
   templateUrl: './checklist-instance.component.html',
   styleUrls: [
@@ -80,6 +69,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   // Full checklist overview modal
   showFullChecklistModal = false;
 
+  // Auto-advance after photo capture
+  autoAdvanceAfterPhoto = false;
+
+  // User's open checklists for offcanvas
+  userOpenChecklists: ChecklistInstance[] = [];
+  loadingChecklists = false;
+
+  // Permission check
+  canModifyChecklist = false;
+  currentUserId: number | null = null;
+
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
     return this.stateService.getItemProgress();
@@ -94,42 +94,46 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     private photoValidation: PhotoValidationService,
     private photoOps: PhotoOperationsService,
     private idExtractor: ItemIdExtractorService,
-    private instanceMatcher: InstanceItemMatcherService
-  ) {}
+    private instanceMatcher: InstanceItemMatcherService,
+    private offcanvasService: NgbOffcanvas,
+    private authService: AuthenticationService
+  ) {
+    // Get current user ID
+    const currentUser = this.authService.currentUserValue;
+    this.currentUserId = currentUser?.id || null;
+  }
 
   ngOnInit(): void {
-    console.log('=== ChecklistInstanceComponent ngOnInit ===');
-    console.log('All route params:', this.route.snapshot.params);
-    console.log('All query params:', this.route.snapshot.queryParams);
-    
     this.route.queryParams.subscribe(params => {
-      console.log('Query params subscription triggered:', params);
       const idParam = params['id'];
       const stepParam = params['step'];
-      console.log('Instance ID from query params:', idParam, 'Type:', typeof idParam);
-      console.log('Step from query params:', stepParam);
       
       if (idParam) {
-        this.instanceId = +idParam;
-        console.log('Parsed instance ID:', this.instanceId, 'Type:', typeof this.instanceId, 'isNaN:', isNaN(this.instanceId));
+        const newInstanceId = +idParam;
         
-        if (this.instanceId && !isNaN(this.instanceId) && this.instanceId > 0) {
-          console.log('Valid instanceId, loading instance...');
+        if (newInstanceId && !isNaN(newInstanceId) && newInstanceId > 0) {
+          // Reset state when switching to a different checklist
+          if (this.instanceId !== newInstanceId) {
+            this.instanceId = newInstanceId;
+            this.instance = null;
+            this.template = null;
+            this.loading = true;
+          }
+          
+          // Update instance ID
+          this.instanceId = newInstanceId;
           
           // Restore step if provided
           if (stepParam && !isNaN(+stepParam)) {
             this.currentStep = +stepParam;
-            console.log('Restored step:', this.currentStep);
           }
           
           this.loadInstance();
         } else {
-          console.error('Invalid instance ID:', idParam, 'Parsed:', this.instanceId);
           this.loading = false;
           alert('Invalid checklist instance ID. Please check the URL.');
         }
       } else {
-        console.error('No instance ID provided in query params. Available params:', Object.keys(params));
         this.loading = false;
         alert('No checklist instance ID provided. Please check the URL.');
       }
@@ -156,23 +160,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   private initializeCarousels(): void {
     try {
-      console.log('=== Initializing carousels ===');
-      
-      // Find all carousel elements
       const carousels = document.querySelectorAll('.carousel');
-      console.log('Found carousels:', carousels.length);
       
-      carousels.forEach((carousel, index) => {
-        console.log(`Initializing carousel ${index}:`, carousel.id);
-        
+      carousels.forEach((carousel) => {
         // Set up slide change event listeners
         carousel.addEventListener('slide.bs.carousel', (event: any) => {
           const slideIndex = event.to;
           const carouselId = carousel.id;
           const itemId = carouselId.replace('photoCarousel-', '');
-          console.log('Carousel slide event:', { carouselId, itemId, slideIndex });
-          
-          // Update thumbnail highlighting
           this.updateThumbnailHighlight(itemId, slideIndex);
         });
         
@@ -180,9 +175,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           const slideIndex = event.to;
           const carouselId = carousel.id;
           const itemId = carouselId.replace('photoCarousel-', '');
-          console.log('Carousel slid event (after transition):', { carouselId, itemId, slideIndex });
-          
-          // Update thumbnail highlighting after transition
           this.updateThumbnailHighlight(itemId, slideIndex);
         });
       });
@@ -192,53 +184,76 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  /**
+   * Check if current user has permission to modify this checklist
+   */
+  private checkPermission(instance: ChecklistInstance): boolean {
+    if (!this.currentUserId) {
+      console.error('No current user ID available');
+      return false;
+    }
+
+    if (!instance.operator_id) {
+      console.warn('Instance has no operator_id');
+      return true; // Allow modification if no operator assigned
+    }
+
+    // Use == for comparison to handle number vs string (e.g., 3 == "3")
+    return this.currentUserId == instance.operator_id;
+  }
+
   loadInstance(): void {
     this.loading = true;
     this.photoChecklistService.getInstance(this.instanceId).subscribe({
       next: (instance) => {
-        console.log('=== API Response Received ===');
-        console.log('Full instance response:', instance);
-        console.log('Instance items:', (instance as any).items);
-        if ((instance as any).items && Array.isArray((instance as any).items)) {
-          (instance as any).items.forEach((item: any, index: number) => {
-            console.log(`Instance Item ${index} (ID: ${item.id}):`, item);
-            console.log(`  - Keys:`, Object.keys(item));
-            console.log(`  - template_item_id:`, item.template_item_id);
-            console.log(`  - item_id:`, item.item_id);
-            console.log(`  - template_id:`, item.template_id);
-            if (item.photos) {
-              console.log(`  - Photos array:`, item.photos);
-              item.photos.forEach((photo: any, photoIndex: number) => {
-                console.log(`    Photo ${photoIndex}:`, photo);
-              });
-            }
-          });
+        if (!instance) {
+          this.loading = false;
+          alert(`Error: Checklist instance #${this.instanceId} not found. It may have been deleted.`);
+          this.router.navigate(['/quality/checklist/list']);
+          return;
         }
+
+        // Check if current user has permission to modify this checklist
+        this.canModifyChecklist = this.checkPermission(instance);
+        if (!this.canModifyChecklist) {
+          this.loading = false;
+          alert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
+          this.router.navigate(['/quality/checklist/execution']);
+          return;
+        }
+        
+        if (!instance.template_id) {
+          this.loading = false;
+          alert('Error: Checklist instance has no associated template.');
+          return;
+        }
+        
         this.instance = instance;
         this.loadTemplate();
       },
       error: (error) => {
         console.error('Error loading instance:', error);
         this.loading = false;
-        alert('Error loading checklist instance. Please try again.');
+        alert(`Error loading checklist instance #${this.instanceId}. It may have been deleted or you don't have permission to access it.`);
+        this.router.navigate(['/quality/checklist/list']);
       }
     });
   }
 
   loadTemplate(): void {
-    if (!this.instance) return;
+    if (!this.instance) {
+      console.error('Cannot load template: instance is null');
+      return;
+    }
     
     this.photoChecklistService.getTemplate(this.instance.template_id).subscribe({
       next: (template) => {
-        console.log('=== Template Response Received ===');
-        console.log('Full template response:', template);
-        console.log('Template items:', template.items);
-        if (template.items && Array.isArray(template.items)) {
-          template.items.forEach((item: any, index: number) => {
-            console.log(`Template Item ${index} (ID: ${item.id}):`, item);
-            console.log(`  - Keys:`, Object.keys(item));
-          });
+        if (!template) {
+          this.loading = false;
+          alert('Error: Template not found. Please try again.');
+          return;
         }
+        
         this.template = template;
         this.initializeProgress();
         this.loading = false;
@@ -251,13 +266,53 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
+  /**
+   * Flatten hierarchical items structure (with nested children) into a flat array
+   * OR sort flat array with sub-items placed after their parents
+   */
+  private flattenItems(items: ChecklistItem[]): ChecklistItem[] {
+    // Check if items are already flat (no children property)
+    const hasChildren = items.some(item => (item as any).children && Array.isArray((item as any).children));
+    
+    if (!hasChildren) {
+      // Items are already flat - just sort them properly
+      // Separate parents and sub-items
+      const parents = items.filter(item => item.level === 0 || !item.level);
+      const subItems = items.filter(item => item.level === 1);
+      
+      // Build ordered array: parent followed by its sub-items
+      const sorted: ChecklistItem[] = [];
+      parents.forEach(parent => {
+        sorted.push(parent);
+        // Find and add all sub-items that belong to this parent
+        const children = subItems.filter(sub => sub.parent_id === parent.id);
+        sorted.push(...children);
+      });
+      
+      return sorted;
+    }
+    
+    // Original hierarchical flattening logic
+    const flattened: ChecklistItem[] = [];
+    
+    const flatten = (item: ChecklistItem) => {
+      // Add the current item
+      flattened.push(item);
+      
+      // If item has children, recursively flatten them
+      if ((item as any).children && Array.isArray((item as any).children)) {
+        (item as any).children.forEach((child: ChecklistItem) => flatten(child));
+      }
+    };
+    
+    items.forEach(item => flatten(item));
+    return flattened;
+  }
+
   initializeProgress(): void {
     if (!this.template?.items) {
-      console.log('No template items available');
       return;
     }
-
-    console.log('=== Initializing Progress ===');
     
     // Set instance ID in state service
     this.stateService.setInstanceId(this.instanceId);
@@ -265,7 +320,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Load completion status from localStorage
     const completionMap = this.stateService.loadFromLocalStorage();
     
-    const itemProgress: ChecklistItemProgress[] = this.template.items.map((item, index) => {
+    // Flatten items to include sub-items from children arrays
+    const flattenedItems = this.flattenItems(this.template.items);
+    
+    const itemProgress: ChecklistItemProgress[] = flattenedItems.map((item, index) => {
       // Validate item ID
       if (!item.id || item.id === null || item.id === undefined) {
         console.error(`Item ${index} has invalid ID:`, item.id);
@@ -305,6 +363,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         notes = localData.notes || '';
       }
       
+      // Check if item should be completed based on photos meeting requirements
+      if (!completed && existingPhotos.length > 0) {
+        const minPhotos = item.photo_requirements?.min_photos || 1;
+        if (existingPhotos.length >= minPhotos) {
+          completed = true;
+          completionDate = completionDate || new Date();
+        }
+      }
+      
       return {
         item: {
           ...item,
@@ -320,12 +387,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
     
     this.stateService.setItemProgress(itemProgress);
-    console.log('Initialized itemProgress:', itemProgress.length, 'items');
+    
+    // Update parent completion based on sub-items
+    this.updateParentCompletion();
+    
+    // Navigate to first incomplete item if no step param was provided
+    this.navigateToFirstIncompleteItem();
+  }
+
+  /**
+   * Navigate to the first incomplete item (only if step param not in URL)
+   */
+  private navigateToFirstIncompleteItem(): void {
+    // Only auto-navigate if step was not explicitly provided in URL
+    const stepParam = this.route.snapshot.queryParams['step'];
+    if (stepParam) {
+      return;
+    }
+    
+    // Find first incomplete parent item (level 0)
+    const firstIncompleteIndex = this.itemProgress.findIndex(p => 
+      !p.completed && (p.item.level === 0 || !p.item.level)
+    );
+    
+    if (firstIncompleteIndex !== -1) {
+      this.currentStep = firstIncompleteIndex + 1; // Steps are 1-indexed
+      this.updateUrlWithCurrentStep();
+    }
   }
 
   onFileSelectedAndUpload(event: any, itemId: number | string): void {
-    console.log('=== onFileSelectedAndUpload called ===');
-    
     // Validate itemId
     if (!this.idExtractor.isValidItemId(itemId)) {
       console.error('Invalid itemId:', itemId);
@@ -436,6 +527,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           this.cdr.detectChanges();
           setTimeout(() => this.initializeCarousels(), 100);
           
+          // Check if all files uploaded, then trigger auto-advance
+          if (uploadedCount === totalFiles) {
+            this.handlePhotoUploadComplete(itemId);
+          }
+          
           uploadNextFile(index + 1);
         },
         error: (error) => {
@@ -451,11 +547,52 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     uploadNextFile(0);
   }
 
+  /**
+   * Update parent item completion based on sub-items
+   * If all sub-items of a parent are complete, mark parent as complete
+   */
+  private updateParentCompletion(): void {
+    const allProgress = this.itemProgress;
+    
+    // Find all parent items
+    const parents = allProgress.filter(p => p.item.level === 0 || !p.item.level);
+    
+    parents.forEach(parent => {
+      // Find all sub-items for this parent
+      const subItems = allProgress.filter(sub => 
+        sub.item.level === 1 && 
+        (sub.item.parent_id === parent.item.id || sub.item.parent_id === (parent.item as any).baseItemId)
+      );
+      
+      // If parent has sub-items, check if all are complete
+      if (subItems.length > 0) {
+        const allSubItemsComplete = subItems.every(sub => sub.completed);
+        
+        // Update parent completion status
+        if (allSubItemsComplete && !parent.completed) {
+          this.stateService.updateItemProgress(parent.item.id, {
+            completed: true,
+            completedAt: new Date()
+          });
+        } else if (!allSubItemsComplete && parent.completed) {
+          // If any sub-item is incomplete, mark parent as incomplete
+          this.stateService.updateItemProgress(parent.item.id, {
+            completed: false,
+            completedAt: undefined
+          });
+        }
+      }
+    });
+  }
+
   saveProgress(): void {
     if (!this.instanceId) {
       console.error('Cannot save progress: Instance ID is not available');
       return;
     }
+
+    // Update parent completion before saving
+    this.updateParentCompletion();
 
     this.saving = true;
     
@@ -473,11 +610,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       next: (response) => {
         this.saving = false;
         this.notesLastSaved = new Date();
-        this.loadInstance();
+        
+        // Update local instance progress percentage immediately
+        if (this.instance) {
+          this.instance.progress_percentage = progress;
+        }
+        
+        // Trigger change detection to update UI
+        this.cdr.detectChanges();
       },
       error: (error) => {
-        this.saving = false;
         console.error('Error saving progress:', error);
+        this.saving = false;
         alert('Error saving progress. Please try again.');
       }
     });
@@ -593,7 +737,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   goBack(): void {
-    this.router.navigate(['../checklist'], { relativeTo: this.route });
+    this.router.navigate(['/quality/checklist/execution']);
   }
 
   toggleItemCompletion(itemId: number | string): void {
@@ -684,6 +828,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (result) {
       result.subscribe({
         next: () => {
+          // Recalculate progress after photo deletion
+          this.saveProgress();
           this.cdr.detectChanges();
           setTimeout(() => this.initializeCarousels(), 100);
         },
@@ -693,7 +839,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
       });
     } else {
-      // UI-only removal (no backend ID found)
+      // UI-only removal (no backend ID found) - still recalculate progress
+      this.saveProgress();
       this.cdr.detectChanges();
     }
   }
@@ -709,6 +856,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (result) {
       result.subscribe({
         next: () => {
+          // Recalculate progress after removing all photos
+          this.saveProgress();
           this.cdr.detectChanges();
           this.loadInstance();
         },
@@ -718,7 +867,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
       });
     } else {
-      // UI-only removal
+      // UI-only removal - still recalculate progress
+      this.saveProgress();
       this.cdr.detectChanges();
     }
   }
@@ -735,6 +885,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (result) {
       result.subscribe({
         next: () => {
+          // Recalculate progress after photo deletion
+          this.saveProgress();
           this.cdr.detectChanges();
           setTimeout(() => this.initializeCarousels(), 100);
         },
@@ -743,6 +895,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
       });
     } else {
+      // Recalculate progress for local deletion
+      this.saveProgress();
       this.cdr.detectChanges();
     }
   }
@@ -767,14 +921,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   goToCarouselSlide(itemId: number | string, slideIndex: number): void {
     try {
-      console.log('=== goToCarouselSlide called ===');
-      console.log('itemId:', itemId, 'slideIndex:', slideIndex);
-      
       const carouselId = `photoCarousel-${itemId}`;
       const carouselElement = document.getElementById(carouselId);
-      
-      console.log('Looking for carousel element:', carouselId);
-      console.log('Found element:', carouselElement);
       
       if (carouselElement) {
         // Try different approaches to control the carousel
@@ -782,25 +930,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         // Method 1: Direct Bootstrap API
         if ((window as any).bootstrap?.Carousel) {
           const carousel = (window as any).bootstrap.Carousel.getOrCreateInstance(carouselElement);
-          console.log('Bootstrap carousel instance:', carousel);
           carousel.to(slideIndex);
         }
         // Method 2: jQuery if available
         else if ((window as any).$ && (window as any).$().carousel) {
-          console.log('Using jQuery carousel');
           (window as any).$(`#${carouselId}`).carousel(slideIndex);
         }
         // Method 3: Manual slide activation
         else {
-          console.log('Using manual slide activation');
           this.activateCarouselSlide(carouselElement, slideIndex);
         }
         
         // Update thumbnail highlighting
         this.updateThumbnailHighlight(itemId, slideIndex);
-        
-      } else {
-        console.error('Carousel element not found:', carouselId);
       }
     } catch (error) {
       console.error('Error navigating carousel:', error);
@@ -854,17 +996,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   // Comparison Mode Methods
   toggleCompareMode(itemId: number | string): void {
-    console.log('=== toggleCompareMode called ===');
-    console.log('itemId:', itemId, 'current mode:', this.isCompareMode[itemId as any]);
-    
     // Use the compound ID directly as the key for isCompareMode
     this.isCompareMode[itemId as any] = !this.isCompareMode[itemId as any];
     
     if (this.isCompareMode[itemId as any] && !this.comparisonPhotoIndex[itemId as any]) {
       this.comparisonPhotoIndex[itemId as any] = 0;
     }
-    
-    console.log('New compare mode:', this.isCompareMode[itemId as any]);
   }
 
   getCurrentComparisonPhoto(itemId: number | string): string {
@@ -907,16 +1044,24 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.stateService.getTotalItemsCount();
   }
 
+  /**
+   * Get total parent items count for navigation
+   */
+  getTotalParentItemsCount(): number {
+    return this.stateService.getTotalParentItemsCount();
+  }
+
   goToItem(itemNumber: number): void {
     this.currentStep = itemNumber;
+    this.updateUrlWithCurrentStep();
   }
 
   nextItem(): void {
-    if (this.currentStep < this.getTotalItemsCount()) {
+    if (this.currentStep < this.getTotalParentItemsCount()) {
       this.currentStep++;
       
       // Skip sub-items since they're shown with their parent
-      while (this.currentStep <= this.getTotalItemsCount()) {
+      while (this.currentStep <= this.getTotalParentItemsCount()) {
         const nextItemProgress = this.itemProgress[this.currentStep - 1];
         if (nextItemProgress && nextItemProgress.item.level === 1) {
           this.currentStep++;
@@ -924,6 +1069,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           break;
         }
       }
+      
+      this.updateUrlWithCurrentStep();
     }
   }
 
@@ -940,6 +1087,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           break;
         }
       }
+      
+      this.updateUrlWithCurrentStep();
     }
   }
 
@@ -1008,7 +1157,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   isLastItem(): boolean {
-    return this.currentStep === this.getTotalItemsCount();
+    return this.currentStep === this.getTotalParentItemsCount();
   }
 
   getRequiredCompletionStatus(): { completed: number; total: number } {
@@ -1082,8 +1231,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Handle notes change with auto-save
    */
   onNotesChange(itemId: number | string): void {
-    console.log('Notes changed for item:', itemId);
-    
     // Clear existing timeout
     if (this.notesAutoSaveTimeout) {
       clearTimeout(this.notesAutoSaveTimeout);
@@ -1104,7 +1251,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
-    console.log('Auto-saving notes...');
     this.notesSaving = true;
     
     // Save notes to localStorage immediately
@@ -1121,7 +1267,6 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.notesSaving = false;
       this.notesLastSaved = new Date();
       this.cdr.detectChanges();
-      console.log('Notes saved to localStorage');
     }, 300);
   }
 
@@ -1153,6 +1298,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   onFileSelected(event: Event, itemId: number | string): void {
     this.onFileSelectedAndUpload(event, itemId);
+  }
+
+  /**
+   * Open camera directly for photo capture
+   */
+  openCamera(fileInput: HTMLInputElement, itemId: number | string): void {
+    // Trigger camera by setting accept to capture
+    fileInput.setAttribute('capture', 'environment');
+    fileInput.click();
+  }
+
+  /**
+   * Open file picker for uploading existing photo
+   */
+  openFilePicker(fileInput: HTMLInputElement, itemId: number | string): void {
+    // Remove capture attribute for regular file selection
+    fileInput.removeAttribute('capture');
+    fileInput.click();
+  }
+
+  /**
+   * Handle photo upload completion and auto-advance if enabled
+   */
+  private handlePhotoUploadComplete(itemId: number | string): void {
+    // If auto-advance is enabled, move to next item
+    if (this.autoAdvanceAfterPhoto && !this.isLastItem()) {
+      setTimeout(() => {
+        this.nextItem();
+      }, 500); // Small delay to show the uploaded photo
+    }
   }
 
   /**
@@ -1251,6 +1426,100 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   /**
+   * Open work order information offcanvas
+   */
+  openWorkOrderInfo(content: any): void {
+    this.offcanvasService.open(content, { 
+      position: 'end',
+      panelClass: 'work-order-offcanvas'
+    });
+  }
+
+  /**
+   * Open offcanvas to show all open checklists for current user
+   */
+  openUserChecklists(content: any): void {
+    this.loadingChecklists = true;
+    
+    // Get current user's operator ID from the instance
+    const currentOperatorId = this.instance?.operator_id;
+    
+    // Fetch all instances (no status filter to get everything)
+    this.photoChecklistService.getInstances().subscribe({
+      next: (instances) => {
+        // Filter to show current user's checklists that are not submitted yet
+        // Include: draft, in_progress, and completed (but not yet submitted)
+        if (currentOperatorId) {
+          this.userOpenChecklists = instances.filter(inst => 
+            inst.operator_id === currentOperatorId && 
+            inst.status !== 'submitted'
+          );
+        } else {
+          this.userOpenChecklists = instances.filter(inst => 
+            inst.status !== 'submitted'
+          );
+        }
+        
+        // Ensure current checklist is in the list (add it if not present)
+        if (this.instance && !this.userOpenChecklists.find(inst => inst.id === this.instance!.id)) {
+          this.userOpenChecklists.unshift(this.instance);
+        }
+        
+        // Sort by updated_at (most recent first), but keep current checklist at top
+        this.userOpenChecklists.sort((a, b) => {
+          if (a.id === this.instanceId) return -1;
+          if (b.id === this.instanceId) return 1;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
+        
+        this.loadingChecklists = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading user checklists:', error);
+        // On error, at least show the current checklist
+        if (this.instance) {
+          this.userOpenChecklists = [this.instance];
+        } else {
+          this.userOpenChecklists = [];
+        }
+        this.loadingChecklists = false;
+        this.cdr.detectChanges();
+      }
+    });
+    
+    this.offcanvasService.open(content, { 
+      position: 'end',
+      panelClass: 'user-checklists-offcanvas',
+      backdrop: true
+    });
+  }
+
+  /**
+   * Navigate to a different checklist instance
+   */
+  switchToChecklist(instanceId: number): void {
+    this.offcanvasService.dismiss();
+    
+    // Navigate without step param so it auto-navigates to first incomplete item
+    this.router.navigate(['/quality/checklist/instance'], { 
+      queryParams: { id: instanceId }
+      // NOTE: No step param - this triggers auto-navigation to first incomplete item
+    }).catch(err => {
+      console.error('Navigation error:', err);
+    });
+  }
+
+  /**
+   * Get progress badge class for checklist item
+   */
+  getProgressBadgeClass(percentage: number): string {
+    if (percentage >= 100) return 'bg-success';
+    if (percentage >= 50) return 'bg-warning';
+    return 'bg-secondary';
+  }
+
+  /**
    * Format value based on item type
    */
   formatValue(notes: string): string {
@@ -1261,7 +1530,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Get status badge class
    */
   getStatusBadgeClass(progress: ChecklistItemProgress): string {
-    if (progress.completed || progress.photos.length > 0) return 'bg-success';
+    if (progress.completed) return 'bg-success';
     return 'bg-secondary';
   }
 
@@ -1269,7 +1538,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Get status text
    */
   getStatusText(progress: ChecklistItemProgress): string {
-    if (progress.completed || progress.photos.length > 0) return 'Completed';
+    if (progress.completed) return 'Completed';
     return 'Pending';
   }
 }

@@ -29,6 +29,10 @@
             </div>
           </div>
           <div class="d-flex gap-2">
+            <button class="btn btn-outline-success" [routerLink]="['./execution']" [relativeTo]="route">
+              <i class="mdi mdi-clipboard-list me-2"></i>
+              Open Instances
+            </button>
             <button class="btn btn-outline-info" [routerLink]="['../checklist-audit']" [relativeTo]="route">
               <i class="mdi mdi-file-chart me-2"></i>
               Audit Reports

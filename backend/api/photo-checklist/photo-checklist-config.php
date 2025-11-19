@@ -592,9 +592,54 @@ class PhotoChecklistConfigAPI {
                     
                     // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        // Store in both columns for compatibility
+                        // Use sample_images array from frontend if provided (includes primary + reference images)
+                        // Otherwise, create array from single sample_image_url for backward compatibility
                         $sampleImagesArray = [];
-                        if (!empty($sampleImageUrl)) {
+                        
+                        if (!empty($item['sample_images']) && is_array($item['sample_images'])) {
+                            // Frontend sent full array with primary + reference images
+                            // IMPORTANT: Move temp images to permanent storage and update URLs
+                            $sampleImagesArray = [];
+                            foreach ($item['sample_images'] as $img) {
+                                $imageUrl = $img['url'];
+                                
+                                // Check if this is a temp image (contains '/temp/')
+                                if (strpos($imageUrl, '/temp/') !== false) {
+                                    // Move from temp to permanent storage
+                                    $imageUrl = $this->moveTempImageToPermanent($imageUrl);
+                                    error_log("  � Moved temp image to permanent: " . $imageUrl);
+                                }
+                                
+                                $sampleImagesArray[] = [
+                                    'url' => $imageUrl,
+                                    'label' => $img['label'] ?? '',
+                                    'description' => $img['description'] ?? '',
+                                    'type' => $img['type'] ?? 'photo',
+                                    'image_type' => $img['image_type'] ?? 'sample',
+                                    'is_primary' => $img['is_primary'] ?? false,
+                                    'order_index' => $img['order_index'] ?? 0
+                                ];
+                            }
+                            
+                            // Update sample_image_url with the primary image URL
+                            $primaryImage = array_filter($sampleImagesArray, function($img) {
+                                return $img['is_primary'] === true;
+                            });
+                            if (!empty($primaryImage)) {
+                                $sampleImageUrl = reset($primaryImage)['url'];
+                            } elseif (!empty($sampleImagesArray)) {
+                                $sampleImageUrl = $sampleImagesArray[0]['url'];
+                            }
+                            
+                            error_log("  📸 Processed sample_images array with " . count($sampleImagesArray) . " images");
+                        } elseif (!empty($sampleImageUrl)) {
+                            // Fallback: Only sample_image_url provided - create single-image array
+                            // Check if it's a temp image
+                            if (strpos($sampleImageUrl, '/temp/') !== false) {
+                                $sampleImageUrl = $this->moveTempImageToPermanent($sampleImageUrl);
+                                error_log("  🔄 Moved temp sample_image_url to permanent: " . $sampleImageUrl);
+                            }
+                            
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
                                 'label' => 'Primary Sample Image',
@@ -604,6 +649,7 @@ class PhotoChecklistConfigAPI {
                                 'is_primary' => true,
                                 'order_index' => 0
                             ]];
+                            error_log("  📸 Created single-image array from sample_image_url");
                         }
                         
                         // Insert with NULL parent_id initially
@@ -784,9 +830,56 @@ class PhotoChecklistConfigAPI {
                     
                     // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        // Store in both columns for compatibility
+                        // Use sample_images array from frontend if provided (includes primary + reference images)
+                        // Otherwise, create array from single sample_image_url for backward compatibility
                         $sampleImagesArray = [];
-                        if (!empty($sampleImageUrl)) {
+                        
+                        if (!empty($item['sample_images']) && is_array($item['sample_images'])) {
+                            // Frontend sent full array with primary + reference images
+                            error_log("  📸 Processing frontend sample_images array with " . count($item['sample_images']) . " images");
+                            
+                            // Process each image: move from temp to permanent storage if needed
+                            foreach ($item['sample_images'] as $img) {
+                                $imageUrl = $img['url'];
+                                
+                                // Check if this is a temp image that needs to be moved
+                                if (strpos($imageUrl, '/temp/') !== false) {
+                                    error_log("    🔄 Found temp image: $imageUrl");
+                                    $imageUrl = $this->moveTempImageToPermanent($imageUrl);
+                                    error_log("    ✅ Moved to permanent: $imageUrl");
+                                }
+                                
+                                // Add image with permanent URL to array
+                                $sampleImagesArray[] = [
+                                    'url' => $imageUrl,
+                                    'label' => $img['label'] ?? '',
+                                    'description' => $img['description'] ?? '',
+                                    'type' => $img['type'] ?? 'photo',
+                                    'image_type' => $img['image_type'] ?? 'sample',
+                                    'is_primary' => $img['is_primary'] ?? false,
+                                    'order_index' => $img['order_index'] ?? 0
+                                ];
+                            }
+                            
+                            // Update primary image URL from the array (for backward compatibility with sample_image_url column)
+                            foreach ($sampleImagesArray as $img) {
+                                if ($img['is_primary']) {
+                                    $sampleImageUrl = $img['url'];
+                                    error_log("  🔵 Extracted primary image URL: $sampleImageUrl");
+                                    break;
+                                }
+                            }
+                            
+                            error_log("  📸 Processed " . count($sampleImagesArray) . " images (all now in permanent storage)");
+                        } elseif (!empty($sampleImageUrl)) {
+                            // Fallback: Only sample_image_url provided - check if temp and move if needed
+                            if (strpos($sampleImageUrl, '/temp/') !== false) {
+                                error_log("    🔄 Found temp sample_image_url: $sampleImageUrl");
+                                $sampleImageUrl = $this->moveTempImageToPermanent($sampleImageUrl);
+                                error_log("    ✅ Moved to permanent: $sampleImageUrl");
+                            }
+                            
+                            // Create single-image array
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
                                 'label' => 'Sample Image',
@@ -795,6 +888,7 @@ class PhotoChecklistConfigAPI {
                                 'is_primary' => true,
                                 'order_index' => 0
                             ]];
+                            error_log("  📸 Created single-image array from sample_image_url");
                         }
                         
                         // Insert with NULL parent_id initially
@@ -1182,7 +1276,7 @@ class PhotoChecklistConfigAPI {
         $params = [];
         
         // Build dynamic update query based on provided fields
-        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number'];
+        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number', 'progress_percentage'];
         
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -1221,8 +1315,9 @@ class PhotoChecklistConfigAPI {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
             
-            // Update progress if status changed
-            if (isset($data['status'])) {
+            // Only recalculate progress if progress_percentage was NOT explicitly provided by frontend
+            // If frontend sent progress_percentage, trust that value (includes verified items without photos)
+            if (isset($data['status']) && !array_key_exists('progress_percentage', $data)) {
                 $this->updateInstanceProgress($id);
                 
                 // Log status change
@@ -1613,6 +1708,51 @@ class PhotoChecklistConfigAPI {
             
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Move a temporary image file to permanent storage
+     * @param string $tempUrl - Full URL to the temp image
+     * @return string - New permanent URL
+     */
+    private function moveTempImageToPermanent($tempUrl) {
+        try {
+            // Extract the filename from the temp URL
+            // Example: https://dashboard.eye-fi.com/attachments/photoChecklist/temp/temp_item-0-ref-1763481030603_691c95c69aaad.png
+            $urlPath = parse_url($tempUrl, PHP_URL_PATH);
+            $filename = basename($urlPath);
+            
+            // Define paths
+            $tempDir = __DIR__ . '/../../../attachments/photoChecklist/temp/';
+            $permanentDir = __DIR__ . '/../../../attachments/photoChecklist/';
+            
+            $tempFilePath = $tempDir . $filename;
+            
+            // Remove 'temp_' prefix from filename for permanent storage
+            $permanentFilename = preg_replace('/^temp_/', '', $filename);
+            $permanentFilePath = $permanentDir . $permanentFilename;
+            
+            // Check if temp file exists
+            if (file_exists($tempFilePath)) {
+                // Move the file
+                if (rename($tempFilePath, $permanentFilePath)) {
+                    // Return the new permanent URL
+                    $permanentUrl = str_replace('/temp/temp_', '/', $tempUrl);
+                    error_log("  ✅ Moved temp image: $filename -> $permanentFilename");
+                    return $permanentUrl;
+                } else {
+                    error_log("  ❌ Failed to move temp image: $tempFilePath");
+                    return $tempUrl; // Return original if move fails
+                }
+            } else {
+                // File doesn't exist in temp - might already be permanent or doesn't exist
+                error_log("  ⚠️ Temp file not found: $tempFilePath");
+                return $tempUrl; // Return original URL
+            }
+        } catch (Exception $e) {
+            error_log("  ❌ Error moving temp image: " . $e->getMessage());
+            return $tempUrl; // Return original URL on error
         }
     }
 

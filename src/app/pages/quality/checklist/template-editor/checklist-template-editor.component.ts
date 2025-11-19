@@ -936,12 +936,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       quality_document_id: template.quality_document_metadata?.document_id || null
     });
 
-    console.log('Loaded template data:', {
-      category: template.category,
-      quality_document_metadata: template.quality_document_metadata,
-      form_category: this.templateForm.get('category')?.value
-    });
-
     // Clear existing items and sample images
     while (this.items.length) {
       this.items.removeAt(0);
@@ -962,18 +956,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       });
     }
 
-    console.log(`📋 Loading template with ${template.items?.length || 0} parent items, flattened to ${flattenedItems.length} total items`);
-
     // Add template items and their sample images
     if (flattenedItems.length > 0) {
       flattenedItems.forEach((item, index) => {
-        // DEBUG: Check if item has ID before adding to form
-        console.log(`Loading item ${index}:`, {
-          id: item.id,
-          title: item.title,
-          hasId: !!item.id
-        });
-        
         this.items.push(this.createItemFormGroup(item));
         
         // Load sample images - handle both array format and single URL
@@ -1166,12 +1151,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     this.items.insert(insertIndex, subItem);
     
-    console.log(`✓ Added sub-item at index ${insertIndex} under parent ${parentIndex}`);
-    console.log(`  - Title: ${subItem.get('title')?.value}`);
-    console.log(`  - Order Index: ${newOrderIndex}`);
-    console.log(`  - Parent ID: ${parentOrderIndex}`);
-    console.log(`  - Level: 1`);
-    
     // Trigger change detection to ensure UI updates
     this.cdr.detectChanges();
   }
@@ -1195,8 +1174,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         this.items.removeAt(childIndex);
         delete this.sampleImages[childIndex];
       });
-      
-      console.log(`✓ Removed ${childIndicesToRemove.length} child items`);
     }
     
     // Remove the item itself
@@ -1227,15 +1204,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     const movedItem = this.items.at(previousIndex);
     const movedLevel = movedItem.get('level')?.value || 0;
     const movedOrderIndex = movedItem.get('order_index')?.value;
-    
-    // Debug: Log the item being moved
-    console.log('🔄 Moving item:', {
-      from: previousIndex,
-      to: currentIndex,
-      title: movedItem.get('title')?.value,
-      description: movedItem.get('description')?.value,
-      level: movedLevel
-    });
     
     // Move the item in the array
     moveItemInArray(this.items.controls, previousIndex, currentIndex);
@@ -1279,35 +1247,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Smart re-parenting based on drop position
     if (itemAbove === null) {
-      // Dropped at the very top - convert to parent
       movedItem.get('level')?.setValue(0);
       movedItem.get('parent_id')?.setValue(null);
-      console.log('✓ Dropped at top - converted to parent');
     } else if (aboveLevel === 0 && (belowLevel === 1 || itemBelow === null)) {
-      // Dropped right after a parent (and before its children or end of list) - become its child
       const newParentId = Math.floor(aboveOrderIndex);
       movedItem.get('level')?.setValue(1);
       movedItem.get('parent_id')?.setValue(newParentId);
-      console.log(`✓ Dropped after parent ${newParentId} - became its child`);
     } else if (aboveLevel === 1) {
-      // Dropped after another child - adopt the same parent
       movedItem.get('level')?.setValue(1);
       movedItem.get('parent_id')?.setValue(aboveParentId);
-      console.log(`✓ Dropped after child - adopted parent ${aboveParentId}`);
     } else if (aboveLevel === 0 && belowLevel === 0) {
-      // Dropped between two parents - become a parent
       movedItem.get('level')?.setValue(0);
       movedItem.get('parent_id')?.setValue(null);
-      console.log('✓ Dropped between parents - converted to parent');
     }
-    
-    // Debug: Verify item data after re-parenting
-    console.log('✓ After re-parenting:', {
-      title: movedItem.get('title')?.value,
-      description: movedItem.get('description')?.value,
-      level: movedItem.get('level')?.value,
-      parent_id: movedItem.get('parent_id')?.value
-    });
     
     // If moving a parent item, also move all its children
     if (movedLevel === 0) {
@@ -1370,7 +1322,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         }
         
         currentParentIndex++;
-        console.log(`📍 Parent item ${index} → order_index: ${currentParentIndex - 1}`);
       } else {
         // Child item - decimal based on parent's current order_index
         // Find the parent's current order_index
@@ -1399,12 +1350,8 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         
         const orderIndex = parentOrderIndex + ((childCount + 1) / 10);
         control.get('order_index')?.setValue(orderIndex);
-        
-        console.log(`  📎 Child item ${index} → parent: ${parentOrderIndex}, order_index: ${orderIndex.toFixed(1)}`);
       }
     });
-    
-    console.log('✓ Order indices recalculated');
   }
   
   /**
@@ -1424,15 +1371,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Recalculate all order indices
     this.recalculateOrderIndices();
-    
-    console.log(`Promoted item ${index} to parent`);
   }
 
   onQualityDocumentSelected(document: QualityDocumentSelection | null): void {
     this.selectedQualityDocument = document;
-    // Update the form control with the selected document ID
     this.templateForm.get('quality_document_id')?.setValue(document?.documentId || null);
-    console.log('Quality document selected:', document);
   }
 
   getSampleImage(itemIndex: number): SampleImage | null {
@@ -1936,7 +1879,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (!Array.isArray(images)) {
       return [];
     }
-    return images.filter(img => !img.is_primary || img.image_type !== 'sample');
+    // Filter to show only reference images (not primary sample images)
+    // Reference images should have is_primary=false AND image_type='reference'
+    return images.filter(img => !img.is_primary && img.image_type !== 'sample');
   }
 
   getReferenceImageCount(itemIndex: number): number {
@@ -2077,19 +2022,21 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
     this.saving = true;
     
-    // DEBUG: Check FormArray directly before serialization
-    console.log('🔍 FormArray length:', this.items.length);
-    console.log('🔍 FormArray controls:', this.items.controls.map((c: any, i: number) => ({
-      index: i,
-      title: c.value.title,
-      level: c.value.level,
-      parent_id: c.value.parent_id
-    })));
-    
     const templateData = this.templateForm.value;
-
-    console.log('Raw template form value:', templateData);
-    console.log('Selected quality document:', this.selectedQualityDocument);
+    
+    // DEBUG: Log sample_images from form before save
+    console.log('� Checking form data before save:');
+    templateData.items.forEach((item: any, index: number) => {
+      if (item.sample_images && Array.isArray(item.sample_images)) {
+        console.log(`  Item ${index}: ${item.sample_images.length} images in form`, item.sample_images.map((img: any) => ({
+          label: img.label,
+          image_type: img.image_type,
+          is_primary: img.is_primary
+        })));
+      } else {
+        console.log(`  Item ${index}: NO sample_images array in form (${typeof item.sample_images})`);
+      }
+    });
     
     // Ensure is_active is a proper boolean (convert from checkbox value if needed)
     if (typeof templateData.is_active !== 'boolean') {
@@ -2100,34 +2047,24 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Remove the form control field since it's not part of the database schema
     delete templateData.quality_document_id;
     
-    // Log each item to debug sub-item data
-    templateData.items = templateData.items.map((item: any, index: number) => {
-      console.log(`Item ${index}:`, {
-        title: item.title,
-        description: item.description,
-        order_index: item.order_index,
-        level: item.level,
-        parent_id: item.parent_id,
-        is_required: item.is_required,
-        sample_image_url: item.sample_image_url,
-        has_photo_requirements: !!item.photo_requirements
-      });
+    // Clean up sample_images array for backend
+    templateData.items = templateData.items.map((item: any) => {
+      // Ensure sample_images array is properly formatted for the backend
+      if (item.sample_images && Array.isArray(item.sample_images)) {
+        // Clean up UI-specific fields that shouldn't be sent to backend
+        item.sample_images = item.sample_images.map((img: SampleImage) => ({
+          url: img.url,
+          label: img.label || '',
+          description: img.description || '',
+          type: img.type || 'photo',
+          image_type: img.image_type || 'sample',
+          is_primary: img.is_primary || false,
+          order_index: img.order_index || 0
+        }));
+      }
       
-      return item; // No transformation needed now
+      return item;
     });
-
-    console.log('Template data before save (matching database schema):', {
-      name: templateData.name,
-      description: templateData.description,
-      part_number: templateData.part_number,
-      product_type: templateData.product_type,
-      category: templateData.category,
-      is_active: templateData.is_active,
-      items_count: templateData.items?.length || 0
-    });
-
-    console.log('Final template data to save:', templateData);
-    console.log('Exact JSON payload being sent:', JSON.stringify(templateData, null, 2));
 
     // When editing a template, ask user to describe changes
     if (this.editingTemplate) {
@@ -2147,14 +2084,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
       modalRef.result.then(
         (result) => {
-          console.log('User provided revision description:', result);
-          
           // Create new version with user's description
           this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes);
         },
         (reason) => {
           // Modal dismissed (cancel)
-          console.log('Save cancelled by user:', reason);
         }
       );
     } else {
