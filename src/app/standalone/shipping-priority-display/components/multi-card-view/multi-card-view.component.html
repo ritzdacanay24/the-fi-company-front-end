@@ -40,6 +40,24 @@
               <div class="priority-number">{{ i + 1 }}</div>
               <div class="priority-label">PRIORITY</div>
             </div>
+            <!-- Priority Source Badge -->
+            <div class="priority-source-badge mt-1" *ngIf="item.orders[0]?.priority_source">
+              <span class="badge" 
+                    [ngClass]="{
+                      'bg-success': item.orders[0]?.priority_source === 'shipping',
+                      'bg-primary': item.orders[0]?.priority_source === 'kanban',
+                      'bg-warning text-dark': item.orders[0]?.priority_source === 'both'
+                    }">
+                <i class="mdi" 
+                   [ngClass]="{
+                     'mdi-truck-fast': item.orders[0]?.priority_source === 'shipping',
+                     'mdi-view-column': item.orders[0]?.priority_source === 'kanban',
+                     'mdi-link-variant': item.orders[0]?.priority_source === 'both'
+                   }"></i>
+                {{ item.orders[0]?.priority_source === 'both' ? 'Both' : 
+                   item.orders[0]?.priority_source === 'shipping' ? 'Shipping' : 'Kanban' }}
+              </span>
+            </div>
           </div>
           
           <div class="header-right d-flex align-items-center gap-3">

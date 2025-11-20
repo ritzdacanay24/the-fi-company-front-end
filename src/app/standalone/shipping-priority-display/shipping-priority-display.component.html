@@ -11,7 +11,9 @@
           <i class="mdi mdi-truck-fast text-primary me-3 text-white"></i>
           Production Priority Queue
         </h1>
-        <p class="lead mb-0">Real-time production priority display</p>
+        <p class="lead mb-0">
+          {{ getPriorityTypeDisplayName() }} - Real-time production display
+        </p>
       </div>
 
       <!-- Company Logo -->
@@ -159,6 +161,64 @@
 
 </div>
 
+<!-- Fixed Bottom Alternate Priorities Section -->
+<div *ngIf="displayData$ | async as displayData">
+  <div *ngIf="showComingUpNext && displayData.alternateGroupedItems.length > 0" 
+       class="fixed-bottom-priorities">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="text-white mb-0">
+          <i class="mdi mdi-format-list-numbered me-2"></i>
+          {{ priorityType === 'kanban' ? 'Shipping Priorities' : 'Kanban Priorities' }} 
+          <span class="badge bg-secondary ms-2">{{ displayData.alternateGroupedItems.length }}</span>
+        </h6>
+      </div>
+      
+      <!-- Horizontal Scrolling Carousel -->
+      <div class="alternate-priorities-carousel">
+        <div class="carousel-track">
+          <div *ngFor="let item of displayData.alternateGroupedItems; let i = index" 
+               class="carousel-card">
+            <div class="card shadow-sm mb-1">
+              <div class="card-body">
+                <!-- Priority Badge -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="badge badge-priority" [ngClass]="getPriorityBadgeClass(item.priority)">
+                    Priority {{ item.priority }}
+                  </span>
+                  <span class="badge bg-secondary" style="
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            font-weight: 600;">#{{ i + 1 }}</span>
+                </div>
+                
+                <!-- Part Number -->
+                <h6 class="part-number mb-2" [title]="item.partNumber">
+                  {{ item.partNumber }}
+                </h6>
+                
+                <!-- Quantity and Orders - Same Row -->
+                <div class="info-row d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center">
+                    <div class="text-center">
+                      <div class="fw-bold">{{ formatQuantity(item.totalQuantity) }}</div>
+                      <small class="text-muted">units</small>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-bold text-center">{{ item.orders.length }}</div>
+                    <small class="text-muted text-center">{{ item.orders.length === 1 ? 'order' : 'orders' }}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- Floating Settings Button -->
   <button class="btn btn-primary floating-settings-btn shadow-lg" 
           (click)="openSettings()"
@@ -196,10 +256,14 @@
     [autoScrollEnabled]="autoScrollEnabled"
     [scrollSpeed]="scrollSpeed"
     [showRefreshOverlay]="showRefreshOverlay"
+    [priorityType]="priorityType"
+    [showCombinedView]="showCombinedView"
     (displayModeChange)="onDisplayModeChange($event)"
     (refreshIntervalChange)="onRefreshIntervalChange($event)"
     (cardLayoutChange)="onCardLayoutChange($event)"
     (comingUpNextSettingsChange)="onComingUpNextSettingsChange($event)"
+    (priorityTypeChange)="togglePriorityType($event)"
+    (showCombinedViewChange)="toggleCombinedView($event)"
     (refreshRequested)="refreshData()"
     (settingsApplied)="onSettingsApplied($event); offcanvas.close()"
     (closed)="offcanvas.close()">

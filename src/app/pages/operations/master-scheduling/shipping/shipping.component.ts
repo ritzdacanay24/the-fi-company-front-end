@@ -56,6 +56,8 @@ import { environment } from "@environments/environment";
 import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
+import { OwnersService } from "@app/core/api/owners/owners.service";
+import { OwnerManagementModalService } from "@app/shared/components/owner-management-modal/owner-management-modal.component";
 
 // Priority-related interfaces
 interface PriorityData {
@@ -165,8 +167,9 @@ export class ShippingComponent implements OnInit {
     private partsOrderModalService: PartsOrderModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
     private bomViewModalService: BomViewModalService,
-    private pathUtils: PathUtilsService
-
+    private pathUtils: PathUtilsService,
+    private ownersService: OwnersService,
+    private ownerManagementModalService: OwnerManagementModalService
   ) {
     this.websocketService = websocketService;
 
@@ -281,7 +284,6 @@ export class ShippingComponent implements OnInit {
       this.viewComment(this.comment, null);
     }
   }
-
   dateFrom = moment()
     .subtract(12, "months")
     .startOf("month")
@@ -1928,9 +1930,66 @@ export class ShippingComponent implements OnInit {
       headerName: "Owner",
       filter: "agMultiColumnFilter",
       editable: true,
-      cellRenderer: EditIconV2Component,
-      cellRendererParams: {
-        iconName: "mdi mdi-pencil",
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorPopup: false,
+      cellEditorParams: {
+        values: async (params) => {
+          // Call API to get fresh list of owners assigned to current user
+          try {
+            const userId = this.authenticationService.currentUserValue?.id;
+            if (!userId) {
+              console.warn('⚠️ No user ID found');
+              return [];
+            }
+
+            console.log(`� Fetching owners for user ID: ${userId}`);
+            const response = await this.ownersService.getOwnersForUser(userId, true);
+            
+            if (response.success && Array.isArray(response.data)) {
+              const ownerNames = response.data.map(o => o.name);
+              console.log('✅ Loaded owners for dropdown:', ownerNames);
+              return ownerNames;
+            } else {
+              console.error('❌ Failed to load owners:', response);
+              return [];
+            }
+          } catch (error) {
+            console.error('❌ Error loading owners:', error);
+            return [];
+          }
+        },
+        searchDebounceDelay: 300,
+        allowTyping: true,
+        filterList: true,
+        highlightMatch: true,
+        valueListMaxHeight: 220
+      },
+      onCellValueChanged: async (params: any) => {
+        if (params.oldValue !== params.newValue) {
+          // Update the data model
+          if (!params.data.misc) {
+            params.data.misc = {};
+          }
+          params.data.misc.userName = params.newValue;
+          
+          // Save to backend
+          try {
+            const res = await this.api.saveMisc(params.data.misc);
+            params.data.misc = res;
+            this.sendAndUpdate(params.data, params.data.id);
+          } catch (err) {
+            console.error('Error saving owner:', err);
+          }
+        }
+      },
+      cellRenderer: (params: any) => {
+        if (params.value) {
+          return `<div class="d-flex align-items-center">
+                    <i class="mdi mdi-account-circle text-primary me-2"></i>
+                    <span>${params.value}</span>
+                  </div>`;
+        }
+        return `<span class="text-muted fst-italic">No owner assigned</span>`;
       },
     },
     {
@@ -2544,6 +2603,21 @@ export class ShippingComponent implements OnInit {
   openPriorityDisplay(): void {
     const url = this.pathUtils.createExternalUrl(['/shipping-priority-display']);
     window.open(url, '_blank');
+  }
+
+  // Open Owner Management Modal
+  async openOwnerManagement(): Promise<void> {
+    try {
+      const result = await this.ownerManagementModalService.open();
+      if (result) {
+        // Refresh owners list after changes
+        await this.ownersService.getActiveOwners();
+        // Optionally refresh the grid to show updated owner options
+        this.gridApi?.refreshCells({ force: true });
+      }
+    } catch (error) {
+      console.error('Error opening owner management:', error);
+    }
   }
 
   data: any;

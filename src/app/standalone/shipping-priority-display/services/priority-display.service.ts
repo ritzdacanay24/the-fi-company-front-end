@@ -29,10 +29,12 @@ export interface ShippingOrder {
   SOD_SHIP_DATE?: string;
   SOD_QTY_TO_SHIP?: number;
   shipping_priority?: number;
+  kanban_priority?: number;
   priority_notes?: string;
   priority_id?: string | number;
   priority_created_at?: string;
   priority_created_by?: string;
+  priority_source?: 'shipping' | 'kanban' | 'both';
   // Additional fields from the data structure
   SOD_DUE_DATE?: string;
   LEADTIME?: number;
@@ -108,6 +110,17 @@ export interface GroupedPriorityItem {
   dueDate?: string;
   status?: string;
   customerName?: string;
+  description?: string;
+}
+
+export interface PriorityContext {
+  shippingPrioritiesCount: number;
+  kanbanPrioritiesCount: number;
+  highestShippingPriority: number | null;
+  highestKanbanPriority: number | null;
+  suggestedShippingPriority: number;
+  suggestedKanbanPriority: number;
+  combinedTotalCount: number;
 }
 
 export interface PriorityDisplayData {
@@ -120,6 +133,8 @@ export interface PriorityDisplayData {
   currentGroupedItem: GroupedPriorityItem | null;
   topThreeGroupedItems: GroupedPriorityItem[];
   nextGroupedItems: GroupedPriorityItem[];
+  // Alternate priority type data (e.g., kanban when showing shipping, and vice versa)
+  alternateGroupedItems: GroupedPriorityItem[];
   statusCount: {
     pastDue: number;
     todayDue: number;
@@ -146,6 +161,7 @@ export class PriorityDisplayService {
     currentGroupedItem: null,
     topThreeGroupedItems: [],
     nextGroupedItems: [],
+    alternateGroupedItems: [],
     statusCount: { pastDue: 0, todayDue: 0, futureDue: 0 },
     isLoading: false,
     hasError: false,
@@ -157,6 +173,9 @@ export class PriorityDisplayService {
 
   // Track current display mode
   private currentDisplayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
+  
+  // Track current priority type ('shipping' or 'kanban')
+  private currentPriorityType: 'shipping' | 'kanban' = 'kanban'; // Default to kanban
 
   constructor(
     private api: MasterSchedulingService,
@@ -184,23 +203,155 @@ export class PriorityDisplayService {
         this.isWebSocketSetup = true;
       }
 
-      // Load both priorities and shipping data
-      const [priorities, shippingData] = await Promise.all([
-        this.loadPriorities(),
+      // Load BOTH priority types and shipping data in parallel
+      const [primaryPriorities, alternatePriorities, shippingData] = await Promise.all([
+        this.currentPriorityType === 'kanban' ? this.loadKanbanPriorities() : this.loadPriorities(),
+        this.currentPriorityType === 'kanban' ? this.loadPriorities() : this.loadKanbanPriorities(),
         this.loadShippingData()
       ]);
 
-      // Merge and process the data - only get active orders
-      const activeOrders = this.mergePriorityWithShippingData(priorities, shippingData);
+      // Merge and process the PRIMARY data (displayed in main area)
+      const activeOrders = this.mergePriorityWithShippingData(primaryPriorities, shippingData, this.currentPriorityType)
+        .map(order => ({ ...order, priority_source: this.currentPriorityType as 'shipping' | 'kanban' }));
+      
+      // Merge and process the ALTERNATE data (displayed in "Coming Up Next")
+      const alternatePriorityType = this.currentPriorityType === 'kanban' ? 'shipping' : 'kanban';
+      const alternateOrders = this.mergePriorityWithShippingData(alternatePriorities, shippingData, alternatePriorityType)
+        .map(order => ({ ...order, priority_source: alternatePriorityType as 'shipping' | 'kanban' }));
+      
       const statusCount = this.calculateStatusCount(shippingData);
 
-      // Update the display data
-      this.updateDisplayDataState(activeOrders, statusCount);
+      // Update the display data with both primary and alternate
+      this.updateDisplayDataState(activeOrders, alternateOrders, statusCount);
       
-      console.log('✅ Priority data loaded successfully');
+      console.log(`✅ ${this.currentPriorityType === 'kanban' ? 'Kanban' : 'Shipping'} priority data loaded successfully`);
+      console.log(`✅ Alternate (${alternatePriorityType}) priority data loaded for bottom section`);
     } catch (error) {
       console.error('❌ Error loading priority data:', error);
       this.updateLoadingState(false, true, 'Failed to load priority data. Please check your connection.');
+    }
+  }
+
+  /**
+   * Load combined priority data (both shipping and kanban together)
+   */
+  async loadCombinedPriorityData(showLoadingState: boolean = true): Promise<void> {
+    try {
+      // Set loading state without clearing existing data - only if requested
+      if (showLoadingState) {
+        this.setLoadingState(true);
+      }
+
+      // Setup WebSocket connection on first load
+      if (!this.isWebSocketSetup) {
+        this.setupWebSocketConnection();
+        this.isWebSocketSetup = true;
+      }
+
+      // Load BOTH priority types and shipping data in parallel
+      const [shippingPriorities, kanbanPriorities, shippingData] = await Promise.all([
+        this.loadPriorities(),
+        this.loadKanbanPriorities(),
+        this.loadShippingData()
+      ]);
+
+      // Merge shipping priorities with shipping data
+      const shippingOrders = this.mergePriorityWithShippingData(shippingPriorities, shippingData, 'shipping')
+        .map(order => ({ ...order, priority_source: 'shipping' as const }));
+      
+      // Merge kanban priorities with shipping data
+      const kanbanOrders = this.mergePriorityWithShippingData(kanbanPriorities, shippingData, 'kanban')
+        .map(order => ({ ...order, priority_source: 'kanban' as const }));
+      
+      // Combine both arrays - keep ALL orders with their source classification
+      // Sort by priority number (lower number = higher priority) regardless of source
+      const allOrders = [...shippingOrders, ...kanbanOrders];
+      
+      // Remove duplicates but KEEP the priority_source from each list
+      // If an order appears in both, we'll keep it with BOTH priorities tracked
+      const orderMap = new Map<string, ShippingOrder>();
+      
+      allOrders.forEach(order => {
+        const key = `${order.SOD_NBR}-${order.SOD_LINE}`;
+        const existing = orderMap.get(key);
+        
+        if (!existing) {
+          // First time seeing this order
+          orderMap.set(key, order);
+        } else {
+          // Order exists - merge priority information
+          // Keep both shipping_priority and kanban_priority values
+          if (order.priority_source === 'shipping' && order.shipping_priority) {
+            existing.shipping_priority = order.shipping_priority;
+          }
+          if (order.priority_source === 'kanban' && order.kanban_priority) {
+            existing.kanban_priority = order.kanban_priority;
+          }
+          
+          // Set priority_source to 'both' if it appears in both lists
+          if ((existing.shipping_priority && existing.kanban_priority) ||
+              (existing.priority_source !== order.priority_source)) {
+            existing.priority_source = 'both' as any;
+          }
+        }
+      });
+
+      const combinedOrders = Array.from(orderMap.values());
+      
+      // Sort by priority with secondary sort criteria for deterministic ordering
+      combinedOrders.sort((a, b) => {
+        // Primary sort: by LOWEST priority number (highest priority first)
+        const aPriority = Math.min(a.shipping_priority || 999, a.kanban_priority || 999);
+        const bPriority = Math.min(b.shipping_priority || 999, b.kanban_priority || 999);
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        
+        // Secondary sort (when priorities are equal): 
+        // 1. 'both' items first (highest visibility)
+        // 2. Then 'shipping' 
+        // 3. Then 'kanban'
+        const sourceOrder = { 'both': 0, 'shipping': 1, 'kanban': 2 };
+        const aSourceOrder = sourceOrder[a.priority_source as keyof typeof sourceOrder] ?? 3;
+        const bSourceOrder = sourceOrder[b.priority_source as keyof typeof sourceOrder] ?? 3;
+        
+        if (aSourceOrder !== bSourceOrder) {
+          return aSourceOrder - bSourceOrder;
+        }
+        
+        // Tertiary sort (when priority and source are equal): by part number alphabetically
+        return (a.SOD_PART || '').localeCompare(b.SOD_PART || '');
+      });
+      
+      const statusCount = this.calculateStatusCount(shippingData);
+
+      // Update display data with combined orders (empty alternate array for bottom section)
+      this.updateDisplayDataState(combinedOrders, [], statusCount);
+      
+      console.log(`✅ Combined priority data loaded successfully - ${combinedOrders.length} orders`);
+      console.log(`📊 Shipping priorities: ${shippingOrders.length}, Kanban priorities: ${kanbanOrders.length}, Combined total: ${combinedOrders.length}`);
+      
+      // Log breakdown by source
+      const shippingOnly = combinedOrders.filter(o => o.priority_source === 'shipping').length;
+      const kanbanOnly = combinedOrders.filter(o => o.priority_source === 'kanban').length;
+      const both = combinedOrders.filter(o => o.priority_source === 'both').length;
+      console.log(`📊 Source breakdown - Shipping only: ${shippingOnly}, Kanban only: ${kanbanOnly}, Both: ${both}`);
+      
+      // Log sorting behavior for items with same priority
+      console.log(`📋 Sort order: Priority # (ascending) → Source (both>shipping>kanban) → Part # (alphabetical)`);
+      
+      // Log examples of 'both' items to show merged priorities
+      if (both > 0) {
+        const bothItems = combinedOrders.filter(o => o.priority_source === 'both').slice(0, 3);
+        console.log(`🔗 Sample items with BOTH priorities:`);
+        bothItems.forEach(item => {
+          console.log(`   ${item.SOD_NBR}-${item.SOD_LINE}: Shipping #${item.shipping_priority}, Kanban #${item.kanban_priority}`);
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error loading combined priority data:', error);
+      this.updateLoadingState(false, true, 'Failed to load combined priority data. Please check your connection.');
     }
   }
 
@@ -231,6 +382,22 @@ export class PriorityDisplayService {
       ...currentData,
       ...updatedData
     });
+  }
+
+  /**
+   * Update priority type (shipping or kanban) and reload data
+   */
+  async updatePriorityType(type: 'shipping' | 'kanban'): Promise<void> {
+    console.log(`🔄 Switching priority type to: ${type}`);
+    this.currentPriorityType = type;
+    await this.loadPriorityData(true);
+  }
+
+  /**
+   * Get current priority type
+   */
+  getCurrentPriorityType(): 'shipping' | 'kanban' {
+    return this.currentPriorityType;
   }
 
   /**
@@ -291,6 +458,25 @@ export class PriorityDisplayService {
   }
 
   /**
+   * Load kanban priorities from the API
+   */
+  private async loadKanbanPriorities(): Promise<PriorityData[]> {
+    try {
+      const response = await this.api.getKanbanPriorities();
+      
+      if (!response?.data) {
+        console.warn('⚠️ No kanban priority data received from API');
+        return [];
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error loading kanban priorities:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Load shipping data from the API
    */
   private async loadShippingData(): Promise<any[]> {
@@ -306,10 +492,16 @@ export class PriorityDisplayService {
   /**
    * Merge priority data with shipping data (active orders only)
    */
-  private mergePriorityWithShippingData(priorities: PriorityData[], shippingData: any[]): ShippingOrder[] {
+  private mergePriorityWithShippingData(
+    priorities: PriorityData[], 
+    shippingData: any[], 
+    priorityType: 'shipping' | 'kanban' = this.currentPriorityType
+  ): ShippingOrder[] {
     console.log('🔍 Merging priorities with shipping data...');
+    console.log(`📊 Priority type: ${priorityType}`);
     console.log('📊 Total priorities count:', priorities.length);
     console.log('📦 Shipping data count:', shippingData.length);
+    console.log('📋 Priority details:', priorities.map(p => `${p.sales_order_number}-${p.sales_order_line} (Level: ${p.priority_level})`));
     
     // Filter and sort active priorities only
     const activePriorities = priorities
@@ -325,23 +517,30 @@ export class PriorityDisplayService {
       const shippingOrder = this.findMatchingShippingOrder(shippingData, priority);
       
       if (shippingOrder) {
-        console.log(`✅ Found shipping data for active ${priority.sales_order_number}-${priority.sales_order_line} - still needs processing`);
+        console.log(`✅ Found shipping data for active ${priority.sales_order_number}-${priority.sales_order_line}`);
+        
+        // Use different field names based on priority type
+        const priorityField = priorityType === 'kanban' ? 'kanban_priority' : 'shipping_priority';
+        
         activeOrders.push({
           ...shippingOrder,
           priority_id: priority.id,
-          shipping_priority: parseInt(priority.priority_level.toString()),
+          [priorityField]: parseInt(priority.priority_level.toString()),
           priority_notes: priority.notes,
           priority_created_at: priority.created_at,
           priority_created_by: priority.created_by
         });
       } else {
-        console.log(`✅ Priority ${priority.sales_order_number}-${priority.sales_order_line} not found in shipping data - order completed/shipped, skipping`);
+        console.log(`⚠️ Priority ${priority.sales_order_number}-${priority.sales_order_line} not found in shipping data - order may be completed/shipped`);
         // Don't add to activeOrders - order is completed since it's not in shipping data
       }
     }
 
     console.log('🎯 Final active orders count:', activeOrders.length);
-    console.log('📋 Active orders (still need processing):', activeOrders.map(order => `${order.SOD_NBR}-${order.SOD_LINE} (Priority: ${order.shipping_priority})`));
+    console.log(`📋 Active orders (${priorityType}):`, activeOrders.map(order => {
+      const priorityValue = priorityType === 'kanban' ? order['kanban_priority'] : order.shipping_priority;
+      return `${order.SOD_NBR}-${order.SOD_LINE} (Priority: ${priorityValue})`;
+    }));
 
     return activeOrders;
   }
@@ -397,54 +596,67 @@ export class PriorityDisplayService {
   /**
    * Group orders by part number across all priority levels
    */
-  private groupOrdersByPartNumber(orders: ShippingOrder[]): GroupedPriorityItem[] {
+  /**
+   * Group orders by part number (with optional priority type override)
+   */
+  private groupOrdersByPartNumber(orders: ShippingOrder[], priorityType?: 'shipping' | 'kanban'): GroupedPriorityItem[] {
+    const typeToUse = priorityType || this.currentPriorityType;
+    
     console.log('📦 Grouping orders by part number...');
+    console.log(`📊 Priority type: ${typeToUse}`);
     console.log('📊 Total orders to group:', orders.length);
     
-    const grouped = new Map<string, GroupedPriorityItem>();
+    const grouped = new Map<string, { item: GroupedPriorityItem; firstOrderIndex: number }>();
+    const priorityField = typeToUse === 'kanban' ? 'kanban_priority' : 'shipping_priority';
 
-    orders.forEach(order => {
+    orders.forEach((order, index) => {
       const partNumber = order.SOD_PART || 'Unknown Part';
-      const priority = order.shipping_priority || 999;
+      const priority = (typeToUse === 'kanban' ? order['kanban_priority'] : order.shipping_priority) || 999;
       // Use only part number as key to group across all priority levels
       const key = partNumber;
 
       if (grouped.has(key)) {
         const existing = grouped.get(key)!;
-        existing.orders.push(order);
-        console.log(`  ➕ Added order to existing group: ${partNumber} (now has ${existing.orders.length} orders)`);
+        existing.item.orders.push(order);
+        console.log(`  ➕ Added order to existing group: ${partNumber} (now has ${existing.item.orders.length} orders)`);
         // Use QTYOPEN as the primary quantity field, fallback to SOD_QTY_ORD
-        existing.totalQuantity += (order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0);
+        existing.item.totalQuantity += (order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0);
         // Keep the highest priority (lowest number) for this part
-        if (priority < existing.priority) {
-          existing.priority = priority;
+        if (priority < existing.item.priority) {
+          existing.item.priority = priority;
         }
         // Update customer name logic - check if we have multiple customers
         const newCustomerName = order.SO_CUST || order.CUSTNAME || 'Unknown Customer';
-        if (existing.customerName !== newCustomerName) {
-          existing.customerName = 'Multiple Customers';
+        if (existing.item.customerName !== newCustomerName) {
+          existing.item.customerName = 'Multiple Customers';
         }
       } else {
-        console.log(`  ✨ Created new group: ${partNumber}`);
+        console.log(`  ✨ Created new group: ${partNumber} (Priority: ${priority}, Index: ${index})`);
         // Get customer name - prefer SO_CUST over CUSTNAME
         const customerName = order.SO_CUST || order.CUSTNAME || 'Unknown Customer';
         
         grouped.set(key, {
-          partNumber,
-          priority,
-          totalQuantity: order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0,
-          orders: [order],
-          dueDate: order.SOD_SHIP_DATE || order.SOD_DUE_DATE,
-          status: order.STATUS,
-          customerName: customerName
+          firstOrderIndex: index,  // Track the position of the first order in this group
+          item: {
+            partNumber,
+            priority,
+            totalQuantity: order.QTYOPEN || order.SOD_QTY_ORD || order.SOD_QTY_TO_SHIP || 0,
+            orders: [order],
+            dueDate: order.SOD_SHIP_DATE || order.SOD_DUE_DATE,
+            status: order.STATUS,
+            customerName: customerName
+          }
         });
       }
     });
 
-    // Convert map to array and sort by lowest priority number (highest priority first)
-    const result = Array.from(grouped.values()).sort((a, b) => a.priority - b.priority);
+    // Convert map to array and sort by the FIRST ORDER'S POSITION (preserves input sort order)
+    const result = Array.from(grouped.values())
+      .sort((a, b) => a.firstOrderIndex - b.firstOrderIndex)
+      .map(entry => entry.item);
+    
     console.log('✅ Grouped result:', result.length, 'unique part numbers');
-    console.log('📋 Group details:', result.map(g => `${g.partNumber} (${g.orders.length} orders)`));
+    console.log('📋 Group details:', result.map(g => `${g.partNumber} (${g.orders.length} orders, Priority: ${g.priority}, Source: ${g.orders[0]?.priority_source || 'unknown'})`));
     
     return result;
   }
@@ -453,9 +665,28 @@ export class PriorityDisplayService {
    * Calculate display data based on mode
    */
   private calculateDisplayData(allOrders: ShippingOrder[], mode: 'single' | 'top3' | 'top6' | 'grid') {
-    const sortedOrders = [...allOrders].sort((a, b) => 
-      (a.shipping_priority || 999) - (b.shipping_priority || 999)
-    );
+    // Check if this is combined data (has mixed priority sources)
+    const hasMixedSources = allOrders.some(o => o.priority_source === 'both') || 
+                           (allOrders.some(o => o.priority_source === 'shipping') && 
+                            allOrders.some(o => o.priority_source === 'kanban'));
+    
+    let sortedOrders: ShippingOrder[];
+    
+    if (hasMixedSources) {
+      // Combined mode: orders are already sorted correctly by loadCombinedPriorityData()
+      // DO NOT re-sort, just use them as-is
+      sortedOrders = [...allOrders];
+      console.log('📊 Using pre-sorted combined orders (preserving priority_source sort)');
+    } else {
+      // Single priority type mode: sort by that priority type
+      const priorityField = this.currentPriorityType === 'kanban' ? 'kanban_priority' : 'shipping_priority';
+      sortedOrders = [...allOrders].sort((a, b) => {
+        const aPriority = this.currentPriorityType === 'kanban' ? (a['kanban_priority'] || 999) : (a.shipping_priority || 999);
+        const bPriority = this.currentPriorityType === 'kanban' ? (b['kanban_priority'] || 999) : (b.shipping_priority || 999);
+        return aPriority - bPriority;
+      });
+      console.log(`📊 Sorted by ${this.currentPriorityType} priority`);
+    }
 
     // Generate grouped data for part number display
     const groupedItems = this.groupOrdersByPartNumber(sortedOrders);
@@ -552,17 +783,27 @@ export class PriorityDisplayService {
   /**
    * Update display data state
    */
-  private updateDisplayDataState(allPriorityOrders: ShippingOrder[], statusCount: any): void {
+  private updateDisplayDataState(
+    allPriorityOrders: ShippingOrder[], 
+    alternateOrders: ShippingOrder[], 
+    statusCount: any
+  ): void {
     const currentData = this._displayData$.value;
     // Use current display mode instead of defaulting to 'single'
     const displayData = this.calculateDisplayData(allPriorityOrders, this.currentDisplayMode);
     
+    // Calculate alternate grouped items for "Coming Up Next" section
+    const alternatePriorityType = this.currentPriorityType === 'kanban' ? 'shipping' : 'kanban';
+    const alternateGroupedItems = this.groupOrdersByPartNumber(alternateOrders, alternatePriorityType);
+    
     console.log(`📊 Updating display data with mode: ${this.currentDisplayMode}`);
+    console.log(`📊 Alternate priority items (${alternatePriorityType}): ${alternateGroupedItems.length}`);
     
     this._displayData$.next({
       ...currentData,
       ...displayData,
       allPriorityOrders,
+      alternateGroupedItems,
       statusCount,
       isLoading: false,
       hasError: false,

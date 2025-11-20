@@ -610,6 +610,25 @@
         box-shadow: 0 3px 12px rgba(33, 150, 243, 0.3);
       }
     }
+    
+    // Priority Source Badge styling
+    .priority-source-badge {
+      margin-top: 0.5rem;
+      text-align: center;
+      
+      .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        border-radius: 0.25rem;
+        
+        i {
+          font-size: 0.75rem;
+          margin-right: 0.2rem;
+        }
+      }
+    }
   }
 
   // Part Info styling

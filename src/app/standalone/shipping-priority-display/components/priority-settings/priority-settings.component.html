@@ -38,6 +38,79 @@
     </div>
   </div>
 
+  <!-- Priority Type Settings -->
+  <div class="settings-section mb-4">
+    <h5 class="settings-title">
+      <i class="mdi mdi-sort-variant me-2 text-primary"></i>
+      Priority Type
+    </h5>
+    <p class="text-muted small mb-3">Choose which priority sequence to display in main view</p>
+    
+    <div class="card">
+      <div class="card-body p-3">
+        <!-- Combined View Toggle -->
+        <div class="form-check form-switch mb-3 p-3 bg-light rounded">
+          <input class="form-check-input" 
+                 type="checkbox" 
+                 id="showCombinedView"
+                 [(ngModel)]="showCombinedView"
+                 (change)="onShowCombinedViewChange(showCombinedView)">
+          <label class="form-check-label fw-bold" for="showCombinedView">
+            <i class="mdi mdi-view-split-vertical me-1"></i>
+            Show Combined View
+          </label>
+          <div class="small text-muted mt-1">
+            Display both shipping and kanban priorities together in one unified list
+          </div>
+        </div>
+
+        <!-- Priority Type Selector (only show when combined view is OFF) -->
+        <div *ngIf="!showCombinedView">
+          <div class="row g-2">
+            <div class="col-6">
+              <button class="btn w-100 h-100" 
+                      [class.btn-primary]="priorityType === 'kanban'"
+                      [class.btn-outline-primary]="priorityType !== 'kanban'"
+                      (click)="onPriorityTypeChange('kanban')">
+                <i class="mdi mdi-view-column fs-4 mb-1 d-block"></i>
+                <div class="fw-bold">Kanban</div>
+                <small class="d-block" style="font-size: 0.7rem; opacity: 0.8;">Production flow priority</small>
+                <i class="mdi mdi-check-circle position-absolute top-0 end-0 m-2" 
+                   *ngIf="priorityType === 'kanban'"></i>
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn w-100 h-100" 
+                      [class.btn-success]="priorityType === 'shipping'"
+                      [class.btn-outline-success]="priorityType !== 'shipping'"
+                      (click)="onPriorityTypeChange('shipping')">
+                <i class="mdi mdi-truck-fast fs-4 mb-1 d-block"></i>
+                <div class="fw-bold">Shipping</div>
+                <small class="d-block" style="font-size: 0.7rem; opacity: 0.8;">Delivery priority</small>
+                <i class="mdi mdi-check-circle position-absolute top-0 end-0 m-2" 
+                   *ngIf="priorityType === 'shipping'"></i>
+              </button>
+            </div>
+          </div>
+          <div class="alert alert-info p-2 mt-3 mb-0">
+            <i class="mdi mdi-information me-1"></i>
+            <small>
+              The alternate priority type will be shown in the bottom scrolling carousel
+            </small>
+          </div>
+        </div>
+
+        <!-- Combined View Info (show when combined view is ON) -->
+        <div *ngIf="showCombinedView" class="alert alert-success p-2 mb-0">
+          <i class="mdi mdi-information me-1"></i>
+          <small>
+            <strong>Combined View Active:</strong> Main display shows both shipping and kanban priorities merged and sorted together
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Card Layout Settings -->
   <div class="settings-section mb-4" *ngIf="displayMode !== 'single'">
     <h5 class="settings-title">
@@ -430,6 +503,10 @@
     <button class="btn btn-primary" (click)="onApplyAndRefresh()">
       <i class="mdi mdi-refresh me-2"></i>
       Apply & Refresh Now
+    </button>
+    <button class="btn btn-outline-warning" (click)="onResetToDefaults()">
+      <i class="mdi mdi-restore me-2"></i>
+      Reset to Default Settings
     </button>
     <button class="btn btn-outline-secondary" (click)="onClose()">
       <i class="mdi mdi-check me-2"></i>

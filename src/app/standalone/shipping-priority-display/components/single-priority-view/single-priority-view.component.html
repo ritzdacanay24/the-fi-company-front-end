@@ -7,6 +7,23 @@
           <h4 class="mb-0">
             <i class="mdi mdi-star"></i>
             Current Priority: {{ currentGroupedItem.partNumber }}
+            <!-- Priority Source Badge -->
+            <span class="badge ms-2" 
+                  *ngIf="currentGroupedItem.orders[0]?.priority_source"
+                  [ngClass]="{
+                    'bg-success': currentGroupedItem.orders[0]?.priority_source === 'shipping',
+                    'bg-info': currentGroupedItem.orders[0]?.priority_source === 'kanban',
+                    'bg-warning text-dark': currentGroupedItem.orders[0]?.priority_source === 'both'
+                  }">
+              <i class="mdi" 
+                 [ngClass]="{
+                   'mdi-truck-fast': currentGroupedItem.orders[0]?.priority_source === 'shipping',
+                   'mdi-view-column': currentGroupedItem.orders[0]?.priority_source === 'kanban',
+                   'mdi-link-variant': currentGroupedItem.orders[0]?.priority_source === 'both'
+                 }"></i>
+              {{ currentGroupedItem.orders[0]?.priority_source === 'both' ? 'Both Priorities' : 
+                 currentGroupedItem.orders[0]?.priority_source === 'shipping' ? 'Shipping Priority' : 'Kanban Priority' }}
+            </span>
           </h4>
         </div>
         <div class="card-body">
@@ -17,6 +34,34 @@
                 <tr>
                   <td><strong>Priority:</strong></td>
                   <td>{{ currentGroupedItem.partNumber }}</td>
+                </tr>
+                <tr *ngIf="currentGroupedItem.orders[0]?.priority_source">
+                  <td><strong>Priority Type:</strong></td>
+                  <td>
+                    <span class="badge" 
+                          [ngClass]="{
+                            'bg-success': currentGroupedItem.orders[0]?.priority_source === 'shipping',
+                            'bg-primary': currentGroupedItem.orders[0]?.priority_source === 'kanban',
+                            'bg-warning text-dark': currentGroupedItem.orders[0]?.priority_source === 'both'
+                          }">
+                      <i class="mdi" 
+                         [ngClass]="{
+                           'mdi-truck-fast': currentGroupedItem.orders[0]?.priority_source === 'shipping',
+                           'mdi-view-column': currentGroupedItem.orders[0]?.priority_source === 'kanban',
+                           'mdi-link-variant': currentGroupedItem.orders[0]?.priority_source === 'both'
+                         }"></i>
+                      {{ currentGroupedItem.orders[0]?.priority_source === 'both' ? 'Both' : 
+                         currentGroupedItem.orders[0]?.priority_source === 'shipping' ? 'Shipping' : 'Kanban' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="currentGroupedItem.orders[0]?.shipping_priority">
+                  <td><strong>Shipping Priority:</strong></td>
+                  <td>#{{ currentGroupedItem.orders[0]?.shipping_priority }}</td>
+                </tr>
+                <tr *ngIf="currentGroupedItem.orders[0]?.kanban_priority">
+                  <td><strong>Kanban Priority:</strong></td>
+                  <td>#{{ currentGroupedItem.orders[0]?.kanban_priority }}</td>
                 </tr>
                 <tr>
                   <td><strong>Total Orders:</strong></td>
