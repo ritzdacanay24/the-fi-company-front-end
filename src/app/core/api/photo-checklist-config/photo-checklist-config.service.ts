@@ -75,6 +75,7 @@ export interface SampleImageData {
   label?: string;
   description?: string;
   type?: 'photo' | 'drawing' | 'bom' | 'schematic' | 'reference' | 'diagram';
+  image_type?: 'sample' | 'reference' | 'defect_example' | 'diagram';  // NEW: categorization for display
   is_primary: boolean;
   order_index: number;
 }
@@ -88,6 +89,7 @@ export interface PhotoRequirements {
   format?: string[];
   max_photos?: number;
   min_photos?: number;
+  picture_required?: boolean; // When false, users can just confirm without taking a photo
 }
 
 export interface ChecklistInstance {

@@ -19,6 +19,7 @@ export interface ChecklistItem {
   description?: string;
   type: 'check' | 'text' | 'number' | 'photo' | 'measure';
   required?: boolean;
+  requiresPhoto?: boolean; // For photo type items - whether photos are required
   samplePhotoUrl?: string;
   minQualityScore?: number;
   requiresSampleMatch?: boolean;
@@ -61,6 +62,11 @@ export interface ChecklistInstance {
   submittedDate?: string;
   location?: string;
   workOrderId?: string;
+  workOrderNumber?: string; // Work order number
+  partNumber?: string; // Part number being inspected
+  serialNumber?: string; // Serial number of the part
+  operatorId?: string; // Operator ID
+  operatorName?: string; // Operator name
   items: ChecklistInstanceItem[];
   notes?: string;
   signature?: string; // Base64 signature

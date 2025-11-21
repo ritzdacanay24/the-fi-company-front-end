@@ -283,8 +283,169 @@ class PhotoChecklistConfigAPI {
             unset($item); // Break reference
         }
         
-        $result['items'] = $items;
+        // Nest child items under their parents
+        $result['items'] = $this->nestItems($items);
         return $result;
+    }
+
+    /**
+     * Nest child items under their parent items
+     * @param array $items Flat array of items
+     * @return array Nested array with children
+     */
+    private function nestItems($items) {
+        if (!is_array($items) || empty($items)) {
+            return [];
+        }
+        
+        error_log("🔍 nestItems: Processing " . count($items) . " items");
+        
+        $itemsById = [];
+        $rootItems = [];
+        
+        // First pass: index all items by their ID
+        foreach ($items as $item) {
+            $itemId = $item['id'];
+            $itemsById[$itemId] = $item;
+            
+            // Initialize children array for all items
+            $itemsById[$itemId]['children'] = [];
+            
+            error_log("   Item indexed: id={$itemId}, order_index={$item['order_index']}, parent_id={$item['parent_id']}, level={$item['level']}, title={$item['title']}");
+        }
+        
+        error_log("   Indexed " . count($itemsById) . " items by ID");
+        
+        // Second pass: nest children under parents using parent_id (which refers to parent's ID)
+        foreach ($itemsById as $itemId => $item) {
+            $parentId = $item['parent_id'];
+            $level = $item['level'];
+            
+            // If this is a root item (level 0 or no parent_id)
+            if ($level == 0 || $parentId === null || $parentId === 0) {
+                $rootItems[] = $itemId;
+                error_log("   Root item: id={$itemId}, order_index={$item['order_index']}");
+            } 
+            // If this item has a parent, nest it under the parent
+            elseif (isset($itemsById[$parentId])) {
+                $itemsById[$parentId]['children'][] = $itemsById[$itemId];
+                error_log("   ✓ Nested child id={$itemId} under parent id={$parentId}");
+            } else {
+                error_log("   ⚠️ WARNING: Child id={$itemId} has parent_id={$parentId} but parent not found!");
+                // Treat as root item if parent not found
+                $rootItems[] = $itemId;
+            }
+        }
+        
+        error_log("   Found " . count($rootItems) . " root items");
+        
+        // Third pass: build final result with only root items (children are already nested)
+        $result = [];
+        foreach ($rootItems as $rootId) {
+            $item = $itemsById[$rootId];
+            
+            $childCount = count($item['children']);
+            if ($childCount > 0) {
+                error_log("   Root item id={$rootId} has {$childCount} children");
+                
+                // Sort children by order_index
+                usort($item['children'], function($a, $b) {
+                    return $a['order_index'] <=> $b['order_index'];
+                });
+            } else {
+                // Remove empty children array
+                unset($item['children']);
+            }
+            
+            $result[] = $item;
+        }
+        
+        // Sort root items by order_index
+        usort($result, function($a, $b) {
+            return $a['order_index'] <=> $b['order_index'];
+        });
+        
+        error_log("   Returning " . count($result) . " root items (with nested children)");
+        
+        return $result;
+    }
+
+    /**
+     * Validate sample images array
+     * Ensures only 1 primary sample image and max 5 reference images
+     * 
+     * @param array $sampleImages Array of sample image objects
+     * @return array [bool success, string error_message]
+     */
+    private function validateSampleImages($sampleImages) {
+        if (empty($sampleImages) || !is_array($sampleImages)) {
+            return [true, '']; // Empty is valid
+        }
+
+        $primaryCount = 0;
+        $referenceCount = 0;
+
+        foreach ($sampleImages as $image) {
+            // Ensure image_type is set (default to 'reference' if not specified)
+            $imageType = $image['image_type'] ?? 'reference';
+            $isPrimary = $image['is_primary'] ?? false;
+
+            // Count primary sample images
+            if ($isPrimary && $imageType === 'sample') {
+                $primaryCount++;
+            }
+
+            // Count reference images (any image that's not the primary sample)
+            if (!$isPrimary || $imageType !== 'sample') {
+                $referenceCount++;
+            }
+        }
+
+        // Validation rules
+        if ($primaryCount > 1) {
+            return [false, 'Only one primary sample image is allowed per checklist item'];
+        }
+
+        if ($referenceCount > 5) {
+            return [false, 'Maximum of 5 reference images allowed per checklist item'];
+        }
+
+        $totalImages = count($sampleImages);
+        if ($totalImages > 6) {
+            return [false, 'Maximum of 6 total images allowed (1 sample + 5 reference)'];
+        }
+
+        return [true, ''];
+    }
+
+    /**
+     * Normalize sample images array
+     * Ensures all images have required fields including image_type
+     * 
+     * @param array $sampleImages Array of sample image objects
+     * @return array Normalized array
+     */
+    private function normalizeSampleImages($sampleImages) {
+        if (empty($sampleImages) || !is_array($sampleImages)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($sampleImages as $index => $image) {
+            $isPrimary = $image['is_primary'] ?? false;
+            
+            $normalized[] = [
+                'url' => $image['url'] ?? '',
+                'label' => $image['label'] ?? ($isPrimary ? 'Primary Sample Image' : 'Reference Image'),
+                'description' => $image['description'] ?? '',
+                'type' => $image['type'] ?? 'photo',
+                'image_type' => $image['image_type'] ?? ($isPrimary ? 'sample' : 'reference'),
+                'is_primary' => $isPrimary,
+                'order_index' => $image['order_index'] ?? $index
+            ];
+        }
+
+        return $normalized;
     }
 
     public function createTemplate() {
@@ -395,84 +556,201 @@ class PhotoChecklistConfigAPI {
                 error_log("Set template_group_id = $templateId for new template");
             }
             
-            // Insert items
+            // Insert items with TWO-PASS approach to handle parent_id mapping
             if (!empty($data['items'])) {
+                error_log("🔵 createTemplate: Starting to insert " . count($data['items']) . " items");
+                
+                // Check if sample_images column exists once (moved outside loop for efficiency)
+                $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
+                $checkStmt = $this->conn->prepare($checkColumnSql);
+                $checkStmt->execute();
+                $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
+                
+                // TWO-PASS APPROACH:
+                // Pass 1: Insert ALL items, build order_index → database_id map
+                // Pass 2: Update child items' parent_id from order_index to actual database ID
+                
+                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
+                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
+                
+                // PASS 1: Insert all items with NULL parent_id
                 foreach ($data['items'] as $index => $item) {
-                    error_log("Inserting item $index for template ID $templateId: " . json_encode($item));
+                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    $level = $item['level'] ?? 0;
+                    $title = $item['title'];
+                    
+                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
+                    $parentOrderIndex = null;
+                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
+                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    }
+                    
+                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
                     
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
-                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
                     
-                    // Check if sample_images column exists for backward compatibility
-                    $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
-                    $checkStmt = $this->conn->prepare($checkColumnSql);
-                    $checkStmt->execute();
-                    $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
-                    
+                    // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        // Store in both columns for compatibility
+                        // Use sample_images array from frontend if provided (includes primary + reference images)
+                        // Otherwise, create array from single sample_image_url for backward compatibility
                         $sampleImagesArray = [];
-                        if (!empty($sampleImageUrl)) {
+                        
+                        if (!empty($item['sample_images']) && is_array($item['sample_images'])) {
+                            // Frontend sent full array with primary + reference images
+                            // IMPORTANT: Move temp images to permanent storage and update URLs
+                            $sampleImagesArray = [];
+                            foreach ($item['sample_images'] as $img) {
+                                $imageUrl = $img['url'];
+                                
+                                // Check if this is a temp image (contains '/temp/')
+                                if (strpos($imageUrl, '/temp/') !== false) {
+                                    // Move from temp to permanent storage
+                                    $imageUrl = $this->moveTempImageToPermanent($imageUrl);
+                                    error_log("  � Moved temp image to permanent: " . $imageUrl);
+                                }
+                                
+                                $sampleImagesArray[] = [
+                                    'url' => $imageUrl,
+                                    'label' => $img['label'] ?? '',
+                                    'description' => $img['description'] ?? '',
+                                    'type' => $img['type'] ?? 'photo',
+                                    'image_type' => $img['image_type'] ?? 'sample',
+                                    'is_primary' => $img['is_primary'] ?? false,
+                                    'order_index' => $img['order_index'] ?? 0
+                                ];
+                            }
+                            
+                            // Update sample_image_url with the primary image URL
+                            $primaryImage = array_filter($sampleImagesArray, function($img) {
+                                return $img['is_primary'] === true;
+                            });
+                            if (!empty($primaryImage)) {
+                                $sampleImageUrl = reset($primaryImage)['url'];
+                            } elseif (!empty($sampleImagesArray)) {
+                                $sampleImageUrl = $sampleImagesArray[0]['url'];
+                            }
+                            
+                            error_log("  📸 Processed sample_images array with " . count($sampleImagesArray) . " images");
+                        } elseif (!empty($sampleImageUrl)) {
+                            // Fallback: Only sample_image_url provided - create single-image array
+                            // Check if it's a temp image
+                            if (strpos($sampleImageUrl, '/temp/') !== false) {
+                                $sampleImageUrl = $this->moveTempImageToPermanent($sampleImageUrl);
+                                error_log("  🔄 Moved temp sample_image_url to permanent: " . $sampleImageUrl);
+                            }
+                            
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
-                                'label' => 'Sample Image',
+                                'label' => 'Primary Sample Image',
                                 'description' => '',
                                 'type' => 'photo',
+                                'image_type' => 'sample',
                                 'is_primary' => true,
                                 'order_index' => 0
                             ]];
+                            error_log("  📸 Created single-image array from sample_image_url");
                         }
                         
+                        // Insert with NULL parent_id initially
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
-                        $success = $stmt->execute([
+                        
+                        $stmt->execute([
                             $templateId,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with both sample_image_url and sample_images");
                     } else {
                         // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
-                        $success = $stmt->execute([
+                        
+                        $stmt->execute([
                             $templateId,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with sample_image_url only");
                     }
                     
-                    if (!$success) {
-                        error_log("Failed to insert item $index. SQL Error: " . implode(", ", $stmt->errorInfo()));
-                        error_log("Failed SQL was for template_id: $templateId, item data: " . json_encode($item));
-                        throw new Exception("Failed to insert item $index: " . implode(", ", $stmt->errorInfo()));
-                    } else {
-                        error_log("Successfully inserted item $index for template $templateId");
+                    // Get the database ID for this item
+                    $dbId = $this->conn->lastInsertId();
+                    
+                    // Map order_index → database_id (use string keys to avoid float/int issues)
+                    $mapKey = (string)$orderIndex;
+                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    
+                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    
+                    // If this is a child item (has parent), track it for updating
+                    if ($parentOrderIndex !== null) {
+                        $itemsToUpdate[] = [
+                            'db_id' => $dbId,
+                            'parent_order_index' => $parentOrderIndex
+                        ];
+                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
                     }
                 }
+                
+                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
+                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
+                
+                // PASS 2: Update child items' parent_id to actual database IDs
+                foreach ($itemsToUpdate as $update) {
+                    $parentOrderIndex = $update['parent_order_index'];
+                    $childDbId = $update['db_id'];
+                    
+                    // Convert to string key for consistent lookup
+                    $lookupKey = (string)$parentOrderIndex;
+                    
+                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
+                    
+                    // Look up the actual database ID for the parent
+                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
+                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
+                        
+                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
+                        
+                        // Update the child item's parent_id
+                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute([$parentDbId, $childDbId]);
+                    } else {
+                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
+                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
+                    }
+                }
+                
+                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
             }
             
             $this->conn->commit();
-            return ['success' => true, 'template_id' => $templateId];
+            
+            // Return detailed info for debugging (visible in browser Network tab)
+            return [
+                'success' => true, 
+                'template_id' => $templateId,
+                'debug_info' => [
+                    'items_received' => count($data['items']),
+                    'items_inserted' => count($orderIndexToDbIdMap),
+                    'child_items_updated' => count($itemsToUpdate),
+                    'order_index_map' => $orderIndexToDbIdMap,
+                    'message' => 'Check database to verify all items saved with correct parent_id'
+                ]
+            ];
             
         } catch (Exception $e) {
             $this->conn->rollback();
@@ -516,26 +794,92 @@ class PhotoChecklistConfigAPI {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$id]);
             
-            // Insert updated items
+            // Insert updated items with TWO-PASS approach (same as createTemplate)
             if (!empty($data['items'])) {
+                error_log("🔵 updateTemplate: Starting to insert " . count($data['items']) . " items");
+                
+                // Check if sample_images column exists once (moved outside loop for efficiency)
+                $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
+                $checkStmt = $this->conn->prepare($checkColumnSql);
+                $checkStmt->execute();
+                $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
+                
+                // TWO-PASS APPROACH:
+                // Pass 1: Insert ALL items, build order_index → database_id map
+                // Pass 2: Update child items' parent_id from order_index to actual database ID
+                
+                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
+                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
+                
+                // PASS 1: Insert all items with NULL parent_id
                 foreach ($data['items'] as $index => $item) {
+                    $orderIndex = $item['order_index'] ?? ($index + 1);
+                    $level = $item['level'] ?? 0;
+                    $title = $item['title'];
+                    
+                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
+                    $parentOrderIndex = null;
+                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
+                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    }
+                    
+                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
+                    
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
                     
-                    // Debug: Log what we received
-                    error_log("Item $index received sample_image_url: " . $sampleImageUrl);
-                    
-                    // Check if sample_images column exists for backward compatibility
-                    $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
-                    $checkStmt = $this->conn->prepare($checkColumnSql);
-                    $checkStmt->execute();
-                    $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
-                    
                     // Build the SQL based on available columns
                     if ($hasSampleImagesColumn) {
-                        // Store in both columns for compatibility
+                        // Use sample_images array from frontend if provided (includes primary + reference images)
+                        // Otherwise, create array from single sample_image_url for backward compatibility
                         $sampleImagesArray = [];
-                        if (!empty($sampleImageUrl)) {
+                        
+                        if (!empty($item['sample_images']) && is_array($item['sample_images'])) {
+                            // Frontend sent full array with primary + reference images
+                            error_log("  📸 Processing frontend sample_images array with " . count($item['sample_images']) . " images");
+                            
+                            // Process each image: move from temp to permanent storage if needed
+                            foreach ($item['sample_images'] as $img) {
+                                $imageUrl = $img['url'];
+                                
+                                // Check if this is a temp image that needs to be moved
+                                if (strpos($imageUrl, '/temp/') !== false) {
+                                    error_log("    🔄 Found temp image: $imageUrl");
+                                    $imageUrl = $this->moveTempImageToPermanent($imageUrl);
+                                    error_log("    ✅ Moved to permanent: $imageUrl");
+                                }
+                                
+                                // Add image with permanent URL to array
+                                $sampleImagesArray[] = [
+                                    'url' => $imageUrl,
+                                    'label' => $img['label'] ?? '',
+                                    'description' => $img['description'] ?? '',
+                                    'type' => $img['type'] ?? 'photo',
+                                    'image_type' => $img['image_type'] ?? 'sample',
+                                    'is_primary' => $img['is_primary'] ?? false,
+                                    'order_index' => $img['order_index'] ?? 0
+                                ];
+                            }
+                            
+                            // Update primary image URL from the array (for backward compatibility with sample_image_url column)
+                            foreach ($sampleImagesArray as $img) {
+                                if ($img['is_primary']) {
+                                    $sampleImageUrl = $img['url'];
+                                    error_log("  🔵 Extracted primary image URL: $sampleImageUrl");
+                                    break;
+                                }
+                            }
+                            
+                            error_log("  📸 Processed " . count($sampleImagesArray) . " images (all now in permanent storage)");
+                        } elseif (!empty($sampleImageUrl)) {
+                            // Fallback: Only sample_image_url provided - check if temp and move if needed
+                            if (strpos($sampleImageUrl, '/temp/') !== false) {
+                                error_log("    🔄 Found temp sample_image_url: $sampleImageUrl");
+                                $sampleImageUrl = $this->moveTempImageToPermanent($sampleImageUrl);
+                                error_log("    ✅ Moved to permanent: $sampleImageUrl");
+                            }
+                            
+                            // Create single-image array
                             $sampleImagesArray = [[
                                 'url' => $sampleImageUrl,
                                 'label' => 'Sample Image',
@@ -544,47 +888,92 @@ class PhotoChecklistConfigAPI {
                                 'is_primary' => true,
                                 'order_index' => 0
                             ]];
+                            error_log("  📸 Created single-image array from sample_image_url");
                         }
                         
+                        // Insert with NULL parent_id initially
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             json_encode($sampleImagesArray),
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with both sample_image_url and sample_images");
                     } else {
                         // Only sample_image_url column exists
                         $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
                         
                         $stmt->execute([
                             $id,
-                            $item['order_index'] ?? ($index + 1),
-                            $item['parent_id'] ?? null,
-                            $item['level'] ?? 0,
-                            $item['title'],
+                            $orderIndex,
+                            $level,
+                            $title,
                             $item['description'] ?? '',
                             json_encode($item['photo_requirements'] ?? []),
                             $sampleImageUrl,
                             $item['is_required'] ?? true
                         ]);
-                        
-                        error_log("Item $index saved with sample_image_url only");
+                    }
+                    
+                    // Get the database ID for this item
+                    $dbId = $this->conn->lastInsertId();
+                    
+                    // Map order_index → database_id (use string keys to avoid float/int issues)
+                    $mapKey = (string)$orderIndex;
+                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    
+                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    
+                    // If this is a child item (has parent), track it for updating
+                    if ($parentOrderIndex !== null) {
+                        $itemsToUpdate[] = [
+                            'db_id' => $dbId,
+                            'parent_order_index' => $parentOrderIndex
+                        ];
+                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
                     }
                 }
+                
+                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
+                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
+                
+                // PASS 2: Update child items' parent_id to actual database IDs
+                foreach ($itemsToUpdate as $update) {
+                    $parentOrderIndex = $update['parent_order_index'];
+                    $childDbId = $update['db_id'];
+                    
+                    // Convert to string key for consistent lookup
+                    $lookupKey = (string)$parentOrderIndex;
+                    
+                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
+                    
+                    // Look up the actual database ID for the parent
+                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
+                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
+                        
+                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
+                        
+                        // Update the child item's parent_id
+                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute([$parentDbId, $childDbId]);
+                    } else {
+                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
+                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
+                    }
+                }
+                
+                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
             }
             
             $this->conn->commit();
@@ -887,7 +1276,7 @@ class PhotoChecklistConfigAPI {
         $params = [];
         
         // Build dynamic update query based on provided fields
-        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number'];
+        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number', 'progress_percentage'];
         
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -926,8 +1315,9 @@ class PhotoChecklistConfigAPI {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
             
-            // Update progress if status changed
-            if (isset($data['status'])) {
+            // Only recalculate progress if progress_percentage was NOT explicitly provided by frontend
+            // If frontend sent progress_percentage, trust that value (includes verified items without photos)
+            if (isset($data['status']) && !array_key_exists('progress_percentage', $data)) {
                 $this->updateInstanceProgress($id);
                 
                 // Log status change
@@ -1318,6 +1708,51 @@ class PhotoChecklistConfigAPI {
             
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Move a temporary image file to permanent storage
+     * @param string $tempUrl - Full URL to the temp image
+     * @return string - New permanent URL
+     */
+    private function moveTempImageToPermanent($tempUrl) {
+        try {
+            // Extract the filename from the temp URL
+            // Example: https://dashboard.eye-fi.com/attachments/photoChecklist/temp/temp_item-0-ref-1763481030603_691c95c69aaad.png
+            $urlPath = parse_url($tempUrl, PHP_URL_PATH);
+            $filename = basename($urlPath);
+            
+            // Define paths
+            $tempDir = __DIR__ . '/../../../attachments/photoChecklist/temp/';
+            $permanentDir = __DIR__ . '/../../../attachments/photoChecklist/';
+            
+            $tempFilePath = $tempDir . $filename;
+            
+            // Remove 'temp_' prefix from filename for permanent storage
+            $permanentFilename = preg_replace('/^temp_/', '', $filename);
+            $permanentFilePath = $permanentDir . $permanentFilename;
+            
+            // Check if temp file exists
+            if (file_exists($tempFilePath)) {
+                // Move the file
+                if (rename($tempFilePath, $permanentFilePath)) {
+                    // Return the new permanent URL
+                    $permanentUrl = str_replace('/temp/temp_', '/', $tempUrl);
+                    error_log("  ✅ Moved temp image: $filename -> $permanentFilename");
+                    return $permanentUrl;
+                } else {
+                    error_log("  ❌ Failed to move temp image: $tempFilePath");
+                    return $tempUrl; // Return original if move fails
+                }
+            } else {
+                // File doesn't exist in temp - might already be permanent or doesn't exist
+                error_log("  ⚠️ Temp file not found: $tempFilePath");
+                return $tempUrl; // Return original URL
+            }
+        } catch (Exception $e) {
+            error_log("  ❌ Error moving temp image: " . $e->getMessage());
+            return $tempUrl; // Return original URL on error
         }
     }
 

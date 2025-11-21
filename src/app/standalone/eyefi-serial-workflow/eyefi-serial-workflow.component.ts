@@ -1656,6 +1656,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'BalGam':
         return 'sg';
       case 'AGS':
+      case 'AMEGAM':
         return 'ags';
       case 'Other':
         return 'other'; // Just assignment, no asset generation
@@ -1680,6 +1681,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       case 'BalGam':
         return 'Light and Wonder';
       case 'AGS':
+      case 'AMEGAM':
         return 'AGS';
       case 'Other':
         return 'Other';

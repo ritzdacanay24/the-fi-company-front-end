@@ -48,6 +48,13 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
   showSignature = false;
   currentPhotoItem?: ChecklistInstanceItem;
 
+  // Image preview modal
+  showImagePreview = false;
+  previewImageUrl: string = '';
+
+  // Full checklist overview modal
+  showFullChecklistModal = false;
+
   // Forms
   itemForm!: FormGroup;
   signatureForm!: FormGroup;
@@ -83,6 +90,17 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
         this.createNewInstance(templateId);
       } else {
         this.router.navigate(['../dashboard'], { relativeTo: this.route });
+      }
+    });
+
+    // Subscribe to query params for current item index
+    this.route.queryParams.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(queryParams => {
+      const itemIndex = queryParams['item'];
+      if (itemIndex !== undefined && !isNaN(+itemIndex)) {
+        this.currentItemIndex = +itemIndex;
+        this.loadCurrentItem();
       }
     });
   }
@@ -168,12 +186,31 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
   }
 
   private calculateProgress(): void {
-    if (!this.instance) return;
+    if (!this.instance || !this.template) return;
 
     this.totalItems = this.instance.items.length;
-    this.completedItems = this.instance.items.filter(item => 
-      item.status === 'completed' || item.status === 'skipped'
-    ).length;
+    
+    // Count items as completed if:
+    // 1. Status is 'completed' or 'skipped'
+    // 2. For photo-type items: has at least one photo
+    // 3. For other types: has a value
+    this.completedItems = this.instance.items.filter((item, index) => {
+      const templateItem = this.template?.items[index];
+      
+      // Check explicit status first
+      if (item.status === 'completed' || item.status === 'skipped') {
+        return true;
+      }
+      
+      // For photo type items, check if photos exist
+      if (templateItem?.type === 'photo') {
+        return item.photos && item.photos.length > 0;
+      }
+      
+      // For other types, check if value exists
+      return item.value !== undefined && item.value !== null && item.value !== '';
+    }).length;
+    
     this.progressPercentage = this.totalItems > 0 ? 
       (this.completedItems / this.totalItems) * 100 : 0;
   }
@@ -195,6 +232,7 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
       this.saveCurrentItem();
       this.currentItemIndex++;
       this.loadCurrentItem();
+      this.updateUrlWithCurrentItem();
     }
   }
 
@@ -203,6 +241,7 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
       this.saveCurrentItem();
       this.currentItemIndex--;
       this.loadCurrentItem();
+      this.updateUrlWithCurrentItem();
     }
   }
 
@@ -211,7 +250,17 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
       this.saveCurrentItem();
       this.currentItemIndex = index;
       this.loadCurrentItem();
+      this.updateUrlWithCurrentItem();
     }
+  }
+
+  private updateUrlWithCurrentItem(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { item: this.currentItemIndex },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   // Item management methods
@@ -285,6 +334,54 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
         console.error('Error completing item:', error);
       }
     });
+  }
+
+  markAsVerified(): void {
+    if (!this.instance) return;
+
+    const currentItem = this.getCurrentItem();
+    if (!currentItem) return;
+
+    // Mark item as verified without requiring photos
+    currentItem.status = 'completed';
+    currentItem.notes = this.itemForm.value.notes || 'Verified without photos';
+    
+    // Save the item
+    this.saveCurrentItem();
+    
+    // Auto-advance to next item if available
+    if (this.currentItemIndex < this.totalItems - 1) {
+      setTimeout(() => {
+        this.goToNextItem();
+      }, 300);
+    }
+  }
+
+  toggleVerification(): void {
+    if (!this.instance) return;
+
+    const currentItem = this.getCurrentItem();
+    if (!currentItem) return;
+
+    if (currentItem.status === 'completed') {
+      // Unmark verification - reset to pending
+      currentItem.status = 'pending';
+      currentItem.notes = this.itemForm.value.notes || '';
+    } else {
+      // Mark as verified
+      currentItem.status = 'completed';
+      currentItem.notes = this.itemForm.value.notes || 'Verified without photos';
+      
+      // Auto-advance to next item if available
+      if (this.currentItemIndex < this.totalItems - 1) {
+        setTimeout(() => {
+          this.goToNextItem();
+        }, 300);
+      }
+    }
+    
+    // Save the item
+    this.saveCurrentItem();
   }
 
   skipCurrentItem(): void {
@@ -543,6 +640,46 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Get actual completion status for an item (used in modal)
+   */
+  isItemCompleted(item: ChecklistInstanceItem, templateItem: ChecklistItem): boolean {
+    // Check explicit status first
+    if (item.status === 'completed' || item.status === 'skipped') {
+      return true;
+    }
+    
+    // For photo type items, check if photos exist
+    if (templateItem?.type === 'photo') {
+      return item.photos ? item.photos.length > 0 : false;
+    }
+    
+    // For other types, check if value exists
+    return item.value !== undefined && item.value !== null && item.value !== '';
+  }
+
+  /**
+   * Get display status for item in modal
+   */
+  getItemDisplayStatus(item: ChecklistInstanceItem, templateItem: ChecklistItem): string {
+    if (item.status === 'skipped') return 'skipped';
+    if (item.status === 'completed') return 'completed';
+    
+    // For photo type items, check if minimum photos are taken
+    if (templateItem?.type === 'photo') {
+      if (item.photos && item.photos.length > 0) {
+        return 'completed';
+      }
+    }
+    
+    // For other types, check if value exists
+    if (item.value !== undefined && item.value !== null && item.value !== '') {
+      return 'completed';
+    }
+    
+    return 'pending';
+  }
+
   formatValue(value: any, templateItem: ChecklistItem): string {
     if (!value) return 'Not set';
 
@@ -568,5 +705,37 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
     this.signatureForm.patchValue({ 
       signature: `Signed at ${new Date().toISOString()}` 
     });
+  }
+
+  previewImage(imageUrl?: string): void {
+    if (imageUrl) {
+      this.previewImageUrl = imageUrl;
+      this.showImagePreview = true;
+    }
+  }
+
+  closeImagePreview(): void {
+    this.showImagePreview = false;
+    this.previewImageUrl = '';
+  }
+
+  openImageInNewTab(): void {
+    if (this.previewImageUrl) {
+      window.open(this.previewImageUrl, '_blank');
+    }
+  }
+
+  // Full checklist modal methods
+  openFullChecklistModal(): void {
+    this.showFullChecklistModal = true;
+  }
+
+  closeFullChecklistModal(): void {
+    this.showFullChecklistModal = false;
+  }
+
+  navigateToItemFromModal(index: number): void {
+    this.closeFullChecklistModal();
+    this.goToItem(index);
   }
 }

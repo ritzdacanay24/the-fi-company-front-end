@@ -469,39 +469,10 @@ export const MENU_DATA: MenuItem[] = [
             },
             {
                 label: "Photo Checklist",
-                icon: "las la-camera",
-                isCollapsed: true,
-                activatedRoutes: "/quality/checklist/*",
-                subItems: [
-                    {
-                        label: "Dashboard",
-                        link: "/quality/checklist",
-                        description: "Checklist Dashboard & Instances",
-                        icon: "las la-clipboard-list",
-                        activatedRoutes: "/quality/checklist"
-                    },
-                    {
-                        label: "Audit & Search",
-                        link: "/quality/checklist/audit",
-                        description: "Historical Checklist Search",
-                        icon: "las la-search",
-                        activatedRoutes: "/quality/checklist/audit"
-                    },
-                    {
-                        label: "Template Manager",
-                        link: "/quality/checklist/template-manager",
-                        description: "Manage Checklist Templates",
-                        icon: "las la-th-list",
-                        activatedRoutes: "/quality/checklist/template-manager"
-                    },
-                    {
-                        label: "Control Photos",
-                        link: "/quality/quality-control-photos",
-                        description: "Quality Control Photos",
-                        icon: "las la-images",
-                        activatedRoutes: "/quality/quality-control-photos/*"
-                    }
-                ]
+                link: "/quality/checklist",
+                description: "Select template and start new checklist",
+                icon: "las la-clipboard-list",
+                activatedRoutes: "/quality/checklist/*"
             },
             // {
             //     label: "Inspection Checklists",

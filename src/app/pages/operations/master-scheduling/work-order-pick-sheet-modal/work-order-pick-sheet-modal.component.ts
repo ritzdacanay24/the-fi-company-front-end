@@ -4,7 +4,6 @@ import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
-import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { UserSearchComponent } from "@app/shared/components/user-search/user-search.component";
 import moment from "moment";
@@ -14,6 +13,7 @@ import { NgxBarcode6Module } from "ngx-barcode6";
 import { CreateShortageModalService } from "../../shortages/shortage-modal/create-shortage.component";
 import { randomStr } from "src/assets/js/util/randomStr";
 import { SweetAlert } from "@app/shared/sweet-alert/sweet-alert.service";
+import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 
 @Injectable({
   providedIn: "root",

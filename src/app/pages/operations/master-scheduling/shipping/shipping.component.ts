@@ -1697,6 +1697,140 @@ export class ShippingComponent implements OnInit {
     // No need to set separate data arrays - we'll use filtering in the grid
   }
 
+  // Kanban Priority Management
+  kanbanPriorityMap: Map<string, any> = new Map();
+
+  async updateKanbanPriority(params: any) {
+    try {
+      const orderData = params.data;
+      const newPriority = parseInt(params.newValue) || null;
+      const oldPriority = params.oldValue;
+      const orderId = `${orderData.SOD_NBR}-${orderData.SOD_LINE}`;
+
+      console.log('🎯 Kanban Priority Update Request:', {
+        orderId,
+        currentPriority: oldPriority,
+        newPriority,
+        orderDetails: `${orderData.SOD_NBR}-${orderData.SOD_LINE}`
+      });
+
+      // Check if priority already exists (excluding current order)
+      if (newPriority > 0) {
+        const existingOrder = this.allOrdersData.find(
+          order => order['kanban_priority'] === newPriority &&
+            `${order.SOD_NBR}-${order.SOD_LINE}` !== orderId
+        );
+
+        if (existingOrder) {
+          console.log('❌ Kanban priority conflict detected:', `Priority ${newPriority} already assigned to ${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+          alert(`Kanban priority ${newPriority} is already assigned to SO#${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+          params.data.kanban_priority = oldPriority;
+          this.gridApi.refreshCells({ rowNodes: [params.node] });
+          return false;
+        }
+      }
+
+      // Update via API
+      const response = await this.api.updateKanbanPriority({
+        orderId: orderId,
+        salesOrderNumber: orderData.SOD_NBR,
+        salesOrderLine: orderData.SOD_LINE,
+        priority: newPriority,
+        notes: `Kanban priority set for ${orderData.SOD_PART}`
+      });
+
+      if (response && response.success) {
+        // Update local data
+        orderData['kanban_priority'] = newPriority;
+
+        // Update priority map
+        if (newPriority > 0) {
+          const priorityId = (response.data && !Array.isArray(response.data)) ? (response.data as any).id : null;
+          this.kanbanPriorityMap.set(orderId, {
+            id: priorityId || Date.now() + Math.random(),
+            priority_level: newPriority,
+            order_id: orderId,
+            sales_order_number: orderData.SOD_NBR,
+            sales_order_line: orderData.SOD_LINE,
+            notes: `Kanban priority set for ${orderData.SOD_PART}`,
+            created_at: new Date().toISOString(),
+            created_by: this.userSsoId || 'unknown',
+            updated_at: new Date().toISOString(),
+            updated_by: this.userSsoId || 'unknown',
+            is_active: true
+          });
+
+          console.log('✅ Kanban Priority Set:', {
+            orderId,
+            priority: newPriority,
+            totalPriorities: this.kanbanPriorityMap.size
+          });
+        } else {
+          this.kanbanPriorityMap.delete(orderId);
+          console.log('🗑️ Kanban Priority Removed:', orderId);
+        }
+
+        this.gridApi.refreshCells({ rowNodes: [params.node] });
+        return true;
+      } else {
+        throw new Error(response?.message || 'Failed to update kanban priority');
+      }
+    } catch (error) {
+      console.error('❌ Error updating kanban priority:', error);
+      alert('Failed to update kanban priority. Please try again.');
+      params.data.kanban_priority = params.oldValue;
+      this.gridApi.refreshCells({ rowNodes: [params.node] });
+      return false;
+    }
+  }
+
+  async loadKanbanPriorities() {
+    try {
+      const response = await this.api.getKanbanPriorities();
+      if (response && response.success) {
+        // Create a map of order IDs to priority data
+        this.kanbanPriorityMap.clear();
+        if (response.data) {
+          response.data.forEach((priority: any) => {
+            this.kanbanPriorityMap.set(priority.order_id, priority);
+          });
+        }
+
+        console.log('Kanban Priorities Loaded:', {
+          count: this.kanbanPriorityMap.size,
+          priorities: Array.from(this.kanbanPriorityMap.values())
+        });
+
+        // Merge priorities into grid data
+        this.mergeKanbanPriorityData();
+      }
+    } catch (error) {
+      console.error('Error loading kanban priorities:', error);
+    }
+  }
+
+  mergeKanbanPriorityData() {
+    if (!this.data || !Array.isArray(this.data)) {
+      console.log('⚠️ No shipping data available yet, skipping kanban priority merge');
+      return;
+    }
+
+    this.data.forEach((order: any) => {
+      const orderId = `${order.SOD_NBR}-${order.SOD_LINE}`;
+      const priorityData = this.kanbanPriorityMap.get(orderId);
+
+      if (priorityData) {
+        order.kanban_priority = priorityData.priority_level;
+      } else {
+        order.kanban_priority = null;
+      }
+    });
+
+    if (this.gridApi) {
+      this.gridApi.refreshCells();
+    }
+  }
+
   columnDefs: ColDef[] = [
     // Priority tab specific columns
     {
@@ -1802,6 +1936,69 @@ export class ShippingComponent implements OnInit {
       },
       tooltipField: 'shipping_priority',
       headerTooltip: 'Set shipping priority (1 = highest priority). Must be unique.',
+    },
+    {
+      field: "kanban_priority",
+      headerName: "Kanban Priority",
+      filter: false,
+      sortable: true,
+      editable: true,
+      maxWidth: 150,
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (params: any) => {
+        // Get all currently used kanban priorities from the grid
+        const usedPriorities = new Set<number>();
+        params.api.forEachNode((node: any) => {
+          if (node.data && node.data.kanban_priority && node.data !== params.data) {
+            usedPriorities.add(parseInt(node.data.kanban_priority));
+          }
+        });
+        
+        // Generate available priority numbers (1-50, excluding used ones)
+        const availablePriorities: number[] = [];
+        for (let i = 1; i <= 50; i++) {
+          if (!usedPriorities.has(i)) {
+            availablePriorities.push(i);
+          }
+        }
+        
+        // If current row has a priority, include it in the list
+        if (params.value) {
+          const currentPriority = parseInt(params.value);
+          if (!availablePriorities.includes(currentPriority)) {
+            availablePriorities.push(currentPriority);
+            availablePriorities.sort((a, b) => a - b);
+          }
+        }
+        
+        // Add "None" option at the beginning
+        const values = [null, ...availablePriorities];
+        
+        return {
+          values: values,
+          cellHeight: 50,
+          formatValue: (value: any) => {
+            if (value === null || value === undefined || value === '') {
+              return '(None)';
+            }
+            return `Priority ${value}`;
+          },
+          searchDebounceDelay: 300,
+          allowTyping: true,
+          filterList: true,
+          highlightMatch: true
+        };
+      },
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        return `<span class="badge bg-info-subtle text-info">★ ${params.value}</span>`;
+      },
+      onCellValueChanged: async (params: any) => {
+        const newPriority = parseInt(params.newValue) || null;
+        await this.updateKanbanPriority(params);
+      },
+      tooltipField: 'kanban_priority',
+      headerTooltip: 'Set kanban priority (1 = highest priority). Must be unique. Click to select from available priorities.',
     },
     {
       field: "STATUS",
@@ -2752,7 +2949,8 @@ export class ShippingComponent implements OnInit {
       // Load shipping data and priorities in parallel
       const [shippingData] = await Promise.all([
         this.api.getShipping(),
-        this.loadPriorities(false) // Don't auto-merge during parallel loading
+        this.loadPriorities(false), // Don't auto-merge during parallel loading
+        this.loadKanbanPriorities() // Load kanban priorities as well
       ]);
 
       this.data = shippingData; 
@@ -2760,6 +2958,7 @@ export class ShippingComponent implements OnInit {
 
       // Merge priority data with shipping data after both are loaded
       this.mergePriorityData();
+      this.mergeKanbanPriorityData();
       this.cleanupPriorityData();
 
       // Set data to all orders, filtering will be handled by the tab switching

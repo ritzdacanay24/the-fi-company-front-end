@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ContinuityModalService } from '@app/pages/operations/labels/continuity-test-modal/continuity-test-modal.component';
 import { PlacardModalService } from '@app/shared/components/placard-modal/placard-modal.component';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
     selector: 'app-checklist',
@@ -55,7 +56,8 @@ export class ChecklistComponent implements OnInit {
         public router: Router,
         private continuityModalService: ContinuityModalService,
         private placardModalService: PlacardModalService,
-        private photoChecklistService: PhotoChecklistConfigService
+        private photoChecklistService: PhotoChecklistConfigService,
+        private authService: AuthenticationService
     ) {
     }
 
@@ -124,6 +126,10 @@ export class ChecklistComponent implements OnInit {
         if (!template.items || template.items.length === 0) {
             this.photoChecklistService.getTemplate(template.id).subscribe({
                 next: (fullTemplate) => {
+                    console.log('Template data received:', fullTemplate);
+                    console.log('Number of items:', fullTemplate.items?.length);
+                    console.log('First item:', fullTemplate.items?.[0]);
+                    console.log('First item children:', fullTemplate.items?.[0]?.children);
                     this.selectedTemplate = fullTemplate;
                     this.showPreviewModal = true;
                 },
@@ -133,6 +139,8 @@ export class ChecklistComponent implements OnInit {
                 }
             });
         } else {
+            console.log('Using cached template:', template);
+            console.log('Cached template items:', template.items);
             this.selectedTemplate = template;
             this.showPreviewModal = true;
         }
@@ -165,13 +173,16 @@ export class ChecklistComponent implements OnInit {
             return;
         }
 
+        // Get current user information
+        const currentUser = this.authService.currentUser();
+        
         const instanceData = {
             template_id: template.id,
             work_order_number: workOrder,
             part_number: partNumber,
             serial_number: serialNumber,
-            operator_id: 1, // TODO: Get from current user
-            operator_name: 'Current User' // TODO: Get from current user
+            operator_id: currentUser?.id || null,
+            operator_name: currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Unknown User'
         };
 
         this.photoChecklistService.createInstance(instanceData).subscribe({
@@ -373,6 +384,13 @@ export class ChecklistComponent implements OnInit {
 
     hasPrimaryImage(sampleImages: any[]): boolean {
         return sampleImages && sampleImages.some(img => img.is_primary);
+    }
+
+    getReferenceImages(sampleImages: any[]): any[] {
+        if (!sampleImages || !Array.isArray(sampleImages)) {
+            return [];
+        }
+        return sampleImages.filter(img => !img.is_primary || img.image_type !== 'sample');
     }
 
     // ==============================================
