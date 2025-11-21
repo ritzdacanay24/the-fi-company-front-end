@@ -82,6 +82,7 @@ class OwnersAPI {
                         o.description,
                         o.display_order,
                         o.is_active,
+                        o.is_production,
                         o.created_at,
                         o.created_by,
                         o.updated_at,
@@ -131,6 +132,7 @@ class OwnersAPI {
                     description,
                     display_order, 
                     is_active,
+                    is_production,
                     created_at,
                     created_by,
                     updated_at,
@@ -170,6 +172,7 @@ class OwnersAPI {
                 description,
                 display_order, 
                 is_active,
+                is_production,
                 created_at,
                 created_by,
                 updated_at,
@@ -234,8 +237,8 @@ class OwnersAPI {
             }
             
             $query = "INSERT INTO owners 
-                     (name, email, department, description, display_order, is_active, created_by) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?)";
+                     (name, email, department, description, display_order, is_active, is_production, created_by) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $this->db->prepare($query);
             $result = $stmt->execute([
@@ -245,6 +248,7 @@ class OwnersAPI {
                 $data['description'] ?? null,
                 $data['display_order'] ?? 999,
                 isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1,
+                isset($data['is_production']) ? ($data['is_production'] ? 1 : 0) : 0,
                 $createdBy
             ]);
             
@@ -297,11 +301,11 @@ class OwnersAPI {
             $updateFields = [];
             $updateValues = [];
             
-            $allowedFields = ['name', 'email', 'department', 'description', 'display_order', 'is_active'];
+            $allowedFields = ['name', 'email', 'department', 'description', 'display_order', 'is_active', 'is_production'];
             foreach ($allowedFields as $field) {
                 if (isset($data[$field])) {
                     $updateFields[] = "$field = ?";
-                    if ($field === 'is_active') {
+                    if ($field === 'is_active' || $field === 'is_production') {
                         $updateValues[] = $data[$field] ? 1 : 0;
                     } else {
                         $updateValues[] = $data[$field];
@@ -691,6 +695,75 @@ class OwnersAPI {
             ];
         }
     }
+
+    /**
+     * Get owner dropdown feature setting
+     */
+    public function getOwnerDropdownSetting() {
+        try {
+            // Check if setting exists in a settings table, or use a simple flag table
+            $query = "SELECT setting_value FROM system_settings WHERE setting_key = 'owner_dropdown_enabled' LIMIT 1";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                return [
+                    'success' => true,
+                    'data' => [
+                        'enabled' => (bool)$result['setting_value']
+                    ]
+                ];
+            } else {
+                // Default to enabled if no setting exists
+                return [
+                    'success' => true,
+                    'data' => [
+                        'enabled' => true
+                    ]
+                ];
+            }
+        } catch (Exception $e) {
+            // Table might not exist, return default
+            error_log('Error getting owner dropdown setting: ' . $e->getMessage());
+            return [
+                'success' => true,
+                'data' => [
+                    'enabled' => true
+                ]
+            ];
+        }
+    }
+
+    /**
+     * Set owner dropdown feature setting
+     */
+    public function setOwnerDropdownSetting($enabled, $updatedBy = 'system') {
+        try {
+            $enabledValue = $enabled ? 1 : 0;
+            
+            // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL compatibility
+            $query = "INSERT INTO system_settings (setting_key, setting_value, updated_by, updated_at) 
+                     VALUES ('owner_dropdown_enabled', ?, ?, NOW())
+                     ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = NOW()";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$enabledValue, $updatedBy, $enabledValue, $updatedBy]);
+            
+            return [
+                'success' => true,
+                'message' => 'Owner dropdown setting updated successfully',
+                'data' => [
+                    'enabled' => (bool)$enabled
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log('Error setting owner dropdown setting: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => 'Failed to update setting: ' . $e->getMessage()
+            ];
+        }
+    }
 }
 
 // Initialize API
@@ -751,6 +824,9 @@ try {
             } elseif ($action === 'get-admin-users') {
                 // Get all admin users
                 $response = $api->getAdminUsers();
+            } elseif ($action === 'dropdown-setting') {
+                // Get owner dropdown feature setting
+                $response = $api->getOwnerDropdownSetting();
             } elseif (isset($_GET['id'])) {
                 // Get specific owner by ID
                 $response = $api->getOwnerById($_GET['id']);
@@ -815,6 +891,11 @@ try {
                         'error' => 'user_id is required'
                     ];
                 }
+            } elseif ($action === 'set-dropdown-setting') {
+                // Set owner dropdown feature setting
+                $enabled = isset($requestBody['enabled']) ? (bool)$requestBody['enabled'] : true;
+                $updatedBy = $requestBody['updated_by'] ?? $requestUserId;
+                $response = $api->setOwnerDropdownSetting($enabled, $updatedBy);
             } else {
                 // Create new owner
                 $response = $api->createOwner($requestBody, $requestUserId);

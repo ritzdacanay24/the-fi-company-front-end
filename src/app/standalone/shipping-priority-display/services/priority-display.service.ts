@@ -93,6 +93,7 @@ export interface ShippingOrder {
     supplyReview?: string;
     shortages_review?: string;
     g2e_comments?: string;
+    owner_name?:  string
   };
   recent_owner_changes?: any;
   all_mention_comments?: {

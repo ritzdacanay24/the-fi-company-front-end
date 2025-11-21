@@ -6,11 +6,13 @@ import { OwnersService, Owner } from '@app/core/api/owners/owners.service';
 import { AuthenticationService } from '@app/core/services/auth.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { UserSearchV1Component } from '@app/shared/components/user-search-v1/user-search-v1.component';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-owner-management-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserSearchV1Component, DragDropModule],
   template: `
     <div class="modal-header bg-primary text-white">
       <h4 class="modal-title text-white">
@@ -48,6 +50,15 @@ import { takeUntil } from 'rxjs/operators';
              style="cursor: pointer;">
             <i class="mdi mdi-shield-account me-1"></i>
             Admin Users
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" 
+             [class.active]="activeTab === 'settings'" 
+             (click)="switchToSettingsTab()"
+             style="cursor: pointer;">
+            <i class="mdi mdi-cog me-1"></i>
+            Settings
           </a>
         </li>
       </ul>
@@ -120,6 +131,21 @@ import { takeUntil } from 'rxjs/operators';
                   </label>
                 </div>
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Currently Working</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" 
+                         type="checkbox" 
+                         [(ngModel)]="formData.is_production" 
+                         name="is_production"
+                         id="productionSwitch">
+                  <label class="form-check-label" for="productionSwitch">
+                    <i class="mdi me-1" [ngClass]="formData.is_production ? 'mdi-hammer-wrench text-success' : 'mdi-pause-circle'"></i>
+                    {{ formData.is_production ? 'In Production' : 'Not Working' }}
+                  </label>
+                </div>
+                <small class="text-muted">Show in production board with highlight</small>
+              </div>
             </div>
             
             <div class="mt-3 d-flex gap-2">
@@ -165,15 +191,23 @@ import { takeUntil } from 'rxjs/operators';
 
       <!-- Owners List -->
       <div class="card">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
-            <i class="mdi mdi-format-list-bulleted me-2"></i>
-            Owners List ({{ filteredOwners.length }})
-          </h5>
-          <button class="btn btn-sm btn-outline-primary" (click)="refreshOwners()">
-            <i class="mdi mdi-refresh" [ngClass]="{'mdi-spin': loading}"></i>
-            Refresh
-          </button>
+        <div class="card-header bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-0">
+                <i class="mdi mdi-format-list-bulleted me-2"></i>
+                Owners List ({{ filteredOwners.length }})
+              </h5>
+              <small class="text-muted">
+                <i class="mdi mdi-drag-vertical me-1"></i>
+                Drag rows to reorder
+              </small>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" (click)="refreshOwners()">
+              <i class="mdi mdi-refresh" [ngClass]="{'mdi-spin': loading}"></i>
+              Refresh
+            </button>
+          </div>
         </div>
         <div class="card-body p-0">
           <div *ngIf="loading" class="text-center py-4">
@@ -190,19 +224,29 @@ import { takeUntil } from 'rxjs/operators';
             <table class="table table-hover mb-0">
               <thead class="table-light">
                 <tr>
+                  <th style="width: 50px;">
+                    <i class="mdi mdi-drag-vertical text-muted" title="Drag to reorder"></i>
+                  </th>
                   <th style="width: 50px;">Order</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Department</th>
                   <th>Description</th>
+                  <th style="width: 120px;">Work Status</th>
                   <th style="width: 100px;">Status</th>
                   <th style="width: 120px;">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody cdkDropList (cdkDropListDropped)="dropOwner($event)">
                 <tr *ngFor="let owner of filteredOwners" 
+                    cdkDrag
+                    [cdkDragDisabled]="editingOwner !== null"
                     [class.table-secondary]="!owner.is_active"
-                    [class.table-warning]="editingOwner?.id === owner.id">
+                    [class.table-warning]="editingOwner?.id === owner.id"
+                    style="cursor: move;">
+                  <td class="text-center">
+                    <i class="mdi mdi-drag-vertical text-muted" cdkDragHandle></i>
+                  </td>
                   <td class="text-center">
                     <span class="badge bg-secondary">{{ owner.display_order }}</span>
                   </td>
@@ -230,6 +274,12 @@ import { takeUntil } from 'rxjs/operators';
                       {{ owner.description.length > 50 ? owner.description.substring(0, 50) + '...' : owner.description }}
                     </span>
                     <span *ngIf="!owner.description" class="text-muted fst-italic">-</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="owner.is_production ? 'bg-success' : 'bg-secondary'">
+                      <i class="mdi" [ngClass]="owner.is_production ? 'mdi-hammer-wrench' : 'mdi-pause-circle'"></i>
+                      {{ owner.is_production ? 'Working Now' : 'Not Working' }}
+                    </span>
                   </td>
                   <td>
                     <span class="badge" [ngClass]="owner.is_active ? 'bg-success' : 'bg-secondary'">
@@ -271,21 +321,15 @@ import { takeUntil } from 'rxjs/operators';
           </div>
           <div class="card-body">
             <div class="row g-3">
-              <div class="col-md-10">
-                <label class="form-label">User</label>
-                <select class="form-select form-select-lg" [(ngModel)]="selectedUserId" (ngModelChange)="onUserSelected()">
-                  <option [ngValue]="null">-- Select a user --</option>
-                  <option *ngFor="let user of availableUsers" [ngValue]="user.id">
-                    {{ user.first }} {{ user.last }} ({{ user.email }})
-                  </option>
-                </select>
-              </div>
-              <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-outline-primary w-100" 
-                        (click)="loadAllUsers()"
-                        [disabled]="loadingUsers">
-                  <i class="mdi mdi-refresh" [ngClass]="{'mdi-spin': loadingUsers}"></i>
-                </button>
+              <div class="col-md-12">
+                <app-user-search-v1
+                  [form_label]="'Select User'"
+                  [value]="selectedUserId"
+                  [placeholder]="'Search users by name or email...'"
+                  [minTermLength]="2"
+                  [appendToBody]="'body'"
+                  (notifyParent)="onUserSelected($event)">
+                </app-user-search-v1>
               </div>
             </div>
           </div>
@@ -451,13 +495,14 @@ import { takeUntil } from 'rxjs/operators';
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-10">
-                <label class="form-label">Select User</label>
-                <select class="form-select form-select-lg" [(ngModel)]="selectedAdminUserId">
-                  <option [ngValue]="null">-- Select a user to make admin --</option>
-                  <option *ngFor="let user of availableUsersForAdmin" [ngValue]="user.id">
-                    {{ user.first }} {{ user.last }} ({{ user.email }})
-                  </option>
-                </select>
+                <app-user-search-v1
+                  [form_label]="'Select User'"
+                  [value]="selectedAdminUserId"
+                  [placeholder]="'Search users to add as admin...'"
+                  [minTermLength]="2"
+                  [appendToBody]="'body'"
+                  (notifyParent)="onAdminUserSelected($event)">
+                </app-user-search-v1>
               </div>
               <div class="col-md-2 d-flex align-items-end">
                 <button class="btn btn-success w-100" 
@@ -534,6 +579,71 @@ import { takeUntil } from 'rxjs/operators';
           </div>
         </div>
       </div><!-- End Admin Users Tab -->
+
+      <!-- Settings Tab -->
+      <div *ngIf="activeTab === 'settings'">
+        <div class="card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="mdi mdi-cog me-2"></i>
+              Owner Feature Settings
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info mb-4">
+              <i class="mdi mdi-information-outline me-2"></i>
+              Control whether the owner dropdown/input field appears on forms throughout the application.
+            </div>
+
+            <div class="row">
+              <div class="col-md-12">
+                <div class="card border-primary">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-1">
+                          <i class="mdi mdi-form-dropdown me-2"></i>
+                          Owner Dropdown/Input Field
+                        </h6>
+                        <p class="text-muted small mb-0">
+                          {{ ownerDropdownEnabled ? 'Owner selection is currently ENABLED across all forms' : 'Owner selection is currently DISABLED across all forms' }}
+                        </p>
+                      </div>
+                      <div class="form-check form-switch form-switch-lg">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               [(ngModel)]="ownerDropdownEnabled" 
+                               (change)="toggleOwnerDropdown()"
+                               [disabled]="savingSettings"
+                               id="ownerDropdownSwitch"
+                               style="width: 3.5rem; height: 1.75rem; cursor: pointer;">
+                        <label class="form-check-label ms-2" for="ownerDropdownSwitch" style="cursor: pointer;">
+                          <strong [class.text-success]="ownerDropdownEnabled" [class.text-secondary]="!ownerDropdownEnabled">
+                            {{ ownerDropdownEnabled ? 'ENABLED' : 'DISABLED' }}
+                          </strong>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div class="mt-3 pt-3 border-top" *ngIf="savingSettings">
+                      <div class="d-flex align-items-center">
+                        <i class="mdi mdi-loading mdi-spin text-primary me-2"></i>
+                        <span class="text-muted">Saving setting...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-warning mt-4">
+              <i class="mdi mdi-alert me-2"></i>
+              <strong>Note:</strong> Disabling this feature will hide the owner dropdown/input on all forms. 
+              Users will not be able to assign or change owners until this is re-enabled.
+            </div>
+          </div>
+        </div>
+      </div><!-- End Settings Tab -->
     </div>
 
     <div class="modal-footer">
@@ -555,11 +665,38 @@ import { takeUntil } from 'rxjs/operators';
     .badge {
       font-size: 0.75rem;
     }
+
+    /* Drag and drop styles */
+    .cdk-drag-preview {
+      opacity: 0.8;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .cdk-drag-placeholder {
+      opacity: 0.4;
+      background: #f0f0f0;
+    }
+
+    .cdk-drag-animating {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    tbody.cdk-drop-list-dragging tr:not(.cdk-drag-placeholder) {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    [cdkDragHandle] {
+      cursor: move;
+    }
+
+    tr[cdkDrag]:hover {
+      background-color: rgba(0, 123, 255, 0.05);
+    }
   `]
 })
 export class OwnerManagementModalComponent implements OnInit, OnDestroy {
   // Tab management
-  activeTab: 'owners' | 'assignments' | 'admins' = 'owners';
+  activeTab: 'owners' | 'assignments' | 'admins' | 'settings' = 'owners';
   
   // Owners tab
   owners: Owner[] = [];
@@ -576,12 +713,11 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
     department: '',
     description: '',
     display_order: 999,
-    is_active: true
+    is_active: true,
+    is_production: false
   };
 
   // User assignments tab
-  availableUsers: any[] = [];
-  loadingUsers = false;
   selectedUserId: number | null = null;
   userAssignments: any[] = [];
   allOwnersForAssignment: (Owner & { isAssigned: boolean })[] = [];
@@ -591,8 +727,11 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
   // Admin users tab
   adminUsers: any[] = [];
   loadingAdmins = false;
-  availableUsersForAdmin: any[] = [];
   selectedAdminUserId: number | null = null;
+
+  // Settings tab
+  ownerDropdownEnabled = true;
+  savingSettings = false;
 
   private destroy$ = new Subject<void>();
 
@@ -604,8 +743,8 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadOwners();
-    this.loadAllUsers();
     this.loadAdminUsers();
+    this.loadOwnerDropdownSetting();
   }
 
   ngOnDestroy(): void {
@@ -625,7 +764,12 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
     try {
       const response = await this.ownersService.getAllOwners();
       if (response.success && Array.isArray(response.data)) {
-        this.owners = response.data;
+        // Convert string values to proper booleans
+        this.owners = response.data.map(owner => ({
+          ...owner,
+          is_active: !!(owner.is_active && (owner.is_active === true || (owner.is_active as any) === 1 || (owner.is_active as any) === "1")),
+          is_production: !!(owner.is_production && (owner.is_production === true || (owner.is_production as any) === 1 || (owner.is_production as any) === "1"))
+        }));
         this.filterOwners();
       }
     } catch (error) {
@@ -662,9 +806,61 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
     this.filteredOwners = filtered;
   }
 
+  /**
+   * Handle drag and drop reordering
+   */
+  async dropOwner(event: CdkDragDrop<Owner[]>): Promise<void> {
+    if (event.previousIndex === event.currentIndex) {
+      return; // No change in position
+    }
+
+    // Move item in the array
+    moveItemInArray(this.filteredOwners, event.previousIndex, event.currentIndex);
+
+    // Update display_order for all affected owners
+    const updates: { id: number; display_order: number }[] = [];
+    this.filteredOwners.forEach((owner, index) => {
+      const newOrder = index + 1;
+      if (owner.display_order !== newOrder) {
+        owner.display_order = newOrder;
+        updates.push({ id: owner.id, display_order: newOrder });
+      }
+    });
+
+    // Save the new order to the backend
+    if (updates.length > 0) {
+      try {
+        const userId = this.authService.currentUserValue?.id || 'system';
+        const response = await this.ownersService.reorderOwners(updates, userId);
+        
+        if (response.success) {
+          console.log('✅ Owner order updated successfully');
+          // Refresh to get updated data from server
+          await this.loadOwners();
+        } else {
+          console.error('❌ Failed to update owner order:', response.error);
+          alert('Failed to save new order. Please try again.');
+          // Reload to reset to server state
+          await this.loadOwners();
+        }
+      } catch (error) {
+        console.error('❌ Error updating owner order:', error);
+        alert('An error occurred while saving the new order');
+        // Reload to reset to server state
+        await this.loadOwners();
+      }
+    }
+  }
+
   async saveOwner(): Promise<void> {
     if (!this.formData.name?.trim()) {
       alert('Owner name is required');
+      return;
+    }
+
+    // Prevent double submission
+    if (this.saving) {
+      console.warn('Save already in progress, ignoring duplicate request');
       return;
     }
 
@@ -698,7 +894,8 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
       department: owner.department,
       description: owner.description,
       display_order: owner.display_order,
-      is_active: owner.is_active
+      is_active: owner.is_active,
+      is_production: owner.is_production || false
     };
     
     // Scroll to top
@@ -738,41 +935,39 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
       department: '',
       description: '',
       display_order: 999,
-      is_active: true
+      is_active: true,
+      is_production: false
     };
   }
 
   // ==================== User Assignment Methods ====================
   
   /**
-   * Load all users for the dropdown
-   */
-  async loadAllUsers(): Promise<void> {
-    this.loadingUsers = true;
-    try {
-      const response = await this.ownersService.getAllUsers();
-      if (response && Array.isArray(response)) {
-        this.availableUsers = response;
-      }
-    } catch (error) {
-      console.error('Error loading users:', error);
-      this.availableUsers = [];
-    } finally {
-      this.loadingUsers = false;
-    }
-  }
-  
-  /**
    * Handle user selection from dropdown
    */
-  onUserSelected(): void {
-    console.log('User selected, ID:', this.selectedUserId);
+  onUserSelected(user: any): void {
+    console.log('User selected:', user);
     
-    if (this.selectedUserId) {
+    if (user && user.id) {
+      this.selectedUserId = user.id;
       this.loadUserAssignments();
     } else {
+      this.selectedUserId = null;
       this.userAssignments = [];
       this.allOwnersForAssignment = [];
+    }
+  }
+
+  /**
+   * Handle admin user selection from dropdown
+   */
+  onAdminUserSelected(user: any): void {
+    console.log('Admin user selected:', user);
+    
+    if (user && user.id) {
+      this.selectedAdminUserId = user.id;
+    } else {
+      this.selectedAdminUserId = null;
     }
   }
   
@@ -820,10 +1015,13 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
         console.log('Assigned owner IDs for filtering:', assignedOwnerIds);
         
         // Map all owners and add isAssigned flag (only show active ones)
+        // Convert string values to proper booleans
         this.allOwnersForAssignment = allOwnersResponse.data
-          .filter(owner => owner.is_active)
+          .filter(owner => !!(owner.is_active && (owner.is_active === true || (owner.is_active as any) === 1 || (owner.is_active as any) === "1")))
           .map(owner => ({
             ...owner,
+            is_active: !!(owner.is_active && (owner.is_active === true || (owner.is_active as any) === 1 || (owner.is_active as any) === "1")),
+            is_production: !!(owner.is_production && (owner.is_production === true || (owner.is_production as any) === 1 || (owner.is_production as any) === "1")),
             isAssigned: assignedOwnerIds.includes(owner.id)
           }));
           
@@ -921,7 +1119,6 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
   switchToAdminTab(): void {
     this.activeTab = 'admins';
     this.loadAdminUsers();
-    this.loadUsersForAdminSelection();
   }
 
   /**
@@ -947,23 +1144,6 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load users for admin selection dropdown (exclude existing admins)
-   */
-  async loadUsersForAdminSelection(): Promise<void> {
-    try {
-      const allUsers = await this.ownersService.getAllUsers();
-      if (allUsers && Array.isArray(allUsers)) {
-        // Filter out users who are already admins
-        const adminUserIds = this.adminUsers.map(admin => admin.user_id);
-        this.availableUsersForAdmin = allUsers.filter(user => !adminUserIds.includes(user.id));
-      }
-    } catch (error) {
-      console.error('Error loading users for admin selection:', error);
-      this.availableUsersForAdmin = [];
-    }
-  }
-
-  /**
    * Add a user as admin
    */
   async addAdminUser(): Promise<void> {
@@ -980,7 +1160,6 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
       if (response.success) {
         this.selectedAdminUserId = null;
         await this.loadAdminUsers();
-        await this.loadUsersForAdminSelection();
         alert('Admin user added successfully!');
       } else {
         alert(response.error || 'Failed to add admin user');
@@ -1006,7 +1185,6 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
       
       if (response.success) {
         await this.loadAdminUsers();
-        await this.loadUsersForAdminSelection();
         alert('Admin access removed successfully!');
       } else {
         alert(response.error || 'Failed to remove admin user');
@@ -1014,6 +1192,68 @@ export class OwnerManagementModalComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error removing admin user:', error);
       alert('An error occurred while removing admin user');
+    }
+  }
+
+  // ==================== Settings Methods ====================
+
+  /**
+   * Switch to settings tab and load data
+   */
+  switchToSettingsTab(): void {
+    this.activeTab = 'settings';
+    this.loadOwnerDropdownSetting();
+  }
+
+  /**
+   * Load owner dropdown feature setting
+   */
+  async loadOwnerDropdownSetting(): Promise<void> {
+    try {
+      const response = await this.ownersService.getOwnerDropdownSetting();
+      if (response.success && response.data) {
+        this.ownerDropdownEnabled = response.data.enabled;
+        console.log('✅ Owner dropdown setting loaded:', this.ownerDropdownEnabled);
+      }
+    } catch (error) {
+      console.error('Error loading owner dropdown setting:', error);
+      // Default to enabled if error
+      this.ownerDropdownEnabled = true;
+    }
+  }
+
+  /**
+   * Toggle owner dropdown feature
+   */
+  async toggleOwnerDropdown(): Promise<void> {
+    this.savingSettings = true;
+    const currentUserId = this.authService.currentUserValue?.id || 'system';
+
+    try {
+      const response = await this.ownersService.setOwnerDropdownSetting(
+        this.ownerDropdownEnabled,
+        currentUserId
+      );
+
+      if (response.success) {
+        console.log('✅ Owner dropdown setting updated:', this.ownerDropdownEnabled);
+        // Show a brief success message
+        const action = this.ownerDropdownEnabled ? 'enabled' : 'disabled';
+        setTimeout(() => {
+          alert(`Owner dropdown has been ${action} successfully!`);
+        }, 100);
+      } else {
+        alert(response.error || 'Failed to update setting');
+        // Revert the toggle on error
+        this.ownerDropdownEnabled = !this.ownerDropdownEnabled;
+      }
+    } catch (error) {
+      console.error('Error updating owner dropdown setting:', error);
+      alert('An error occurred while updating the setting');
+      // Revert the toggle on error
+      this.ownerDropdownEnabled = !this.ownerDropdownEnabled;
+    } finally {
+      this.savingSettings = false;
     }
   }
 }

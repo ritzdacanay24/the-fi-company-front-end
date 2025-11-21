@@ -388,8 +388,13 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
           
           // Ensure display mode is preserved during auto-refresh
           this.priorityDisplayService.updateDisplayMode(this.displayMode);
-          // Pass showRefreshOverlay setting to control loading state
-          this.priorityDisplayService.loadPriorityData(this.showRefreshOverlay);
+          
+          // Load data based on combined view setting
+          if (this.showCombinedView) {
+            this.priorityDisplayService.loadCombinedPriorityData(this.showRefreshOverlay);
+          } else {
+            this.priorityDisplayService.loadPriorityData(this.showRefreshOverlay);
+          }
         });
       console.log(`✅ Auto-refresh started with ${this.refreshInterval/1000}s interval`);
     } else {
@@ -468,10 +473,17 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   async refreshData(): Promise<void> {
     console.log('🔄 Manual refresh triggered');
     console.log('🔄 Current display mode during manual refresh:', this.displayMode);
+    console.log('🔄 Combined view enabled:', this.showCombinedView);
+    
     // Ensure display mode is preserved during manual refresh
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
-    // Always show loading state for manual refresh
-    await this.priorityDisplayService.loadPriorityData(true);
+    
+    // Load data based on combined view setting
+    if (this.showCombinedView) {
+      await this.priorityDisplayService.loadCombinedPriorityData(true);
+    } else {
+      await this.priorityDisplayService.loadPriorityData(true);
+    }
   }
 
   /**

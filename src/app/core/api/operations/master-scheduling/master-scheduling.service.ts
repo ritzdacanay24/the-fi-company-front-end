@@ -155,6 +155,14 @@ export class MasterSchedulingService extends DataService<any> {
     }
   }
 
+  getKanbanPriorities() {
+    if (this.useMockData) {
+      return this.getKanbanPrioritiesMock();
+    } else {
+      return this.getKanbanPrioritiesAPI();
+    }
+  }
+
   removeShippingPriority(orderId: any) {
     if (this.useMockData) {
       return this.removeShippingPriorityMock(orderId);
@@ -276,6 +284,30 @@ export class MasterSchedulingService extends DataService<any> {
       return {
         success: false,
         message: error.message || 'Failed to get priorities',
+        data: []
+      };
+    }
+  }
+
+  private async getKanbanPrioritiesAPI(): Promise<ShippingPriorityResponse> {
+    try {
+      console.log('🌐 Making REAL API call to get kanban priorities');
+      
+      const response = await firstValueFrom(
+        this.http.get<any>(`kanban-priorities/`)
+      );
+
+      console.log('✅ Real API kanban priorities retrieved:', response.data?.length || 0);
+      return {
+        success: response.success || false,
+        message: response.message || 'Kanban priorities retrieved',
+        data: response.data || []
+      };
+    } catch (error: any) {
+      console.error('❌ Real API error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to get kanban priorities',
         data: []
       };
     }
@@ -475,6 +507,34 @@ export class MasterSchedulingService extends DataService<any> {
           success: true,
           message: 'Priorities retrieved successfully',
           data: priorities
+        });
+      }, 50); // Simulate network delay
+    });
+  }
+
+  private getKanbanPrioritiesMock() {
+    return new Promise<ShippingPriorityResponse>((resolve) => {
+      setTimeout(() => {
+        // For mock mode, return empty array or sample kanban priorities
+        const kanbanPriorities = [
+          {
+            order_id: 'SO12348-001',
+            sales_order_number: 'SO12348',
+            sales_order_line: '001',
+            priority_level: 1,
+            notes: 'Kanban pull signal',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            created_by: 'kanban_system',
+            updated_at: new Date(Date.now() - 43200000).toISOString(),
+            updated_by: 'kanban_system',
+            is_active: true
+          }
+        ];
+        console.log('🧪 Mock Kanban Priorities Retrieved:', kanbanPriorities.length);
+        resolve({
+          success: true,
+          message: 'Kanban priorities retrieved successfully',
+          data: kanbanPriorities
         });
       }, 50); // Simulate network delay
     });

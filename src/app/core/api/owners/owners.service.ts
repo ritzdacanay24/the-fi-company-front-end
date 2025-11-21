@@ -13,6 +13,7 @@ export interface Owner {
   description?: string;
   display_order: number;
   is_active: boolean;
+  is_production?: boolean; // Flag to indicate currently working on items
   created_at?: string;
   created_by?: string;
   updated_at?: string;
@@ -317,6 +318,29 @@ export class OwnersService extends DataService<any> {
       action: 'remove-admin-user',
       user_id: userId,
       removed_by: removedBy
+    };
+    return await firstValueFrom(
+      this.http.post<OwnerResponse>(url, payload)
+    );
+  }
+
+  /**
+   * Get owner dropdown feature setting
+   */
+  getOwnerDropdownSetting = async (): Promise<{success: boolean; data: {enabled: boolean}; error?: string}> => {
+    return await firstValueFrom(
+      this.http.get<{success: boolean; data: {enabled: boolean}; error?: string}>(`${url}?action=dropdown-setting`)
+    );
+  }
+
+  /**
+   * Set owner dropdown feature setting
+   */
+  setOwnerDropdownSetting = async (enabled: boolean, updatedBy?: string): Promise<OwnerResponse> => {
+    const payload = {
+      action: 'set-dropdown-setting',
+      enabled: enabled,
+      updated_by: updatedBy
     };
     return await firstValueFrom(
       this.http.post<OwnerResponse>(url, payload)

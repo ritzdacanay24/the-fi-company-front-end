@@ -106,6 +106,9 @@ const WS_SHIPPING_PRIORITY = "WS_SHIPPING_PRIORITY";
   styleUrls: ["./shipping.component.scss"],
 })
 export class ShippingComponent implements OnInit {
+  // Owner dropdown configuration - loaded dynamically from database setting
+  ownerDropdownEnabled = false;
+
   onBtExport() {
     this.gridApi!.exportDataAsExcel();
   }
@@ -269,6 +272,9 @@ export class ShippingComponent implements OnInit {
     // Initialize user ID
     this.userSsoId = this.authenticationService.currentUserValue?.ssoId || 'unknown';
 
+    // Load owner dropdown setting from database
+    this.loadOwnerDropdownSetting();
+
     // Check if priority help alert should be shown
     this.initializePriorityHelpAlert();
 
@@ -284,6 +290,130 @@ export class ShippingComponent implements OnInit {
       this.viewComment(this.comment, null);
     }
   }
+
+  /**
+   * Load the owner dropdown setting from the database
+   */
+  async loadOwnerDropdownSetting(): Promise<void> {
+    try {
+      const response = await this.ownersService.getOwnerDropdownSetting();
+      if (response.success && response.data) {
+        this.ownerDropdownEnabled = response.data.enabled;
+        console.log(`Owner dropdown setting loaded: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
+        
+        // Update owner column visibility
+        if (this.gridApi) {
+          this.updateOwnerColumnVisibility();
+        }
+      } else {
+        console.warn('Failed to load owner dropdown setting, defaulting to disabled');
+        this.ownerDropdownEnabled = false;
+      }
+    } catch (error) {
+      console.error('Error loading owner dropdown setting:', error);
+      this.ownerDropdownEnabled = false;
+    }
+  }
+
+  /**
+   * Refresh owner dropdown setting and update column editor in real-time
+   * Called before cell editing to ensure latest setting is applied
+   */
+  async refreshOwnerDropdownSetting(): Promise<void> {
+    try {
+      const response = await this.ownersService.getOwnerDropdownSetting();
+      if (response.success && response.data) {
+        const wasEnabled = this.ownerDropdownEnabled;
+        this.ownerDropdownEnabled = response.data.enabled;
+        
+        // Only update if setting changed
+        if (wasEnabled !== this.ownerDropdownEnabled) {
+          console.log(`⚡ Owner dropdown setting changed: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
+          
+          // Update the column definition immediately
+          if (this.gridApi) {
+            this.updateOwnerColumnEditor();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing owner dropdown setting:', error);
+    }
+  }
+
+  /**
+   * Update the visibility of the owner column based on the setting
+   */
+  updateOwnerColumnVisibility(): void {
+    if (this.gridApi) {
+      // Hide owner column when dropdown is disabled
+      this.gridApi.setColumnsVisible(['misc.userName'], this.ownerDropdownEnabled);
+      console.log(`Owner column visibility: ${this.ownerDropdownEnabled ? 'VISIBLE' : 'HIDDEN'}`);
+      
+      // Update the column definition to use the correct editor type
+      this.updateOwnerColumnEditor();
+    }
+  }
+
+  /**
+   * Update the owner column editor type based on the setting
+   * This must be called after the grid is ready and the setting is loaded
+   */
+  updateOwnerColumnEditor(): void {
+    if (!this.gridApi) return;
+
+    const ownerColDef = this.columnDefs.find(col => col.field === 'misc.userName');
+    if (!ownerColDef) {
+      console.warn('Owner column definition not found');
+      return;
+    }
+
+    // Update the column definition with the correct editor
+    ownerColDef.cellEditor = this.ownerDropdownEnabled ? 'agRichSelectCellEditor' : 'agTextCellEditor';
+    ownerColDef.cellEditorParams = this.ownerDropdownEnabled ? {
+      values: async (params) => {
+        try {
+          const userId = this.authenticationService.currentUserValue?.id;
+          if (!userId) {
+            console.warn('⚠️ No user ID found');
+            return ['⚠️ Please log in to assign owners'];
+          }
+
+          console.log(`🔍 Fetching owners for user ID: ${userId}`);
+          const response = await this.ownersService.getOwnersForUser(userId, true);
+          
+          if (response.success && Array.isArray(response.data)) {
+            if (response.data.length === 0) {
+              console.warn('⚠️ No owners assigned to this user');
+              return ['⚠️ No owners assigned - Contact admin to assign owners'];
+            }
+            
+            const ownerNames = response.data.map(o => o.name);
+            console.log('✅ Loaded owners for dropdown:', ownerNames);
+            return ownerNames;
+          } else {
+            console.error('❌ Failed to load owners:', response);
+            return ['⚠️ Failed to load owners - Try again'];
+          }
+        } catch (error) {
+          console.error('❌ Error loading owners:', error);
+          return ['⚠️ Error loading owners - Try again'];
+        }
+      },
+      searchDebounceDelay: 300,
+      allowTyping: true,
+      filterList: true,
+      highlightMatch: true,
+      valueListMaxHeight: 220
+    } : {};
+
+    // Force AG Grid to update the column definition by calling setColumnDefs
+    // This is necessary because AG Grid caches column definitions
+    this.gridApi.setGridOption('columnDefs', this.columnDefs);
+    
+    console.log(`✅ Owner column editor updated: ${this.ownerDropdownEnabled ? 'DROPDOWN' : 'TEXT INPUT'}`);
+  }
+
   dateFrom = moment()
     .subtract(12, "months")
     .startOf("month")
@@ -665,6 +795,17 @@ export class ShippingComponent implements OnInit {
 
     // Configure grid based on active tab
     this.configureGridForActiveTab();
+
+    // Update owner column visibility based on loaded setting
+    this.updateOwnerColumnVisibility();
+
+    // Add event listener for when cell editing starts (to refresh owner setting)
+    this.gridApi.addEventListener('cellEditingStarted', async (event: any) => {
+      if (event.column?.getColId() === 'misc.userName') {
+        // Refresh the setting when user starts editing owner column
+        await this.refreshOwnerDropdownSetting();
+      }
+    });
 
     // Add row drag end listener for priority reordering
     this.gridApi.addEventListener('rowDragEnd', (event: any) => {
@@ -1929,52 +2070,29 @@ export class ShippingComponent implements OnInit {
       field: "misc.userName",
       headerName: "Owner",
       filter: "agMultiColumnFilter",
-      editable: true,
-      cellEditor: 'agRichSelectCellEditor',
+      editable: true, // Always editable - editor type controlled by setting
+      cellEditor: 'agTextCellEditor', // Will be updated dynamically based on setting
       cellEditorPopup: false,
-      cellEditorParams: {
-        values: async (params) => {
-          // Call API to get fresh list of owners assigned to current user
-          try {
-            const userId = this.authenticationService.currentUserValue?.id;
-            if (!userId) {
-              console.warn('⚠️ No user ID found');
-              return [];
-            }
-
-            console.log(`� Fetching owners for user ID: ${userId}`);
-            const response = await this.ownersService.getOwnersForUser(userId, true);
-            
-            if (response.success && Array.isArray(response.data)) {
-              const ownerNames = response.data.map(o => o.name);
-              console.log('✅ Loaded owners for dropdown:', ownerNames);
-              return ownerNames;
-            } else {
-              console.error('❌ Failed to load owners:', response);
-              return [];
-            }
-          } catch (error) {
-            console.error('❌ Error loading owners:', error);
-            return [];
-          }
-        },
-        searchDebounceDelay: 300,
-        allowTyping: true,
-        filterList: true,
-        highlightMatch: true,
-        valueListMaxHeight: 220
-      },
+      cellEditorParams: {}, // Will be updated dynamically based on setting
       onCellValueChanged: async (params: any) => {
         if (params.oldValue !== params.newValue) {
           // Update the data model
           if (!params.data.misc) {
             params.data.misc = {};
           }
-          params.data.misc.userName = params.newValue;
+          
+          // Preserve existing misc data and update only userName
+          const miscData = {
+            ...params.data.misc,
+            userName: params.newValue,
+            // Ensure required fields are present
+            shippingMisc: params.data.misc.shippingMisc || params.data.misc.id,
+            so: params.data.misc.so || params.data.SOD_NBR
+          };
           
           // Save to backend
           try {
-            const res = await this.api.saveMisc(params.data.misc);
+            const res = await this.api.saveMisc(miscData);
             params.data.misc = res;
             this.sendAndUpdate(params.data, params.data.id);
           } catch (err) {
@@ -1984,11 +2102,17 @@ export class ShippingComponent implements OnInit {
       },
       cellRenderer: (params: any) => {
         if (params.value) {
+          const icon = this.ownerDropdownEnabled ? 'mdi-account-circle' : 'mdi-text';
           return `<div class="d-flex align-items-center">
-                    <i class="mdi mdi-account-circle text-primary me-2"></i>
+                    <i class="mdi ${icon} text-primary me-2"></i>
                     <span>${params.value}</span>
                   </div>`;
         }
+        
+        if (!this.ownerDropdownEnabled) {
+          return `<span class="text-muted fst-italic">Enter owner name</span>`;
+        }
+        
         return `<span class="text-muted fst-italic">No owner assigned</span>`;
       },
     },

@@ -29,8 +29,15 @@
          class="mb-3"
          [class.loading-overlay]="isRefreshing && showRefreshOverlay">
       <div class="card priority-card h-100" 
-           [ngClass]="getPriorityCardColor(i)"
+           [ngClass]="[getPriorityCardColor(i), isOwnerInProduction(item) ? 'in-production' : '']"
            [class.refreshing]="isRefreshing && showRefreshOverlay">
+        
+        <!-- Production Status Banner (shown at top of card when owner is working) -->
+        <div class="production-banner" *ngIf="isOwnerInProduction(item)">
+          <i class="mdi mdi-hammer-wrench me-2"></i>
+          <span class="fw-bold">IN PRODUCTION</span>
+          <span class="ms-2" *ngIf="getProductionOwnerName(item)">- {{ getProductionOwnerName(item) }}</span>
+        </div>
         
         <!-- Card Header - Compact Priority & Status Only -->
         <div class="card-header d-flex justify-content-between align-items-center py-2">
@@ -40,27 +47,32 @@
               <div class="priority-number">{{ i + 1 }}</div>
               <div class="priority-label">PRIORITY</div>
             </div>
+          </div>
+          
+          <div class="header-right d-flex align-items-center gap-3">
             <!-- Priority Source Badge -->
-            <div class="priority-source-badge mt-1" *ngIf="item.orders[0]?.priority_source">
+            <div class="priority-source-badge" *ngIf="item.orders[0]?.priority_source && item.orders[0]?.priority_source !== 'shipping'">
               <span class="badge" 
                     [ngClass]="{
-                      'bg-success': item.orders[0]?.priority_source === 'shipping',
                       'bg-primary': item.orders[0]?.priority_source === 'kanban',
                       'bg-warning text-dark': item.orders[0]?.priority_source === 'both'
                     }">
                 <i class="mdi" 
                    [ngClass]="{
-                     'mdi-truck-fast': item.orders[0]?.priority_source === 'shipping',
                      'mdi-view-column': item.orders[0]?.priority_source === 'kanban',
                      'mdi-link-variant': item.orders[0]?.priority_source === 'both'
                    }"></i>
-                {{ item.orders[0]?.priority_source === 'both' ? 'Both' : 
-                   item.orders[0]?.priority_source === 'shipping' ? 'Shipping' : 'Kanban' }}
+                {{ item.orders[0]?.priority_source === 'both' ? 'Both' : 'Kanban' }}
               </span>
             </div>
-          </div>
-          
-          <div class="header-right d-flex align-items-center gap-3">
+            <!-- Owner Badge -->
+            <div class="owner-badge" *ngIf="item.orders[0]?.misc?.owner_name">
+              <span class="badge bg-secondary">
+                <i class="mdi mdi-account-circle me-1"></i>
+                {{ item.orders[0].misc.owner_name }}
+              </span>
+            </div>
+            
             <!-- Customer Logo or Name -->
             <div class="customer-branding">
               <img *ngIf="getCustomerLogo(getPrimaryCustomer(item))"
@@ -99,7 +111,12 @@
               <div class="detail-summary">
                 <p class="part-number mb-1 fw-bold">{{ item.partNumber }}</p>
                 <p class="customer mb-1 text-muted">{{ item.orders[0]?.['COMPANY'] || item.customerName || 'Multiple Customers' }}</p>
-                <p class="ship-date small text-muted mb-2">Ship: {{ formatDate(item.dueDate) }}</p>
+                <p class="ship-date small text-muted mb-1">Ship: {{ formatDate(item.dueDate) }}</p>
+                <!-- Owner Display -->
+                <p class="owner-info small mb-2" *ngIf="getOwnerName(item)">
+                  <i class="mdi mdi-account-circle me-1"></i>
+                  <span class="fw-semibold">{{ getOwnerName(item) }}</span>
+                </p>
                 <div class="status-badges">
                   <span *ngIf="hasCompletedOrders(item.orders)" class="badge bg-success me-1">
                     <i class="mdi mdi-check"></i> Completed
@@ -160,9 +177,20 @@
             </div>
             
             <!-- Work Orders - Compact List -->
-            <div class="prod-details-compact" *ngIf="getWorkOrderNumbers(item).length > 0">
+            <div class="prod-details-compact" *ngIf="getWorkOrderNumbers(item).length > 0 || getOwnerName(item)">
+              <!-- Owner Info -->
+              <div class="detail-row-compact d-flex align-items-start mb-1" *ngIf="getOwnerName(item)">
+                <div class="detail-icon-compact me-2">
+                  <i class="mdi mdi-account-circle"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <small class="text-muted d-block">OWNER</small>
+                  <strong class="d-block">{{ getOwnerName(item) }}</strong>
+                </div>
+              </div>
+              
               <!-- Work Orders -->
-              <div class="detail-row-compact d-flex align-items-start mb-1">
+              <div class="detail-row-compact d-flex align-items-start mb-1" *ngIf="getWorkOrderNumbers(item).length > 0">
                 <div class="detail-icon-compact me-2">
                   <i class="mdi mdi-wrench"></i>
                 </div>
