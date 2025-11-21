@@ -1151,4 +1151,17 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     
     return rollingPosition;
   }
+
+  /**
+   * Check if any order in the item has an owner currently working on it (is_production = true)
+   */
+  isOwnerInProduction(item: any): boolean {
+    if (!item || !item.orders) return false;
+    
+    return item.orders.some((order: any) => {
+      // Check if owner data exists and is_production flag is true
+      return order.owner_is_production === true || 
+             order.misc?.owner_is_production === true;
+    });
+  }
 }

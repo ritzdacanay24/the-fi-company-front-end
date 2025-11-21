@@ -179,7 +179,7 @@
         <div class="carousel-track">
           <div *ngFor="let item of displayData.alternateGroupedItems; let i = index" 
                class="carousel-card">
-            <div class="card shadow-sm mb-1">
+            <div class="card shadow-sm mb-1" [ngClass]="{'in-production': isOwnerInProduction(item)}">
               <div class="card-body">
                 <!-- Priority Badge -->
                 <div class="d-flex justify-content-between align-items-start mb-2">

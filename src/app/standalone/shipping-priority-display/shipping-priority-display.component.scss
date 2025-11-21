@@ -2700,6 +2700,16 @@ body[data-bs-theme="dark"] .shipping-priority-container {
           }
         }
       }
+      
+      // Green border for cards in production
+      .card.in-production {
+        border: 3px solid #10b981 !important;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5) !important;
+        
+        &:hover {
+          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6) !important;
+        }
+      }
     }
   }
 }
@@ -2741,6 +2751,16 @@ body[data-bs-theme="dark"] .shipping-priority-container {
               color: #1a202c;
             }
           }
+        }
+      }
+      
+      // Green border for cards in production (light theme)
+      .card.in-production {
+        border: 3px solid #10b981 !important;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.3) !important;
+        
+        &:hover {
+          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
         }
       }
     }
