@@ -10,6 +10,7 @@ export interface ChecklistItemProgress {
   };
   completed: boolean;
   photos: string[];
+  videos?: string[]; // NEW: Array of uploaded video URLs
   notes: string;
   completedAt?: Date;
 }

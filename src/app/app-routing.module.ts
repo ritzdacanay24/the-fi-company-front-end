@@ -84,6 +84,11 @@ const routes: Routes = [
     title: "Shipping Priority Display"
   },
   { 
+    path: "physical-inventory-display", 
+    loadComponent: () => import("./standalone/physical-inventory-display/physical-inventory-display.component").then(c => c.PhysicalInventoryDisplayComponent),
+    title: "Physical Inventory Display"
+  },
+  { 
     path: "safety-dashboard-display", 
     component: SafetyDashboardComponent,
     title: "Safety Dashboard Display"

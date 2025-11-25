@@ -236,9 +236,34 @@ class PhotoChecklistConfigAPI {
               $result['qr_id'], $result['revision_number'], $result['qr_description']);
         
         // Then get items separately with proper ordering
-        $sql = "SELECT id, template_id, order_index, parent_id, level, title, description,
-                       photo_requirements, sample_images, sample_image_url, is_required
-                FROM checklist_items
+        // Detect if sample_videos and video_requirements columns exist to avoid SQL errors on older schemas
+        $checkVideosSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_videos'";
+        $checkVideosStmt = $this->conn->prepare($checkVideosSql);
+        $checkVideosStmt->execute();
+        $hasSampleVideosColumn = $checkVideosStmt->rowCount() > 0;
+
+        $checkVideoReqSql = "SHOW COLUMNS FROM checklist_items LIKE 'video_requirements'";
+        $checkVideoReqStmt = $this->conn->prepare($checkVideoReqSql);
+        $checkVideoReqStmt->execute();
+        $hasVideoRequirementsColumn = $checkVideoReqStmt->rowCount() > 0;
+
+        $checkSubmissionTypeSql = "SHOW COLUMNS FROM checklist_items LIKE 'submission_type'";
+        $checkSubmissionTypeStmt = $this->conn->prepare($checkSubmissionTypeSql);
+        $checkSubmissionTypeStmt->execute();
+        $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
+
+        $selectFields = "id, template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, sample_image_url, is_required";
+        if ($hasSubmissionTypeColumn) {
+            $selectFields .= ", submission_type";
+        }
+        if ($hasSampleVideosColumn) {
+            $selectFields .= ", sample_videos, sample_video_url";
+        }
+        if ($hasVideoRequirementsColumn) {
+            $selectFields .= ", video_requirements";
+        }
+
+        $sql = "SELECT " . $selectFields . " FROM checklist_items 
                 WHERE template_id = ?
                 ORDER BY 
                     CASE 
@@ -262,11 +287,42 @@ class PhotoChecklistConfigAPI {
                     $item['photo_requirements'] = [];
                 }
                 
+                // Handle submission_type from column or JSON fallback
+                if ($hasSubmissionTypeColumn && isset($item['submission_type'])) {
+                    // Column exists - use it directly (already in $item)
+                } else {
+                    // Column doesn't exist - try to extract from photo_requirements JSON
+                    if (!isset($item['submission_type']) && isset($item['photo_requirements']['submission_type'])) {
+                        $item['submission_type'] = $item['photo_requirements']['submission_type'];
+                    }
+                    if (!isset($item['submission_type'])) {
+                        $item['submission_type'] = 'photo'; // Default
+                    }
+                }
+                
                 // Parse sample_images
                 if (isset($item['sample_images']) && is_string($item['sample_images'])) {
                     $item['sample_images'] = json_decode($item['sample_images'], true) ?: [];
                 } else {
                     $item['sample_images'] = [];
+                }
+
+                // Parse sample_videos (if present)
+                if (isset($item['sample_videos']) && is_string($item['sample_videos'])) {
+                    $item['sample_videos'] = json_decode($item['sample_videos'], true) ?: [];
+                } else {
+                    $item['sample_videos'] = [];
+                }
+
+                // Parse video_requirements (if present)
+                if (isset($item['video_requirements']) && is_string($item['video_requirements'])) {
+                    $item['video_requirements'] = json_decode($item['video_requirements'], true) ?: [];
+                    // Extract submission_time_seconds for backward compatibility with frontend
+                    if (isset($item['video_requirements']['submission_time_seconds'])) {
+                        $item['submission_time_seconds'] = $item['video_requirements']['submission_time_seconds'];
+                    }
+                } else if (!isset($item['video_requirements'])) {
+                    $item['video_requirements'] = [];
                 }
                 
                 // Ensure numeric types
@@ -560,13 +616,26 @@ class PhotoChecklistConfigAPI {
             if (!empty($data['items'])) {
                 error_log("🔵 createTemplate: Starting to insert " . count($data['items']) . " items");
                 
-                // Check if sample_images column exists once (moved outside loop for efficiency)
+                // Check if sample_images and sample_videos columns exist once (moved outside loop for efficiency)
                 $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
                 $checkStmt = $this->conn->prepare($checkColumnSql);
                 $checkStmt->execute();
                 $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
-                
-                // TWO-PASS APPROACH:
+
+                $checkVideosSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_videos'";
+                $checkVideosStmt = $this->conn->prepare($checkVideosSql);
+                $checkVideosStmt->execute();
+                $hasSampleVideosColumn = $checkVideosStmt->rowCount() > 0;
+
+                $checkVideoReqSql = "SHOW COLUMNS FROM checklist_items LIKE 'video_requirements'";
+                $checkVideoReqStmt = $this->conn->prepare($checkVideoReqSql);
+                $checkVideoReqStmt->execute();
+                $hasVideoRequirementsColumn = $checkVideoReqStmt->rowCount() > 0;
+
+                $checkSubmissionTypeSql = "SHOW COLUMNS FROM checklist_items LIKE 'submission_type'";
+                $checkSubmissionTypeStmt = $this->conn->prepare($checkSubmissionTypeSql);
+                $checkSubmissionTypeStmt->execute();
+                $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
                 // Pass 1: Insert ALL items, build order_index → database_id map
                 // Pass 2: Update child items' parent_id from order_index to actual database ID
                 
@@ -651,39 +720,91 @@ class PhotoChecklistConfigAPI {
                             ]];
                             error_log("  📸 Created single-image array from sample_image_url");
                         }
+
+                        // Process sample_videos if column exists
+                        $sampleVideosArray = [];
+                        if ($hasSampleVideosColumn && !empty($item['sample_videos']) && is_array($item['sample_videos'])) {
+                            foreach ($item['sample_videos'] as $vid) {
+                                $videoUrl = $vid['url'];
+                                
+                                // Check if this is a temp video (contains '/temp/')
+                                if (strpos($videoUrl, '/temp/') !== false) {
+                                    // Move from temp to permanent storage
+                                    $videoUrl = $this->moveTempImageToPermanent($videoUrl);
+                                    error_log("  🎬 Moved temp video to permanent: " . $videoUrl);
+                                }
+                                
+                                $sampleVideosArray[] = [
+                                    'url' => $videoUrl,
+                                    'label' => $vid['label'] ?? '',
+                                    'description' => $vid['description'] ?? '',
+                                    'type' => $vid['type'] ?? 'video',
+                                    'is_primary' => $vid['is_primary'] ?? false,
+                                    'order_index' => $vid['order_index'] ?? 0,
+                                    'duration_seconds' => $vid['duration_seconds'] ?? null
+                                ];
+                            }
+                            error_log("  🎬 Processed sample_videos array with " . count($sampleVideosArray) . " videos");
+                        }
                         
-                        // Insert with NULL parent_id initially
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $this->conn->prepare($sql);
+                        // Normalize photo_requirements to ensure submission_type is present
+                        $photoRequirements = $item['photo_requirements'] ?? [];
+                        $submissionType = $item['submission_type'] ?? 'photo'; // ✅ Read from TOP-LEVEL (not photo_requirements JSON)
                         
-                        $stmt->execute([
+                        // Clean up: ensure photo_requirements doesn't have old submission_type remnants
+                        if (isset($photoRequirements['submission_type'])) {
+                            unset($photoRequirements['submission_type']);
+                        }
+                        
+                        // Build video_requirements JSON from frontend data
+                        $videoRequirements = [];
+                        if ($item['submission_time_seconds'] !== null) {
+                            $videoRequirements['submission_time_seconds'] = (int)$item['submission_time_seconds'];
+                        }
+                        if (isset($item['photo_requirements']['max_video_duration_seconds'])) {
+                            $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
+                        }
+                        
+                        // Insert with NULL parent_id initially - dynamically build SQL based on available columns
+                        $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
+                        $insertValues = ['?', '?', 'NULL', '?', '?', '?', '?', '?', '?'];
+                        $executeParams = [
                             $templateId,
                             $orderIndex,
                             $level,
                             $title,
                             $item['description'] ?? '',
-                            json_encode($item['photo_requirements'] ?? []),
+                            json_encode($photoRequirements),
                             $sampleImageUrl,
-                            json_encode($sampleImagesArray),
-                            $item['is_required'] ?? true
-                        ]);
-                    } else {
-                        // Only sample_image_url column exists
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $this->conn->prepare($sql);
+                            json_encode($sampleImagesArray)
+                        ];
                         
-                        $stmt->execute([
-                            $templateId,
-                            $orderIndex,
-                            $level,
-                            $title,
-                            $item['description'] ?? '',
-                            json_encode($item['photo_requirements'] ?? []),
-                            $sampleImageUrl,
-                            $item['is_required'] ?? true
-                        ]);
+                        if ($hasSampleVideosColumn) {
+                            $insertColumns[] = 'sample_videos';
+                            $insertValues[] = '?';
+                            $executeParams[] = json_encode($sampleVideosArray);
+                        }
+                        
+                        if ($hasSubmissionTypeColumn) {
+                            $insertColumns[] = 'submission_type';
+                            $insertValues[] = '?';
+                            $executeParams[] = $submissionType;
+                        }
+                        
+                        if ($hasVideoRequirementsColumn) {
+                            $insertColumns[] = 'video_requirements';
+                            $insertValues[] = '?';
+                            $executeParams[] = !empty($videoRequirements) ? json_encode($videoRequirements) : null;
+                        }
+                        
+                        $insertColumns[] = 'is_required';
+                        $insertValues[] = '?';
+                        $executeParams[] = $item['is_required'] ?? true;
+                        
+                        $sql = "INSERT INTO checklist_items (" . implode(', ', $insertColumns) . ") 
+                                VALUES (" . implode(', ', $insertValues) . ")";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute($executeParams);
                     }
                     
                     // Get the database ID for this item
@@ -798,11 +919,26 @@ class PhotoChecklistConfigAPI {
             if (!empty($data['items'])) {
                 error_log("🔵 updateTemplate: Starting to insert " . count($data['items']) . " items");
                 
-                // Check if sample_images column exists once (moved outside loop for efficiency)
+                // Check if sample_images and sample_videos columns exist once (moved outside loop for efficiency)
                 $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
                 $checkStmt = $this->conn->prepare($checkColumnSql);
                 $checkStmt->execute();
                 $hasSampleImagesColumn = $checkStmt->rowCount() > 0;
+
+                $checkVideosSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_videos'";
+                $checkVideosStmt = $this->conn->prepare($checkVideosSql);
+                $checkVideosStmt->execute();
+                $hasSampleVideosColumn = $checkVideosStmt->rowCount() > 0;
+
+                $checkVideoReqSql = "SHOW COLUMNS FROM checklist_items LIKE 'video_requirements'";
+                $checkVideoReqStmt = $this->conn->prepare($checkVideoReqSql);
+                $checkVideoReqStmt->execute();
+                $hasVideoRequirementsColumn = $checkVideoReqStmt->rowCount() > 0;
+                
+                $checkSubmissionTypeSql = "SHOW COLUMNS FROM checklist_items LIKE 'submission_type'";
+                $checkSubmissionTypeStmt = $this->conn->prepare($checkSubmissionTypeSql);
+                $checkSubmissionTypeStmt->execute();
+                $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
                 
                 // TWO-PASS APPROACH:
                 // Pass 1: Insert ALL items, build order_index → database_id map
@@ -890,39 +1026,91 @@ class PhotoChecklistConfigAPI {
                             ]];
                             error_log("  📸 Created single-image array from sample_image_url");
                         }
+
+                        // Process sample_videos if column exists
+                        $sampleVideosArray = [];
+                        if ($hasSampleVideosColumn && !empty($item['sample_videos']) && is_array($item['sample_videos'])) {
+                            foreach ($item['sample_videos'] as $vid) {
+                                $videoUrl = $vid['url'];
+                                
+                                // Check if this is a temp video (contains '/temp/')
+                                if (strpos($videoUrl, '/temp/') !== false) {
+                                    // Move from temp to permanent storage
+                                    $videoUrl = $this->moveTempImageToPermanent($videoUrl);
+                                    error_log("  🎬 Moved temp video to permanent: " . $videoUrl);
+                                }
+                                
+                                $sampleVideosArray[] = [
+                                    'url' => $videoUrl,
+                                    'label' => $vid['label'] ?? '',
+                                    'description' => $vid['description'] ?? '',
+                                    'type' => $vid['type'] ?? 'video',
+                                    'is_primary' => $vid['is_primary'] ?? false,
+                                    'order_index' => $vid['order_index'] ?? 0,
+                                    'duration_seconds' => $vid['duration_seconds'] ?? null
+                                ];
+                            }
+                            error_log("  🎬 Processed sample_videos array with " . count($sampleVideosArray) . " videos");
+                        }
                         
-                        // Insert with NULL parent_id initially
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, sample_images, is_required) 
-                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $this->conn->prepare($sql);
+                        // Normalize photo_requirements to ensure submission_type is present
+                        $photoRequirements = $item['photo_requirements'] ?? [];
+                        $submissionType = $item['submission_type'] ?? 'photo'; // ✅ Read from TOP-LEVEL (not photo_requirements JSON)
                         
-                        $stmt->execute([
+                        // Clean up: ensure photo_requirements doesn't have old submission_type remnants
+                        if (isset($photoRequirements['submission_type'])) {
+                            unset($photoRequirements['submission_type']);
+                        }
+                        
+                        // Build video_requirements JSON from frontend data
+                        $videoRequirements = [];
+                        if ($item['submission_time_seconds'] !== null) {
+                            $videoRequirements['submission_time_seconds'] = (int)$item['submission_time_seconds'];
+                        }
+                        if (isset($item['photo_requirements']['max_video_duration_seconds'])) {
+                            $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
+                        }
+                        
+                        // Insert with NULL parent_id initially - dynamically build SQL based on available columns
+                        $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
+                        $insertValues = ['?', '?', 'NULL', '?', '?', '?', '?', '?', '?'];
+                        $executeParams = [
                             $id,
                             $orderIndex,
                             $level,
                             $title,
                             $item['description'] ?? '',
-                            json_encode($item['photo_requirements'] ?? []),
+                            json_encode($photoRequirements),
                             $sampleImageUrl,
-                            json_encode($sampleImagesArray),
-                            $item['is_required'] ?? true
-                        ]);
-                    } else {
-                        // Only sample_image_url column exists
-                        $sql = "INSERT INTO checklist_items (template_id, order_index, parent_id, level, title, description, photo_requirements, sample_image_url, is_required) 
-                                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $this->conn->prepare($sql);
+                            json_encode($sampleImagesArray)
+                        ];
                         
-                        $stmt->execute([
-                            $id,
-                            $orderIndex,
-                            $level,
-                            $title,
-                            $item['description'] ?? '',
-                            json_encode($item['photo_requirements'] ?? []),
-                            $sampleImageUrl,
-                            $item['is_required'] ?? true
-                        ]);
+                        if ($hasSampleVideosColumn) {
+                            $insertColumns[] = 'sample_videos';
+                            $insertValues[] = '?';
+                            $executeParams[] = json_encode($sampleVideosArray);
+                        }
+                        
+                        if ($hasSubmissionTypeColumn) {
+                            $insertColumns[] = 'submission_type';
+                            $insertValues[] = '?';
+                            $executeParams[] = $submissionType;
+                        }
+                        
+                        if ($hasVideoRequirementsColumn) {
+                            $insertColumns[] = 'video_requirements';
+                            $insertValues[] = '?';
+                            $executeParams[] = !empty($videoRequirements) ? json_encode($videoRequirements) : null;
+                        }
+                        
+                        $insertColumns[] = 'is_required';
+                        $insertValues[] = '?';
+                        $executeParams[] = $item['is_required'] ?? true;
+                        
+                        $sql = "INSERT INTO checklist_items (" . implode(', ', $insertColumns) . ") 
+                                VALUES (" . implode(', ', $insertValues) . ")";
+                        $stmt = $this->conn->prepare($sql);
+                        $stmt->execute($executeParams);
                     }
                     
                     // Get the database ID for this item
@@ -1220,13 +1408,14 @@ class PhotoChecklistConfigAPI {
                     'is_required' => (bool)$row['is_required'],
                     'level' => isset($row['level']) ? (int)$row['level'] : 0,
                     'parent_id' => isset($row['parent_id']) ? (int)$row['parent_id'] : null,
-                    'photos' => []
+                    'photos' => [],
+                    'videos' => []  // Add videos array
                 ];
             }
             
-            // Add photo if exists
+            // Add photo or video if exists
             if ($row['photo_id']) {
-                $items[$itemId]['photos'][] = [
+                $submission = [
                     'id' => $row['photo_id'],
                     'file_name' => $row['file_name'],
                     'file_url' => $row['file_url'],
@@ -1235,6 +1424,13 @@ class PhotoChecklistConfigAPI {
                     'is_approved' => $row['is_approved'],
                     'review_notes' => $row['review_notes']
                 ];
+                
+                // Separate photos and videos based on file_type
+                if ($row['file_type'] === 'video') {
+                    $items[$itemId]['videos'][] = $submission;
+                } else {
+                    $items[$itemId]['photos'][] = $submission;
+                }
             }
         }
         
@@ -1354,16 +1550,44 @@ class PhotoChecklistConfigAPI {
         
         // Validate file
         $config = $this->getConfigValues();
-        $maxSize = ($config['max_photo_size_mb'] ?? 10) * 1024 * 1024;
+        
+        // Determine if this is a video or photo based on MIME type
+        $isVideo = strpos($uploadedFile['type'], 'video') !== false;
+        
+        // Debug logging
+        error_log("Upload file type: " . $uploadedFile['type']);
+        error_log("Is video: " . ($isVideo ? 'YES' : 'NO'));
+        error_log("Config values: " . json_encode($config));
+        
+        // Use appropriate size limit based on file type
+        $maxSizeConfig = $isVideo ? 'max_video_size_mb' : 'max_photo_size_mb';
+        $maxSize = ($config[$maxSizeConfig] ?? ($isVideo ? 50 : 10)) * 1024 * 1024;
+        
+        error_log("Max size config key: " . $maxSizeConfig);
+        error_log("Max size from config: " . ($config[$maxSizeConfig] ?? 'NOT FOUND'));
+        error_log("Max size used: " . ($maxSize / 1024 / 1024) . "MB");
         
         if ($uploadedFile['size'] > $maxSize) {
-            throw new Exception('File size exceeds maximum allowed size');
+            $actualSizeMB = round($uploadedFile['size'] / 1024 / 1024, 2);
+            $maxSizeMB = $config[$maxSizeConfig] ?? ($isVideo ? 50 : 10);
+            $fileType = $isVideo ? 'Video' : 'Photo';
+            throw new Exception("{$fileType} size ({$actualSizeMB}MB) exceeds maximum allowed size ({$maxSizeMB}MB)");
         }
         
-        // Get allowed types - they're already decoded as array by getConfigValues()
-        $allowedTypes = $config['allowed_photo_types'] ?? ['image/jpeg', 'image/png'];
+
+        // Get allowed types based on file type - they're already decoded as array by getConfigValues()
+        $allowedTypesConfig = $isVideo ? 'allowed_video_types' : 'allowed_photo_types';
+        $allowedTypes = $config[$allowedTypesConfig] ?? ($isVideo ? ['video/mp4', 'video/webm'] : ['image/jpeg', 'image/png']);
+        
+        error_log("Allowed types config key: " . $allowedTypesConfig);
+        error_log("Allowed types from config: " . json_encode($config[$allowedTypesConfig] ?? 'NOT FOUND'));
+        error_log("Allowed types used: " . json_encode($allowedTypes));
+        error_log("Uploaded file MIME type: " . $uploadedFile['type']);
+        error_log("Is MIME type allowed? " . (in_array($uploadedFile['type'], $allowedTypes) ? 'YES' : 'NO'));
+        
         if (!in_array($uploadedFile['type'], $allowedTypes)) {
-            throw new Exception('File type not allowed');
+            $fileType = $isVideo ? 'Video' : 'Photo';
+            throw new Exception("{$fileType} type '{$uploadedFile['type']}' not allowed. Allowed types: " . implode(', ', $allowedTypes));
         }
         
         // Generate unique filename

@@ -149,17 +149,64 @@ export class PhotoValidationService {
 
   /**
    * Validate if item can be marked as complete
+   * NOW RESPECTS submission_type to ensure correct media is uploaded
    */
-  canCompleteItem(currentPhotoCount: number, item: ChecklistItem): PhotoValidationResult {
+  canCompleteItem(currentPhotoCount: number, item: ChecklistItem, currentVideoCount: number = 0): PhotoValidationResult {
+    const submissionType = item.submission_type || 'photo'; // Default to photo for backward compatibility
     const minPhotos = this.getMinPhotos(item);
     
-    if (minPhotos > 0 && currentPhotoCount < minPhotos) {
-      return {
-        valid: false,
-        error: `Cannot mark as complete. This item requires at least ${minPhotos} photo${minPhotos > 1 ? 's' : ''}.`
-      };
+    // Validation based on submission_type
+    switch (submissionType) {
+      case 'photo':
+        // PHOTO ONLY: Must have photos if min_photos > 0
+        if (minPhotos > 0 && currentPhotoCount < minPhotos) {
+          return {
+            valid: false,
+            error: `Cannot mark as complete. This item requires at least ${minPhotos} photo${minPhotos > 1 ? 's' : ''}.`
+          };
+        }
+        break;
+        
+      case 'video':
+        // VIDEO ONLY: Must have at least one video
+        if (currentVideoCount === 0) {
+          return {
+            valid: false,
+            error: `Cannot mark as complete. This item requires a video submission.`
+          };
+        }
+        break;
+        
+      case 'either':
+        // EITHER: Must have at least one photo OR one video
+        if (currentPhotoCount === 0 && currentVideoCount === 0) {
+          return {
+            valid: false,
+            error: `Cannot mark as complete. This item requires either a photo or video submission.`
+          };
+        }
+        break;
     }
 
     return { valid: true };
+  }
+
+  /**
+   * Check if submission requirements are met based on submission_type
+   */
+  areSubmissionRequirementsMet(photoCount: number, videoCount: number, item: ChecklistItem): boolean {
+    const submissionType = item.submission_type || 'photo';
+    const minPhotos = this.getMinPhotos(item);
+    
+    switch (submissionType) {
+      case 'photo':
+        return photoCount >= minPhotos;
+      case 'video':
+        return videoCount > 0;
+      case 'either':
+        return photoCount > 0 || videoCount > 0;
+      default:
+        return photoCount >= minPhotos; // Fallback
+    }
   }
 }

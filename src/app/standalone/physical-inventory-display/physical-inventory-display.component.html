@@ -1,0 +1,247 @@
+<div class="inventory-display-container" 
+     [class.theme-light]="currentTheme === 'light'"
+     [class.theme-dark]="currentTheme === 'dark'"
+     [style.zoom]="zoomLevel + '%'">
+  
+  <!-- Header -->
+  <div class="display-header">
+    <div class="header-left">
+      <h1 class="display-title">
+        <i class="mdi mdi-clipboard-list-outline me-2"></i>
+        Physical Inventory Progress
+      </h1>
+      <div class="last-updated" *ngIf="lastUpdated">
+        <i class="mdi mdi-clock-outline me-1"></i>
+        Last Updated: {{ lastUpdated | date:'short' }}
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" (click)="toggleViewMode()" title="Toggle View">
+        <i class="mdi" [class.mdi-chart-bar]="viewMode === 'stats'" 
+           [class.mdi-view-dashboard]="viewMode === 'charts'"></i>
+        <span class="btn-label">{{ viewMode === 'stats' ? 'Charts' : 'Stats' }}</span>
+      </button>
+      <button class="btn-icon" (click)="manualRefresh()" [disabled]="isLoading" title="Refresh">
+        <i class="mdi mdi-refresh" [class.spin]="isLoading"></i>
+      </button>
+      <button class="btn-icon" (click)="toggleTheme()" title="Toggle Theme">
+        <i class="mdi" [class.mdi-weather-sunny]="currentTheme === 'dark'" 
+           [class.mdi-weather-night]="currentTheme === 'light'"></i>
+      </button>
+      <button class="btn-icon" (click)="adjustZoom(-10)" title="Zoom Out">
+        <i class="mdi mdi-magnify-minus"></i>
+      </button>
+      <button class="btn-icon" (click)="adjustZoom(10)" title="Zoom In">
+        <i class="mdi mdi-magnify-plus"></i>
+      </button>
+      <div class="refresh-countdown" *ngIf="refreshCountdown">
+        <i class="mdi mdi-timer-outline me-1"></i>
+        {{ refreshCountdown }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats View -->
+  <div class="stats-view" *ngIf="viewMode === 'stats'">
+    <!-- Main Stats Grid -->
+  <div class="stats-grid">
+    <!-- Total Tags Card -->
+    <div class="stat-card total-card">
+      <div class="stat-icon">
+        <i class="mdi mdi-tag-multiple"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total Tags</div>
+        <div class="stat-value">{{ stats.totalTags | number }}</div>
+      </div>
+    </div>
+
+    <!-- First Count Progress -->
+    <div class="stat-card progress-card">
+      <div class="stat-header">
+        <h3>
+          <i class="mdi mdi-counter me-2"></i>
+          First Count Progress
+        </h3>
+        <span class="badge" [class.badge-success]="progress.firstCount >= 90"
+              [class.badge-warning]="progress.firstCount >= 70 && progress.firstCount < 90"
+              [class.badge-danger]="progress.firstCount < 70">
+          {{ progress.firstCount }}%
+        </span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="progress.firstCount"
+             [class.bg-success]="progress.firstCount >= 90"
+             [class.bg-warning]="progress.firstCount >= 70 && progress.firstCount < 90"
+             [class.bg-danger]="progress.firstCount < 70"></div>
+      </div>
+      <div class="stat-details">
+        <div class="detail-item">
+          <span class="detail-label">Completed:</span>
+          <span class="detail-value text-success">{{ stats.completedFirstCounts | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Outstanding:</span>
+          <span class="detail-value text-danger">{{ stats.outstandingFirstCounts | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Variance:</span>
+          <span class="detail-value" [class.text-danger]="stats.firstCountVariance > 0"
+                [class.text-success]="stats.firstCountVariance === 0">
+            {{ stats.firstCountVariance | number }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Count Progress -->
+    <div class="stat-card progress-card">
+      <div class="stat-header">
+        <h3>
+          <i class="mdi mdi-counter me-2"></i>
+          Second Count Progress
+        </h3>
+        <span class="badge" [class.badge-success]="progress.secondCount >= 90"
+              [class.badge-warning]="progress.secondCount >= 70 && progress.secondCount < 90"
+              [class.badge-danger]="progress.secondCount < 70">
+          {{ progress.secondCount }}%
+        </span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="progress.secondCount"
+             [class.bg-success]="progress.secondCount >= 90"
+             [class.bg-warning]="progress.secondCount >= 70 && progress.secondCount < 90"
+             [class.bg-danger]="progress.secondCount < 70"></div>
+      </div>
+      <div class="stat-details">
+        <div class="detail-item">
+          <span class="detail-label">Completed:</span>
+          <span class="detail-value text-success">{{ stats.completedSecondCounts | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Required:</span>
+          <span class="detail-value">{{ stats.firstCountVariance | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Variance:</span>
+          <span class="detail-value" [class.text-danger]="stats.secondCountVariance > 0"
+                [class.text-success]="stats.secondCountVariance === 0">
+            {{ stats.secondCountVariance | number }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Third Count Progress -->
+    <div class="stat-card progress-card">
+      <div class="stat-header">
+        <h3>
+          <i class="mdi mdi-counter me-2"></i>
+          Third Count Progress
+        </h3>
+        <span class="badge" [class.badge-success]="progress.thirdCount >= 90"
+              [class.badge-warning]="progress.thirdCount >= 70 && progress.thirdCount < 90"
+              [class.badge-danger]="progress.thirdCount < 70">
+          {{ progress.thirdCount }}%
+        </span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="progress.thirdCount"
+             [class.bg-success]="progress.thirdCount >= 90"
+             [class.bg-warning]="progress.thirdCount >= 70 && progress.thirdCount < 90"
+             [class.bg-danger]="progress.thirdCount < 70"></div>
+      </div>
+      <div class="stat-details">
+        <div class="detail-item">
+          <span class="detail-label">Completed:</span>
+          <span class="detail-value text-success">{{ stats.completedThirdCounts | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Required:</span>
+          <span class="detail-value">{{ stats.secondCountVariance | number }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Posted Progress -->
+    <div class="stat-card progress-card">
+      <div class="stat-header">
+        <h3>
+          <i class="mdi mdi-check-circle me-2"></i>
+          Posting Progress
+        </h3>
+        <span class="badge" [class.badge-success]="progress.posted >= 90"
+              [class.badge-warning]="progress.posted >= 70 && progress.posted < 90"
+              [class.badge-danger]="progress.posted < 70">
+          {{ progress.posted }}%
+        </span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="progress.posted"
+             [class.bg-success]="progress.posted >= 90"
+             [class.bg-warning]="progress.posted >= 70 && progress.posted < 90"
+             [class.bg-danger]="progress.posted < 70"></div>
+      </div>
+      <div class="stat-details">
+        <div class="detail-item">
+          <span class="detail-label">Posted:</span>
+          <span class="detail-value text-success">{{ stats.postedTags | number }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Unposted:</span>
+          <span class="detail-value text-danger">{{ stats.unpostedTags | number }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Value Stats -->
+    <div class="stat-card value-card">
+      <div class="stat-icon">
+        <i class="mdi mdi-currency-usd"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total Inventory Value</div>
+        <div class="stat-value">{{ stats.totalValue | currency }}</div>
+      </div>
+    </div>
+
+    <!-- Variance Value -->
+    <div class="stat-card value-card variance-card">
+      <div class="stat-icon">
+        <i class="mdi mdi-alert-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total Variance Value</div>
+        <div class="stat-value" [class.text-danger]="stats.varianceValue !== 0">
+          {{ stats.varianceValue | currency }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Tags with Qty -->
+    <div class="stat-card alert-card">
+      <div class="stat-icon">
+        <i class="mdi mdi-tag-text-outline"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Bulk Tags with Qty</div>
+        <div class="stat-value" [class.text-warning]="stats.bulkTagsWithQty > 0">
+          {{ stats.bulkTagsWithQty | number }}
+        </div>
+        <div class="stat-description">Requires attention</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Charts View -->
+  <div class="charts-view" *ngIf="viewMode === 'charts'">
+    <app-inventory-charts></app-inventory-charts>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <div class="loading-text">Refreshing inventory data...</div>
+  </div>
+</div>

@@ -39,6 +39,7 @@ export type ChartOptions = {
   noData?: ApexNoData;
   colors?: string[];
   labels?: string[];
+  thisemes?:any;
 };
 
 interface SafetyMetrics {

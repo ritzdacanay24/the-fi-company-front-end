@@ -48,9 +48,14 @@ export interface ChecklistItem {
   order_index: number;
   title: string;
   description: string;
+  // ✅ TOP-LEVEL: submission_type is a separate ENUM column (photo, video, either)
+  submission_type?: 'photo' | 'video' | 'either';
   photo_requirements: PhotoRequirements;
   sample_images: SampleImageData[];
   sample_image_url?: string; // Single image URL field
+  sample_videos?: SampleVideoData[]; // NEW: Array of sample reference videos
+  video_requirements?: VideoRequirements; // NEW: Video configuration (stored as JSON in database)
+  submission_time_seconds?: number; // NEW: Per-item submission time limit in seconds (null/0 = no limit) - for backward compatibility
   is_required: boolean;
   max_photos?: number;
   min_photos?: number;
@@ -80,6 +85,17 @@ export interface SampleImageData {
   order_index: number;
 }
 
+export interface SampleVideoData {
+  id?: string;
+  url: string;
+  label?: string;
+  description?: string;
+  type?: 'video' | 'screen' | 'other';
+  is_primary?: boolean;
+  order_index?: number;
+  duration_seconds?: number; // Video duration in seconds
+}
+
 export interface PhotoRequirements {
   angle?: string;
   distance?: string;
@@ -90,6 +106,13 @@ export interface PhotoRequirements {
   max_photos?: number;
   min_photos?: number;
   picture_required?: boolean; // When false, users can just confirm without taking a photo
+  submission_type?: 'photo' | 'video' | 'either'; // NEW: Type of submission allowed (mutually exclusive)
+  max_video_duration_seconds?: number; // NEW: Maximum allowed video duration in seconds (only used if submission_type includes video)
+}
+
+export interface VideoRequirements {
+  submission_time_seconds?: number; // Per-item submission time limit in seconds (null/0 = no limit)
+  max_video_duration_seconds?: number; // Maximum allowed video duration in seconds
 }
 
 export interface ChecklistInstance {

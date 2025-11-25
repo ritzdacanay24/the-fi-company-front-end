@@ -235,8 +235,8 @@
               <!-- Side-by-Side Layout for Photos and Sample -->
               <div class="row g-4 mb-4">
                 
-                <!-- Photo Requirements Info Bar (spans both columns) - Only show when pictures required -->
-                <div class="col-12" *ngIf="progress.item.photo_requirements && progress.item.photo_requirements.picture_required">
+                <!-- Photo Requirements Info Bar (spans both columns) - Only show when pictures required AND submission type allows photos -->
+                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'photo' || progress.item['submission_type'] === 'either' || !progress.item['submission_type']) && progress.item.photo_requirements && progress.item.photo_requirements.picture_required">
                   <div class="border rounded p-2 bg-info bg-opacity-10 border-info border-opacity-25">
                     <div class="row g-2 small text-info-emphasis">
                       <div class="col-auto" *ngIf="progress.item.photo_requirements.min_photos || progress.item.min_photos">
@@ -258,6 +258,34 @@
                       <div class="col-auto" *ngIf="progress.item.photo_requirements.lighting">
                         <i class="mdi mdi-lightbulb me-1"></i>
                         <strong>Lighting:</strong> {{progress.item.photo_requirements.lighting}}
+                      </div>
+                      <div class="col-auto">
+                        <i class="mdi mdi-file-image me-1"></i>
+                        <strong>Max Size:</strong> {{maxPhotoSizeMB}}MB
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Video Requirements Info Bar (spans both columns) - Only show when submission type allows videos -->
+                <div class="col-12" *ngIf="(progress.item['submission_type'] === 'video' || progress.item['submission_type'] === 'either') && progress.item.video_requirements">
+                  <div class="border rounded p-2 bg-primary bg-opacity-10 border-primary border-opacity-25">
+                    <div class="row g-2 small text-primary-emphasis">
+                      <div class="col-auto">
+                        <i class="mdi mdi-video me-1"></i>
+                        <strong>Video Required</strong>
+                      </div>
+                      <div class="col-auto" *ngIf="progress.item.video_requirements.submission_time_seconds">
+                        <i class="mdi mdi-timer me-1"></i>
+                        <strong>Duration:</strong> {{progress.item.video_requirements.submission_time_seconds}}s
+                      </div>
+                      <div class="col-auto" *ngIf="progress.item.video_requirements.max_video_duration_seconds">
+                        <i class="mdi mdi-clock-alert me-1"></i>
+                        <strong>Max Duration:</strong> {{progress.item.video_requirements.max_video_duration_seconds}}s
+                      </div>
+                      <div class="col-auto">
+                        <i class="mdi mdi-file-video me-1"></i>
+                        <strong>Max Size:</strong> {{maxVideoSizeMB}}MB
                       </div>
                     </div>
                   </div>
@@ -283,8 +311,8 @@
                   </div>
                 </div>
 
-                <!-- Photo Section - Inline (Only show when pictures required OR photos already exist) -->
-                <div class="col-md-6" *ngIf="progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0)">
+                <!-- Photo Section - Inline (Only show for photo or either submission type) -->
+                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || progress.item['submission_type'] === 'either' || !progress.item['submission_type'])">
                   <div class="h-100">
                     <h6 class="text-primary mb-3 d-flex align-items-center">
                       <i class="mdi mdi-camera me-2"></i>Take Photo
@@ -358,8 +386,112 @@
                   </div>
                 </div>
 
-                <!-- Sample Reference Section - Primary Image Only (Only show when pictures required OR photos already exist) -->
-                <div class="col-md-6" *ngIf="progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0)">
+                <!-- Video Section - Inline (Only show for video or either submission type) -->
+                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'video' || progress.item['submission_type'] === 'either')">
+                  <div class="h-100">
+                    <h6 class="text-primary mb-3 d-flex align-items-center">
+                      <i class="mdi mdi-video me-2"></i>Take Video
+                      <span class="badge bg-secondary ms-auto" *ngIf="progress.videos && progress.videos.length > 0">Video uploaded</span>
+                      <span class="badge bg-outline-secondary ms-auto" *ngIf="!progress.videos || progress.videos.length === 0">No video</span>
+                    </h6>
+                    
+                    <!-- Video Upload Area -->
+                    <div class="border border-2 border-dashed rounded p-4 text-center" 
+                         style="min-height: 280px; display: flex; flex-direction: column; justify-content: center;"
+                         *ngIf="!progress.videos || progress.videos.length === 0">
+                      <i class="mdi mdi-video-plus text-muted fs-1 mb-2"></i>
+                      <p class="text-muted mb-3">
+                        Record or upload a video
+                        <span *ngIf="progress.item.photo_requirements?.max_video_duration_seconds">
+                          <br><small>(Max {{progress.item.photo_requirements.max_video_duration_seconds}} seconds)</small>
+                        </span>
+                      </p>
+                      <input type="file" 
+                             #videoFileInput 
+                             (change)="onFileSelected($event, progress.item.id)" 
+                             accept="video/*" 
+                             class="d-none">
+                      <div class="d-flex gap-2 justify-content-center mb-3">
+                        <button class="btn btn-primary" 
+                                (click)="openCamera(videoFileInput, progress.item.id)"
+                                [disabled]="!canModifyChecklist"
+                                title="Record a new video">
+                          <i class="mdi mdi-camcorder me-2"></i>Record Video
+                        </button>
+                        <button class="btn btn-outline-primary" 
+                                (click)="openFilePicker(videoFileInput, progress.item.id)"
+                                [disabled]="!canModifyChecklist"
+                                title="Upload an existing video">
+                          <i class="mdi mdi-upload me-2"></i>Add Video
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Current Video -->
+                    <div *ngIf="progress.videos && progress.videos.length > 0">
+                      <input type="file" 
+                             #replaceVideoFileInput 
+                             (change)="onFileSelected($event, progress.item.id)" 
+                             accept="video/*" 
+                             class="d-none">
+                      <div class="position-relative border rounded" 
+                           style="min-height: 280px; display: flex; align-items: center; justify-content: center; background-color: #000;">
+                        <video [src]="getPhotoUrl(progress.videos[0])" 
+                               controls 
+                               class="w-100 rounded shadow-sm"
+                               style="max-height: 250px; max-width: 100%; object-fit: contain;">
+                        </video>
+                        <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                                (click)="deletePhoto(progress.videos[0], progress.item.id)"
+                                [disabled]="!canModifyChecklist"
+                                title="Delete Video">
+                          <i class="mdi mdi-close"></i>
+                        </button>
+                      </div>
+                      <div class="mt-2 text-center">
+                        <button class="btn btn-outline-secondary btn-sm" 
+                                (click)="replaceVideoFileInput.click()"
+                                [disabled]="!canModifyChecklist">
+                          <i class="mdi mdi-video-refresh me-1"></i>Replace Video
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6" *ngIf="progress.item.sample_videos && progress.item.sample_videos.length > 0 && (progress.item['submission_type'] === 'video' || progress.item['submission_type'] === 'either')">
+                  <div class="h-100">
+                    <h6 class="text-primary mb-3">
+                      <i class="mdi mdi-video me-2"></i>Sample Video Reference
+                      <span class="badge bg-warning text-dark ms-2" *ngIf="progress.item.sample_videos[0].duration_seconds">
+                        {{formatDuration(progress.item.sample_videos[0].duration_seconds)}}
+                      </span>
+                    </h6>
+                    
+                    <!-- Primary Sample Video Display -->
+                    <div class="border rounded p-3" 
+                         style="min-height: 280px; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="text-center">
+                        <video [src]="getPhotoUrl(progress.item.sample_videos[0].url)" 
+                               controls 
+                               class="w-100 rounded shadow-sm cursor-pointer"
+                               style="max-height: 200px; object-fit: contain;"
+                               [title]="progress.item.sample_videos[0].label || 'Sample reference video for ' + progress.item.title">
+                        </video>
+                        <div class="mt-2" *ngIf="progress.item.sample_videos[0].label || progress.item.sample_videos[0].description">
+                          <small class="text-muted d-block" *ngIf="progress.item.sample_videos[0].label">
+                            <strong>{{progress.item.sample_videos[0].label}}</strong>
+                          </small>
+                          <small class="text-muted" *ngIf="progress.item.sample_videos[0].description">
+                            {{progress.item.sample_videos[0].description}}
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sample Reference Section - Primary Image Only (Only show for photo or either submission types) -->
+                <div class="col-md-6" *ngIf="(progress.item['submission_type'] === 'photo' || progress.item['submission_type'] === 'either' || !progress.item['submission_type']) && (progress.item.photo_requirements?.picture_required || (progress.photos && progress.photos.length > 0))">
                   <div class="h-100">
                     <h6 class="text-primary mb-3">
                       <i class="mdi mdi-image-multiple me-2"></i>Sample Reference
@@ -616,9 +748,9 @@
                 <th style="width: 50px;" class="text-center">#</th>
                 <th style="width: 250px;">Task</th>
                 <th style="width: 200px;">Description</th>
-                <th style="width: 120px;">Sample Photo</th>
+                <th style="width: 120px;">Sample Media</th>
                 <th style="width: 100px;" class="text-center">Status</th>
-                <th style="width: 150px;">Photos Taken</th>
+                <th style="width: 150px;">Media Taken</th>
                 <th style="width: 200px;">Notes</th>
                 <th style="width: 80px;" class="text-center">Actions</th>
               </tr>
@@ -650,8 +782,26 @@
                   </div>
                 </td>
                 <td>
-                  <!-- Sample Photo (Primary Image) -->
-                  <div *ngIf="progress.item.sample_images && progress.item.sample_images.length > 0; else noSample">
+                  <!-- Sample Video (when submission_type is 'video') -->
+                  <div *ngIf="progress.item.submission_type === 'video' && progress.item.sample_videos && progress.item.sample_videos.length > 0">
+                    <div class="position-relative" style="width: 80px; height: 80px;">
+                      <video 
+                        [src]="getPhotoUrl(progress.item.sample_videos[0].url)" 
+                        class="img-thumbnail"
+                        style="width: 80px; height: 80px; object-fit: cover;"
+                        [title]="progress.item.sample_videos[0].label || 'Sample video'">
+                      </video>
+                      <span class="badge bg-success position-absolute top-0 start-0 m-1">V</span>
+                      <i class="mdi mdi-play-circle position-absolute top-50 start-50 translate-middle text-white" 
+                         style="font-size: 2rem; text-shadow: 0 0 4px rgba(0,0,0,0.8);"></i>
+                    </div>
+                    <div class="small text-center mt-1" *ngIf="progress.item.sample_videos.length > 1">
+                      <span class="badge bg-info badge-sm">+{{ progress.item.sample_videos.length - 1 }} more</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Sample Photo (when submission_type is 'photo' or 'either' or undefined) -->
+                  <div *ngIf="(progress.item.submission_type === 'photo' || progress.item.submission_type === 'either' || !progress.item.submission_type) && progress.item.sample_images && progress.item.sample_images.length > 0">
                     <img 
                       [src]="getPhotoUrl(progress.item.sample_images[0].url)" 
                       class="img-thumbnail cursor-pointer"
@@ -664,23 +814,28 @@
                       <span class="badge bg-info badge-sm">+{{ progress.item.sample_images.length - 1 }} more</span>
                     </div>
                   </div>
-                  <ng-template #noSample>
-                    <div class="text-center text-muted small">
-                      <i class="mdi mdi-image-off fs-4"></i>
-                      <div>No sample</div>
-                    </div>
-                  </ng-template>
+                  
+                  <!-- No sample available -->
+                  <div class="text-center text-muted small" 
+                       *ngIf="(progress.item.submission_type === 'video' && (!progress.item.sample_videos || progress.item.sample_videos.length === 0)) ||
+                              ((progress.item.submission_type === 'photo' || progress.item.submission_type === 'either' || !progress.item.submission_type) && (!progress.item.sample_images || progress.item.sample_images.length === 0))">
+                    <i class="mdi mdi-image-off fs-4"></i>
+                    <div>No sample</div>
+                  </div>
                 </td>
                 <td class="text-center">
                   <span class="badge" [ngClass]="getStatusBadgeClass(progress)">
                     {{ getStatusText(progress) }}
                   </span>
-                  <div class="small text-muted mt-1" *ngIf="progress.photos.length > 0">
-                    {{ progress.photos.length }} photo(s)
+                  <div class="small text-muted mt-1">
+                    <span *ngIf="progress.photos.length > 0">{{ progress.photos.length }} photo(s)</span>
+                    <span *ngIf="progress.photos.length > 0 && progress.videos && progress.videos.length > 0"> | </span>
+                    <span *ngIf="progress.videos && progress.videos.length > 0">{{ progress.videos.length }} video(s)</span>
                   </div>
                 </td>
                 <td>
-                  <div class="d-flex flex-wrap gap-2" *ngIf="progress.photos.length > 0">
+                  <!-- Photos -->
+                  <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="progress.photos.length > 0">
                     <div *ngFor="let photo of progress.photos; let photoIdx = index" class="position-relative">
                       <img 
                         [src]="getPhotoUrl(photo)" 
@@ -689,9 +844,25 @@
                         alt="Photo"
                         (click)="previewImage(getPhotoUrl(photo))"
                         [title]="'Photo ' + (photoIdx + 1)">
+                      <span class="position-absolute top-0 start-0 badge bg-primary m-1" style="font-size: 0.6rem;">P</span>
                     </div>
                   </div>
-                  <span class="text-muted small fst-italic" *ngIf="progress.photos.length === 0">No photos taken</span>
+                  
+                  <!-- Videos -->
+                  <div class="d-flex flex-wrap gap-2" *ngIf="progress.videos && progress.videos.length > 0">
+                    <div *ngFor="let video of progress.videos; let videoIdx = index" class="position-relative">
+                      <video 
+                        [src]="getPhotoUrl(video)" 
+                        class="img-thumbnail cursor-pointer"
+                        style="width: 60px; height: 60px; object-fit: cover;"
+                        [title]="'Video ' + (videoIdx + 1)">
+                      </video>
+                      <span class="position-absolute top-0 start-0 badge bg-success m-1" style="font-size: 0.6rem;">V</span>
+                      <i class="mdi mdi-play-circle position-absolute top-50 start-50 translate-middle text-white fs-3" style="text-shadow: 0 0 3px rgba(0,0,0,0.5);"></i>
+                    </div>
+                  </div>
+                  
+                  <span class="text-muted small fst-italic" *ngIf="progress.photos.length === 0 && (!progress.videos || progress.videos.length === 0)">No media uploaded</span>
                 </td>
                 <td>
                   <div class="small" style="max-height: 60px; overflow-y: auto;" 

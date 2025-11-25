@@ -28,6 +28,18 @@ interface SampleImage {
   status?: 'loading' | 'loaded' | 'error';
 }
 
+interface SampleVideo {
+  id?: string;
+  url: string;
+  label?: string;
+  description?: string;
+  type?: 'video' | 'screen' | 'other';
+  is_primary: boolean;
+  order_index: number;
+  status?: 'loading' | 'loaded' | 'error';
+  duration_seconds?: number | null;
+}
+
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
@@ -185,6 +197,29 @@ interface SampleImage {
                     <div class="form-text">
                       <i class="mdi mdi-information-outline me-1"></i>
                       Product type or classification for this template.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Max Upload Size (MB)</label>
+                    <input type="number" class="form-control" formControlName="max_upload_size_mb" min="1" placeholder="Leave empty for defaults">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Optional per-template override for maximum upload file size (MB). If empty, images default to 5MB and videos to 50MB.
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" formControlName="disable_max_upload_limit" id="disableMaxUpload">
+                      <label class="form-check-label" for="disableMaxUpload"><strong>Disable Max Upload Size</strong></label>
+                    </div>
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      When enabled, client-side file size limits are disabled for this template. Server should still enforce limits if desired.
                     </div>
                   </div>
                 </div>
@@ -356,103 +391,173 @@ interface SampleImage {
                         </div>
                       </div>
 
-                      <!-- Photo Requirements -->
-                      <div class="mb-3">
-                        <div class="mb-2">
-                          <label class="form-label mb-0">Photo Requirements</label>
+                      <!-- Submission Type Selector (Controls what sections appear) -->
+                      <div class="mb-4 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                          <label class="form-label d-block mb-0">
+                            <i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>
+                            <strong>Submission Type</strong>
+                          </label>
+                          <span class="badge" [ngSwitch]="item.get('submission_type')?.value">
+                            <span *ngSwitchCase="'photo'" class="badge bg-primary">
+                              <i class="mdi mdi-camera me-1"></i>Photo Only
+                            </span>
+                            <span *ngSwitchCase="'video'" class="badge bg-success">
+                              <i class="mdi mdi-video me-1"></i>Video Only
+                            </span>
+                            <span *ngSwitchCase="'either'" class="badge bg-info">
+                              <i class="mdi mdi-file-multiple me-1"></i>Photo OR Video
+                            </span>
+                          </span>
                         </div>
+                        <div class="btn-group w-100 mb-3" role="group">
+                          <input type="radio" class="btn-check" name="submission_type" id="type_photo_{{i}}" value="photo" formControlName="submission_type">
+                          <label class="btn btn-primary" [for]="'type_photo_' + i" [class.active]="item.get('submission_type')?.value === 'photo'">
+                            <i class="mdi mdi-camera me-2"></i>Photo Only
+                          </label>
 
-                        <div class="border rounded p-3 bg-light">
-                            <div formGroupName="photo_requirements">
-                              <div class="row mb-3">
-                                <div class="col-md-3 mb-3">
-                                  <label class="form-label">Photo Angle</label>
-                                  <select class="form-select" formControlName="angle">
-                                    <option value="">Any Angle</option>
-                                    <option value="front">Front View</option>
-                                    <option value="back">Back View</option>
-                                    <option value="side">Side View</option>
-                                    <option value="top">Top View</option>
-                                    <option value="bottom">Bottom View</option>
-                                    <option value="diagonal">Diagonal View</option>
-                                  </select>
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Required viewing angle for photos.
-                                  </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                  <label class="form-label">Photo Distance</label>
-                                  <select class="form-select" formControlName="distance">
-                                    <option value="">Any Distance</option>
-                                    <option value="close">Close-up</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="far">Wide View</option>
-                                  </select>
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Required distance for photo capture.
-                                  </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                  <label class="form-label">Lighting Conditions</label>
-                                  <select class="form-select" formControlName="lighting">
-                                    <option value="">Any Lighting</option>
-                                    <option value="bright">Bright</option>
-                                    <option value="normal">Normal</option>
-                                    <option value="dim">Dim</option>
-                                  </select>
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Required lighting conditions.
-                                  </div>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                  <label class="form-label">Focus Area</label>
-                                  <input type="text" class="form-control" formControlName="focus" placeholder="e.g., connector pins">
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Specific area to focus on in photos.
-                                  </div>
-                                </div>
-                              </div>
+                          <input type="radio" class="btn-check" name="submission_type" id="type_video_{{i}}" value="video" formControlName="submission_type">
+                          <label class="btn btn-primary" [for]="'type_video_' + i" [class.active]="item.get('submission_type')?.value === 'video'">
+                            <i class="mdi mdi-video me-2"></i>Video Only
+                          </label>
 
-                              <div class="row">
-                                <div class="col-md-6 mb-3">
-                                  <label class="form-label">Minimum Photos Required</label>
-                                  <input type="number" class="form-control" formControlName="min_photos" min="0" max="10" placeholder="0">
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Minimum number of photos required for this item.
-                                  </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                  <label class="form-label">Maximum Photos Allowed</label>
-                                  <input type="number" class="form-control" formControlName="max_photos" min="0" max="10" placeholder="10">
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    Maximum number of photos allowed for this item.
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div class="row">
-                                <div class="col-md-12 mb-3">
-                                  <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'picture-required-' + i">
-                                    <label class="form-check-label" [for]="'picture-required-' + i">
-                                      <strong>Picture Required</strong>
-                                    </label>
-                                  </div>
-                                  <div class="form-text">
-                                    <i class="mdi mdi-information-outline me-1"></i>
-                                    When enabled, users must take a photo. When disabled, users can simply confirm the item without capturing a photo.
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                          <input type="radio" class="btn-check" name="submission_type" id="type_either_{{i}}" value="either" formControlName="submission_type">
+                          <label class="btn btn-primary" [for]="'type_either_' + i" [class.active]="item.get('submission_type')?.value === 'either'">
+                            <i class="mdi mdi-file-multiple me-2"></i>Photo OR Video
+                          </label>
+                        </div>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Choose whether users submit a <strong>photo</strong>, <strong>video</strong>, or <strong>either one</strong> (mutually exclusive).
+                        </div>
+                      </div>
+
+                      <!-- PHOTO REQUIREMENTS SECTION -->
+                      <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either')" 
+                           class="mb-4 pb-4 border-bottom">
+                        <div class="d-flex align-items-center mb-3">
+                          <div class="bg-light rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                            <i class="mdi mdi-camera text-primary fs-5"></i>
+                          </div>
+                          <div>
+                            <h5 class="mb-1">Photo Requirements</h5>
+                            <p class="mb-0 text-muted small">Settings for photo-based submissions</p>
                           </div>
                         </div>
+
+                        <div formGroupName="photo_requirements">
+                          <!-- Photo Capture Guidelines -->
+                          <div class="row mb-3 p-3 bg-light rounded">
+                            <div class="col-md-3 mb-3">
+                              <label class="form-label">Viewing Angle</label>
+                              <select class="form-select" formControlName="angle">
+                                <option value="">Any Angle</option>
+                                <option value="front">Front View</option>
+                                <option value="back">Back View</option>
+                                <option value="side">Side View</option>
+                                <option value="top">Top View</option>
+                                <option value="bottom">Bottom View</option>
+                                <option value="diagonal">Diagonal View</option>
+                              </select>
+                              <small class="form-text text-muted d-block mt-1">
+                                <i class="mdi mdi-information-outline"></i>
+                                Required viewing angle
+                              </small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                              <label class="form-label">Capture Distance</label>
+                              <select class="form-select" formControlName="distance">
+                                <option value="">Any Distance</option>
+                                <option value="close">Close-up</option>
+                                <option value="medium">Medium</option>
+                                <option value="far">Wide View</option>
+                              </select>
+                              <small class="form-text text-muted d-block mt-1">
+                                <i class="mdi mdi-information-outline"></i>
+                                Required distance
+                              </small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                              <label class="form-label">Lighting</label>
+                              <select class="form-select" formControlName="lighting">
+                                <option value="">Any Lighting</option>
+                                <option value="bright">Bright</option>
+                                <option value="normal">Normal</option>
+                                <option value="dim">Dim</option>
+                              </select>
+                              <small class="form-text text-muted d-block mt-1">
+                                <i class="mdi mdi-information-outline"></i>
+                                Lighting conditions
+                              </small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                              <label class="form-label">Focus Area</label>
+                              <input type="text" class="form-control" formControlName="focus" placeholder="e.g., connector pins">
+                              <small class="form-text text-muted d-block mt-1">
+                                <i class="mdi mdi-information-outline"></i>
+                                Specific focus area
+                              </small>
+                            </div>
+                          </div>
+
+                          <!-- Photo Count Requirements -->
+                          <div class="row mb-3">
+                            <div class="col-md-6">
+                              <label class="form-label">Minimum Photos</label>
+                              <input type="number" class="form-control" formControlName="min_photos" min="0" max="10" placeholder="0">
+                              <small class="form-text text-muted">Minimum required (0 = optional)</small>
+                            </div>
+                            <div class="col-md-6">
+                              <label class="form-label">Maximum Photos</label>
+                              <input type="number" class="form-control" formControlName="max_photos" min="1" max="10" placeholder="10">
+                              <small class="form-text text-muted">Maximum allowed per item</small>
+                            </div>
+                          </div>
+
+                          <!-- Photo Required Toggle -->
+                          <div class="mb-3 p-3 bg-light rounded">
+                            <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'picture-required-' + i">
+                              <label class="form-check-label" [for]="'picture-required-' + i">
+                                <strong>Picture Required</strong>
+                              </label>
+                            </div>
+                            <small class="form-text text-muted d-block mt-2">
+                              <i class="mdi mdi-lightbulb-on-outline"></i>
+                              When <strong>ON</strong>: Users must take a photo. When <strong>OFF</strong>: Users can confirm without capturing.
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- VIDEO REQUIREMENTS SECTION -->
+                      <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either')" 
+                           class="mb-4 pb-4 border-bottom">
+                        <div class="d-flex align-items-center mb-3">
+                          <div class="bg-light rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                            <i class="mdi mdi-video text-danger fs-5"></i>
+                          </div>
+                          <div>
+                            <h5 class="mb-1">Video Requirements</h5>
+                            <p class="mb-0 text-muted small">Settings for video-based submissions</p>
+                          </div>
+                        </div>
+
+                        <div class="row">
+                          <div class="col-md-6">
+                            <div formGroupName="photo_requirements">
+                              <label class="form-label">Max Video Duration</label>
+                              <input type="number" class="form-control" formControlName="max_video_duration_seconds" min="1" max="600">
+                              <small class="form-text text-muted">Maximum video length in seconds</small>
+                            </div>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Submission Time Limit</label>
+                            <input type="number" class="form-control" formControlName="submission_time_seconds" min="0" placeholder="0 for no limit">
+                            <small class="form-text text-muted">Time allowed to submit (seconds)</small>
+                          </div>
+                        </div>
+                      </div>
 
                         <!-- Primary Sample Image -->
                         <div class="mb-3">
@@ -560,6 +665,35 @@ interface SampleImage {
                           <div *ngIf="getReferenceImages(i).length === 0" class="text-muted text-center py-3 border rounded bg-light">
                             <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
                             <p class="mb-0 small">No reference images added</p>
+                          </div>
+                        </div>
+                        <!-- Sample Video -->
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                              <label class="form-label mb-0">Sample Video</label>
+                              <small class="d-block text-muted">Optional short video demonstrating required capture (mp4/webm)</small>
+                            </div>
+                            <div>
+                              <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openSampleVideoUpload(i)" [disabled]="uploadingVideo">
+                                <span *ngIf="uploadingVideo" class="spinner-border spinner-border-sm me-1"></span>
+                                <i *ngIf="!uploadingVideo" class="mdi mdi-video-plus"></i>
+                                {{ uploadingVideo ? 'Uploading...' : (hasSampleVideo(i) ? 'Replace Video' : 'Add Video') }}
+                              </button>
+                              <button *ngIf="hasSampleVideo(i)" type="button" class="btn btn-outline-secondary btn-sm" (click)="previewSampleVideo(i)">
+                                <i class="mdi mdi-play-circle me-1"></i>Preview
+                              </button>
+                              <button *ngIf="hasSampleVideo(i)" type="button" class="btn btn-danger btn-sm ms-2" (click)="removeSampleVideo(i)">
+                                <i class="mdi mdi-delete"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-white text-center">
+                            <video [src]="getPrimarySampleVideoUrl(i)" controls style="max-height:120px; max-width:220px; object-fit:cover;"></video>
+                          </div>
+                          <div *ngIf="!hasSampleVideo(i)" class="text-muted text-center py-3 border rounded bg-light">
+                            <i class="mdi mdi-video-outline mb-2" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0 small">No sample video added</p>
                           </div>
                         </div>
                       </div>
@@ -736,6 +870,21 @@ interface SampleImage {
       </div>
     </ng-template>
 
+    <!-- Video Preview Modal -->
+    <ng-template #videoPreviewModal let-modal>
+      <div class="modal-header">
+        <h5 class="modal-title">Sample Video Preview</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body text-center">
+        <video *ngIf="previewVideoUrl" [src]="previewVideoUrl" controls class="w-100" style="max-height:70vh; object-fit:contain;"></video>
+        <div *ngIf="!previewVideoUrl" class="text-muted">No video to preview</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Close</button>
+      </div>
+    </ng-template>
+
     <!-- Sample Image Upload Modal (keeping existing modal for now) -->
     <!-- Add your existing modal templates here -->
   `,
@@ -808,6 +957,7 @@ interface SampleImage {
 export class ChecklistTemplateEditorComponent implements OnInit {
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
   @ViewChild('imagePreviewModal') imagePreviewModalRef!: TemplateRef<any>;
+  @ViewChild('videoPreviewModal') videoPreviewModalRef!: TemplateRef<any>;
   
   templateForm: FormGroup;
   editingTemplate: ChecklistTemplate | null = null;
@@ -824,9 +974,15 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   
   // Sample image management - single image per item
   sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null } = {};
+  sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null } = {};
   
   // Image preview
   previewImageUrl: string | null = null;
+  // Video preview
+  previewVideoUrl: string | null = null;
+
+  // Video upload state
+  uploadingVideo = false;
   
   // Auto-save functionality
   autoSaveEnabled = false;
@@ -883,6 +1039,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       name: ['', Validators.required],
       category: ['', Validators.required],
       description: [''],
+      // Optional override (MB) for maximum upload size when editing this template
+      max_upload_size_mb: [null],
+      // When true, disable max upload size checks for this template (use with caution)
+      disable_max_upload_limit: [true],
       part_number: [''],
       product_type: [''],
       customer_part_number: [''],
@@ -896,6 +1056,28 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       quality_document_id: [null], // Add quality document field
       items: this.fb.array([])
     });
+  }
+
+  /**
+   * Return effective maximum upload size in bytes.
+   * If a per-template override (max_upload_size_mb) is set, use that (MB -> bytes).
+   * Otherwise use sensible defaults per file type.
+   */
+  getMaxUploadBytes(fileType: 'image' | 'video'): number {
+    // If the template explicitly disables the upload limit, return a very large value
+    const disabled = !!this.templateForm.get('disable_max_upload_limit')?.value;
+    if (disabled) {
+      return Number.MAX_SAFE_INTEGER; // Effectively disable client-side size checks
+    }
+
+    const overrideMb = Number(this.templateForm.get('max_upload_size_mb')?.value || 0);
+    if (overrideMb && overrideMb > 0) {
+      return overrideMb * 1024 * 1024;
+    }
+
+    // Defaults
+    if (fileType === 'video') return 50 * 1024 * 1024; // 50MB
+    return 5 * 1024 * 1024; // 5MB for images
   }
 
   get items(): FormArray {
@@ -923,6 +1105,8 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       name: template.name,
       category: template.category,
       description: template.description,
+      max_upload_size_mb: (template as any).max_upload_size_mb || null,
+      disable_max_upload_limit: (template as any).disable_max_upload_limit || false,
       part_number: template.part_number,
       customer_part_number: template.customer_part_number,
       revision: template.revision,
@@ -983,8 +1167,20 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           if (itemFormGroup) {
             itemFormGroup.patchValue({
               sample_image_url: item.sample_image_url || loadedImages.find(img => img.is_primary)?.url || loadedImages[0]?.url,
-              sample_images: loadedImages
+              sample_images: loadedImages,
+              sample_videos: (item.sample_videos && Array.isArray(item.sample_videos)) ? item.sample_videos : [],
+              photo_requirements: {
+                ...(itemFormGroup.get('photo_requirements')?.value || {}),
+                submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
+                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+              },
+              submission_time_seconds: (item as any)?.submission_time_seconds || null
             });
+          }
+
+          // Also populate the sampleVideos component property so display methods work
+          if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
+            this.sampleVideos[index] = item.sample_videos;
           }
         } else if (item.sample_image_url) {
           // Single URL format: Just the primary image
@@ -1005,8 +1201,20 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           if (itemFormGroup) {
             itemFormGroup.patchValue({
               sample_image_url: item.sample_image_url,
-              sample_images: [this.sampleImages[index] as SampleImage]
+              sample_images: [this.sampleImages[index] as SampleImage],
+              sample_videos: (item.sample_videos && Array.isArray(item.sample_videos)) ? item.sample_videos : [],
+              photo_requirements: {
+                ...(itemFormGroup.get('photo_requirements')?.value || {}),
+                submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
+                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+              },
+              submission_time_seconds: (item as any)?.submission_time_seconds || null
             });
+          }
+
+          // Also populate the sampleVideos component property so display methods work
+          if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
+            this.sampleVideos[index] = item.sample_videos;
           }
         }
       });
@@ -1020,17 +1228,23 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       description: [item?.description || ''],
       is_required: [item?.is_required || false],
       order_index: [item?.order_index || this.items.length + 1],
+      // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
+      submission_type: [(item as any)?.submission_type || 'photo'],
       photo_requirements: this.fb.group({
-        angle: [item?.photo_requirements?.angle || ''],
-        distance: [item?.photo_requirements?.distance || ''],
-        lighting: [item?.photo_requirements?.lighting || ''],
-        focus: [item?.photo_requirements?.focus || ''],
-        min_photos: [item?.photo_requirements?.min_photos || null],
-        max_photos: [item?.photo_requirements?.max_photos || null],
-        picture_required: [item?.photo_requirements?.picture_required !== undefined ? item?.photo_requirements?.picture_required : true] // Default to true
+        angle: [(item as any)?.photo_requirements?.angle || ''],
+        distance: [(item as any)?.photo_requirements?.distance || ''],
+        lighting: [(item as any)?.photo_requirements?.lighting || ''],
+        focus: [(item as any)?.photo_requirements?.focus || ''],
+        min_photos: [(item as any)?.photo_requirements?.min_photos || null],
+        max_photos: [(item as any)?.photo_requirements?.max_photos || null],
+        picture_required: [(item as any)?.photo_requirements?.picture_required !== undefined ? (item as any)?.photo_requirements?.picture_required : true], // Default to true
+        max_video_duration_seconds: [(item as any)?.photo_requirements?.max_video_duration_seconds || 30]
       }),
+      // TOP-LEVEL: per-item submission time limit (in seconds). Stored in video_requirements JSON. Null or 0 = no limit
+      submission_time_seconds: [(item as any)?.submission_time_seconds || null],
       sample_image_url: [item?.sample_image_url || item?.sample_images?.[0]?.url || null], // Use sample_image_url or first sample_images URL
       sample_images: [item?.sample_images || null], // NEW: Array of all sample/reference images
+      sample_videos: [(item as any)?.sample_videos && Array.isArray((item as any)?.sample_videos) ? (item as any).sample_videos : []], // NEW: Array of sample videos (init as empty array)
       level: [item?.level || 0], // 0 = parent, 1 = child
       parent_id: [item?.parent_id || null] // Reference to parent item
     });
@@ -1075,6 +1289,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       description: item.description || '',
       order_index: item.order_index,
       is_required: item.is_required !== undefined ? item.is_required : true,
+      submission_type: (item as any)?.submission_type || 'photo', // TOP-LEVEL: Separate ENUM column
       sample_image_url: sampleImageUrl,
       level: item.level || 0,
       parent_id: parentId || item.parent_id || null,
@@ -1085,8 +1300,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         focus: item.photo_requirements?.focus || '',
         min_photos: item.photo_requirements?.min_photos || 1,
         max_photos: item.photo_requirements?.max_photos || 5,
-        picture_required: hasImages // Set to false if no images, true if images exist
-      }
+        picture_required: hasImages, // Set to false if no images, true if images exist
+        max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+      },
+      submission_time_seconds: (item as any)?.submission_time_seconds || null,
+      sample_videos: (item as any)?.sample_videos || null
     });
     
     this.items.push(itemGroup);
@@ -1122,6 +1340,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       description: [''],
       order_index: [newOrderIndex],
       is_required: [true],
+      submission_type: ['photo'], // TOP-LEVEL: Separate ENUM column
       sample_image_url: [null],
       sample_images: [null], // NEW: Array of all sample/reference images
       level: [1], // Child level
@@ -1133,8 +1352,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         focus: [''],
         min_photos: [1],
         max_photos: [5],
-        picture_required: [true] // Default to true
-      })
+        picture_required: [true], // Default to true
+        max_video_duration_seconds: [30]
+      }),
+      submission_time_seconds: [null],
+      sample_videos: [] // NEW: Array of sample videos
     });
     
     // Insert right after the last child of this parent (or after parent if no children)
@@ -1516,10 +1738,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       // Set loading state
       this.uploadingImage = true;
 
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Validate file size against template override or default (image)
+      const maxSize = this.getMaxUploadBytes('image');
       if (file.size > maxSize) {
-        alert('File size too large. Maximum size is 5MB');
+        alert('File size too large. Maximum size is ' + Math.round(maxSize / (1024 * 1024)) + 'MB');
         return;
       }
 
@@ -2014,6 +2236,155 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
   }
 
+  // =====================
+  // Sample Video Methods
+  // =====================
+
+  openSampleVideoUpload(itemIndex: number): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'video/*';
+    fileInput.style.display = 'none';
+
+    fileInput.onchange = async (event: any) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('video/')) {
+        try {
+          await this.uploadSampleVideo(itemIndex, file);
+        } catch (error) {
+          console.error('Video upload failed:', error);
+        }
+      } else {
+        alert('Please select a video file (mp4, webm, mov)');
+      }
+    };
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+  }
+
+  async uploadSampleVideo(itemIndex: number, file: File): Promise<void> {
+    this.uploadingVideo = true;
+
+    try {
+      // Validate allowed duration vs item config
+      const item = this.items.at(itemIndex);
+      const maxDuration = item?.get('photo_requirements')?.get('max_video_duration_seconds')?.value || 30;
+
+      // Check duration by loading metadata
+      const url = URL.createObjectURL(file);
+      const videoEl = document.createElement('video');
+      videoEl.preload = 'metadata';
+      videoEl.src = url;
+
+      const duration: number = await new Promise((resolve, reject) => {
+        videoEl.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(videoEl.duration || 0);
+        };
+        videoEl.onerror = (e) => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to read video metadata'));
+        };
+      });
+
+      if (maxDuration && duration > maxDuration) {
+        alert(`Video duration is ${Math.round(duration)}s which exceeds the allowed ${maxDuration}s`);
+        return;
+      }
+
+      const tempId = `sample_video_${itemIndex}_${Date.now()}`;
+      // Validate file size against template override or default (video)
+      const maxSize = this.getMaxUploadBytes('video');
+      // if (file.size > maxSize) {
+      //   alert('Video file size too large. Maximum size is ' + Math.round(maxSize / (1024 * 1024)) + 'MB');
+      //   return;
+      // }
+
+      const response = await this.photoUploadService.uploadTemporaryImage(file, tempId);
+
+      if (response && response.success && response.url) {
+        const newVideo: SampleVideo = {
+          id: `uploaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          url: response.url,
+          label: 'Sample Video',
+          description: '',
+          type: 'video',
+          is_primary: true,
+          order_index: 0,
+          status: 'loaded'
+        };
+
+        this.sampleVideos[itemIndex] = newVideo;
+
+        // Update the form control
+        const itemFormGroup = this.items.at(itemIndex) as FormGroup;
+        if (itemFormGroup) {
+          itemFormGroup.patchValue({
+            sample_videos: [newVideo]
+          });
+        }
+      } else {
+        const err = response?.error || 'Upload failed';
+        throw new Error(err);
+      }
+    } catch (error: any) {
+      console.error('Sample video upload error:', error);
+      alert('Failed to upload video: ' + (error?.message || error));
+    } finally {
+      this.uploadingVideo = false;
+    }
+  }
+
+  previewSampleVideo(itemIndex: number): void {
+    const video = this.sampleVideos[itemIndex];
+    let url: string | null = null;
+    if (Array.isArray(video)) {
+      url = video[0]?.url || null;
+    } else if (video) {
+      url = video.url;
+    }
+
+    if (url) {
+      this.previewVideoUrl = url;
+      this.modalService.open(this.videoPreviewModalRef, { size: 'lg', centered: true });
+    }
+  }
+
+  hasSampleVideo(itemIndex: number): boolean {
+    const v = this.sampleVideos[itemIndex];
+    if (!v) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return !!v.url;
+  }
+
+  getPrimarySampleVideo(itemIndex: number): SampleVideo | null {
+    const v = this.sampleVideos[itemIndex];
+    if (!v) return null;
+    if (Array.isArray(v)) return v.find(x => x.is_primary) || v[0] || null;
+    return v as SampleVideo;
+  }
+
+  getPrimarySampleVideoUrl(itemIndex: number): string | null {
+    const primary = this.getPrimarySampleVideo(itemIndex);
+    if (!primary?.url) return null;
+    if (primary.url.startsWith('data:')) {
+      return primary.url;
+    }
+    return this.getAbsoluteImageUrl(primary.url);
+  }
+
+  removeSampleVideo(itemIndex: number): void {
+    this.sampleVideos[itemIndex] = null;
+    const item = this.items.at(itemIndex);
+    if (item) {
+      item.patchValue({ sample_videos: null });
+      item.markAsDirty();
+      this.templateForm.markAsDirty();
+    }
+  }
+
   saveTemplate(): void {
     if (this.templateForm.invalid) {
       this.templateForm.markAllAsTouched();
@@ -2025,6 +2396,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     const templateData = this.templateForm.value;
     
     // DEBUG: Log sample_images from form before save
+    //
     console.log('� Checking form data before save:');
     templateData.items.forEach((item: any, index: number) => {
       if (item.sample_images && Array.isArray(item.sample_images)) {
@@ -2049,6 +2421,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     
     // Clean up sample_images array for backend
     templateData.items = templateData.items.map((item: any) => {
+      // Ensure photo_requirements is properly formatted (includes submission_type, etc.)
+      if (item.photo_requirements) {
+        // Ensure submission_type is present
+        if (!item.photo_requirements.submission_type) {
+          item.photo_requirements.submission_type = 'photo'; // Default to 'photo'
+        }
+        console.log(`  Item: photo_requirements.submission_type = ${item.photo_requirements.submission_type}`);
+      }
+      
+      // Log submission_time_seconds to verify it's in the form
+      console.log(`  Item "${item.title}": submission_time_seconds = ${item.submission_time_seconds}`);
+      
       // Ensure sample_images array is properly formatted for the backend
       if (item.sample_images && Array.isArray(item.sample_images)) {
         // Clean up UI-specific fields that shouldn't be sent to backend
@@ -2060,6 +2444,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           image_type: img.image_type || 'sample',
           is_primary: img.is_primary || false,
           order_index: img.order_index || 0
+        }));
+      }
+      // Ensure sample_videos array is properly formatted for the backend
+      if (item.sample_videos && Array.isArray(item.sample_videos)) {
+        item.sample_videos = item.sample_videos.map((v: SampleVideo) => ({
+          url: v.url,
+          label: v.label || '',
+          description: v.description || '',
+          type: v.type || 'video',
+          is_primary: v.is_primary || false,
+          order_index: v.order_index || 0,
+          duration_seconds: v.duration_seconds || null
         }));
       }
       

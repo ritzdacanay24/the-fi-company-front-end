@@ -642,13 +642,24 @@ class PhotoChecklistConfigAPI {
         
         // Validate file
         $config = $this->getConfigValues();
-        $maxSize = ($config['max_photo_size_mb'] ?? 10) * 1024 * 1024;
+        
+        // Determine if this is a video or photo based on MIME type
+        $isVideo = strpos($uploadedFile['type'], 'video') !== false;
+        
+        // Use appropriate size limit based on file type
+        $maxSizeConfig = $isVideo ? 'max_video_size_mb' : 'max_photo_size_mb';
+        $maxSize = ($config[$maxSizeConfig] ?? ($isVideo ? 50 : 10)) * 1024 * 1024;
         
         if ($uploadedFile['size'] > $maxSize) {
-            throw new Exception('File size exceeds maximum allowed size');
+            $actualSizeMB = round($uploadedFile['size'] / 1024 / 1024, 2);
+            $maxSizeMB = $config[$maxSizeConfig] ?? ($isVideo ? 50 : 10);
+            $fileType = $isVideo ? 'Video' : 'Photo';
+            throw new Exception("{$fileType} size ({$actualSizeMB}MB) exceeds maximum allowed size ({$maxSizeMB}MB)");
         }
         
-        $allowedTypes = json_decode($config['allowed_photo_types'] ?? '["image/jpeg", "image/png"]', true);
+        // Get allowed types based on file type - they're already decoded as array by getConfigValues()
+        $allowedTypesConfig = $isVideo ? 'allowed_video_types' : 'allowed_photo_types';
+        $allowedTypes = $config[$allowedTypesConfig] ?? ($isVideo ? ['video/mp4', 'video/webm'] : ['image/jpeg', 'image/png']);
         if (!in_array($uploadedFile['type'], $allowedTypes)) {
             throw new Exception('File type not allowed');
         }

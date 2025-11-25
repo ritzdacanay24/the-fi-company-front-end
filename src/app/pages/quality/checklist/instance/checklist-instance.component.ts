@@ -80,6 +80,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   canModifyChecklist = false;
   currentUserId: number | null = null;
 
+  // Configuration values
+  maxPhotoSizeMB = 10;
+  maxVideoSizeMB = 50; // Default to 50MB for videos
+
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
     return this.stateService.getItemProgress();
@@ -104,6 +108,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   ngOnInit(): void {
+    // Load configuration values
+    this.loadConfig();
+    
     this.route.queryParams.subscribe(params => {
       const idParam = params['id'];
       const stepParam = params['step'];
@@ -200,6 +207,29 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
     // Use == for comparison to handle number vs string (e.g., 3 == "3")
     return this.currentUserId == instance.operator_id;
+  }
+
+  loadConfig(): void {
+    this.photoChecklistService.getConfig().subscribe({
+      next: (config) => {
+        // Load max file sizes from config
+        const configArray = Array.isArray(config) ? config : [];
+        
+        const photoSizeConfig = configArray.find((c: any) => c.config_key === 'max_photo_size_mb');
+        if (photoSizeConfig) {
+          this.maxPhotoSizeMB = parseFloat(photoSizeConfig.config_value) || 10;
+        }
+        
+        const videoSizeConfig = configArray.find((c: any) => c.config_key === 'max_video_size_mb');
+        if (videoSizeConfig) {
+          this.maxVideoSizeMB = parseFloat(videoSizeConfig.config_value) || 50;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading config:', error);
+        // Use defaults if config loading fails
+      }
+    });
   }
 
   loadInstance(): void {
@@ -346,6 +376,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Extract photos from instance item
       const existingPhotos = this.instanceMatcher.extractPhotos(instanceItem);
       
+      // Extract videos from instance item (NEW)
+      const existingVideos = instanceItem?.videos?.map((v: any) => v.file_url || v.url || v) || [];
+      
       // Get completion status from instance item
       const { isCompleted, completedAt } = this.instanceMatcher.getCompletionStatus(instanceItem);
       
@@ -381,6 +414,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         } as ChecklistItem & { id: string; original_position: number; baseItemId: number },
         completed,
         photos: existingPhotos,
+        videos: existingVideos, // Use extracted videos
         notes,
         completedAt: completionDate
       };
@@ -744,11 +778,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const itemProgress = this.stateService.findItemProgress(itemId);
     
     if (itemProgress) {
-      // Check if photo requirements are met before marking as complete
+      // Check if submission requirements are met based on submission_type before marking as complete
       if (!itemProgress.completed) {
         const validation = this.photoValidation.canCompleteItem(
           itemProgress.photos.length,
-          itemProgress.item
+          itemProgress.item,
+          itemProgress.videos?.length || 0  // Pass video count for submission_type validation
         );
         
         if (!validation.valid) {
@@ -1221,6 +1256,16 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   getPhotoUrl(photo: string | any): string {
     return this.photoOps.getPhotoUrl(photo);
+  }
+
+  /**
+   * Format video duration in seconds to MM:SS format
+   */
+  formatDuration(seconds: number | null | undefined): string {
+    if (!seconds || seconds <= 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   // ==============================================

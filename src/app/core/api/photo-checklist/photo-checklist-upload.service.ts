@@ -81,7 +81,7 @@ export class PhotoChecklistUploadService {
     try {
       const response = await firstValueFrom(
         this.http.post<ChecklistImageUploadResponse>(
-          'photo-checklist/upload-temp-image.php',
+          '/backend/api/photo-checklist/upload-temp-image.php',
           formData
         )
       );

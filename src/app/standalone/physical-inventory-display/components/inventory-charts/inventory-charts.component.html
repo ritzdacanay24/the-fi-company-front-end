@@ -1,0 +1,234 @@
+<div class="charts-container">
+  <!-- Header Section -->
+  <div class="charts-header">
+    <div class="header-content">
+      <div class="title-section">
+        <i class="mdi mdi-chart-bar"></i>
+        <h1>Physical Inventory Analytics</h1>
+      </div>
+      <div class="stats-summary">
+        <div class="stat-card">
+          <i class="mdi mdi-clipboard-list"></i>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.totalCount }}</div>
+            <div class="stat-label">Total Items</div>
+          </div>
+        </div>
+        <div class="stat-card success">
+          <i class="mdi mdi-check-circle"></i>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.overallProgress | number:'1.0-0' }}%</div>
+            <div class="stat-label">Overall Progress</div>
+          </div>
+        </div>
+        <div class="stat-card info">
+          <i class="mdi mdi-clock-outline"></i>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.completedFirstCounts + stats.completedSecondCounts }}</div>
+            <div class="stat-label">Total Completed</div>
+          </div>
+        </div>
+      </div>
+      <button class="refresh-btn" (click)="refreshCharts()">
+        <i class="mdi mdi-refresh"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Completion Chart -->
+    <div class="chart-card large">
+      <div class="chart-wrapper">
+        <canvas #completionChart></canvas>
+      </div>
+      <div class="chart-footer">
+        <div class="footer-stat">
+          <i class="mdi mdi-numeric-1-circle text-success"></i>
+          <span>First Count: {{ stats.completedFirstCounts }}/{{ stats.totalFirstCounts }}</span>
+        </div>
+        <div class="footer-stat">
+          <i class="mdi mdi-numeric-2-circle text-info"></i>
+          <span>Second Count: {{ stats.completedSecondCounts }}/{{ stats.totalSecondCounts }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Chart -->
+    <div class="chart-card large">
+      <div class="chart-wrapper">
+        <canvas #progressChart></canvas>
+      </div>
+      <div class="chart-footer">
+        <div class="footer-stat">
+          <i class="mdi mdi-progress-check text-success"></i>
+          <span>Stacked view showing completed vs remaining counts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Count Comparison Chart -->
+    <div class="chart-card">
+      <div class="chart-wrapper">
+        <canvas #countComparisonChart></canvas>
+      </div>
+      <div class="chart-footer">
+        <div class="footer-stat">
+          <i class="mdi mdi-chart-line text-info"></i>
+          <span>Completion rate trend between count cycles</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="chart-card">
+      <div class="chart-wrapper">
+        <canvas #trendChart></canvas>
+      </div>
+      <div class="chart-footer">
+        <div class="footer-stat">
+          <i class="mdi mdi-trending-up text-warning"></i>
+          <span>Historical progress over time</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Stats Section -->
+  <div class="detailed-stats">
+    <h3>
+      <i class="mdi mdi-information"></i>
+      Detailed Statistics
+    </h3>
+    <div class="stats-grid">
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="mdi mdi-numeric-1-circle-outline"></i>
+          <h4>First Count Status</h4>
+        </div>
+        <div class="detail-body">
+          <div class="detail-row">
+            <span class="label">Total Required:</span>
+            <span class="value">{{ stats.totalFirstCounts }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Completed:</span>
+            <span class="value text-success">{{ stats.completedFirstCounts }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Remaining:</span>
+            <span class="value text-warning">{{ stats.totalFirstCounts - stats.completedFirstCounts }}</span>
+          </div>
+          <div class="detail-row highlight">
+            <span class="label">Completion Rate:</span>
+            <span class="value text-success">{{ stats.firstCountPercentage | number:'1.1-1' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="mdi mdi-numeric-2-circle-outline"></i>
+          <h4>Second Count Status</h4>
+        </div>
+        <div class="detail-body">
+          <div class="detail-row">
+            <span class="label">Total Required:</span>
+            <span class="value">{{ stats.totalSecondCounts }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Completed:</span>
+            <span class="value text-info">{{ stats.completedSecondCounts }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Remaining:</span>
+            <span class="value text-warning">{{ stats.totalSecondCounts - stats.completedSecondCounts }}</span>
+          </div>
+          <div class="detail-row highlight">
+            <span class="label">Completion Rate:</span>
+            <span class="value text-info">{{ stats.secondCountPercentage | number:'1.1-1' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="mdi mdi-chart-donut"></i>
+          <h4>Overall Summary</h4>
+        </div>
+        <div class="detail-body">
+          <div class="detail-row">
+            <span class="label">Total Items:</span>
+            <span class="value">{{ stats.totalCount }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Total Completed:</span>
+            <span class="value text-success">{{ stats.completedFirstCounts + stats.completedSecondCounts }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Total Remaining:</span>
+            <span class="value text-warning">{{ (stats.totalFirstCounts - stats.completedFirstCounts) + (stats.totalSecondCounts - stats.completedSecondCounts) }}</span>
+          </div>
+          <div class="detail-row highlight">
+            <span class="label">Overall Progress:</span>
+            <span class="value text-primary">{{ stats.overallProgress | number:'1.1-1' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <i class="mdi mdi-speedometer"></i>
+          <h4>Performance Metrics</h4>
+        </div>
+        <div class="detail-body">
+          <div class="detail-row">
+            <span class="label">First Count Rate:</span>
+            <span class="value" [class.text-success]="stats.firstCountPercentage >= 75" 
+                  [class.text-warning]="stats.firstCountPercentage < 75 && stats.firstCountPercentage >= 50"
+                  [class.text-danger]="stats.firstCountPercentage < 50">
+              {{ stats.firstCountPercentage | number:'1.1-1' }}%
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Second Count Rate:</span>
+            <span class="value" [class.text-success]="stats.secondCountPercentage >= 75" 
+                  [class.text-warning]="stats.secondCountPercentage < 75 && stats.secondCountPercentage >= 50"
+                  [class.text-danger]="stats.secondCountPercentage < 50">
+              {{ stats.secondCountPercentage | number:'1.1-1' }}%
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Efficiency:</span>
+            <span class="value" [class.text-success]="stats.overallProgress >= 75" 
+                  [class.text-warning]="stats.overallProgress < 75 && stats.overallProgress >= 50"
+                  [class.text-danger]="stats.overallProgress < 50">
+              {{ stats.overallProgress >= 75 ? 'High' : stats.overallProgress >= 50 ? 'Medium' : 'Low' }}
+            </span>
+          </div>
+          <div class="detail-row highlight">
+            <span class="label">Status:</span>
+            <span class="value" [class.text-success]="stats.overallProgress >= 90" 
+                  [class.text-info]="stats.overallProgress < 90 && stats.overallProgress >= 50"
+                  [class.text-warning]="stats.overallProgress < 50">
+              {{ stats.overallProgress >= 90 ? 'Near Complete' : stats.overallProgress >= 50 ? 'In Progress' : 'Just Started' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="charts-footer">
+    <div class="footer-content">
+      <i class="mdi mdi-update"></i>
+      <span>Auto-refreshes every 30 seconds</span>
+    </div>
+    <div class="footer-content">
+      <i class="mdi mdi-information-outline"></i>
+      <span>Real-time inventory count analytics and progress tracking</span>
+    </div>
+  </div>
+</div>
