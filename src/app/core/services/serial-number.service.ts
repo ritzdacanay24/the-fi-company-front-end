@@ -408,4 +408,16 @@ export class SerialNumberService {
   isUnique(serialNumber: string, existingNumbers: string[]): boolean {
     return !existingNumbers.includes(serialNumber);
   }
+
+  /**
+   * Generate EYEFI Asset Numbers in format YYYYMMDDXXX
+   * Backend will generate sequential numbers for today's date
+   */
+  generateEyefiAssetNumbers(count: number): Promise<any> {
+    return this.http.post<any>(`${this.API_URL}/index.php`, {
+      action: 'generate_asset_numbers',
+      count: count,
+      date: moment().format('YYYY-MM-DD')
+    }).toPromise();
+  }
 }

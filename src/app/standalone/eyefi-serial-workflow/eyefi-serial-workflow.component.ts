@@ -101,27 +101,34 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     },
     {
       id: 2,
+      title: 'Choose Asset Type',
+      description: 'Select Serial Tag or Asset Number',
+      completed: false,
+      active: false
+    },
+    {
+      id: 3,
       title: 'Select Customer',
       description: 'Choose the customer for this batch',
       completed: false,
       active: false
     },
     {
-      id: 3,
+      id: 4,
       title: 'Configure Batch',
       description: 'Enter quantity and select category (New/Used)',
       completed: false,
       active: false
     },
     {
-      id: 4,
+      id: 5,
       title: 'Assign Serials & UL Numbers',
       description: 'Select serial numbers and assign UL labels',
       completed: false,
       active: false
     },
     {
-      id: 5,
+      id: 6,
       title: 'Generate Assets',
       description: 'Generate or select customer assets',
       completed: false,
@@ -132,6 +139,9 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   // Step 1: Work Order
   workOrderNumber: string | any = '';
   workOrderDetails: any = null; // Store full work order details (part #, description, etc.)
+
+  // Step 2: Asset Type Selection
+  assetType: 'serial' | 'asset_number' = 'serial'; // 'serial' = EYEFI Serial Tag, 'asset_number' = EYEFI Asset Number
 
   // Step 2: Batch Configuration
   quantity: number = 1;
@@ -331,6 +341,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     // Generate workflow session ID for tracking this batch
     this.workflowSessionId = this.generateUUID();
     console.log('🔐 Workflow Session ID:', this.workflowSessionId);
+    console.log('📊 Total Steps Defined:', this.steps.length);
+    console.log('📋 Steps Array:', this.steps.map(s => `${s.id}: ${s.title}`));
     
     // Restore workflow state from sessionStorage if exists
     this.restoreWorkflowState();
@@ -531,8 +543,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     if (this.canProceedToNextStep()) {
       this.completeCurrentStep();
       
-      // Auto-populate serials when moving from Step 3 (Configure Batch) to Step 4 (Assign Serials)
-      if (this.currentStep === 3) {
+      // Auto-populate serials when moving from Step 4 (Configure Batch) to Step 5 (Assign Serials)
+      if (this.currentStep === 4) {
         this.currentStep++;
         this.updateStepStates();
         
@@ -546,8 +558,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         await this.autoPopulateSerials();
         this.saveWorkflowState(); // Save after populating
       }
-      // Auto-generate/select assets when moving from Step 4 (Assign Serials) to Step 5 (Generate Assets)
-      else if (this.currentStep === 4) {
+      // Auto-generate/select assets when moving from Step 5 (Assign Serials) to Step 6 (Generate Assets)
+      else if (this.currentStep === 5) {
         this.currentStep++;
         this.updateStepStates();
         
@@ -568,8 +580,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         this.updateStepStates();
         this.saveWorkflowState(); // Save after each step
         
-        // If moved to step 2 and customer is selected, scroll to it
-        if (this.currentStep === 2 && this.selectedCustomer) {
+        // If moved to step 3 and customer is selected, scroll to it
+        if (this.currentStep === 3 && this.selectedCustomer) {
           this.scrollToSelectedCustomer();
         }
       }
@@ -581,8 +593,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       this.currentStep--;
       this.updateStepStates();
       
-      // If moved back to step 2 and customer is selected, scroll to it
-      if (this.currentStep === 2 && this.selectedCustomer) {
+      // If moved back to step 3 and customer is selected, scroll to it
+      if (this.currentStep === 3 && this.selectedCustomer) {
         this.scrollToSelectedCustomer();
       }
     }
@@ -607,13 +619,16 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         // Step 1: Work Order Number is required
         return !!this.workOrderNumber && this.workOrderNumber.toString().trim().length > 0;
       case 2:
-        // Step 2: Customer selected (and custom name if "Other" selected)
+        // Step 2: Asset Type selection required
+        return !!this.assetType;
+      case 3:
+        // Step 3: Customer selected (and custom name if "Other" selected)
         if (this.selectedCustomer === 'Other') {
           return !!this.selectedCustomer && !!this.customOtherCustomerName && this.customOtherCustomerName.trim().length > 0;
         }
         return !!this.selectedCustomer;
-      case 3:
-        // Step 3: Quantity must be at least 1 and category selected
+      case 4:
+        // Step 4: Quantity must be at least 1 and category selected
         // Also ensure serialAssignments array is initialized
         if (this.quantity >= 1 && !!this.category) {
           // Initialize serialAssignments if not already done
@@ -623,8 +638,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           return true;
         }
         return false;
-      case 4:
-        // Step 4: All serial assignments must be filled
+      case 5:
+        // Step 5: All serial assignments must be filled
         // Handle both object (new category) and string (used category) serial values
         // UL is optional based on ulRequired flag
         const allFilled = this.serialAssignments.length === this.quantity &&
@@ -746,21 +761,29 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       let serials = [];
       
       if (this.category === 'new') {
-        // ✨ NEW: Use availability views that check BOTH serial_assignments AND legacy tables
-        const serialsResponse = await this.serialNumberService.getAvailableSerialsFromViews(this.quantity * 2);
-        
-        console.log('🆕 Serials Response (from views):', serialsResponse);
-        
-        if (serialsResponse?.success && serialsResponse?.data && Array.isArray(serialsResponse.data)) {
-          const allSerials = serialsResponse.data;
+        // Check asset type: 'serial' = traditional EyeFi serials, 'asset_number' = YYYYMMDDXXX format
+        if (this.assetType === 'asset_number') {
+          // EYEFI Asset Numbers - Show PREVIEW placeholders (actual generation happens on submit)
+          console.log('🔢 Creating preview placeholders for EYEFI Asset Numbers (YYYYMMDDXXX format)...');
+          serials = this.createAssetNumberPreviewPlaceholders(this.quantity);
+        } else {
+          // Traditional EyeFi Serial Tags
+          // ✨ NEW: Use availability views that check BOTH serial_assignments AND legacy tables
+          const serialsResponse = await this.serialNumberService.getAvailableSerialsFromViews(this.quantity * 2);
           
-          // Use LAST or FIRST items based on testing mode
-          serials = this.USE_LAST_ITEMS_FOR_TESTING 
-            ? allSerials.slice(-this.quantity)  // Testing: LAST N items
-            : allSerials.slice(0, this.quantity); // Production: FIRST N items
+          console.log('🆕 Serials Response (from views):', serialsResponse);
           
-          if (this.USE_LAST_ITEMS_FOR_TESTING) {
-            console.log(`🧪 TESTING MODE: Total serials: ${allSerials.length}, Using LAST ${this.quantity}`, serials.map(s => s.serial_number));
+          if (serialsResponse?.success && serialsResponse?.data && Array.isArray(serialsResponse.data)) {
+            const allSerials = serialsResponse.data;
+            
+            // Use LAST or FIRST items based on testing mode
+            serials = this.USE_LAST_ITEMS_FOR_TESTING 
+              ? allSerials.slice(-this.quantity)  // Testing: LAST N items
+              : allSerials.slice(0, this.quantity); // Production: FIRST N items
+            
+            if (this.USE_LAST_ITEMS_FOR_TESTING) {
+              console.log(`🧪 TESTING MODE: Total serials: ${allSerials.length}, Using LAST ${this.quantity}`, serials.map(s => s.serial_number));
+            }
           }
         }
       } else {
@@ -1260,6 +1283,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         active: 1,
         inspector_name: userFullName,
         consumed_by: userFullName,
+        asset_type: this.assetType, // 'serial' or 'asset_number'
         // Work Order Information
         wo_number: this.workOrderNumber,
         wo_part: this.workOrderDetails?.wo_part || null,
@@ -1328,6 +1352,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         active: 1,
         inspector_name: userFullName,
         consumed_by: userFullName,
+        asset_type: this.assetType, // 'serial' or 'asset_number'
         // Work Order Information
         wo_number: this.workOrderNumber,
         wo_part: this.workOrderDetails?.wo_part || null,
@@ -1394,6 +1419,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         active: 1,
         inspector_name: userFullName,
         consumed_by: userFullName,
+        asset_type: this.assetType, // 'serial' or 'asset_number'
         // Work Order Information
         wo_number: this.workOrderNumber,
         wo_part: this.workOrderDetails?.wo_part || null,
@@ -1467,6 +1493,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         consumed_by: userFullName,
         status: 'consumed',
         active: 1,
+        asset_type: this.assetType, // 'serial' or 'asset_number'
         // Work Order Information
         wo_number: this.workOrderNumber,
         wo_part: this.workOrderDetails?.wo_part || null,
@@ -1766,6 +1793,11 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     try {
       this.isLoading = true;
 
+      // ✅ GENERATE ASSET NUMBERS NOW (only if using asset_number type and they're still previews)
+      if (this.assetType === 'asset_number' && this.category === 'new') {
+        await this.generateActualAssetNumbers();
+      }
+
       let result: any;
       switch (this.currentFormType) {
         case 'sg':
@@ -1940,6 +1972,113 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       result += Math.floor(Math.random() * 10);
     }
     return result;
+  }
+
+  /**
+   * Generate EYEFI Asset Numbers in format YYYYMMDDXXX
+   * Fetches next available sequence number from backend for today's date
+   */
+  private async generateEyefiAssetNumbers(count: number): Promise<any[]> {
+    try {
+      // Call backend API to get next available asset numbers for today
+      const response = await this.serialNumberService.generateEyefiAssetNumbers(count, this.category === 'new' ? 'New' : 'Used');
+      
+      if (response?.success && Array.isArray(response.data)) {
+        console.log('✅ Generated EYEFI Asset Numbers:', response.data);
+        // Map the response to match the expected format
+        return response.data.map((asset: any) => ({
+          serial_number: asset.asset_number,
+          id: asset.id,
+          generation_date: asset.generation_date,
+          daily_sequence: asset.daily_sequence,
+          is_asset_number: true // Flag to indicate this is an asset number, not traditional serial
+        }));
+      } else {
+        throw new Error('Failed to generate asset numbers from backend');
+      }
+    } catch (error) {
+      console.error('❌ Error generating EYEFI Asset Numbers:', error);
+      this.toastrService.error('Failed to generate asset numbers. Please try again.');
+      return [];
+    }
+  }
+
+  /**
+   * Create preview placeholders for EYEFI Asset Numbers
+   * These are NOT generated in the database yet - only visual previews
+   * Actual generation happens on submit to prevent orphaned numbers
+   */
+  private createAssetNumberPreviewPlaceholders(count: number): any[] {
+    const today = new Date();
+    const datePrefix = today.getFullYear().toString() + 
+                      String(today.getMonth() + 1).padStart(2, '0') + 
+                      String(today.getDate()).padStart(2, '0');
+    
+    const placeholders = [];
+    for (let i = 1; i <= count; i++) {
+      const sequenceStr = String(i).padStart(3, '0');
+      placeholders.push({
+        serial_number: `${datePrefix}${sequenceStr}`,
+        id: null, // No ID yet - will be generated on submit
+        is_asset_number: true,
+        is_preview: true // Flag to indicate this is a preview placeholder
+      });
+    }
+    
+    console.log('📋 Created preview placeholders:', placeholders);
+    return placeholders;
+  }
+
+  /**
+   * Generate actual asset numbers in database (called on submit)
+   * Replaces preview placeholders with real database-generated asset numbers
+   */
+  private async generateActualAssetNumbers(): Promise<void> {
+    try {
+      console.log('🔢 Generating ACTUAL EYEFI Asset Numbers in database...');
+      
+      // Check if we have preview placeholders
+      const hasPreviewPlaceholders = this.serialAssignments.some((a: any) => 
+        a.serial?.is_preview === true
+      );
+      
+      if (!hasPreviewPlaceholders) {
+        console.log('ℹ️ Asset numbers already generated, skipping...');
+        return;
+      }
+
+      // Generate actual asset numbers from backend
+      const actualAssetNumbers = await this.generateEyefiAssetNumbers(this.quantity);
+      
+      if (actualAssetNumbers.length !== this.quantity) {
+        throw new Error(`Expected ${this.quantity} asset numbers but got ${actualAssetNumbers.length}`);
+      }
+
+      // Replace preview placeholders with actual generated asset numbers
+      for (let i = 0; i < this.serialAssignments.length; i++) {
+        if (this.serialAssignments[i].serial?.is_preview) {
+          this.serialAssignments[i].serial = actualAssetNumbers[i];
+          console.log(`✅ Replaced placeholder ${i + 1} with actual asset number:`, actualAssetNumbers[i].serial_number);
+        }
+      }
+
+      // Update generatedAssets if needed
+      if (this.generatedAssets.length > 0) {
+        for (let i = 0; i < this.generatedAssets.length; i++) {
+          if (this.generatedAssets[i].serial?.is_preview) {
+            this.generatedAssets[i].serial = actualAssetNumbers[i];
+          }
+        }
+      }
+
+      console.log('✅ All asset numbers generated successfully');
+      this.toastrService.success(`Generated ${actualAssetNumbers.length} EYEFI Asset Numbers`, 'Asset Generation');
+      
+    } catch (error) {
+      console.error('❌ Error generating actual asset numbers:', error);
+      this.toastrService.error('Failed to generate asset numbers. Please try again.');
+      throw error; // Re-throw to prevent submission
+    }
   }
 
   /**
@@ -2620,6 +2759,7 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
       currentStep: this.currentStep,
       workOrderNumber: this.workOrderNumber,
       workOrderDetails: this.workOrderDetails,
+      assetType: this.assetType, // Save asset type selection ('serial' or 'asset_number')
       selectedCustomer: this.selectedCustomer,
       customOtherCustomerName: this.customOtherCustomerName,
       quantity: this.quantity,
@@ -2670,6 +2810,7 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
       this.currentStep = workflowState.currentStep || 1;
       this.workOrderNumber = workflowState.workOrderNumber || '';
       this.workOrderDetails = workflowState.workOrderDetails || null;
+      this.assetType = workflowState.assetType || 'serial'; // Restore asset type ('serial' or 'asset_number')
       this.selectedCustomer = workflowState.selectedCustomer || '';
       this.customOtherCustomerName = workflowState.customOtherCustomerName || '';
       this.quantity = workflowState.quantity || 1;
@@ -2682,6 +2823,7 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
 
       console.log('✅ Workflow state restored from sessionStorage');
       console.log('📍 Current Step:', this.currentStep);
+      console.log('🏷️ Asset Type:', this.assetType);
       console.log('🔢 Quantity:', this.quantity);
       console.log('📋 Serial Assignments:', this.serialAssignments.length);
 

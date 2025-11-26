@@ -2934,7 +2934,7 @@ export class ShippingComponent implements OnInit {
         // Refresh owners list after changes
         await this.ownersService.getActiveOwners();
         // Optionally refresh the grid to show updated owner options
-        this.gridApi?.refreshCells({ force: true });
+        //this.gridApi?.refreshCells({ force: true });
       }
     } catch (error) {
       console.error('Error opening owner management:', error);

@@ -149,6 +149,14 @@ export class PublicFormWrapperComponent implements OnInit, OnDestroy {
     this.userLoggedOut.emit();
   }
 
+  extendSession(): void {
+    // Reset inactivity timer
+    this.lastActivity = Date.now();
+    this.saveLastActivity();
+    this.toastrService.success('Session extended', 'Success');
+    console.log('Session manually extended');
+  }
+
   goToFormsMenu(): void {
     this.router.navigate(['/forms']);
   }
