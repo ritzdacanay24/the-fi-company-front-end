@@ -1,0 +1,39 @@
+<!-- Don't show actions for group rows -->
+<ng-container *ngIf="params.data">
+  <span class="text-muted small" *ngIf="!isNewSystem">Legacy - N/A</span>
+
+  <div class="btn-group" ngbDropdown *ngIf="isNewSystem && isVoided">
+  <button type="button" class="btn btn-sm btn-secondary" ngbDropdownToggle>
+    <i class="mdi mdi-dots-vertical"></i>
+  </button>
+  <div ngbDropdownMenu class="dropdown-menu-end">
+    <button ngbDropdownItem (click)="onRestore()">
+      <i class="mdi mdi-restore me-2"></i>Restore Assignment
+    </button>
+  </div>
+</div>
+
+<div class="btn-group" ngbDropdown *ngIf="isNewSystem && !isVoided">
+  <button type="button" class="btn btn-sm btn-secondary" ngbDropdownToggle>
+    <i class="mdi mdi-dots-vertical"></i>
+  </button>
+  <div ngbDropdownMenu class="dropdown-menu-end">
+    <button ngbDropdownItem (click)="onPrint()">
+      <i class="mdi mdi-printer me-2"></i>Print Report
+    </button>
+    <div class="dropdown-divider"></div>
+    <button ngbDropdownItem disabled class="text-muted">
+      <i class="mdi mdi-cancel me-2"></i>Void Assignment (Disabled)
+    </button>
+    <button ngbDropdownItem disabled class="text-muted">
+      <i class="mdi mdi-delete me-2"></i>Delete Assignment (Disabled)
+    </button>
+    <ng-container *ngIf="requiresVerif && verificationStatus !== 'verified'">
+      <div class="dropdown-divider"></div>
+      <button ngbDropdownItem disabled class="text-muted">
+        <i class="mdi {{ verifyIcon }} me-2"></i>{{ verifyText }} Serial (Disabled)
+      </button>
+    </ng-container>
+  </div>
+</div>
+</ng-container>

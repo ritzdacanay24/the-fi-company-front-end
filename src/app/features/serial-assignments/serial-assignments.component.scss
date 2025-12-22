@@ -1,0 +1,15 @@
+::ng-deep .ag-cell {
+  overflow: visible !important;
+}
+
+::ng-deep .ag-row {
+  z-index: 0;
+}
+
+::ng-deep .ag-row:hover {
+  z-index: 1;
+}
+
+::ng-deep .ag-cell-focus {
+  z-index: 2;
+}

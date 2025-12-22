@@ -1021,8 +1021,134 @@
                 <p class="text-muted">Generating {{ getCustomerDisplayName() }} assets...</p>
               </div>
 
-              <!-- Light and Wonder & AGS - Show preview table (assets will be generated on submit) -->
-              <div *ngIf="!isGeneratingAssets && (getCustomerFormComponent() === 'sg' || getCustomerFormComponent() === 'ags')">
+              <!-- Light and Wonder - Manual entry for USED, Auto-generate for NEW -->
+              <div *ngIf="!isGeneratingAssets && getCustomerFormComponent() === 'sg'">
+                
+                <!-- USED Category: Manual Entry -->
+                <div *ngIf="category === 'used'">
+                  <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-start">
+                      <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                      <div>
+                        <h6 class="alert-heading mb-2">{{ getCustomerDisplayName() }} Assets - Manual Entry Required (USED)</h6>
+                        <p class="mb-0">Please enter the {{ generatedAssets.length }} {{ getCustomerDisplayName() }} asset numbers manually below.</p>
+                        <small class="text-muted">
+                          <span class="badge bg-primary me-2">{{ getCompletedAssetNumbersCount() }} / {{ generatedAssets.length }}</span>
+                          Completed
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Manual Entry Assets Table -->
+                  <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                      <thead class="table-light">
+                        <tr>
+                          <th>#</th>
+                          <th>EyeFi Serial Number</th>
+                          <th>UL Label Number</th>
+                          <th>{{ getCustomerDisplayName() }} Asset Number <span class="text-danger">*</span></th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let generated of generatedAssets; let i = index">
+                          <td>{{ i + 1 }}</td>
+                          <td>
+                            <strong class="text-primary">{{ generated.serial?.serial_number || generated.serial }}</strong>
+                          </td>
+                          <td>
+                            <strong class="text-info">{{ generated.ulNumber?.ul_number }}</strong>
+                          </td>
+                          <td>
+                            <input 
+                              type="text" 
+                              class="form-control" 
+                              [(ngModel)]="generated.assetNumber"
+                              (input)="onAssetNumberInput(i, generated.assetNumber)"
+                              (blur)="onAssetNumberBlur(i)"
+                              placeholder="Enter Light & Wonder asset number (e.g., US12345678)..."
+                              [disabled]="isLoading"
+                              required>
+                            <small class="text-muted">Enter the Light & Wonder asset number</small>
+                          </td>
+                          <td>
+                            <span class="badge" [class.bg-success]="generated.assetNumber && generated.assetNumber.trim()" [class.bg-warning]="!generated.assetNumber || !generated.assetNumber.trim()">
+                              <i class="mdi" [class.mdi-check]="generated.assetNumber && generated.assetNumber.trim()" [class.mdi-alert]="!generated.assetNumber || !generated.assetNumber.trim()"></i>
+                              {{ (generated.assetNumber && generated.assetNumber.trim()) ? 'Entered' : 'Pending' }}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Help Text for USED -->
+                  <div class="alert alert-light mt-3">
+                    <div class="d-flex align-items-start">
+                      <i class="mdi mdi-help-circle-outline me-3 mt-1"></i>
+                      <div class="small">
+                        <p class="mb-2"><strong>Asset Number Format:</strong> Light & Wonder asset numbers typically follow the format <code>US########</code> (e.g., US14432505)</p>
+                        <p class="mb-0">All asset numbers must be entered before you can proceed with submission.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- NEW Category: Auto-generation -->
+                <div *ngIf="category === 'new'">
+                  <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-start">
+                      <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>
+                      <div>
+                        <h6 class="alert-heading mb-2">Ready to Generate Assets</h6>
+                        <p class="mb-0">{{ generatedAssets.length }} {{ getCustomerDisplayName() }} assets will be generated when you submit the form below.</p>
+                        <small class="text-muted">Asset numbers are generated sequentially to prevent gaps.</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Preview Assets Table -->
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead class="table-light">
+                        <tr>
+                          <th>#</th>
+                          <th>EyeFi Serial Number</th>
+                          <th>UL Label Number</th>
+                          <th>{{ getCustomerDisplayName() }} Asset Number</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let generated of generatedAssets; let i = index">
+                          <td>{{ i + 1 }}</td>
+                          <td>
+                            <strong class="text-primary">{{ generated.serial?.serial_number || generated.serial }}</strong>
+                          </td>
+                          <td>
+                            <strong class="text-info">{{ generated.ulNumber?.ul_number }}</strong>
+                          </td>
+                          <td>
+                            <span class="text-muted">
+                              <i class="mdi mdi-clock-outline"></i> Pending Generation
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge bg-warning text-dark">
+                              <i class="mdi mdi-clock-outline"></i> Pending
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AGS - Show preview table (assets will be auto-generated on submit) -->
+              <div *ngIf="!isGeneratingAssets && getCustomerFormComponent() === 'ags'">
                 <div class="alert alert-info mb-4">
                   <div class="d-flex align-items-start">
                     <i class="mdi mdi-information-outline me-3 mt-1 fs-4"></i>

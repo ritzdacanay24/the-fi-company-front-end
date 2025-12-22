@@ -23,6 +23,7 @@ import { MismatchReport } from './models/mismatch-report.model';
 import { MismatchReportService } from './services/mismatch-report.service';
 import { SerialSequenceDebugModalComponent } from '../serial-sequence-debug-modal/serial-sequence-debug-modal.component';
 import { SerialAssignmentsService } from '@app/features/serial-assignments/services/serial-assignments.service';
+import { SerialReportPrintService } from '@app/shared/services/serial-report-print.service';
 import { interval, Subscription } from 'rxjs';
 
 interface WorkflowStep {
@@ -334,7 +335,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     private zebraLabelPrintModalService: ZebraLabelPrintModalService,
     private authenticationService: AuthenticationService,
     private mismatchReportService: MismatchReportService,
-    private serialAssignmentsService: SerialAssignmentsService
+    private serialAssignmentsService: SerialAssignmentsService,
+    private serialReportPrintService: SerialReportPrintService
   ) {}
 
   ngOnInit(): void {
@@ -666,6 +668,17 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         }
         
         return allFilled;
+      case 6:
+        // Step 6: For SG/Light and Wonder with USED category, ensure all asset numbers are manually entered
+        const customerType = this.getCustomerFormComponent();
+        if (customerType === 'sg' && this.category === 'used') {
+          return this.generatedAssets.length === this.quantity &&
+                 this.generatedAssets.every(asset => {
+                   return !!asset.assetNumber && asset.assetNumber.trim().length > 0;
+                 });
+        }
+        // For other customers (including SG with NEW category), allow proceeding
+        return this.generatedAssets.length === this.quantity;
       default:
         return false;
     }
@@ -1109,6 +1122,53 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     return this.serialAssignments.filter(a => a.serial && a.ulNumber).length;
   }
 
+  /**
+   * Handle manual asset number input for SG/Light and Wonder
+   */
+  onAssetNumberInput(index: number, assetNumberText: string): void {
+    if (this.generatedAssets[index]) {
+      // Store the manually entered asset number
+      if (assetNumberText && assetNumberText.trim()) {
+        this.generatedAssets[index].assetNumber = assetNumberText.trim();
+        console.log(`Manual asset number entered at position ${index}:`, assetNumberText);
+      } else {
+        this.generatedAssets[index].assetNumber = null;
+      }
+    }
+  }
+
+  /**
+   * Check for duplicate asset numbers on blur
+   */
+  onAssetNumberBlur(index: number): void {
+    if (this.generatedAssets[index]) {
+      const assetNumber = this.generatedAssets[index].assetNumber;
+      
+      if (assetNumber && assetNumber.trim()) {
+        // Check for duplicate asset numbers within this batch
+        const duplicateIndex = this.generatedAssets.findIndex((asset, i) => 
+          i !== index && asset.assetNumber === assetNumber.trim()
+        );
+        
+        if (duplicateIndex !== -1) {
+          this.toastrService.error(
+            `Asset number ${assetNumber} is already assigned to row ${duplicateIndex + 1}. Please enter a different asset number.`,
+            'Duplicate Asset Number'
+          );
+          // Clear the duplicate
+          this.generatedAssets[index].assetNumber = null;
+        }
+      }
+    }
+  }
+
+  /**
+   * Get count of completed asset number entries (for SG/Light and Wonder)
+   */
+  getCompletedAssetNumbersCount(): number {
+    return this.generatedAssets.filter(a => a.assetNumber && a.assetNumber.trim().length > 0).length;
+  }
+
   resetWorkflow(): void {
     // Reset step navigation
     this.currentStep = 1;
@@ -1243,9 +1303,32 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
           asset: null,
           customerName: customerName
         }));
+      } else if (customerType === 'sg') {
+        // SG (Light and Wonder) - Manual entry for USED, auto-generate for NEW
+        if (this.category === 'used') {
+          console.log('➡️ SG assets require manual entry (USED category)');
+          this.generatedAssets = this.serialAssignments.map((a, i) => ({
+            index: i,
+            serial: a.serial,
+            ulNumber: a.ulNumber,
+            assetNumber: null, // Will be manually entered by user
+            asset: null,
+            isEditing: true, // Enable editing mode
+            needsManualEntry: true // Flag for manual entry requirement
+          }));
+        } else {
+          console.log('➡️ SG assets will be auto-generated on submit (NEW category)');
+          this.generatedAssets = this.serialAssignments.map((a, i) => ({
+            index: i,
+            serial: a.serial,
+            ulNumber: a.ulNumber,
+            assetNumber: '(Will be generated on submit)',
+            asset: null
+          }));
+        }
       } else {
-        // SG & AGS - Just show preview message, will generate on submit
-        console.log('➡️ SG/AGS assets will be generated on form submit');
+        // AGS - Will auto-generate on submit
+        console.log('➡️ AGS assets will be generated on form submit');
         this.generatedAssets = this.serialAssignments.map((a, i) => ({
           serial: a.serial,
           ulNumber: a.ulNumber,
@@ -1264,6 +1347,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
 
   /**
    * Generate SG Assets (Light and Wonder) via backend - BULK TRANSACTION
+   * For USED category: Uses manually entered asset numbers from generatedAssets array
+   * For NEW category: Auto-generates asset numbers in backend
    */
   async generateSGAssets(): Promise<void> {
     try {
@@ -1271,13 +1356,39 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
       const currentUser = this.authenticationService.currentUserValue;
       const userFullName = currentUser?.full_name || 'System';
 
-      // Prepare bulk assignments array with work order info
-      const assignments = this.serialAssignments.map((assignment) => ({
-        serialNumber: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
-        eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
-        ulNumber: assignment.ulNumber?.ul_number || '',
-        ul_label_id: assignment.ulNumber?.id || null,
-        sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
+      // Prepare bulk assignments array
+      // For USED category, include manually entered asset numbers
+      // For NEW category, backend will auto-generate asset numbers
+      const assignments = this.category === 'used'
+        ? this.generatedAssets.map((generated, index) => ({
+            serialNumber: typeof generated.serial === 'string' ? generated.serial : generated.serial.serial_number,
+            eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
+            ulNumber: generated.ulNumber?.ul_number || '',
+            ul_label_id: generated.ulNumber?.id || null,
+            sgAssetNumber: generated.assetNumber, // Use manually entered asset number for USED
+            sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
+            poNumber: this.workOrderNumber,
+            property_site: '',
+            active: 1,
+            inspector_name: userFullName,
+            consumed_by: userFullName,
+            asset_type: this.assetType,
+            wo_number: this.workOrderNumber,
+            wo_part: this.workOrderDetails?.wo_part || null,
+            wo_description: this.workOrderDetails?.description || null,
+            wo_qty_ord: this.workOrderDetails?.wo_qty_ord || null,
+            wo_due_date: this.workOrderDetails?.wo_due_date || null,
+            wo_routing: this.workOrderDetails?.wo_routing || null,
+            wo_line: this.workOrderDetails?.wo_line || null,
+            cp_cust_part: this.workOrderDetails?.cp_cust_part || null,
+            cp_cust: this.workOrderDetails?.cp_cust || null
+          }))
+        : this.serialAssignments.map((assignment) => ({
+            serialNumber: typeof assignment.serial === 'string' ? assignment.serial : assignment.serial.serial_number,
+            eyefi_serial_id: typeof assignment.serial === 'string' ? null : assignment.serial.id,
+            ulNumber: assignment.ulNumber?.ul_number || '',
+            ul_label_id: assignment.ulNumber?.id || null,
+            sgPartNumber: this.workOrderDetails?.cp_cust_part || '', //this is a customer field for sg
         poNumber: this.workOrderNumber,
         property_site: '', // Add if needed
         active: 1,
@@ -2091,104 +2202,15 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
     const currentUser = this.authenticationService.currentUserValue;
     const userFullName = currentUser?.full_name || 'System';
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      this.toastrService.error('Please allow pop-ups to print the report');
-      return;
-    }
-
-    const reportHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Serial Number Report - WO ${this.successSummary.workOrder.number}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-          .section { margin: 20px 0; }
-          .section-title { font-weight: bold; color: #555; margin-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #007bff; color: white; }
-          tr:nth-child(even) { background-color: #f2f2f2; }
-          .footer { margin-top: 30px; font-size: 12px; color: #666; }
-          .user-info { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #007bff; }
-          @media print {
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <button class="no-print" onclick="window.print()" style="margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer;">
-          Print Report
-        </button>
-        
-        <h1>Serial Number Assignment Report</h1>
-        
-        <div class="user-info">
-          <strong>Created By:</strong> ${userFullName}
-        </div>
-        
-        <div class="section">
-          <div class="section-title">Work Order Information</div>
-          <table>
-            <tr><th style="width: 200px;">Work Order #</th><td>${this.successSummary.workOrder.number || 'N/A'}</td></tr>
-            <tr><th>Part Number</th><td>${this.successSummary.workOrder.part || 'N/A'}</td></tr>
-            <tr><th>Customer Part #</th><td>${this.successSummary.workOrder.cp_cust_part || 'N/A'}</td></tr>
-            <tr><th>Description</th><td>${this.successSummary.workOrder.description || 'N/A'}</td></tr>
-            <tr><th>Ordered Quantity</th><td>${this.successSummary.workOrder.qty_ord || 'N/A'}</td></tr>
-            <tr><th>Due Date</th><td>${this.successSummary.workOrder.due_date || 'N/A'}</td></tr>
-            <tr><th>Routing</th><td>${this.successSummary.workOrder.routing || 'N/A'}</td></tr>
-            <tr><th>Line</th><td>${this.successSummary.workOrder.line || 'N/A'}</td></tr>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Batch Details</div>
-          <table>
-            <tr><th>Quantity</th><td>${this.successSummary.batch.quantity}</td></tr>
-            <tr><th>Category</th><td>${this.successSummary.batch.category}</td></tr>
-            <tr><th>Customer</th><td>${this.successSummary.customer}</td></tr>
-            <tr><th>Date/Time</th><td>${this.successSummary.timestamp.toLocaleString()}</td></tr>
-            <tr><th>Created By</th><td>${userFullName}</td></tr>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Created Assets (${this.successSummary.createdAssets.length})</div>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>${this.successSummary.customer} Asset Number</th>
-                <th>EyeFi Serial Number</th>
-                <th>UL Number</th>
-                <th>UL Category</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.successSummary.createdAssets.map(asset => `
-                <tr>
-                  <td>${asset.index}</td>
-                  <td><strong>${asset.assetNumber}</strong></td>
-                  <td>${asset.eyefiSerial}</td>
-                  <td>${asset.ulNumber}</td>
-                  <td>${asset.ulCategory}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="footer">
-          Generated on ${new Date().toLocaleString()} | EyeFi Serial Workflow System | Report generated by ${userFullName}
-        </div>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.write(reportHtml);
-    printWindow.document.close();
+    // Use the shared service to print
+    this.serialReportPrintService.printSerialReport({
+      workOrder: this.successSummary.workOrder,
+      batch: this.successSummary.batch,
+      customer: this.successSummary.customer,
+      assets: this.successSummary.createdAssets,
+      timestamp: this.successSummary.timestamp,
+      createdBy: userFullName
+    });
   }
 
   /**
