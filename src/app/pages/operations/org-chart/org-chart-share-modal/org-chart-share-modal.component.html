@@ -1,0 +1,135 @@
+<div class="modal-header bg-primary text-white">
+  <h5 class="modal-title">
+    <i class="mdi mdi-share-variant me-2"></i>Share Organization Chart
+  </h5>
+  <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="activeModal.dismiss()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- Generated Link Section -->
+  <div *ngIf="generatedLink" class="alert alert-success mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h6 class="mb-1">
+          <i class="mdi mdi-check-circle me-1"></i>Share Link Generated!
+        </h6>
+        <small class="text-muted">Expires: {{ tokenData?.expiresAt | date:'medium' }}</small>
+      </div>
+      <button class="btn btn-sm btn-outline-success" (click)="resetForm()">
+        <i class="mdi mdi-plus"></i> Generate New
+      </button>
+    </div>
+    
+    <div class="input-group">
+      <input type="text" class="form-control" [value]="generatedLink" readonly>
+      <button class="btn btn-primary" type="button" (click)="copyToClipboard()">
+        <i class="mdi" [ngClass]="copiedToClipboard ? 'mdi-check' : 'mdi-content-copy'"></i>
+        {{ copiedToClipboard ? 'Copied!' : 'Copy' }}
+      </button>
+    </div>
+    
+    <div *ngIf="tokenData?.hasPassword" class="mt-2">
+      <small class="text-warning">
+        <i class="mdi mdi-lock-outline"></i>
+        This link is password protected. Share the password separately.
+      </small>
+    </div>
+  </div>
+
+  <!-- Generation Form -->
+  <form [formGroup]="shareForm" *ngIf="!generatedLink">
+    <div class="mb-3">
+      <label class="form-label">Link Expiration</label>
+      <div class="input-group">
+        <input type="number" class="form-control" formControlName="expiryHours" min="1" max="168">
+        <span class="input-group-text">hours</span>
+      </div>
+      <small class="form-text text-muted">Maximum 168 hours (7 days)</small>
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" formControlName="requirePassword" id="requirePassword">
+        <label class="form-check-label" for="requirePassword">
+          <i class="mdi mdi-lock-outline me-1"></i>
+          Require password to access (recommended)
+        </label>
+      </div>
+    </div>
+
+    <div *ngIf="shareForm.get('requirePassword')?.value" class="password-section">
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" formControlName="password" placeholder="Enter password">
+        <small class="form-text text-muted">Minimum 6 characters</small>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" class="form-control" formControlName="confirmPassword" placeholder="Confirm password">
+        <div *ngIf="!passwordsMatch && shareForm.get('confirmPassword')?.touched" class="text-danger mt-1">
+          <small>Passwords do not match</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-grid">
+      <button type="button" 
+              class="btn btn-primary" 
+              (click)="generateShareLink()" 
+              [disabled]="isGenerating || !shareForm.valid || (shareForm.get('requirePassword')?.value && !passwordsMatch)">
+        <span *ngIf="isGenerating" class="spinner-border spinner-border-sm me-2"></span>
+        <i *ngIf="!isGenerating" class="mdi mdi-link-variant me-1"></i>
+        {{ isGenerating ? 'Generating...' : 'Generate Share Link' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Active Tokens List -->
+  <div class="mt-4">
+    <h6 class="mb-3">
+      <i class="mdi mdi-clock-outline me-1"></i>Active Share Links
+    </h6>
+    
+    <div *ngIf="loadingTokens" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm text-primary"></div>
+      <p class="text-muted mt-2 mb-0">Loading active links...</p>
+    </div>
+
+    <div *ngIf="!loadingTokens && activeTokens.length === 0" class="text-center text-muted py-3">
+      <i class="mdi mdi-information-outline"></i>
+      <p class="mb-0">No active share links</p>
+    </div>
+
+    <div *ngIf="!loadingTokens && activeTokens.length > 0" class="list-group">
+      <div class="list-group-item" *ngFor="let token of activeTokens">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+              <code class="me-2">{{ token.token_preview }}...</code>
+              <span *ngIf="token.has_password" class="badge bg-warning text-dark">
+                <i class="mdi mdi-lock"></i> Password
+              </span>
+            </div>
+            <small class="text-muted">
+              <i class="mdi mdi-clock-outline"></i> Expires: {{ token.expires_at | date:'short' }}
+              <span class="ms-3">
+                <i class="mdi mdi-eye-outline"></i> {{ token.access_count }} views
+              </span>
+              <span class="ms-3" *ngIf="token.last_accessed_at">
+                <i class="mdi mdi-calendar-check"></i> Last: {{ token.last_accessed_at | date:'short' }}
+              </span>
+            </small>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" (click)="revokeToken(token.id)" title="Revoke access">
+            <i class="mdi mdi-delete"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="activeModal.close()">Close</button>
+</div>

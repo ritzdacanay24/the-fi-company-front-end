@@ -853,7 +853,6 @@ class SerialAssignmentsAPI {
                         $performedBy,                                  // inspector_name
                         $batchId,                                      // batch_id
                         $performedBy                                   // consumed_by
-                    ]); $performedBy                                   // consumed_by
                     ]);
 
                     $assignmentId = $this->db->lastInsertId();
@@ -1050,6 +1049,84 @@ class SerialAssignmentsAPI {
             ];
         }
     }
+
+    /**
+     * Get audit signoffs
+     */
+    public function getAuditSignoffs() {
+        try {
+            $query = "SELECT * FROM ul_audit_signoffs 
+                     ORDER BY audit_date DESC, created_at DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $signoffs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Decode JSON ul_numbers
+            foreach ($signoffs as &$signoff) {
+                $signoff['ul_numbers'] = json_decode($signoff['ul_numbers'], true) ?: [];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Audit signoffs retrieved successfully',
+                'data' => $signoffs
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Failed to get audit signoffs: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Submit audit signoff
+     */
+    public function submitAuditSignoff($data) {
+        try {
+            $this->db->beginTransaction();
+            
+            $query = "INSERT INTO ul_audit_signoffs (
+                        audit_date,
+                        auditor_name,
+                        auditor_signature,
+                        items_audited,
+                        ul_numbers,
+                        notes
+                     ) VALUES (?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $data['audit_date'],
+                $data['auditor_name'],
+                $data['auditor_signature'],
+                $data['items_audited'],
+                json_encode($data['ul_numbers']),
+                $data['notes'] ?? ''
+            ]);
+            
+            $signoffId = $this->db->lastInsertId();
+            
+            $this->db->commit();
+            
+            return [
+                'success' => true,
+                'message' => 'Audit signoff submitted successfully',
+                'data' => [
+                    'id' => $signoffId
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'error' => 'Failed to submit audit signoff: ' . $e->getMessage()
+            ];
+        }
+    }
 }
 
 // Initialize database connection and handle request
@@ -1158,6 +1235,10 @@ try {
                     $result = $api->getUserConsumptionActivity();
                     break;
                 
+                case 'get_audit_signoffs':
+                    $result = $api->getAuditSignoffs();
+                    break;
+                
                 case 'get_work_order_serials':
                     $workOrder = $_GET['work_order'] ?? null;
                     $result = $api->getWorkOrderSerials($workOrder);
@@ -1196,6 +1277,17 @@ try {
                     } else {
                         $reason = $data['reason'] ?? 'No reason provided';
                         $result = $api->voidAssignment($data['id'], $reason, $data['performed_by']);
+                    }
+                    break;
+                
+                case 'submit_audit_signoff':
+                    if (!isset($data['audit_date']) || !isset($data['auditor_name']) || !isset($data['auditor_signature']) || !isset($data['ul_numbers'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: audit_date, auditor_name, auditor_signature, ul_numbers'
+                        ];
+                    } else {
+                        $result = $api->submitAuditSignoff($data);
                     }
                     break;
                     
@@ -1237,7 +1329,7 @@ try {
                 default:
                     $result = [
                         'success' => false,
-                        'error' => 'Invalid POST action. Available: bulk_create_other, void_assignment, delete_assignment, restore_assignment, bulk_void'
+                        'error' => 'Invalid POST action. Available: bulk_create_other, void_assignment, delete_assignment, restore_assignment, bulk_void, submit_audit_signoff'
                     ];
             }
             break;

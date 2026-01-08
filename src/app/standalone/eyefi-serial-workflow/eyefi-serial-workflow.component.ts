@@ -1939,6 +1939,7 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         batch: this.confirmationSummary.batch,
         customer: this.selectedCustomer === 'Other' ? this.customOtherCustomerName : this.selectedCustomer,
         customerType: this.currentFormType,
+        assetType: this.assetType, // 'serial' or 'asset_number'
         createdAssets: this.generatedAssets.map((asset, index) => ({
           index: index + 1,
           assetNumber: asset.assetNumber,
@@ -2193,6 +2194,55 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Test Print Asset Label - Preview how the Zebra label will look
+   */
+  testPrintAssetLabel(): void {
+    if (!this.serialAssignments || this.serialAssignments.length === 0) {
+      this.toastrService.warning('No asset numbers available for test print');
+      return;
+    }
+
+    // Get the first asset number as an example
+    const firstAssignment = this.serialAssignments[0];
+    const assetNumber = firstAssignment.serial?.serial_number || firstAssignment.serial;
+
+    if (!assetNumber) {
+      this.toastrService.warning('Asset number not found');
+      return;
+    }
+
+    // Get current date for the label
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: 'numeric' 
+    });
+
+    // Open zebra print modal with electrical specifications
+    const modalRef = this.zebraLabelPrintModalService.open({
+      serialNumber: assetNumber,
+      title: 'Test Print - EyeFi Asset Number Label',
+      partNumber: this.workOrderDetails?.wo_part || '',
+      date: currentDate,
+      volts: '120',  // Default electrical specs - can be customized in modal
+      hz: '60',
+      amps: '5',
+      templateId: 'eyefi-asset-number'  // Use the new EyeFi asset number template
+    });
+
+    // Handle modal result
+    modalRef.result.then(
+      () => {
+        console.log('Test print completed successfully');
+      },
+      (reason) => {
+        // Modal dismissed (user closed it)
+        console.log('Print modal dismissed:', reason);
+      }
+    );
+  }
+
+  /**
    * Print Serial Number Report
    */
   printSerialReport(): void {
@@ -2246,8 +2296,12 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
         
         assetsToPrint.forEach((asset, index) => {
           setTimeout(() => {
-            // Call appropriate print method based on customer type
-            if (customerType === 'sg') {
+            // Check if using asset_number type (EYEFI Asset Number labels)
+            if (this.successSummary.assetType === 'asset_number') {
+              this.printOtherLabel(asset, copiesPerLabel);
+            }
+            // Otherwise call appropriate print method based on customer type
+            else if (customerType === 'sg') {
               this.printSGLabel(asset, copiesPerLabel);
             } else if (customerType === 'ags') {
               this.printAGSLabel(asset, copiesPerLabel);
@@ -2447,42 +2501,25 @@ H01FFE,gG01IFC,:gG01IF8,gG01IF,gG01FFE,gG01FFC,gG01FF8,gG01FE,gG01F8,gG01C,,::::
    */
   private printOtherLabel(asset: any, copies: number = 1): void {
     const eyefiSerial = asset.eyefiSerial || '';
-    const ulNumber = asset.ulNumber || '';
     const customerName = this.customOtherCustomerName || 'Customer';
     
-    // Zebra ZPL commands for Other customer label - Basic format
-    const cmds = `
-^XA
-^PQ${copies},0,1,Y
+    // Use the Zebra Label Print Modal for EyeFi asset labels with electrical specs
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: 'numeric' 
+    });
 
-^FX Basic Asset Label
-^CF0,50
-^FO50,50^FD${customerName}^FS
-
-^CF0,30
-^FO50,130^FDEyeFi Serial:^FS
-^CF0,45
-^FO50,170^FD${eyefiSerial}^FS
-^FO50,225^BY2,2^B3N,N,80,N,N^FD${eyefiSerial}^FS
-
-^CF0,30
-^FO50,330^FDUL Number:^FS
-^CF0,45
-^FO50,370^FD${ulNumber}^FS
-^FO50,425^BY2,2^B3N,N,80,N,N^FD${ulNumber}^FS
-
-^XZ
-`;
-
-    // Open print window with Zebra ZPL commands
-    const printWindow = window.open('', 'PRINT', 'height=500,width=600');
-    if (printWindow) {
-      printWindow.document.write(cmds);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    }
+    this.zebraLabelPrintModalService.open({
+      serialNumber: eyefiSerial,
+      title: `Print ${customerName} Asset Label`,
+      partNumber: this.workOrderDetails?.wo_part || '',
+      date: currentDate,
+      volts: '120',  // Default - user can modify in modal
+      hz: '60',      // Default - user can modify in modal
+      amps: '5',     // Default - user can modify in modal
+      templateId: 'eyefi-asset-number'
+    });
   }
 
   /**

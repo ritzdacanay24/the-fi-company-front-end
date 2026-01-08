@@ -76,6 +76,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild("chartContainer") chartContainer: ElementRef;
   @Input() data: any[];
+  @Input() readOnly: boolean = false; // New input to control read-only mode
   chart: any; // Add proper typing for the chart
   
   // Layout toggle properties
@@ -348,6 +349,20 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Prevent clicking on "Unassigned" section node
     if (d.data.id === -2) {
+      return;
+    }
+
+    // If in read-only mode, only highlight the node, don't open modal
+    if (this.readOnly) {
+      this.chart.clearHighlighting();
+      d.data._highlighted = true;
+      this.currentView = d.data.id;
+      
+      try {
+        this.chart.render();
+      } catch (error) {
+        console.error('Error rendering chart after node click:', error);
+      }
       return;
     }
 
@@ -1096,6 +1111,15 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   openDepartmentModal(department: Department | null = null) {
     this.currentDepartment = department;
     this.showDepartmentModal = true;
+  }
+
+  openShareModal() {
+    import('../org-chart-share-modal/org-chart-share-modal.component').then(m => {
+      const modalRef = this.userModalService.modalService.open(m.OrgChartShareModalComponent, {
+        size: 'lg',
+        backdrop: 'static'
+      });
+    });
   }
 
   closeDepartmentModal() {

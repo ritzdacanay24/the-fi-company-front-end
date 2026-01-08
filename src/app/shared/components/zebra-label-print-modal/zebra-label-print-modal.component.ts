@@ -17,6 +17,11 @@ export class ZebraLabelPrintModalComponent {
   @Input() serialNumber: string = '';
   @Input() title: string = 'Print Zebra Label';
   @Input() partNumber: string = '';
+  @Input() date: string = '';
+  @Input() volts: string = '';
+  @Input() hz: string = '';
+  @Input() amps: string = '';
+  @Input() templateId: string = 'serial-number-standard';
 
   form: FormGroup;
   zebraTemplates: ZebraLabelTemplate[] = [];
@@ -34,16 +39,26 @@ export class ZebraLabelPrintModalComponent {
   }
 
   ngOnInit() {
-    if (this.partNumber) {
-      this.form.patchValue({ partNumber: this.partNumber });
-    }
+    // Patch form with input values
+    this.form.patchValue({
+      templateId: this.templateId,
+      partNumber: this.partNumber,
+      date: this.date,
+      volts: this.volts,
+      hz: this.hz,
+      amps: this.amps
+    });
   }
 
   private initializeForm() {
     this.form = this.fb.group({
       templateId: ['serial-number-standard', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1), Validators.max(100)]],
-      partNumber: ['']
+      partNumber: [''],
+      date: [''],
+      volts: [''],
+      hz: [''],
+      amps: ['']
     });
   }
 
@@ -59,7 +74,11 @@ export class ZebraLabelPrintModalComponent {
       this.serialNumber,
       {
         quantity: formValue.quantity,
-        partNumber: formValue.partNumber
+        partNumber: formValue.partNumber,
+        date: formValue.date,
+        volts: formValue.volts,
+        hz: formValue.hz,
+        amps: formValue.amps
       }
     );
   }
@@ -85,7 +104,11 @@ export class ZebraLabelPrintModalComponent {
       this.serialNumber,
       {
         quantity: formValue.quantity,
-        partNumber: formValue.partNumber
+        partNumber: formValue.partNumber,
+        date: formValue.date,
+        volts: formValue.volts,
+        hz: formValue.hz,
+        amps: formValue.amps
       }
     );
   }
@@ -102,7 +125,11 @@ export class ZebraLabelPrintModalComponent {
       this.serialNumber,
       {
         quantity: formValue.quantity,
-        partNumber: formValue.partNumber
+        partNumber: formValue.partNumber,
+        date: formValue.date,
+        volts: formValue.volts,
+        hz: formValue.hz,
+        amps: formValue.amps
       }
     );
 

@@ -1,0 +1,13 @@
+
+.no-border {
+  border: none !important;
+}
+
+.table-fixed-header {
+    thead th {
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+        z-index: 3;
+        }
+}

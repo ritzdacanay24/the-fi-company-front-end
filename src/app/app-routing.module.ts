@@ -48,6 +48,11 @@ const routes: Routes = [
     title: "UL Usage Entry"
   },
   { 
+    path: "standalone/org-chart",
+    loadComponent: () => import("./standalone/standalone-org-chart/standalone-org-chart.component").then(m => m.StandaloneOrgChartComponent),
+    title: "Organization Chart - Shared View"
+  },
+  { 
     path: "standalone/eyefi-workflow", 
     loadComponent: () => import("./standalone/eyefi-serial-workflow/eyefi-serial-workflow.component").then(c => c.EyefiSerialWorkflowComponent),
     title: "EyeFi Serial Workflow"
@@ -71,6 +76,11 @@ const routes: Routes = [
     path: "standalone/serial-generator", 
     loadComponent: () => import("./standalone/standalone-serial-generator/standalone-serial-generator.component").then(c => c.StandaloneSerialGeneratorComponent),
     title: "Serial Number Generator"
+  },
+  { 
+    path: "standalone/ul-audit-signoff", 
+    loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
+    title: "UL Audit Sign-Off"
   },
   
   // Legacy route for backward compatibility

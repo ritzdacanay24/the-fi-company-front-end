@@ -49,9 +49,9 @@ SELECT
     CAST(sa.void_reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as void_reason,
     sa.created_at,
     -- Additional details
-    CAST(sa.generated_asset_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
+    CAST(COALESCE(sa.cp_cust_part, sa.wo_part) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as part_number,
     CAST(sa.wo_description AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as wo_description,
-    CAST(COALESCE(sa.cp_cust_part, sa.wo_part) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
+    CAST(sa.generated_asset_number AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_part_number,
     NULL as property_site,
     NULL as inspector_name,
     CAST(sa.cp_cust AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as customer_name,

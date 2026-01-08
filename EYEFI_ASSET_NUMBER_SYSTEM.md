@@ -134,8 +134,8 @@ The new system **integrates seamlessly** with existing infrastructure:
 
 ```
 User selects:
-┌─────────────────────────────────────┐
-│   Choose Asset Type (Step 2)       │
+┌─────────────────────────────────────┐ 
+│   Choose Asset Type (Step 2)        │
 └─────────────────────────────────────┘
            │
            ├─→ EYEFI Serial Tag (existing)

@@ -322,4 +322,21 @@ export class SerialAssignmentsService {
       this.http.post('verification-session/update-session.php', body)
     );
   }
+
+  /**
+   * UL AUDIT SIGN-OFF - Get audit signoffs
+   */
+  async getAuditSignoffs(): Promise<any> {
+    const params = new HttpParams().set('action', 'get_audit_signoffs');
+    return await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
+  }
+
+  /**
+   * UL AUDIT SIGN-OFF - Submit audit signoff
+   */
+  async submitAuditSignoff(signoff: any): Promise<any> {
+    return await firstValueFrom(
+      this.http.post(`${this.API_URL}/index.php?action=submit_audit_signoff`, signoff)
+    );
+  }
 }
