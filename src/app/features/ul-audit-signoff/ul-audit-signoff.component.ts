@@ -59,6 +59,7 @@ export class UlAuditSignoffComponent implements OnInit {
   // Signoff Form
   auditorName = '';
   auditorSignature = '';
+  auditorEmail = '';
   auditNotes = '';
   currentDate = new Date().toISOString().split('T')[0];
 
@@ -284,16 +285,26 @@ export class UlAuditSignoffComponent implements OnInit {
       if (this.categoryFilter && item.ul_category !== this.categoryFilter) {
         return false;
       }
-      if (this.dateFromFilter) {
-        const itemDate = new Date(item.used_date);
-        const fromDate = new Date(this.dateFromFilter);
+      
+      // Date filtering based on used_date
+      if (this.dateFromFilter && item.used_date) {
+        // Extract just the date portion (YYYY-MM-DD) for comparison
+        const itemDateStr = item.used_date.split('T')[0].split(' ')[0];
+        const itemDate = new Date(itemDateStr + 'T00:00:00');
+        const fromDate = new Date(this.dateFromFilter + 'T00:00:00');
+        
         if (itemDate < fromDate) return false;
       }
-      if (this.dateToFilter) {
-        const itemDate = new Date(item.used_date);
-        const toDate = new Date(this.dateToFilter);
+      
+      if (this.dateToFilter && item.used_date) {
+        // Extract just the date portion (YYYY-MM-DD) for comparison
+        const itemDateStr = item.used_date.split('T')[0].split(' ')[0];
+        const itemDate = new Date(itemDateStr + 'T00:00:00');
+        const toDate = new Date(this.dateToFilter + 'T00:00:00');
+        
         if (itemDate > toDate) return false;
       }
+      
       return true;
     });
   }
@@ -321,12 +332,24 @@ export class UlAuditSignoffComponent implements OnInit {
     this.showSignoffModal = false;
     this.auditorName = '';
     this.auditorSignature = '';
+    this.auditorEmail = '';
     this.auditNotes = '';
   }
 
+  isValidEmail(email: string): boolean {
+    if (!email) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
   async submitSignoff(): Promise<void> {
-    if (!this.auditorName || !this.auditorSignature) {
-      alert('Please provide auditor name and signature');
+    if (!this.auditorName || !this.auditorSignature || !this.auditorEmail) {
+      alert('Please provide auditor name, signature, and email address');
+      return;
+    }
+
+    if (!this.isValidEmail(this.auditorEmail)) {
+      alert('Please provide a valid email address');
       return;
     }
 
@@ -340,14 +363,32 @@ export class UlAuditSignoffComponent implements OnInit {
     };
 
     try {
-      const response = await this.serialAssignmentsService.submitAuditSignoff(signoff);
+      const response = await this.serialAssignmentsService.submitAuditSignoff(signoff, this.auditorEmail);
       
       if (response.success) {
         this.lastSignedOffRecord = signoff;
         this.closeSignoffModal();
+        
+        // Clear form
+        this.auditorName = '';
+        this.auditorSignature = '';
+        this.auditorEmail = '';
+        this.auditNotes = '';
+        
+        // Reload audit history to update audited UL numbers
         await this.loadAuditHistory();
-        // Clear selection
+        
+        // Reload UL items to refresh the data
+        await this.loadULItems();
+        
+        // Clear grid selection
+        if (this.gridApi) {
+          this.gridApi.deselectAll();
+        }
+        
+        // Clear selection array
         this.selectedItems = [];
+        
         // Show success modal with print option
         this.showSuccessModal = true;
       } else {
@@ -406,74 +447,134 @@ ${signoff.notes || 'No notes provided'}
       <head>
         <title>UL Audit Sign-Off Report</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 40px; }
-          h1 { color: #198754; border-bottom: 3px solid #198754; padding-bottom: 10px; }
-          .info-section { margin: 20px 0; }
-          .info-row { margin: 10px 0; }
-          .label { font-weight: bold; display: inline-block; width: 150px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th, td { border: 1px solid #dee2e6; padding: 8px; text-align: left; }
-          th { background-color: #f8f9fa; font-weight: bold; }
-          .signature { font-style: italic; }
-          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+          @page {
+            size: letter;
+            margin: 0.5in;
+          }
+          
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            font-size: 11pt;
+          }
+          
+          h1 { 
+            color: #198754; 
+            border-bottom: 3px solid #198754; 
+            padding-bottom: 10px;
+            font-size: 18pt;
+            margin-top: 0;
+          }
+          
+          .info-section { 
+            margin: 15px 0;
+            page-break-inside: avoid;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 8px;
+            margin: 10px 0;
+          }
+          
+          .label { 
+            font-weight: bold;
+          }
+          
+          .signature { 
+            font-style: italic; 
+          }
+          
+          h3 {
+            color: #333;
+            font-size: 13pt;
+            margin: 15px 0 10px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+          }
+          
+          .ul-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            margin: 10px 0;
+            font-size: 9pt;
+          }
+          
+          .ul-item {
+            border: 1px solid #dee2e6;
+            padding: 4px 6px;
+            background-color: #f8f9fa;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+          }
+          
+          .summary-box {
+            background-color: #e7f5ec;
+            border: 2px solid #198754;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+          }
+          
+          .notes-box {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            background-color: #f8f9fa;
+            min-height: 60px;
+            white-space: pre-wrap;
+          }
+          
+          .footer { 
+            margin-top: 30px; 
+            padding-top: 15px; 
+            border-top: 1px solid #ddd; 
+            font-size: 9pt; 
+            color: #666;
+            page-break-inside: avoid;
+          }
+          
           @media print {
-            body { padding: 20px; }
+            body { padding: 0; }
+            .no-print { display: none; }
           }
         </style>
       </head>
       <body>
-        <h1>UL New Audit Sign-Off Report</h1>
-        <div class="info-section">
-          <div class="info-row">
-            <span class="label">Audit Date:</span>
-            <span>${signoff.audit_date}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Auditor Name:</span>
-            <span>${signoff.auditor_name}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Signature:</span>
-            <span class="signature">${signoff.auditor_signature}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Items Audited:</span>
-            <span><strong>${signoff.items_audited}</strong></span>
+        <h1>🏷️ UL New Audit Sign-Off Report</h1>
+        
+        <div class="summary-box">
+          <div class="info-grid">
+            <div class="label">Audit Date:</div>
+            <div>${new Date(signoff.audit_date).toLocaleDateString()}</div>
+            
+            <div class="label">Auditor Name:</div>
+            <div>${signoff.auditor_name}</div>
+            
+            <div class="label">Signature:</div>
+            <div class="signature">${signoff.auditor_signature}</div>
+            
+            <div class="label">Total Items:</div>
+            <div><strong>${signoff.items_audited} UL Numbers</strong></div>
           </div>
         </div>
         
         <div class="info-section">
-          <h3>UL Numbers Audited (${signoff.ul_numbers.length})</h3>
-          <table>
-            <tbody>
-              ${(() => {
-                let rows = '';
-                for (let i = 0; i < signoff.ul_numbers.length; i += 4) {
-                  rows += '<tr>';
-                  for (let j = 0; j < 4; j++) {
-                    const index = i + j;
-                    if (index < signoff.ul_numbers.length) {
-                      rows += `<td>${signoff.ul_numbers[index]}</td>`;
-                    } else {
-                      rows += '<td></td>';
-                    }
-                  }
-                  rows += '</tr>';
-                }
-                return rows;
-              })()}
-            </tbody>
-          </table>
+          <h3>UL Numbers Audited (${signoff.ul_numbers.length} items)</h3>
+          <div class="ul-grid">
+            ${signoff.ul_numbers.map(ul => `<div class="ul-item">${ul}</div>`).join('')}
+          </div>
         </div>
         
         <div class="info-section">
           <h3>Audit Notes</h3>
-          <p>${signoff.notes || 'No notes provided'}</p>
+          <div class="notes-box">${signoff.notes || 'No notes provided'}</div>
         </div>
         
         <div class="footer">
-          <p>This is an official audit record for UL New label verification.</p>
-          <p>Generated on: ${new Date().toLocaleString()}</p>
+          <p><strong>Official Audit Record for UL New Label Verification</strong></p>
+          <p>Generated: ${new Date().toLocaleString()} | Report ID: ${signoff.id || 'N/A'}</p>
         </div>
       </body>
       </html>

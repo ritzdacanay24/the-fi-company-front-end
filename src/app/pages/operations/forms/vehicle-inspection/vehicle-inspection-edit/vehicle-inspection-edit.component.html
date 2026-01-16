@@ -74,6 +74,26 @@
             </div>
           </div>
         </div>
+
+        <!-- Success Alert when all issues are resolved -->
+        <div class="alert alert-success border-success border-opacity-25 bg-success bg-opacity-10" role="alert" *ngIf="data && id && !hasFailedInspections()">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-check-decagram text-success me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-success mb-2">Inspection Cleared</h6>
+              <p class="mb-2">
+                <strong>All previously failed inspection items are resolved.</strong>
+                The vehicle is cleared for operation, subject to standard safety protocols.
+              </p>
+              <div class="mt-2">
+                <small class="text-success fw-medium">
+                  <i class="mdi mdi-shield-check me-1"></i>
+                  Compliance confirmed: no outstanding failed inspection items.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="card shadow-sm border-0">

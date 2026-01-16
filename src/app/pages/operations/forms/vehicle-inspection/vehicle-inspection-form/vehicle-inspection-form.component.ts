@@ -30,6 +30,7 @@ export class VehicleInspectionFormComponent implements OnInit {
   @Input() isSubmitted: boolean = false; // Track if inspection has been submitted
   @Output() setFormEmitter: EventEmitter<any> = new EventEmitter();
   @Output() setFormErrorsEmitter: EventEmitter<any> = new EventEmitter();
+  @Output() hasUnresolvedFailures: EventEmitter<boolean> = new EventEmitter();
   form: FormGroup;
 
   // convenience getter for easy access to form fields
@@ -141,9 +142,23 @@ export class VehicleInspectionFormComponent implements OnInit {
       create: [1],
       created_by: ["", Validators.required],
       created_by_name: ["", Validators.required],
-      mileage: [null],
+      mileage: [null, Validators.required],
       not_used: [0],
     });
+    
+    // Watch for changes to not_used checkbox to conditionally require mileage
+    this.form.get('not_used').valueChanges.subscribe(notUsed => {
+      const mileageControl = this.form.get('mileage');
+      if (notUsed) {
+        // If vehicle not used, mileage is not required
+        mileageControl.clearValidators();
+      } else {
+        // If vehicle is used, mileage is required
+        mileageControl.setValidators([Validators.required]);
+      }
+      mileageControl.updateValueAndValidity();
+    });
+    
     this.setDetailsFormEmitter.emit(this.formValues);
     this.setFormEmitter.emit(this.form);
 
@@ -162,9 +177,11 @@ export class VehicleInspectionFormComponent implements OnInit {
     if (this.failureErrors?.length > 0) {
       this.failureClass = "alert alert-danger";
       this.failureMessage = `Vehicle Status Update: This vehicle currently has a total of ${this.failureErrors?.length} unresolved failures that need to be addressed.`;
+      this.hasUnresolvedFailures.emit(true);
     } else {
       this.failureClass = "alert alert-success";
       this.failureMessage = `Vehicle Status Update: This vehicle is in excellent condition and does not have any reported failures. `;
+      this.hasUnresolvedFailures.emit(false);
     }
 
     for (let i = 0; i < this.formValues?.checklist?.length; i++) {

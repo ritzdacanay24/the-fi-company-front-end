@@ -61,7 +61,7 @@
           </div>
         </div>
         <div class="col-lg-4 mb-3">
-          <label for="mileage" class="form-label">Current Mileage</label>
+          <label for="mileage" class="form-label required">Current Mileage</label>
           <input type="text" class="form-control" id="mileage" name="mileage" placeholder="Enter current mileage"
             formControlName="mileage" [ngClass]="{ 'is-invalid': submitted && f['mileage'].errors }">
           <div class="form-text">
@@ -74,11 +74,13 @@
 
     <!-- Failure Alert Section -->
     <div class="mb-4 pb-4 border-bottom" *ngIf="failureMessage">
-      <div class="alert d-flex align-items-start" role="alert" [ngClass]="failureClass">
-        <i class="mdi mdi-alert-circle me-3 mt-1 fs-5"></i>
-        <div>
-          <h6 class="alert-heading mb-2">Inspection Alert</h6>
-          <p class="mb-0">{{failureMessage}}</p>
+      <div class="alert d-flex align-items-start shadow-lg border-3 p-4" role="alert" [ngClass]="failureClass">
+        <i class="mdi mdi-alert-circle me-4 fs-2 fw-bold"></i>
+        <div class="flex-grow-1">
+          <h5 class="alert-heading mb-3 fw-bold">
+            <i class="mdi mdi-shield-alert me-2"></i>Inspection Alert
+          </h5>
+          <p class="mb-0 fs-5 fw-semibold">{{failureMessage}}</p>
         </div>
       </div>
     </div>
@@ -173,10 +175,10 @@
                 <!-- Action Buttons for Mobile -->
                 <button class="btn btn-sm mt-2" (click)="resolveIssue(row1)" 
                   [disabled]="row1?.id"
-                  [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-outline-secondary'"
+                  [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'btn-warning' : 'btn-outline-secondary'"
                   *ngIf="id && row1.status === 0">
-                  <i class="mdi me-2" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : row1?.resolved_confirmed_date ? 'mdi-clock-outline' : 'mdi-wrench'"></i>
-                  {{row1?.resolved_confirmed_date ? 'Issue Resolved' : row1?.resolved_confirmed_date ? 'Pending Review' : 'Resolve Issue'}}
+                  <i class="mdi me-2" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'mdi-clock-outline' : 'mdi-clipboard-check-outline'"></i>
+                  {{row1?.resolved_confirmed_date ? 'Resolved' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'Pending Confirmation' : 'Enter Resolution'}}
                 </button>
                 
                 <div class="text-center mt-2" *ngIf="id && row1.status === 1">
@@ -265,10 +267,10 @@
                     <td class="text-center">
                       <button class="btn btn-sm" (click)="resolveIssue(row1)" 
                         [disabled]="id && (!row1?.id || !isSubmitted)"
-                        [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : row1?.resolved_confirmed_date ? 'btn-warning' : 'btn-outline-secondary'"
+                        [ngClass]="row1?.resolved_confirmed_date ? 'btn-success' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'btn-warning' : 'btn-outline-secondary'"
                         *ngIf="isSubmitted && row1.status === 0">
-                        <i class="mdi me-1" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : row1?.resolved_confirmed_date ? 'mdi-clock-outline' : 'mdi-wrench'"></i>
-                        {{row1?.resolved_confirmed_date ? 'Resolved' : row1?.resolved_confirmed_date ? 'Pending' : 'Report Issue'}}
+                        <i class="mdi me-1" [ngClass]="row1?.resolved_confirmed_date ? 'mdi-check-circle' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'mdi-clock-outline' : 'mdi-clipboard-check-outline'"></i>
+                        {{row1?.resolved_confirmed_date ? 'Resolved' : (row1?.resolved_by_date && !row1?.resolved_confirmed_date) ? 'Pending Confirmation' : 'Enter Resolution'}}
                       </button>
                       
                       <small class="text-success fst-italic" *ngIf="isSubmitted && row1.status === 1">

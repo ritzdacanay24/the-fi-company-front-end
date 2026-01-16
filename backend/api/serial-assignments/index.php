@@ -1111,11 +1111,35 @@ class SerialAssignmentsAPI {
             
             $this->db->commit();
             
+            // Send email if email address is provided
+            if (!empty($data['email'])) {
+                require_once __DIR__ . '/EmailHelper.php';
+                
+                $emailData = [
+                    'audit_date' => $data['audit_date'],
+                    'auditor_name' => $data['auditor_name'],
+                    'auditor_signature' => $data['auditor_signature'],
+                    'items_audited' => $data['items_audited'],
+                    'ul_numbers' => $data['ul_numbers'],
+                    'notes' => $data['notes'] ?? ''
+                ];
+                
+                $htmlBody = EmailHelper::generateULAuditReportHTML($emailData);
+                $subject = "UL New Audit Sign-Off Report - " . date('F j, Y', strtotime($data['audit_date']));
+                
+                $emailSent = EmailHelper::sendEmail($data['email'], $subject, $htmlBody);
+                
+                if (!$emailSent) {
+                    error_log("Failed to send audit report email to: " . $data['email']);
+                }
+            }
+            
             return [
                 'success' => true,
-                'message' => 'Audit signoff submitted successfully',
+                'message' => 'Audit signoff submitted successfully' . (!empty($data['email']) ? ' and email sent' : ''),
                 'data' => [
-                    'id' => $signoffId
+                    'id' => $signoffId,
+                    'email_sent' => !empty($data['email'])
                 ]
             ];
             

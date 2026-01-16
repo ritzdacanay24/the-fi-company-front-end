@@ -217,6 +217,18 @@
         </div>
 
         <div class="mb-3">
+          <label for="auditorEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+          <input 
+            type="email" 
+            id="auditorEmail" 
+            class="form-control" 
+            [(ngModel)]="auditorEmail"
+            placeholder="your.email@example.com"
+            required>
+          <small class="text-muted">Audit report will be sent to this email address</small>
+        </div>
+
+        <div class="mb-3">
           <label for="auditNotes" class="form-label">Audit Notes (Optional)</label>
           <textarea 
             id="auditNotes" 
@@ -233,9 +245,9 @@
           type="button" 
           class="btn btn-success" 
           (click)="submitSignoff()" 
-          [disabled]="!auditorName || !auditorSignature">
-          <i class="mdi mdi-clipboard-check me-1"></i>
-          Submit Sign-Off
+          [disabled]="!auditorName || !auditorSignature || !auditorEmail || !isValidEmail(auditorEmail)">
+          <i class="mdi mdi-email-send me-1"></i>
+          Submit & Email Report
         </button>
       </div>
     </div>
@@ -323,19 +335,23 @@
         <button type="button" class="btn-close btn-close-white" (click)="closeSuccessModal()"></button>
       </div>
       <div class="modal-body text-center py-4">
-        <i class="mdi mdi-check-circle-outline text-success" style="font-size: 4rem;"></i>
+        <i class="mdi mdi-email-check text-success" style="font-size: 4rem;"></i>
         <h4 class="mt-3">Sign-Off Completed!</h4>
-        <p class="text-muted mb-0" *ngIf="lastSignedOffRecord">
+        <p class="text-muted mb-2" *ngIf="lastSignedOffRecord">
           Successfully audited <strong>{{ lastSignedOffRecord.items_audited }}</strong> UL New items.
+        </p>
+        <p class="text-success" *ngIf="auditorEmail">
+          <i class="mdi mdi-email-send me-1"></i>
+          Audit report has been sent to <strong>{{ auditorEmail }}</strong>
         </p>
       </div>
       <div class="modal-footer justify-content-center">
         <button 
           type="button" 
-          class="btn btn-primary"
+          class="btn btn-outline-primary"
           (click)="printAuditReport(lastSignedOffRecord!); closeSuccessModal();"
           *ngIf="lastSignedOffRecord">
-          <i class="mdi mdi-printer me-2"></i>Print Record
+          <i class="mdi mdi-printer me-2"></i>Print Copy (Optional)
         </button>
         <button type="button" class="btn btn-secondary" (click)="closeSuccessModal()">Close</button>
       </div>

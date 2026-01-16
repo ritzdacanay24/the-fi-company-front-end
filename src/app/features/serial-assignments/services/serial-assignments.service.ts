@@ -334,9 +334,13 @@ export class SerialAssignmentsService {
   /**
    * UL AUDIT SIGN-OFF - Submit audit signoff
    */
-  async submitAuditSignoff(signoff: any): Promise<any> {
+  async submitAuditSignoff(signoff: any, email?: string): Promise<any> {
+    const body = {
+      ...signoff,
+      email: email
+    };
     return await firstValueFrom(
-      this.http.post(`${this.API_URL}/index.php?action=submit_audit_signoff`, signoff)
+      this.http.post(`${this.API_URL}/index.php?action=submit_audit_signoff`, body)
     );
   }
 }

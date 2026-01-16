@@ -50,6 +50,8 @@ export class VehicleInspectionCreateComponent {
 
   submitted = false;
 
+  hasUnresolvedFailures = false;
+
   @Input() goBack: Function = () => {
     this.router.navigate([NAVIGATION_ROUTE.LIST], {
       queryParamsHandling: "merge",
@@ -81,6 +83,10 @@ export class VehicleInspectionCreateComponent {
   setFormErrorsEmitter($event) {
   }
 
+  setHasUnresolvedFailures($event) {
+    this.hasUnresolvedFailures = $event;
+  }
+
   myFiles: string[] | any = [];
   onFileChange(event: any) {
     this.myFiles = [];
@@ -93,6 +99,23 @@ export class VehicleInspectionCreateComponent {
     this.submitted = true;
     this.form.value.details = this.details;
 
+    // Check if form is valid
+    if (this.form.invalid) {
+      this.toastrService.error(
+        "Please fill in all required fields before submitting.",
+        "Form Validation Error"
+      );
+      return;
+    }
+
+    // Prevent submission if there are unresolved failures
+    if (this.hasUnresolvedFailures) {
+      this.toastrService.error(
+        "Cannot submit inspection with unresolved failures. Please resolve all issues before submitting.",
+        "Unresolved Failures"
+      );
+      return;
+    }
 
     try {
       this.isLoading = true;

@@ -54,6 +54,27 @@ import * as d3 from "d3";
       font-weight: 600;
     }
 
+    /* Drag and Drop Styles */
+    :host ::ng-deep .node.drop-target .node-rect {
+      stroke: #4CAF50 !important;
+      stroke-width: 2 !important;
+      stroke-dasharray: 5,5 !important;
+      animation: dash 0.5s linear infinite;
+    }
+
+    :host ::ng-deep .node.drop-target-hover .node-rect {
+      stroke: #2196F3 !important;
+      stroke-width: 4 !important;
+      stroke-dasharray: none !important;
+      filter: drop-shadow(0 0 10px rgba(33, 150, 243, 0.6));
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -10;
+      }
+    }
+
   `]
 })
 export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -77,16 +98,64 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild("chartContainer") chartContainer: ElementRef;
   @Input() data: any[];
   @Input() readOnly: boolean = false; // New input to control read-only mode
+  @Input() set isHorizontalLayout(value: boolean) {
+    this._isHorizontalLayout = value;
+    if (this.chart && this.data && this.data.length > 0) {
+      this.updateChartLayout();
+    }
+  }
+  get isHorizontalLayout(): boolean {
+    return this._isHorizontalLayout;
+  }
+  private _isHorizontalLayout = false;
+  
   chart: any; // Add proper typing for the chart
   
   // Layout toggle properties
-  isHorizontalLayout = false; // Default to vertical
   layoutIcon = 'mdi-view-sequential'; // Default icon for vertical layout
 
   // Department management properties
   departments: Department[] = [];
   showDepartmentModal = false;
   currentDepartment: Department | null = null;
+
+  /**
+   * Deep clone array of objects, excluding functions and circular references
+   * Only copies plain data properties needed for org chart
+   */
+  private deepCloneData(data: any[]): any[] {
+    if (!data || !Array.isArray(data)) return [];
+    
+    return data.map(item => {
+      if (!item || typeof item !== 'object') return item;
+      
+      const cloned: any = {};
+      for (const key in item) {
+        if (item.hasOwnProperty(key)) {
+          const value = item[key];
+          // Skip functions, circular references, and complex objects
+          if (typeof value === 'function' || 
+              value === null || 
+              value === undefined ||
+              key.startsWith('_') && (key === '_component' || key === '_readOnly')) {
+            continue;
+          }
+          // Only copy primitive values and simple data
+          if (typeof value === 'string' || 
+              typeof value === 'number' || 
+              typeof value === 'boolean') {
+            cloned[key] = value;
+          } else if (Array.isArray(value)) {
+            cloned[key] = [...value];
+          } else if (typeof value === 'object' && value.constructor === Object) {
+            // Simple object, copy properties
+            cloned[key] = { ...value };
+          }
+        }
+      }
+      return cloned;
+    });
+  }
 
   // User assignment properties
   selectedUser: any = null;
@@ -117,6 +186,21 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  updateChartLayout(): void {
+    if (!this.chart) return;
+
+    // Force update nodeContent to ensure it's using our custom function
+    this.chart.nodeContent(this.getNodeContent.bind(this));
+
+    if (this.isHorizontalLayout) {
+      // Horizontal layout - using 'left'
+      this.chart.layout('left').render().fit();
+    } else {
+      // Vertical layout - using 'top'
+      this.chart.layout('top').render().fit();
+    }
+  }
+
   getNodeContent(d, i, arr, state) {
     const color = '#FFFFFF';
     const imageDiffVert = 25 + 2;
@@ -125,30 +209,30 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     if (d.data.id === -1) {
       return `
         <div style='width:${d.width}px;height:${d.height}px;padding-top:${imageDiffVert - 2}px;padding-left:1px;padding-right:1px'>
-          <div style="font-family: 'Inter', sans-serif;background-color:#6c757d;margin-left:-1px;width:${d.width - 2}px;height:${d.height - imageDiffVert}px;border-radius:10px;border: 1px solid #E4E2E9;display:flex;align-items:center;justify-content:center;">
+          <div style="font-family: 'Inter', sans-serif;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);margin-left:-1px;width:${d.width - 2}px;height:${d.height - imageDiffVert}px;border-radius:12px;border: none;box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);display:flex;align-items:center;justify-content:center;">
             <div style="color:white;text-align:center;">
-              <div style="font-size:15px;font-weight:bold">${d.data.name || d.data.first}</div>
-              <div style="font-size:10px">Organization Structure</div>
+              <div style="font-size:15px;font-weight:bold;letter-spacing:0.5px;">${d.data.name || d.data.first}</div>
+              <div style="font-size:10px;opacity:0.9;margin-top:2px;">Organization Structure</div>
             </div>
           </div>
         </div>
       `;
     }
 
-    // Handle "Unassigned" section node - MATCHING REGULAR CARD DESIGN
+    // Handle "Unassigned" section node
     if (d.data.id === -2) {
       return `
-        <div style="width:${d.width}px;height:${d.height}px;background:#ffc107;border:1px solid #ddd;border-radius:8px;position:relative;box-shadow:0 2px 4px rgba(0,0,0,0.1);text-align:center;padding:6px 4px 25px 4px;">
-          <div style="position:absolute;top:3px;right:5px;font-size:9px;color:#666;">#${d.data.id}</div>
-          <div style="margin-top:4px;">
-            <div style="width:40px;height:40px;border-radius:50%;border:2px solid #eee;display:block;margin:0 auto;background:#fff;display:flex;align-items:center;justify-content:center;">
-              <i style="font-size:20px;color:#ffc107;">⚠️</i>
+        <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #FFD26F 0%, #FF9800 100%);border:none;border-radius:12px;position:relative;box-shadow:0 4px 12px rgba(255, 152, 0, 0.3);text-align:center;padding:8px 6px 30px 6px;">
+          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(0,0,0,0.4);background:rgba(255,255,255,0.3);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+          <div style="margin-top:6px;">
+            <div style="width:45px;height:45px;border-radius:50%;border:none;display:block;margin:0 auto;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+              <span style="font-size:22px;">⚠️</span>
             </div>
           </div>
-          <div style="font-size:11px;font-weight:bold;color:#000;margin-top:5px;line-height:1.1;padding:0 2px;">
+          <div style="font-size:11px;font-weight:bold;color:#fff;margin-top:6px;line-height:1.2;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,0.2);">
             ${d.data.name || d.data.first}
           </div>
-          <div style="font-size:9px;color:#666;margin-top:2px;line-height:1.0;padding:0 2px;margin-bottom:5px;">
+          <div style="font-size:9px;color:rgba(255,255,255,0.9);margin-top:2px;line-height:1.1;padding:0 4px;">
             ${d.data.title || ""}
           </div>
         </div>
@@ -156,47 +240,63 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // Determine if this is a department placeholder or regular user
-    const isDepartment = d.data.type === 3 && d.data.orgChartPlaceHolder === 1;
+    const isDepartment = d.data.orgChartPlaceHolder === 1;
+    const isOpenPosition = !isDepartment && d.data.openPosition === 1;
     
-    // CLEAN SIMPLE CARDS
-    return `
-      <div 
-        style="width:${d.width}px;height:${d.height}px;background:${isDepartment ? '#e3f2fd' : 'white'};border:1px solid ${isDepartment ? '#2196f3' : '#ddd'};border-radius:8px;position:relative;text-align:center;padding:6px 4px 25px 4px;">
-        <div style="position:absolute;top:3px;right:5px;font-size:9px;color:#999;">#${d.data.id}</div>
-        ${isDepartment ? 
-          `<div style="margin-top:4px;">
-            <div style="width:40px;height:40px;border-radius:50%;border:2px solid #2196f3;display:block;margin:0 auto;background:#ffffff;display:flex;align-items:center;justify-content:center;font-size:20px;">
-              🏢
+    // PROFESSIONAL MODERN CARDS
+    if (isDepartment) {
+      return `
+        <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);border:none;border-radius:12px;position:relative;text-align:center;padding:20px 10px 30px 10px;box-shadow:0 4px 12px rgba(33, 150, 243, 0.2);transition:all 0.3s ease;display:flex;flex-direction:column;justify-content:center;">
+          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(33,150,243,0.6);background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+          <div style="font-size:13px;font-weight:700;color:#1565C0;line-height:1.3;padding:0 6px;letter-spacing:0.4px;text-align:center;">
+            ${d.data.org_chart_department || d.data.department || d.data.first}
+          </div>
+          <div style="font-size:10px;color:#1976D2;margin-top:6px;line-height:1.1;padding:0 6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+            Department
+          </div>
+        </div>
+      `;
+    }
+    
+    // Open position card (no photo)
+    if (isOpenPosition) {
+      return `
+        <div style="width:${d.width}px;height:${d.height}px;background:linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);border:none;border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:0 4px 12px rgba(33, 150, 243, 0.2);transition:all 0.3s ease;">
+          <div style="position:absolute;top:5px;right:8px;font-size:8px;color:rgba(33,150,243,0.6);background:rgba(255,255,255,0.8);padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+          <div style="margin-top:6px;">
+            <div style="width:45px;height:45px;border-radius:50%;border:none;display:block;margin:0 auto;background:linear-gradient(135deg, #2196F3 0%, #1976D2 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(33,150,243,0.4);">
+              <i class="mdi mdi-account-plus" style="font-size:24px;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2));"></i>
             </div>
-          </div>` :
-          `<div style="margin-top:4px;">
-            <img src="${d.data.imageUrl}" style="width:40px;height:40px;border-radius:50%;border:2px solid #eee;display:block;margin:0 auto;" />
-          </div>`
-        }
-        <div style="font-size:11px;font-weight:bold;color:#333;margin-top:5px;line-height:1.1;padding:0 2px;">
-          ${isDepartment ? (d.data.org_chart_department || d.data.department || d.data.first) : `${d.data.first} ${d.data.last}`}
+          </div>
+          <div style="font-size:11px;font-weight:700;color:#1565C0;margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
+            ${d.data.first} ${d.data.last}
+          </div>
+          <div style="font-size:9px;color:#1976D2;margin-top:3px;line-height:1.1;padding:0 4px;font-weight:600;">
+            OPEN POSITION
+          </div>
         </div>
-        <div style="font-size:9px;color:#666;margin-top:2px;line-height:1.0;padding:0 2px;margin-bottom:5px;">
-          ${isDepartment ? 'Department' : (d.data.title || "")}
+      `;
+    }
+    
+    // Regular employee card
+    return `
+      <div style="width:${d.width}px;height:${d.height}px;background:#ffffff;border:none;border-radius:12px;position:relative;text-align:center;padding:8px 6px 30px 6px;box-shadow:0 4px 12px rgba(0,0,0,0.08);transition:all 0.3s ease;cursor:pointer;" 
+           onmouseover="this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)';this.style.transform='translateY(-2px)';" 
+           onmouseout="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.transform='translateY(0)';">
+        <div style="position:absolute;top:5px;right:8px;font-size:8px;color:#999;background:#f5f5f5;padding:2px 6px;border-radius:10px;font-weight:600;">#${d.data.id}</div>
+        <div style="margin-top:6px;">
+          <img src="${d.data.imageUrl}" 
+               style="width:45px;height:45px;border-radius:50%;border:3px solid #f0f0f0;display:block;margin:0 auto;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,0.15);" 
+               onerror="this.src='assets/images/default-user.png'" />
         </div>
-
+        <div style="font-size:11px;font-weight:700;color:#2c3e50;margin-top:6px;line-height:1.2;padding:0 4px;letter-spacing:0.2px;">
+          ${d.data.first} ${d.data.last}
+        </div>
+        <div style="font-size:9px;color:#7f8c8d;margin-top:3px;line-height:1.1;padding:0 4px;font-weight:500;">
+          ${d.data.title || "Employee"}
+        </div>
       </div>
     `;
-  }
-
-  updateChartLayout(): void {
-    if (!this.chart) return;
-
-    // Force update nodeContent to ensure it's using our custom function
-    this.chart.nodeContent(this.getNodeContent.bind(this));
-
-    if (this.isHorizontalLayout) {
-      // Horizontal layout - using 'left' like in the example
-      this.chart.layout('left').render().fit();
-    } else {
-      // Vertical layout - using 'top' like in the example
-      this.chart.layout('top').render().fit();
-    }
   }
 
   ngAfterViewInit() {
@@ -285,7 +385,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Get chart nodes
     if (!value || Number(value) === 0) {
-      this.chart.data(structuredClone(this.originalData)).render().fit();
+      this.chart.data(this.deepCloneData(this.originalData)).render().fit();
     } else {
       let data = this.viewOnlyTree(Number(value) === 0 ? null : Number(value));
       this.chart.data(data).render().fit();
@@ -580,7 +680,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   findParent(id) {
-    let ddd = structuredClone(this.originalData);
+    let ddd = this.deepCloneData(this.originalData);
     for (let i = 0; i < ddd.length; i++) {
       if (id == ddd[i].id) {
         return ddd[i];
@@ -589,7 +689,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   viewOnlyTree(userIdSearch = null) {
-    let ddd = structuredClone(this.originalData);
+    let ddd = this.deepCloneData(this.originalData);
     let allParentsAndChilds = this.getChildren(ddd, userIdSearch);
 
     allParentsAndChilds.push(userIdSearch);
@@ -811,6 +911,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
             ? "red"
             : this.checkHireColor(data[i].hire_date),
           org_chart_expand: data[i].org_chart_expand,
+          _readOnly: this.readOnly,  // Pass read-only flag to data
+          _component: this,  // Pass component reference for drag and drop
         });
       }
 
@@ -838,16 +940,16 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
           .nodeContent(this.getNodeContent.bind(this))
 
           .nodeHeight((d) => {
-            if (d.data.id === -1 || d.data.id === -2) return 90;
-            if (d.data.orgChartPlaceHolder) return 90;
-            return 90;
+            if (d.data.id === -1 || d.data.id === -2) return 110;
+            if (d.data.orgChartPlaceHolder) return 110;
+            return 110;
           })
           .nodeWidth((d) => {
             if (d.data.id === -1 || d.data.id === -2) return 180;
             if (d.data.orgChartPlaceHolder) return 180;
             return 180;
           })
-          .childrenMargin((d) => 50)
+          .childrenMargin((d) => 80)
           .compactMarginBetween((d) => 35)
           .compactMarginPair((d) => 30)
           .compact(false)
@@ -889,7 +991,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           })
           .nodeUpdate(function (d, i, arr) {
-            d3.select(this)
+            const node = d3.select(this);
+            
+            // Apply stroke styling
+            node
               .select(".node-rect")
               .attr("stroke", (d) =>
                 d.data._highlighted || d.data._upToTheRootHighlighted
@@ -900,6 +1005,89 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
                 "stroke-width",
                 d.data._highlighted || d.data._upToTheRootHighlighted ? 20 : 2
               );
+            
+            // Setup drag and drop only if not read-only and not a virtual node
+            if (!d.data._readOnly && d.data.id !== -1 && d.data.id !== -2) {
+              let draggedNode = null;
+              
+              const dragHandler = d3.drag()
+                .on('start', function(event, dragData) {
+                  draggedNode = this;
+                  d3.select(this).raise();
+                  d3.select(this).style('cursor', 'grabbing');
+                  d3.select(this).attr('opacity', 0.7);
+                  
+                  // Add visual class to all potential drop targets
+                  d3.selectAll('.node')
+                    .filter(function(targetData: any) {
+                      return targetData.data.id !== dragData.data.id && 
+                             targetData.data.id !== -1 && 
+                             targetData.data.id !== -2;
+                    })
+                    .classed('drop-target', true);
+                })
+                .on('drag', function(event) {
+                  d3.select(this)
+                    .attr('transform', `translate(${event.x}, ${event.y})`);
+                  
+                  // Highlight nodes we're hovering over
+                  const elements = document.elementsFromPoint(event.sourceEvent.clientX, event.sourceEvent.clientY);
+                  d3.selectAll('.node').classed('drop-target-hover', false);
+                  
+                  for (const el of elements) {
+                    const nodeData = d3.select(el).datum();
+                    if (nodeData && nodeData.data && nodeData.data.id && 
+                        nodeData.data.id !== d.data.id && 
+                        nodeData.data.id !== -1 && 
+                        nodeData.data.id !== -2) {
+                      d3.select(el.closest('.node')).classed('drop-target-hover', true);
+                      break;
+                    }
+                  }
+                })
+                .on('end', function(event) {
+                  d3.select(this).style('cursor', 'grab');
+                  d3.select(this).attr('opacity', 1);
+                  
+                  // Remove drop target classes
+                  d3.selectAll('.node').classed('drop-target', false).classed('drop-target-hover', false);
+                  
+                  // Find the node we're hovering over
+                  const elements = document.elementsFromPoint(event.sourceEvent.clientX, event.sourceEvent.clientY);
+                  let targetNode = null;
+                  
+                  for (const el of elements) {
+                    const nodeData = d3.select(el).datum();
+                    if (nodeData && nodeData.data && nodeData.data.id && 
+                        nodeData.data.id !== d.data.id && 
+                        nodeData.data.id !== -1 && 
+                        nodeData.data.id !== -2) {
+                      targetNode = nodeData;
+                      break;
+                    }
+                  }
+                  
+                  if (targetNode) {
+                    // Call the component's method to handle the parent change
+                    const component = arr[0].__data__.data._component;
+                    if (component && component.handleNodeDrop) {
+                      component.handleNodeDrop(d.data.id, targetNode.data.id);
+                    }
+                  } else {
+                    // If no valid drop target, reset position by re-rendering
+                    const component = arr[0].__data__.data._component;
+                    if (component && component.chart) {
+                      component.chart.render();
+                    }
+                  }
+                });
+              
+              // Apply drag handler to the node
+              dragHandler(node);
+              
+              // Change cursor to indicate draggable
+              node.style('cursor', 'grab');
+            }
           })
           .render()
           .fit();
@@ -912,8 +1100,13 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       // this.defaultExpand();
 
       let d = this.chart.data();
-      this.originalData = structuredClone(d);
-      this.expandImmediate();
+      // Deep clone without functions and circular refs
+      this.originalData = this.deepCloneData(d);
+      
+      // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
+      setTimeout(() => {
+        this.expandImmediate();
+      }, 0);
 
       if (this.query) {
         this.filterChart(this.userId);
@@ -954,8 +1147,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   compact() {
     this.chart
       .nodeWidth((d) => 180)
-      .childrenMargin((d) => 40)
-      .nodeHeight((d) => 90)
+      .childrenMargin((d) => 70)
+      .nodeHeight((d) => 110)
       .compactMarginBetween((d) => 25)
       .compactMarginPair((d) => 20)
       .compact(true)
@@ -1310,6 +1503,8 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
             ? "red"
             : this.checkHireColor(data[i].hire_date),
           org_chart_expand: data[i].org_chart_expand,
+          _readOnly: this.readOnly,  // Pass read-only flag to data
+          _component: this,  // Pass component reference for drag and drop
         });
       }
 
@@ -1345,7 +1540,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (d.data.orgChartPlaceHolder) return 180;
         return 180;
       })
-      .childrenMargin((d) => 50)
+      .childrenMargin((d) => 80)
       .compactMarginBetween((d) => 35)
       .compactMarginPair((d) => 30)
       .compact(false)
@@ -1421,74 +1616,10 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
         if (draggedNodeId && targetNodeId && draggedNodeId !== targetNodeId) {
           console.log('Dropped user', draggedNodeId, 'on target', targetNodeId, 'isDepartment:', isDepartment);
           
-          // Call the existing onNodeDrop logic
-          this.handleNodeDrop(parseInt(draggedNodeId), parseInt(targetNodeId), isDepartment);
+          // Department assignment is now handled by the new drag and drop implementation
         }
       });
   }
-
-  private handleNodeDrop(draggedUserId: number, targetNodeId: number, isDepartment: boolean) {
-    // Find the dragged user and target in the original data
-    const draggedUser = this.originalData.find(user => user.id === draggedUserId);
-    const targetNode = this.originalData.find(user => user.id === targetNodeId);
-    
-    if (!draggedUser) {
-      console.error('Dragged user not found:', draggedUserId);
-      return;
-    }
-    
-    if (!targetNode) {
-      console.error('Target node not found:', targetNodeId);
-      return;
-    }
-    
-    let departmentId: number;
-    
-    if (isDepartment) {
-      // Target is a department placeholder - assign user to this department
-      departmentId = targetNodeId;
-    } else {
-      // Target is a regular user - assign dragged user to target's department
-      if (!targetNode.department_id) {
-        console.error('Target user has no department assigned');
-        return;
-      }
-      departmentId = targetNode.department_id;
-    }
-    
-    // Show confirmation dialog
-    const departmentName = isDepartment ? 
-      (targetNode.org_chart_department || targetNode.department || targetNode.first) :
-      this.originalData.find(d => d.id === departmentId)?.org_chart_department || 'Unknown Department';
-      
-    if (!confirm(`Assign ${draggedUser.first} ${draggedUser.last} to ${departmentName}?`)) {
-      return;
-    }
-    
-    console.log(`Assigning user ${draggedUserId} to department ${departmentId}`);
-    
-    // Call the department service to assign the user
-    this.departmentService.assignUser({ user_id: draggedUserId, department_id: departmentId }).subscribe({
-      next: (response) => {
-        console.log('User assigned successfully:', response);
-        
-        // Update local data
-        if (draggedUser) {
-          draggedUser.department_id = departmentId;
-          draggedUser.parentId = departmentId;
-        }
-        
-        // Refresh the chart while preserving expansion state
-        this.getDataWithStatePreservation();
-      },
-      error: (error) => {
-        console.error('Failed to assign user:', error);
-        alert('Failed to assign user. Please try again.');
-      }
-    });
-  }
-
-
 
   // Method to preserve expansion state and refresh chart data
   async getDataWithStatePreservation() {
@@ -1649,6 +1780,125 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
     if (invalidNodes.length > 0) {
       console.warn(`Fixed ${invalidNodes.length} invalid parent references:`, invalidNodes.map(n => `${n.id}->${n.parentId}`));
     }
+  }
+
+  /**
+   * Handle drag and drop of nodes to change parent relationships
+   * @param nodeId - ID of the node being dragged  
+   * @param newParentId - ID of the node it's being dropped on
+   */
+  async handleNodeDrop(nodeId: number, newParentId: number) {
+    // Safety check - ensure data is loaded
+    if (!this.originalData || !Array.isArray(this.originalData) || this.originalData.length === 0) {
+      console.warn('Chart data not yet loaded, cannot process drag and drop');
+      this.chart?.render(); // Reset visual state
+      return;
+    }
+
+    if (this.readOnly) {
+      console.warn('Cannot update org chart in read-only mode');
+      return;
+    }
+
+    // Prevent circular references
+    if (nodeId === newParentId) {
+      alert('Cannot assign a node as its own parent');
+      return;
+    }
+
+    // Check if the new parent is a descendant of the node being moved
+    const isDescendant = this.isNodeDescendant(nodeId, newParentId);
+    if (isDescendant) {
+      alert('Cannot move a node under one of its descendants. This would create a circular reference.');
+      return;
+    }
+
+    // Find the dragged user and target in the original data
+    const draggedUser = this.originalData.find(user => user.id === nodeId);
+    const targetNode = this.originalData.find(user => user.id === newParentId);
+    
+    if (!draggedUser) {
+      console.error('Dragged user not found:', nodeId);
+      return;
+    }
+    
+    if (!targetNode) {
+      console.error('Target node not found:', newParentId);
+      return;
+    }
+
+    // Confirm the action
+    const draggedName = draggedUser.name || `${draggedUser.first} ${draggedUser.last}`;
+    const targetName = targetNode.name || targetNode.org_chart_department || `${targetNode.first} ${targetNode.last}`;
+    const confirmMsg = `Move "${draggedName}" under "${targetName}"?`;
+    
+    if (!confirm(confirmMsg)) {
+      // Refresh chart to reset visual state
+      this.chart.render();
+      return;
+    }
+
+    try {
+      // Update the parent relationship in the backend
+      const result = await this.userService.update(nodeId, {
+        parentId: newParentId
+      });
+
+      if (result) {
+        // Update local data
+        const nodeIndex = this.originalData.findIndex(n => n.id === nodeId);
+        if (nodeIndex !== -1) {
+          this.originalData[nodeIndex].parentId = newParentId;
+        }
+
+        // Refresh the chart while preserving expansion state
+        await this.getDataWithStatePreservation();
+        
+        // alert('Org chart updated successfully');
+      } else {
+        alert('Failed to update org chart');
+        this.chart.render(); // Reset visual state
+      }
+    } catch (error) {
+      console.error('Error updating org chart:', error);
+      alert('Error updating org chart: ' + error.message);
+      this.chart.render(); // Reset visual state
+    }
+  }
+
+  /**
+   * Check if potentialDescendantId is a descendant of ancestorId
+   */
+  private isNodeDescendant(ancestorId: number, potentialDescendantId: number): boolean {
+    // Safety check
+    if (!this.originalData || !Array.isArray(this.originalData)) {
+      console.warn('originalData not available for circular reference check. Assuming no circular reference but should be verified now. This is iimportant to check now. w');
+      return false;
+    }
+    
+    const findParent = (nodeId: number): number | null => {
+      const node = this.originalData.find(n => n.id === nodeId);
+      return node?.parentId || null;
+    };
+
+    let currentId = potentialDescendantId;
+    const visited = new Set<number>();
+
+    while (currentId !== null && currentId !== undefined) {
+      if (currentId === ancestorId) {
+        return true; // Found the ancestor, so it's a descendant
+      }
+
+      if (visited.has(currentId)) {
+        // Circular reference detected, break to prevent infinite loop
+        break;
+      }
+
+      visited.add(currentId);
+      currentId = findParent(currentId);
+    }
+
+    return false;
   }
 
   ngOnDestroy() {

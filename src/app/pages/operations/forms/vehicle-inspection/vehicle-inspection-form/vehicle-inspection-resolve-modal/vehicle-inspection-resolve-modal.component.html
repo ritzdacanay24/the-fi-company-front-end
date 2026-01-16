@@ -1,6 +1,6 @@
 <div class="modal-header">
     <h4 class="modal-title" id="modal-basic-title">
-        <i class="mdi mdi-wrench-outline me-2"></i>Resolve Inspection Issue
+        <i class="mdi mdi-clipboard-check-outline me-2"></i>Enter Resolution Details
     </h4>
     <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
 </div>
@@ -20,7 +20,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="resolved_by" class="form-label">Resolved By</label>
-                        <input type="text" class="form-control" id="resolved_by" placeholder="Enter name of person who resolved the issue"
+                        <input type="text" class="form-control" id="resolved_by" name="resolved_by" placeholder="Enter name of person who resolved the issue"
                             [(ngModel)]="formData.resolved_by">
                         <div class="form-text">
                             <i class="mdi mdi-information-outline me-1"></i>
@@ -29,7 +29,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="resolved_by_date" class="form-label">Resolved Date</label>
-                        <input type="date" class="form-control" id="resolved_by_date"
+                        <input type="date" class="form-control" id="resolved_by_date" name="resolved_by_date"
                             [(ngModel)]="formData.resolved_by_date">
                         <div class="form-text">
                             <i class="mdi mdi-information-outline me-1"></i>
@@ -41,7 +41,7 @@
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label for="resolved_by_notes" class="form-label">Resolution Notes</label>
-                        <textarea class="form-control" id="resolved_by_notes" rows="3"
+                        <textarea class="form-control" id="resolved_by_notes" name="resolved_by_notes" rows="3"
                             placeholder="Describe what was done to resolve the issue, parts used, etc."
                             [(ngModel)]="formData.resolved_by_notes"></textarea>
                         <div class="form-text">
@@ -64,7 +64,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="resolved_confirmed_by" class="form-label">Confirmed By</label>
-                        <input type="text" class="form-control" id="resolved_confirmed_by" 
+                        <input type="text" class="form-control" id="resolved_confirmed_by" name="resolved_confirmed_by"
                             placeholder="Enter name of supervisor or manager"
                             [(ngModel)]="formData.resolved_confirmed_by">
                         <div class="form-text">
@@ -74,7 +74,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="resolved_confirmed_date" class="form-label">Confirmed Date</label>
-                        <input type="date" class="form-control" id="resolved_confirmed_date"
+                        <input type="date" class="form-control" id="resolved_confirmed_date" name="resolved_confirmed_date"
                             [(ngModel)]="formData.resolved_confirmed_date">
                         <div class="form-text">
                             <i class="mdi mdi-information-outline me-1"></i>
@@ -86,7 +86,7 @@
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label for="resolved_confirmed_notes" class="form-label">Confirmation Notes</label>
-                        <textarea class="form-control" id="resolved_confirmed_notes" rows="3"
+                        <textarea class="form-control" id="resolved_confirmed_notes" name="resolved_confirmed_notes" rows="3"
                             placeholder="Any additional notes or verification details from the confirming authority"
                             [(ngModel)]="formData.resolved_confirmed_notes"></textarea>
                         <div class="form-text">

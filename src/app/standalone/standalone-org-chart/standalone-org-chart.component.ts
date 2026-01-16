@@ -23,11 +23,20 @@ import { OrgChartViewComponent } from "@app/pages/operations/org-chart/org-chart
 
       <div *ngIf="!isLoading && !errorMessage && isValidToken">
         <div class="header-bar">
-          <h4 class="mb-0">The Fi Company - Organization Chart</h4>
-          <small class="text-muted">Shared View (Read-Only)</small>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="mb-0">The Fi Company - Organization Chart</h4>
+              <small class="text-muted">Shared View (Read-Only)</small>
+            </div>
+            <button class="btn btn-outline-primary btn-sm d-flex align-items-center" (click)="toggleLayout()" 
+                    [title]="isHorizontalLayout ? 'Switch to Vertical Layout' : 'Switch to Horizontal Layout'">
+              <i class="mdi me-1" [ngClass]="isHorizontalLayout ? 'mdi-view-sequential' : 'mdi-view-parallel'"></i>
+              {{isHorizontalLayout ? 'Vertical' : 'Horizontal'}}
+            </button>
+          </div>
         </div>
         
-        <app-org-chart-view [readOnly]="true"></app-org-chart-view>
+        <app-org-chart-view [readOnly]="true" [isHorizontalLayout]="isHorizontalLayout"></app-org-chart-view>
       </div>
     </div>
   `,
@@ -64,6 +73,7 @@ export class StandaloneOrgChartComponent implements OnInit {
   isValidToken = false;
   errorMessage = "";
   token = "";
+  isHorizontalLayout = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -80,6 +90,10 @@ export class StandaloneOrgChartComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  toggleLayout() {
+    this.isHorizontalLayout = !this.isHorizontalLayout;
   }
 
   async validateTokenAndLoadChart() {

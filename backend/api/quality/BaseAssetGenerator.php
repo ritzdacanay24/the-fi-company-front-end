@@ -102,8 +102,24 @@ abstract class BaseAssetGenerator
                     error_log("Created/found EyeFi serial '{$assignment['serialNumber']}' with ID: {$assignment['eyefi_serial_id']}");
                 }
                 
-                // 1. Generate customer-specific asset number
-                $generatedAssetNumber = $this->generateAssetNumber($assignment);
+                // 1. Generate customer-specific asset number OR use manually provided one
+                // Check if manual asset number is provided (for USED category)
+                if (!empty($assignment['sgAssetNumber'])) {
+                    // Use manually entered asset number for SG
+                    $generatedAssetNumber = $assignment['sgAssetNumber'];
+                    error_log("Using manual SG asset number: {$generatedAssetNumber}");
+                } elseif (!empty($assignment['agsAssetNumber'])) {
+                    // Use manually entered asset number for AGS
+                    $generatedAssetNumber = $assignment['agsAssetNumber'];
+                    error_log("Using manual AGS asset number: {$generatedAssetNumber}");
+                } elseif (!empty($assignment['igtAssetNumber'])) {
+                    // Use manually entered asset number for IGT
+                    $generatedAssetNumber = $assignment['igtAssetNumber'];
+                    error_log("Using manual IGT asset number: {$generatedAssetNumber}");
+                } else {
+                    // Auto-generate asset number
+                    $generatedAssetNumber = $this->generateAssetNumber($assignment);
+                }
                 
                 // 2. Insert into customer-specific table
                 $customerAssetId = $this->insertCustomerAsset($assignment, $generatedAssetNumber);

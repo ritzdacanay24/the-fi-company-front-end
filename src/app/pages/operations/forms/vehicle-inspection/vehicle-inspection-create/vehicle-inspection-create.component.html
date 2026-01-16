@@ -27,7 +27,8 @@
         <div class="card-body p-4">
           <app-vehicle-inspection-form (setFormEmitter)="setFormEmitter($event)"
               (setDetailsFormEmitter)="setDetailsFormEmitter($event)" [submitted]="submitted"
-              (setFormErrorsEmitter)="setFormErrorsEmitter($event)"></app-vehicle-inspection-form>
+              (setFormErrorsEmitter)="setFormErrorsEmitter($event)"
+              (hasUnresolvedFailures)="setHasUnresolvedFailures($event)"></app-vehicle-inspection-form>
 
           <div class="mt-4 pt-4 border-top">
             <div class="mb-3">
@@ -49,7 +50,10 @@
           <button type="button" class="btn btn-outline-secondary me-2" [disabled]="isLoading" (click)="onCancel()">
             <i class="mdi mdi-close me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary ms-auto" [disabled]="isLoading" (click)="onSubmit()">
+          <button type="submit" class="btn btn-primary ms-auto" 
+                  [disabled]="isLoading || hasUnresolvedFailures" 
+                  (click)="onSubmit()"
+                  [title]="hasUnresolvedFailures ? 'Cannot submit with unresolved failures' : 'Create Inspection'">
             @if (isLoading) {
               <span class="spinner-border spinner-border-sm me-2" role="status"></span>
               Creating...
