@@ -170,6 +170,9 @@ class SgAssetGenerator extends BaseAssetGenerator
      */
     protected function insertCustomerAsset($assignment, $generatedAssetNumber)
     {
+        // Use manualUpdate from assignment if provided (for USED category), otherwise NULL (for NEW/auto-generated)
+        $manualUpdate = isset($assignment['manualUpdate']) ? $assignment['manualUpdate'] : null;
+        
         $insertQry = "
             INSERT INTO eyefidb.sgAssetGenerator (
                 timeStamp,
@@ -190,7 +193,7 @@ class SgAssetGenerator extends BaseAssetGenerator
                 :generated_SG_asset,
                 :serialNumber,
                 :lastUpdate,
-                NULL
+                :manualUpdate
             )
         ";
 
@@ -203,6 +206,7 @@ class SgAssetGenerator extends BaseAssetGenerator
         $insertQuery->bindParam(':generated_SG_asset', $generatedAssetNumber, PDO::PARAM_STR);
         $insertQuery->bindParam(':serialNumber', $assignment['serialNumber'], PDO::PARAM_STR);
         $insertQuery->bindParam(':lastUpdate', $this->nowDate, PDO::PARAM_STR);
+        $insertQuery->bindParam(':manualUpdate', $manualUpdate, PDO::PARAM_STR);
         $insertQuery->execute();
 
         return $this->db->lastInsertId();

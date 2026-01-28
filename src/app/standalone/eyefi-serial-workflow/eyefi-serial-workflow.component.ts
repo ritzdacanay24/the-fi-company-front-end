@@ -1365,7 +1365,8 @@ export class EyefiSerialWorkflowComponent implements OnInit, OnDestroy {
             eyefi_serial_id: typeof generated.serial === 'string' ? null : generated.serial.id,
             ulNumber: generated.ulNumber?.ul_number || '',
             ul_label_id: generated.ulNumber?.id || null,
-            sgAssetNumber: generated.assetNumber, // Use manually entered asset number for USED
+            sgAssetNumber: generated.assetNumber?.trim() || '', // Use manually entered asset number for USED (trimmed)
+            manualUpdate: '1', // Flag as manual entry so sequence logic ignores this row
             sgPartNumber: this.workOrderDetails?.cp_cust_part || '',
             poNumber: this.workOrderNumber,
             property_site: '',
