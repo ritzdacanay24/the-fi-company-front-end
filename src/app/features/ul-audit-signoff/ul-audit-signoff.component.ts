@@ -5,6 +5,8 @@ import { SharedModule } from '@app/shared/shared.module';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef, GridOptions, GridReadyEvent } from 'ag-grid-community';
 import { SerialAssignmentsService } from '../serial-assignments/services/serial-assignments.service';
+import { NgChartsModule } from 'ng2-charts';
+import { ChartConfiguration, ChartOptions } from 'chart.js';
 
 interface ULAuditItem {
   id: number;
@@ -21,11 +23,11 @@ interface ULAuditItem {
 }
 
 interface AuditSignoff {
-  id?: number;
+  id?: number | string;
   audit_date: string;
   auditor_name: string;
   auditor_signature: string;
-  items_audited: number;
+  items_audited: number | string;
   ul_numbers: string[];
   notes: string;
   created_at?: string;
@@ -34,7 +36,7 @@ interface AuditSignoff {
 @Component({
   selector: 'app-ul-audit-signoff',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular],
+  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular, NgChartsModule],
   templateUrl: './ul-audit-signoff.component.html',
   styleUrls: ['./ul-audit-signoff.component.scss']
 })
@@ -69,11 +71,37 @@ export class UlAuditSignoffComponent implements OnInit {
   dateToFilter = '';
   showAuditedItems = false;
 
+  // Audit History Chart
+  auditChartType: 'bar' = 'bar';
+  auditChartData: ChartConfiguration<'bar'>['data'] = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Items Audited',
+        data: [],
+        backgroundColor: 'rgba(25, 135, 84, 0.35)',
+        borderColor: 'rgba(25, 135, 84, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
+  auditChartOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      x: { ticks: { maxRotation: 0, autoSkip: true } },
+      y: { beginAtZero: true, ticks: { precision: 0 } }
+    }
+  };
+
   // AG Grid
   columnDefs: ColDef[] = [];
   gridOptions: GridOptions = {
-    pagination: true,
-    paginationPageSize: 50,
+    pagination: false,
     animateRows: true,
     rowSelection: 'multiple',
     suppressRowClickSelection: false,
@@ -248,8 +276,9 @@ export class UlAuditSignoffComponent implements OnInit {
               // Store the most recent audit date and ID (since sorted DESC)
               if (!this.ulNumberToAuditDate.has(ul)) {
                 this.ulNumberToAuditDate.set(ul, signoff.audit_date);
-                if (signoff.id) {
-                  this.ulNumberToAuditId.set(ul, signoff.id);
+                const signoffId = Number(signoff.id);
+                if (Number.isFinite(signoffId) && signoffId > 0) {
+                  this.ulNumberToAuditId.set(ul, signoffId);
                 }
               }
             });
@@ -261,6 +290,8 @@ export class UlAuditSignoffComponent implements OnInit {
           item.audit_date = this.ulNumberToAuditDate.get(item.ul_number);
           item.audit_id = this.ulNumberToAuditId.get(item.ul_number);
         });
+
+        this.buildAuditChart();
         
         // Refresh grid to update status badges
         this.applyFilters();
@@ -273,6 +304,43 @@ export class UlAuditSignoffComponent implements OnInit {
     } catch (error) {
       console.error('Error loading audit history:', error);
     }
+  }
+
+  private normalizeAuditDate(dateStr: string): string {
+    if (!dateStr) return '';
+    // Supports 'YYYY-MM-DD', 'YYYY-MM-DDTHH:mm:ss', and 'YYYY-MM-DD HH:mm:ss'
+    return dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+  }
+
+  private toNumber(value: unknown): number {
+    const n = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private buildAuditChart(): void {
+    const totalsByDate = new Map<string, number>();
+
+    for (const signoff of this.auditHistory) {
+      const dateKey = this.normalizeAuditDate(signoff.audit_date);
+      if (!dateKey) continue;
+      totalsByDate.set(dateKey, (totalsByDate.get(dateKey) ?? 0) + this.toNumber(signoff.items_audited));
+    }
+
+    const labels = Array.from(totalsByDate.keys()).sort((a, b) => a.localeCompare(b));
+    const data = labels.map(label => totalsByDate.get(label) ?? 0);
+
+    this.auditChartData = {
+      labels,
+      datasets: [
+        {
+          label: 'Items Audited',
+          data,
+          backgroundColor: 'rgba(25, 135, 84, 0.35)',
+          borderColor: 'rgba(25, 135, 84, 1)',
+          borderWidth: 1
+        }
+      ]
+    };
   }
 
   applyFilters(): void {
@@ -402,6 +470,7 @@ export class UlAuditSignoffComponent implements OnInit {
 
   openHistoryModal(): void {
     this.showHistoryModal = true;
+    this.buildAuditChart();
   }
 
   closeHistoryModal(): void {

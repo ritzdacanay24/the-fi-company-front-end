@@ -98,6 +98,7 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild("chartContainer") chartContainer: ElementRef;
   @Input() data: any[];
   @Input() readOnly: boolean = false; // New input to control read-only mode
+  @Input() showSearch: boolean = true;
   @Input() set isHorizontalLayout(value: boolean) {
     this._isHorizontalLayout = value;
     if (this.chart && this.data && this.data.length > 0) {
@@ -390,6 +391,27 @@ export class OrgChartViewComponent implements OnInit, AfterViewInit, OnDestroy {
       let data = this.viewOnlyTree(Number(value) === 0 ? null : Number(value));
       this.chart.data(data).render().fit();
     }
+  }
+
+  expandAllNodes() {
+    if (!this.chart) {
+      console.warn('Chart not initialized yet');
+      return;
+    }
+
+    const data = this.chart.data();
+    if (!data || !Array.isArray(data)) {
+      console.warn('Chart data not available');
+      return;
+    }
+
+    data.forEach((d: any) => {
+      if (!d || d.id === -1) return;
+      d._expanded = true;
+      this.chart.setExpanded(d.id, true);
+    });
+
+    this.chart.render().fit();
   }
 
   defaultExpand() {
