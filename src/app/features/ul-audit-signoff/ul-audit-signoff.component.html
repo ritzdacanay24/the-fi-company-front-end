@@ -267,6 +267,23 @@
         <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()"></button>
       </div>
       <div class="modal-body">
+
+        <div *ngIf="auditHistory.length > 0" class="card mb-3">
+          <div class="card-header bg-light d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <strong>Audits Over Time</strong>
+            <span class="text-muted small">Total sign-offs: {{ auditHistory.length }}</span>
+          </div>
+          <div class="card-body">
+            <div style="height: 240px;">
+              <canvas
+                baseChart
+                [data]="auditChartData"
+                [options]="auditChartOptions"
+                [type]="auditChartType">
+              </canvas>
+            </div>
+          </div>
+        </div>
         
         <div *ngIf="auditHistory.length === 0" class="text-center py-4">
           <i class="mdi mdi-history text-muted" style="font-size: 3rem;"></i>

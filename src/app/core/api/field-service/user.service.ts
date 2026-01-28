@@ -64,7 +64,9 @@ export class UserService extends DataService<any> {
   }
 
   public validateOrgChartToken(token: string, password?: string): Observable<any> {
-    const params = password ? `mode=validate&token=${token}&password=${password}` : `mode=validate&token=${token}`;
+    const safeToken = encodeURIComponent(token);
+    const safePassword = password != null ? encodeURIComponent(password) : null;
+    const params = safePassword ? `mode=validate&token=${safeToken}&password=${safePassword}` : `mode=validate&token=${safeToken}`;
     return this.http.get(`org-chart-token/index.php?${params}`);
   }
 

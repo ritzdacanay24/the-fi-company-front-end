@@ -21,7 +21,7 @@
         <div class="card-header">
           <div class="d-flex align-items-stretch justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-stretch gap-3 flex-grow-1">
-              <div class="form-icon d-flex align-items-center" style="min-width: 300px; max-width: 400px;">
+              <div *ngIf="showSearch" class="form-icon d-flex align-items-center" style="min-width: 300px; max-width: 400px;">
                 <app-user-search-v1 (notifyParent)="notifyParent($event)" [value]="query" [showLabel]="false"
                     [appendToBody]="'body'" [ngClass]="'mb-0 w-100'" [placeholder]="'Search employees...'"
                     [editableSearchTerm]="false"></app-user-search-v1>
