@@ -208,8 +208,9 @@ COMMENT='Track sample image uploads';
 -- =====================================================
 INSERT INTO checklist_config (config_key, config_value, description, config_type, is_system) VALUES
 ('max_photo_size_mb', '10', 'Maximum photo file size in MB', 'number', false),
+('max_video_size_mb', '50', 'Maximum video file size in MB', 'number', false),
 ('allowed_photo_types', '["image/jpeg", "image/png", "image/webp"]', 'Allowed photo MIME types', 'json', false),
-('allowed_video_types', '["video/mp4", "video/webm", "video/ogg"]', 'Allowed video MIME types', 'json', false),
+('allowed_video_types', '["video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo", "video/x-matroska"]', 'Allowed video MIME types', 'json', false),
 ('photo_quality_min', '80', 'Minimum photo quality percentage', 'number', false),
 ('auto_submit_on_complete', 'false', 'Auto-submit checklist when all photos are taken', 'boolean', false),
 ('require_review_before_submit', 'true', 'Require review step before final submission', 'boolean', false),

@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 
@@ -25,7 +25,7 @@ interface SampleImage {
 @Component({
   selector: 'app-checklist-template-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent],
   template: `
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -58,6 +58,13 @@ interface SampleImage {
                 </div>
               </div>
               <div class="d-flex gap-2">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-secondary"
+                  [routerLink]="['/quality/checklist']"
+                  title="Back to Photo Checklists">
+                  <i class="mdi mdi-arrow-left me-2"></i>Back to Checklists
+                </button>
                 <button 
                   type="button" 
                   class="btn btn-primary"

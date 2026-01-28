@@ -80,6 +80,78 @@ export class ZebraLabelService {
 ^FO50,400^A0N,35,25^FDQTY: {QUANTITY}^FS
 ^PQ{QUANTITY}^FS
 ^XZ`
+    },
+    {
+      id: 'eyefi-asset-number',
+      name: 'EyeFi Asset Number Label (Electrical)',
+      description: '2x4 inch label - 2 labels lengthwise with asset number, electrical specs, and company logo',
+      size: '2 x 4',
+      orientation: 'Portrait',
+      width: 200,
+      height: 800,
+      zplTemplate: `^XA
+
+^FO590,10^GFA,1140,1140,20,,:::S01F8,S07F8,R01FF8,R03FF8,R07FF8,R0IF8,Q01IF8,Q01IF,Q03FF80F,Q03FE03F8,Q07FC03FC,Q07FC07FC,Q07F807FC,Q07F803FC,:Q07F801F8,Q07F8006,Q07F8,Q0FF8,03E0841F00MFC00F81F03081E03018831,01808C1800MFC01803183981307018813,01808C1800MFC01006183B8130781C81E,0180FC1E00MFC01006083E81F0581F80E,01808C1800MFC01802183481C0F81380C,0180841800MFC00C0310308100FC11804,0080841E007LFC00701E02081008410804,Q0FF803FC,Q07F801FC,:::::::::::::Q07F801F8,Q07F801F,Q07F801C,Q07F8,::::::,:^FS
+
+^CF0,30
+^FO20,20^FDEYEFI ASSET:^FS
+^CF0,35
+^FO20,55^FD{SERIAL_NUMBER}^FS
+^FO20,100^BY2,2.5,80^BCN,,N,N,N,A^FD{SERIAL_NUMBER}^FS
+^FO20,200^GB560,0,2^FS
+^CF0,25
+^FO20,215^FDPN: {PART_NUMBER}^FS
+^FO20,255^FDDATE: {DATE}^FS
+^FO20,295^GB560,0,2^FS
+^CF0,22
+^FO20,320^FDVOLTS:____________ HZ:____________ AMPS:____________^FS
+^FO20,365^GB560,0,2^FS
+^CF0,28
+^FO20,380^FDDRY LOCATIONS ONLY^FS
+
+^PQ{QUANTITY}^FS
+^XZ`
+    },
+    {
+      id: 'eyefi-asset-number-usa',
+      name: 'EyeFi Asset Number Label (USA/UL)',
+      description: '2x4 inch label with Made in USA, UL File info, and website',
+      size: '2 x 4',
+      orientation: 'Portrait',
+      width: 200,
+      height: 800,
+      zplTemplate: `^XA
+
+^FO550,10^GFA,1140,1140,20,,:::S01F8,S07F8,R01FF8,R03FF8,R07FF8,R0IF8,Q01IF8,Q01IF,Q03FF80F,Q03FE03F8,Q07FC03FC,Q07FC07FC,Q07F807FC,Q07F803FC,:Q07F801F8,Q07F8006,Q07F8,Q0FF8,03E0841F00MFC00F81F03081E03018831,01808C1800MFC01803183981307018813,01808C1800MFC01006183B8130781C81E,0180FC1E00MFC01006083E81F0581F80E,01808C1800MFC01802183481C0F81380C,0180841800MFC00C0310308100FC11804,0080841E007LFC00701E02081008410804,Q0FF803FC,Q07F801FC,:::::::::::::Q07F801F8,Q07F801F,Q07F801C,Q07F8,::::::,:^FS
+
+^CF0,40
+^FO20,20^FDEYEFI ASSET NUMBER^FS
+^FO20,70^GB760,2,2^FS
+
+^CF0,35
+^FO20,85^FD{SERIAL_NUMBER}^FS
+^FO20,130^BY2,2.5,80^BCN,,N,N,N,A^FD{SERIAL_NUMBER}^FS
+
+^FO20,225^GB760,2,2^FS
+^CF0,22
+^FO20,235^FDPART NUMBER: {PART_NUMBER}^FS
+^FO380,235^FDDATE: {DATE}^FS
+
+^CF0,24
+^FO20,270^FDELECTRICAL SPECIFICATIONS^FS
+^CF0,20
+^FO20,300^FDVOLTS:________ HZ:________ AMPS:________ LAMP HOLDERS:________^FS
+
+^FO20,335^GB760,2,2^FS
+^CF0,26
+^FO20,345^FDWARNING: DRY LOCATIONS ONLY^FS
+
+^FO20,380^GB760,2,2^FS
+^CF0,16
+^FO20,390^FDMADE IN USA  |  UL FILE #E325442  |  the-fi-company.com^FS
+
+^PQ{QUANTITY}^FS
+^XZ`
     }
   ];
 
@@ -109,9 +181,11 @@ export class ZebraLabelService {
     let zpl = template.zplTemplate;
     
     // Replace placeholders
+    // this is ithe tbealc hto thie srhlurh 
     zpl = zpl.replace(/{SERIAL_NUMBER}/g, serialNumber.toUpperCase());
     zpl = zpl.replace(/{QUANTITY}/g, (options.quantity || 1).toString());
     zpl = zpl.replace(/{DATE_TIME}/g, options.dateTime || moment().format('MM/DD/YYYY HH:mm'));
+    zpl = zpl.replace(/{DATE}/g, options['date'] || moment().format('MM/DD/YYYY'));
     zpl = zpl.replace(/{PART_NUMBER}/g, options.partNumber || '');
 
     // Replace any custom placeholders

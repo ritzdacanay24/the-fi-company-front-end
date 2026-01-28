@@ -45,6 +45,12 @@
       </div>
     </div>
 
+    <!-- Note for EyeFi Asset Number labels -->
+    <div *ngIf="form.get('templateId')?.value === 'eyefi-asset-number'" class="alert alert-info">
+      <i class="mdi mdi-information-outline me-2"></i>
+      <strong>Note:</strong> The label will include today's date and blank lines for Volts, Hz, and Amps to be filled in manually with a pen.
+    </div>
+
     <!-- Barcode Preview -->
     <div class="row mb-3" *ngIf="showBarcode">
       <div class="col-12">

@@ -47,6 +47,44 @@
     </div>
   </div>
 
+  <!-- Work Order Information Section -->
+  <div class="work-order-section card mb-3" *ngIf="instance">
+    <div class="card-body">
+      <h5 class="card-title mb-3">
+        <i class="fas fa-info-circle"></i>
+        Work Order Information
+      </h5>
+      <div class="row">
+        <div class="col-md-3 col-sm-6 mb-2" *ngIf="instance.workOrderNumber">
+          <strong>Work Order:</strong>
+          <div class="text-primary">{{ instance.workOrderNumber }}</div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2" *ngIf="instance.partNumber">
+          <strong>Part Number:</strong>
+          <div class="text-dark">{{ instance.partNumber }}</div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2" *ngIf="instance.serialNumber">
+          <strong>Serial Number:</strong>
+          <div class="text-dark">{{ instance.serialNumber }}</div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2" *ngIf="instance.operatorName">
+          <strong>Operator:</strong>
+          <div class="text-dark">{{ instance.operatorName }}</div>
+        </div>
+      </div>
+      <div class="row mt-2" *ngIf="template?.version || template?.description">
+        <div class="col-md-3 col-sm-6 mb-2" *ngIf="template?.version">
+          <strong>Template Version:</strong>
+          <div class="text-muted">{{ template.version }}</div>
+        </div>
+        <div class="col-md-9 col-sm-6 mb-2" *ngIf="template?.description">
+          <strong>Description:</strong>
+          <div class="text-muted">{{ template.description }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Navigation Controls -->
   <div class="navigation-section">
     <div class="nav-buttons">
@@ -69,6 +107,14 @@
           (click)="showAllItems = !showAllItems">
           <i class="fas fa-list"></i>
           {{ showAllItems ? 'Hide' : 'Show' }} All
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-outline-primary btn-sm ms-2"
+          (click)="openFullChecklistModal()"
+          title="View Full Checklist">
+          <i class="fas fa-table"></i>
+          Full View
         </button>
       </div>
 
@@ -132,17 +178,25 @@
       <div class="card-body">
         <!-- Item Description -->
         <div class="item-description" *ngIf="getCurrentTemplateItem()?.description">
-          <p>{{ getCurrentTemplateItem()?.description }}</p>
+          <div [innerHTML]="getCurrentTemplateItem()?.description"></div>
         </div>
 
-        <!-- Sample Photo (for photo type items) -->
-        <div class="sample-photo-section" 
-             *ngIf="getCurrentTemplateItem()?.type === 'photo' && getCurrentTemplateItem()?.samplePhotoUrl">
-          <h6>Reference Photo:</h6>
-          <img 
-            [src]="getCurrentTemplateItem()?.samplePhotoUrl" 
-            class="sample-photo"
-            alt="Reference photo">
+        <!-- Reference Image Section (Only show when photos are required) -->
+        <div class="reference-images-section mb-4" 
+             *ngIf="getCurrentTemplateItem()?.samplePhotoUrl && getCurrentTemplateItem()?.requiresPhoto">
+          <h6 class="text-info mb-3">
+            <i class="fas fa-images"></i>
+            Reference Image
+          </h6>
+          
+          <div class="reference-image-container">
+            <img 
+              [src]="getCurrentTemplateItem()?.samplePhotoUrl" 
+              class="reference-image img-fluid rounded shadow-sm"
+              alt="Reference image"
+              (click)="previewImage(getCurrentTemplateItem()?.samplePhotoUrl)"
+              style="max-height: 300px; cursor: pointer;">
+          </div>
         </div>
 
         <!-- Input Form -->
@@ -228,61 +282,92 @@
           <div *ngIf="getCurrentTemplateItem()?.type === 'photo'" class="form-group">
             <label class="form-label">Photos</label>
             
-            <!-- Photo Actions -->
-            <div class="photo-actions">
-              <button 
-                type="button" 
-                class="btn btn-primary btn-sm"
-                (click)="openPhotoCapture(getCurrentItem()!)">
-                <i class="fas fa-camera"></i>
-                Take Photo
-              </button>
-              
-              <input 
-                #fileInput
-                type="file" 
-                class="d-none"
-                accept="image/*"
-                (change)="onFileSelect($event, getCurrentItem()!)">
-              
-              <button 
-                type="button" 
-                class="btn btn-outline-primary btn-sm"
-                (click)="fileInput.click()">
-                <i class="fas fa-upload"></i>
-                Upload Photo
-              </button>
-            </div>
-
-            <!-- Existing Photos -->
-            <div class="photos-grid" *ngIf="getCurrentItem()?.photos && getCurrentItem()!.photos!.length > 0">
-              <div *ngFor="let photo of getCurrentItem()!.photos" class="photo-item">
-                <img [src]="photo.url" class="photo-thumbnail" [alt]="photo.fileName">
-                <div class="photo-overlay">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-danger"
-                    (click)="deletePhoto(getCurrentItem()!, photo)"
-                    title="Delete Photo">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-                <div class="photo-info">
-                  <small>{{ photo.fileName }}</small>
-                  <div *ngIf="photo.qualityScore" class="quality-score">
-                    Quality: {{ photo.qualityScore }}%
+            <!-- Photo not required - Verification Button (Only show verification, no photo upload) -->
+            <div *ngIf="!getCurrentTemplateItem()?.requiresPhoto && (!getCurrentItem()?.photos || getCurrentItem()!.photos!.length === 0)">
+              <div class="alert mb-3"
+                   [ngClass]="getCurrentItem()?.status === 'completed' ? 'alert-success' : 'alert-info'">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <i class="fas me-2" [ngClass]="getCurrentItem()?.status === 'completed' ? 'fa-check-circle' : 'fa-info-circle'"></i>
+                    <strong>Photos are optional for this item.</strong>
+                    <p class="mb-0 mt-1" *ngIf="getCurrentItem()?.status !== 'completed'">
+                      You can mark this item as verified without taking photos.
+                    </p>
+                    <p class="mb-0 mt-1" *ngIf="getCurrentItem()?.status === 'completed'">
+                      This item has been verified without photos.
+                    </p>
+                  </div>
+                  <div>
+                    <button 
+                      type="button" 
+                      class="btn btn-sm"
+                      [ngClass]="getCurrentItem()?.status === 'completed' ? 'btn-outline-warning' : 'btn-success'"
+                      (click)="toggleVerification()">
+                      <i class="fas me-1" [ngClass]="getCurrentItem()?.status === 'completed' ? 'fa-times-circle' : 'fa-check-circle'"></i>
+                      {{ getCurrentItem()?.status === 'completed' ? 'Unmark Verified' : 'Mark as Verified' }}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+            
+            <!-- Photo Actions (Only show when photos are required OR user wants to add photos anyway) -->
+            <div *ngIf="getCurrentTemplateItem()?.requiresPhoto || (getCurrentItem()?.photos && getCurrentItem()!.photos!.length > 0)">
+              <div class="photo-actions">
+                <button 
+                  type="button" 
+                  class="btn btn-primary btn-sm"
+                  (click)="openPhotoCapture(getCurrentItem()!)">
+                  <i class="fas fa-camera"></i>
+                  Take Photo
+                </button>
+                
+                <input 
+                  #fileInput
+                  type="file" 
+                  class="d-none"
+                  accept="image/*"
+                  (change)="onFileSelect($event, getCurrentItem()!)">
+                
+                <button 
+                  type="button" 
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="fileInput.click()">
+                  <i class="fas fa-upload"></i>
+                  Upload Photo
+                </button>
+              </div>
 
-            <!-- Pending Photos -->
-            <div class="pending-photos" *ngIf="pendingPhotos.get(getCurrentItem()!.id)?.length">
-              <div *ngFor="let upload of pendingPhotos.get(getCurrentItem()!.id)" class="pending-photo">
-                <img [src]="upload.preview" class="photo-thumbnail" alt="Uploading...">
-                <div class="upload-overlay" *ngIf="upload.uploading">
-                  <div class="spinner-border spinner-border-sm" role="status"></div>
-                  <div class="upload-progress">{{ upload.progress }}%</div>
+              <!-- Existing Photos -->
+              <div class="photos-grid" *ngIf="getCurrentItem()?.photos && getCurrentItem()!.photos!.length > 0">
+                <div *ngFor="let photo of getCurrentItem()!.photos" class="photo-item">
+                  <img [src]="photo.url" class="photo-thumbnail" [alt]="photo.fileName">
+                  <div class="photo-overlay">
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-danger"
+                      (click)="deletePhoto(getCurrentItem()!, photo)"
+                      title="Delete Photo">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                  <div class="photo-info">
+                    <small>{{ photo.fileName }}</small>
+                    <div *ngIf="photo.qualityScore" class="quality-score">
+                      Quality: {{ photo.qualityScore }}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pending Photos -->
+              <div class="pending-photos" *ngIf="pendingPhotos.get(getCurrentItem()!.id)?.length">
+                <div *ngFor="let upload of pendingPhotos.get(getCurrentItem()!.id)" class="pending-photo">
+                  <img [src]="upload.preview" class="photo-thumbnail" alt="Uploading...">
+                  <div class="upload-overlay" *ngIf="upload.uploading">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <div class="upload-progress">{{ upload.progress }}%</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -491,7 +576,160 @@
           (click)="finalizeSubmission()"
           [disabled]="signatureForm.invalid || isSubmitting">
           <i class="fas fa-paper-plane"></i>
-          {{ isSubmitting ? 'Submitting...' : 'Submit Checklist' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade show" 
+     *ngIf="showImagePreview" 
+     style="display: block; background: rgba(0,0,0,0.8);"
+     (click)="closeImagePreview()">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-header border-0 pb-0">
+        <button 
+          type="button" 
+          class="close text-white"
+          (click)="closeImagePreview()"
+          aria-label="Close"
+          style="font-size: 2rem; opacity: 0.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center p-4" (click)="$event.stopPropagation()">
+        <img 
+          [src]="previewImageUrl" 
+          class="img-fluid rounded shadow-lg" 
+          style="max-height: 80vh; max-width: 100%; object-fit: contain;"
+          alt="Preview image">
+      </div>
+      <div class="modal-footer border-0 justify-content-center pt-0">
+        <button 
+          type="button" 
+          class="btn btn-light btn-sm"
+          (click)="openImageInNewTab()">
+          <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary btn-sm"
+          (click)="closeImagePreview()">
+          <i class="fas fa-times me-1"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Checklist Overview Modal -->
+<div class="modal fade show" 
+     *ngIf="showFullChecklistModal" 
+     style="display: block; background: rgba(0,0,0,0.5);"
+     (click)="closeFullChecklistModal()">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-clipboard-list me-2"></i>
+          Full Checklist Overview - {{ template?.name }}
+        </h5>
+        <button 
+          type="button" 
+          class="close text-white"
+          (click)="closeFullChecklistModal()"
+          aria-label="Close"
+          style="opacity: 0.8;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4" style="overflow-x: auto;">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th style="width: 300px;">Task</th>
+                <th style="width: 200px;">Description</th>
+                <th style="width: 100px;">Type</th>
+                <th style="width: 120px;">Status</th>
+                <th style="width: 150px;">Value</th>
+                <th style="width: 200px;">Photos</th>
+                <th style="width: 200px;">Notes</th>
+                <th style="width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of instance?.items; let i = index"
+                  [class.table-primary]="i === currentItemIndex">
+                <td class="text-center fw-bold">{{ i + 1 }}</td>
+                <td>
+                  <div class="fw-semibold">{{ template?.items[i]?.title }}</div>
+                  <span class="badge badge-warning badge-sm" *ngIf="template?.items[i]?.required">Required</span>
+                </td>
+                <td>
+                  <div class="small text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                    <div [innerHTML]="template?.items[i]?.description || 'N/A'"></div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-info">{{ template?.items[i]?.type | titlecase }}</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getStatusBadgeClass(getItemDisplayStatus(item, template?.items[i]!))">
+                    {{ getItemDisplayStatus(item, template?.items[i]!) | titlecase }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="item.value">{{ formatValue(item.value, template?.items[i]!) }}</span>
+                  <span class="text-muted" *ngIf="!item.value">-</span>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1" *ngIf="item.photos && item.photos.length > 0">
+                    <img 
+                      *ngFor="let photo of item.photos" 
+                      [src]="photo.url" 
+                      class="img-thumbnail cursor-pointer"
+                      style="width: 50px; height: 50px; object-fit: cover;"
+                      [alt]="photo.fileName"
+                      (click)="previewImage(photo.url)"
+                      [title]="photo.fileName">
+                    <span class="badge bg-secondary">{{ item.photos.length }}</span>
+                  </div>
+                  <span class="text-muted small" *ngIf="!item.photos || item.photos.length === 0">No photos</span>
+                </td>
+                <td>
+                  <div class="small" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                       [title]="item.notes || ''">
+                    {{ item.notes || '-' }}
+                  </div>
+                </td>
+                <td>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="navigateToItemFromModal(i)"
+                    title="Go to this item">
+                    <i class="fas fa-arrow-right"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="me-auto">
+          <strong>Progress:</strong> {{ completedItems }} of {{ totalItems }} items completed 
+          ({{ progressPercentage.toFixed(0) }}%)
+        </div>
+        <button 
+          type="button" 
+          class="btn btn-secondary"
+          (click)="closeFullChecklistModal()">
+          Close
         </button>
       </div>
     </div>

@@ -23,6 +23,14 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2">
+                        <button type="button" 
+                            class="btn" 
+                            [ngClass]="showPendingOnly ? 'btn-warning' : 'btn-outline-warning'"
+                            (click)="togglePendingFilter()">
+                            <i class="las la-clock me-2"></i>
+                            {{ showPendingOnly ? 'Showing Pending' : 'Show Pending Resolutions' }}
+                            <span class="badge bg-white text-warning ms-2" *ngIf="pendingCount > 0">{{pendingCount}}</span>
+                        </button>
                         <button type="button" class="btn btn-info" [routerLink]="['/operations/forms/vehicle-inspection/create']">
                             <i class="las la-plus me-2"></i>Create Inspection
                         </button>

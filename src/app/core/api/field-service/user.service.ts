@@ -58,13 +58,31 @@ export class UserService extends DataService<any> {
     return await firstValueFrom(this.http.get(`${url}/hasSubordinates.php?id=${id}`));
   }
 
+  // Org Chart Token Methods
+  public generateOrgChartToken(params: { password?: string; expiryHours?: number; userId?: number }): Observable<any> {
+    return this.http.post('org-chart-token/index.php?mode=generate', params);
+  }
 
+  public validateOrgChartToken(token: string, password?: string): Observable<any> {
+    const params = password ? `mode=validate&token=${token}&password=${password}` : `mode=validate&token=${token}`;
+    return this.http.get(`org-chart-token/index.php?${params}`);
+  }
+
+  public revokeOrgChartToken(tokenId: number): Observable<any> {
+    return this.http.post('org-chart-token/index.php?mode=revoke', { tokenId });
+  }
+
+  public listOrgChartTokens(): Observable<any> {
+    return this.http.get('org-chart-token/index.php?mode=list');
+  }
+
+  
 }
 
 function formatData(data) {
   function addChild(obj) {
     // get childs and further retrieve its childs with map recursively
-    let subItems = data.filter((a) => a.parentId == obj.id).map(addChild);
+    let subItems = data.filter((a: { parentId: any; }) => a.parentId == obj.id).map(addChild);
 
     // if childs are found then add childs in object
     if (subItems.length > 0) {

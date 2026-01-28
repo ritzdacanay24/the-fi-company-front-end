@@ -1,0 +1,361 @@
+<div class="container-fluid p-4">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      
+      <!-- Page Header -->
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <div class="bg-success bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+              <i class="mdi mdi-clipboard-check-outline text-white fs-4"></i>
+            </div>
+            <div>
+              <h2 class="mb-1 text-success">UL New Audit Sign-Off</h2>
+              <p class="text-muted mb-0">Select and sign off on UL New label audits</p>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              routerLink="/menu"
+              title="Back to main menu">
+              <i class="mdi mdi-arrow-left me-2"></i>Back to Menu
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-info"
+              (click)="openHistoryModal()"
+              title="View audit history">
+              <i class="mdi mdi-history me-2"></i>Audit History
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              (click)="refresh()"
+              title="Refresh data">
+              <i class="mdi mdi-refresh me-2"></i>Refresh
+            </button>
+          </div>
+        </div>
+        
+        <div class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="mdi mdi-information text-info me-3 mt-1 fs-5"></i>
+            <div>
+              <h6 class="alert-heading text-info mb-2">Audit Instructions</h6>
+              <p class="mb-0">
+                Select the UL New items you have audited by checking the boxes, then click <strong>"Sign Off Audit"</strong> to complete the process.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="error" class="alert alert-danger" role="alert">
+        <i class="mdi mdi-alert-circle me-2"></i>
+        {{ error }}
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            
+            <!-- Filters -->
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <input 
+                type="date" 
+                class="form-control form-control-sm" 
+                [(ngModel)]="dateFromFilter"
+                (change)="applyFilters()"
+                placeholder="From Date"
+                style="width: 150px;">
+              <input 
+                type="date" 
+                class="form-control form-control-sm" 
+                [(ngModel)]="dateToFilter"
+                (change)="applyFilters()"
+                placeholder="To Date"
+                style="width: 150px;">
+              <div class="form-check">
+                <input 
+                  type="checkbox" 
+                  class="form-check-input" 
+                  id="showAuditedItems"
+                  [(ngModel)]="showAuditedItems"
+                  (change)="applyFilters()">
+                <label class="form-check-label small" for="showAuditedItems">
+                  Show Already Audited
+                </label>
+              </div>
+              <button 
+                class="btn btn-sm btn-outline-secondary" 
+                (click)="clearFilters()">
+                <i class="mdi mdi-filter-remove me-1"></i>Clear
+              </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="d-flex gap-3 align-items-center">
+              <span class="badge bg-primary">
+                {{ filteredItems.length }} Total Items
+              </span>
+              <span class="badge bg-success" *ngIf="selectedItems.length > 0">
+                {{ selectedItems.length }} Selected
+              </span>
+              <button 
+                type="button"
+                class="btn btn-success btn-sm"
+                (click)="openSignoffModal()"
+                [disabled]="selectedItems.length === 0">
+                <i class="mdi mdi-clipboard-check me-1"></i>
+                Sign Off Audit ({{ selectedItems.length }})
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body p-0">
+          <ng-container *ngIf="!loading && filteredItems.length; else noRecords">
+            <ag-grid-angular
+              class="ag-theme-quartz no-border"
+              style="width: 100%; height: calc(100vh - 350px);"
+              [rowData]="filteredItems"
+              [columnDefs]="columnDefs"
+              [gridOptions]="gridOptions"
+              (gridReady)="onGridReady($event)"
+              (selectionChanged)="onSelectionChanged($event)"
+              [domLayout]="'normal'">
+            </ag-grid-angular>
+          </ng-container>
+          <ng-template #noRecords>
+            <div class="text-center py-5">
+              <div *ngIf="loading" class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div *ngIf="!loading">
+                <i class="mdi mdi-clipboard-search text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No UL New Items Found</h5>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Sign-Off Modal -->
+<div class="modal fade" [class.show]="showSignoffModal" [style.display]="showSignoffModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-clipboard-check me-2"></i>
+          UL New Audit Sign-Off
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeSignoffModal()"></button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="alert alert-success">
+          <i class="mdi mdi-information me-2"></i>
+          You are about to sign off on <strong>{{ selectedItems.length }}</strong> UL New items.
+        </div>
+
+        <!-- Selected Items Preview -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong>Selected Items ({{ selectedItems.length }})</strong>
+          </div>
+          <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+            <div class="row g-2">
+              <div class="col-md-4" *ngFor="let item of selectedItems">
+                <div class="border rounded p-2 small">
+                  <div><strong>{{ item.ul_number }}</strong></div>
+                  <div class="text-muted">{{ item.eyefi_serial_number }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sign-off Form -->
+        <div class="mb-3">
+          <label for="auditDate" class="form-label">Audit Date <span class="text-danger">*</span></label>
+          <input 
+            type="date" 
+            id="auditDate" 
+            class="form-control" 
+            [(ngModel)]="currentDate"
+            required>
+        </div>
+
+        <div class="mb-3">
+          <label for="auditorName" class="form-label">Auditor Name <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            id="auditorName" 
+            class="form-control" 
+            [(ngModel)]="auditorName"
+            placeholder="Enter your full name"
+            required>
+        </div>
+
+        <div class="mb-3">
+          <label for="auditorSignature" class="form-label">Signature <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            id="auditorSignature" 
+            class="form-control" 
+            [(ngModel)]="auditorSignature"
+            placeholder="Type your signature"
+            required>
+          <small class="text-muted">Type your full name as electronic signature</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="auditorEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+          <input 
+            type="email" 
+            id="auditorEmail" 
+            class="form-control" 
+            [(ngModel)]="auditorEmail"
+            placeholder="your.email@example.com"
+            required>
+          <small class="text-muted">Audit report will be sent to this email address</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="auditNotes" class="form-label">Audit Notes (Optional)</label>
+          <textarea 
+            id="auditNotes" 
+            class="form-control" 
+            rows="3" 
+            [(ngModel)]="auditNotes"
+            placeholder="Add any notes about this audit..."></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeSignoffModal()">Cancel</button>
+        <button 
+          type="button" 
+          class="btn btn-success" 
+          (click)="submitSignoff()" 
+          [disabled]="!auditorName || !auditorSignature || !auditorEmail || !isValidEmail(auditorEmail)">
+          <i class="mdi mdi-email-send me-1"></i>
+          Submit & Email Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showSignoffModal" *ngIf="showSignoffModal"></div>
+
+<!-- Audit History Modal -->
+<div class="modal fade" [class.show]="showHistoryModal" [style.display]="showHistoryModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-history me-2"></i>
+          Audit Sign-Off History
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeHistoryModal()"></button>
+      </div>
+      <div class="modal-body">
+        
+        <div *ngIf="auditHistory.length === 0" class="text-center py-4">
+          <i class="mdi mdi-history text-muted" style="font-size: 3rem;"></i>
+          <h5 class="text-muted mt-3">No Audit History</h5>
+        </div>
+
+        <div *ngFor="let signoff of auditHistory" class="card mb-3">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ signoff.audit_date | date:'medium' }}</strong>
+              <span class="badge bg-success ms-2">{{ signoff.items_audited }} Items</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button 
+                class="btn btn-sm btn-outline-primary"
+                (click)="printAuditReport(signoff)"
+                title="Print report">
+                <i class="mdi mdi-printer me-1"></i>Print
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-secondary"
+                (click)="exportSignoffReport(signoff)"
+                title="Export as text file">
+                <i class="mdi mdi-download me-1"></i>Export
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Auditor:</strong> {{ signoff.auditor_name }}</p>
+                <p><strong>Signature:</strong> <em>{{ signoff.auditor_signature }}</em></p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Notes:</strong></p>
+                <p class="text-muted">{{ signoff.notes || 'No notes' }}</p>
+              </div>
+            </div>
+            <div class="mt-2">
+              <strong>UL Numbers:</strong>
+              <div class="d-flex flex-wrap gap-1 mt-2">
+                <span class="badge bg-secondary" *ngFor="let ul of signoff.ul_numbers">{{ ul }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showHistoryModal" *ngIf="showHistoryModal"></div>
+
+<!-- Success Modal -->
+<div class="modal fade" [class.show]="showSuccessModal" [style.display]="showSuccessModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-check-circle me-2"></i>
+          Audit Sign-Off Successful
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeSuccessModal()"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="mdi mdi-email-check text-success" style="font-size: 4rem;"></i>
+        <h4 class="mt-3">Sign-Off Completed!</h4>
+        <p class="text-muted mb-2" *ngIf="lastSignedOffRecord">
+          Successfully audited <strong>{{ lastSignedOffRecord.items_audited }}</strong> UL New items.
+        </p>
+        <p class="text-success" *ngIf="auditorEmail">
+          <i class="mdi mdi-email-send me-1"></i>
+          Audit report has been sent to <strong>{{ auditorEmail }}</strong>
+        </p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button 
+          type="button" 
+          class="btn btn-outline-primary"
+          (click)="printAuditReport(lastSignedOffRecord!); closeSuccessModal();"
+          *ngIf="lastSignedOffRecord">
+          <i class="mdi mdi-printer me-2"></i>Print Copy (Optional)
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="closeSuccessModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showSuccessModal" *ngIf="showSuccessModal"></div>

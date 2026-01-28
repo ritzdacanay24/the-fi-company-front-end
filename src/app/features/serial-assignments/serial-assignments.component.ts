@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SharedModule } from '@app/shared/shared.module';
 import { SerialAssignmentsService } from './services/serial-assignments.service';
+import { SerialReportPrintService } from '@app/shared/services/serial-report-print.service';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef, GridOptions, GridReadyEvent } from 'ag-grid-community';
 import { interval, Subscription } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
+import { ActionCellRendererComponent } from './action-cell-renderer/action-cell-renderer.component';
 
 interface SerialAssignment {
   // Common fields
@@ -27,9 +29,17 @@ interface SerialAssignment {
   sg_asset_id?: number;
   sg_asset_number?: string;
 
+  // Customer asset tracking
+  customer_type_id?: number;
+  customer_asset_id?: number;
+  generated_asset_number?: string;
+
   // Work order / PO
   wo_number?: string;
   po_number?: string;
+
+  // Batch tracking
+  batch_id?: string;
 
   // Usage tracking
   used_date: string;
@@ -117,7 +127,7 @@ interface AuditEntry {
 @Component({
   selector: 'app-serial-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular],
+  imports: [CommonModule, FormsModule, SharedModule, AgGridAngular, ActionCellRendererComponent],
   templateUrl: './serial-assignments.component.html',
   styleUrls: ['./serial-assignments.component.scss']
 })
@@ -153,7 +163,17 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
     pagination: false,
     animateRows: true,
     rowSelection: 'multiple',
-    suppressRowClickSelection: true
+    suppressRowClickSelection: true,
+    groupDefaultExpanded: 1,
+    autoGroupColumnDef: {
+      headerName: 'Batch Group',
+      minWidth: 250,
+      cellRendererParams: {
+        suppressCount: false,
+        checkbox: false
+      }
+    },
+    groupDisplayType: 'singleColumn'
   };
 
   // Pagination - removed, showing all records
@@ -210,7 +230,8 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
   Math = Math;
 
   constructor(
-    private serialAssignmentsService: SerialAssignmentsService
+    private serialAssignmentsService: SerialAssignmentsService,
+    private serialReportPrintService: SerialReportPrintService
   ) {
     this.initializeGrid();
   }
@@ -241,6 +262,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         field: 'source_type',
         width: 140,
         cellRenderer: (params: any) => {
+          if (!params.data) return '';
           const badgeClass = this.getSourceBadgeClass(params.data.source_table);
           return `<span class="badge ${badgeClass}">${params.value}</span>`;
         }
@@ -250,6 +272,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         field: 'status',
         width: 120,
         cellRenderer: (params: any) => {
+          if (!params.data) return '';
           if (params.data.is_voided == 1 || params.data.is_voided === true) {
             return '<span class="badge bg-warning text-dark"><i class="mdi mdi-cancel"></i> VOIDED</span>';
           }
@@ -310,7 +333,18 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         headerName: 'Work Order / PO',
         field: 'wo_number',
         width: 150,
-        valueGetter: (params: any) => params.data.wo_number || params.data.po_number || '-'
+        valueGetter: (params: any) => {
+          if (!params.data) return '';
+          return params.data.wo_number || params.data.po_number || '-';
+        }
+      },
+      {
+        headerName: 'Batch ID',
+        field: 'batch_id',
+        width: 140,
+        rowGroup: true,
+        hide: true,
+        valueFormatter: (params: any) => params.value || '-'
       },
       {
         headerName: 'Used Date',
@@ -331,6 +365,7 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
         field: 'verification_status',
         width: 140,
         cellRenderer: (params: any) => {
+          if (!params.data) return '';
           const status = params.value;
           const requiresVerif = this.requiresVerification(params.data);
           
@@ -353,74 +388,23 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       },
       {
         headerName: 'Actions',
-        width: 180,
+        width: 220,
         pinned: 'right',
         cellStyle: { 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          padding: '4px'
+          padding: '4px',
+          overflow: 'visible'
         },
-        cellRenderer: (params: any) => {
-          const isNewSystem = params.data.source_table === 'serial_assignments';
-          const isVoided = params.data.is_voided == 1 || params.data.is_voided === true;
-          const verificationStatus = params.data.verification_status;
-          const requiresVerif = this.requiresVerification(params.data);
-          
-          if (!isNewSystem) {
-            return '<span class="text-muted small">Legacy - N/A</span>';
-          }
-          
-          if (isVoided) {
-            return `
-              <button class="btn btn-sm btn-success" data-action="restore" title="Restore Assignment">
-                <i class="mdi mdi-restore"></i>
-              </button>
-            `;
-          }
-          
-          let buttons = `
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-warning" data-action="void" title="Void Assignment">
-                <i class="mdi mdi-cancel"></i>
-              </button>
-              <button class="btn btn-sm btn-danger" data-action="delete" title="Delete Assignment">
-                <i class="mdi mdi-delete"></i>
-              </button>
-          `;
-          
-          // Add verify button if needed
-          if (requiresVerif && verificationStatus !== 'verified') {
-            const btnClass = verificationStatus === 'failed' ? 'btn-danger' : 'btn-primary';
-            const icon = verificationStatus === 'failed' ? 'mdi-camera-retake' : 'mdi-camera';
-            const title = verificationStatus === 'failed' ? 'Retry Verification' : 'Verify Serial';
-            buttons += `
-              <button class="btn btn-sm ${btnClass}" data-action="verify" title="${title}">
-                <i class="mdi ${icon}"></i>
-              </button>
-            `;
-          }
-          
-          buttons += '</div>';
-          return buttons;
-        },
-        onCellClicked: (params: any) => {
-          const target = params.event.target as HTMLElement;
-          const button = target.closest('button');
-          
-          if (button) {
-            const action = button.getAttribute('data-action');
-            
-            if (action === 'void') {
-              this.openVoidModal(params.data);
-            } else if (action === 'delete') {
-              this.openDeleteModal(params.data);
-            } else if (action === 'restore') {
-              this.restoreAssignment(params.data);
-            } else if (action === 'verify') {
-              this.startSerialVerification(params.data);
-            }
-          }
+        cellRenderer: ActionCellRendererComponent,
+        cellRendererParams: {
+          onPrint: (data: any) => this.printSingleAssignment(data),
+          onVoid: (data: any) => this.openVoidModal(data),
+          onDelete: (data: any) => this.openDeleteModal(data),
+          onRestore: (data: any) => this.restoreAssignment(data),
+          onVerify: (data: any) => this.startSerialVerification(data),
+          requiresVerification: (data: any) => this.requiresVerification(data)
         }
       }
     ];
@@ -1264,6 +1248,217 @@ export class SerialAssignmentsComponent implements OnInit, OnDestroy {
       case 'pending': return 'mdi-clock-outline';
       case 'skipped': return 'mdi-minus-circle';
       default: return 'mdi-help-circle';
+    }
+  }
+
+  /**
+   * Print Serial Number Report for all filtered assignments
+   */
+  async printAllAssignments(): Promise<void> {
+    if (!this.filteredAssignments || this.filteredAssignments.length === 0) {
+      alert('No assignments to print');
+      return;
+    }
+
+    this.loading = true;
+    try {
+      // Use current filtered assignments (they already have full data from the initial load)
+      // Group assignments by batch_id first (for batched assignments), then by work order
+      const groupedByBatch = new Map<string, any>();
+      
+      this.filteredAssignments.forEach(assignment => {
+        // If assignment has batch_id, use that as the primary grouping key
+        // Otherwise, fall back to work order number
+        const groupKey = assignment.batch_id || assignment.wo_number || assignment.po_number || `SINGLE-${assignment.id}`;
+        
+        if (!groupedByBatch.has(groupKey)) {
+          const firstAssignment = assignment;
+          groupedByBatch.set(groupKey, {
+            workOrder: {
+              number: firstAssignment.wo_number || firstAssignment.po_number || 'N/A',
+              part: firstAssignment.part_number,
+              cp_cust_part: firstAssignment.customer_part_number,
+              description: firstAssignment.wo_description
+            },
+            batch: {
+              quantity: 0,
+              status: firstAssignment.status,
+              date: new Date(firstAssignment.used_date || firstAssignment.created_at).toLocaleString(),
+              createdBy: firstAssignment.used_by,
+              batchId: firstAssignment.batch_id || null
+            },
+            customer: firstAssignment.customer_name || 'N/A',
+            assets: [],
+            timestamp: new Date(firstAssignment.used_date || firstAssignment.created_at),
+            createdBy: firstAssignment.used_by || this.currentUser
+          });
+        }
+        
+        const batchData = groupedByBatch.get(groupKey);
+        batchData.batch.quantity++;
+        batchData.assets.push({
+          index: batchData.assets.length + 1,
+          assetNumber: assignment.generated_asset_number || 'N/A',
+          eyefiSerial: assignment.eyefi_serial_number || 'N/A',
+          ulNumber: assignment.ul_number || 'N/A',
+          igtSerial: assignment.igt_serial_number,
+          agsAsset: assignment.ags_serial_number,
+          sgAsset: assignment.sg_asset_number
+        });
+      });
+
+      // Use the shared service to print
+      this.serialReportPrintService.printMultiWorkOrderReport(groupedByBatch, this.currentUser);
+    } catch (error: any) {
+      console.error('Error preparing print data:', error);
+      alert('Failed to prepare print data');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Print Serial Number Report for a single assignment
+   */
+  async printSingleAssignment(assignment: SerialAssignment): Promise<void> {
+    if (!assignment) return;
+
+    // Only print for serial_assignments (new system)
+    if (assignment.source_table !== 'serial_assignments') {
+      alert('Printing is only available for new system assignments');
+      return;
+    }
+
+    this.loading = true;
+    try {
+      // Fetch full assignment details from backend
+      const response = await this.serialAssignmentsService.getAssignmentById(assignment.source_id);
+      
+      // Handle response - it might be wrapped in a data property or be the object directly
+      const detailedAssignment = response?.data || response;
+
+      if (!detailedAssignment) {
+        alert('Failed to fetch assignment details');
+        return;
+      }
+
+      console.log('Detailed Assignment:', detailedAssignment); // Debug log
+
+      // Check if this assignment has a batch_id - if so, print entire batch
+      if (detailedAssignment.batch_id) {
+        console.log('Assignment has batch_id:', detailedAssignment.batch_id);
+        await this.printBatchAssignments(detailedAssignment.batch_id, detailedAssignment);
+        return;
+      }
+
+      // Create print data for single assignment with full details
+      const printData = {
+        workOrder: {
+          number: detailedAssignment.wo_number || detailedAssignment.po_number || assignment.wo_number || assignment.po_number || 'N/A',
+          part: detailedAssignment.part_number || assignment.part_number || 'N/A',
+          cp_cust_part: detailedAssignment.customer_part_number || assignment.customer_part_number || 'N/A',
+          description: detailedAssignment.wo_description || assignment.wo_description || 'N/A',
+          qty_ord: detailedAssignment.qty_ord || 'N/A',
+          due_date: detailedAssignment.due_date || 'N/A',
+          routing: detailedAssignment.routing || 'N/A',
+          line: detailedAssignment.line || 'N/A'
+        },
+        batch: {
+          quantity: 1,
+          status: detailedAssignment.status || assignment.status || 'N/A',
+          category: 'Serial Assignment',
+          date: new Date(detailedAssignment.used_date || detailedAssignment.created_at || assignment.used_date || assignment.created_at).toLocaleString(),
+          createdBy: detailedAssignment.used_by || assignment.used_by || this.currentUser,
+          batchId: null
+        },
+        customer: detailedAssignment.customer_name || assignment.customer_name || 'N/A',
+        assets: [{
+          index: 1,
+          assetNumber: detailedAssignment.generated_asset_number || assignment.generated_asset_number || 'N/A',
+          eyefiSerial: detailedAssignment.eyefi_serial_number || assignment.eyefi_serial_number || 'N/A',
+          ulNumber: detailedAssignment.ul_number || assignment.ul_number || 'N/A',
+          ulCategory: detailedAssignment.ul_category || 'N/A',
+          igtSerial: detailedAssignment.igt_serial_number || assignment.igt_serial_number || 'N/A',
+          agsAsset: detailedAssignment.ags_serial_number || assignment.ags_serial_number || 'N/A',
+          sgAsset: detailedAssignment.sg_asset_number || assignment.sg_asset_number || 'N/A'
+        }],
+        timestamp: new Date(detailedAssignment.used_date || detailedAssignment.created_at || assignment.used_date || assignment.created_at),
+        createdBy: detailedAssignment.used_by || assignment.used_by || this.currentUser
+      };
+
+      // Use the shared service to print
+      this.serialReportPrintService.printSerialReport(printData);
+    } catch (error: any) {
+      console.error('Error fetching assignment details:', error);
+      alert('Failed to fetch assignment details for printing');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Print all assignments in a batch together
+   */
+  async printBatchAssignments(batchId: string, sampleAssignment: any): Promise<void> {
+    try {
+      // Fetch all assignments with this batch_id from the view
+      const batchResponse = await this.serialAssignmentsService.getAssignments({
+        page: 1,
+        limit: 9999 // Get all assignments in batch
+      });
+
+      const allAssignments = batchResponse?.data || [];
+      
+      // Filter to only assignments with matching batch_id
+      const batchAssignments = allAssignments.filter((a: any) => a.batch_id === batchId);
+
+      if (!batchAssignments || batchAssignments.length === 0) {
+        console.warn('No batch assignments found for batch_id:', batchId);
+        return;
+      }
+
+      console.log(`Found ${batchAssignments.length} assignments in batch ${batchId}`);
+
+      // Build the print data
+      const printData = {
+        workOrder: {
+          number: sampleAssignment.wo_number || sampleAssignment.po_number || 'N/A',
+          part: sampleAssignment.part_number || 'N/A',
+          cp_cust_part: sampleAssignment.customer_part_number || 'N/A',
+          description: sampleAssignment.wo_description || 'N/A',
+          qty_ord: sampleAssignment.qty_ord || 'N/A',
+          due_date: sampleAssignment.due_date || 'N/A',
+          routing: sampleAssignment.routing || 'N/A',
+          line: sampleAssignment.line || 'N/A'
+        },
+        batch: {
+          quantity: batchAssignments.length,
+          status: sampleAssignment.status || 'N/A',
+          category: 'Serial Assignment',
+          date: new Date(sampleAssignment.used_date || sampleAssignment.created_at).toLocaleString(),
+          createdBy: sampleAssignment.used_by || this.currentUser,
+          batchId: batchId
+        },
+        customer: sampleAssignment.customer_name || 'N/A',
+        assets: batchAssignments.map((assignment: any, index: number) => ({
+          index: index + 1,
+          assetNumber: assignment.generated_asset_number || assignment.part_number || 'N/A',
+          eyefiSerial: assignment.eyefi_serial_number || 'N/A',
+          ulNumber: assignment.ul_number || 'N/A',
+          ulCategory: assignment.ul_category || 'N/A',
+          igtSerial: assignment.igt_serial_number || 'N/A',
+          agsAsset: assignment.ags_serial_number || 'N/A',
+          sgAsset: assignment.sg_asset_number || 'N/A'
+        })),
+        timestamp: new Date(sampleAssignment.used_date || sampleAssignment.created_at),
+        createdBy: sampleAssignment.used_by || this.currentUser
+      };
+
+      // Use the shared service to print
+      this.serialReportPrintService.printSerialReport(printData);
+    } catch (error: any) {
+      console.error('Error fetching batch assignments:', error);
+      alert('Failed to fetch batch assignments for printing');
     }
   }
 }

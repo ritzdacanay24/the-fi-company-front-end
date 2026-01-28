@@ -56,6 +56,8 @@ import { environment } from "@environments/environment";
 import { ChecboxRendererV2 } from "@app/shared/ag-grid/cell-renderers/checkbox-renderer-v2/checkbox-renderer-v2.component";
 import { LateReasonCodeRendererV2Component } from "@app/shared/ag-grid/cell-renderers/late-reason-code-renderer-v2/late-reason-code-renderer-v2.component";
 import { OwnerRendererV2Component } from "@app/shared/ag-grid/owner-renderer-v2/owner-renderer-v2.component";
+import { OwnersService } from "@app/core/api/owners/owners.service";
+import { OwnerManagementModalService } from "@app/shared/components/owner-management-modal/owner-management-modal.component";
 
 // Priority-related interfaces
 interface PriorityData {
@@ -104,6 +106,9 @@ const WS_SHIPPING_PRIORITY = "WS_SHIPPING_PRIORITY";
   styleUrls: ["./shipping.component.scss"],
 })
 export class ShippingComponent implements OnInit {
+  // Owner dropdown configuration - loaded dynamically from database setting
+  ownerDropdownEnabled = false;
+
   onBtExport() {
     this.gridApi!.exportDataAsExcel();
   }
@@ -165,8 +170,9 @@ export class ShippingComponent implements OnInit {
     private partsOrderModalService: PartsOrderModalService,
     private workOrderInfoModalService: WorkOrderInfoModalService,
     private bomViewModalService: BomViewModalService,
-    private pathUtils: PathUtilsService
-
+    private pathUtils: PathUtilsService,
+    private ownersService: OwnersService,
+    private ownerManagementModalService: OwnerManagementModalService
   ) {
     this.websocketService = websocketService;
 
@@ -266,6 +272,9 @@ export class ShippingComponent implements OnInit {
     // Initialize user ID
     this.userSsoId = this.authenticationService.currentUserValue?.ssoId || 'unknown';
 
+    // Load owner dropdown setting from database
+    this.loadOwnerDropdownSetting();
+
     // Check if priority help alert should be shown
     this.initializePriorityHelpAlert();
 
@@ -280,6 +289,129 @@ export class ShippingComponent implements OnInit {
     if (this.comment) {
       this.viewComment(this.comment, null);
     }
+  }
+
+  /**
+   * Load the owner dropdown setting from the database
+   */
+  async loadOwnerDropdownSetting(): Promise<void> {
+    try {
+      const response = await this.ownersService.getOwnerDropdownSetting();
+      if (response.success && response.data) {
+        this.ownerDropdownEnabled = response.data.enabled;
+        console.log(`Owner dropdown setting loaded: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
+        
+        // Update owner column visibility
+        if (this.gridApi) {
+          this.updateOwnerColumnVisibility();
+        }
+      } else {
+        console.warn('Failed to load owner dropdown setting, defaulting to disabled');
+        this.ownerDropdownEnabled = false;
+      }
+    } catch (error) {
+      console.error('Error loading owner dropdown setting:', error);
+      this.ownerDropdownEnabled = false;
+    }
+  }
+
+  /**
+   * Refresh owner dropdown setting and update column editor in real-time
+   * Called before cell editing to ensure latest setting is applied
+   */
+  async refreshOwnerDropdownSetting(): Promise<void> {
+    try {
+      const response = await this.ownersService.getOwnerDropdownSetting();
+      if (response.success && response.data) {
+        const wasEnabled = this.ownerDropdownEnabled;
+        this.ownerDropdownEnabled = response.data.enabled;
+        
+        // Only update if setting changed
+        if (wasEnabled !== this.ownerDropdownEnabled) {
+          console.log(`⚡ Owner dropdown setting changed: ${this.ownerDropdownEnabled ? 'ENABLED' : 'DISABLED'}`);
+          
+          // Update the column definition immediately
+          if (this.gridApi) {
+            this.updateOwnerColumnEditor();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing owner dropdown setting:', error);
+    }
+  }
+
+  /**
+   * Update the visibility of the owner column based on the setting
+   */
+  updateOwnerColumnVisibility(): void {
+    if (this.gridApi) {
+      // Hide owner column when dropdown is disabled
+      this.gridApi.setColumnsVisible(['misc.userName'], this.ownerDropdownEnabled);
+      console.log(`Owner column visibility: ${this.ownerDropdownEnabled ? 'VISIBLE' : 'HIDDEN'}`);
+      
+      // Update the column definition to use the correct editor type
+      this.updateOwnerColumnEditor();
+    }
+  }
+
+  /**
+   * Update the owner column editor type based on the setting
+   * This must be called after the grid is ready and the setting is loaded
+   */
+  updateOwnerColumnEditor(): void {
+    if (!this.gridApi) return;
+
+    const ownerColDef = this.columnDefs.find(col => col.field === 'misc.userName');
+    if (!ownerColDef) {
+      console.warn('Owner column definition not found');
+      return;
+    }
+
+    // Update the column definition with the correct editor
+    ownerColDef.cellEditor = this.ownerDropdownEnabled ? 'agRichSelectCellEditor' : 'agTextCellEditor';
+    ownerColDef.cellEditorParams = this.ownerDropdownEnabled ? {
+      values: async (params) => {
+        try {
+          const userId = this.authenticationService.currentUserValue?.id;
+          if (!userId) {
+            console.warn('⚠️ No user ID found');
+            return ['⚠️ Please log in to assign owners'];
+          }
+
+          console.log(`🔍 Fetching owners for user ID: ${userId}`);
+          const response = await this.ownersService.getOwnersForUser(userId, true);
+          
+          if (response.success && Array.isArray(response.data)) {
+            if (response.data.length === 0) {
+              console.warn('⚠️ No owners assigned to this user');
+              return ['⚠️ No owners assigned - Contact admin to assign owners'];
+            }
+            
+            const ownerNames = response.data.map(o => o.name);
+            console.log('✅ Loaded owners for dropdown:', ownerNames);
+            return ownerNames;
+          } else {
+            console.error('❌ Failed to load owners:', response);
+            return ['⚠️ Failed to load owners - Try again'];
+          }
+        } catch (error) {
+          console.error('❌ Error loading owners:', error);
+          return ['⚠️ Error loading owners - Try again'];
+        }
+      },
+      searchDebounceDelay: 300,
+      allowTyping: true,
+      filterList: true,
+      highlightMatch: true,
+      valueListMaxHeight: 220
+    } : {};
+
+    // Force AG Grid to update the column definition by calling setColumnDefs
+    // This is necessary because AG Grid caches column definitions
+    this.gridApi.setGridOption('columnDefs', this.columnDefs);
+    
+    console.log(`✅ Owner column editor updated: ${this.ownerDropdownEnabled ? 'DROPDOWN' : 'TEXT INPUT'}`);
   }
 
   dateFrom = moment()
@@ -663,6 +795,17 @@ export class ShippingComponent implements OnInit {
 
     // Configure grid based on active tab
     this.configureGridForActiveTab();
+
+    // Update owner column visibility based on loaded setting
+    this.updateOwnerColumnVisibility();
+
+    // Add event listener for when cell editing starts (to refresh owner setting)
+    this.gridApi.addEventListener('cellEditingStarted', async (event: any) => {
+      if (event.column?.getColId() === 'misc.userName') {
+        // Refresh the setting when user starts editing owner column
+        await this.refreshOwnerDropdownSetting();
+      }
+    });
 
     // Add row drag end listener for priority reordering
     this.gridApi.addEventListener('rowDragEnd', (event: any) => {
@@ -1554,6 +1697,140 @@ export class ShippingComponent implements OnInit {
     // No need to set separate data arrays - we'll use filtering in the grid
   }
 
+  // Kanban Priority Management
+  kanbanPriorityMap: Map<string, any> = new Map();
+
+  async updateKanbanPriority(params: any) {
+    try {
+      const orderData = params.data;
+      const newPriority = parseInt(params.newValue) || null;
+      const oldPriority = params.oldValue;
+      const orderId = `${orderData.SOD_NBR}-${orderData.SOD_LINE}`;
+
+      console.log('🎯 Kanban Priority Update Request:', {
+        orderId,
+        currentPriority: oldPriority,
+        newPriority,
+        orderDetails: `${orderData.SOD_NBR}-${orderData.SOD_LINE}`
+      });
+
+      // Check if priority already exists (excluding current order)
+      if (newPriority > 0) {
+        const existingOrder = this.allOrdersData.find(
+          order => order['kanban_priority'] === newPriority &&
+            `${order.SOD_NBR}-${order.SOD_LINE}` !== orderId
+        );
+
+        if (existingOrder) {
+          console.log('❌ Kanban priority conflict detected:', `Priority ${newPriority} already assigned to ${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+          alert(`Kanban priority ${newPriority} is already assigned to SO#${existingOrder.SOD_NBR}-${existingOrder.SOD_LINE}`);
+          params.data.kanban_priority = oldPriority;
+          this.gridApi.refreshCells({ rowNodes: [params.node] });
+          return false;
+        }
+      }
+
+      // Update via API
+      const response = await this.api.updateKanbanPriority({
+        orderId: orderId,
+        salesOrderNumber: orderData.SOD_NBR,
+        salesOrderLine: orderData.SOD_LINE,
+        priority: newPriority,
+        notes: `Kanban priority set for ${orderData.SOD_PART}`
+      });
+
+      if (response && response.success) {
+        // Update local data
+        orderData['kanban_priority'] = newPriority;
+
+        // Update priority map
+        if (newPriority > 0) {
+          const priorityId = (response.data && !Array.isArray(response.data)) ? (response.data as any).id : null;
+          this.kanbanPriorityMap.set(orderId, {
+            id: priorityId || Date.now() + Math.random(),
+            priority_level: newPriority,
+            order_id: orderId,
+            sales_order_number: orderData.SOD_NBR,
+            sales_order_line: orderData.SOD_LINE,
+            notes: `Kanban priority set for ${orderData.SOD_PART}`,
+            created_at: new Date().toISOString(),
+            created_by: this.userSsoId || 'unknown',
+            updated_at: new Date().toISOString(),
+            updated_by: this.userSsoId || 'unknown',
+            is_active: true
+          });
+
+          console.log('✅ Kanban Priority Set:', {
+            orderId,
+            priority: newPriority,
+            totalPriorities: this.kanbanPriorityMap.size
+          });
+        } else {
+          this.kanbanPriorityMap.delete(orderId);
+          console.log('🗑️ Kanban Priority Removed:', orderId);
+        }
+
+        this.gridApi.refreshCells({ rowNodes: [params.node] });
+        return true;
+      } else {
+        throw new Error(response?.message || 'Failed to update kanban priority');
+      }
+    } catch (error) {
+      console.error('❌ Error updating kanban priority:', error);
+      alert('Failed to update kanban priority. Please try again.');
+      params.data.kanban_priority = params.oldValue;
+      this.gridApi.refreshCells({ rowNodes: [params.node] });
+      return false;
+    }
+  }
+
+  async loadKanbanPriorities() {
+    try {
+      const response = await this.api.getKanbanPriorities();
+      if (response && response.success) {
+        // Create a map of order IDs to priority data
+        this.kanbanPriorityMap.clear();
+        if (response.data) {
+          response.data.forEach((priority: any) => {
+            this.kanbanPriorityMap.set(priority.order_id, priority);
+          });
+        }
+
+        console.log('Kanban Priorities Loaded:', {
+          count: this.kanbanPriorityMap.size,
+          priorities: Array.from(this.kanbanPriorityMap.values())
+        });
+
+        // Merge priorities into grid data
+        this.mergeKanbanPriorityData();
+      }
+    } catch (error) {
+      console.error('Error loading kanban priorities:', error);
+    }
+  }
+
+  mergeKanbanPriorityData() {
+    if (!this.data || !Array.isArray(this.data)) {
+      console.log('⚠️ No shipping data available yet, skipping kanban priority merge');
+      return;
+    }
+
+    this.data.forEach((order: any) => {
+      const orderId = `${order.SOD_NBR}-${order.SOD_LINE}`;
+      const priorityData = this.kanbanPriorityMap.get(orderId);
+
+      if (priorityData) {
+        order.kanban_priority = priorityData.priority_level;
+      } else {
+        order.kanban_priority = null;
+      }
+    });
+
+    if (this.gridApi) {
+      this.gridApi.refreshCells();
+    }
+  }
+
   columnDefs: ColDef[] = [
     // Priority tab specific columns
     {
@@ -1659,6 +1936,69 @@ export class ShippingComponent implements OnInit {
       },
       tooltipField: 'shipping_priority',
       headerTooltip: 'Set shipping priority (1 = highest priority). Must be unique.',
+    },
+    {
+      field: "kanban_priority",
+      headerName: "Kanban Priority",
+      filter: false,
+      sortable: true,
+      editable: true,
+      maxWidth: 150,
+      cellEditor: 'agRichSelectCellEditor',
+      cellEditorParams: (params: any) => {
+        // Get all currently used kanban priorities from the grid
+        const usedPriorities = new Set<number>();
+        params.api.forEachNode((node: any) => {
+          if (node.data && node.data.kanban_priority && node.data !== params.data) {
+            usedPriorities.add(parseInt(node.data.kanban_priority));
+          }
+        });
+        
+        // Generate available priority numbers (1-50, excluding used ones)
+        const availablePriorities: number[] = [];
+        for (let i = 1; i <= 50; i++) {
+          if (!usedPriorities.has(i)) {
+            availablePriorities.push(i);
+          }
+        }
+        
+        // If current row has a priority, include it in the list
+        if (params.value) {
+          const currentPriority = parseInt(params.value);
+          if (!availablePriorities.includes(currentPriority)) {
+            availablePriorities.push(currentPriority);
+            availablePriorities.sort((a, b) => a - b);
+          }
+        }
+        
+        // Add "None" option at the beginning
+        const values = [null, ...availablePriorities];
+        
+        return {
+          values: values,
+          cellHeight: 50,
+          formatValue: (value: any) => {
+            if (value === null || value === undefined || value === '') {
+              return '(None)';
+            }
+            return `Priority ${value}`;
+          },
+          searchDebounceDelay: 300,
+          allowTyping: true,
+          filterList: true,
+          highlightMatch: true
+        };
+      },
+      cellRenderer: (params: any) => {
+        if (!params.value) return '';
+        return `<span class="badge bg-info-subtle text-info">★ ${params.value}</span>`;
+      },
+      onCellValueChanged: async (params: any) => {
+        const newPriority = parseInt(params.newValue) || null;
+        await this.updateKanbanPriority(params);
+      },
+      tooltipField: 'kanban_priority',
+      headerTooltip: 'Set kanban priority (1 = highest priority). Must be unique. Click to select from available priorities.',
     },
     {
       field: "STATUS",
@@ -1927,10 +2267,50 @@ export class ShippingComponent implements OnInit {
       field: "misc.userName",
       headerName: "Owner",
       filter: "agMultiColumnFilter",
-      editable: true,
-      cellRenderer: EditIconV2Component,
-      cellRendererParams: {
-        iconName: "mdi mdi-pencil",
+      editable: true, // Always editable - editor type controlled by setting
+      cellEditor: 'agTextCellEditor', // Will be updated dynamically based on setting
+      cellEditorPopup: false,
+      cellEditorParams: {}, // Will be updated dynamically based on setting
+      onCellValueChanged: async (params: any) => {
+        if (params.oldValue !== params.newValue) {
+          // Update the data model
+          if (!params.data.misc) {
+            params.data.misc = {};
+          }
+          
+          // Preserve existing misc data and update only userName
+          const miscData = {
+            ...params.data.misc,
+            userName: params.newValue,
+            // Ensure required fields are present
+            shippingMisc: params.data.misc.shippingMisc || params.data.misc.id,
+            so: params.data.misc.so || params.data.SOD_NBR
+          };
+          
+          // Save to backend
+          try {
+            const res = await this.api.saveMisc(miscData);
+            params.data.misc = res;
+            this.sendAndUpdate(params.data, params.data.id);
+          } catch (err) {
+            console.error('Error saving owner:', err);
+          }
+        }
+      },
+      cellRenderer: (params: any) => {
+        if (params.value) {
+          const icon = this.ownerDropdownEnabled ? 'mdi-account-circle' : 'mdi-text';
+          return `<div class="d-flex align-items-center">
+                    <i class="mdi ${icon} text-primary me-2"></i>
+                    <span>${params.value}</span>
+                  </div>`;
+        }
+        
+        if (!this.ownerDropdownEnabled) {
+          return `<span class="text-muted fst-italic">Enter owner name</span>`;
+        }
+        
+        return `<span class="text-muted fst-italic">No owner assigned</span>`;
       },
     },
     {
@@ -2546,6 +2926,21 @@ export class ShippingComponent implements OnInit {
     window.open(url, '_blank');
   }
 
+  // Open Owner Management Modal
+  async openOwnerManagement(): Promise<void> {
+    try {
+      const result = await this.ownerManagementModalService.open();
+      if (result) {
+        // Refresh owners list after changes
+        await this.ownersService.getActiveOwners();
+        // Optionally refresh the grid to show updated owner options
+        //this.gridApi?.refreshCells({ force: true });
+      }
+    } catch (error) {
+      console.error('Error opening owner management:', error);
+    }
+  }
+
   data: any;
   async getData() {
     try {
@@ -2554,7 +2949,8 @@ export class ShippingComponent implements OnInit {
       // Load shipping data and priorities in parallel
       const [shippingData] = await Promise.all([
         this.api.getShipping(),
-        this.loadPriorities(false) // Don't auto-merge during parallel loading
+        this.loadPriorities(false), // Don't auto-merge during parallel loading
+        this.loadKanbanPriorities() // Load kanban priorities as well
       ]);
 
       this.data = shippingData; 
@@ -2562,6 +2958,7 @@ export class ShippingComponent implements OnInit {
 
       // Merge priority data with shipping data after both are loaded
       this.mergePriorityData();
+      this.mergeKanbanPriorityData();
       this.cleanupPriorityData();
 
       // Set data to all orders, filtering will be handled by the tab switching

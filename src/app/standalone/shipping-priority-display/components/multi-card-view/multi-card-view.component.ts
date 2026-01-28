@@ -231,4 +231,66 @@ export class MultiCardViewComponent implements OnInit, OnDestroy {
     if (index <= 9) return 'priority-medium';     // #6-10 - Medium priority
     return 'priority-standard';                   // #11+ - Standard
   }
+
+  /**
+   * Check if any order in the item has an owner currently working on it (is_production = true)
+   */
+  isOwnerInProduction(item: any): boolean {
+    if (!item || !item.orders) return false;
+    
+    return item.orders.some((order: any) => {
+      // Check if owner data exists and is_production flag is true
+      return order.owner_is_production === true || 
+             order.misc?.owner_is_production === true;
+    });
+  }
+
+  /**
+   * Get the owner name for items currently in production
+   */
+  getProductionOwnerName(item: any): string {
+    if (!item || !item.orders) return '';
+    
+    const productionOrder = item.orders.find((order: any) => 
+      order.owner_is_production === true || 
+      order.misc?.owner_is_production === true
+    );
+    
+    if (productionOrder) {
+      return productionOrder.owner_name || 
+             productionOrder.misc?.owner_name || 
+             'Working';
+    }
+    
+    return '';
+  }
+
+  /**
+   * Get the owner name(s) for an item
+   */
+  getOwnerName(item: any): string {
+    if (!item || !item.orders) return '';
+    
+    // Get unique owner names from all orders
+    const ownerNames = new Set<string>();
+    
+    item.orders.forEach((order: any) => {
+      const ownerName = order.owner_name || 
+                       order.misc?.owner_name || 
+                       order.misc?.userName ||  // Also check userName field
+                       order.owner || 
+                       order.misc?.owner;
+      
+      if (ownerName && ownerName.trim() && ownerName !== 'N/A') {
+        ownerNames.add(ownerName.trim());
+      }
+    });
+    
+    const names = Array.from(ownerNames);
+    
+    if (names.length === 0) return '';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return names.join(' & ');
+    return `${names[0]} +${names.length - 1}`;
+  }
 }

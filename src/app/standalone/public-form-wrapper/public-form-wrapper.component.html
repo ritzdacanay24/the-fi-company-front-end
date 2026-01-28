@@ -4,6 +4,7 @@
         [isAuthenticated]="isAuthenticated" [currentUser]="currentUser" [hasValidUserImage]="hasValidUserImage"
         [sessionTimeRemaining]="getTimeRemainingFormatted()"
         [inactivityTimeRemaining]="getInactivityTimeRemainingFormatted()"
+        (extendSession)="extendSession()"
         (logout)="logout()" (userImageError)="onUserImageError($event)" (goToFormsMenu)="goToFormsMenu()">
     </app-shared-header>
 

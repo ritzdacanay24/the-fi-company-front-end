@@ -105,8 +105,10 @@ class SerialAssignmentsAPI {
                         v.eyefi_serial_number,
                         v.ul_label_id,
                         v.ul_number,
+                        v.ul_category,
                         v.wo_number,
                         v.po_number,
+                        v.batch_id,
                         v.used_date as consumed_at,
                         v.used_by as consumed_by,
                         v.status,
@@ -147,6 +149,7 @@ class SerialAssignmentsAPI {
 
     /**
      * Get assignment by ID
+     * Returns complete assignment details including work order information
      */
     public function getAssignmentById($id) {
         try {
@@ -157,15 +160,45 @@ class SerialAssignmentsAPI {
                         sa.ul_label_id,
                         sa.ul_number,
                         sa.wo_number,
-                        sa.consumed_at,
-                        sa.consumed_by,
+                        sa.po_number,
+                        sa.batch_id,
+                        sa.consumed_at as used_date,
+                        sa.consumed_by as used_by,
                         sa.status,
                         sa.created_at,
                         sa.is_voided,
                         sa.voided_by,
                         sa.voided_at,
-                        sa.void_reason
+                        sa.void_reason,
+                        sa.part_number,
+                        sa.wo_description,
+                        sa.wo_qty_ord as qty_ord,
+                        sa.wo_due_date as due_date,
+                        sa.wo_routing as routing,
+                        sa.wo_line as line,
+                        sa.cp_cust_part as customer_part_number,
+                        sa.cp_cust as customer_name,
+                        sa.inspector_name,
+                        sa.customer_type_id,
+                        sa.customer_asset_id,
+                        sa.generated_asset_number,
+                        sa.verification_status,
+                        sa.verification_photo,
+                        sa.verified_at,
+                        sa.verified_by,
+                        -- Get IGT serial if exists
+                        igt.serial_number as igt_serial_number,
+                        -- Get AGS serial if exists
+                        ags.generated_SG_asset as ags_serial_number,
+                        -- Get SG asset if exists
+                        sg.generated_SG_asset as sg_asset_number,
+                        -- Get UL category
+                        ul.category as ul_category
                       FROM serial_assignments sa
+                      LEFT JOIN igt_serial_numbers igt ON sa.customer_type_id = 1 AND sa.customer_asset_id = igt.id
+                      LEFT JOIN agsSerialGenerator ags ON sa.customer_type_id = 3 AND sa.customer_asset_id = ags.id
+                      LEFT JOIN sgAssetGenerator sg ON sa.customer_type_id = 2 AND sa.customer_asset_id = sg.id
+                      LEFT JOIN ul_labels ul ON sa.ul_label_id = ul.id
                       WHERE sa.id = ?";
 
             $stmt = $this->db->prepare($query);
@@ -732,6 +765,9 @@ class SerialAssignmentsAPI {
         try {
             $this->db->beginTransaction();
             
+            // Generate unique batch ID for this batch operation
+            $batchId = 'BATCH-' . date('YmdHis') . '-' . substr(md5(uniqid(rand(), true)), 0, 8);
+            
             $results = [];
             $errors = [];
             
@@ -777,22 +813,26 @@ class SerialAssignmentsAPI {
                             po_number,
                             part_number,
                             wo_number,
+                            wo_part,
                             wo_description,
                             wo_qty_ord,
+                            wo_due_date,
+                            wo_routing,
+                            wo_line,
                             cp_cust_part,
                             cp_cust,
                             inspector_name,
+                            batch_id,
                             status,
                             consumed_at,
                             consumed_by,
                             is_voided,
                             verification_status
-                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
+                        ) VALUES (?, ?, ?, ?, 4, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', NOW(), ?, 0, 'skipped')
                     ";
                     
                     // Customer name goes into cp_cust field
                     $customerName = $assignment['customer_name'] ?? $assignment['cp_cust'] ?? 'Other';
-                    
                     $insertStmt = $this->db->prepare($insertQuery);
                     $insertStmt->execute([
                         $eyefi_serial_id,                              // eyefi_serial_id
@@ -802,11 +842,16 @@ class SerialAssignmentsAPI {
                         $assignment['poNumber'] ?? null,               // po_number
                         $assignment['partNumber'] ?? null,             // part_number
                         $assignment['wo_number'] ?? null,              // wo_number
+                        $assignment['wo_part'] ?? null,                // wo_part
                         $assignment['wo_description'] ?? null,         // wo_description
                         $assignment['wo_qty_ord'] ?? null,             // wo_qty_ord (quantity ordered)
+                        $assignment['wo_due_date'] ?? null,            // wo_due_date
+                        $assignment['wo_routing'] ?? null,             // wo_routing
+                        $assignment['wo_line'] ?? null,                // wo_line
                         $assignment['cp_cust_part'] ?? null,           // cp_cust_part (customer part number)
                         $customerName,                                 // cp_cust (customer name)
                         $performedBy,                                  // inspector_name
+                        $batchId,                                      // batch_id
                         $performedBy                                   // consumed_by
                     ]);
 
@@ -858,12 +903,13 @@ class SerialAssignmentsAPI {
             }
 
             $this->db->commit();
-
             return [
                 'success' => true,
                 'message' => "Created " . count($results) . " Other customer assignments",
                 'count' => count($results),
+                'batch_id' => $batchId,
                 'data' => $results
+            ];  'data' => $results
             ];
 
         } catch (\Exception $e) {
@@ -1003,6 +1049,108 @@ class SerialAssignmentsAPI {
             ];
         }
     }
+
+    /**
+     * Get audit signoffs
+     */
+    public function getAuditSignoffs() {
+        try {
+            $query = "SELECT * FROM ul_audit_signoffs 
+                     ORDER BY audit_date DESC, created_at DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $signoffs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Decode JSON ul_numbers
+            foreach ($signoffs as &$signoff) {
+                $signoff['ul_numbers'] = json_decode($signoff['ul_numbers'], true) ?: [];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Audit signoffs retrieved successfully',
+                'data' => $signoffs
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Failed to get audit signoffs: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Submit audit signoff
+     */
+    public function submitAuditSignoff($data) {
+        try {
+            $this->db->beginTransaction();
+            
+            $query = "INSERT INTO ul_audit_signoffs (
+                        audit_date,
+                        auditor_name,
+                        auditor_signature,
+                        items_audited,
+                        ul_numbers,
+                        notes
+                     ) VALUES (?, ?, ?, ?, ?, ?)";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([
+                $data['audit_date'],
+                $data['auditor_name'],
+                $data['auditor_signature'],
+                $data['items_audited'],
+                json_encode($data['ul_numbers']),
+                $data['notes'] ?? ''
+            ]);
+            
+            $signoffId = $this->db->lastInsertId();
+            
+            $this->db->commit();
+            
+            // Send email if email address is provided
+            if (!empty($data['email'])) {
+                require_once __DIR__ . '/EmailHelper.php';
+                
+                $emailData = [
+                    'audit_date' => $data['audit_date'],
+                    'auditor_name' => $data['auditor_name'],
+                    'auditor_signature' => $data['auditor_signature'],
+                    'items_audited' => $data['items_audited'],
+                    'ul_numbers' => $data['ul_numbers'],
+                    'notes' => $data['notes'] ?? ''
+                ];
+                
+                $htmlBody = EmailHelper::generateULAuditReportHTML($emailData);
+                $subject = "UL New Audit Sign-Off Report - " . date('F j, Y', strtotime($data['audit_date']));
+                
+                $emailSent = EmailHelper::sendEmail($data['email'], $subject, $htmlBody);
+                
+                if (!$emailSent) {
+                    error_log("Failed to send audit report email to: " . $data['email']);
+                }
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Audit signoff submitted successfully' . (!empty($data['email']) ? ' and email sent' : ''),
+                'data' => [
+                    'id' => $signoffId,
+                    'email_sent' => !empty($data['email'])
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'error' => 'Failed to submit audit signoff: ' . $e->getMessage()
+            ];
+        }
+    }
 }
 
 // Initialize database connection and handle request
@@ -1111,6 +1259,10 @@ try {
                     $result = $api->getUserConsumptionActivity();
                     break;
                 
+                case 'get_audit_signoffs':
+                    $result = $api->getAuditSignoffs();
+                    break;
+                
                 case 'get_work_order_serials':
                     $workOrder = $_GET['work_order'] ?? null;
                     $result = $api->getWorkOrderSerials($workOrder);
@@ -1149,6 +1301,17 @@ try {
                     } else {
                         $reason = $data['reason'] ?? 'No reason provided';
                         $result = $api->voidAssignment($data['id'], $reason, $data['performed_by']);
+                    }
+                    break;
+                
+                case 'submit_audit_signoff':
+                    if (!isset($data['audit_date']) || !isset($data['auditor_name']) || !isset($data['auditor_signature']) || !isset($data['ul_numbers'])) {
+                        $result = [
+                            'success' => false,
+                            'error' => 'Missing required fields: audit_date, auditor_name, auditor_signature, ul_numbers'
+                        ];
+                    } else {
+                        $result = $api->submitAuditSignoff($data);
                     }
                     break;
                     
@@ -1190,7 +1353,7 @@ try {
                 default:
                     $result = [
                         'success' => false,
-                        'error' => 'Invalid POST action. Available: bulk_create_other, void_assignment, delete_assignment, restore_assignment, bulk_void'
+                        'error' => 'Invalid POST action. Available: bulk_create_other, void_assignment, delete_assignment, restore_assignment, bulk_void, submit_audit_signoff'
                     ];
             }
             break;

@@ -238,7 +238,7 @@
         <div class="mb-3">
           <label class="form-label">Bulk Item Entry</label>
           <ace [config]="aceConfig" [mode]="'plain_text'" [theme]="aceTheme" [(value)]="value"
-            (textChanged)="onChange($event)" #editor class="border border-light" id="editor"></ace>
+            (textChanged)="onChange($event)" #editor class="border border-light" id="editor" style="overflow:auto"></ace>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>
             Enter multiple items quickly using the format above, then click Validate to process.

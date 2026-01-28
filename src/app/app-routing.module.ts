@@ -48,6 +48,11 @@ const routes: Routes = [
     title: "UL Usage Entry"
   },
   { 
+    path: "standalone/org-chart",
+    loadComponent: () => import("./standalone/standalone-org-chart/standalone-org-chart.component").then(m => m.StandaloneOrgChartComponent),
+    title: "Organization Chart - Shared View"
+  },
+  { 
     path: "standalone/eyefi-workflow", 
     loadComponent: () => import("./standalone/eyefi-serial-workflow/eyefi-serial-workflow.component").then(c => c.EyefiSerialWorkflowComponent),
     title: "EyeFi Serial Workflow"
@@ -72,6 +77,11 @@ const routes: Routes = [
     loadComponent: () => import("./standalone/standalone-serial-generator/standalone-serial-generator.component").then(c => c.StandaloneSerialGeneratorComponent),
     title: "Serial Number Generator"
   },
+  { 
+    path: "standalone/ul-audit-signoff", 
+    loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
+    title: "UL Audit Sign-Off"
+  },
   
   // Legacy route for backward compatibility
   { 
@@ -82,6 +92,11 @@ const routes: Routes = [
     path: "shipping-priority-display", 
     component: StandaloneShippingPriorityDisplayComponent,
     title: "Shipping Priority Display"
+  },
+  { 
+    path: "physical-inventory-display", 
+    loadComponent: () => import("./standalone/physical-inventory-display/physical-inventory-display.component").then(c => c.PhysicalInventoryDisplayComponent),
+    title: "Physical Inventory Display"
   },
   { 
     path: "safety-dashboard-display", 

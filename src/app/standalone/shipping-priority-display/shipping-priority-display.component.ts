@@ -45,15 +45,21 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   refreshCountdown: string = '';
   
   // Display mode options
-  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'single';
+  displayMode: 'single' | 'top3' | 'top6' | 'grid' = 'top6';
   
   // Card layout options
-  cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'traditional';
+  cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard' = 'salesorder';
   
   // Coming Up Next configuration
   showComingUpNext: boolean = true;
   autoScrollEnabled: boolean = true;
   scrollSpeed: number = 30; // seconds for one complete scroll cycle
+  
+  // Priority type toggle
+  priorityType: 'shipping' | 'kanban' = 'shipping'; // Default to shipping
+  
+  // Combined view setting
+  showCombinedView: boolean = false;
   
   // Slick Carousel configuration - optimized for smooth auto-scrolling
   slickConfig = {
@@ -112,7 +118,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   showRefreshOverlay: boolean = false;
   
   // Theme management
-  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'light';
+  currentTheme: 'light' | 'dark' | 'dark-vibrant' | 'midnight' | 'neon' | 'bootstrap-dark' = 'bootstrap-dark';
   autoSwitchEnabled: boolean = false;
   switchIntervalMinutes: number = 30;
   switchCountdown: string = '';
@@ -382,8 +388,13 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
           
           // Ensure display mode is preserved during auto-refresh
           this.priorityDisplayService.updateDisplayMode(this.displayMode);
-          // Pass showRefreshOverlay setting to control loading state
-          this.priorityDisplayService.loadPriorityData(this.showRefreshOverlay);
+          
+          // Load data based on combined view setting
+          if (this.showCombinedView) {
+            this.priorityDisplayService.loadCombinedPriorityData(this.showRefreshOverlay);
+          } else {
+            this.priorityDisplayService.loadPriorityData(this.showRefreshOverlay);
+          }
         });
       console.log(`✅ Auto-refresh started with ${this.refreshInterval/1000}s interval`);
     } else {
@@ -437,11 +448,18 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     try {
       console.log('🚀 Loading initial priority data...');
       console.log('🚀 Initial display mode from URL:', this.displayMode);
+      console.log('🚀 Initial priority type:', this.priorityType);
+      console.log('🚀 Combined view enabled:', this.showCombinedView);
       
       // Set display mode BEFORE loading data
       this.priorityDisplayService.updateDisplayMode(this.displayMode);
-      // Always show loading state for initial load
-      await this.priorityDisplayService.loadPriorityData(true);
+      
+      // Set combined view mode BEFORE loading data
+      if (this.showCombinedView) {
+        await this.priorityDisplayService.loadCombinedPriorityData(true);
+      } else {
+        await this.priorityDisplayService.updatePriorityType(this.priorityType);
+      }
       
       console.log('✅ Initial data load completed');
     } catch (error) {
@@ -455,10 +473,17 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   async refreshData(): Promise<void> {
     console.log('🔄 Manual refresh triggered');
     console.log('🔄 Current display mode during manual refresh:', this.displayMode);
+    console.log('🔄 Combined view enabled:', this.showCombinedView);
+    
     // Ensure display mode is preserved during manual refresh
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
-    // Always show loading state for manual refresh
-    await this.priorityDisplayService.loadPriorityData(true);
+    
+    // Load data based on combined view setting
+    if (this.showCombinedView) {
+      await this.priorityDisplayService.loadCombinedPriorityData(true);
+    } else {
+      await this.priorityDisplayService.loadPriorityData(true);
+    }
   }
 
   /**
@@ -546,7 +571,46 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     }
   }
 
+  /**
+   * Toggle between shipping and kanban priorities
+   */
+  async togglePriorityType(newType?: 'kanban' | 'shipping'): Promise<void> {
+    this.priorityType = newType ?? (this.priorityType === 'shipping' ? 'kanban' : 'shipping');
+    console.log(`🔄 Priority type toggled to: ${this.priorityType}`);
+    
+    // Save settings
+    this.saveSettingsToStorage();
+    
+    // Update service and reload data - only if not in combined view mode
+    if (!this.showCombinedView) {
+      await this.priorityDisplayService.updatePriorityType(this.priorityType);
+    }
+  }
 
+  /**
+   * Toggle combined view mode
+   */
+  async toggleCombinedView(enabled: boolean): Promise<void> {
+    this.showCombinedView = enabled;
+    console.log(`🔄 Combined view ${enabled ? 'enabled' : 'disabled'}`);
+    
+    // Save settings
+    this.saveSettingsToStorage();
+    
+    // Reload data based on combined view setting
+    if (enabled) {
+      await this.priorityDisplayService.loadCombinedPriorityData(true);
+    } else {
+      await this.priorityDisplayService.updatePriorityType(this.priorityType);
+    }
+  }
+
+  /**
+   * Get display name for current priority type
+   */
+  getPriorityTypeDisplayName(): string {
+    return this.priorityType === 'kanban' ? 'Kanban Priorities' : 'Shipping Priorities';
+  }
 
   /**
    * Navigate back to main application
@@ -729,20 +793,22 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         
-        // Load display mode
+        // Load display mode (only if valid, otherwise keep component default)
         if (settings.displayMode && ['single', 'top3', 'top6', 'grid'].includes(settings.displayMode)) {
           this.displayMode = settings.displayMode;
         }
+        // If no saved displayMode, component default (top6) will be used
         
         // Load refresh interval
         if (settings.refreshInterval !== undefined && settings.refreshInterval >= 0) {
           this.refreshInterval = settings.refreshInterval;
         }
         
-        // Load card layout
+        // Load card layout (only if valid, otherwise keep component default)
         if (settings.cardLayout && ['traditional', 'production', 'salesorder', 'compact', 'detailed', 'minimal', 'dashboard'].includes(settings.cardLayout)) {
           this.cardLayout = settings.cardLayout;
         }
+        // If no saved cardLayout, component default (salesorder) will be used
         
         // Load coming up next settings
         if (settings.showComingUpNext !== undefined) {
@@ -760,7 +826,21 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
           this.showRefreshOverlay = settings.showRefreshOverlay;
         }
         
+        // Load priority type setting (only if valid, otherwise keep component default)
+        if (settings.priorityType && ['shipping', 'kanban'].includes(settings.priorityType)) {
+          this.priorityType = settings.priorityType;
+        }
+        // If no saved priorityType, component default (shipping) will be used
+        
+        // Load combined view setting
+        if (settings.showCombinedView !== undefined) {
+          this.showCombinedView = settings.showCombinedView;
+        }
+        
         console.log('✅ Settings loaded from localStorage:', settings);
+        console.log('📊 Final applied settings - displayMode:', this.displayMode, 'cardLayout:', this.cardLayout, 'priorityType:', this.priorityType, 'showCombinedView:', this.showCombinedView);
+      } else {
+        console.log('📊 No saved settings found, using component defaults - displayMode:', this.displayMode, 'cardLayout:', this.cardLayout, 'priorityType:', this.priorityType, 'showCombinedView:', this.showCombinedView);
       }
     } catch (error) {
       console.warn('⚠️ Failed to load settings from localStorage:', error);
@@ -780,6 +860,8 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
         autoScrollEnabled: this.autoScrollEnabled,
         scrollSpeed: this.scrollSpeed,
         showRefreshOverlay: this.showRefreshOverlay,
+        priorityType: this.priorityType,
+        showCombinedView: this.showCombinedView,
         lastUpdated: new Date().toISOString()
       };
       
@@ -924,7 +1006,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
   /**
    * Handle settings applied from settings component
    */
-  onSettingsApplied(settings: { displayMode: 'single' | 'top3' | 'top6' | 'grid'; refreshInterval: number; cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'; showComingUpNext: boolean; autoScrollEnabled: boolean; scrollSpeed: number; showRefreshOverlay: boolean }): void {
+  onSettingsApplied(settings: { displayMode: 'single' | 'top3' | 'top6' | 'grid'; refreshInterval: number; cardLayout: 'traditional' | 'production' | 'salesorder' | 'compact' | 'detailed' | 'minimal' | 'dashboard'; showComingUpNext: boolean; autoScrollEnabled: boolean; scrollSpeed: number; showRefreshOverlay: boolean; showCombinedView: boolean }): void {
     this.displayMode = settings.displayMode;
     this.refreshInterval = settings.refreshInterval;
     this.cardLayout = settings.cardLayout;
@@ -932,6 +1014,7 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     this.autoScrollEnabled = settings.autoScrollEnabled;
     this.scrollSpeed = settings.scrollSpeed;
     this.showRefreshOverlay = settings.showRefreshOverlay;
+    this.showCombinedView = settings.showCombinedView;
     this.priorityDisplayService.updateDisplayMode(this.displayMode);
     this.startAutoRefresh();
     this.saveSettingsToStorage();
@@ -1067,5 +1150,18 @@ export class StandaloneShippingPriorityDisplayComponent implements OnInit, After
     const rollingPosition = basePosition + (repetitionNumber * nextGroupedItemsLength);
     
     return rollingPosition;
+  }
+
+  /**
+   * Check if any order in the item has an owner currently working on it (is_production = true)
+   */
+  isOwnerInProduction(item: any): boolean {
+    if (!item || !item.orders) return false;
+    
+    return item.orders.some((order: any) => {
+      // Check if owner data exists and is_production flag is true
+      return order.owner_is_production === true || 
+             order.misc?.owner_is_production === true;
+    });
   }
 }

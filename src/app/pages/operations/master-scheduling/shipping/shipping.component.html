@@ -47,6 +47,11 @@
                     Priority Display
                 </button>
                 
+                <button class="btn btn-outline-secondary btn-sm me-3" (click)="openOwnerManagement()" title="Manage Owners">
+                    <i class="mdi mdi-account-cog me-1"></i>
+                    Manage Owners
+                </button>
+                
                 <!-- Grid Tools -->
                 <div class="me-2">
                     <app-grid-settings [data]="tableList?.data" [gridApi]="gridApi"

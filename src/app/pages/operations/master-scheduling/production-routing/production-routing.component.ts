@@ -3,10 +3,10 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { SharedModule } from "@app/shared/shared.module";
 import { MasterProductionComponent } from "../master-production/master-production.component";
 import { TableSettingsService } from "@app/core/api/table-settings/table-settings.service";
-import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 import { GridSettingsComponent } from "@app/shared/grid-settings/grid-settings.component";
 import { GridFiltersComponent } from "@app/shared/grid-filters/grid-filters.component";
 import { GridApi } from "ag-grid-community";
+import { MasterSchedulingService } from "@app/core/api/operations/master-scheduling/master-scheduling.service";
 
 @Component({
   standalone: true,

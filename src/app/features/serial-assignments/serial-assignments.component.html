@@ -31,6 +31,21 @@
           <div class="d-flex gap-2">
             <button 
               type="button" 
+              class="btn btn-success"
+              routerLink="/standalone/ul-audit-signoff"
+              title="UL Audit Sign-Off">
+              <i class="mdi mdi-clipboard-check me-2"></i>UL Audit
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-primary"
+              (click)="printAllAssignments()" 
+              [disabled]="loading || filteredAssignments.length === 0"
+              title="Print all serial assignment reports">
+              <i class="mdi mdi-printer me-2"></i>Print All
+            </button>
+            <button 
+              type="button" 
               class="btn btn-outline-success"
               (click)="exportToCSV()" 
               [disabled]="loading || assignments.length === 0"

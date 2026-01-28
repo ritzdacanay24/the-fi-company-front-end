@@ -141,10 +141,16 @@ export class VehicleInspectionEditComponent {
   }
 
   hasFailedInspections(): boolean {
-    if (!this.formValues?.checklist) return false;
-    
-    return this.formValues.checklist.some((section: any) => 
-      section.details?.some((item: any) => item.status === 0)
+    const checklist = this.formValues?.checklist;
+    if (!Array.isArray(checklist)) return false;
+
+    // Consider an item a "failed and requires attention" when:
+    // - It was marked failed at inspection time (status === 0)
+    // - AND it has not been confirmed resolved (missing resolved_confirmed_date)
+    // Once all failed items have a confirmed resolution date, no failure alert should show.
+    return checklist.some((section: any) =>
+      Array.isArray(section?.details) &&
+      section.details.some((item: any) => item?.status === 0 && !item?.resolved_confirmed_date)
     );
   }
 }

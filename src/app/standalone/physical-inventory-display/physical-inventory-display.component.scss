@@ -1,0 +1,469 @@
+.inventory-display-container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 2rem;
+  transition: all 0.3s ease;
+  
+  &.theme-dark {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #ffffff;
+  }
+  
+  &.theme-light {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: #2c3e50;
+  }
+}
+
+// Header
+.display-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .theme-light & {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.header-left {
+  flex: 1;
+}
+
+.display-title {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  
+  i {
+    font-size: 3rem;
+  }
+}
+
+.last-updated {
+  margin-top: 0.5rem;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  min-width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  transition: all 0.3s ease;
+  
+  i {
+    font-size: 1.5rem;
+  }
+
+  .btn-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+  }
+  
+  .theme-light & {
+    background: rgba(0, 0, 0, 0.05);
+    color: #2c3e50;
+    
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.1);
+      transform: scale(1.05);
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.refresh-countdown {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .theme-light & {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+// Stat Cards
+.stat-card {
+  padding: 2rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+  }
+  
+  .theme-light & {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+// Total Card
+.total-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  
+  .stat-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    i {
+      font-size: 2.5rem;
+      color: white;
+    }
+  }
+  
+  .stat-content {
+    flex: 1;
+  }
+  
+  .stat-label {
+    font-size: 1rem;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+}
+
+// Progress Cards
+.progress-card {
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+  }
+  
+  .badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    
+    &.badge-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    &.badge-warning {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    &.badge-danger {
+      background: #ef4444;
+      color: white;
+    }
+  }
+}
+
+.progress-bar-container {
+  height: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .theme-light & {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.progress-bar {
+  height: 100%;
+  transition: width 1s ease, background-color 0.3s ease;
+  border-radius: 12px;
+  
+  &.bg-success {
+    background: linear-gradient(90deg, #10b981, #059669);
+  }
+  
+  &.bg-warning {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+  }
+  
+  &.bg-danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+  }
+}
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  
+  .theme-dark & {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .theme-light & {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+.detail-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.detail-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  
+  &.text-success {
+    color: #10b981;
+  }
+  
+  &.text-warning {
+    color: #f59e0b;
+  }
+  
+  &.text-danger {
+    color: #ef4444;
+  }
+}
+
+// Value Cards
+.value-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  
+  .stat-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    i {
+      font-size: 2.5rem;
+      color: white;
+    }
+  }
+  
+  &:not(.variance-card) .stat-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  &.variance-card .stat-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+  
+  .stat-content {
+    flex: 1;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+}
+
+// Alert Card
+.alert-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  
+  .stat-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    
+    i {
+      font-size: 2.5rem;
+      color: white;
+    }
+  }
+  
+  .stat-content {
+    flex: 1;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    
+    &.text-warning {
+      color: #f59e0b;
+    }
+  }
+  
+  .stat-description {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin-top: 0.25rem;
+  }
+}
+
+// Loading Overlay
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  color: white;
+  font-weight: 600;
+}
+
+// Spin animation for refresh icon
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .display-title {
+    font-size: 1.8rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem !important;
+  }
+}

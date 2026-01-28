@@ -12,6 +12,11 @@ export class ZebraLabelPrintModalService {
     serialNumber: string;
     title?: string;
     partNumber?: string;
+    date?: string;
+    volts?: string;
+    hz?: string;
+    amps?: string;
+    templateId?: string;
   }) {
     const modalRef = this.modalService.open(ZebraLabelPrintModalComponent, {
       size: 'lg',
@@ -21,6 +26,11 @@ export class ZebraLabelPrintModalService {
     modalRef.componentInstance.serialNumber = data.serialNumber;
     modalRef.componentInstance.title = data.title || 'Print Zebra Label';
     modalRef.componentInstance.partNumber = data.partNumber || '';
+    modalRef.componentInstance.date = data.date || '';
+    modalRef.componentInstance.volts = data.volts || '';
+    modalRef.componentInstance.hz = data.hz || '';
+    modalRef.componentInstance.amps = data.amps || '';
+    modalRef.componentInstance.templateId = data.templateId || 'serial-number-standard';
 
     return modalRef;
   }

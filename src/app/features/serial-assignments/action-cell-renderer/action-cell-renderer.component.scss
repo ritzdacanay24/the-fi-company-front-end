@@ -1,0 +1,19 @@
+::ng-deep .dropdown-menu {
+  min-width: 200px;
+  z-index: 9999 !important;
+}
+
+::ng-deep .dropdown-item.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+:host {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-group {
+  position: relative;
+  z-index: 1;
+}

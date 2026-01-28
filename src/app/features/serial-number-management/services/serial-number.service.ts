@@ -274,4 +274,19 @@ export class SerialNumberService {
     return  await firstValueFrom(this.http.get(`${this.API_URL}/index.php`, { params }));
   }
 
+  /**
+   * Generate EYEFI Asset Numbers in format YYYYMMDDXXX
+   * Backend will generate sequential numbers for today's date
+   * Uses dedicated eyefi-asset-numbers API endpoint
+   */
+  async generateEyefiAssetNumbers(count: number, category: string = 'New'): Promise<any> {
+    const API_URL = 'eyefi-asset-numbers';
+    return await firstValueFrom(
+      this.http.post<any>(`${API_URL}/index.php?action=generate`, {
+        quantity: count,
+        category: category
+      })
+    );
+  }
+
 }

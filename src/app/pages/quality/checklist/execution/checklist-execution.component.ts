@@ -6,6 +6,7 @@ import { WorkOrderInfoService } from '@app/core/api/work-order/work-order-info.s
 import { QualityPhotoChecklistService } from '@app/core/api/quality-photo-checklist/quality-photo-checklist-service';
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistInstance } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { SharedModule } from '@app/shared/shared.module';
+import { AuthenticationService } from '@app/core/services/auth.service';
 
 @Component({
   standalone:true, 
@@ -25,13 +26,15 @@ export class ChecklistExecutionComponent implements OnInit {
   // Filter properties
   selectedStatus: string = '';
   selectedTemplate: string = '';
+  selectedOperator: string = ''; // Filter by operator
 
   constructor(
     private photosService: PhotosService,
     private qualityPhotoChecklistService: QualityPhotoChecklistService,
     private workOrderInfoService: WorkOrderInfoService,
     private photoChecklistConfigService: PhotoChecklistConfigService,
-    private router: Router
+    private router: Router,
+    private authService: AuthenticationService
   ) { }
   woNumber: any
   partNumber: string
@@ -66,12 +69,18 @@ export class ChecklistExecutionComponent implements OnInit {
     }
 
     this.loading = true;
+    
+    // Get current user information
+    const currentUser = this.authService.currentUser();
+    
     const instanceData: Partial<ChecklistInstance> = {
       template_id: templateId,
       work_order_number: this.woNumber,
       part_number: this.partNumber,
       serial_number: this.serialNumber || '',
-      status: 'in_progress' as const
+      status: 'in_progress' as const,
+      operator_id: currentUser?.id || null,
+      operator_name: currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Unknown User'
     };
 
     this.photoChecklistConfigService.createInstance(instanceData).pipe(first()).subscribe(response => {
@@ -85,8 +94,10 @@ export class ChecklistExecutionComponent implements OnInit {
     this.loading = true;
     this.photoChecklistConfigService.getInstances().pipe(first()).subscribe(data => {
       this.loading = false;
+      // Load ALL checklists and let UI filters handle the filtering
+      // Exclude only 'submitted' status since those are truly finalized
       this.openChecklists = data.filter(instance => 
-        instance.status === 'in_progress' || instance.status === 'draft'
+        instance.status !== 'submitted'
       );
       this.applyFilters(); // Apply filters after loading data
     }, () => this.loading = false);
@@ -126,13 +137,18 @@ export class ChecklistExecutionComponent implements OnInit {
         matches = matches && checklist.template_id?.toString() === this.selectedTemplate;
       }
 
+      // Filter by operator
+      if (this.selectedOperator) {
+        matches = matches && checklist.operator_id?.toString() === this.selectedOperator;
+      }
+
       return matches;
     });
   }
 
   // Check if any filters are active
   hasActiveFilters(): boolean {
-    return !!(this.woNumber || this.serialNumber || this.selectedStatus || this.selectedTemplate);
+    return !!(this.woNumber || this.serialNumber || this.selectedStatus || this.selectedTemplate || this.selectedOperator);
   }
 
   // Clear individual filters
@@ -156,10 +172,27 @@ export class ChecklistExecutionComponent implements OnInit {
     this.applyFilters();
   }
 
+  clearOperatorFilter() {
+    this.selectedOperator = '';
+    this.applyFilters();
+  }
+
   // Get template name by ID
   getTemplateName(templateId: string): string {
     const template = this.checklistTemplates.find(t => t.id?.toString() === templateId);
     return template?.name || 'Unknown Template';
+  }
+
+  // Get unique operators for dropdown
+  getUniqueOperators(): ChecklistInstance[] {
+    const seen = new Set();
+    return this.openChecklists.filter(checklist => {
+      if (!checklist.operator_id || seen.has(checklist.operator_id)) {
+        return false;
+      }
+      seen.add(checklist.operator_id);
+      return true;
+    });
   }
 
   results = [];
@@ -184,6 +217,12 @@ export class ChecklistExecutionComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Set default filter to current user
+    const currentUser = this.authService.currentUser();
+    if (currentUser?.id) {
+      this.selectedOperator = currentUser.id.toString();
+    }
+    
     this.getOpenChecklists();
     this.filteredChecklists = [...this.openChecklists]; // Initialize filtered list
   }

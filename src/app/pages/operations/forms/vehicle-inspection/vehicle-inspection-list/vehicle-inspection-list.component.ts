@@ -53,6 +53,9 @@ export class VehicleInspectionListComponent implements OnInit {
         : false;
       this.selectedViewType =
         params["selectedViewType"] || this.selectedViewType;
+      this.showPendingOnly = params["showPending"]
+        ? params["showPending"].toLocaleLowerCase() === "true"
+        : false;
     });
 
     this.getData();
@@ -171,6 +174,12 @@ export class VehicleInspectionListComponent implements OnInit {
   gridApi: GridApi;
 
   data: any[];
+  
+  allData: any[]; // Store complete dataset
+  
+  showPendingOnly = false;
+  
+  pendingCount = 0;
 
   id = null;
 
@@ -249,7 +258,19 @@ export class VehicleInspectionListComponent implements OnInit {
         params = { active: status.value };
       }
 
-      this.data = await this.api.getList();
+      this.allData = await this.api.getList();
+      
+      // Calculate pending count
+      this.pendingCount = this.allData.filter(item => 
+        item.confirmed_resolved_count > 0
+      ).length;
+      
+      // Apply pending filter if active
+      if (this.showPendingOnly) {
+        this.data = this.allData.filter(item => item.confirmed_resolved_count > 0);
+      } else {
+        this.data = this.allData;
+      }
 
       this.router.navigate(["."], {
         queryParams: {
@@ -257,6 +278,7 @@ export class VehicleInspectionListComponent implements OnInit {
           isAll: this.isAll,
           dateFrom: this.dateFrom,
           dateTo: this.dateTo,
+          showPending: this.showPendingOnly,
         },
         relativeTo: this.activatedRoute,
         queryParamsHandling: "merge",
@@ -266,5 +288,23 @@ export class VehicleInspectionListComponent implements OnInit {
     } catch (err) {
       this.gridApi?.hideOverlay();
     }
+  }
+  
+  togglePendingFilter() {
+    this.showPendingOnly = !this.showPendingOnly;
+    
+    if (this.showPendingOnly) {
+      this.data = this.allData.filter(item => item.confirmed_resolved_count > 0);
+    } else {
+      this.data = this.allData;
+    }
+    
+    this.router.navigate(["."], {
+      queryParams: {
+        showPending: this.showPendingOnly,
+      },
+      relativeTo: this.activatedRoute,
+      queryParamsHandling: "merge",
+    });
   }
 }
