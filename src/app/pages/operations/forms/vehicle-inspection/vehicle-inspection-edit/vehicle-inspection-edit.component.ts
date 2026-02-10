@@ -67,7 +67,22 @@ export class VehicleInspectionEditComponent {
 
   data;
 
-  viewImage(row) {}
+  getImageUrl(attachment): string {
+    if (!attachment?.link || !attachment?.directory) return '';
+    
+    // Extract the relative path after 'attachments/'
+    const linkParts = attachment.link.split('/attachments/');
+    const relativePath = linkParts.length > 1 ? linkParts[1] : attachment.fileName;
+    
+    return `${attachment.directory}/${relativePath}`;
+  }
+
+  viewImage(attachment) {
+    const url = this.getImageUrl(attachment);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }
 
   setFormErrorsEmitter($event){
   }
@@ -89,6 +104,12 @@ export class VehicleInspectionEditComponent {
   }
 
   attachments = [];
+  private readonly vehiclePhotoTitles = {
+    front: ['Vehicle Front View'],
+    rear: ['Vehicle Rear View'],
+    left: ['Vehicle Left Side View', 'Vehicle Left Side (Front) View', 'Vehicle Left Side (Rear) View'],
+    right: ['Vehicle Right Side View', 'Vehicle Right Side (Front) View', 'Vehicle Right Side (Rear) View']
+  };
   getData = async () => {
     try {
       this.isLoading = true;
@@ -109,6 +130,32 @@ export class VehicleInspectionEditComponent {
       this.isLoading = false;
     }
   };
+
+  getVehiclePhotosByTitles(titles: string[]) {
+    if (!Array.isArray(this.attachments)) return [];
+    return this.attachments.filter((attachment) => titles.includes(attachment?.title));
+  }
+
+  getVehiclePhotosBySide(side: 'front' | 'rear' | 'left' | 'right') {
+    return this.getVehiclePhotosByTitles(this.vehiclePhotoTitles[side]);
+  }
+
+  getAdditionalVehiclePhotos() {
+    if (!Array.isArray(this.attachments)) return [];
+    return this.attachments.filter((attachment) =>
+      typeof attachment?.title === 'string' && attachment.title.startsWith('Vehicle Additional Photo')
+    );
+  }
+
+  hasGroupedVehiclePhotos(): boolean {
+    const groupedCount =
+      this.getVehiclePhotosBySide('front').length +
+      this.getVehiclePhotosBySide('rear').length +
+      this.getVehiclePhotosBySide('left').length +
+      this.getVehiclePhotosBySide('right').length +
+      this.getAdditionalVehiclePhotos().length;
+    return groupedCount > 0;
+  }
 
   setFormEmitter($event) {
     this.form = $event;

@@ -127,8 +127,15 @@ export class MindeeService {
     // Step 1: Enqueue the inference
     const jobResponse = await this.submitInferenceJob(file, modelId, options);
     
-    // Step 2: Poll for completion
-    const completedJob = await this.pollJobCompletion(jobResponse.job.id);
+    console.log('[Mindee] Job enqueued:', {
+      jobId: jobResponse.job.id,
+      status: jobResponse.job.status,
+      polling_url: jobResponse.job.polling_url,
+      result_url: jobResponse.job.result_url
+    });
+    
+    // Step 2: Poll for completion using the provided polling_url
+    const completedJob = await this.pollJobCompletion(jobResponse.job.polling_url || jobResponse.job.id, jobResponse.job.result_url);
     
     // Step 3: Handle the completed result
     if (completedJob.inference) {
@@ -180,12 +187,16 @@ export class MindeeService {
 
   /**
    * Poll job completion using V2 API
-   * @param jobId - Job ID from enqueue response
+   * @param pollingUrlOrJobId - Polling URL from job response or job ID
+   * @param initialResultUrl - Result URL from initial job response (if available)
    * @returns Promise with completed job information
    */
-  private async pollJobCompletion(jobId: string): Promise<any> {
+  private async pollJobCompletion(pollingUrlOrJobId: string, initialResultUrl?: string): Promise<any> {
     const headers = this.buildHeaders();
-    const url = `https://api-v2.mindee.net/v2/jobs/${jobId}`;
+    // Use the polling URL if it's a full URL, otherwise construct from job ID
+    const url = pollingUrlOrJobId.startsWith('http') 
+      ? pollingUrlOrJobId 
+      : `https://api-v2.mindee.net/v2/jobs/${pollingUrlOrJobId}`;
     
     let attempts = 0;
     
@@ -197,27 +208,61 @@ export class MindeeService {
             .pipe(catchError(this.handleError.bind(this)))
         );
         
-        // Handle both job status polling and completed inference response
-        if (response.job) {
-          // Still processing - response has job status
-          console.log(`Job status: ${response.job.status}`);
-          
-          if (response.job.status === 'Processed' || response.job.status === 'Failed') {
-            console.log(`Job completed with status: ${response.job.status}`);
-            return response;
-          }
-        } else if (response.inference) {
-          // Job completed - response contains the inference result
-          console.log('Job completed, received inference result');
-          return response;
-        } else {
-          console.error('Invalid polling response structure:', response);
-          throw new Error(`Invalid polling response structure. Expected job or inference, got keys: ${Object.keys(response)}`);
-        }
+        console.log(`[Mindee Poll ${attempts + 1}/${this.maxPollingAttempts}] Response:`, {
+          hasJob: !!response.job,
+          hasInference: !!response.inference,
+          status: response.job?.status,
+          result_url: response.job?.result_url
+        });
         
-        // Wait 5 seconds before next poll
-        await this.delay(5000);
-        attempts++;
+        // IMPORTANT: Check for inference FIRST - Mindee V2 API returns both job and inference when complete
+        if (response.inference) {
+          // Job completed - response contains the inference result directly
+          console.log('[Mindee] Job completed, received inference result directly');
+          return response;
+        } else if (response.job) {
+          // Still processing - response has job status only
+          const jobStatus = response.job.status;
+          console.log(`[Mindee] Job status: ${jobStatus}`);
+          
+          // Check for failure first
+          if (jobStatus === 'Failed' || jobStatus === 'Error') {
+            console.error(`Job failed with status: ${jobStatus}`);
+            throw new Error(`Mindee job failed: ${response.job.error?.detail || 'Unknown error'}`);
+          }
+          
+          // Check if job completed successfully (legacy behavior - use result_url)
+          if (jobStatus === 'Processed' || jobStatus === 'Completed') {
+            console.log(`[Mindee] Job completed with status: ${jobStatus}`);
+            
+            // IMPORTANT: Fetch the result from result_url
+            if (response.job.result_url) {
+              console.log('[Mindee] Fetching final result from result_url:', response.job.result_url);
+              return await this.getInferenceResult(response.job.result_url);
+            } else {
+              console.error('[Mindee] Job completed but no result_url provided!');
+              throw new Error('Job completed but result_url is missing');
+            }
+          }
+          
+          // Still processing - continue polling
+          if (jobStatus === 'Processing' || jobStatus === 'Pending' || jobStatus === 'Queued') {
+            console.log(`[Mindee] Job still ${jobStatus.toLowerCase()}, waiting 3 seconds before next poll...`);
+            // Wait 3 seconds before next poll (reduced from 5 for faster feedback)
+            await this.delay(3000);
+            attempts++;
+            continue; // Explicitly continue the loop
+          }
+          
+          // Unknown or undefined status
+          console.warn(`[Mindee] Unexpected job status: ${jobStatus}, waiting before retry...`);
+          await this.delay(3000);
+          attempts++;
+          continue;
+        } else {
+          console.error('[Mindee] Invalid polling response structure:', response);
+          throw new Error(`Invalid polling response. Expected 'job' or 'inference', got: ${Object.keys(response).join(', ')}`);
+        }
         
       } catch (error) {
         throw this.processError(error);

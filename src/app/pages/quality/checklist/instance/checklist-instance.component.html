@@ -36,8 +36,9 @@
 </div>
 
 <div class="container-fluid" [hidden]="loading || !instance || !template">
-  <div class="row justify-content-center">
-    <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+  <div class="row">
+    <!-- Main Content Area -->
+    <div class="col-12 col-lg-11 col-xl-9">
       
       <!-- Page Header with Context -->
       <div class="mb-4">
@@ -161,7 +162,8 @@
           
           <!-- Photo Taking Mode -->
           <div *ngIf="!isReviewMode">
-            <div *ngFor="let progress of getCurrentItemsToShow(); let i = index; let first = first">
+            <div *ngFor="let progress of getCurrentItemsToShow(); let i = index; let first = first"
+                 [id]="'item-' + progress.item.id">
               
               <!-- Separator between parent and sub-items -->
               <div *ngIf="i > 0 && progress.item.level === 1 && first" class="my-4">
@@ -678,6 +680,113 @@
       </div>
       
     </div>
+    
+    <!-- Navigation Sidebar -->
+    <div class="col-12 col-lg-1 col-xl-3 d-none d-xl-block">
+      <div class="position-sticky" style="top: 20px;">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white py-2">
+            <h6 class="mb-0">
+              <i class="mdi mdi-format-list-bulleted-square me-2"></i>
+              Checklist Items
+            </h6>
+          </div>
+          <div class="card-body p-0" style="max-height: calc(100vh - 150px); overflow-y: auto;">
+            <div class="list-group list-group-flush">
+              <a *ngFor="let progress of itemProgress; let i = index"
+                 [id]="'nav-item-' + i"
+                 href="#item-{{progress.item.id}}"
+                 class="list-group-item list-group-item-action py-2 border-0"
+                 [class.bg-body-secondary]="currentStep === i + 1"
+                 [class.border-start]="currentStep === i + 1"
+                 [class.border-3]="currentStep === i + 1"
+                 [class.border-primary]="currentStep === i + 1"
+                 [class.fw-semibold]="currentStep === i + 1"
+                 style="cursor: pointer; min-height: 40px;"
+                 [style.display]="isNavItemVisible(i) ? 'block' : 'none'"
+                 [style.padding-left.rem]="0.5"
+                 [style.padding-right.rem]="0.5"
+                 (click)="jumpToItem(i + 1, $event)">
+                
+                <div class="d-flex align-items-center gap-1">
+                  <!-- Indentation spacer based on level -->
+                  <div class="flex-shrink-0" [style.width.px]="(progress.item.level || 0) * 20"></div>
+                  
+                  <!-- Expand/Collapse chevron for parent items -->
+                  <div class="flex-shrink-0" style="width: 18px;">
+                    <i *ngIf="hasNavChildren(progress)" 
+                       class="mdi text-muted"
+                       [class.mdi-chevron-down]="isNavItemExpanded(progress.item.id)"
+                       [class.mdi-chevron-right]="!isNavItemExpanded(progress.item.id)"
+                       (click)="toggleNavItem(progress.item.id, $event)"
+                       style="cursor: pointer; font-size: 18px;"></i>
+                  </div>
+                  
+                  <!-- Folder/File icon -->
+                  <div class="flex-shrink-0" style="width: 20px;">
+                    <i class="mdi" 
+                       [class.mdi-folder-open]="(progress.item.level || 0) === 0 && isNavItemExpanded(progress.item.id)"
+                       [class.mdi-folder]="(progress.item.level || 0) === 0 && !isNavItemExpanded(progress.item.id)"
+                       [class.mdi-file-document-outline]="(progress.item.level || 0) > 0"
+                       [class.text-warning]="(progress.item.level || 0) === 0"
+                       [class.text-muted]="(progress.item.level || 0) > 0"
+                       style="font-size: 18px;"></i>
+                  </div>
+                  
+                  <!-- Outline number badge -->
+                  <span class="badge flex-shrink-0 me-1" 
+                        [class.bg-secondary]="!progress.completed"
+                        [class.bg-success]="progress.completed"
+                        style="min-width: 42px; font-size: 0.65rem;">
+                    {{(progress.item.level || 0) === 0 ? getItemNumber(progress) : getChildItemNumber(progress)}}
+                  </span>
+                  
+                  <!-- Item title -->
+                  <div class="flex-grow-1 min-w-0">
+                    <small class="text-truncate d-block" 
+                           [class.fw-semibold]="(progress.item.level || 0) === 0"
+                           [title]="progress.item.title">
+                      {{progress.item.title}}
+                    </small>
+                  </div>
+                  
+                  <!-- Status indicators -->
+                  <div class="flex-shrink-0 d-flex align-items-center gap-1">
+                    <!-- Completed checkmark -->
+                    <div *ngIf="progress.completed">
+                      <i class="mdi mdi-check-circle text-success" style="font-size: 16px;"></i>
+                    </div>
+                    
+                    <!-- Photo count indicator -->
+                    <div *ngIf="progress.photos && progress.photos.length > 0"
+                         class="d-flex align-items-center justify-content-center rounded border border-primary bg-primary bg-opacity-10" 
+                         style="width: 24px; height: 24px;"
+                         [title]="progress.photos.length + ' photo(s) uploaded'">
+                      <small class="text-primary fw-bold" style="font-size: 0.65rem;">{{progress.photos.length}}</small>
+                    </div>
+                    
+                    <!-- Video count indicator -->
+                    <div *ngIf="progress.videos && progress.videos.length > 0"
+                         class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10" 
+                         style="width: 24px; height: 24px;"
+                         [title]="progress.videos.length + ' video(s) uploaded'">
+                      <small class="text-info fw-bold" style="font-size: 0.65rem;">{{progress.videos.length}}</small>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="card-footer bg-light text-center py-2">
+            <small class="text-muted">
+              <i class="mdi mdi-information-outline me-1"></i>
+              {{itemProgress.length}} item{{itemProgress.length !== 1 ? 's' : ''}}
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </div>
 

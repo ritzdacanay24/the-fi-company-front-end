@@ -558,7 +558,7 @@
             </span>
             <div>
               <h4 class="mb-1 fw-bold text-white">
-                Template Preview
+                Template Preview ----- 
               </h4>
               <p class="text-white-50 mb-0" *ngIf="selectedTemplate">
                 {{selectedTemplate.name}} - Version {{selectedTemplate.version}} | {{selectedTemplate.category | titlecase}}
@@ -642,12 +642,25 @@
                         <h6 class="mb-0">
                           {{item.title}}
                           <span class="badge bg-danger ms-2" style="font-size: 0.7rem;" *ngIf="item.is_required">Required</span>
+                          <span class="badge ms-1" style="font-size: 0.7rem;" 
+                                [ngClass]="{
+                                  'bg-primary': item.submission_type === 'photo',
+                                  'bg-success': item.submission_type === 'video',
+                                  'bg-info': item.submission_type === 'either'
+                                }">
+                            <i class="mdi" [ngClass]="{
+                              'mdi-camera': item.submission_type === 'photo',
+                              'mdi-video': item.submission_type === 'video',
+                              'mdi-file-multiple': item.submission_type === 'either'
+                            }"></i>
+                            {{item.submission_type === 'either' ? 'Photo OR Video' : (item.submission_type | titlecase)}}
+                          </span>
                         </h6>
                       </div>
                       <div class="text-muted mb-2" *ngIf="item.description" [innerHTML]="item.description"></div>
                     
-                      <!-- Photo Requirements -->
-                      <div class="row g-2 mb-2" *ngIf="item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
+                      <!-- Photo Requirements (only for photo/either) -->
+                      <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'photo' || item.submission_type === 'either') && item.photo_requirements && hasPhotoRequirements(item.photo_requirements)">
                         <div class="col-auto" *ngIf="item.photo_requirements.angle">
                           <small class="badge bg-light text-dark">
                             <i class="mdi mdi-camera-metering-spot me-1"></i>
@@ -679,52 +692,100 @@
                           </small>
                         </div>
                       </div>
-                    </div>
-
-                    <!-- Right side: Sample images -->
-                    <div class="flex-shrink-0" style="width: 280px;" *ngIf="item.sample_images && item.sample_images.length > 0">
-                      <!-- Primary Sample Image -->
-                      <ng-container *ngFor="let sampleImage of item.sample_images">
-                        <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
-                             class="mb-2 p-2 border border-primary rounded bg-light">
-                          <div class="d-flex align-items-center mb-2">
-                            <small class="text-primary fw-bold">
-                              <i class="mdi mdi-target me-1"></i>Match This
-                            </small>
-                            <span class="badge bg-primary ms-auto" style="font-size: 0.65rem;">Primary</span>
-                          </div>
-                          <img [src]="sampleImage.url" 
-                               class="img-thumbnail border-primary w-100"
-                               style="height: 180px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
-                               [alt]="sampleImage.label || 'Primary sample image'"
-                               [title]="sampleImage.label || 'Primary Sample Image'"
-                               (click)="previewImage(sampleImage.url)"
-                               (error)="$any($event).target.style.display='none'">
-                          <p class="mb-0 mt-1 small text-muted">
-                            <i class="mdi mdi-information-outline me-1"></i>
-                            Replicate this photo
-                          </p>
-                        </div>
-                      </ng-container>
                       
-                      <!-- Reference Images -->
-                      <ng-container *ngIf="getReferenceImages(item.sample_images).length > 0">
-                        <div class="mb-1">
-                          <small class="text-secondary fw-bold">
-                            <i class="mdi mdi-image-multiple me-1"></i>Reference ({{ getReferenceImages(item.sample_images).length }})
+                      <!-- Video Requirements (only for video/either) -->
+                      <div class="row g-2 mb-2" *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.video_requirements && item.video_requirements.max_video_duration_seconds">
+                        <div class="col-auto">
+                          <small class="badge bg-light text-dark">
+                            <i class="mdi mdi-timer-off me-1"></i>
+                            Max Duration: {{item.video_requirements.max_video_duration_seconds}}s
                           </small>
                         </div>
-                        <div class="row g-1">
-                          <div class="col-6" *ngFor="let refImage of getReferenceImages(item.sample_images)">
-                            <img [src]="refImage.url" 
-                                 class="img-thumbnail w-100"
-                                 style="height: 80px; object-fit: cover; cursor: pointer;"
-                                 [alt]="refImage.label || 'Reference image'"
-                                 [title]="refImage.label || 'Reference Image'"
-                                 (click)="previewImage(refImage.url)"
-                                 (error)="$any($event).target.style.display='none'">
-                          </div>
+                      </div>
+                      
+                      <!-- Submission Time Limit -->
+                      <div class="row g-2 mb-2" *ngIf="item.submission_time_seconds">
+                        <div class="col-auto">
+                          <small class="badge bg-warning text-dark">
+                            <i class="mdi mdi-clock-alert me-1"></i>
+                            Time Limit: {{item.submission_time_seconds}}s
+                          </small>
                         </div>
+                      </div>
+                    </div>
+
+                    <!-- Right side: Sample media (images and videos) -->
+                    <div class="flex-shrink-0" style="width: 280px;" *ngIf="(item.sample_images && item.sample_images.length > 0) || (item.sample_videos && item.sample_videos.length > 0)">
+                      <!-- Primary Sample Image -->
+                      <ng-container *ngIf="item.submission_type === 'photo' || item.submission_type === 'either'">
+                        <ng-container *ngFor="let sampleImage of item.sample_images">
+                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
+                               class="mb-2 p-2 border border-primary rounded bg-light">
+                            <div class="d-flex align-items-center mb-2">
+                              <small class="text-primary fw-bold">
+                                <i class="mdi mdi-target me-1"></i>Match This
+                              </small>
+                              <span class="badge bg-primary ms-auto" style="font-size: 0.65rem;">Primary</span>
+                            </div>
+                            <img [src]="sampleImage.url" 
+                                 class="img-thumbnail border-primary w-100"
+                                 style="height: 180px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
+                                 [alt]="sampleImage.label || 'Primary sample image'"
+                                 [title]="sampleImage.label || 'Primary Sample Image'"
+                                 (click)="previewImage(sampleImage.url)"
+                                 (error)="$any($event).target.style.display='none'">
+                            <p class="mb-0 mt-1 small text-muted">
+                              <i class="mdi mdi-information-outline me-1"></i>
+                              Replicate this photo
+                            </p>
+                          </div>
+                        </ng-container>
+                        
+                        <!-- Reference Images -->
+                        <ng-container *ngIf="getReferenceImages(item.sample_images).length > 0">
+                          <div class="mb-1">
+                            <small class="text-secondary fw-bold">
+                              <i class="mdi mdi-image-multiple me-1"></i>Reference ({{ getReferenceImages(item.sample_images).length }})
+                            </small>
+                          </div>
+                          <div class="row g-1">
+                            <div class="col-6" *ngFor="let refImage of getReferenceImages(item.sample_images)">
+                              <img [src]="refImage.url" 
+                                   class="img-thumbnail w-100"
+                                   style="height: 80px; object-fit: cover; cursor: pointer;"
+                                   [alt]="refImage.label || 'Reference image'"
+                                   [title]="refImage.label || 'Reference Image'"
+                                   (click)="previewImage(refImage.url)"
+                                   (error)="$any($event).target.style.display='none'">
+                            </div>
+                          </div>
+                        </ng-container>
+                      </ng-container>
+                      
+                      <!-- Primary Sample Video -->
+                      <ng-container *ngIf="(item.submission_type === 'video' || item.submission_type === 'either') && item.sample_videos && item.sample_videos.length > 0">
+                        <ng-container *ngFor="let sampleVideo of item.sample_videos">
+                          <div *ngIf="sampleVideo.is_primary" 
+                               class="mb-2 p-2 border border-success rounded bg-light">
+                            <div class="d-flex align-items-center mb-2">
+                              <small class="text-success fw-bold">
+                                <i class="mdi mdi-video me-1"></i>Sample Video
+                              </small>
+                              <span class="badge bg-success ms-auto" style="font-size: 0.65rem;">Primary</span>
+                            </div>
+                            <video [src]="sampleVideo.url" 
+                                   controls
+                                   class="w-100 rounded"
+                                   style="max-height: 180px; object-fit: contain; cursor: pointer;"
+                                   [title]="sampleVideo.label || 'Primary Sample Video'">
+                            </video>
+                            <p class="mb-0 mt-1 small text-muted">
+                              <i class="mdi mdi-information-outline me-1"></i>
+                              Reference video
+                              <span *ngIf="sampleVideo.duration_seconds"> ({{sampleVideo.duration_seconds}}s)</span>
+                            </p>
+                          </div>
+                        </ng-container>
                       </ng-container>
                     </div>
                   </div>
@@ -750,12 +811,25 @@
                             <i class="mdi mdi-subdirectory-arrow-right me-1 text-primary"></i>
                             {{child.title}}
                             <span class="badge bg-danger ms-2" style="font-size: 0.65rem;" *ngIf="child.is_required">Required</span>
+                            <span class="badge ms-1" style="font-size: 0.65rem;" 
+                                  [ngClass]="{
+                                    'bg-primary': child.submission_type === 'photo',
+                                    'bg-success': child.submission_type === 'video',
+                                    'bg-info': child.submission_type === 'either'
+                                  }">
+                              <i class="mdi" [ngClass]="{
+                                'mdi-camera': child.submission_type === 'photo',
+                                'mdi-video': child.submission_type === 'video',
+                                'mdi-file-multiple': child.submission_type === 'either'
+                              }"></i>
+                              {{child.submission_type === 'either' ? 'Photo OR Video' : (child.submission_type | titlecase)}}
+                            </span>
                           </h6>
                         </div>
                         <div class="text-muted mb-2 small" *ngIf="child.description" [innerHTML]="child.description"></div>
                         
-                        <!-- Photo Requirements for child -->
-                        <div class="row g-2 mb-2" *ngIf="child.photo_requirements && hasPhotoRequirements(child.photo_requirements)">
+                        <!-- Photo Requirements for child (only for photo/either) -->
+                        <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'photo' || child.submission_type === 'either') && child.photo_requirements && hasPhotoRequirements(child.photo_requirements)">
                           <div class="col-auto" *ngIf="child.photo_requirements.angle">
                             <small class="badge bg-light text-dark">
                               <i class="mdi mdi-camera-metering-spot me-1"></i>
@@ -781,47 +855,89 @@
                             </small>
                           </div>
                         </div>
-                      </div>
-
-                      <!-- Right: Sample images -->
-                      <div class="flex-shrink-0" style="width: 200px;" *ngIf="child.sample_images && child.sample_images.length > 0">
-                        <!-- Primary Sample Image -->
-                        <ng-container *ngFor="let sampleImage of child.sample_images">
-                          <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
-                               class="mb-2 p-2 border border-info rounded" style="background-color: #f0f8ff;">
-                            <div class="d-flex align-items-center mb-1">
-                              <small class="text-info fw-bold">
-                                <i class="mdi mdi-target me-1"></i>Match This
-                              </small>
-                              <span class="badge bg-info ms-auto" style="font-size: 0.65rem;">Primary</span>
-                            </div>
-                            <img [src]="sampleImage.url" 
-                                 class="img-thumbnail border-info w-100"
-                                 style="height: 120px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
-                                 [alt]="sampleImage.label || 'Primary sample'"
-                                 (click)="previewImage(sampleImage.url)"
-                                 (error)="$any($event).target.style.display='none'">
-                          </div>
-                        </ng-container>
                         
-                        <!-- Reference Images -->
-                        <ng-container *ngIf="getReferenceImages(child.sample_images).length > 0">
-                          <div class="mb-1">
-                            <small class="text-secondary fw-bold">
-                              <i class="mdi mdi-image-multiple me-1"></i>Ref ({{ getReferenceImages(child.sample_images).length }})
+                        <!-- Video Requirements for child (only for video/either) -->
+                        <div class="row g-2 mb-2" *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.video_requirements && child.video_requirements.max_video_duration_seconds">
+                          <div class="col-auto">
+                            <small class="badge bg-light text-dark">
+                              <i class="mdi mdi-timer-off me-1"></i>
+                              Max Duration: {{child.video_requirements.max_video_duration_seconds}}s
                             </small>
                           </div>
-                          <div class="row g-1">
-                            <div class="col-6" *ngFor="let refImage of getReferenceImages(child.sample_images)">
-                              <img [src]="refImage.url" 
-                                   class="img-thumbnail w-100"
-                                   style="height: 60px; object-fit: cover; cursor: pointer;"
-                                   [alt]="refImage.label || 'Reference'"
-                                   [title]="refImage.label || 'Reference Image'"
-                                   (click)="previewImage(refImage.url)"
+                        </div>
+                        
+                        <!-- Submission Time Limit -->
+                        <div class="row g-2 mb-2" *ngIf="child.submission_time_seconds">
+                          <div class="col-auto">
+                            <small class="badge bg-warning text-dark">
+                              <i class="mdi mdi-clock-alert me-1"></i>
+                              Time Limit: {{child.submission_time_seconds}}s
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Right: Sample media -->
+                      <div class="flex-shrink-0" style="width: 200px;" *ngIf="(child.sample_images && child.sample_images.length > 0) || (child.sample_videos && child.sample_videos.length > 0)">
+                        <!-- Primary Sample Image -->
+                        <ng-container *ngIf="child.submission_type === 'photo' || child.submission_type === 'either'">
+                          <ng-container *ngFor="let sampleImage of child.sample_images">
+                            <div *ngIf="sampleImage.is_primary && sampleImage.image_type === 'sample'" 
+                                 class="mb-2 p-2 border border-info rounded" style="background-color: #f0f8ff;">
+                              <div class="d-flex align-items-center mb-1">
+                                <small class="text-info fw-bold">
+                                  <i class="mdi mdi-target me-1"></i>Match This
+                                </small>
+                                <span class="badge bg-info ms-auto" style="font-size: 0.65rem;">Primary</span>
+                              </div>
+                              <img [src]="sampleImage.url" 
+                                   class="img-thumbnail border-info w-100"
+                                   style="height: 120px; object-fit: contain; cursor: pointer; border-width: 2px !important;"
+                                   [alt]="sampleImage.label || 'Primary sample'"
+                                   (click)="previewImage(sampleImage.url)"
                                    (error)="$any($event).target.style.display='none'">
                             </div>
-                          </div>
+                          </ng-container>
+                          
+                          <!-- Reference Images -->
+                          <ng-container *ngIf="getReferenceImages(child.sample_images).length > 0">
+                            <div class="mb-1">
+                              <small class="text-secondary fw-bold">
+                                <i class="mdi mdi-image-multiple me-1"></i>Ref ({{ getReferenceImages(child.sample_images).length }})
+                              </small>
+                            </div>
+                            <div class="row g-1">
+                              <div class="col-6" *ngFor="let refImage of getReferenceImages(child.sample_images)">
+                                <img [src]="refImage.url" 
+                                     class="img-thumbnail w-100"
+                                     style="height: 60px; object-fit: cover; cursor: pointer;"
+                                     [alt]="refImage.label || 'Reference'"
+                                     [title]="refImage.label || 'Reference Image'"
+                                     (click)="previewImage(refImage.url)"
+                                     (error)="$any($event).target.style.display='none'">
+                              </div>
+                            </div>
+                          </ng-container>
+                        </ng-container>
+                        
+                        <!-- Primary Sample Video -->
+                        <ng-container *ngIf="(child.submission_type === 'video' || child.submission_type === 'either') && child.sample_videos && child.sample_videos.length > 0">
+                          <ng-container *ngFor="let sampleVideo of child.sample_videos">
+                            <div *ngIf="sampleVideo.is_primary" 
+                                 class="mb-2 p-2 border border-success rounded bg-light">
+                              <div class="d-flex align-items-center mb-1">
+                                <small class="text-success fw-bold">
+                                  <i class="mdi mdi-video me-1"></i>Sample
+                                </small>
+                                <span class="badge bg-success ms-auto" style="font-size: 0.65rem;">Primary</span>
+                              </div>
+                              <video [src]="sampleVideo.url" 
+                                     controls
+                                     class="w-100 rounded"
+                                     style="max-height: 120px; object-fit: contain;">
+                              </video>
+                            </div>
+                          </ng-container>
                         </ng-container>
                       </div>
                     </div>

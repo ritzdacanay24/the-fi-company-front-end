@@ -84,6 +84,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   maxPhotoSizeMB = 10;
   maxVideoSizeMB = 50; // Default to 50MB for videos
 
+  // Navigation sidebar state
+  expandedNavItems: Set<number | string> = new Set();
+
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
     return this.stateService.getItemProgress();
@@ -322,20 +325,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return sorted;
     }
     
-    // Original hierarchical flattening logic
+    // Hierarchical flattening logic with proper level assignment
     const flattened: ChecklistItem[] = [];
     
-    const flatten = (item: ChecklistItem) => {
+    const flatten = (item: ChecklistItem, level: number = 0, parentId?: number) => {
+      // Set the level and parent_id for this item
+      const flatItem = { ...item, level, parent_id: parentId };
+      
       // Add the current item
-      flattened.push(item);
+      flattened.push(flatItem);
       
       // If item has children, recursively flatten them
       if ((item as any).children && Array.isArray((item as any).children)) {
-        (item as any).children.forEach((child: ChecklistItem) => flatten(child));
+        (item as any).children.forEach((child: ChecklistItem) => {
+          flatten(child, level + 1, item.id);
+        });
       }
     };
     
-    items.forEach(item => flatten(item));
+    items.forEach(item => flatten(item, 0));
     return flattened;
   }
 
@@ -1585,5 +1593,137 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   getStatusText(progress: ChecklistItemProgress): string {
     if (progress.completed) return 'Completed';
     return 'Pending';
+  }
+
+  /**
+   * Jump to a specific item in the checklist
+   */
+  jumpToItem(step: number, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    
+    // Don't allow jumping in review mode
+    if (this.isReviewMode) {
+      return;
+    }
+    
+    this.currentStep = step;
+    this.updateUrlWithCurrentStep();
+    this.cdr.detectChanges();
+    
+    // Scroll to top of content
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
+   * Get item number for navigation (parent items only)
+   */
+  getItemNumber(progress: ChecklistItemProgress): number {
+    let count = 0;
+    for (const p of this.itemProgress) {
+      if (!p.item.level || p.item.level === 0) {
+        count++;
+        if (p.item.id === progress.item.id) {
+          return count;
+        }
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Get child item number for navigation (e.g., "1.1", "1.2")
+   */
+  getChildItemNumber(progress: ChecklistItemProgress): string {
+    if (!progress.item.parent_id) return '';
+    
+    // Find parent item
+    const parentProgress = this.itemProgress.find(p => 
+      p.item.order_index === progress.item.parent_id
+    );
+    
+    if (!parentProgress) return '';
+    
+    const parentNum = this.getItemNumber(parentProgress);
+    
+    // Count child items before this one with same parent
+    let childCount = 0;
+    for (const p of this.itemProgress) {
+      if (p.item.level === 1 && p.item.parent_id === progress.item.parent_id) {
+        childCount++;
+        if (p.item.id === progress.item.id) {
+          return `${parentNum}.${childCount}`;
+        }
+      }
+    }
+    
+    return '';
+  }
+
+  /**
+   * Toggle navigation item expansion
+   */
+  toggleNavItem(itemId: number | string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    if (this.expandedNavItems.has(itemId)) {
+      this.expandedNavItems.delete(itemId);
+    } else {
+      this.expandedNavItems.add(itemId);
+    }
+  }
+
+  /**
+   * Check if navigation item is expanded
+   */
+  isNavItemExpanded(itemId: number | string): boolean {
+    return this.expandedNavItems.has(itemId);
+  }
+
+  /**
+   * Get child items for a parent in navigation
+   */
+  getNavChildItems(parentProgress: ChecklistItemProgress): ChecklistItemProgress[] {
+    const parentOrderIndex = parentProgress.item.order_index;
+    return this.itemProgress.filter(p => 
+      p.item.level === 1 && p.item.parent_id === parentOrderIndex
+    );
+  }
+
+  /**
+   * Check if item has children
+   */
+  hasNavChildren(progress: ChecklistItemProgress): boolean {
+    return this.getNavChildItems(progress).length > 0;
+  }
+
+  /**
+   * Check if navigation item should be visible (handles parent expansion)
+   */
+  isNavItemVisible(itemIndex: number): boolean {
+    const progress = this.itemProgress[itemIndex];
+    if (!progress) return false;
+
+    const level = progress.item.level || 0;
+
+    // Root items (level 0) are always visible
+    if (level === 0) return true;
+
+    // Find parent item and check if it's expanded
+    for (let i = itemIndex - 1; i >= 0; i--) {
+      const potentialParent = this.itemProgress[i];
+      const parentLevel = potentialParent?.item.level || 0;
+
+      // Found the direct parent (level is 1 less)
+      if (parentLevel === level - 1) {
+        return this.isNavItemExpanded(potentialParent.item.id) && this.isNavItemVisible(i);
+      }
+    }
+
+    return false;
   }
 }

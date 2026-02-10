@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { NgbModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { QuillModule, QuillModules } from 'ngx-quill';
+import Quill from 'quill';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
@@ -40,14 +41,21 @@ interface SampleVideo {
   duration_seconds?: number | null;
 }
 
+interface ItemLink {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule, QuillModule],
   template: `
     <div class="container-fluid">
-      <div class="row justify-content-center">
-        <div class="col-12 col-lg-11 col-xl-10 col-xxl-8">
+      <div class="print-hide">
+        <div class="row">
+          <div class="col-12">
           
           <!-- Breadcrumb Navigation -->
           <nav aria-label="breadcrumb">
@@ -81,6 +89,22 @@ interface SampleVideo {
                 title="Import from PDF or CSV"
                 *ngIf="!editingTemplate">
                 <i class="mdi mdi-file-import me-2"></i>Import
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-info me-3"
+                (click)="openPreviewModal()"
+                title="Preview Template"
+                *ngIf="items.length > 0">
+                <i class="mdi mdi-eye me-2"></i>Preview
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-dark me-3"
+                (click)="printChecklist()"
+                title="Print Template PDF"
+                *ngIf="items.length > 0">
+                <i class="mdi mdi-printer me-2"></i>Print Template
               </button>
               <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                 <i class="mdi mdi-clipboard-edit-outline text-white fs-4"></i>
@@ -130,26 +154,26 @@ interface SampleVideo {
             </div>
           </div>
 
-          <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
-
-          <!-- Main Content -->
-          <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()" class="settings-form" autocomplete="off">
-            
-            <div class="body">
+          <!-- Main Content with Navigation Sidebar -->
+          <div class="row">
+            <!-- Main Form Card -->
+            <div [ngClass]="items.length > 0 ? 'col-12 col-md-8 col-lg-8' : 'col-12'">
+              <div class="card shadow-sm border-0">
+                <div [formGroup]="templateForm">
+                  <div class="card-body p-4">
               
-              <!-- Template Basic Information Section -->
-              <div class="mb-4 pb-4 border-bottom">
-                <div class="mb-3">
-                  <h3 class="h5 mb-1">Template Information</h3>
-                  <p class="text-muted mb-0">
-                    Basic template details and categorization for the checklist.
-                  </p>
-                </div>
+                    <!-- Template Basic Information Section -->
+                    <div class="mb-4 pb-4 border-bottom">
+                      <div class="mb-3">
+                        <h3 class="h5 mb-1">Template Information</h3>
+                        <p class="text-muted mb-0">
+                          Basic template details and categorization for the checklist.
+                        </p>
+                      </div>
 
-                <div class="row">
+                      <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">Template Name</label>
+                    <label class="form-label">Template Name <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" formControlName="name" 
                            placeholder="Enter template name"
                            [ngClass]="{ 'is-invalid': templateForm.get('name')?.invalid && templateForm.get('name')?.touched }">
@@ -163,7 +187,7 @@ interface SampleVideo {
                   </div>
                   
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">Category</label>
+                    <label class="form-label">Category <span class="text-danger">*</span></label>
                     <select class="form-select" formControlName="category"
                             [ngClass]="{ 'is-invalid': templateForm.get('category')?.invalid && templateForm.get('category')?.touched }">
                       <option value="">Select a category</option>
@@ -226,18 +250,18 @@ interface SampleVideo {
 
                 <div class="row">
                   <div class="col-12 mb-3">
-                    <label class="form-label">Description</label>
-                    <div class="border rounded">
+                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                    <div class="border rounded" [ngClass]="{ 'border-danger border-2': templateForm.get('description')?.invalid && templateForm.get('description')?.touched }">
                       <quill-editor 
                         formControlName="description" 
                         [modules]="quillConfig"
+                        (onContentChanged)="onQuillContentChanged($event)"
                         placeholder="Enter template description"
-                        [styles]="{height: '150px'}">
+                        class="quill-auto-height quill-template">
                       </quill-editor>
                     </div>
-                    <div class="form-text">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      Detailed description of what this template covers.
+                    <div class="text-danger small mt-1" *ngIf="templateForm.get('description')?.invalid && templateForm.get('description')?.touched">
+                      Description is required
                     </div>
                   </div>
                 </div>
@@ -265,453 +289,7 @@ interface SampleVideo {
                   </div>
                 </div>
               </div>
-
-              <!-- Checklist Items Section -->
-              <div class="mb-4 pb-4 border-bottom">
-                <div class="mb-3">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <h3 class="h5 mb-1">Checklist Items</h3>
-                      <p class="text-muted mb-0">
-                        Define inspection items and photo requirements for this template.
-                      </p>
-                    </div>
-                    <button type="button" class="btn btn-primary " (click)="addItem()">
-                      <i class="mdi mdi-plus me-2"></i>
-                      Add Item
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Items List -->
-                <div formArrayName="items" cdkDropList (cdkDropListDropped)="dropItem($event)">
-                  <div *ngFor="let item of items.controls; let i = index" 
-                       class="card mb-3" 
-                       [formGroupName]="i" 
-                       [class.ms-4]="item.get('level')?.value === 1"
-                       [class.border-start]="item.get('level')?.value === 1"
-                       [class.border-4]="item.get('level')?.value === 1"
-                       [class.border-primary]="item.get('level')?.value === 1"
-                       cdkDrag>
-                    
-                    <!-- Drag Preview (what you see while dragging) -->
-                    <div class="card drag-preview" *cdkDragPreview>
-                      <div class="card-header bg-light">
-                        <i class="mdi mdi-drag-vertical me-2"></i>
-                        <span *ngIf="item.get('level')?.value === 0">Item {{getItemNumber(i)}}</span>
-                        <span *ngIf="item.get('level')?.value === 1">Sub-item {{getItemNumber(i)}}</span>
-                        : {{item.get('title')?.value || 'Untitled'}}
-                      </div>
-                    </div>
-                    
-                    <!-- Drag Handle and Header -->
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                      <div class="d-flex align-items-center">
-                        <div class="drag-handle me-3" cdkDragHandle title="Drag to reorder">
-                          <i class="mdi mdi-drag-vertical text-muted fs-4"></i>
-                        </div>
-                        <h6 class="mb-0">
-                          <span *ngIf="item.get('level')?.value === 0 || !item.get('level')?.value">
-                            <i class="mdi mdi-file-document-outline me-1"></i>
-                            Item {{getItemNumber(i)}}
-                          </span>
-                          <span *ngIf="item.get('level')?.value === 1" class="text-primary">
-                            <i class="mdi mdi-subdirectory-arrow-right me-1"></i>
-                            Sub-item {{getItemNumber(i)}}
-                          </span>
-                        </h6>
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
-                          <label class="form-check-label" [for]="'required-' + i">
-                            Required
-                          </label>
-                        </div>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-primary" 
-                          (click)="addSubItem(i)"
-                          *ngIf="item.get('level')?.value === 0 || !item.get('level')?.value"
-                          title="Add sub-item below this item">
-                          <i class="mdi mdi-plus me-1"></i>Add Sub-item
-                        </button>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-secondary" 
-                          (click)="promoteToParent(i)"
-                          *ngIf="item.get('level')?.value === 1"
-                          title="Convert to parent item">
-                          <i class="mdi mdi-arrow-up-bold me-1"></i>Promote
-                        </button>
-                        <button 
-                          type="button" 
-                          class="btn btn-sm btn-outline-danger" 
-                          (click)="removeItem(i)"
-                          title="Remove item">
-                          <i class="mdi mdi-delete"></i>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Item Content -->
-                    <div class="card-body">
-                      <div class="row mb-3">
-                        <div class="col-md-8">
-                          <label class="form-label">Title</label>
-                          <input type="text" class="form-control" formControlName="title" placeholder="Enter item title">
-                          <div class="form-text">
-                            <i class="mdi mdi-information-outline me-1"></i>
-                            Clear title describing what needs to be inspected.
-                          </div>
-                        </div>
-                        <div class="col-md-4">
-                          <label class="form-label">Order</label>
-                          <input type="number" class="form-control" formControlName="order_index" min="1">
-                          <div class="form-text">
-                            <i class="mdi mdi-information-outline me-1"></i>
-                            Display order for this item.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <div class="border rounded">
-                          <quill-editor 
-                            formControlName="description" 
-                            [modules]="quillConfig"
-                            placeholder="Enter item description (supports rich text formatting)"
-                            [styles]="{height: '200px'}">
-                          </quill-editor>
-                        </div>
-                        <div class="form-text">
-                          <i class="mdi mdi-information-outline me-1"></i>
-                          Detailed instructions for this inspection item. Rich text formatting is supported.
-                        </div>
-                      </div>
-
-                      <!-- Submission Type Selector (Controls what sections appear) -->
-                      <div class="mb-4 pb-3 border-bottom">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                          <label class="form-label d-block mb-0">
-                            <i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>
-                            <strong>Submission Type</strong>
-                          </label>
-                          <span class="badge" [ngSwitch]="item.get('submission_type')?.value">
-                            <span *ngSwitchCase="'photo'" class="badge bg-primary">
-                              <i class="mdi mdi-camera me-1"></i>Photo Only
-                            </span>
-                            <span *ngSwitchCase="'video'" class="badge bg-success">
-                              <i class="mdi mdi-video me-1"></i>Video Only
-                            </span>
-                            <span *ngSwitchCase="'either'" class="badge bg-info">
-                              <i class="mdi mdi-file-multiple me-1"></i>Photo OR Video
-                            </span>
-                          </span>
-                        </div>
-                        <div class="btn-group w-100 mb-3" role="group">
-                          <input type="radio" class="btn-check" name="submission_type" id="type_photo_{{i}}" value="photo" formControlName="submission_type">
-                          <label class="btn btn-primary" [for]="'type_photo_' + i" [class.active]="item.get('submission_type')?.value === 'photo'">
-                            <i class="mdi mdi-camera me-2"></i>Photo Only
-                          </label>
-
-                          <input type="radio" class="btn-check" name="submission_type" id="type_video_{{i}}" value="video" formControlName="submission_type">
-                          <label class="btn btn-primary" [for]="'type_video_' + i" [class.active]="item.get('submission_type')?.value === 'video'">
-                            <i class="mdi mdi-video me-2"></i>Video Only
-                          </label>
-
-                          <input type="radio" class="btn-check" name="submission_type" id="type_either_{{i}}" value="either" formControlName="submission_type">
-                          <label class="btn btn-primary" [for]="'type_either_' + i" [class.active]="item.get('submission_type')?.value === 'either'">
-                            <i class="mdi mdi-file-multiple me-2"></i>Photo OR Video
-                          </label>
-                        </div>
-                        <div class="form-text">
-                          <i class="mdi mdi-information-outline me-1"></i>
-                          Choose whether users submit a <strong>photo</strong>, <strong>video</strong>, or <strong>either one</strong> (mutually exclusive).
-                        </div>
-                      </div>
-
-                      <!-- PHOTO REQUIREMENTS SECTION -->
-                      <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either')" 
-                           class="mb-4 pb-4 border-bottom">
-                        <div class="d-flex align-items-center mb-3">
-                          <div class="bg-light rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                            <i class="mdi mdi-camera text-primary fs-5"></i>
-                          </div>
-                          <div>
-                            <h5 class="mb-1">Photo Requirements</h5>
-                            <p class="mb-0 text-muted small">Settings for photo-based submissions</p>
-                          </div>
-                        </div>
-
-                        <div formGroupName="photo_requirements">
-                          <!-- Photo Capture Guidelines -->
-                          <div class="row mb-3 p-3 bg-light rounded">
-                            <div class="col-md-3 mb-3">
-                              <label class="form-label">Viewing Angle</label>
-                              <select class="form-select" formControlName="angle">
-                                <option value="">Any Angle</option>
-                                <option value="front">Front View</option>
-                                <option value="back">Back View</option>
-                                <option value="side">Side View</option>
-                                <option value="top">Top View</option>
-                                <option value="bottom">Bottom View</option>
-                                <option value="diagonal">Diagonal View</option>
-                              </select>
-                              <small class="form-text text-muted d-block mt-1">
-                                <i class="mdi mdi-information-outline"></i>
-                                Required viewing angle
-                              </small>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                              <label class="form-label">Capture Distance</label>
-                              <select class="form-select" formControlName="distance">
-                                <option value="">Any Distance</option>
-                                <option value="close">Close-up</option>
-                                <option value="medium">Medium</option>
-                                <option value="far">Wide View</option>
-                              </select>
-                              <small class="form-text text-muted d-block mt-1">
-                                <i class="mdi mdi-information-outline"></i>
-                                Required distance
-                              </small>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                              <label class="form-label">Lighting</label>
-                              <select class="form-select" formControlName="lighting">
-                                <option value="">Any Lighting</option>
-                                <option value="bright">Bright</option>
-                                <option value="normal">Normal</option>
-                                <option value="dim">Dim</option>
-                              </select>
-                              <small class="form-text text-muted d-block mt-1">
-                                <i class="mdi mdi-information-outline"></i>
-                                Lighting conditions
-                              </small>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                              <label class="form-label">Focus Area</label>
-                              <input type="text" class="form-control" formControlName="focus" placeholder="e.g., connector pins">
-                              <small class="form-text text-muted d-block mt-1">
-                                <i class="mdi mdi-information-outline"></i>
-                                Specific focus area
-                              </small>
-                            </div>
-                          </div>
-
-                          <!-- Photo Count Requirements -->
-                          <div class="row mb-3">
-                            <div class="col-md-6">
-                              <label class="form-label">Minimum Photos</label>
-                              <input type="number" class="form-control" formControlName="min_photos" min="0" max="10" placeholder="0">
-                              <small class="form-text text-muted">Minimum required (0 = optional)</small>
-                            </div>
-                            <div class="col-md-6">
-                              <label class="form-label">Maximum Photos</label>
-                              <input type="number" class="form-control" formControlName="max_photos" min="1" max="10" placeholder="10">
-                              <small class="form-text text-muted">Maximum allowed per item</small>
-                            </div>
-                          </div>
-
-                          <!-- Photo Required Toggle -->
-                          <div class="mb-3 p-3 bg-light rounded">
-                            <div class="form-check form-switch">
-                              <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'picture-required-' + i">
-                              <label class="form-check-label" [for]="'picture-required-' + i">
-                                <strong>Picture Required</strong>
-                              </label>
-                            </div>
-                            <small class="form-text text-muted d-block mt-2">
-                              <i class="mdi mdi-lightbulb-on-outline"></i>
-                              When <strong>ON</strong>: Users must take a photo. When <strong>OFF</strong>: Users can confirm without capturing.
-                            </small>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- VIDEO REQUIREMENTS SECTION -->
-                      <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either')" 
-                           class="mb-4 pb-4 border-bottom">
-                        <div class="d-flex align-items-center mb-3">
-                          <div class="bg-light rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                            <i class="mdi mdi-video text-danger fs-5"></i>
-                          </div>
-                          <div>
-                            <h5 class="mb-1">Video Requirements</h5>
-                            <p class="mb-0 text-muted small">Settings for video-based submissions</p>
-                          </div>
-                        </div>
-
-                        <div class="row">
-                          <div class="col-md-6">
-                            <div formGroupName="photo_requirements">
-                              <label class="form-label">Max Video Duration</label>
-                              <input type="number" class="form-control" formControlName="max_video_duration_seconds" min="1" max="600">
-                              <small class="form-text text-muted">Maximum video length in seconds</small>
-                            </div>
-                          </div>
-                          <div class="col-md-6">
-                            <label class="form-label">Submission Time Limit</label>
-                            <input type="number" class="form-control" formControlName="submission_time_seconds" min="0" placeholder="0 for no limit">
-                            <small class="form-text text-muted">Time allowed to submit (seconds)</small>
-                          </div>
-                        </div>
-                      </div>
-
-                        <!-- Primary Sample Image -->
-                        <div class="mb-3">
-                          <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                              <label class="form-label mb-0">Primary Sample Image</label>
-                              <small class="d-block text-muted">The main image users should replicate when taking photos</small>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary" 
-                                    (click)="openPrimarySampleImageUpload(i)"
-                                    [disabled]="uploadingImage">
-                              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(i)" [class.mdi-image-edit]="hasPrimarySampleImage(i)"></i>
-                              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(i) ? 'Replace' : 'Add Sample')}}
-                            </button>
-                          </div>
-                          
-                          <div *ngIf="hasPrimarySampleImage(i)" class="d-flex align-items-center border rounded p-3 bg-light">
-                            <div class="position-relative me-3">
-                              <img [src]="getPrimarySampleImageUrl(i)"
-                                   class="img-thumbnail border-primary"
-                                   style="width: 150px; height: 150px; object-fit: contain; cursor: pointer; background: white; border-width: 3px !important;"
-                                   [alt]="getPrimarySampleImage(i)?.label || 'Primary sample image'"
-                                   (click)="previewSampleImage(i)"
-                                   (error)="onSampleImageError(i)"
-                                   (load)="onSampleImageLoad(i)">
-                              <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1">
-                                Primary
-                              </span>
-                              <button type="button"
-                                      class="btn btn-danger position-absolute top-0 end-0"
-                                      style="transform: translate(50%, -50%); width: 24px; height: 24px; padding: 0; border-radius: 50%;"
-                                      (click)="removePrimarySampleImage(i)">
-                                <i class="mdi mdi-close" style="font-size: 0.8rem;"></i>
-                              </button>
-                            </div>
-                            <div class="flex-grow-1">
-                              <div class="d-flex align-items-start mb-2">
-                                <i class="mdi mdi-target text-primary me-2 mt-1"></i>
-                                <div>
-                                  <strong>Match This Photo</strong>
-                                  <p class="mb-0 text-muted small">Users will compare their captured photo against this image</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div *ngIf="!hasPrimarySampleImage(i)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
-                            <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
-                            <p class="mb-0"><strong>No primary sample image</strong></p>
-                            <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
-                          </div>
-                        </div>
-
-                        <!-- Reference Images -->
-                        <div class="mb-3">
-                          <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                              <label class="form-label mb-0">Reference Images</label>
-                              <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
-                            </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" 
-                                    (click)="openReferenceImageUpload(i)"
-                                    [disabled]="uploadingImage || getReferenceImageCount(i) >= 5">
-                              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
-                              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
-                              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(i)}}/5</span>
-                            </button>
-                          </div>
-                          
-                          <!-- Reference Images Grid -->
-                          <div *ngIf="getReferenceImages(i).length > 0" class="row g-2">
-                            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(i); let refIdx = index">
-                              <div class="position-relative border rounded p-2 bg-white">
-                                <img [src]="refImage.url"
-                                     class="img-thumbnail w-100"
-                                     style="height: 100px; object-fit: cover; cursor: pointer;"
-                                     [alt]="refImage.label || 'Reference image'"
-                                     (click)="previewReferenceImage(i, refIdx)">
-                                <button type="button"
-                                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
-                                        style="transform: translate(25%, -25%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
-                                        (click)="removeReferenceImage(i, refIdx)">
-                                  <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
-                                </button>
-                                <div class="mt-1">
-                                  <input type="text" 
-                                         class="form-control form-control-sm" 
-                                         placeholder="Label (optional)"
-                                         [(ngModel)]="refImage.label"
-                                         [ngModelOptions]="{standalone: true}">
-                                  <select class="form-select form-select-sm mt-1" 
-                                          [(ngModel)]="refImage.image_type"
-                                          [ngModelOptions]="{standalone: true}">
-                                    <option value="reference">Reference</option>
-                                    <option value="defect_example">Defect Example</option>
-                                    <option value="diagram">Diagram</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div *ngIf="getReferenceImages(i).length === 0" class="text-muted text-center py-3 border rounded bg-light">
-                            <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
-                            <p class="mb-0 small">No reference images added</p>
-                          </div>
-                        </div>
-                        <!-- Sample Video -->
-                        <div class="mb-3">
-                          <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                              <label class="form-label mb-0">Sample Video</label>
-                              <small class="d-block text-muted">Optional short video demonstrating required capture (mp4/webm)</small>
-                            </div>
-                            <div>
-                              <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openSampleVideoUpload(i)" [disabled]="uploadingVideo">
-                                <span *ngIf="uploadingVideo" class="spinner-border spinner-border-sm me-1"></span>
-                                <i *ngIf="!uploadingVideo" class="mdi mdi-video-plus"></i>
-                                {{ uploadingVideo ? 'Uploading...' : (hasSampleVideo(i) ? 'Replace Video' : 'Add Video') }}
-                              </button>
-                              <button *ngIf="hasSampleVideo(i)" type="button" class="btn btn-outline-secondary btn-sm" (click)="previewSampleVideo(i)">
-                                <i class="mdi mdi-play-circle me-1"></i>Preview
-                              </button>
-                              <button *ngIf="hasSampleVideo(i)" type="button" class="btn btn-danger btn-sm ms-2" (click)="removeSampleVideo(i)">
-                                <i class="mdi mdi-delete"></i>
-                              </button>
-                            </div>
-                          </div>
-                          <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-white text-center">
-                            <video [src]="getPrimarySampleVideoUrl(i)" controls style="max-height:120px; max-width:220px; object-fit:cover;"></video>
-                          </div>
-                          <div *ngIf="!hasSampleVideo(i)" class="text-muted text-center py-3 border rounded bg-light">
-                            <i class="mdi mdi-video-outline mb-2" style="font-size: 1.5rem;"></i>
-                            <p class="mb-0 small">No sample video added</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                <!-- No Items State -->
-                <div *ngIf="items.length === 0" class="text-center p-5 border rounded bg-light">
-                  <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 3rem;"></i>
-                  <h6 class="text-muted">No Checklist Items</h6>
-                  <p class="text-muted mb-3">Add your first checklist item to get started</p>
-                  <button type="button" class="btn btn-primary" (click)="addItem()">
-                    <i class="mdi mdi-plus me-2"></i>
-                    Add First Item
-                  </button>
-                </div>
-              </div>
-
+              
               <!-- Template Status Section -->
               <div class="mb-4">
                 <div class="mb-3">
@@ -738,27 +316,589 @@ interface SampleVideo {
                 </div>
               </div>
 
-            </div> <!-- end body container -->
-          </form>
+
+              <!-- Checklist Items Section -->
+              <div class="mb-4 pb-4 border-bottom">
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h3 class="h5 mb-1">
+                        Checklist Items
+                        <span *ngIf="selectedFormItemIndex !== null && focusedEditMode" class="badge bg-info ms-2">
+                          Viewing Item {{getOutlineNumber(selectedFormItemIndex)}}
+                        </span>
+                        <span *ngIf="navViewMode === 'groups'" class="badge bg-warning text-dark ms-2">
+                          Groups Only
+                        </span>
+                        <span *ngIf="navViewMode === 'items'" class="badge bg-primary ms-2">
+                          Items Only
+                        </span>
+                      </h3>
+                      <p class="text-muted mb-0">
+                        Define inspection items and photo requirements for this template.
+                      </p>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                      <button *ngIf="selectedFormItemIndex !== null || navViewMode !== 'all'" 
+                              type="button" 
+                              class="btn btn-outline-secondary btn-sm" 
+                              (click)="showAllFormItems()">
+                        <i class="mdi mdi-eye me-1"></i>Show All
+                      </button>
+                      <button type="button" class="btn btn-primary" (click)="addItem()">
+                        <i class="mdi mdi-plus me-2"></i>
+                        Add Item
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Items List -->
+                <div *ngIf="stickyParentIndex !== null" class="sticky-parent-banner">
+                  <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                      <span class="badge bg-warning text-dark flex-shrink-0">Parent</span>
+                      <span class="badge bg-secondary flex-shrink-0">{{ getOutlineNumber(stickyParentIndex!) }}</span>
+                      <span class="text-truncate">
+                        {{ getItemTitle(stickyParentIndex!) }}
+                      </span>
+                      <span class="text-muted flex-shrink-0" *ngIf="getChildCount(stickyParentIndex!) > 0">
+                        ({{ getChildCount(stickyParentIndex!) }} child{{ getChildCount(stickyParentIndex!) !== 1 ? 'ren' : '' }})
+                      </span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0" (click)="scrollToItem(stickyParentIndex!)">
+                      <i class="mdi mdi-arrow-up-bold me-1"></i>Jump to parent
+                    </button>
+                  </div>
+                </div>
+                <div formArrayName="items" cdkDropList (cdkDropListDropped)="dropItem($event)">
+                  <div *ngFor="let item of items.controls; let i = index" 
+                       [id]="'edit-item-' + i"
+                       class="card mb-3" 
+                       [formGroupName]="i" 
+                       [ngStyle]="{'margin-left.rem': (item.get('level')?.value || 0) * 2}"
+                       [class.border-start]="(item.get('level')?.value || 0) > 0"
+                       [class.border-4]="(item.get('level')?.value || 0) > 0"
+                       [class.border-primary]="(item.get('level')?.value || 0) > 0"
+                       [style.display]="isFormItemVisible(i) ? 'block' : 'none'"
+                       cdkDrag>
+                    
+                    <!-- Drag Preview (what you see while dragging) -->
+                    <div class="card drag-preview" *cdkDragPreview>
+                      <div class="card-header bg-light">
+                        <i class="mdi mdi-drag-vertical me-2"></i>
+                        <strong>{{getOutlineNumber(i)}}</strong> {{item.get('title')?.value || 'Untitled'}}
+                      </div>
+                    </div>
+                    
+                    <!-- Drag Handle and Header -->
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                      <div class="d-flex align-items-center">
+                        <div class="drag-handle me-3" cdkDragHandle title="Drag to reorder">
+                          <i class="mdi mdi-drag-vertical text-muted fs-4"></i>
+                        </div>
+                        <h6 class="mb-0">
+                          <span class="badge bg-secondary me-2">{{getOutlineNumber(i)}}</span>
+                          <span [class.text-primary]="(item.get('level')?.value || 0) > 0">
+                            <i class="mdi" [class.mdi-file-document-outline]="(item.get('level')?.value || 0) === 0" [class.mdi-subdirectory-arrow-right]="(item.get('level')?.value || 0) > 0" class="me-1"></i>
+                            {{item.get('title')?.value || 'Untitled'}}
+                          </span>
+                        </h6>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
+                          <label class="form-check-label" [for]="'required-' + i">
+                            Active
+                          </label>
+                        </div>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-primary" 
+                          (click)="addSubItem(i)"
+                          title="Add nested item below this item">
+                          <i class="mdi mdi-plus me-1"></i>Add Sub-item
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-info" 
+                          (click)="demoteItem(i)"
+                          *ngIf="i > 0 && canDemote(i)"
+                          title="Nest under previous item">
+                          <i class="mdi mdi-arrow-right-bold me-1"></i>Indent
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-secondary" 
+                          (click)="promoteItem(i)"
+                          *ngIf="(item.get('level')?.value || 0) > 0"
+                          title="Move up one level">
+                          <i class="mdi mdi-arrow-left-bold me-1"></i>Outdent
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-danger" 
+                          (click)="removeItem(i)"
+                          title="Remove item and all children">
+                          <i class="mdi mdi-delete"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Item Content -->
+                    <div class="card-body">
+                      <div class="row mb-3">
+                        <div class="col-md-12">
+                          <label class="form-label">Title <span class="text-danger">*</span></label>
+                               <input #itemTitleInput type="text" class="form-control" formControlName="title" placeholder="Enter item title"
+                                 [ngClass]="{ 'is-invalid': item.get('title')?.invalid && item.get('title')?.touched }">
+                          <div class="form-text">
+                            <i class="mdi mdi-information-outline me-1"></i>
+                            Clear title describing what needs to be inspected.
+                          </div>
+                          <div class="invalid-feedback" *ngIf="item.get('title')?.invalid && item.get('title')?.touched">
+                            Title is required
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Hidden order field - auto-calculated, not editable -->
+                      <input type="hidden" formControlName="order_index">
+
+                      <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <div class="border rounded" [ngClass]="{ 'border-danger border-2': item.get('description')?.invalid && item.get('description')?.touched }">
+                          <quill-editor 
+                            formControlName="description" 
+                            [modules]="quillConfig"
+                            (onContentChanged)="onQuillContentChanged($event)"
+                            placeholder="Enter item description (supports rich text formatting)"
+                            class="quill-auto-height quill-item">
+                          </quill-editor>
+                        </div>
+                        <div class="text-danger small mt-1" *ngIf="item.get('description')?.invalid && item.get('description')?.touched">
+                          Description is required
+                        </div>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Detailed instructions for this inspection item. Rich text formatting is supported.
+                        </div>
+                      </div>
+
+                      <!-- Links Section (compact, open modal to edit) -->
+                      <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">
+                            <i class="mdi mdi-link-variant me-1"></i>Links
+                          </label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openLinksModal(i)">
+                            <i class="mdi mdi-link-variant-plus me-1"></i>Manage Links
+                            <span class="badge bg-primary ms-2">{{ getLinksFormArray(i).length }}</span>
+                          </button>
+                        </div>
+
+                        <div *ngIf="getLinksFormArray(i).length === 0" class="text-muted small border rounded bg-light p-2">
+                          No links added.
+                        </div>
+
+                        <div *ngIf="getLinksFormArray(i).length > 0" class="small text-muted">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          {{ getLinksFormArray(i).length }} link{{ getLinksFormArray(i).length !== 1 ? 's' : '' }} added.
+                        </div>
+
+                        <div *ngIf="getLinksFormArray(i).length > 0" class="mt-1 d-flex flex-column gap-1">
+                          <a *ngFor="let link of getLinksFormArray(i).value"
+                             class="small text-decoration-none text-primary text-truncate"
+                             [href]="link.url"
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             [title]="link.title || link.url">
+                            <i class="mdi mdi-link-variant me-1"></i>
+                            {{ link.title || link.url }}
+                          </a>
+                        </div>
+                      </div>
+
+                      <!-- Submission Type Selector (Controls what sections appear) -->
+                      <div class="mb-3">
+                        <label class="form-label">
+                          <i class="mdi mdi-checkbox-multiple-marked-circle text-info me-2"></i>
+                          Submission Type
+                        </label>
+                        <select class="form-select" formControlName="submission_type">
+                          <option value="photo">
+                            📷 Photo Only - Users submit photos
+                          </option>
+                          <option value="video">
+                            🎥 Video Only - Users submit videos
+                          </option>
+                          <option value="either">
+                            📁 Photo OR Video - Users choose one (mutually exclusive)
+                          </option>
+                          <option value="none">
+                            🚫 No Media Required - Instruction only
+                          </option>
+                        </select>
+                        <div class="form-text">
+                          <i class="mdi mdi-information-outline me-1"></i>
+                          Determines what type of media users can submit for this item.
+                        </div>
+                      </div>
+
+                        <!-- SAMPLE IMAGES SECTION (only for photo/either submissions) -->
+                        <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either')"
+                          class="mb-3"
+                          [ngClass]="{ 'border border-danger border-2 rounded p-2': (item.get('submission_type')?.value === 'photo' && item.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0) || (item.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0 && !hasSampleVideo(i)) }">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">
+                            <i class="mdi mdi-image-multiple me-1"></i>Sample Images
+                          </label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(i)">
+                            <i class="mdi mdi-cog me-1"></i>Manage Images
+                            <span class="badge bg-primary ms-2">{{getTotalSampleImagesCount(i)}}</span>
+                          </button>
+                        </div>
+                        
+                        <!-- Compact Display -->
+                        <div *ngIf="hasPrimarySampleImage(i) || getReferenceImageCount(i) > 0" class="border rounded p-2 bg-light">
+                          <div class="d-flex gap-2 flex-wrap">
+                            <!-- Primary Image Thumbnail -->
+                            <div *ngIf="hasPrimarySampleImage(i)" class="position-relative">
+                              <img [src]="getPrimarySampleImageUrl(i)"
+                                   class="img-thumbnail"
+                                   style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                   (click)="previewSampleImage(i)">
+                              <span class="badge bg-primary position-absolute top-0 start-0" style="font-size: 0.6rem;">Primary</span>
+                            </div>
+                            <!-- Reference Images Thumbnails -->
+                            <div *ngFor="let refImage of getReferenceImages(i); let refIdx = index" class="position-relative">
+                              <img [src]="getReferenceImageUrl(refImage)"
+                                   class="img-thumbnail"
+                                   style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                   (click)="previewReferenceImage(i, refIdx)">
+                              <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size: 0.6rem;">Ref</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div *ngIf="!hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0" class="text-muted text-center py-2 border rounded bg-white">
+                          <i class="mdi mdi-image-off-outline"></i>
+                          <small class="d-block">No sample images</small>
+                        </div>
+                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'photo' && item.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0">
+                          Sample photo required for Photo submission type.
+                        </div>
+                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0 && !hasSampleVideo(i)">
+                          Add a sample image or sample video.
+                        </div>
+                      </div>
+                      
+                      <!-- SAMPLE VIDEO SECTION (only for video/either submissions) -->
+                        <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either')"
+                          class="mb-3"
+                          [ngClass]="{ 'border border-danger border-2 rounded p-2': (item.get('submission_type')?.value === 'video' && !hasSampleVideo(i)) || (item.get('submission_type')?.value === 'either' && !hasSampleVideo(i) && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0) }">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <label class="form-label mb-0">
+                            <i class="mdi mdi-video me-1"></i>Sample Video
+                          </label>
+                          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleVideoModal(i)">
+                            <i class="mdi mdi-cog me-1"></i>Manage Video
+                          </button>
+                        </div>
+                        
+                        <!-- Compact Display -->
+                        <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-light text-center">
+                          <video [src]="getPrimarySampleVideoUrl(i)" 
+                                 style="max-height: 80px; max-width: 140px; object-fit: cover; cursor: pointer;"
+                                 (click)="previewSampleVideo(i)"></video>
+                          <div class="mt-1">
+                            <small class="text-muted"><i class="mdi mdi-information-outline"></i> Click to preview</small>
+                          </div>
+                        </div>
+                        
+                        <div *ngIf="!hasSampleVideo(i)" class="text-muted text-center py-2 border rounded bg-white">
+                          <i class="mdi mdi-video-off-outline"></i>
+                          <small class="d-block">No sample video</small>
+                        </div>
+                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'video' && !hasSampleVideo(i)">
+                          Sample video required for Video submission type.
+                        </div>
+                        <div class="text-danger small mt-2" *ngIf="item.get('submission_type')?.value === 'either' && !hasSampleVideo(i) && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0">
+                          Add a sample image or sample video.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- No Items State -->
+                <div *ngIf="items.length === 0" class="text-center p-5 border rounded bg-light">
+                  <i class="mdi mdi-clipboard-list-outline text-muted mb-3" style="font-size: 3rem;"></i>
+                  <h6 class="text-muted">No Checklist Items</h6>
+                  <p class="text-muted mb-3">Add your first checklist item to get started</p>
+                  <button type="button" class="btn btn-primary" (click)="addItem()">
+                    <i class="mdi mdi-plus me-2"></i>
+                    Add First Item
+                  </button>
+                </div>
+
+              </div>
+
+                  </div> <!-- end card-body -->
+
+                </div>
+              </div>
+              
+                  <div class="card-footer template-editor-footer bg-light border-top d-flex p-3">
+                    <button type="button" class="btn btn-outline-secondary me-2" [disabled]="saving" (click)="cancel()">
+                      <i class="mdi mdi-close me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-success ms-auto" [disabled]="saving" (click)="saveTemplate()">
+                      @if (saving) {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Saving...
+                      } @else {
+                        <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Save as New Version' : 'Create Template'}}
+                      }
+                    </button>
+                  </div>
             </div>
             
-            <div class="card-footer bg-light border-top d-flex p-3">
-              <button type="button" class="btn btn-outline-secondary me-2" [disabled]="saving" (click)="cancel()">
-                <i class="mdi mdi-close me-1"></i>Cancel
-              </button>
-              <button type="submit" class="btn btn-success ms-auto" [disabled]="!templateForm.valid || saving" (click)="saveTemplate()">
-                @if (saving) {
-                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                  Saving...
-                } @else {
-                  <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Save as New Version' : 'Create Template'}}
-                }
-              </button>
+            <!-- Navigation Sidebar Card -->
+            <div class="col-12 col-md-4 col-lg-4 mt-3 mt-md-0" *ngIf="items.length > 0">
+              <div class="position-sticky" style="top: 66px;">
+                <div class="card shadow-sm border-0">
+                  <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h6 class="mb-0">
+                        <i class="mdi mdi-view-list me-2"></i>Navigation
+                      </h6>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" 
+                                class="btn btn-outline-secondary py-0 px-2" 
+                                (click)="expandAllNav()"
+                                title="Expand All">
+                          <i class="mdi mdi-chevron-down"></i>
+                        </button>
+                        <button type="button" 
+                                class="btn btn-outline-secondary py-0 px-2" 
+                                (click)="collapseAllNav()"
+                                title="Collapse All">
+                          <i class="mdi mdi-chevron-right"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" 
+                             type="checkbox" 
+                             id="focusedEditModeSwitch" 
+                             [(ngModel)]="focusedEditMode"
+                             [ngModelOptions]="{standalone: true}">
+                      <label class="form-check-label" for="focusedEditModeSwitch">
+                        <small><i class="mdi mdi-filter me-1"></i>Focus Mode</small>
+                      </label>
+                    </div>
+
+                    <div class="mt-2">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">
+                          <i class="mdi mdi-magnify"></i>
+                        </span>
+                        <input 
+                          type="text"
+                          class="form-control"
+                          placeholder="Search items..."
+                          [(ngModel)]="navSearchTerm"
+                          (input)="onNavSearchTermChanged()">
+                        <button 
+                          *ngIf="isNavSearchActive()"
+                          type="button"
+                          class="btn btn-outline-secondary"
+                          (click)="clearNavSearch()"
+                          title="Clear search">
+                          <i class="mdi mdi-close"></i>
+                        </button>
+                      </div>
+                      <div *ngIf="isNavSearchActive()" class="mt-1">
+                        <small class="text-muted">
+                          {{ navSearchMatchCount }} match{{ navSearchMatchCount !== 1 ? 'es' : '' }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-body p-0">
+                    <div class="list-group list-group-flush nav-scroll-container"
+                         cdkDropList 
+                         [cdkDropListDisabled]="isNavSearchActive()"
+                         (cdkDropListDropped)="dropNavItem($event)">
+                      <a *ngFor="let item of items.controls; let i = index" 
+                         [id]="'nav-item-' + i"
+                         class="list-group-item list-group-item-action py-2 border-0"
+                         [class.bg-body-secondary]="activeNavItemIndex === i"
+                         [class.border-start]="activeNavItemIndex === i"
+                         [class.border-3]="activeNavItemIndex === i"
+                         [class.border-primary]="activeNavItemIndex === i"
+                         [class.fw-semibold]="activeNavItemIndex === i"
+                         [class.nav-item-match]="isNavItemMatch(i)"
+                         [class.nav-item-invalid]="isNavItemInvalid(i)"
+                         style="cursor: pointer; min-height: 40px;"
+                         [style.display]="isNavItemVisible(i) ? 'block' : 'none'"
+                         [style.padding-left.rem]="0.5"
+                         [style.padding-right.rem]="0.5"
+                         cdkDrag
+                         [cdkDragDisabled]="isNavSearchActive()"
+                         (click)="scrollToItem(i)">
+                        
+                        <!-- Drag preview (what you see while dragging) -->
+                        <div class="d-flex align-items-center gap-1 px-2 py-1 bg-body-secondary border rounded" *cdkDragPreview>
+                          <i class="mdi" 
+                             [class.mdi-folder]="(item.get('level')?.value || 0) === 0"
+                             [class.mdi-file-document-outline]="(item.get('level')?.value || 0) > 0"
+                             [class.text-warning]="(item.get('level')?.value || 0) === 0"
+                             [class.text-muted]="(item.get('level')?.value || 0) > 0"></i>
+                          <span class="badge bg-secondary" style="font-size: 0.65rem;">{{getOutlineNumber(i)}}</span>
+                          <small class="fw-semibold">{{item.get('title')?.value || 'Untitled'}}</small>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-1">
+                          <!-- Drag handle -->
+                          <div class="flex-shrink-0" style="width: 16px;" cdkDragHandle title="Drag to reorder">
+                            <i class="mdi mdi-drag-vertical text-muted" style="font-size: 18px; cursor: grab;"></i>
+                          </div>
+                          
+                          <!-- Indentation spacer based on level -->
+                          <div class="flex-shrink-0" [style.width.px]="(item.get('level')?.value || 0) * 20"></div>
+                          
+                          <!-- Expand/Collapse chevron for parent items -->
+                          <div class="flex-shrink-0" style="width: 18px;">
+                            <i *ngIf="hasChildren(i)" 
+                               class="mdi text-muted"
+                               [class.mdi-chevron-down]="expandedItems.has(i)"
+                               [class.mdi-chevron-right]="!expandedItems.has(i)"
+                               (click)="toggleNavExpansion(i, $event)"
+                               style="cursor: pointer; font-size: 18px;"></i>
+                          </div>
+                          
+                          <!-- Folder/File icon -->
+                          <div class="flex-shrink-0" style="width: 20px;">
+                            <i class="mdi" 
+                               [class.mdi-folder-open]="(item.get('level')?.value || 0) === 0 && expandedItems.has(i)"
+                               [class.mdi-folder]="(item.get('level')?.value || 0) === 0 && !expandedItems.has(i)"
+                               [class.mdi-file-document-outline]="(item.get('level')?.value || 0) > 0"
+                               [class.text-warning]="(item.get('level')?.value || 0) === 0"
+                               [class.text-muted]="(item.get('level')?.value || 0) > 0"
+                               style="font-size: 18px;"></i>
+                          </div>
+                          
+                          <!-- Outline number badge -->
+                          <span class="badge bg-secondary flex-shrink-0 me-1" style="min-width: 42px; font-size: 0.65rem;">
+                            {{getOutlineNumber(i)}}
+                          </span>
+                          
+                          <!-- Item title -->
+                          <div class="flex-grow-1 min-w-0">
+                            <small class="text-truncate d-block" 
+                                   [class.fw-semibold]="(item.get('level')?.value || 0) === 0">
+                              {{item.get('title')?.value || 'Untitled'}}
+                            </small>
+                          </div>
+                          
+                          <!-- Photo indicator badges -->
+                          <div class="flex-shrink-0 d-flex align-items-center gap-1">
+                            <!-- Has sample image -->
+                            <div *ngIf="item.get('submission_type')?.value !== 'none' && hasPrimarySampleImage(i)" class="position-relative">
+                              <img [src]="getPrimarySampleImageUrl(i)" 
+                                   class="rounded border border-success"
+                                   style="width: 28px; height: 28px; object-fit: cover;"
+                                [alt]="'Thumbnail'"
+                                title="Preview image"
+                                (click)="previewNavPrimaryImage(i, $event)">
+                              <i class="mdi mdi-check-circle position-absolute bg-white rounded-circle text-success" 
+                                 style="bottom: -3px; right: -3px; font-size: 12px;"></i>
+                            </div>
+                            <!-- Requires photo but no image -->
+                            <div *ngIf="item.get('submission_type')?.value !== 'none' && !hasPrimarySampleImage(i) && item.get('photo_requirements')?.value?.picture_required">
+                              <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10" 
+                                   style="width: 28px; height: 28px;"
+                                   title="Photo required">
+                                <i class="mdi mdi-camera-outline text-warning" style="font-size: 14px;"></i>
+                              </div>
+                            </div>
+                            <!-- Has video -->
+                            <div *ngIf="item.get('submission_type')?.value !== 'none' && hasSampleVideo(i)" 
+                                 class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10" 
+                                 style="width: 28px; height: 28px;object-fit: cover;"
+                                 title="Preview video"
+                                 (click)="previewNavSampleVideo(i, $event)">
+                              <i class="mdi mdi-video text-info" style="font-size: 14px;"></i>
+                            </div>
+                          </div>
+                          
+                          <!-- Invalid indicator -->
+                          <div class="flex-shrink-0" *ngIf="isNavItemInvalid(i)" title="Item has missing/invalid fields">
+                            <i class="mdi mdi-alert-circle text-danger" style="font-size: 16px;"></i>
+                          </div>
+
+                          <!-- 3-dot dropdown menu -->
+                          <div class="flex-shrink-0 nav-item-actions" ngbDropdown container="body" placement="bottom-end">
+                            <button class="btn btn-sm btn-link text-muted p-0 border-0" 
+                                    ngbDropdownToggle
+                                    (click)="$event.stopPropagation()"
+                                    style="width: 24px; height: 24px; line-height: 1;"
+                                    title="Actions">
+                              <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
+                            </button>
+                            <div ngbDropdownMenu>
+                              <button ngbDropdownItem (click)="editItemOnly(i, $event)">
+                                <i class="mdi mdi-pencil me-2"></i>Edit Item
+                              </button>
+                              <div class="dropdown-divider"></div>
+                              <button ngbDropdownItem (click)="addItemAbove(i, $event)">
+                                <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
+                              </button>
+                              <button ngbDropdownItem (click)="addItemBelow(i, $event)">
+                                <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
+                              </button>
+                              <button ngbDropdownItem (click)="duplicateItem(i, $event)">
+                                <i class="mdi mdi-content-copy me-2"></i>Duplicate
+                              </button>
+                              <div class="dropdown-divider"></div>
+                              <button ngbDropdownItem (click)="moveItemUp(i, $event)" [disabled]="i === 0">
+                                <i class="mdi mdi-chevron-up me-2"></i>Move Up
+                              </button>
+                              <button ngbDropdownItem (click)="moveItemDown(i, $event)" [disabled]="i === items.length - 1">
+                                <i class="mdi mdi-chevron-down me-2"></i>Move Down
+                              </button>
+                              <div class="dropdown-divider"></div>
+                              <button ngbDropdownItem (click)="promoteItem(i)" [disabled]="(item.get('level')?.value || 0) === 0">
+                                <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
+                              </button>
+                              <button ngbDropdownItem (click)="demoteItem(i)" [disabled]="i === 0">
+                                <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
+                              </button>
+                              <div class="dropdown-divider"></div>
+                              <button ngbDropdownItem (click)="deleteItemFromNav(i, $event)" class="text-danger">
+                                <i class="mdi mdi-delete me-2"></i>Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="card-footer bg-light text-center py-2">
+                    <small class="text-muted">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      {{ items.length }} item{{ items.length !== 1 ? 's' : '' }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
-          
-        </div>
-      </div>
     </div>
 
     <!-- Import Modal -->
@@ -885,10 +1025,767 @@ interface SampleVideo {
       </div>
     </ng-template>
 
+    <!-- Sample Images Management Modal -->
+    <ng-template #sampleImagesModalTemplate let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-image-multiple me-2"></i>
+          Manage Sample Images
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Configure the primary sample image and reference images for this checklist item.
+        </p>
+
+        <!-- Primary Sample Image -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <label class="form-label mb-0 fw-bold">Primary Sample Image</label>
+              <small class="d-block text-muted">The main image users should replicate when taking photos</small>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" 
+                    (click)="openPrimarySampleImageUpload(currentModalItemIndex)"
+                    [disabled]="uploadingImage">
+              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              <i *ngIf="!uploadingImage" class="mdi" [class.mdi-plus]="!hasPrimarySampleImage(currentModalItemIndex)" [class.mdi-image-edit]="hasPrimarySampleImage(currentModalItemIndex)"></i>
+              {{uploadingImage ? 'Uploading...' : (hasPrimarySampleImage(currentModalItemIndex) ? 'Replace' : 'Add Sample')}}
+            </button>
+          </div>
+          
+          <div *ngIf="hasPrimarySampleImage(currentModalItemIndex)" class="d-flex align-items-center border rounded p-3 bg-light">
+            <div class="position-relative me-3">
+              <img [src]="getPrimarySampleImageUrl(currentModalItemIndex)"
+                   class="img-thumbnail border-primary"
+                   style="width: 150px; height: 150px; object-fit: contain; cursor: pointer; background: white; border-width: 3px !important;"
+                   [alt]="getPrimarySampleImage(currentModalItemIndex)?.label || 'Primary sample image'"
+                   (click)="previewSampleImage(currentModalItemIndex)"
+                   (error)="onSampleImageError(currentModalItemIndex)"
+                   (load)="onSampleImageLoad(currentModalItemIndex)">
+              <span class="badge bg-primary position-absolute bottom-0 start-50 translate-middle-x mb-1">
+                Primary
+              </span>
+              <button type="button"
+                      class="btn btn-danger position-absolute top-0 end-0"
+                      style="transform: translate(50%, -50%); width: 24px; height: 24px; padding: 0; border-radius: 50%;"
+                      (click)="removePrimarySampleImage(currentModalItemIndex)">
+                <i class="mdi mdi-close" style="font-size: 0.8rem;"></i>
+              </button>
+            </div>
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-start mb-2">
+                <i class="mdi mdi-target text-primary me-2 mt-1"></i>
+                <div>
+                  <strong>Match This Photo</strong>
+                  <p class="mb-0 text-muted small">Users will compare their captured photo against this image</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="!hasPrimarySampleImage(currentModalItemIndex)" class="text-muted text-center py-4 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
+            <i class="mdi mdi-camera-outline text-primary mb-2" style="font-size: 2.5rem;"></i>
+            <p class="mb-0"><strong>No primary sample image</strong></p>
+            <p class="mb-0 small text-muted">Add the main reference photo users should replicate</p>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Reference Images -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <label class="form-label mb-0 fw-bold">Reference Images</label>
+              <small class="d-block text-muted">Additional context images (max 5) - different angles, examples, diagrams</small>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" 
+                    (click)="openReferenceImageUpload(currentModalItemIndex)"
+                    [disabled]="uploadingImage || getReferenceImageCount(currentModalItemIndex) >= 5">
+              <span *ngIf="uploadingImage" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              <i *ngIf="!uploadingImage" class="mdi mdi-plus"></i>
+              {{uploadingImage ? 'Uploading...' : 'Add Reference'}}
+              <span class="badge bg-secondary ms-1">{{getReferenceImageCount(currentModalItemIndex)}}/5</span>
+            </button>
+          </div>
+          
+          <!-- Reference Images Grid -->
+          <div *ngIf="getReferenceImages(currentModalItemIndex).length > 0" class="row g-2">
+            <div class="col-6 col-md-4" *ngFor="let refImage of getReferenceImages(currentModalItemIndex); let refIdx = index">
+              <div class="position-relative border rounded p-2 bg-white">
+                <img [src]="refImage.url"
+                     class="img-thumbnail w-100"
+                     style="height: 100px; object-fit: cover; cursor: pointer;"
+                     [alt]="refImage.label || 'Reference image'"
+                     (click)="previewReferenceImage(currentModalItemIndex, refIdx)">
+                <button type="button"
+                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                        style="transform: translate(25%, -25%); width: 20px; height: 20px; padding: 0; border-radius: 50%;"
+                        (click)="removeReferenceImage(currentModalItemIndex, refIdx)">
+                  <i class="mdi mdi-close" style="font-size: 0.7rem;"></i>
+                </button>
+                <div class="mt-1">
+                  <input type="text" 
+                         class="form-control form-control-sm" 
+                         placeholder="Label (optional)"
+                         [(ngModel)]="refImage.label"
+                         [ngModelOptions]="{standalone: true}">
+                  <select class="form-select form-select-sm mt-1" 
+                          [(ngModel)]="refImage.image_type"
+                          [ngModelOptions]="{standalone: true}">
+                    <option value="reference">Reference</option>
+                    <option value="defect_example">Defect Example</option>
+                    <option value="diagram">Diagram</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div *ngIf="getReferenceImages(currentModalItemIndex).length === 0" class="text-muted text-center py-3 border rounded bg-light">
+            <i class="mdi mdi-image-multiple-outline mb-2" style="font-size: 1.5rem;"></i>
+            <p class="mb-0 small">No reference images added</p>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Photo Requirements -->
+        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex)">
+          <h6 class="mb-3 fw-bold">
+            <i class="mdi mdi-cog me-1"></i>Photo Requirements
+          </h6>
+          
+          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
+            <div formGroupName="photo_requirements">
+            <!-- Photo Capture Guidelines -->
+            <div class="row mb-3 p-3 bg-light rounded">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Viewing Angle</label>
+                <select class="form-select form-select-sm" formControlName="angle">
+                  <option value="">Any Angle</option>
+                  <option value="front">Front View</option>
+                  <option value="back">Back View</option>
+                  <option value="side">Side View</option>
+                  <option value="top">Top View</option>
+                  <option value="bottom">Bottom View</option>
+                  <option value="diagonal">Diagonal View</option>
+                </select>
+                <small class="form-text text-muted">Required viewing angle</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Capture Distance</label>
+                <select class="form-select form-select-sm" formControlName="distance">
+                  <option value="">Any Distance</option>
+                  <option value="close">Close-up</option>
+                  <option value="medium">Medium</option>
+                  <option value="far">Wide View</option>
+                </select>
+                <small class="form-text text-muted">Required distance</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Lighting</label>
+                <select class="form-select form-select-sm" formControlName="lighting">
+                  <option value="">Any Lighting</option>
+                  <option value="bright">Bright</option>
+                  <option value="normal">Normal</option>
+                  <option value="dim">Dim</option>
+                </select>
+                <small class="form-text text-muted">Lighting conditions</small>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Focus Area</label>
+                <input type="text" class="form-control form-control-sm" formControlName="focus" placeholder="e.g., connector pins">
+                <small class="form-text text-muted">Specific focus area</small>
+              </div>
+            </div>
+
+            <!-- Photo Count Requirements -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Minimum Photos</label>
+                <input type="number" class="form-control form-control-sm" formControlName="min_photos" min="0" max="10" placeholder="0">
+                <small class="form-text text-muted">Minimum required (0 = optional)</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Maximum Photos</label>
+                <input type="number" class="form-control form-control-sm" formControlName="max_photos" min="1" max="10" placeholder="10">
+                <small class="form-text text-muted">Maximum allowed per item</small>
+              </div>
+            </div>
+
+            <!-- Photo Required Toggle -->
+            <div class="p-3 bg-light rounded">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" formControlName="picture_required" [id]="'modal-picture-required-' + currentModalItemIndex">
+                <label class="form-check-label" [for]="'modal-picture-required-' + currentModalItemIndex">
+                  <strong>Picture Required</strong>
+                </label>
+              </div>
+              <small class="form-text text-muted d-block mt-2">
+                <i class="mdi mdi-lightbulb-on-outline"></i>
+                When <strong>ON</strong>: Users must take a photo. When <strong>OFF</strong>: Users can confirm without capturing.
+              </small>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Sample Video Management Modal -->
+    <ng-template #sampleVideoModalTemplate let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-video me-2"></i>
+          Manage Sample Video
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Optional short video demonstrating the required capture (mp4/webm)
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <label class="form-label mb-0 fw-bold">Sample Video</label>
+          <div>
+            <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="openSampleVideoUpload(currentModalItemIndex)" [disabled]="uploadingVideo">
+              <span *ngIf="uploadingVideo" class="spinner-border spinner-border-sm me-1"></span>
+              <i *ngIf="!uploadingVideo" class="mdi mdi-video-plus"></i>
+              {{ uploadingVideo ? 'Uploading...' : (hasSampleVideo(currentModalItemIndex) ? 'Replace Video' : 'Add Video') }}
+            </button>
+            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-outline-secondary btn-sm" (click)="previewSampleVideo(currentModalItemIndex)">
+              <i class="mdi mdi-play-circle me-1"></i>Preview
+            </button>
+            <button *ngIf="hasSampleVideo(currentModalItemIndex)" type="button" class="btn btn-danger btn-sm ms-2" (click)="removeSampleVideo(currentModalItemIndex)">
+              <i class="mdi mdi-delete"></i>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="hasSampleVideo(currentModalItemIndex)" class="border rounded p-3 bg-light text-center">
+          <video [src]="getPrimarySampleVideoUrl(currentModalItemIndex)" controls style="max-height:300px; max-width:100%; object-fit:contain;"></video>
+        </div>
+        
+        <div *ngIf="!hasSampleVideo(currentModalItemIndex)" class="text-muted text-center py-5 border-2 border-dashed rounded bg-white" style="border: 2px dashed #dee2e6;">
+          <i class="mdi mdi-video-outline text-primary mb-2" style="font-size: 3rem;"></i>
+          <p class="mb-0"><strong>No sample video</strong></p>
+          <p class="mb-0 small text-muted">Add a short video demonstration</p>
+        </div>
+
+        <hr>
+
+        <!-- Video Requirements -->
+        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex)">
+          <h6 class="mb-3 fw-bold">
+            <i class="mdi mdi-cog me-1"></i>Video Requirements
+          </h6>
+          
+          <div [formGroup]="getItemFormGroup(currentModalItemIndex)!">
+            <div class="row">
+              <div class="col-md-6" formGroupName="photo_requirements">
+                <label class="form-label">Max Video Duration</label>
+                <input type="number" class="form-control form-control-sm" formControlName="max_video_duration_seconds" min="1" max="600">
+                <small class="form-text text-muted">Maximum video length in seconds</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Submission Time Limit</label>
+                <input type="number" class="form-control form-control-sm" formControlName="submission_time_seconds" min="0" placeholder="0 for no limit">
+                <small class="form-text text-muted">Time allowed to submit (seconds)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Links Management Modal -->
+    <ng-template #linksModalTemplate let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-link-variant me-2"></i>
+          Manage Links
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body" *ngIf="currentLinksItemIndex >= 0 && getItemFormGroup(currentLinksItemIndex)">
+        <p class="text-muted mb-3">
+          <i class="mdi mdi-information-outline me-1"></i>
+          Add reference links for this checklist item (specs, drawings, videos, etc.).
+        </p>
+
+        <div [formGroup]="getItemFormGroup(currentLinksItemIndex)!">
+          <div formArrayName="links">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0">
+                Links
+              </label>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addLink(currentLinksItemIndex)">
+                <i class="mdi mdi-plus me-1"></i>Add Link
+              </button>
+            </div>
+
+            <div *ngIf="getLinksFormArray(currentLinksItemIndex).length === 0" class="text-muted small border rounded bg-light p-2">
+              No links added.
+            </div>
+
+            <div class="d-flex flex-column gap-2" *ngIf="getLinksFormArray(currentLinksItemIndex).length > 0">
+              <div *ngFor="let link of getLinksFormArray(currentLinksItemIndex).controls; let linkIndex = index" [formGroupName]="linkIndex" class="border rounded p-2">
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-4">
+                    <label class="form-label mb-1">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" formControlName="title" placeholder="Link title"
+                           [ngClass]="{ 'is-invalid': link.get('title')?.invalid && link.get('title')?.touched }">
+                    <div class="invalid-feedback" *ngIf="link.get('title')?.invalid && link.get('title')?.touched">
+                      Title is required
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label mb-1">URL <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control" formControlName="url" placeholder="https://example.com"
+                           [ngClass]="{ 'is-invalid': link.get('url')?.invalid && link.get('url')?.touched }">
+                    <div class="invalid-feedback" *ngIf="link.get('url')?.invalid && link.get('url')?.touched">
+                      URL is required
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label mb-1">Description</label>
+                    <input type="text" class="form-control" formControlName="description" placeholder="Optional description">
+                  </div>
+                  <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100" (click)="removeLink(currentLinksItemIndex, linkIndex)" title="Remove link">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="modal.close()">
+          <i class="mdi mdi-check me-1"></i>Done
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Preview Modal -->
+    <ng-template #previewModal let-modal>
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">
+          <i class="mdi mdi-eye me-2"></i>Checklist Preview
+          <span class="badge bg-info ms-2">{{templateForm.get('name')?.value || 'Untitled Template'}}</span>
+        </h5>
+        <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+      </div>
+      <div class="modal-body p-0" style="max-height: 70vh; overflow: hidden;">
+        <div class="row g-0 h-100">
+          <!-- Main Content Area -->
+          <div class="col-md-9 pe-3" style="max-height: 70vh; overflow-y: auto; padding: 1rem;" #previewContent>
+            <!-- Template Info Banner -->
+            <div class="alert alert-info mb-4">
+              <div class="row">
+                <div class="col-md-6">
+                  <strong>Category:</strong> {{templateForm.get('category')?.value | titlecase}}<br>
+                  <strong>Part Number:</strong> {{templateForm.get('part_number')?.value || 'N/A'}}
+                </div>
+                <div class="col-md-6">
+                  <strong>Product Type:</strong> {{templateForm.get('product_type')?.value || 'N/A'}}<br>
+                  <strong>Total Items:</strong> {{items.length}}
+                </div>
+              </div>
+              
+              <!-- Quick Stats -->
+              <div class="border-top mt-3 pt-3">
+                <div class="row small">
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-checkbox-marked-circle text-danger me-1"></i>
+                    <strong>{{getRequiredItemsCount()}}</strong> Required
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-camera text-primary me-1"></i>
+                    <strong>{{getPhotoItemsCount()}}</strong> Photo
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-video text-success me-1"></i>
+                    <strong>{{getVideoItemsCount()}}</strong> Video
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <i class="mdi mdi-image-multiple text-info me-1"></i>
+                    <strong>{{getItemsWithMediaCount()}}</strong> With Media
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Checklist Items Preview -->
+            <div *ngFor="let item of items.controls; let i = index" class="mb-3" [id]="'preview-item-' + i">
+              <div class="card border" 
+               [class.border-primary]="item.get('level')?.value === 0"
+               [class.border-secondary]="item.get('level')?.value > 0"
+               [style.margin-left.rem]="(item.get('level')?.value || 0) * 1.5">
+            <div class="card-body p-3">
+              <!-- Item Header -->
+              <div class="d-flex align-items-start mb-2">
+                <span class="badge bg-secondary me-2" style="min-width: 50px; font-size: 0.9rem;">
+                  {{getOutlineNumber(i)}}
+                </span>
+                <div class="flex-grow-1">
+                  <h6 class="mb-1" [class.fw-bold]="item.get('level')?.value === 0">
+                    {{item.get('title')?.value}}
+                    <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-2">Active</span>
+                  </h6>
+                  
+                  <!-- Description (plain text, no rich editor) -->
+                  <div *ngIf="item.get('description')?.value" 
+                       class="text-muted small mb-2"
+                       [innerHTML]="item.get('description')?.value">
+                  </div>
+
+                  <!-- Links Preview -->
+                  <div *ngIf="getLinksFormArray(i).length > 0" class="mb-2">
+                    <small class="text-muted d-block mb-1">
+                      <i class="mdi mdi-link-variant me-1"></i>Links
+                    </small>
+                    <div class="list-group list-group-flush">
+                      <a *ngFor="let link of getLinksFormArray(i).value"
+                         class="list-group-item list-group-item-action px-0 py-1"
+                         [href]="link.url"
+                         target="_blank"
+                         rel="noopener noreferrer">
+                        <div class="fw-semibold text-truncate">{{ link.title || link.url }}</div>
+                        <div class="small text-muted" *ngIf="link.description">{{ link.description }}</div>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Submission Type Badge -->
+                  <div class="mb-2">
+                    <span class="badge" [ngSwitch]="item.get('submission_type')?.value">
+                      <span *ngSwitchCase="'photo'" class="badge bg-primary">
+                        <i class="mdi mdi-camera me-1"></i>Photo
+                      </span>
+                      <span *ngSwitchCase="'video'" class="badge bg-success">
+                        <i class="mdi mdi-video me-1"></i>Video
+                      </span>
+                      <span *ngSwitchCase="'either'" class="badge bg-info">
+                        <i class="mdi mdi-file-multiple me-1"></i>Photo/Video
+                      </span>
+                      <span *ngSwitchCase="'none'" class="badge bg-secondary">
+                        <i class="mdi mdi-cancel me-1"></i>No Media
+                      </span>
+                    </span>
+                  </div>
+
+                  <!-- Sample Images Preview (improved layout) -->
+                  <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either') && getSampleImagesArray(i).length > 0">
+                    <!-- Primary Sample Image - Large, floated right -->
+                    <div *ngFor="let img of getSampleImagesArray(i)">
+                      <div *ngIf="img.is_primary" class="float-end ms-3 mb-2">
+                        <div class="text-center">
+                          <img [src]="img.url" 
+                               class="rounded border border-primary shadow-sm" 
+                               style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
+                               [title]="img.label || 'Primary Sample Image'"
+                               (click)="openImagePreview(img.url)">
+                          <div class="small text-muted mt-1">
+                            <i class="mdi mdi-star text-warning me-1"></i>Primary Sample
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Reference Images - Small thumbnails -->
+                    <div class="mb-2">
+                      <small class="text-muted d-block mb-2">
+                        <i class="mdi mdi-image-multiple me-1"></i>Reference Images:
+                      </small>
+                      <div class="d-flex flex-wrap gap-2">
+                        <div *ngFor="let img of getSampleImagesArray(i)" class="text-center">
+                          <img *ngIf="!img.is_primary"
+                               [src]="img.url" 
+                               class="rounded border" 
+                               style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                               [title]="img.label || 'Reference Image'"
+                               (click)="openImagePreview(img.url)">
+                          <div *ngIf="!img.is_primary" class="small text-muted" style="font-size: 0.7rem; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{img.label || 'Reference'}}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="clearfix"></div>
+                    
+                    <!-- Photo Requirements -->
+                    <div class="small text-muted mt-2">
+                      <i class="mdi mdi-cog me-1"></i>
+                      Min: {{item.get('photo_requirements.min_photos')?.value || 1}}, 
+                      Max: {{item.get('photo_requirements.max_photos')?.value || 5}}
+                      <span *ngIf="item.get('photo_requirements.angle')?.value">
+                        | Angle: {{item.get('photo_requirements.angle')?.value}}
+                      </span>
+                      <span *ngIf="item.get('photo_requirements.distance')?.value">
+                        | Distance: {{item.get('photo_requirements.distance')?.value}}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Sample Videos Preview -->
+                  <div *ngIf="(item.get('submission_type')?.value === 'video' || item.get('submission_type')?.value === 'either') && getSampleVideosArray(i).length > 0">
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                      <small class="text-muted me-2">
+                        <i class="mdi mdi-video me-1"></i>Sample Videos:
+                      </small>
+                      <video *ngFor="let vid of getSampleVideosArray(i)" 
+                             [src]="vid.url" 
+                             class="rounded border" 
+                             style="width: 80px; height: 50px; object-fit: cover;">
+                      </video>
+                    </div>
+                    
+                    <!-- Video Requirements -->
+                    <div class="small text-muted" *ngIf="item.get('photo_requirements.max_video_duration_seconds')?.value">
+                      <i class="mdi mdi-clock-outline me-1"></i>
+                      Max Duration: {{item.get('photo_requirements.max_video_duration_seconds')?.value}}s
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+            <!-- Empty State -->
+            <div *ngIf="items.length === 0" class="text-center text-muted py-5">
+              <i class="mdi mdi-clipboard-text-outline" style="font-size: 4rem;"></i>
+              <p class="mt-3">No items to preview</p>
+            </div>
+          </div>
+
+          <!-- Navigation Sidebar -->
+          <div class="col-md-3 border-start bg-light" style="max-height: 70vh; overflow-y: auto;">
+            <div class="p-3">
+              <h6 class="text-muted mb-3">
+                <i class="mdi mdi-map-marker-path me-1"></i>Navigation
+              </h6>
+
+              <!-- Navigation Items -->
+              <div class="nav flex-column">
+                <a *ngFor="let item of items.controls; let i = index"
+                   class="nav-link py-2 px-2 text-start border-bottom"
+                   [class.fw-bold]="item.get('level')?.value === 0"
+                   [class.text-primary]="item.get('level')?.value === 0"
+                   [class.text-secondary]="item.get('level')?.value > 0"
+                   [style.padding-left.rem]="0.5 + (item.get('level')?.value || 0) * 0.75"
+                   [style.font-size.rem]="item.get('level')?.value === 0 ? 0.9 : 0.85"
+                   (click)="scrollToPreviewItem(i)"
+                   style="cursor: pointer; transition: all 0.2s;"
+                   onmouseover="this.style.backgroundColor='rgba(13, 110, 253, 0.1)'"
+                   onmouseout="this.style.backgroundColor='transparent'">
+                  <span class="badge bg-secondary me-2" style="font-size: 0.7rem; min-width: 40px;">
+                    {{getOutlineNumber(i)}}
+                  </span>
+                  <span class="text-truncate d-inline-block" style="max-width: 150px;" [title]="item.get('title')?.value">
+                    {{item.get('title')?.value}}
+                  </span>
+                  <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-1" style="font-size: 0.6rem;">
+                    Active
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+          <i class="mdi mdi-close me-1"></i>Close
+        </button>
+        <button type="button" class="btn btn-primary" (click)="modal.dismiss(); saveTemplate()">
+          <i class="mdi mdi-content-save me-1"></i>Save Template
+        </button>
+      </div>
+    </ng-template>
+
     <!-- Sample Image Upload Modal (keeping existing modal for now) -->
     <!-- Add your existing modal templates here -->
+
+      </div>
+
+    <!-- Print-Only Professional PDF Layout -->
+    <div class="print-only">
+      <div class="print-header d-flex justify-content-between align-items-end">
+        <div>
+          <div class="title">Checklist Template</div>
+          <div class="print-muted">{{ templateForm.get('name')?.value || 'Untitled Template' }}</div>
+        </div>
+        <div class="text-end print-meta">
+          <div>Version: {{ editingTemplate?.version || 'New' }}</div>
+          <div>Date: {{ today | date:'mediumDate' }}</div>
+        </div>
+      </div>
+
+      <div class="print-section-title">Template Details</div>
+      <div class="row g-2 print-meta">
+        <div class="col-6">Category: {{ templateForm.get('category')?.value | titlecase }}</div>
+        <div class="col-6">Product Type: {{ templateForm.get('product_type')?.value || 'N/A' }}</div>
+        <div class="col-6">Part Number: {{ templateForm.get('part_number')?.value || 'N/A' }}</div>
+        <div class="col-6" *ngIf="editingTemplate?.quality_document_metadata">
+          Doc: {{ editingTemplate?.quality_document_metadata?.document_number }} Rev {{ editingTemplate?.quality_document_metadata?.revision_number }}
+        </div>
+      </div>
+
+      <div class="print-section-title">Template Items</div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 18%">Item</th>
+            <th>Description</th>
+            <th style="width: 10%">Type</th>
+            <th style="width: 10%">Required</th>
+            <th style="width: 20%">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items.controls; let i = index">
+            <td>
+              <div><strong>{{ getOutlineNumber(i) }}.</strong></div>
+              <div>{{ item.get('title')?.value || 'Untitled' }}</div>
+            </td>
+            <td [innerHTML]="item.get('description')?.value"></td>
+            <td>{{ item.get('submission_type')?.value | titlecase }}</td>
+            <td>{{ item.get('is_required')?.value ? 'Yes' : 'No' }}</td>
+            <td>
+              <div class="print-field-line"></div>
+              <div class="print-field-line"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    </div>
   `,
   styles: [`
+    .print-only {
+      display: none;
+    }
+
+    .print-header {
+      border-bottom: 2px solid #1e3a8a;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    .print-header .title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .print-meta {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .print-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #1f2937;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 4px;
+      margin: 14px 0 8px;
+    }
+
+    .print-field-line {
+      border-bottom: 1px solid #9ca3af;
+      height: 18px;
+    }
+
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .print-table th,
+    .print-table td {
+      border: 1px solid #d1d5db;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    .print-table th {
+      background: #f3f4f6;
+      font-weight: 700;
+    }
+
+    .print-checkbox {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #6b7280;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .print-muted {
+      color: #6b7280;
+      font-size: 11px;
+    }
+
+    @media print {
+      .print-hide {
+        display: none !important;
+      }
+
+      .print-only {
+        display: block !important;
+      }
+
+      @page {
+        margin: 0.5in;
+      }
+    }
+
+    /* Sticky Footer for Template Editor */
+    .template-editor-card {
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 180px);
+    }
+    
+    .template-editor-body {
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 20px;
+    }
+    
+    .template-editor-footer {
+      position: sticky !important;
+      bottom: 0;
+      z-index: 1040;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    
     .drag-handle {
       cursor: move;
       cursor: grab;
@@ -952,30 +1849,145 @@ interface SampleVideo {
     .cdk-drag-placeholder + .card:not([class*="ms-4"]) {
       border-top: 3px solid #198754;
     }
+    
+    /* Hide 3-dot menu by default, show on hover */
+    .nav-item-actions {
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+    }
+    
+    .list-group-item:hover .nav-item-actions {
+      opacity: 1;
+    }
+    
+    /* Hide NgBootstrap dropdown caret */
+    .nav-item-actions [ngbDropdownToggle]::after {
+      display: none !important;
+    }
+
+    /* Navigation: fit to viewport (sticky top is ~66px) */
+    .nav-scroll-container {
+      max-height: calc(100vh - 253px);
+      overflow-y: auto;
+    }
+
+    /* Navigation search highlighting */
+    .list-group-item.nav-item-match {
+      background-color: rgba(255, 193, 7, 0.12);
+    }
+
+    .list-group-item.nav-item-match:hover {
+      background-color: rgba(255, 193, 7, 0.18);
+    }
+
+    .list-group-item.nav-item-invalid {
+      border-left: 3px solid #dc3545 !important;
+      background-color: rgba(220, 53, 69, 0.18) !important;
+    }
+
+    .list-group-item.nav-item-invalid:hover,
+    .list-group-item.nav-item-invalid:focus,
+    .list-group-item.nav-item-invalid:active,
+    .list-group-item.nav-item-invalid.bg-body-secondary {
+      background-color: rgba(220, 53, 69, 0.18) !important;
+    }
+
+    /* Main editor: sticky parent banner while scrolling through children */
+    .sticky-parent-banner {
+      position: sticky;
+      top: 66px;
+      z-index: 5;
+      background: rgba(248, 249, 250, 0.98);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      margin: 0.25rem 0 0.75rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Quill auto-height editors */
+    :host ::ng-deep .quill-auto-height .ql-container {
+      height: auto;
+    }
+
+    :host ::ng-deep .quill-auto-height .ql-editor {
+      overflow: visible;
+    }
+
+    :host ::ng-deep .quill-template .ql-editor {
+      min-height: 120px;
+    }
+
+    :host ::ng-deep .quill-item .ql-editor {
+      min-height: 200px;
+    }
   `]
 })
-export class ChecklistTemplateEditorComponent implements OnInit {
+export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
   @ViewChild('imagePreviewModal') imagePreviewModalRef!: TemplateRef<any>;
   @ViewChild('videoPreviewModal') videoPreviewModalRef!: TemplateRef<any>;
-  
+  @ViewChild('previewModal') previewModalRef!: TemplateRef<any>;
+  @ViewChild('linksModalTemplate') linksModalTemplate: any;
+  @ViewChildren('itemTitleInput') itemTitleInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
   templateForm: FormGroup;
   editingTemplate: ChecklistTemplate | null = null;
   saving = false;
   loading = false;
   uploadingImage = false;
   selectedQualityDocument: QualityDocumentSelection | null = null;
-  
+  today = new Date();
+
+  private static quillFileProtocolEnabled = false;
+  private applyingAutoLinks = false;
+
   // Import functionality
   importing = false;
   importError: string | null = null;
   importManualName = '';
   importManualItemCount = 5;
-  
+
   // Sample image management - single image per item
   sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null } = {};
   sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null } = {};
-  
+  currentModalItemIndex: number = -1;
+  currentLinksItemIndex: number = -1;
+
+  // Navigation tree expansion state
+  expandedItems: Set<number> = new Set<number>();
+
+  // Navigation search/filter
+  navSearchTerm = '';
+  navSearchMatchCount = 0;
+  private navSearchMatchedIndices = new Set<number>();
+  private navSearchVisibleIndices = new Set<number>();
+  private savedExpandedItemsBeforeSearch: Set<number> | null = null;
+  private lastNormalizedSearchTerm = '';
+
+  // Navigation view mode
+  navViewMode: 'all' | 'groups' | 'items' = 'all';
+
+  // Selected item for focused editing (null means show all)
+  selectedFormItemIndex: number | null = null;
+
+  // Focused edit mode toggle - when true, clicking items shows only that item; when false, just scrolls
+  focusedEditMode: boolean = false;
+
+  // Active item tracking for scroll highlighting
+  activeNavItemIndex: number = -1;
+  stickyParentIndex: number | null = null;
+  private scrollCheckTimeout: any = null;
+  private boundScrollHandler: (() => void) | null = null;
+  private activeItemObserver: IntersectionObserver | null = null;
+  private visibleItemEntries: Map<number, IntersectionObserverEntry> = new Map();
+  private scheduledFallbackCheck = false;
+
+  // Modal template references
+  @ViewChild('sampleImagesModalTemplate') sampleImagesModalTemplate: any;
+  @ViewChild('sampleVideoModalTemplate') sampleVideoModalTemplate: any;
+
   // Image preview
   previewImageUrl: string | null = null;
   // Video preview
@@ -983,18 +1995,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   // Video upload state
   uploadingVideo = false;
-  
+
   // Auto-save functionality
   autoSaveEnabled = false;
   lastSavedAt: Date | null = null;
   private autoSaveTimeout: any = null;
-  
+
   // Quill editor configuration
   quillConfig: QuillModules = {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'indent': '-1' }, { 'indent': '+1' }],
       [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
       [{ 'color': [] }, { 'background': [] }],
       [{ 'align': [] }],
@@ -1017,7 +2029,123 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     private wordParser: WordParserService,
     private sanitizer: DomSanitizer
   ) {
+    this.ensureQuillFileLinksEnabled();
     this.templateForm = this.createTemplateForm();
+  }
+
+  printChecklist(): void {
+    window.print();
+  }
+
+  private ensureQuillFileLinksEnabled(): void {
+    if (ChecklistTemplateEditorComponent.quillFileProtocolEnabled) {
+      return;
+    }
+
+    try {
+      const Link = (Quill as any).import('formats/link');
+      if (Link?.PROTOCOL_WHITELIST && Array.isArray(Link.PROTOCOL_WHITELIST)) {
+        if (!Link.PROTOCOL_WHITELIST.includes('file')) {
+          Link.PROTOCOL_WHITELIST.push('file');
+          (Quill as any).register(Link, true);
+        }
+        ChecklistTemplateEditorComponent.quillFileProtocolEnabled = true;
+      }
+    } catch {
+      // If Quill internals change or aren't available, just skip the whitelist patch.
+    }
+  }
+
+  onQuillContentChanged(event: any): void {
+    const editor = event?.editor;
+    const source = event?.source;
+    if (!editor || source !== 'user' || this.applyingAutoLinks) {
+      return;
+    }
+
+    const text: string = editor.getText?.() ?? '';
+    if (!text || (!text.includes('\\') && !text.toLowerCase().includes('http') && !/\b[A-Z]:\\/.test(text))) {
+      return;
+    }
+
+    const matches = this.findAutoLinkMatches(text);
+    if (matches.length === 0) {
+      return;
+    }
+
+    this.applyingAutoLinks = true;
+    try {
+      for (const match of matches) {
+        const existing = editor.getFormat?.(match.index, match.length);
+        if (existing?.link) {
+          continue;
+        }
+        editor.formatText(match.index, match.length, 'link', match.href, 'silent');
+      }
+    } finally {
+      this.applyingAutoLinks = false;
+    }
+  }
+
+  private findAutoLinkMatches(text: string): Array<{ index: number; length: number; href: string }> {
+    const results: Array<{ index: number; length: number; href: string }> = [];
+
+    const add = (index: number, raw: string, href: string) => {
+      let value = raw;
+      while (value.length > 0 && /[\s\]\)\}\.,;:!?]+$/.test(value)) {
+        value = value.replace(/[\s\]\)\}\.,;:!?]+$/, '');
+      }
+      if (!value) {
+        return;
+      }
+      results.push({ index, length: value.length, href });
+    };
+
+    // http/https URLs
+    const httpRegex = /\bhttps?:\/\/[^\s<]+/gi;
+    let m: RegExpExecArray | null;
+    while ((m = httpRegex.exec(text)) !== null) {
+      add(m.index, m[0], m[0]);
+    }
+
+    // www.* URLs -> https://www.*
+    const wwwRegex = /\bwww\.[^\s<]+/gi;
+    while ((m = wwwRegex.exec(text)) !== null) {
+      add(m.index, m[0], `https://${m[0]}`);
+    }
+
+    // Windows drive paths (link to file:///)
+    const drivePathRegex = /\b[A-Z]:\\[^\n\r<>]+/g;
+    while ((m = drivePathRegex.exec(text)) !== null) {
+      const raw = m[0];
+      const normalized = raw.replace(/\\/g, '/');
+      const href = encodeURI(`file:///${normalized}`);
+      add(m.index, raw, href);
+    }
+
+    // UNC paths (e.g. \\server\share\folder\file)
+    const uncRegex = /\\\\[^\n\r<>]+/g;
+    while ((m = uncRegex.exec(text)) !== null) {
+      const raw = m[0];
+      const uncNoPrefix = raw.replace(/^\\\\/, '');
+      const normalized = uncNoPrefix.replace(/\\/g, '/');
+      const href = encodeURI(`file://${normalized}`);
+      add(m.index, raw, href);
+    }
+
+    // Prefer longer matches first to avoid partial overlaps.
+    results.sort((a, b) => (b.length - a.length) || (a.index - b.index));
+
+    // Drop overlaps.
+    const filtered: typeof results = [];
+    for (const r of results) {
+      const overlaps = filtered.some(f => !(r.index + r.length <= f.index || f.index + f.length <= r.index));
+      if (!overlaps) {
+        filtered.push(r);
+      }
+    }
+    filtered.sort((a, b) => a.index - b.index);
+    return filtered;
   }
 
   ngOnInit(): void {
@@ -1025,7 +2153,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (templateId) {
       this.loadTemplate(parseInt(templateId));
     }
-    
+
+    // Expand all parent items by default in navigation
+    this.initializeNavExpansion();
+
     // Enable auto-save after form changes (with 3 second debounce)
     this.templateForm.valueChanges.subscribe(() => {
       if (this.autoSaveEnabled && this.editingTemplate) {
@@ -1034,11 +2165,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.refreshActiveItemTracking();
+    // Ensure initial highlight is correct
+    this.checkActiveItem();
+  }
+
   createTemplateForm(): FormGroup {
     return this.fb.group({
       name: ['', Validators.required],
       category: ['', Validators.required],
-      description: [''],
+      description: ['', Validators.required],
       // Optional override (MB) for maximum upload size when editing this template
       max_upload_size_mb: [null],
       // When true, disable max upload size checks for this template (use with caution)
@@ -1084,10 +2221,24 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     return this.templateForm.get('items') as FormArray;
   }
 
+  getItemFormGroup(index: number): FormGroup | null {
+    if (index < 0 || index >= this.items.length) {
+      return null;
+    }
+    return this.items.at(index) as FormGroup;
+  }
+
   loadTemplate(id: number): void {
     this.loading = true;
     this.configService.getTemplate(id).subscribe({
       next: (template) => {
+        if (!template) {
+          console.error('Template not found');
+          alert('Template not found. Redirecting to template manager.');
+          this.router.navigate(['/quality/template-manager']);
+          this.loading = false;
+          return;
+        }
         this.editingTemplate = template;
         this.populateForm(template);
         this.loading = false;
@@ -1095,12 +2246,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       error: (error) => {
         console.error('Error loading template:', error);
         this.loading = false;
-        // Handle error - maybe redirect back to template manager
+        alert('Error loading template: ' + (error.message || 'Unknown error'));
+        this.router.navigate(['/quality/template-manager']);
       }
     });
   }
 
   populateForm(template: ChecklistTemplate): void {
+    if (!template) {
+      console.error('populateForm called with null template');
+      return;
+    }
+
     this.templateForm.patchValue({
       name: template.name,
       category: template.category,
@@ -1126,25 +2283,14 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     }
     this.sampleImages = {};
 
-    // Flatten items if backend returns nested structure (children inside parents)
-    let flattenedItems: any[] = [];
-    if (template.items) {
-      template.items.forEach((item: any) => {
-        flattenedItems.push(item);
-        // If item has children array, flatten them into main array
-        if (item.children && Array.isArray(item.children)) {
-          item.children.forEach((child: any) => {
-            flattenedItems.push(child);
-          });
-        }
-      });
-    }
+    // Recursively flatten nested items structure to flat list
+    const flattenedItems = this.flattenNestedItems(template.items || []);
 
     // Add template items and their sample images
     if (flattenedItems.length > 0) {
       flattenedItems.forEach((item, index) => {
         this.items.push(this.createItemFormGroup(item));
-        
+
         // Load sample images - handle both array format and single URL
         if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
           // Array format: Load all images (primary + references)
@@ -1159,9 +2305,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
             order_index: img.order_index || imgIndex,
             status: 'loaded' as const
           }));
-          
+
           this.sampleImages[index] = loadedImages;
-          
+
           // Update the form control with all images
           const itemFormGroup = this.items.at(index) as FormGroup;
           if (itemFormGroup) {
@@ -1195,7 +2341,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
             order_index: 0,
             status: 'loaded' as const
           };
-          
+
           // Update the form control with the loaded sample image URL
           const itemFormGroup = this.items.at(index) as FormGroup;
           if (itemFormGroup) {
@@ -1219,17 +2365,63 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         }
       });
     }
+
+    // Recalculate order indices to ensure correct outline numbering display
+    this.recalculateOrderIndices();
+
+    // Reinitialize navigation + tracking after loading items
+    this.expandedItems.clear();
+    this.initializeNavExpansion();
+    this.updateNavSearchSets();
+    this.cdr.detectChanges();
+    setTimeout(() => this.refreshActiveItemTracking());
+  }
+
+  /**
+   * Recursively flatten nested items structure to flat array
+   * Converts children arrays to flat list with level/parent_id preserved
+   * @param items Nested items array (may contain children arrays)
+   * @param level Current nesting level (0 for root)
+   * @param parentId Parent item's database ID
+   * @returns Flat array of items in display order
+   */
+  private flattenNestedItems(items: any[], level: number = 0, parentId: number | null = null): any[] {
+    const result: any[] = [];
+
+    items.forEach(item => {
+      // Add current item with level/parent_id metadata
+      const flatItem = {
+        ...item,
+        level: level,
+        parent_id: parentId
+      };
+
+      // Remove children array from the item itself (we'll flatten it)
+      const children = flatItem.children;
+      delete flatItem.children;
+
+      result.push(flatItem);
+
+      // Recursively flatten children
+      if (children && Array.isArray(children) && children.length > 0) {
+        const flattenedChildren = this.flattenNestedItems(children, level + 1, item.id);
+        result.push(...flattenedChildren);
+      }
+    });
+
+    return result;
   }
 
   createItemFormGroup(item?: ChecklistItem): FormGroup {
     return this.fb.group({
       id: [item?.id || null], // Include ID for change detection
       title: [item?.title || '', Validators.required],
-      description: [item?.description || ''],
+      description: [item?.description || '', Validators.required],
       is_required: [item?.is_required || false],
       order_index: [item?.order_index || this.items.length + 1],
       // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
       submission_type: [(item as any)?.submission_type || 'photo'],
+      links: this.buildLinksFormArray((item as any)?.links || []),
       photo_requirements: this.fb.group({
         angle: [(item as any)?.photo_requirements?.angle || ''],
         distance: [(item as any)?.photo_requirements?.distance || ''],
@@ -1256,18 +2448,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    */
   private addItemToForm(item: any, formIndex: number, parentId?: number): void {
     const itemGroup = this.createItemFormGroup();
-    
+
     // Determine sample image URL
     let sampleImageUrl: string | null = null;
     let hasImages = false;
-    
+
     // Check if item has sample_images array (from PDF/Word import)
     if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
       hasImages = true;
       // Use the first (or primary) image
       const primaryImage = item.sample_images.find((img: any) => img.is_primary) || item.sample_images[0];
       sampleImageUrl = primaryImage.url;
-      
+
       // Store in sampleImages dictionary for UI display
       this.sampleImages[formIndex] = {
         id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1279,11 +2471,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         order_index: 0,
         status: 'loaded'
       };
-      
+
       // Trigger change detection
       this.cdr.detectChanges();
     }
-    
+
     itemGroup.patchValue({
       title: item.title,
       description: item.description || '',
@@ -1306,45 +2498,110 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       submission_time_seconds: (item as any)?.submission_time_seconds || null,
       sample_videos: (item as any)?.sample_videos || null
     });
-    
+
+    if (Array.isArray(item.links)) {
+      itemGroup.setControl('links', this.buildLinksFormArray(item.links));
+    }
+
     this.items.push(itemGroup);
+  }
+
+  private createLinkFormGroup(link?: ItemLink): FormGroup {
+    return this.fb.group({
+      title: [link?.title || '', Validators.required],
+      url: [link?.url || '', Validators.required],
+      description: [link?.description || '']
+    });
+  }
+
+  private buildLinksFormArray(links?: ItemLink[] | null): FormArray {
+    const linkItems = Array.isArray(links) ? links : [];
+    return this.fb.array(linkItems.map(link => this.createLinkFormGroup({ ...link })));
+  }
+
+  getLinksFormArray(itemIndex: number): FormArray {
+    const item = this.items.at(itemIndex) as FormGroup | undefined;
+    const links = item?.get('links');
+    return (links as FormArray) || this.fb.array([]);
+  }
+
+  addLink(itemIndex: number): void {
+    this.getLinksFormArray(itemIndex).push(this.createLinkFormGroup());
+    this.templateForm.markAsDirty();
+  }
+
+  removeLink(itemIndex: number, linkIndex: number): void {
+    const links = this.getLinksFormArray(itemIndex);
+    if (linkIndex >= 0 && linkIndex < links.length) {
+      links.removeAt(linkIndex);
+      this.templateForm.markAsDirty();
+    }
+  }
+
+  openLinksModal(itemIndex: number): void {
+    this.currentLinksItemIndex = itemIndex;
+    this.modalService.open(this.linksModalTemplate, { size: 'lg', centered: true });
   }
 
   addItem(): void {
     const newIndex = this.items.length;
     this.items.push(this.createItemFormGroup());
+    this.recalculateOrderIndices(); // Auto-calculate order after adding
+    this.updateNavSearchSets();
+    this.cdr.detectChanges();
+    setTimeout(() => this.refreshActiveItemTracking());
   }
 
   /**
-   * Add a sub-item (child) under a parent item
+   * Add a sub-item (child) under a parent item at the next nesting level
    */
   addSubItem(parentIndex: number): void {
     const parentItem = this.items.at(parentIndex);
+    const parentLevel = parentItem.get('level')?.value || 0;
     const parentOrderIndex = parentItem.get('order_index')?.value || (parentIndex + 1);
-    
-    // Count existing children for this parent
+    const parentDbId = parentItem.get('id')?.value; // Use database ID, not order_index
+
+    // New child will be at parent level + 1
+    const childLevel = parentLevel + 1;
+
+    // Count existing children at this level for this parent
     let childCount = 0;
-    for (let i = 0; i < this.items.length; i++) {
+    for (let i = parentIndex + 1; i < this.items.length; i++) {
       const item = this.items.at(i);
-      if (item.get('parent_id')?.value === parentOrderIndex) {
+      const itemLevel = item.get('level')?.value || 0;
+      const itemParentId = item.get('parent_id')?.value;
+
+      // Stop when we hit an item at parent level or lower (sibling or uncle)
+      if (itemLevel <= parentLevel) break;
+
+      // Count direct children only (same level, same parent)
+      if (itemLevel === childLevel && itemParentId === parentDbId) {
         childCount++;
       }
     }
-    
-    // Calculate the new sub-item's order_index (e.g., 5.1, 5.2, 5.3)
-    const newOrderIndex = parentOrderIndex + ((childCount + 1) * 0.1);
-    
+
+    // Calculate the new sub-item's order_index (e.g., 5.1, 5.1.1, 5.1.1.1)
+    const newOrderIndex = parentOrderIndex + ((childCount + 1) * Math.pow(0.1, childLevel));
+
+    // Build outline number for the new item based on parent
+    // Parent is 1 → child will be 1.1
+    // Parent is 1.1 → child will be 1.1.1
+    const parentOutlineNumber = this.getOutlineNumber(parentIndex);
+    const newOutlineNumber = `${parentOutlineNumber}.${childCount + 1}`;
+
     // Create new sub-item with proper form group structure
     const subItem = this.fb.group({
-      title: [`Sub-item ${childCount + 1}`, Validators.required],
-      description: [''],
+      id: [null], // New item has no ID yet
+      title: ['', Validators.required],
+      description: ['', Validators.required],
       order_index: [newOrderIndex],
       is_required: [true],
-      submission_type: ['photo'], // TOP-LEVEL: Separate ENUM column
+      submission_type: ['photo'],
+      links: this.fb.array([]),
       sample_image_url: [null],
-      sample_images: [null], // NEW: Array of all sample/reference images
-      level: [1], // Child level
-      parent_id: [parentOrderIndex],
+      sample_images: [null],
+      level: [childLevel],
+      parent_id: [parentDbId], // Store database ID, not order_index
       photo_requirements: this.fb.group({
         angle: [''],
         distance: [''],
@@ -1352,245 +2609,536 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         focus: [''],
         min_photos: [1],
         max_photos: [5],
-        picture_required: [true], // Default to true
+        picture_required: [true],
         max_video_duration_seconds: [30]
       }),
       submission_time_seconds: [null],
-      sample_videos: [] // NEW: Array of sample videos
+      sample_videos: []
     });
-    
-    // Insert right after the last child of this parent (or after parent if no children)
+
+    // Insert right after the last descendant of this parent (or after parent if no children)
     let insertIndex = parentIndex + 1;
     for (let i = parentIndex + 1; i < this.items.length; i++) {
-      const item = this.items.at(i);
-      if (item.get('parent_id')?.value === parentOrderIndex) {
-        insertIndex = i + 1;
-      } else if (item.get('level')?.value === 0) {
-        // Hit another parent item, stop here
+      const itemLevel = this.items.at(i).get('level')?.value || 0;
+      // Stop when we hit an item at parent level or lower
+      if (itemLevel <= parentLevel) break;
+      insertIndex = i + 1;
+    }
+
+    this.items.insert(insertIndex, subItem);
+
+    const shiftOnInsert = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
+      const updated: { [itemIndex: number]: T } = {};
+      Object.keys(dict).forEach((key) => {
+        const oldIndex = parseInt(key, 10);
+        const newIndex = oldIndex >= insertIndex ? oldIndex + 1 : oldIndex;
+        updated[newIndex] = dict[oldIndex];
+      });
+      return updated;
+    };
+
+    // Shift sample media dictionaries so the new sub-item starts clean
+    this.sampleImages = shiftOnInsert(this.sampleImages);
+    this.sampleVideos = shiftOnInsert(this.sampleVideos);
+
+    // Shift expanded items and active index (index-based state)
+    const updatedExpanded = new Set<number>();
+    this.expandedItems.forEach((oldIndex) => {
+      const newIndex = oldIndex >= insertIndex ? oldIndex + 1 : oldIndex;
+      updatedExpanded.add(newIndex);
+    });
+    this.expandedItems = updatedExpanded;
+
+    if (this.activeNavItemIndex >= insertIndex) {
+      this.activeNavItemIndex = this.activeNavItemIndex + 1;
+    }
+
+    this.recalculateOrderIndices(); // Auto-calculate order after adding sub-item
+
+    // Trigger change detection to ensure UI updates
+    this.cdr.detectChanges();
+
+    this.updateNavSearchSets();
+    setTimeout(() => {
+      this.refreshActiveItemTracking();
+      const input = this.itemTitleInputs?.toArray?.()[insertIndex];
+      if (input?.nativeElement) {
+        input.nativeElement.focus();
+        input.nativeElement.select();
+      }
+    });
+  }
+
+  /**
+   * Promote item up one level (decrease nesting)
+   */
+  promoteItem(index: number): void {
+    const item = this.items.at(index);
+    const currentLevel = item.get('level')?.value || 0;
+
+    if (currentLevel === 0) return; // Already at top level
+
+    // Move up one level
+    const newLevel = currentLevel - 1;
+    item.patchValue({ level: newLevel });
+
+    // Update parent_id to grandparent's database ID
+    if (newLevel === 0) {
+      item.patchValue({ parent_id: null });
+    } else {
+      // Find new parent (previous item at new level - 1)
+      for (let i = index - 1; i >= 0; i--) {
+        const prevItem = this.items.at(i);
+        const prevLevel = prevItem.get('level')?.value || 0;
+        if (prevLevel === newLevel - 1) {
+          item.patchValue({ parent_id: prevItem.get('id')?.value }); // Use database ID
+          break;
+        }
+      }
+    }
+
+    // Recursively promote all descendants
+    this.promoteDescendants(index, currentLevel);
+
+    this.recalculateOrderIndices(); // Auto-calculate order
+
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Demote item (nest under previous sibling)
+   */
+  demoteItem(index: number): void {
+    if (index === 0) return; // Can't demote first item
+
+    const item = this.items.at(index);
+    const currentLevel = item.get('level')?.value || 0;
+
+    // Find previous sibling or parent at same/lower level
+    let newParentIndex = -1;
+    for (let i = index - 1; i >= 0; i--) {
+      const prevItem = this.items.at(i);
+      const prevLevel = prevItem.get('level')?.value || 0;
+
+      if (prevLevel < currentLevel) {
+        // Found parent level - this becomes new parent
+        newParentIndex = i;
+        break;
+      } else if (prevLevel === currentLevel) {
+        // Found sibling - nest under this
+        newParentIndex = i;
         break;
       }
     }
-    
-    this.items.insert(insertIndex, subItem);
-    
-    // Trigger change detection to ensure UI updates
+
+    if (newParentIndex === -1) return;
+
+    const newParent = this.items.at(newParentIndex);
+    const newParentLevel = newParent.get('level')?.value || 0;
+    const newLevel = newParentLevel + 1;
+
+    item.patchValue({
+      level: newLevel,
+      parent_id: newParent.get('id')?.value // Use database ID
+    });
+
+    // Recursively demote all descendants
+    this.demoteDescendants(index, currentLevel, newLevel - currentLevel);
+
+    this.recalculateOrderIndices(); // Auto-calculate order
+
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Check if item can be demoted (has a previous sibling or parent to nest under)
+   */
+  canDemote(index: number): boolean {
+    if (index === 0) return false;
+
+    const currentLevel = this.items.at(index).get('level')?.value || 0;
+    const prevLevel = this.items.at(index - 1).get('level')?.value || 0;
+
+    // Can demote if previous item is at same level or higher (less nested)
+    return prevLevel <= currentLevel;
+  }
+
+  /**
+   * Recursively promote all descendants by one level
+   */
+  private promoteDescendants(parentIndex: number, parentOldLevel: number): void {
+    const parentOrderIndex = this.items.at(parentIndex).get('order_index')?.value;
+
+    for (let i = parentIndex + 1; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      const itemLevel = item.get('level')?.value || 0;
+      const itemParentId = item.get('parent_id')?.value;
+
+      // Stop when we hit item at parent's old level or lower
+      if (itemLevel <= parentOldLevel) break;
+
+      // Promote this descendant
+      item.patchValue({ level: itemLevel - 1 });
+    }
+  }
+
+  /**
+   * Recursively demote all descendants
+   */
+  private demoteDescendants(parentIndex: number, parentOldLevel: number, levelDelta: number): void {
+    for (let i = parentIndex + 1; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      const itemLevel = item.get('level')?.value || 0;
+
+      // Stop when we hit item at parent's old level or lower
+      if (itemLevel <= parentOldLevel) break;
+
+      // Demote this descendant
+      item.patchValue({ level: itemLevel + levelDelta });
+    }
+  }
+
+  /**
+   * Get label for nesting level (Sub-item, Sub-sub-item, etc.)
+   */
+  getLevelLabel(level: number): string {
+    if (!level || level === 0) return 'Item';
+    if (level === 1) return 'Sub-item';
+    if (level === 2) return 'Sub-sub-item';
+
+    // For deeper levels, use numeric representation
+    const prefix = 'Sub-'.repeat(level);
+    return `${prefix}item`;
   }
 
   removeItem(index: number): void {
     const item = this.items.at(index);
-    const isParent = item.get('level')?.value === 0 || !item.get('level')?.value;
-    const orderIndex = item.get('order_index')?.value;
-    
-    // If removing a parent, also remove all its children
-    if (isParent) {
-      const childIndicesToRemove: number[] = [];
-      for (let i = 0; i < this.items.length; i++) {
-        if (this.items.at(i).get('parent_id')?.value === orderIndex) {
-          childIndicesToRemove.push(i);
-        }
-      }
-      
-      // Remove children first (in reverse order to maintain indices)
-      childIndicesToRemove.reverse().forEach(childIndex => {
-        this.items.removeAt(childIndex);
-        delete this.sampleImages[childIndex];
-      });
+    const itemLevel = item.get('level')?.value || 0;
+
+    // Collect all descendants (children, grandchildren, etc.)
+    const itemsToRemove: number[] = [index];
+
+    for (let i = index + 1; i < this.items.length; i++) {
+      const checkItem = this.items.at(i);
+      const checkLevel = checkItem.get('level')?.value || 0;
+
+      // Stop when we hit an item at same or lower level (sibling or uncle)
+      if (checkLevel <= itemLevel) break;
+
+      // This is a descendant - mark for removal
+      itemsToRemove.push(i);
     }
-    
-    // Remove the item itself
-    this.items.removeAt(index);
-    delete this.sampleImages[index];
-    
-    // Rebuild sample images dictionary with updated indices
-    const tempImages = { ...this.sampleImages };
-    this.sampleImages = {};
-    Object.keys(tempImages).forEach(key => {
-      const oldIndex = parseInt(key);
-      if (oldIndex > index) {
-        this.sampleImages[oldIndex - 1] = tempImages[oldIndex];
-      } else if (oldIndex < index) {
-        this.sampleImages[oldIndex] = tempImages[oldIndex];
+
+    const removedSorted = [...itemsToRemove].sort((a, b) => a - b);
+    const removedSet = new Set<number>(itemsToRemove);
+    const oldImages = { ...this.sampleImages };
+    const oldVideos = { ...this.sampleVideos };
+
+    // Remove from bottom to top to maintain indices
+    for (let i = itemsToRemove.length - 1; i >= 0; i--) {
+      const removeIndex = itemsToRemove[i];
+      this.items.removeAt(removeIndex);
+    }
+
+    const shiftByRemovedBefore = (oldIndex: number): number => {
+      let shift = 0;
+      for (const r of removedSorted) {
+        if (r < oldIndex) shift++;
       }
+      return shift;
+    };
+
+    // Rebuild sample media dictionaries with updated indices
+    this.sampleImages = {};
+    Object.keys(oldImages).forEach(key => {
+      const oldIndex = parseInt(key, 10);
+      if (removedSet.has(oldIndex)) return;
+      const newIndex = oldIndex - shiftByRemovedBefore(oldIndex);
+      this.sampleImages[newIndex] = oldImages[oldIndex];
     });
+
+    this.sampleVideos = {};
+    Object.keys(oldVideos).forEach(key => {
+      const oldIndex = parseInt(key, 10);
+      if (removedSet.has(oldIndex)) return;
+      const newIndex = oldIndex - shiftByRemovedBefore(oldIndex);
+      this.sampleVideos[newIndex] = oldVideos[oldIndex];
+    });
+
+    // Shift expanded items and active index
+    const updatedExpanded = new Set<number>();
+    this.expandedItems.forEach((oldIndex) => {
+      if (removedSet.has(oldIndex)) return;
+      const newIndex = oldIndex - shiftByRemovedBefore(oldIndex);
+      updatedExpanded.add(newIndex);
+    });
+    this.expandedItems = updatedExpanded;
+
+    if (this.activeNavItemIndex >= 0) {
+      if (removedSet.has(this.activeNavItemIndex)) {
+        this.activeNavItemIndex = -1;
+      } else {
+        this.activeNavItemIndex = this.activeNavItemIndex - shiftByRemovedBefore(this.activeNavItemIndex);
+      }
+    }
+
+    this.recalculateOrderIndices();
+    this.updateNavSearchSets();
+    this.cdr.detectChanges();
+    setTimeout(() => this.refreshActiveItemTracking());
   }
 
   dropItem(event: CdkDragDrop<string[]>): void {
     const previousIndex = event.previousIndex;
     const currentIndex = event.currentIndex;
-    
+
     if (previousIndex === currentIndex) {
       return; // No change
     }
-    
+
+    this.performDrop(previousIndex, currentIndex);
+  }
+
+  /**
+   * Handle drop in navigation (needs to map visible indices to actual indices)
+   */
+  dropNavItem(event: CdkDragDrop<string[]>): void {
+    const visibleIndices = this.getVisibleItemIndices();
+
+    if (event.previousIndex >= visibleIndices.length || event.currentIndex >= visibleIndices.length) {
+      return; // Invalid indices
+    }
+
+    const actualPrevIndex = visibleIndices[event.previousIndex];
+    const actualCurrentIndex = visibleIndices[event.currentIndex];
+
+    if (actualPrevIndex === actualCurrentIndex) {
+      return; // No change
+    }
+
+    this.performDrop(actualPrevIndex, actualCurrentIndex);
+  }
+
+  /**
+   * Get array of actual indices for currently visible items in navigation
+   */
+  getVisibleItemIndices(): number[] {
+    const visibleIndices: number[] = [];
+    this.items.controls.forEach((item, i) => {
+      if (this.isNavItemVisible(i)) {
+        visibleIndices.push(i);
+      }
+    });
+    return visibleIndices;
+  }
+
+  /**
+   * Perform the actual drop operation (shared by main form and navigation)
+   */
+  private performDrop(previousIndex: number, currentIndex: number): void {
+
     const movedItem = this.items.at(previousIndex);
     const movedLevel = movedItem.get('level')?.value || 0;
     const movedOrderIndex = movedItem.get('order_index')?.value;
-    
+
     // Move the item in the array
     moveItemInArray(this.items.controls, previousIndex, currentIndex);
-    
-    // Also move sample images to match the new indices
-    const movedImage = this.sampleImages[previousIndex];
-    const tempImages = { ...this.sampleImages };
-    this.sampleImages = {};
-    
-    // Rebuild sample images dictionary with updated indices
-    Object.keys(tempImages).forEach(key => {
-      const oldIndex = parseInt(key);
+
+    const reindexOnMove = <T>(dict: { [itemIndex: number]: T }): { [itemIndex: number]: T } => {
+      const updated: { [itemIndex: number]: T } = {};
+      Object.keys(dict).forEach((key) => {
+        const oldIndex = parseInt(key, 10);
+        let newIndex = oldIndex;
+
+        if (oldIndex === previousIndex) {
+          newIndex = currentIndex;
+        } else if (previousIndex < currentIndex) {
+          if (oldIndex > previousIndex && oldIndex <= currentIndex) {
+            newIndex = oldIndex - 1;
+          }
+        } else {
+          if (oldIndex >= currentIndex && oldIndex < previousIndex) {
+            newIndex = oldIndex + 1;
+          }
+        }
+
+        updated[newIndex] = dict[oldIndex];
+      });
+      return updated;
+    };
+
+    this.sampleImages = reindexOnMove(this.sampleImages);
+    this.sampleVideos = reindexOnMove(this.sampleVideos);
+
+    // Shift expanded items and active index (index-based state)
+    const updatedExpanded = new Set<number>();
+    this.expandedItems.forEach((oldIndex) => {
       let newIndex = oldIndex;
-      
       if (oldIndex === previousIndex) {
-        // This is the moved item
         newIndex = currentIndex;
       } else if (previousIndex < currentIndex) {
-        // Item moved down - shift items between old and new position up
         if (oldIndex > previousIndex && oldIndex <= currentIndex) {
           newIndex = oldIndex - 1;
         }
       } else {
-        // Item moved up - shift items between new and old position down
         if (oldIndex >= currentIndex && oldIndex < previousIndex) {
           newIndex = oldIndex + 1;
         }
       }
-      
-      this.sampleImages[newIndex] = tempImages[oldIndex];
+      updatedExpanded.add(newIndex);
     });
-    
+    this.expandedItems = updatedExpanded;
+
+    if (this.activeNavItemIndex >= 0) {
+      let newActive = this.activeNavItemIndex;
+      if (newActive === previousIndex) {
+        newActive = currentIndex;
+      } else if (previousIndex < currentIndex) {
+        if (newActive > previousIndex && newActive <= currentIndex) {
+          newActive = newActive - 1;
+        }
+      } else {
+        if (newActive >= currentIndex && newActive < previousIndex) {
+          newActive = newActive + 1;
+        }
+      }
+      this.activeNavItemIndex = newActive;
+    }
+
     // Check what's around the dropped position to determine new parent
     const itemAbove = currentIndex > 0 ? this.items.at(currentIndex - 1) : null;
     const itemBelow = currentIndex < this.items.length - 1 ? this.items.at(currentIndex + 1) : null;
-    
+
     const aboveLevel = itemAbove?.get('level')?.value || 0;
     const belowLevel = itemBelow?.get('level')?.value || 0;
     const aboveOrderIndex = itemAbove?.get('order_index')?.value;
     const aboveParentId = itemAbove?.get('parent_id')?.value;
-    
+    const aboveDbId = itemAbove?.get('id')?.value; // Database ID
+
     // Smart re-parenting based on drop position
     if (itemAbove === null) {
       movedItem.get('level')?.setValue(0);
       movedItem.get('parent_id')?.setValue(null);
     } else if (aboveLevel === 0 && (belowLevel === 1 || itemBelow === null)) {
-      const newParentId = Math.floor(aboveOrderIndex);
+      // Dropped below a parent item - become its child
       movedItem.get('level')?.setValue(1);
-      movedItem.get('parent_id')?.setValue(newParentId);
+      movedItem.get('parent_id')?.setValue(aboveDbId); // Use database ID
     } else if (aboveLevel === 1) {
+      // Dropped below a child - become sibling
       movedItem.get('level')?.setValue(1);
-      movedItem.get('parent_id')?.setValue(aboveParentId);
+      movedItem.get('parent_id')?.setValue(aboveParentId); // Same parent
     } else if (aboveLevel === 0 && belowLevel === 0) {
+      // Dropped between two parents
       movedItem.get('level')?.setValue(0);
       movedItem.get('parent_id')?.setValue(null);
     }
-    
+
     // If moving a parent item, also move all its children
     if (movedLevel === 0) {
-      const movedItemOrderIndex = Math.floor(movedOrderIndex);
+      const movedItemDbId = movedItem.get('id')?.value; // Use database ID
       const children: { index: number, control: any }[] = [];
-      
+
       // Find all children of the moved parent (before the move)
       this.items.controls.forEach((item, index) => {
-        if (item.get('parent_id')?.value === movedItemOrderIndex && index !== currentIndex) {
+        if (item.get('parent_id')?.value === movedItemDbId && index !== currentIndex) {
           children.push({ index, control: item });
         }
       });
-      
+
       // Move children to be right after their parent
       if (children.length > 0) {
-        console.log(`Moving ${children.length} children with parent`);
-        
         // Sort by current position (descending) to avoid index conflicts
         children.sort((a, b) => b.index - a.index);
-        
+
         // Move each child to right after parent
         children.forEach((child, i) => {
           const targetIndex = currentIndex + 1 + i;
           const currentChildIndex = this.items.controls.indexOf(child.control);
-          
+
           if (currentChildIndex !== targetIndex) {
             moveItemInArray(this.items.controls, currentChildIndex, targetIndex);
           }
         });
       }
     }
-    
+
     // Recalculate order_index for all items to maintain proper sequence
     this.recalculateOrderIndices();
-    
+    this.updateNavSearchSets();
+
     // Trigger change detection
     this.cdr.detectChanges();
+    setTimeout(() => this.refreshActiveItemTracking());
   }
-  
+
   /**
-   * Recalculate order_index for all items based on their position and hierarchy
+   * Recalculate order_index for all items using outline numbering (1, 1.1, 1.1.1, 1.1.1.1)
+   * Industry standard for quality checklists - clear hierarchy, easy to reference
    */
   private recalculateOrderIndices(): void {
-    let currentParentIndex = 1;
-    const parentOrderMap = new Map<number, number>(); // Maps old parent_id to new order_index
-    const childCounters = new Map<number, number>(); // Tracks child count per parent
-    
+    // Track counters at each level for each parent path
+    const counterStack: number[] = [0]; // Start with 0 at root level
+    const parentIdStack: (number | null)[] = [null]; // Track parent IDs for each level
+
     this.items.controls.forEach((control, index) => {
       const level = control.get('level')?.value || 0;
       const parentId = control.get('parent_id')?.value;
-      
-      if (level === 0) {
-        // Parent item - assign whole number and track mapping
-        const oldOrderIndex = control.get('order_index')?.value;
-        control.get('order_index')?.setValue(currentParentIndex);
-        
-        // Map old parent order to new parent order for children
-        if (oldOrderIndex) {
-          parentOrderMap.set(Math.floor(oldOrderIndex), currentParentIndex);
-        }
-        
-        currentParentIndex++;
-      } else {
-        // Child item - decimal based on parent's current order_index
-        // Find the parent's current order_index
-        let parentOrderIndex = parentId;
-        
-        // Look for the parent in our items array
-        for (let i = 0; i < this.items.controls.length; i++) {
-          const item = this.items.at(i);
-          const itemLevel = item.get('level')?.value || 0;
-          const itemOrderIndex = item.get('order_index')?.value;
-          
-          if (itemLevel === 0 && Math.floor(itemOrderIndex) === parentId) {
-            parentOrderIndex = itemOrderIndex;
-            break;
-          }
-        }
-        
-        // Update parent_id to match current parent order if needed
-        if (parentOrderIndex !== parentId) {
-          control.get('parent_id')?.setValue(parentOrderIndex);
-        }
-        
-        // Count children for this parent
-        const childCount = childCounters.get(parentOrderIndex) || 0;
-        childCounters.set(parentOrderIndex, childCount + 1);
-        
-        const orderIndex = parentOrderIndex + ((childCount + 1) / 10);
-        control.get('order_index')?.setValue(orderIndex);
+
+      // Adjust stack size to current level + 1
+      while (counterStack.length > level + 1) {
+        counterStack.pop();
+        parentIdStack.pop();
       }
+      while (counterStack.length < level + 1) {
+        counterStack.push(0);
+        parentIdStack.push(null);
+      }
+
+      // Check if we've moved to a different parent - reset counter if so
+      if (level > 0 && parentIdStack[level] !== parentId) {
+        counterStack[level] = 0;
+        parentIdStack[level] = parentId;
+      }
+
+      // Increment counter at current level
+      counterStack[level]++;
+
+      // Build outline number: 1, 1.01, 1.0101, 1.010101
+      // Pad each level to 2 digits so parseFloat works correctly
+      let outlineNumber: number;
+      if (level === 0) {
+        // Root level: 1, 2, 3
+        outlineNumber = counterStack[0];
+      } else {
+        // Build hierarchical number by padding each level to 2 digits
+        // Example: [1, 2, 3, 1] at level 3 → "1.020301" → 1.020301
+        const root = counterStack[0];
+        const subLevels = counterStack.slice(1, level + 1)
+          .map(num => num.toString().padStart(2, '0'))
+          .join('');
+        const fullString = `${root}.${subLevels}`;
+        outlineNumber = parseFloat(fullString);
+      }
+
+      control.get('order_index')?.setValue(outlineNumber);
     });
   }
-  
+
   /**
    * Promote a child item to become a parent item
    */
   promoteToParent(index: number): void {
     const item = this.items.at(index);
     const currentLevel = item.get('level')?.value;
-    
+
     if (currentLevel !== 1) {
       return; // Only promote child items
     }
-    
+
     // Change to parent
     item.get('level')?.setValue(0);
     item.get('parent_id')?.setValue(null);
-    
+
     // Recalculate all order indices
     this.recalculateOrderIndices();
   }
@@ -1602,25 +3150,25 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   getSampleImage(itemIndex: number): SampleImage | null {
     const sampleImage = this.sampleImages[itemIndex] || null;
-    
+
     // If it's an array, return the primary or first image for backward compatibility
     if (Array.isArray(sampleImage)) {
       const primary = sampleImage.find(img => img.is_primary);
       const firstImage = primary || sampleImage[0] || null;
-      
+
       // Convert relative URLs to absolute URLs (but skip data URLs)
       if (firstImage && firstImage.url && !firstImage.url.startsWith('data:')) {
         firstImage.url = this.getAbsoluteImageUrl(firstImage.url);
       }
-      
+
       return firstImage;
     }
-    
+
     // Single image - convert relative URLs to absolute URLs (but skip data URLs)
     if (sampleImage && sampleImage.url && !sampleImage.url.startsWith('data:')) {
       sampleImage.url = this.getAbsoluteImageUrl(sampleImage.url);
     }
-    
+
     return sampleImage;
   }
 
@@ -1633,12 +3181,12 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (!sampleImage?.url) {
       return null;
     }
-    
+
     // For data URLs, sanitize them to bypass Angular security
     if (sampleImage.url.startsWith('data:')) {
       return this.sanitizer.bypassSecurityTrustUrl(sampleImage.url);
     }
-    
+
     // For regular URLs, return as-is
     return sampleImage.url;
   }
@@ -1654,17 +3202,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    */
   private getAbsoluteImageUrl(url: string): string {
     if (!url) return url;
-    
+
     // If already absolute, return as-is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
+
     // If relative, prepend base URL
     const baseUrl = 'https://dashboard.eye-fi.com';
     // Remove leading slash if present to avoid double slashes
     const cleanUrl = url.startsWith('/') ? url : '/' + url;
-    
+
     return baseUrl + cleanUrl;
   }
 
@@ -1672,13 +3220,16 @@ export class ChecklistTemplateEditorComponent implements OnInit {
    * Calculate the next version number for a template
    * Examples: "1.0" -> "1.1", "2.5" -> "2.6", "3.9" -> "3.10"
    */
-  private getNextVersion(currentVersion: string): string {
+  private getNextVersion(currentVersion: string | number | null | undefined): string {
     if (!currentVersion) return '1.0';
-    
-    const parts = currentVersion.split('.');
+
+    // Convert to string if it's a number
+    const versionString = String(currentVersion);
+
+    const parts = versionString.split('.');
     const major = parseInt(parts[0]) || 1;
     const minor = parseInt(parts[1]) || 0;
-    
+
     // Increment minor version
     return `${major}.${minor + 1}`;
   }
@@ -1686,48 +3237,63 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   /**
    * Get display number for item (e.g., "14" for parent, "14.1" for first child)
    */
-  getItemNumber(itemIndex: number): string {
+  /**
+   * Get outline number for display (1, 1.1, 1.1.1, 1.1.1.1)
+   * Formats the order_index as proper outline numbering
+   */
+  getOutlineNumber(itemIndex: number): string {
     const item = this.items.at(itemIndex);
     const orderIndex = item.get('order_index')?.value;
-    const level = item.get('level')?.value || 0;
-    
-    if (level === 0) {
-      // Parent item - show whole number
-      return Math.floor(orderIndex).toString();
-    } else {
-      // Child item - show decimal (e.g., 14.1, 14.2)
-      return orderIndex.toFixed(1);
+    const level = item.get('level')?.value ?? 0;
+    const title = item.get('title')?.value;
+
+    if (!orderIndex) return '1';
+
+    // Convert float to outline format: 1.020301 → "1.2.3.1"
+    const parts = orderIndex.toString().split('.');
+
+    if (parts.length === 1) {
+      // Whole number: 1, 2, 3
+      return parts[0];
     }
+
+    // Has decimal part: 1.020301 → "1.2.3.1"
+    const wholePart = parts[0];
+    const decimalPart = parts[1] || '';
+
+    // Split decimal into pairs: "020301" → ["02", "03", "01"] → [2, 3, 1]
+    const components = [wholePart];
+    for (let i = 0; i < decimalPart.length; i += 2) {
+      const pair = decimalPart.substring(i, i + 2);
+      const num = parseInt(pair, 10);
+      components.push(num.toString());
+    }
+
+    const result = components.join('.');
+    return result;
   }
 
   openSampleImageUpload(itemIndex: number): void {
-    console.log('Opening file upload for item index:', itemIndex);
-    
     // Create a file input element
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
-    
+
     fileInput.onchange = async (event: any) => {
-      console.log('File input changed, event:', event);
       const file = event.target.files[0];
-      console.log('Selected file:', file);
-      
+
       if (file && file.type.startsWith('image/')) {
-        console.log('Valid image file selected, starting upload...');
         try {
           await this.uploadSampleImage(itemIndex, file);
-          console.log('Upload completed successfully');
         } catch (error) {
-          console.error('Upload failed with error:', error);
+          console.error('Upload failed:', error);
         }
       } else {
-        console.error('Invalid file selected:', file?.type);
         alert('Please select an image file (JPG, PNG, GIF, WebP)');
       }
     };
-    
+
     document.body.appendChild(fileInput);
     fileInput.click();
     document.body.removeChild(fileInput);
@@ -1755,23 +3321,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       // Create temp ID for upload
       const tempId = `sample_image_${itemIndex}_${Date.now()}`;
 
-      // Show loading state
-      console.log('Starting image upload...', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        itemIndex: itemIndex,
-        tempId: tempId
-      });
-      
       // Upload the image to the server
       const response = await this.photoUploadService.uploadTemporaryImage(file, tempId);
-      
-      console.log('Upload response received:', response);
-      
+
       if (response && response.success && response.url) {
-        console.log('Creating new sample image with URL:', response.url);
-        
         const newImage: SampleImage = {
           id: `uploaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           url: response.url,
@@ -1783,46 +3336,32 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           status: 'loaded'
         };
 
-        console.log('Created sample image object:', newImage);
-
         // Set the single image for this item
         this.sampleImages[itemIndex] = newImage;
-        
+
         // Update the form control with the sample image
         const itemFormGroup = this.items.at(itemIndex) as FormGroup;
         if (itemFormGroup) {
           const sampleImageControl = itemFormGroup.get('sample_image_url');
           if (sampleImageControl) {
             sampleImageControl.setValue(newImage.url);
-            console.log('Updated form control with sample image URL:', newImage.url);
           }
         }
-        
-        console.log('Sample image uploaded successfully:', response.url);
-        console.log('Current sample image for item', itemIndex, ':', this.sampleImages[itemIndex]);
-        
+
         // Force change detection to update the UI
-        // This ensures the new image appears immediately in the template
         this.cdr.detectChanges();
-        
-        setTimeout(() => {
-          console.log('Force change detection - sample image updated');
-          console.log('After timeout - getSampleImage returns:', this.getSampleImage(itemIndex));
-          console.log('Form value for this item:', this.items.at(itemIndex)?.value);
-        }, 100);
-        
+
       } else {
         const errorMsg = response?.error || 'Upload failed - no URL returned';
-        console.error('Upload failed:', errorMsg, response);
         throw new Error(errorMsg);
       }
-      
+
     } catch (error: any) {
       console.error('Sample image upload failed:', error);
-      
+
       // More detailed error handling
       let errorMessage = 'Failed to upload image. Please try again.';
-      
+
       if (error.error) {
         errorMessage = error.error;
       } else if (error.message) {
@@ -1830,13 +3369,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       } else if (typeof error === 'string') {
         errorMessage = error;
       }
-      
+
       console.error('Detailed error:', {
         error: error,
         message: errorMessage,
         stack: error.stack
       });
-      
+
       alert('Upload Error: ' + errorMessage);
     } finally {
       this.uploadingImage = false;
@@ -1852,21 +3391,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     try {
       // Convert data URL to Blob
       const blob = this.dataUrlToBlob(dataUrl);
-      
+
       // Determine file extension from MIME type
       const mimeType = dataUrl.split(';')[0].split(':')[1];
       const extension = mimeType.split('/')[1];
       const filename = `imported-image-${Date.now()}-${itemIndex}.${extension}`;
-      
+
       // Convert Blob to File
       const file = new File([blob], filename, { type: mimeType });
-      
+
       // Upload using the existing upload function
       await this.uploadSampleImage(itemIndex, file);
-      
-      console.log(`✅ Converted and uploaded data URL for item ${itemIndex + 1}`);
     } catch (error) {
-      console.error(`❌ Failed to convert/upload data URL for item ${itemIndex + 1}:`, error);
+      console.error('Failed to convert/upload data URL:', error);
       throw error;
     }
   }
@@ -1883,24 +3420,22 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       if (parts.length !== 2) {
         throw new Error(`Invalid data URL format - expected 2 parts, got ${parts.length}`);
       }
-      
+
       const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
       const base64 = parts[1];
-      
+
       if (!base64 || base64.length < 100) {
         throw new Error(`Data URL base64 part is too short: ${base64?.length} chars`);
       }
-      
+
       // Decode base64
       const binaryString = atob(base64);
       const bytes = new Uint8Array(binaryString.length);
-      
+
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
-      console.log(`✓ Converted data URL to Blob: ${mime}, ${bytes.length} bytes`);
-      
+
       return new Blob([bytes], { type: mime });
     } catch (error) {
       console.error('❌ Failed to convert data URL to Blob:', error);
@@ -1913,7 +3448,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     const primaryImage = this.getPrimarySampleImage(itemIndex);
     if (primaryImage?.url) {
       this.previewImageUrl = primaryImage.url;
-      this.modalService.open(this.imagePreviewModalRef, { 
+      this.modalService.open(this.imagePreviewModalRef, {
         size: 'lg',
         centered: true
       });
@@ -1923,14 +3458,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   removeSampleImage(itemIndex: number): void {
     // Remove the sample image for this item
     this.sampleImages[itemIndex] = null;
-    
+
     // Update the form control 
     const itemFormGroup = this.items.at(itemIndex) as FormGroup;
     if (itemFormGroup) {
       const sampleImageControl = itemFormGroup.get('sample_image_url');
       if (sampleImageControl) {
         sampleImageControl.setValue(null);
-        console.log('Removed sample image from form control');
       }
     }
   }
@@ -1939,7 +3473,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // Handle image load error
     const sampleImage = this.getSampleImage(itemIndex);
     console.error(`Failed to load image for item ${itemIndex + 1}:`, sampleImage?.url);
-    
+
     // If this is a data URL, try to upload it
     if (sampleImage?.url?.startsWith('data:')) {
       console.warn('Image is still a data URL - attempting to upload...');
@@ -1956,7 +3490,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   // ============================================
   // Primary Sample Image Methods
   // ============================================
-  
+
   hasPrimarySampleImage(itemIndex: number): boolean {
     const images = this.sampleImages[itemIndex];
     if (!Array.isArray(images)) {
@@ -1976,7 +3510,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   getPrimarySampleImageUrl(itemIndex: number): SafeUrl | string | null {
     const primaryImage = this.getPrimarySampleImage(itemIndex);
     if (!primaryImage?.url) return null;
-    
+
     if (primaryImage.url.startsWith('data:')) {
       return this.sanitizer.bypassSecurityTrustUrl(primaryImage.url);
     }
@@ -1988,7 +3522,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
-    
+
     fileInput.onchange = async (event: any) => {
       const file = event.target.files[0];
       if (file && file.type.startsWith('image/')) {
@@ -2001,7 +3535,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         alert('Please select an image file (JPG, PNG, GIF, WebP)');
       }
     };
-    
+
     document.body.appendChild(fileInput);
     fileInput.click();
     document.body.removeChild(fileInput);
@@ -2009,10 +3543,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
   async uploadPrimarySampleImage(itemIndex: number, file: File): Promise<void> {
     this.uploadingImage = true;
-    
+
     try {
       const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-primary`);
-      
+
       if (response.success && response.url) {
         const newPrimaryImage: SampleImage = {
           url: response.url,
@@ -2024,11 +3558,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           order_index: 0,
           status: 'loaded'
         };
-        
+
         // Update sample images array
         let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
         let imageArray: SampleImage[] = [];
-        
+
         if (!images) {
           imageArray = [];
         } else if (Array.isArray(images)) {
@@ -2036,27 +3570,25 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         } else {
           imageArray = [images];
         }
-        
+
         // Remove old primary sample if exists
         imageArray = imageArray.filter(img => !(img.is_primary && img.image_type === 'sample'));
-        
+
         // Add new primary sample at the start
         imageArray.unshift(newPrimaryImage);
-        
+
         this.sampleImages[itemIndex] = imageArray;
-        
+
         // Update form control
         const item = this.items.at(itemIndex);
         item.patchValue({
           sample_image_url: response.url,
           sample_images: imageArray
         });
-        
+
         // Mark form as dirty to detect changes
         item.markAsDirty();
         this.templateForm.markAsDirty();
-        
-        console.log('Primary sample image uploaded successfully', imageArray);
       }
     } catch (error) {
       console.error('Error uploading primary sample image:', error);
@@ -2069,12 +3601,12 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   removePrimarySampleImage(itemIndex: number): void {
     let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
     let imageArray: SampleImage[] = [];
-    
+
     if (!images) {
       this.sampleImages[itemIndex] = null;
       return;
     }
-    
+
     if (Array.isArray(images)) {
       // Remove primary sample
       imageArray = images.filter(img => !(img.is_primary && img.image_type === 'sample'));
@@ -2082,7 +3614,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     } else {
       this.sampleImages[itemIndex] = null;
     }
-    
+
     // Update form
     const item = this.items.at(itemIndex);
     const remainingImages = this.sampleImages[itemIndex];
@@ -2095,7 +3627,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   // ============================================
   // Reference Images Methods
   // ============================================
-  
+
   getReferenceImages(itemIndex: number): SampleImage[] {
     const images = this.sampleImages[itemIndex];
     if (!Array.isArray(images)) {
@@ -2110,17 +3642,868 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     return this.getReferenceImages(itemIndex).length;
   }
 
+  getReferenceImageUrl(refImage: SampleImage): SafeUrl | string {
+    if (!refImage?.url) return '';
+    
+    if (refImage.url.startsWith('data:')) {
+      return this.sanitizer.bypassSecurityTrustUrl(refImage.url);
+    }
+    return this.getAbsoluteImageUrl(refImage.url);
+  }
+
+  getTotalSampleImagesCount(itemIndex: number): number {
+    const primaryCount = this.hasPrimarySampleImage(itemIndex) ? 1 : 0;
+    const referenceCount = this.getReferenceImageCount(itemIndex);
+    return primaryCount + referenceCount;
+  }
+
+  /**
+   * Helper method to check if value is an array (for template usage)
+   */
+  isArray(value: any): boolean {
+    return Array.isArray(value);
+  }
+
+  /**
+   * Get sample images as array for preview
+   */
+  getSampleImagesArray(itemIndex: number): SampleImage[] {
+    const images = this.sampleImages[itemIndex];
+    if (!images) return [];
+    return Array.isArray(images) ? images : [images];
+  }
+
+  /**
+   * Get sample videos as array for preview
+   */
+  getSampleVideosArray(itemIndex: number): SampleVideo[] {
+    const videos = this.sampleVideos[itemIndex];
+    if (!videos) return [];
+    return Array.isArray(videos) ? videos : [videos];
+  }
+
+  /**
+   * Open image in full-screen preview modal
+   */
+  openImagePreview(imageUrl: string): void {
+    this.previewImageUrl = imageUrl;
+    this.modalService.open(this.imagePreviewModalRef, { size: 'lg', centered: true });
+  }
+
+  previewNavPrimaryImage(itemIndex: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    const primary = this.getPrimarySampleImage(itemIndex);
+    if (!primary?.url) {
+      return;
+    }
+
+    const url = primary.url.startsWith('data:') ? primary.url : this.getAbsoluteImageUrl(primary.url);
+    this.openImagePreview(url);
+  }
+
+  previewNavSampleVideo(itemIndex: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    const url = this.getPrimarySampleVideoUrl(itemIndex);
+    if (!url) {
+      return;
+    }
+
+    this.previewVideoUrl = url;
+    this.modalService.open(this.videoPreviewModalRef, { size: 'lg', centered: true });
+  }
+
+  /**
+   * Scroll to specific item in preview modal
+   */
+  scrollToPreviewItem(itemIndex: number): void {
+    const element = document.getElementById(`preview-item-${itemIndex}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Add brief highlight effect
+      element.classList.add('bg-primary', 'bg-opacity-10');
+      setTimeout(() => {
+        element.classList.remove('bg-primary', 'bg-opacity-10');
+      }, 1500);
+    }
+  }
+
+  /**
+   * Scroll to an item in the edit view (main form)
+   */
+  scrollToItem(itemIndex: number): void {
+    // Set selected item if focused edit mode is ON
+    if (this.focusedEditMode) {
+      this.selectedFormItemIndex = itemIndex;
+    }
+
+    const element = document.getElementById(`edit-item-${itemIndex}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add brief highlight effect
+      element.classList.add('border-success', 'border-3');
+      const originalBorderClass = element.className;
+      setTimeout(() => {
+        element.classList.remove('border-success', 'border-3');
+      }, 1500);
+    }
+  }
+
+  /**
+   * Scroll to the first invalid field and highlight it
+   */
+  scrollToFirstInvalidField(): void {
+    // Check template-level fields first (name, category, description)
+    const templateLevelFields = ['name', 'category', 'description'];
+    for (const fieldName of templateLevelFields) {
+      const control = this.templateForm.get(fieldName);
+      if (control && control.invalid) {
+        const element = document.querySelector(`[formControlName="${fieldName}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+    }
+
+    // Check items for missing sample media requirements
+    const missingSampleImageIndex = this.getFirstMissingSampleImageIndex();
+    const missingSampleVideoIndex = this.getFirstMissingSampleVideoIndex();
+    const missingEitherMediaIndex = this.getFirstMissingEitherMediaIndex();
+    const missingSampleIndex =
+      missingSampleImageIndex ??
+      missingSampleVideoIndex ??
+      missingEitherMediaIndex;
+
+    if (missingSampleIndex !== null) {
+      this.scrollToItem(missingSampleIndex);
+      return;
+    }
+
+    // Check items for invalid title/description fields
+    const itemsArray = this.items;
+    for (let i = 0; i < itemsArray.length; i++) {
+      const itemControl = itemsArray.at(i);
+      const titleControl = itemControl.get('title');
+      if (titleControl && titleControl.invalid) {
+        // Scroll to the item
+        this.scrollToItem(i);
+        return;
+      }
+      const descriptionControl = itemControl.get('description');
+      if (descriptionControl && descriptionControl.invalid) {
+        this.scrollToItem(i);
+        return;
+      }
+    }
+  }
+
+  private getFirstMissingSampleImageIndex(): number | null {
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      const submissionType = item.get('submission_type')?.value;
+      const pictureRequired = item.get('photo_requirements')?.value?.picture_required;
+
+      if (
+        submissionType === 'photo' &&
+        pictureRequired &&
+        !this.hasPrimarySampleImage(i) &&
+        this.getReferenceImageCount(i) === 0
+      ) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  private getFirstMissingSampleVideoIndex(): number | null {
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      const submissionType = item.get('submission_type')?.value;
+
+      if (submissionType === 'video' && !this.hasSampleVideo(i)) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  private getFirstMissingEitherMediaIndex(): number | null {
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      const submissionType = item.get('submission_type')?.value;
+
+      if (
+        submissionType === 'either' &&
+        !this.hasSampleVideo(i) &&
+        !this.hasPrimarySampleImage(i) &&
+        this.getReferenceImageCount(i) === 0
+      ) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Check if a form item should be visible based on view mode and selection
+   */
+  isFormItemVisible(itemIndex: number): boolean {
+    const item = this.items.at(itemIndex);
+    if (!item) return false;
+
+    // If focused edit mode is OFF, show all items (just scroll to selected)
+    if (!this.focusedEditMode) {
+      const level = item.get('level')?.value || 0;
+
+      // Only apply view mode filter
+      if (this.navViewMode === 'groups' && level !== 0) {
+        return false; // Only show groups (level 0)
+      }
+      if (this.navViewMode === 'items' && level === 0) {
+        return false; // Only show items (level > 0)
+      }
+
+      return true; // Show all in 'all' mode
+    }
+
+    // Focused edit mode is ON - show only selected item and its descendants
+    // If a specific item is selected, show it plus all its descendants
+    if (this.selectedFormItemIndex !== null) {
+      // Show the selected item itself
+      if (itemIndex === this.selectedFormItemIndex) return true;
+
+      // Show if this item is a descendant of the selected item
+      return this.isDescendantOf(itemIndex, this.selectedFormItemIndex);
+    }
+
+    const level = item.get('level')?.value || 0;
+
+    // Apply view mode filter
+    if (this.navViewMode === 'groups' && level !== 0) {
+      return false; // Only show groups (level 0)
+    }
+    if (this.navViewMode === 'items' && level === 0) {
+      return false; // Only show items (level > 0)
+    }
+
+    return true; // Show all in 'all' mode
+  }
+
+  isNavItemInvalid(itemIndex: number): boolean {
+    const item = this.items.at(itemIndex) as FormGroup | undefined;
+    if (!item) return false;
+
+    const touched = item.touched || this.templateForm.touched;
+    const invalidControls = item.invalid;
+    const isActive = !!item.get('is_required')?.value;
+
+    const submissionType = item.get('submission_type')?.value;
+    const requiresPhoto = submissionType === 'photo';
+    const requiresVideo = submissionType === 'video';
+    const allowsEither = submissionType === 'either';
+
+    const missingSampleImage = (requiresPhoto || allowsEither)
+      && item.get('photo_requirements')?.value?.picture_required
+      && !this.hasPrimarySampleImage(itemIndex)
+      && this.getReferenceImageCount(itemIndex) === 0;
+
+    const missingSampleVideo = (requiresVideo || allowsEither)
+      && !this.hasSampleVideo(itemIndex)
+      && (!allowsEither || (!this.hasPrimarySampleImage(itemIndex) && this.getReferenceImageCount(itemIndex) === 0));
+
+    const missingSample = missingSampleImage || missingSampleVideo;
+
+    if (isActive) {
+      return invalidControls || missingSample;
+    }
+
+    return touched && (invalidControls || missingSample);
+  }
+
+  /**
+   * Clear filters and show all form items
+   */
+  showAllFormItems(): void {
+    this.selectedFormItemIndex = null;
+    this.navViewMode = 'all';
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Check if an item is a descendant (child at any level) of a parent item
+   */
+  private isDescendantOf(itemIndex: number, parentIndex: number): boolean {
+    if (itemIndex <= parentIndex) return false;
+
+    const parentLevel = this.items.at(parentIndex)?.get('level')?.value || 0;
+    const itemLevel = this.items.at(itemIndex)?.get('level')?.value || 0;
+
+    // Item must have a deeper level to be a descendant
+    if (itemLevel <= parentLevel) return false;
+
+    // Check if this item is within the parent's range
+    // Start from the item and walk backwards to find if parent is an ancestor
+    for (let i = itemIndex - 1; i > parentIndex; i--) {
+      const checkLevel = this.items.at(i)?.get('level')?.value || 0;
+      // If we hit an item at the same or shallower level as parent, we've left the parent's tree
+      if (checkLevel <= parentLevel) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Edit only the selected item from navigation dropdown
+   */
+  editItemOnly(itemIndex: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedFormItemIndex = itemIndex;
+    this.scrollToItem(itemIndex);
+  }
+
+  /**
+   * Get count of required items
+   */
+  getRequiredItemsCount(): number {
+    return this.items.controls.filter(item => item.get('is_required')?.value).length;
+  }
+
+  /**
+   * Get count of photo items
+   */
+  getPhotoItemsCount(): number {
+    return this.items.controls.filter(item =>
+      item.get('submission_type')?.value === 'photo' ||
+      item.get('submission_type')?.value === 'either'
+    ).length;
+  }
+
+  /**
+   * Get count of video items
+   */
+  getVideoItemsCount(): number {
+    return this.items.controls.filter(item =>
+      item.get('submission_type')?.value === 'video' ||
+      item.get('submission_type')?.value === 'either'
+    ).length;
+  }
+
+  /**
+   * Get count of items with sample media
+   */
+  getItemsWithMediaCount(): number {
+    let count = 0;
+    this.items.controls.forEach((item, i) => {
+      const hasImages = this.getSampleImagesArray(i).length > 0;
+      const hasVideos = this.getSampleVideosArray(i).length > 0;
+      if (hasImages || hasVideos) count++;
+    });
+    return count;
+  }
+
+  /**
+   * Toggle expansion state of a parent item in navigation
+   */
+  toggleNavExpansion(itemIndex: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation(); // Prevent scrollToItem from firing
+    }
+
+    if (this.expandedItems.has(itemIndex)) {
+      this.expandedItems.delete(itemIndex);
+    } else {
+      this.expandedItems.add(itemIndex);
+    }
+  }
+
+  /**
+   * Check if an item should be visible in the navigation tree
+   */
+  isNavItemVisible(itemIndex: number): boolean {
+    const item = this.items.at(itemIndex);
+    if (!item) return false;
+
+    const level = item.get('level')?.value || 0;
+
+    // Apply view mode filter first
+    if (this.navViewMode === 'groups' && level !== 0) {
+      // In groups mode, only show level 0 items (groups/parents)
+      return false;
+    }
+    if (this.navViewMode === 'items' && level === 0) {
+      // In items mode, only show non-group items (level > 0)
+      return false;
+    }
+
+    // Then apply search filter if active
+    if (this.isNavSearchActive()) {
+      return this.navSearchVisibleIndices.has(itemIndex);
+    }
+
+    // Root items are always visible (if not filtered by view mode)
+    if (level === 0) return true;
+
+    // Find parent item and check if it's expanded
+    for (let i = itemIndex - 1; i >= 0; i--) {
+      const potentialParent = this.items.at(i);
+      const parentLevel = potentialParent?.get('level')?.value || 0;
+
+      // Found the direct parent
+      if (parentLevel === level - 1) {
+        return this.expandedItems.has(i) && this.isNavItemVisible(i);
+      }
+    }
+
+    return false;
+  }
+
+  isNavSearchActive(): boolean {
+    return this.normalizeNavSearchTerm(this.navSearchTerm).length > 0;
+  }
+
+  isNavItemMatch(itemIndex: number): boolean {
+    return this.isNavSearchActive() && this.navSearchMatchedIndices.has(itemIndex);
+  }
+
+  onNavSearchTermChanged(): void {
+    const normalized = this.normalizeNavSearchTerm(this.navSearchTerm);
+
+    // Search started
+    if (!this.lastNormalizedSearchTerm && normalized) {
+      this.savedExpandedItemsBeforeSearch = new Set(this.expandedItems);
+    }
+
+    // Search cleared
+    if (this.lastNormalizedSearchTerm && !normalized) {
+      if (this.savedExpandedItemsBeforeSearch) {
+        this.expandedItems = new Set(this.savedExpandedItemsBeforeSearch);
+      }
+      this.savedExpandedItemsBeforeSearch = null;
+    }
+
+    this.lastNormalizedSearchTerm = normalized;
+    this.updateNavSearchSets();
+
+    // Auto-expand parents of matches for context
+    if (normalized) {
+      this.navSearchMatchedIndices.forEach((i) => this.expandParentsOfItem(i));
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  clearNavSearch(): void {
+    this.navSearchTerm = '';
+    this.onNavSearchTermChanged();
+  }
+
+  /**
+   * Set the navigation view mode
+   */
+  setNavViewMode(mode: 'all' | 'groups' | 'items'): void {
+    this.navViewMode = mode;
+    this.selectedFormItemIndex = null; // Clear item selection when changing view mode
+
+    // Auto-expand based on mode
+    if (mode === 'groups') {
+      // Expand all groups to show their children
+      this.expandAllNav();
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  private normalizeNavSearchTerm(term: string): string {
+    return (term || '').trim().toLowerCase();
+  }
+
+  private updateNavSearchSets(): void {
+    const normalized = this.normalizeNavSearchTerm(this.navSearchTerm);
+
+    this.navSearchMatchedIndices.clear();
+    this.navSearchVisibleIndices.clear();
+    this.navSearchMatchCount = 0;
+
+    if (!normalized) {
+      return;
+    }
+
+    // Find matches
+    this.items.controls.forEach((ctrl, i) => {
+      const title = ((ctrl.get('title')?.value ?? '') + '').toLowerCase();
+      const desc = ((ctrl.get('description')?.value ?? '') + '').toLowerCase();
+      if (title.includes(normalized) || desc.includes(normalized)) {
+        this.navSearchMatchedIndices.add(i);
+      }
+    });
+
+    this.navSearchMatchCount = this.navSearchMatchedIndices.size;
+
+    // Visible = matches + ancestors + descendants of a match
+    this.navSearchMatchedIndices.forEach((matchIndex) => {
+      this.navSearchVisibleIndices.add(matchIndex);
+      this.addNavAncestors(matchIndex);
+      this.addNavDescendants(matchIndex);
+    });
+  }
+
+  private addNavAncestors(itemIndex: number): void {
+    let currentLevel = this.items.at(itemIndex)?.get('level')?.value || 0;
+    for (let i = itemIndex - 1; i >= 0 && currentLevel > 0; i--) {
+      const level = this.items.at(i)?.get('level')?.value || 0;
+      if (level === currentLevel - 1) {
+        this.navSearchVisibleIndices.add(i);
+        currentLevel = level;
+      }
+    }
+  }
+
+  private addNavDescendants(itemIndex: number): void {
+    const level = this.items.at(itemIndex)?.get('level')?.value || 0;
+    for (let i = itemIndex + 1; i < this.items.length; i++) {
+      const nextLevel = this.items.at(i)?.get('level')?.value || 0;
+      if (nextLevel <= level) break;
+      this.navSearchVisibleIndices.add(i);
+    }
+  }
+
+  /**
+   * Check if item has children (is a parent)
+   */
+  hasChildren(itemIndex: number): boolean {
+    const currentLevel = this.items.at(itemIndex)?.get('level')?.value || 0;
+
+    // Check if the next item has a higher level (is a child)
+    if (itemIndex + 1 < this.items.length) {
+      const nextLevel = this.items.at(itemIndex + 1)?.get('level')?.value || 0;
+      return nextLevel > currentLevel;
+    }
+
+    return false;
+  }
+
+  /**
+   * Initialize navigation tree - expand all parent items by default
+   */
+  initializeNavExpansion(): void {
+    this.items.controls.forEach((item, i) => {
+      if (this.hasChildren(i)) {
+        this.expandedItems.add(i);
+      }
+    });
+  }
+
+  /**
+   * Expand all parent items in navigation
+   */
+  expandAllNav(): void {
+    this.items.controls.forEach((item, i) => {
+      if (this.hasChildren(i)) {
+        this.expandedItems.add(i);
+      }
+    });
+  }
+
+  /**
+   * Collapse all parent items in navigation
+   */
+  collapseAllNav(): void {
+    this.expandedItems.clear();
+  }
+
+  /**
+   * Setup scroll listener to track which item is currently in view
+   */
+  setupScrollListener(): void {
+    if (this.boundScrollHandler) {
+      return;
+    }
+
+    this.boundScrollHandler = () => {
+      if (this.scheduledFallbackCheck) return;
+      this.scheduledFallbackCheck = true;
+      requestAnimationFrame(() => {
+        this.scheduledFallbackCheck = false;
+        this.checkActiveItem();
+      });
+    };
+
+    window.addEventListener('scroll', this.boundScrollHandler, { passive: true });
+  }
+
+  private teardownScrollListener(): void {
+    if (this.boundScrollHandler) {
+      window.removeEventListener('scroll', this.boundScrollHandler);
+      this.boundScrollHandler = null;
+    }
+  }
+
+  private setupIntersectionObserver(): void {
+    this.teardownIntersectionObserver();
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      this.setupScrollListener();
+      return;
+    }
+
+    this.visibleItemEntries.clear();
+
+    this.activeItemObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement;
+          const match = /^edit-item-(\d+)$/.exec(el.id || '');
+          if (!match) continue;
+          const index = parseInt(match[1], 10);
+
+          if (entry.isIntersecting) {
+            this.visibleItemEntries.set(index, entry);
+          } else {
+            this.visibleItemEntries.delete(index);
+          }
+        }
+
+        const nextActive = this.pickBestActiveIndexFromVisibleEntries();
+        if (nextActive !== -1 && nextActive !== this.activeNavItemIndex) {
+          this.activeNavItemIndex = nextActive;
+          this.updateStickyParentFromActive(nextActive);
+          this.expandParentsOfItem(nextActive);
+          this.scrollNavToActiveItem(nextActive);
+          this.cdr.detectChanges();
+        }
+      },
+      {
+        root: null,
+        // Bias toward whichever item is near the top of the viewport
+        rootMargin: '-120px 0px -65% 0px',
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+      }
+    );
+
+    // Observe all rendered edit-item elements
+    for (let i = 0; i < this.items.length; i++) {
+      const el = document.getElementById(`edit-item-${i}`);
+      if (el) {
+        this.activeItemObserver.observe(el);
+      }
+    }
+  }
+
+  private teardownIntersectionObserver(): void {
+    if (this.activeItemObserver) {
+      this.activeItemObserver.disconnect();
+      this.activeItemObserver = null;
+    }
+    this.visibleItemEntries.clear();
+  }
+
+  private pickBestActiveIndexFromVisibleEntries(): number {
+    if (this.visibleItemEntries.size === 0) return -1;
+
+    const targetTop = 120;
+    let bestIndex = -1;
+    let bestDistance = Infinity;
+
+    for (const [index, entry] of this.visibleItemEntries.entries()) {
+      const distance = Math.abs(entry.boundingClientRect.top - targetTop);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    }
+
+    return bestIndex;
+  }
+
+  private updateStickyParentFromActive(activeIndex: number): void {
+    this.stickyParentIndex = this.computeStickyParentIndex(activeIndex);
+  }
+
+  private computeStickyParentIndex(activeIndex: number): number | null {
+    if (activeIndex < 0 || activeIndex >= this.items.length) {
+      return null;
+    }
+
+    const activeLevel = this.items.at(activeIndex)?.get('level')?.value ?? 0;
+    if (!activeLevel || activeLevel <= 0) {
+      return null;
+    }
+
+    // Find the nearest root (level 0) ancestor above this item
+    for (let i = activeIndex - 1; i >= 0; i--) {
+      const level = this.items.at(i)?.get('level')?.value ?? 0;
+      if (level === 0) {
+        return this.hasChildren(i) ? i : null;
+      }
+    }
+
+    return null;
+  }
+
+  getItemTitle(index: number): string {
+    const value = this.items.at(index)?.get('title')?.value;
+    return (value ?? '').toString() || 'Untitled';
+  }
+
+  getChildCount(parentIndex: number): number {
+    if (parentIndex < 0 || parentIndex >= this.items.length) return 0;
+    const parentLevel = this.items.at(parentIndex)?.get('level')?.value ?? 0;
+    if (parentLevel !== 0) return 0;
+
+    let count = 0;
+    for (let i = parentIndex + 1; i < this.items.length; i++) {
+      const level = this.items.at(i)?.get('level')?.value ?? 0;
+      if (level <= parentLevel) break;
+      count++;
+    }
+    return count;
+  }
+
+  refreshActiveItemTracking(): void {
+    // Ensure we don't have both observer and scroll listener running
+    this.teardownScrollListener();
+    this.setupIntersectionObserver();
+  }
+
+  /**
+   * Check which item is currently in the viewport
+   */
+  checkActiveItem(): void {
+    const viewportMiddle = window.innerHeight / 2;
+    let closestItem = -1;
+    let closestDistance = Infinity;
+
+    // Find the item closest to the middle of the viewport
+    this.items.controls.forEach((item, i) => {
+      const element = document.getElementById(`edit-item-${i}`);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const elementMiddle = rect.top + rect.height / 2;
+        const distance = Math.abs(elementMiddle - viewportMiddle);
+
+        if (distance < closestDistance && rect.top < viewportMiddle && rect.bottom > 0) {
+          closestDistance = distance;
+          closestItem = i;
+        }
+      }
+    });
+
+    if (closestItem !== this.activeNavItemIndex) {
+      this.activeNavItemIndex = closestItem;
+      this.updateStickyParentFromActive(closestItem);
+
+      // Auto-expand parent folders to show active item
+      if (closestItem >= 0) {
+        this.expandParentsOfItem(closestItem);
+        // Scroll navigation to show the active item
+        this.scrollNavToActiveItem(closestItem);
+      }
+
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Scroll the navigation sidebar to show the active item
+   */
+  scrollNavToActiveItem(itemIndex: number): void {
+    // Wait for DOM to update after expansion
+    setTimeout(() => {
+      const navElement = document.getElementById(`nav-item-${itemIndex}`);
+      const navContainer = document.querySelector('.list-group-flush');
+
+      if (navElement && navContainer) {
+        const containerRect = navContainer.getBoundingClientRect();
+        const elementRect = navElement.getBoundingClientRect();
+
+        // Check if element is outside the visible area of the container
+        const isAboveView = elementRect.top < containerRect.top;
+        const isBelowView = elementRect.bottom > containerRect.bottom;
+
+        if (isAboveView || isBelowView) {
+          // Scroll the navigation container to center the active item
+          const scrollTop = navElement.offsetTop - navContainer.clientHeight / 2 + navElement.clientHeight / 2;
+          navContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }, 150); // Delay to allow expansion animation
+  }
+
+  /**
+   * Expand all parent folders of a given item
+   */
+  expandParentsOfItem(itemIndex: number): void {
+    const level = this.items.at(itemIndex)?.get('level')?.value || 0;
+
+    if (level === 0) return; // Root item, no parents
+
+    // Find all parent items going backward
+    for (let i = itemIndex - 1; i >= 0; i--) {
+      const parentLevel = this.items.at(i)?.get('level')?.value || 0;
+
+      // If this is a parent level, expand it
+      if (parentLevel < level && this.hasChildren(i)) {
+        this.expandedItems.add(i);
+      }
+
+      // Stop when we reach a root item
+      if (parentLevel === 0) break;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.teardownIntersectionObserver();
+    this.teardownScrollListener();
+
+    if (this.scrollCheckTimeout) {
+      clearTimeout(this.scrollCheckTimeout);
+    }
+
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+    }
+  }
+
+  openSampleImagesModal(itemIndex: number): void {
+    // Store the current item index for the modal
+    this.currentModalItemIndex = itemIndex;
+
+    // Open modal - the modal content will use openPrimarySampleImageUpload and openReferenceImageUpload
+    this.modalService.open(this.sampleImagesModalTemplate, { size: 'lg', backdrop: 'static' });
+  }
+
+  openSampleVideoModal(itemIndex: number): void {
+    // Store the current item index for the modal
+    this.currentModalItemIndex = itemIndex;
+
+    // Open modal - the modal content will use openSampleVideoUpload
+    this.modalService.open(this.sampleVideoModalTemplate, { size: 'lg', backdrop: 'static' });
+  }
+
   openReferenceImageUpload(itemIndex: number): void {
     if (this.getReferenceImageCount(itemIndex) >= 5) {
       alert('Maximum of 5 reference images allowed');
       return;
     }
-    
+
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
-    
+
     fileInput.onchange = async (event: any) => {
       const file = event.target.files[0];
       if (file && file.type.startsWith('image/')) {
@@ -2133,7 +4516,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         alert('Please select an image file');
       }
     };
-    
+
     document.body.appendChild(fileInput);
     fileInput.click();
     document.body.removeChild(fileInput);
@@ -2144,12 +4527,12 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       alert('Maximum of 5 reference images allowed');
       return;
     }
-    
+
     this.uploadingImage = true;
-    
+
     try {
       const response = await this.photoUploadService.uploadTemporaryImage(file, `item-${itemIndex}-ref-${Date.now()}`);
-      
+
       if (response.success && response.url) {
         const newReferenceImage: SampleImage = {
           url: response.url,
@@ -2161,11 +4544,11 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           order_index: this.getReferenceImageCount(itemIndex) + 1,
           status: 'loaded'
         };
-        
+
         // Update sample images array
         let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
         let imageArray: SampleImage[] = [];
-        
+
         if (!images) {
           imageArray = [];
         } else if (Array.isArray(images)) {
@@ -2177,21 +4560,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           legacyImage.image_type = 'sample';
           imageArray = [legacyImage];
         }
-        
+
         imageArray.push(newReferenceImage);
         this.sampleImages[itemIndex] = imageArray;
-        
+
         // Update form control
         const item = this.items.at(itemIndex);
         item.patchValue({
           sample_images: imageArray
         });
-        
+
         // Mark form as dirty to detect changes
         item.markAsDirty();
         this.templateForm.markAsDirty();
-        
-        console.log('Reference image uploaded successfully', imageArray);
       }
     } catch (error) {
       console.error('Error uploading reference image:', error);
@@ -2204,21 +4585,21 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   removeReferenceImage(itemIndex: number, refImageIndex: number): void {
     let images: SampleImage | SampleImage[] | null = this.sampleImages[itemIndex];
     if (!Array.isArray(images)) return;
-    
+
     const refImages = this.getReferenceImages(itemIndex);
     const imageToRemove = refImages[refImageIndex];
-    
+
     // Remove the specific reference image
     const filteredImages: SampleImage[] = images.filter((img: SampleImage) => img !== imageToRemove);
-    
+
     this.sampleImages[itemIndex] = filteredImages.length > 0 ? filteredImages : null;
-    
+
     // Update form
     const item = this.items.at(itemIndex);
     item.patchValue({
       sample_images: this.sampleImages[itemIndex]
     });
-    
+
     // Mark form as dirty to detect changes
     item.markAsDirty();
     this.templateForm.markAsDirty();
@@ -2229,7 +4610,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     const image = refImages[refImageIndex];
     if (image?.url) {
       this.previewImageUrl = image.url;
-      this.modalService.open(this.imagePreviewModalRef, { 
+      this.modalService.open(this.imagePreviewModalRef, {
         size: 'lg',
         centered: true
       });
@@ -2386,15 +4767,34 @@ export class ChecklistTemplateEditorComponent implements OnInit {
   }
 
   saveTemplate(): void {
-    if (this.templateForm.invalid) {
+    const missingSampleImageIndex = this.getFirstMissingSampleImageIndex();
+    const missingSampleVideoIndex = this.getFirstMissingSampleVideoIndex();
+    const missingEitherMediaIndex = this.getFirstMissingEitherMediaIndex();
+
+    const missingSampleIndex =
+      missingSampleImageIndex ??
+      missingSampleVideoIndex ??
+      missingEitherMediaIndex;
+
+    if (this.templateForm.invalid || missingSampleIndex !== null) {
       this.templateForm.markAllAsTouched();
+      // Mark all items as touched too
+      this.items.controls.forEach(item => {
+        item.markAllAsTouched();
+      });
+
+      if (missingSampleIndex !== null) {
+        this.scrollToItem(missingSampleIndex);
+      } else {
+        this.scrollToFirstInvalidField();
+      }
       return;
     }
 
     this.saving = true;
-    
+
     const templateData = this.templateForm.value;
-    
+
     // DEBUG: Log sample_images from form before save
     //
     console.log('� Checking form data before save:');
@@ -2409,30 +4809,31 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         console.log(`  Item ${index}: NO sample_images array in form (${typeof item.sample_images})`);
       }
     });
-    
+
     // Ensure is_active is a proper boolean (convert from checkbox value if needed)
     if (typeof templateData.is_active !== 'boolean') {
       templateData.is_active = !!templateData.is_active;
     }
-    
+
     // Note: Quality document relationship is handled separately from template creation
     // Remove the form control field since it's not part of the database schema
     delete templateData.quality_document_id;
-    
+
     // Clean up sample_images array for backend
-    templateData.items = templateData.items.map((item: any) => {
+    templateData.items = templateData.items.map((item: any, index: number) => {
       // Ensure photo_requirements is properly formatted (includes submission_type, etc.)
       if (item.photo_requirements) {
         // Ensure submission_type is present
         if (!item.photo_requirements.submission_type) {
           item.photo_requirements.submission_type = 'photo'; // Default to 'photo'
         }
-        console.log(`  Item: photo_requirements.submission_type = ${item.photo_requirements.submission_type}`);
       }
-      
-      // Log submission_time_seconds to verify it's in the form
-      console.log(`  Item "${item.title}": submission_time_seconds = ${item.submission_time_seconds}`);
-      
+
+      // Backend ONE-PASS algorithm automatically determines parent_id from:
+      // 1. Sequential order of items in the array
+      // 2. The 'level' field
+      // No need to send parent_order_index or parent_id - backend calculates it!
+
       // Ensure sample_images array is properly formatted for the backend
       if (item.sample_images && Array.isArray(item.sample_images)) {
         // Clean up UI-specific fields that shouldn't be sent to backend
@@ -2458,30 +4859,48 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           duration_seconds: v.duration_seconds || null
         }));
       }
-      
-      return item;
+
+      if (item.links && Array.isArray(item.links)) {
+        item.links = item.links
+          .map((link: ItemLink) => ({
+            title: (link.title || '').trim(),
+            url: (link.url || '').trim(),
+            description: (link.description || '').trim()
+          }))
+          .filter((link: ItemLink) => link.title || link.url || link.description);
+      } else {
+        item.links = [];
+      }
+
+      // Return item with level for ONE-PASS parent_id calculation
+      // Backend uses sequential processing + level to determine parent_id automatically
+      return {
+        ...item
+        // parent_order_index removed - no longer needed with ONE-PASS algorithm
+      };
     });
 
     // When editing a template, ask user to describe changes
     if (this.editingTemplate) {
       this.saving = false; // Reset while we show the dialog
-      
+
       // Show the revision description dialog
       const modalRef = this.modalService.open(RevisionDescriptionDialogComponent, {
         size: 'lg',
         backdrop: 'static',
         keyboard: false
       });
-      
+
       // Pass data to the modal
       modalRef.componentInstance.templateName = this.editingTemplate.name;
       modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
       modalRef.componentInstance.nextVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
+      // Auto-fill disabled for now
 
       modalRef.result.then(
         (result) => {
           // Create new version with user's description
-          this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes);
+          this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes, result.nextVersion);
         },
         (reason) => {
           // Modal dismissed (cancel)
@@ -2509,17 +4928,18 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       { key: 'part_number', label: 'Part Number' },
       { key: 'product_type', label: 'Product Type' },
       { key: 'category', label: 'Category' },
-      { key: 'is_active', label: 'Active Status' }
+      { key: 'is_active', label: 'Active Status' },
+      { key: 'max_upload_size_mb', label: 'Max Upload Size' },
+      { key: 'disable_max_upload_limit', label: 'Disable Upload Limit' }
     ];
 
     for (const field of fieldsToCheck) {
       const oldValue = originalTemplate[field.key];
       const newValue = newData[field.key];
-      
-      // Normalize boolean values (database may store as 1/0, form uses true/false)
-      const normalizedOld = field.key === 'is_active' ? !!oldValue : oldValue;
-      const normalizedNew = field.key === 'is_active' ? !!newValue : newValue;
-      
+
+      const normalizedOld = this.normalizeTemplateFieldValue(field.key, oldValue);
+      const normalizedNew = this.normalizeTemplateFieldValue(field.key, newValue);
+
       if (normalizedOld !== normalizedNew) {
         changes.has_changes = true;
         changes.field_changes.push({
@@ -2535,46 +4955,31 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     // 2. Match old and new by ID
     // 3. If old item's ID not found in new items = REMOVED
     // 4. Compare only items with matching IDs for changes
-    const oldItems = originalTemplate.items || [];
+    const oldItemsRaw = originalTemplate.items || [];
+    const oldItems = Array.isArray(oldItemsRaw) && oldItemsRaw.some((item: any) => Array.isArray(item?.children) && item.children.length > 0)
+      ? this.flattenNestedItems(oldItemsRaw)
+      : oldItemsRaw;
     const newItems = newData.items || [];
-
-    console.log('🔍 Starting item comparison:', {
-      oldCount: oldItems.length,
-      newCount: newItems.length
-    });
 
     // Build a map of NEW items by their ID (from form's hidden id field)
     const newItemsById = new Map<number, any>();
-    let newItemsWithoutId = 0;
+    const newItemsWithoutId: any[] = [];
     newItems.forEach((item: any) => {
       if (item.id) {
         newItemsById.set(item.id, item);
       } else {
-        newItemsWithoutId++;
-        console.warn('⚠️ New item missing ID:', item.title);
+        newItemsWithoutId.push(item);
       }
     });
-
-    console.log('📋 New items with IDs:', Array.from(newItemsById.keys()));
-    console.log('📋 New items WITHOUT IDs:', newItemsWithoutId);
-    
-    // If ALL new items are missing IDs, this is likely a data issue - skip item comparison
-    if (newItemsWithoutId === newItems.length && newItems.length > 0) {
-      console.error('❌ All new items are missing IDs - cannot perform proper comparison. Skipping item diff.');
-      console.error('   This usually means the form is not properly preserving item IDs from the database.');
-      // Still compare metadata fields, but skip item-level changes
-      return changes;
-    }
 
     // Check each OLD item
     oldItems.forEach((oldItem: any) => {
       if (!oldItem.id) {
-        console.warn('⚠️ Old item missing ID:', oldItem.title);
         return; // Skip items without IDs
       }
 
       const newItem = newItemsById.get(oldItem.id);
-      
+
       if (!newItem) {
         // Old item not found in new items = DELETED
         changes.has_changes = true;
@@ -2582,7 +4987,6 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           title: oldItem.title,
           order_index: oldItem.order_index
         });
-        console.log('❌ Item removed:', oldItem.title, '(ID:', oldItem.id, ')');
       } else {
         // Item exists in both - check for modifications
         const itemChanges = this.compareItems(oldItem, newItem);
@@ -2590,33 +4994,32 @@ export class ChecklistTemplateEditorComponent implements OnInit {
           changes.has_changes = true;
           changes.items_modified.push({
             title: newItem.title,
+            order_index: newItem.order_index,
             changes: itemChanges
           });
-          console.log('✏️ Item modified:', newItem.title, '(ID:', newItem.id, ')', itemChanges.length, 'changes');
         }
-        
+
         // Remove from map so we can detect additions later
         newItemsById.delete(oldItem.id);
       }
     });
 
-    // Any items left in newItemsById are NEW (don't exist in old items)
-    if (newItemsById.size > 0) {
-      newItemsById.forEach((newItem) => {
-        changes.has_changes = true;
+    // Any items left in newItemsById are NEW
+    const addedItems: any[] = [];
+    newItemsById.forEach((newItem) => addedItems.push(newItem));
+    if (newItemsWithoutId.length > 0) {
+      addedItems.push(...newItemsWithoutId);
+    }
+
+    if (addedItems.length > 0) {
+      changes.has_changes = true;
+      addedItems.forEach((newItem) => {
         changes.items_added.push({
           title: newItem.title,
           order_index: newItem.order_index
         });
-        console.log('➕ Item added:', newItem.title);
       });
     }
-
-    console.log('✅ Comparison complete:', {
-      removed: changes.items_removed.length,
-      added: changes.items_added.length,
-      modified: changes.items_modified.length
-    });
 
     return changes;
   }
@@ -2626,16 +5029,67 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     return `${item.title}_${item.order_index}`;
   }
 
+  private buildRevisionSummary(changes: any): string {
+    if (!changes?.has_changes) {
+      return '';
+    }
+
+    const lines: string[] = [];
+
+    if (changes.field_changes?.length) {
+      const fields = changes.field_changes.map((c: any) => c.field).join(', ');
+      lines.push(`Template fields updated: ${fields}`);
+    }
+
+    if (changes.items_added?.length) {
+      const titles = changes.items_added.map((i: any) => i.title || 'Untitled').join(', ');
+      lines.push(`Items added: ${titles}`);
+    }
+
+    if (changes.items_removed?.length) {
+      const titles = changes.items_removed.map((i: any) => i.title || 'Untitled').join(', ');
+      lines.push(`Items removed: ${titles}`);
+    }
+
+    if (changes.items_modified?.length) {
+      const combined = new Map<string, Set<string>>();
+      changes.items_modified.forEach((item: any) => {
+        const key = `${item.title || 'Untitled'}|${item.order_index ?? ''}`;
+        const fields = (item.changes || []).map((c: any) => c.field).filter(Boolean);
+        if (!combined.has(key)) {
+          combined.set(key, new Set<string>());
+        }
+        const set = combined.get(key)!;
+        fields.forEach((f: string) => set.add(f));
+      });
+
+      combined.forEach((fields, key) => {
+        const [title, orderIndex] = key.split('|');
+        const fieldList = Array.from(fields).join(', ');
+        if (fieldList) {
+          const suffix = orderIndex ? ` (#${orderIndex})` : '';
+          lines.push(`Item "${title}"${suffix}: ${fieldList}`);
+        }
+      });
+    }
+
+    return lines.join('\n');
+  }
+
   private compareItems(oldItem: any, newItem: any): any[] {
     const itemChanges = [];
     // Compare fields that represent content or order changes
     const fieldsToCheck = [
       { key: 'title', label: 'Title' },
       { key: 'description', label: 'Description' },
-      { key: 'is_required', label: 'Required' },
+      { key: 'is_required', label: 'Active' },
       { key: 'sample_image_url', label: 'Sample Image' },
       { key: 'sample_images', label: 'Sample & Reference Images' }, // Track all images (primary + references)
+      { key: 'sample_videos', label: 'Sample Videos' },
+      { key: 'links', label: 'Links' },
       { key: 'photo_requirements', label: 'Photo Requirements' },
+      { key: 'submission_type', label: 'Submission Type' },
+      { key: 'submission_time_seconds', label: 'Submission Time Limit' },
       { key: 'order_index', label: 'Position' },        // Track reordering
       { key: 'level', label: 'Hierarchy Level' },       // Track parent/child changes
       { key: 'parent_id', label: 'Parent Item' }        // Track hierarchy changes
@@ -2654,10 +5108,52 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       if (field.key === 'sample_images') {
         const normalizedOld = this.normalizeSampleImages(oldValue);
         const normalizedNew = this.normalizeSampleImages(newValue);
-        
+
         const oldJson = this.sortedStringify(normalizedOld);
         const newJson = this.sortedStringify(normalizedNew);
-        
+
+        if (oldJson !== newJson) {
+          itemChanges.push({
+            field: field.label,
+            old_value: normalizedOld,
+            new_value: normalizedNew
+          });
+        }
+      } else if (field.key === 'sample_videos') {
+        const normalizedOld = this.normalizeSampleVideos(oldValue);
+        const normalizedNew = this.normalizeSampleVideos(newValue);
+
+        const oldJson = this.sortedStringify(normalizedOld);
+        const newJson = this.sortedStringify(normalizedNew);
+
+        if (oldJson !== newJson) {
+          itemChanges.push({
+            field: field.label,
+            old_value: normalizedOld,
+            new_value: normalizedNew
+          });
+        }
+      } else if (field.key === 'links') {
+        const normalizedOld = this.normalizeLinks(oldValue);
+        const normalizedNew = this.normalizeLinks(newValue);
+
+        const oldJson = this.sortedStringify(normalizedOld);
+        const newJson = this.sortedStringify(normalizedNew);
+
+        if (oldJson !== newJson) {
+          itemChanges.push({
+            field: field.label,
+            old_value: normalizedOld,
+            new_value: normalizedNew
+          });
+        }
+      } else if (field.key === 'photo_requirements') {
+        const normalizedOld = this.normalizePhotoRequirements(oldValue);
+        const normalizedNew = this.normalizePhotoRequirements(newValue);
+
+        const oldJson = this.sortedStringify(normalizedOld);
+        const newJson = this.sortedStringify(normalizedNew);
+
         if (oldJson !== newJson) {
           itemChanges.push({
             field: field.label,
@@ -2670,7 +5166,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       else if (typeof oldValue === 'object' && oldValue !== null && typeof newValue === 'object' && newValue !== null) {
         const oldJson = this.sortedStringify(this.normalizeValue(oldValue));
         const newJson = this.sortedStringify(this.normalizeValue(newValue));
-        
+
         if (oldJson !== newJson) {
           itemChanges.push({
             field: field.label,
@@ -2678,8 +5174,19 @@ export class ChecklistTemplateEditorComponent implements OnInit {
             new_value: newValue
           });
         }
-      } 
+      }
       // For primitives (strings, numbers, booleans)
+      else if (typeof oldValue === 'number' || typeof newValue === 'number') {
+        const oldNum = oldValue === null || oldValue === undefined ? null : Number(oldValue);
+        const newNum = newValue === null || newValue === undefined ? null : Number(newValue);
+        if (oldNum !== newNum) {
+          itemChanges.push({
+            field: field.label,
+            old_value: oldValue,
+            new_value: newValue
+          });
+        }
+      }
       else if (oldValue !== newValue) {
         itemChanges.push({
           field: field.label,
@@ -2700,9 +5207,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (!images || !Array.isArray(images)) {
       return null;
     }
-    
+
     // Keep only the essential fields for comparison
-    return images.map(img => ({
+    return images
+      .map(img => ({
       url: img.url,
       label: img.label || '',
       description: img.description || '',
@@ -2710,7 +5218,97 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       image_type: img.image_type || 'sample',
       is_primary: !!img.is_primary,
       order_index: img.order_index || 0
-    }));
+      }))
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  }
+
+  private normalizeSampleVideos(videos: any): any {
+    if (!videos || !Array.isArray(videos)) {
+      return null;
+    }
+
+    return videos
+      .map(vid => ({
+        url: vid.url,
+        label: vid.label || '',
+        description: vid.description || '',
+        type: vid.type || 'video',
+        is_primary: !!vid.is_primary,
+        order_index: vid.order_index || 0,
+        duration_seconds: vid.duration_seconds ?? null
+      }))
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  }
+
+  private normalizeLinks(links: any): any {
+    if (!links || !Array.isArray(links)) {
+      return null;
+    }
+
+    return links
+      .map(link => ({
+        title: (link.title || '').trim(),
+        url: (link.url || '').trim(),
+        description: (link.description || '').trim()
+      }))
+      .sort((a, b) => {
+        const aKey = `${a.title}|${a.url}|${a.description}`.toLowerCase();
+        const bKey = `${b.title}|${b.url}|${b.description}`.toLowerCase();
+        return aKey.localeCompare(bKey);
+      });
+  }
+
+  private normalizeTemplateFieldValue(key: string, value: any): any {
+    if (key === 'is_active' || key === 'disable_max_upload_limit') {
+      return !!value;
+    }
+
+    if (key === 'max_upload_size_mb') {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      return Number.isNaN(num) ? null : num;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+
+    return value === undefined ? null : value;
+  }
+
+  private normalizePhotoRequirements(req: any): any {
+    if (!req || typeof req !== 'object') {
+      return {
+        angle: '',
+        distance: '',
+        lighting: '',
+        focus: '',
+        min_photos: null,
+        max_photos: null,
+        picture_required: true,
+        max_video_duration_seconds: 30
+      };
+    }
+
+    const normalized = {
+      angle: (req.angle || '').trim(),
+      distance: (req.distance || '').trim(),
+      lighting: (req.lighting || '').trim(),
+      focus: (req.focus || '').trim(),
+      min_photos: req.min_photos === null || req.min_photos === undefined || req.min_photos === '' ? null : Number(req.min_photos),
+      max_photos: req.max_photos === null || req.max_photos === undefined || req.max_photos === '' ? null : Number(req.max_photos),
+      picture_required: req.picture_required === undefined ? true : !!req.picture_required,
+      max_video_duration_seconds: req.max_video_duration_seconds === undefined || req.max_video_duration_seconds === null || req.max_video_duration_seconds === ''
+        ? 30
+        : Number(req.max_video_duration_seconds)
+    };
+
+    if (Number.isNaN(normalized.min_photos as any)) normalized.min_photos = null;
+    if (Number.isNaN(normalized.max_photos as any)) normalized.max_photos = null;
+    if (Number.isNaN(normalized.max_video_duration_seconds as any)) normalized.max_video_duration_seconds = 30;
+
+    return normalized;
   }
 
   private isEmptyValue(value: any): boolean {
@@ -2733,7 +5331,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (obj === null || obj === undefined) return 'null';
     if (typeof obj !== 'object') return JSON.stringify(obj);
     if (Array.isArray(obj)) return JSON.stringify(obj.map(item => this.sortedStringify(item)));
-    
+
     // Sort object keys alphabetically before stringifying
     const sortedObj: any = {};
     Object.keys(obj).sort().forEach(key => {
@@ -2742,42 +5340,37 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     return JSON.stringify(sortedObj);
   }
 
-  private proceedWithSave(templateData: any, createVersion: boolean, changes?: any, revisionDescription?: string, versionNotes?: string): void {
+  private proceedWithSave(templateData: any, createVersion: boolean, changes?: any, revisionDescription?: string, versionNotes?: string, versionOverride?: string): void {
     this.saving = true;
 
     // When creating a new version
     if (createVersion && this.editingTemplate) {
       // Increment the version for the new template
       const currentVersion = this.editingTemplate.version || '1.0';
-      const newVersion = this.getNextVersion(currentVersion);
+      const newVersion = versionOverride?.trim() || this.getNextVersion(currentVersion);
       templateData.version = newVersion;
-      
+
       // IMPORTANT: Pass the source template ID to maintain parent/group relationships
       templateData.source_template_id = this.editingTemplate.id;
-      
+
       // Add version notes if provided
       if (versionNotes) {
         templateData.version_notes = versionNotes;
       }
-      
+
       // Clean the name - remove any existing version suffixes before adding the new one
       let cleanName = templateData.name;
       // Remove all version patterns like (v1.0), (v1.1), etc.
       cleanName = cleanName.replace(/\s*\(v\d+\.\d+\)\s*/g, '').trim();
       // Add the new version
       templateData.name = `${cleanName} (v${newVersion})`;
-      
-      console.log(`Creating new version: ${newVersion} from existing template ${this.editingTemplate.id}`);
-      console.log(`source_template_id set to: ${templateData.source_template_id}`);
-      console.log(`Cleaned name from "${this.editingTemplate.name}" to "${templateData.name}"`);
     } else if (this.editingTemplate) {
       // Updating current version - use updateTemplate instead
-      console.log(`Updating current version: ${this.editingTemplate.version}`);
       templateData.id = this.editingTemplate.id;
     }
 
     // Choose the appropriate API call
-    const saveRequest = (createVersion || !this.editingTemplate) 
+    const saveRequest = (createVersion || !this.editingTemplate)
       ? this.configService.createTemplate(templateData)
       : this.configService.updateTemplate(this.editingTemplate.id, templateData);
 
@@ -2801,15 +5394,23 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       next: (response: any) => {
         clearTimeout(timeoutId);
         console.log('Template saved successfully:', response);
-        
+
         // Get the template ID (either from response or existing template)
         const templateId = response.template_id || this.editingTemplate?.id;
-        
+
         if (!templateId) {
           console.error('No template ID available');
           this.saving = false;
           alert('Error: Template ID not available');
           return;
+        }
+
+        // Update component data with returned template (includes permanent image URLs)
+        if (response.template) {
+          console.log('📦 Updating component with returned template data (permanent URLs)', response.template);
+          this.updateComponentWithSavedTemplate(response.template);
+        } else {
+          console.warn('⚠️ Backend did not return template data in response');
         }
 
         // After saving template, integrate with document control system
@@ -2842,7 +5443,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         console.error('Error saving template:', error);
         console.error('Full error object:', JSON.stringify(error, null, 2));
         this.saving = false;
-        
+
         // Show more detailed error information
         let errorMessage = 'Unknown error occurred';
         if (error.error && error.error.message) {
@@ -2852,7 +5453,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         } else if (error.status) {
           errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
         }
-        
+
         alert('Error saving template: ' + errorMessage);
       }
     });
@@ -2937,9 +5538,9 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (!changes) {
       return 'Template updated';
     }
-    
+
     const parts = [];
-    
+
     if (changes.field_changes?.length) {
       parts.push(`${changes.field_changes.length} field change(s)`);
     }
@@ -2952,7 +5553,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     if (changes.items_modified?.length) {
       parts.push(`${changes.items_modified.length} item(s) modified`);
     }
-    
+
     return parts.join(', ') || 'No significant changes';
   }
 
@@ -2967,6 +5568,13 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     this.importManualName = '';
     this.importManualItemCount = 5;
     this.modalService.open(this.importModalRef, { size: 'lg', backdrop: 'static' });
+  }
+
+  /**
+   * Open preview modal to show condensed read-only view of entire checklist
+   */
+  openPreviewModal(): void {
+    this.modalService.open(this.previewModalRef, { size: 'xl', scrollable: true });
   }
 
   async onImportFileSelected(event: any): Promise<void> {
@@ -2994,15 +5602,15 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
       // Populate the form with parsed data
       this.populateFormFromImport(parsedTemplate);
-      
+
       // Close modal
       this.modalService.dismissAll();
-      
+
       // Automatically save the imported template as a draft (with small delay to ensure form is populated)
       setTimeout(() => {
         this.saveImportedTemplate();
       }, 100);
-      
+
       alert(`Successfully imported and saved ${parsedTemplate.items.length} items from ${file.name}`);
     } catch (error: any) {
       console.error('Import error:', error);
@@ -3026,12 +5634,12 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     });
 
     this.populateFormFromImport(parsedTemplate);
-    
+
     // Automatically save the manually created template as a draft (with small delay to ensure form is populated)
     setTimeout(() => {
       this.saveImportedTemplate();
     }, 100);
-    
+
     alert(`Successfully created template with ${parsedTemplate.items.length} items`);
   }
 
@@ -3047,21 +5655,21 @@ export class ChecklistTemplateEditorComponent implements OnInit {
 
     console.log('Auto-saving imported template...');
     console.log('📤 Processing imported images...');
-    
+
     // First, upload any data URL images to the server
     const uploadPromises: Promise<void>[] = [];
-    
+
     this.items.controls.forEach((control, index) => {
       const itemFormGroup = control as FormGroup;
       const sampleImageUrl = itemFormGroup.get('sample_image_url')?.value;
-      
+
       // Check if this is a data URL (from Word import)
       if (sampleImageUrl && sampleImageUrl.startsWith('data:')) {
         console.log(`   Item ${index + 1}: Converting data URL to uploaded image...`);
         uploadPromises.push(this.convertDataUrlToUpload(index, sampleImageUrl));
       }
     });
-    
+
     // Wait for all uploads to complete
     if (uploadPromises.length > 0) {
       console.log(`⏳ Uploading ${uploadPromises.length} image(s)...`);
@@ -3073,22 +5681,22 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         alert('Some images could not be uploaded. The template will be saved without those images.');
       }
     }
-    
+
     const templateData = this.templateForm.value;
-    
+
     // DEBUG: Log first 5 items to see their parent_id and level values
     console.log('🔍 FIRST 5 ITEMS IN TEMPLATEDATA:');
     templateData.items.slice(0, 5).forEach((item: any, idx: number) => {
       console.log(`  [${idx}] title="${item.title}" order=${item.order_index} parent_id=${item.parent_id} level=${item.level}`);
     });
-    
+
     // DEBUG: Verify sub-items are in the data being auto-saved
     console.log('🔍 AUTO-SAVE CHECK:', {
       totalItemsInForm: this.items.length,
       totalItemsInData: templateData.items.length,
       subItemsInData: templateData.items.filter((i: any) => i.level === 1).length
     });
-    
+
     // Log summary instead of full data to avoid console spam
     const itemsWithImages = templateData.items.filter((item: any) => item.sample_image_url).length;
     console.log('📤 Sending template to backend:', {
@@ -3097,7 +5705,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       itemsWithImages,
       category: templateData.category
     });
-    
+
     // Check for potentially truncated data URLs
     templateData.items.forEach((item: any, idx: number) => {
       if (item.sample_image_url && item.sample_image_url.startsWith('data:')) {
@@ -3112,17 +5720,17 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     this.configService.createTemplate(templateData).subscribe({
       next: (response) => {
         console.log('✓ Imported template auto-saved successfully:', response);
-        
+
         // Update the URL to reflect that we're now editing an existing template
         if (response && response.template_id) {
           console.log('✓ Template ID:', response.template_id);
-          
+
           // Reload the template from the server to get the full data
           this.loadTemplate(response.template_id);
-          
+
           // Update the URL without reloading the page
           this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
-          
+
           // Enable auto-save after initial import save
           this.autoSaveEnabled = true;
         }
@@ -3133,6 +5741,48 @@ export class ChecklistTemplateEditorComponent implements OnInit {
         // Just log the error for debugging
       }
     });
+  }
+
+  /**
+   * Update component data with saved template from backend (includes permanent URLs)
+   */
+  private updateComponentWithSavedTemplate(template: any): void {
+    if (!template.items || !Array.isArray(template.items)) {
+      return;
+    }
+
+    // Flatten items if needed
+    const flattenedItems = this.flattenNestedItems(template.items || []);
+
+    // Update sampleImages with permanent URLs from backend
+    flattenedItems.forEach((item: any, index: number) => {
+      if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
+        const updatedImages: SampleImage[] = item.sample_images.map((img: any, imgIndex: number) => ({
+          id: `saved_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${imgIndex}`,
+          url: img.url, // This now has permanent URL (no /temp/)
+          label: img.label || (img.is_primary ? 'Sample Image' : `Reference ${imgIndex}`),
+          description: img.description || '',
+          type: img.type || 'photo',
+          image_type: img.image_type || (img.is_primary ? 'sample' : 'reference'),
+          is_primary: img.is_primary || false,
+          order_index: img.order_index || imgIndex,
+          status: 'loaded' as const
+        }));
+
+        this.sampleImages[index] = updatedImages;
+
+        // Update form control with permanent URLs
+        const itemFormGroup = this.items.at(index) as FormGroup;
+        if (itemFormGroup) {
+          itemFormGroup.patchValue({
+            sample_image_url: item.sample_image_url || updatedImages.find(img => img.is_primary)?.url || updatedImages[0]?.url,
+            sample_images: updatedImages
+          }, { emitEvent: false });
+        }
+      }
+    });
+
+    console.log('✅ Updated component with permanent image URLs');
   }
 
   /**
@@ -3161,10 +5811,10 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     console.log('📝 Auto-saving template changes...');
 
     const templateData = this.templateForm.value;
-    
+
     // Remove quality_document_id as it's not part of the database schema
     delete templateData.quality_document_id;
-    
+
     templateData.items = templateData.items.map((item: any) => item);
 
     // Update existing template
@@ -3180,24 +5830,252 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     });
   }
 
+  /**
+   * Navigation dropdown actions
+   */
+  private shiftExpandedItemsOnInsert(insertIndex: number): void {
+    const updated = new Set<number>();
+    this.expandedItems.forEach(i => {
+      updated.add(i >= insertIndex ? i + 1 : i);
+    });
+    this.expandedItems = updated;
+  }
+
+  private shiftIndexedDictionaryOnInsert<T>(dict: { [itemIndex: number]: T }, insertIndex: number): { [itemIndex: number]: T } {
+    const updated: { [itemIndex: number]: T } = {};
+    Object.keys(dict).forEach(key => {
+      const oldIndex = parseInt(key, 10);
+      const newIndex = oldIndex >= insertIndex ? oldIndex + 1 : oldIndex;
+      updated[newIndex] = dict[oldIndex];
+    });
+    return updated;
+  }
+
+  private shiftMediaOnInsert(insertIndex: number): void {
+    this.sampleImages = this.shiftIndexedDictionaryOnInsert(this.sampleImages, insertIndex);
+    this.sampleVideos = this.shiftIndexedDictionaryOnInsert(this.sampleVideos, insertIndex);
+  }
+
+  addItemAbove(index: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const currentItem = this.items.at(index);
+    const currentLevel = currentItem.get('level')?.value || 0;
+    const parentId = currentItem.get('parent_id')?.value ?? null;
+    const submissionType = currentItem.get('submission_type')?.value || 'photo';
+
+    // Use the same FormGroup shape as regular items (includes submission_type, sample_images, etc.)
+    const newItem = this.createItemFormGroup({
+      title: 'New Item',
+      level: currentLevel,
+      parent_id: parentId,
+      submission_type: submissionType,
+      order_index: 0
+    } as any);
+
+    // Shift any index-based state before insert so we don't “move” expansion/media to the wrong row
+    this.shiftExpandedItemsOnInsert(index);
+    this.shiftMediaOnInsert(index);
+    this.items.insert(index, newItem);
+
+    this.recalculateOrderIndices();
+    this.cdr.detectChanges();
+    this.updateNavSearchSets();
+    setTimeout(() => this.refreshActiveItemTracking());
+  }
+
+  addItemBelow(index: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const currentItem = this.items.at(index);
+    const currentLevel = currentItem.get('level')?.value || 0;
+    const parentId = currentItem.get('parent_id')?.value ?? null;
+    const submissionType = currentItem.get('submission_type')?.value || 'photo';
+    const insertIndex = index + 1;
+
+    // Use the same FormGroup shape as regular items (includes submission_type, sample_images, etc.)
+    const newItem = this.createItemFormGroup({
+      title: 'New Item',
+      level: currentLevel,
+      parent_id: parentId,
+      submission_type: submissionType,
+      order_index: 0
+    } as any);
+
+    this.shiftExpandedItemsOnInsert(insertIndex);
+    this.shiftMediaOnInsert(insertIndex);
+    this.items.insert(insertIndex, newItem);
+
+    this.recalculateOrderIndices();
+    this.cdr.detectChanges();
+    this.updateNavSearchSets();
+    setTimeout(() => this.refreshActiveItemTracking());
+  }
+
+  async duplicateItem(index: number, event?: Event): Promise<void> {
+    if (event) {
+      event.stopPropagation();
+    }
+    const currentItem = this.items.at(index).value;
+    const insertIndex = index + 1;
+
+    // Create duplicate with same properties but new ID using the canonical item FormGroup shape
+    const duplicateItem = this.createItemFormGroup({
+      ...(currentItem as any),
+      id: null,
+      title: `${currentItem.title || 'Untitled'} (Copy)`,
+      order_index: 0
+    } as any);
+
+    this.shiftExpandedItemsOnInsert(insertIndex);
+    this.shiftMediaOnInsert(insertIndex);
+    this.items.insert(insertIndex, duplicateItem);
+
+    await this.duplicateSampleMedia(index, insertIndex, duplicateItem);
+
+    this.recalculateOrderIndices();
+    this.cdr.detectChanges();
+    this.updateNavSearchSets();
+    setTimeout(() => this.refreshActiveItemTracking());
+  }
+
+  private async duplicateSampleMedia(sourceIndex: number, targetIndex: number, targetItem: FormGroup): Promise<void> {
+    await Promise.all([
+      this.duplicateSampleImages(sourceIndex, targetIndex, targetItem),
+      this.duplicateSampleVideos(sourceIndex, targetIndex, targetItem)
+    ]);
+  }
+
+  private async duplicateSampleImages(sourceIndex: number, targetIndex: number, targetItem: FormGroup): Promise<void> {
+    const sourceImages = this.sampleImages[sourceIndex];
+    if (!sourceImages) {
+      return;
+    }
+
+    const imagesArray = Array.isArray(sourceImages) ? sourceImages : [sourceImages];
+    const duplicated: SampleImage[] = [];
+
+    for (const img of imagesArray) {
+      const newUrl = await this.duplicateMediaUrl(img.url, 'image');
+      duplicated.push({
+        ...img,
+        id: `dup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        url: newUrl
+      });
+    }
+
+    this.sampleImages[targetIndex] = Array.isArray(sourceImages) ? duplicated : duplicated[0];
+
+    const primaryUrl = duplicated.find(img => img.is_primary && img.image_type === 'sample')?.url || duplicated[0]?.url || null;
+    targetItem.patchValue({
+      sample_images: duplicated,
+      sample_image_url: primaryUrl
+    });
+  }
+
+  private async duplicateSampleVideos(sourceIndex: number, targetIndex: number, targetItem: FormGroup): Promise<void> {
+    const sourceVideos = this.sampleVideos[sourceIndex];
+    if (!sourceVideos) {
+      return;
+    }
+
+    const videosArray = Array.isArray(sourceVideos) ? sourceVideos : [sourceVideos];
+    const duplicated: SampleVideo[] = [];
+
+    for (const vid of videosArray) {
+      const newUrl = await this.duplicateMediaUrl(vid.url, 'video');
+      duplicated.push({
+        ...vid,
+        id: `dup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        url: newUrl
+      });
+    }
+
+    this.sampleVideos[targetIndex] = Array.isArray(sourceVideos) ? duplicated : duplicated[0];
+    targetItem.patchValue({
+      sample_videos: duplicated
+    });
+  }
+
+  private async duplicateMediaUrl(url: string, type: 'image' | 'video'): Promise<string> {
+    if (!url) {
+      return url;
+    }
+
+    try {
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch media: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const extension = blob.type?.includes('/') ? blob.type.split('/')[1] : (type === 'video' ? 'mp4' : 'jpg');
+      const fileName = `duplicate-${Date.now()}-${Math.random().toString(36).substr(2, 6)}.${extension}`;
+      const file = new File([blob], fileName, { type: blob.type || (type === 'video' ? 'video/mp4' : 'image/jpeg') });
+
+      const tempId = `${type}_duplicate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const upload = await this.photoUploadService.uploadTemporaryImage(file, tempId);
+      if (upload?.success && upload?.url) {
+        return upload.url;
+      }
+    } catch (error) {
+      console.warn('Failed to duplicate media, falling back to original URL', error);
+    }
+
+    return url;
+  }
+
+  moveItemUp(index: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (index === 0) return; // Can't move first item up
+
+    this.performDrop(index, index - 1);
+  }
+
+  moveItemDown(index: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (index >= this.items.length - 1) return; // Can't move last item down
+
+    this.performDrop(index, index + 1);
+  }
+
+  deleteItemFromNav(index: number, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    const item = this.items.at(index);
+    const itemTitle = item.get('title')?.value || 'this item';
+
+    if (confirm(`Are you sure you want to delete "${itemTitle}" and all its sub-items?`)) {
+      this.removeItem(index);
+    }
+  }
+
   private populateFormFromImport(parsedTemplate: any): void {
     console.log('🔍 populateFormFromImport called with:', parsedTemplate);
     console.log('   - Template name:', parsedTemplate.name);
     console.log('   - Items to import:', parsedTemplate.items?.length || 0);
-    
+
     // Log the structure of items array
     if (parsedTemplate.items && Array.isArray(parsedTemplate.items)) {
       const parentCount = parsedTemplate.items.filter((i: any) => i.level === 0).length;
       const childCount = parsedTemplate.items.filter((i: any) => i.level === 1).length;
       console.log(`   - Parent items: ${parentCount}, Sub-items: ${childCount}`);
-      
+
       parsedTemplate.items.forEach((item: any, idx: number) => {
         if (item.level === 1) {
           console.log(`   [${idx}] 🔗 Sub-item: order=${item.order_index}, parent_id=${item.parent_id}, level=${item.level}`);
         }
       });
     }
-    
+
     // Clear existing items and sample images
     while (this.items.length > 0) {
       this.items.removeAt(0);
@@ -3217,7 +6095,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
       original_filename: parsedTemplate.original_filename || '',
       is_active: true
     });
-    
+
     console.log('✓ Basic template info populated');
     console.log('   - Form items array length BEFORE adding:', this.items.length);
 
@@ -3232,7 +6110,7 @@ export class ChecklistTemplateEditorComponent implements OnInit {
     } else {
       console.warn('⚠️ No items array found in parsedTemplate!');
     }
-    
+
     // Trigger change detection to update UI
     this.cdr.detectChanges();
   }

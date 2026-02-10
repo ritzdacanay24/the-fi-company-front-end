@@ -1,0 +1,253 @@
+<div class="simple-checklist-editor">
+  <div class="header">
+    <h2>{{ templateId ? 'Edit' : 'Create' }} Checklist Template</h2>
+    <div class="status">
+      <span *ngIf="saving" class="saving">Saving...</span>
+      <span *ngIf="lastSaved && !saving" class="saved">
+        Saved at {{ lastSaved | date:'shortTime' }}
+      </span>
+    </div>
+  </div>
+
+  <form [formGroup]="templateForm" *ngIf="!loading">
+    <!-- Template Info -->
+    <div class="template-info card">
+      <div class="row">
+        <div class="col-md-6">
+          <label>Name *</label>
+          <input type="text" formControlName="name" class="form-control" placeholder="Template name">
+        </div>
+        <div class="col-md-3">
+          <label>Part Number</label>
+          <input type="text" formControlName="part_number" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label>Product Type</label>
+          <input type="text" formControlName="product_type" class="form-control">
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-md-12">
+          <label>Description</label>
+          <textarea formControlName="description" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="items-section card">
+      <div class="section-header">
+        <h3>Checklist Items</h3>
+        <button type="button" class="btn btn-sm btn-primary" (click)="addItem()">
+          + Add Item
+        </button>
+      </div>
+
+      <div formArrayName="items" class="items-list">
+        <div *ngFor="let item of items.controls; let i = index" 
+             [formGroupName]="i" 
+             class="item-row" 
+             [ngClass]="getIndentClass(item.get('level')?.value)">
+          
+          <!-- Controls -->
+          <div class="item-controls">
+            <button type="button" class="btn-icon" (click)="moveUp(i)" [disabled]="i === 0" title="Move up">
+              ↑
+            </button>
+            <button type="button" class="btn-icon" (click)="moveDown(i)" [disabled]="i === items.length - 1" title="Move down">
+              ↓
+            </button>
+            <button type="button" class="btn-icon" (click)="outdent(i)" [disabled]="item.get('level')?.value === 0" title="Outdent">
+              ←
+            </button>
+            <button type="button" class="btn-icon" (click)="indent(i)" [disabled]="item.get('level')?.value >= 10" title="Indent">
+              →
+            </button>
+          </div>
+
+          <!-- Level Indicator -->
+          <div class="level-indicator">
+            <span class="level-badge">L{{ item.get('level')?.value }}</span>
+            
+            <!-- Photo Badge with Count - Always visible -->
+            <button 
+              type="button" 
+              class="photo-badge" 
+              [ngClass]="getPhotoBadgeClass(i)"
+              (click)="openPhotoModal(i)"
+              [title]="needsReferenceWarning(i) ? 'Photos required but no reference guides uploaded!' : 'Photo requirements & references'">
+              📷<span *ngIf="getPhotoCount(i) > 0">{{ getPhotoCount(i) }}</span>
+              <span *ngIf="needsReferenceWarning(i)" class="warning-icon">⚠️</span>
+            </button>
+            
+            <!-- Inline Reference Thumbnails -->
+            <div class="reference-thumbnails" *ngIf="getReferenceThumbnails(i).length > 0">
+              <img 
+                *ngFor="let ref of getReferenceThumbnails(i)" 
+                [src]="ref.image_url" 
+                [alt]="ref.caption"
+                class="thumbnail-preview"
+                (click)="openPhotoModal(i)"
+                [title]="ref.caption || ref.type">
+            </div>
+          </div>
+
+          <!-- Item Content -->
+          <div class="item-content">
+            <div class="row">
+              <div class="col-md-6">
+                <input type="text" formControlName="title" class="form-control" placeholder="Item title *">
+              </div>
+              <div class="col-md-3">
+                <select formControlName="submission_type" class="form-control">
+                  <option value="photo">Photo</option>
+                  <option value="video">Video</option>
+                  <option value="either">Either</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="checkbox-label">
+                  <input type="checkbox" formControlName="is_required">
+                  Required
+                </label>
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-danger" (click)="removeItem(i)" title="Remove">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            
+            <div class="row mt-2" *ngIf="item.get('submission_type')?.value !== 'video'">
+              <div class="col-md-12">
+                <textarea formControlName="description" class="form-control form-control-sm" 
+                          rows="1" placeholder="Description (optional)"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="items.length === 0" class="empty-state">
+          No items yet. Click "Add Item" to get started.
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      <button type="button" class="btn btn-outline-primary" (click)="saveDraft()" [disabled]="saving">
+        Save Draft
+      </button>
+      <button type="button" class="btn btn-success" (click)="publish()" [disabled]="saving || templateForm.invalid">
+        Publish
+      </button>
+    </div>
+  </form>
+
+  <div *ngIf="loading" class="loading-spinner">
+    Loading...
+  </div>
+</div>
+
+<!-- Photo Requirements Modal -->
+<div class="photo-modal-overlay" *ngIf="showPhotoModal" (click)="closePhotoModal()">
+  <div class="photo-modal" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>📷 Photo Requirements & References</h3>
+      <button type="button" class="btn-close" (click)="closePhotoModal()">×</button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedItem" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()">
+      <!-- Requirements Section -->
+      <div class="section">
+        <h4>Photo Requirements</h4>
+        <p class="text-muted">Define what photos workers must capture during inspection</p>
+        
+        <div class="requirement-form">
+          <div class="form-group">
+            <label>Minimum Photos Required</label>
+            <input type="number" class="form-control" 
+                   [value]="selectedItem.photo_requirements?.min_count || 0"
+                   (input)="updatePhotoRequirement('min_count', +$any($event.target).value); $event.stopPropagation()"
+                   min="0" max="10">
+          </div>
+          <div class="form-group">
+            <label>Maximum Photos Allowed</label>
+            <input type="number" class="form-control" 
+                   [value]="selectedItem.photo_requirements?.max_count || 5"
+                   (input)="updatePhotoRequirement('max_count', +$any($event.target).value); $event.stopPropagation()"
+                   min="0" max="20">
+          </div>
+          <div class="form-group">
+            <label>Minimum Resolution (optional)</label>
+            <input type="text" class="form-control" 
+                   [value]="selectedItem.photo_requirements?.min_resolution || ''"
+                   (input)="updatePhotoRequirement('min_resolution', $any($event.target).value); $event.stopPropagation()"
+                   placeholder="e.g., 1920x1080">
+          </div>
+          <div class="form-group">
+            <label>Notes/Instructions</label>
+            <textarea class="form-control" rows="3"
+                      [value]="selectedItem.photo_requirements?.notes || ''"
+                      (input)="updatePhotoRequirement('notes', $any($event.target).value); $event.stopPropagation()"
+                      placeholder="e.g., Capture front, side, and top views with good lighting"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Reference Images Section -->
+      <div class="section">
+        <h4>Reference Images</h4>
+        <p class="text-muted">Upload example images to guide workers (optional)</p>
+        
+        <div class="reference-upload-section">
+          <div class="upload-buttons">
+            <label class="btn btn-sm btn-success">
+              ✓ Good Example
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'good_sample')" hidden>
+            </label>
+            <label class="btn btn-sm btn-danger">
+              ✗ Bad Example
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'bad_sample')" hidden>
+            </label>
+            <label class="btn btn-sm btn-primary">
+              📋 Diagram/Reference
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'reference')" hidden>
+            </label>
+          </div>
+
+          <div class="reference-images" *ngIf="selectedItem.references && selectedItem.references.length > 0">
+            <div class="reference-item" *ngFor="let ref of selectedItem.references">
+              <img [src]="ref.image_url" [alt]="ref.caption">
+              <div class="reference-info">
+                <span class="badge" [ngClass]="{
+                  'badge-success': ref.type === 'good_sample',
+                  'badge-danger': ref.type === 'bad_sample',
+                  'badge-primary': ref.type === 'reference' || ref.type === 'diagram'
+                }">{{ ref.type.replace('_', ' ') }}</span>
+                <p>{{ ref.caption }}</p>
+                <button class="btn btn-sm btn-danger" (click)="deleteReferenceImage(ref.id!)">Delete</button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!selectedItem.references || selectedItem.references.length === 0" class="empty-references">
+            No reference images yet. Upload examples to guide workers.
+          </div>
+
+          <div *ngIf="uploadingReference" class="uploading">
+            Uploading...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" (click)="closePhotoModal()">Done</button>
+    </div>
+  </div>
+</div>

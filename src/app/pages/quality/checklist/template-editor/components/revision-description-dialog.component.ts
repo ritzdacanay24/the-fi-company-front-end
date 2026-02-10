@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -25,6 +25,27 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
           <p class="mb-0 small text-muted">
             A new version will be created to preserve history. The previous version will remain available for reference.
           </p>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="nextVersionInput" class="form-label">
+          <strong>New Version</strong>
+          <span class="text-danger">*</span>
+        </label>
+        <input
+          id="nextVersionInput"
+          type="text"
+          class="form-control"
+          [(ngModel)]="nextVersion"
+          placeholder="e.g. 1.2"
+          [class.is-invalid]="showValidation && !nextVersion.trim()">
+        <div class="form-text">
+          <i class="mdi mdi-tag-outline me-1"></i>
+          Choose the version number for this new revision.
+        </div>
+        <div class="invalid-feedback" *ngIf="showValidation && !nextVersion.trim()">
+          Version is required.
         </div>
       </div>
 
@@ -89,7 +110,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
     }
   `]
 })
-export class RevisionDescriptionDialogComponent {
+export class RevisionDescriptionDialogComponent implements OnInit {
   @Input() templateName: string = '';
   @Input() currentVersion: string = '1.0';
   @Input() nextVersion: string = '1.1';
@@ -100,15 +121,20 @@ export class RevisionDescriptionDialogComponent {
 
   constructor(public activeModal: NgbActiveModal) {}
 
+  ngOnInit(): void {
+    // No auto-fill for now
+  }
+
   confirm(): void {
     // Validate that description is not empty
-    if (!this.revisionDescription.trim()) {
+    if (!this.nextVersion.trim() || !this.revisionDescription.trim()) {
       this.showValidation = true;
       return;
     }
 
     // Return the data to the parent
     this.activeModal.close({
+      nextVersion: this.nextVersion.trim(),
       revisionDescription: this.revisionDescription.trim(),
       notes: this.versionNotes.trim()
     });

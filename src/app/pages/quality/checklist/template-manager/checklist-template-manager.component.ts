@@ -367,7 +367,7 @@ interface SampleImage {
         <button type="button" class="btn-close" (click)="modal.dismiss()" [attr.aria-label]="'Close'"></button>
       </div>
       
-      <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+      <div class="modal-body template-modal-body" style="overflow-y: auto; padding-bottom: 20px;">
         <!-- Progress Indicator -->
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -903,7 +903,7 @@ interface SampleImage {
         </form>
       </div>
       
-      <div class="modal-footer bg-light border-top d-flex justify-content-between align-items-center">
+      <div class="modal-footer template-modal-footer bg-light border-top d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center text-muted">
           <i class="mdi mdi-information-outline me-2"></i>
           <small>
@@ -1781,6 +1781,30 @@ interface SampleImage {
     </ng-template>
   `,
   styles: [`
+    /* Template Modal Sticky Footer */
+    ::ng-deep .modal-content:has(.template-modal-footer) {
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+    
+    ::ng-deep .modal-content:has(.template-modal-footer) .modal-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .template-modal-footer {
+      position: sticky !important;
+      bottom: 0;
+      z-index: 1050;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    
+    .template-modal-body {
+      padding-bottom: 20px;
+    }
+    
     .template-card {
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }

@@ -18,6 +18,24 @@ const routes: Routes = [
       ),
     runGuardsAndResolvers: "always",
   },
+  {
+    title: "Simple Checklist Manager",
+    path: "checklist-simple",
+    loadComponent: () =>
+      import("./checklist-simple/checklist-simple.component").then(
+        (m) => m.ChecklistSimpleComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
+    title: "Edit Simple Checklist",
+    path: "checklist-simple/:id",
+    loadComponent: () =>
+      import("./checklist-simple/checklist-simple.component").then(
+        (m) => m.ChecklistSimpleComponent
+      ),
+    runGuardsAndResolvers: "always",
+  },
   // Backwards compatibility redirects for old URLs
   {
     path: "checklist-instance",

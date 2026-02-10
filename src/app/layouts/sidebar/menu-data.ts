@@ -184,6 +184,16 @@ export const MENU_DATA: MenuItem[] = [
         ],
     },
     {
+        id: 16.1,
+        label: "Parts Request",
+        link: "/operations/parts-order/list",
+        description: "Field Service Parts Requests",
+        icon: "las la-tools",
+        hideCheckBox: true,
+        accessRequired: false,
+        activatedRoutes: "/operations/parts-order/*"
+    },
+    {
         id: 17,
         label: "RFQ Management",
         link: "/operations/forms/rfq/list",

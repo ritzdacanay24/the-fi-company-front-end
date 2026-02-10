@@ -81,6 +81,15 @@ const routes: Routes = [
       import("./forms/forms-routing.module").then((m) => m.FormsRoutingModule),
   },
   {
+    title: "Parts Request",
+    path: "parts-order",
+    loadChildren: () =>
+      import("../field-service/parts-order/parts-order.module").then(
+        (m) => m.PartsOrderModule
+      ),
+    runGuardsAndResolvers: "always",
+  },
+  {
     path: "maintenance",
     loadChildren: () =>
       import("./maintenance/maintenance-routing.module").then(

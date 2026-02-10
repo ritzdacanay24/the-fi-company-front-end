@@ -1,4 +1,7 @@
 <?php
+
+require '/var/www/html/server/Databases/DatabaseEyefiV1.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: DELETE, OPTIONS');
@@ -16,8 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     echo json_encode(['error' => 'Method not allowed']);
     exit();
 }
-
-require_once '../../config/database.php';
 
 try {
     // Get request body
@@ -45,64 +46,41 @@ try {
         $file_path = '../../../attachments/photoChecklist/' . $filename;
         
         // Also remove from database if it's a permanent file
-        $pdo = getConnection();
+        $pdo = $database->pdo;
         
-        // First, try to delete from photo_submissions table (user uploaded photos)
-        $stmt = $pdo->prepare("DELETE FROM photo_submissions WHERE file_url = ?");
-        $deleted_rows = $stmt->execute([$image_url]);
-        $submissions_deleted = $stmt->rowCount();
-        
-        // Also update checklist_items table (sample images)
+        // Update checklist items table
         $stmt = $pdo->prepare("UPDATE checklist_items SET sample_image_url = NULL WHERE sample_image_url = ?");
         $stmt->execute([$image_url]);
-        $items_updated = $stmt->rowCount();
         
         // Log the deletion
         $log_stmt = $pdo->prepare("
-            INSERT INTO checklist_upload_log (template_id, item_id, filename, file_url, uploaded_at, action)
-            VALUES (0, 0, ?, ?, NOW(), 'DELETED')
+            INSERT INTO checklist_upload_log (template_id, item_id, filename, file_url, uploaded_at)
+            SELECT template_id, id, ?, ?, NOW()
+            FROM checklist_items 
+            WHERE sample_image_url = ?
+            LIMIT 1
         ");
-        $log_stmt->execute(["DELETED_" . $filename, $image_url]);
+        $log_stmt->execute(["DELETED_" . $filename, $image_url, $image_url]);
     }
     
     // Delete the physical file
     if (file_exists($file_path)) {
         if (unlink($file_path)) {
-            $response = [
+            echo json_encode([
                 'success' => true,
                 'message' => 'Image deleted successfully',
                 'filename' => $filename
-            ];
-            
-            // Add database deletion info for permanent files
-            if (!$is_temp) {
-                $response['database_changes'] = [
-                    'photo_submissions_deleted' => $submissions_deleted ?? 0,
-                    'sample_images_updated' => $items_updated ?? 0
-                ];
-            }
-            
-            echo json_encode($response);
+            ]);
         } else {
             throw new Exception('Failed to delete file from disk');
         }
     } else {
         // File doesn't exist, but we can still clean up database
-        $response = [
+        echo json_encode([
             'success' => true,
             'message' => 'Image reference removed (file not found on disk)',
             'filename' => $filename
-        ];
-        
-        // Add database deletion info for permanent files
-        if (!$is_temp) {
-            $response['database_changes'] = [
-                'photo_submissions_deleted' => $submissions_deleted ?? 0,
-                'sample_images_updated' => $items_updated ?? 0
-            ];
-        }
-        
-        echo json_encode($response);
+        ]);
     }
     
 } catch (Exception $e) {

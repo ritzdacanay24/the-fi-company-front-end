@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { ChecklistTemplateTransformer, ChecklistTemplateResponse } from './checklist-template.models';
 
 // ==============================================
 // Interfaces
@@ -42,6 +43,12 @@ export interface ChecklistTemplate {
   } | null;
 }
 
+export interface ChecklistItemLink {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 export interface ChecklistItem {
   id: number;
   template_id: number;
@@ -49,7 +56,8 @@ export interface ChecklistItem {
   title: string;
   description: string;
   // ✅ TOP-LEVEL: submission_type is a separate ENUM column (photo, video, either)
-  submission_type?: 'photo' | 'video' | 'either';
+  submission_type?: 'photo' | 'video' | 'either' | 'none';
+  links?: ChecklistItemLink[];
   photo_requirements: PhotoRequirements;
   sample_images: SampleImageData[];
   sample_image_url?: string; // Single image URL field
@@ -106,7 +114,7 @@ export interface PhotoRequirements {
   max_photos?: number;
   min_photos?: number;
   picture_required?: boolean; // When false, users can just confirm without taking a photo
-  submission_type?: 'photo' | 'video' | 'either'; // NEW: Type of submission allowed (mutually exclusive)
+  submission_type?: 'photo' | 'video' | 'either' | 'none'; // NEW: Type of submission allowed (mutually exclusive)
   max_video_duration_seconds?: number; // NEW: Maximum allowed video duration in seconds (only used if submission_type includes video)
 }
 
@@ -200,8 +208,8 @@ export class PhotoChecklistConfigService {
     return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}`);
   }
 
-  createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, debug?: any}> {
-    return this.http.post<{success: boolean, template_id: number, debug?: any}>(
+  createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}> {
+    return this.http.post<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}>(
       `${this.baseUrl}?request=templates`, 
       template
     ).pipe(
@@ -215,8 +223,8 @@ export class PhotoChecklistConfigService {
     );
   }
 
-  updateTemplate(id: number, template: Partial<ChecklistTemplate>): Observable<{success: boolean}> {
-    return this.http.put<{success: boolean}>(
+  updateTemplate(id: number, template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id?: number, template?: ChecklistTemplate}> {
+    return this.http.put<{success: boolean, template_id?: number, template?: ChecklistTemplate}>(
       `${this.baseUrl}?request=template&id=${id}`, 
       template
     ).pipe(

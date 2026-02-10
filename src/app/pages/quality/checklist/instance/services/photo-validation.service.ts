@@ -186,6 +186,9 @@ export class PhotoValidationService {
           };
         }
         break;
+      case 'none':
+        // NONE: No media required
+        break;
     }
 
     return { valid: true };
@@ -205,6 +208,8 @@ export class PhotoValidationService {
         return videoCount > 0;
       case 'either':
         return photoCount > 0 || videoCount > 0;
+      case 'none':
+        return true;
       default:
         return photoCount >= minPhotos; // Fallback
     }

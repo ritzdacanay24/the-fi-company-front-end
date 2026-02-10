@@ -81,7 +81,7 @@ export class BomRendererV2Component implements ICellRendererAngularComp {
 
   hasPartNumber(): boolean {
     const partNumber = this.getPartNumber();
-    return !!(partNumber && partNumber.trim().length > 0);
+    return !!(partNumber && String(partNumber).trim().length > 0);
   }
 
   private getPartNumber(): string {

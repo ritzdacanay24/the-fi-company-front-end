@@ -2,6 +2,8 @@
 
 require '/var/www/html/server/Databases/DatabaseEyefiV1.php';
 require __DIR__ . '/TemplateChangeTracker.php';
+require __DIR__ . '/ChecklistTemplateTransformer.php';
+require __DIR__ . '/ChecklistSampleMediaService.php';
 
 // Get the underlying PDO connection from Medoo
 $db = $database->pdo;
@@ -12,9 +14,12 @@ $db = $database->pdo;
 class PhotoChecklistConfigAPI {
     private $conn;
     private $database;
+    private $mediaService;
+    private $debugLog = []; // Debug log for image operations
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->mediaService = new ChecklistSampleMediaService($db);
     }
 
     /**
@@ -53,6 +58,20 @@ class PhotoChecklistConfigAPI {
                         echo json_encode($this->updateTemplate($id));
                     } elseif ($method === 'DELETE' && $id) {
                         echo json_encode($this->deleteTemplate($id));
+                    }
+                    break;
+
+                case 'autosave':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST') {
+                        echo json_encode($this->autosaveTemplate($id));
+                    }
+                    break;
+
+                case 'publish':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->publishTemplate($id));
                     }
                     break;
 
@@ -252,6 +271,11 @@ class PhotoChecklistConfigAPI {
         $checkSubmissionTypeStmt->execute();
         $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
 
+        $checkLinksSql = "SHOW COLUMNS FROM checklist_items LIKE 'links'";
+        $checkLinksStmt = $this->conn->prepare($checkLinksSql);
+        $checkLinksStmt->execute();
+        $hasLinksColumn = $checkLinksStmt->rowCount() > 0;
+
         $selectFields = "id, template_id, order_index, parent_id, level, title, description, photo_requirements, sample_images, sample_image_url, is_required";
         if ($hasSubmissionTypeColumn) {
             $selectFields .= ", submission_type";
@@ -261,6 +285,9 @@ class PhotoChecklistConfigAPI {
         }
         if ($hasVideoRequirementsColumn) {
             $selectFields .= ", video_requirements";
+        }
+        if ($hasLinksColumn) {
+            $selectFields .= ", links";
         }
 
         $sql = "SELECT " . $selectFields . " FROM checklist_items 
@@ -280,6 +307,9 @@ class PhotoChecklistConfigAPI {
         // Parse JSON fields for each item
         if (is_array($items)) {
             foreach ($items as &$item) {
+                // Debug: Log the raw item data
+                error_log("📦 Raw DB item: id={$item['id']}, parent_id=" . ($item['parent_id'] ?? 'NULL') . ", level=" . ($item['level'] ?? 'NULL') . ", order_index={$item['order_index']}, title={$item['title']}");
+                
                 // Parse photo_requirements
                 if (isset($item['photo_requirements']) && is_string($item['photo_requirements'])) {
                     $item['photo_requirements'] = json_decode($item['photo_requirements'], true) ?: [];
@@ -303,6 +333,11 @@ class PhotoChecklistConfigAPI {
                 // Parse sample_images
                 if (isset($item['sample_images']) && is_string($item['sample_images'])) {
                     $item['sample_images'] = json_decode($item['sample_images'], true) ?: [];
+                    
+                    // DEBUG: Log what we fetched from DB
+                    if (!empty($item['sample_images'])) {
+                        error_log("  📖 Read sample_images from DB (item {$item['id']}): " . json_encode($item['sample_images']));
+                    }
                 } else {
                     $item['sample_images'] = [];
                 }
@@ -324,6 +359,15 @@ class PhotoChecklistConfigAPI {
                 } else if (!isset($item['video_requirements'])) {
                     $item['video_requirements'] = [];
                 }
+
+                // Parse links (if present)
+                if ($hasLinksColumn) {
+                    if (isset($item['links']) && is_string($item['links'])) {
+                        $item['links'] = json_decode($item['links'], true) ?: [];
+                    } else if (!isset($item['links'])) {
+                        $item['links'] = [];
+                    }
+                }
                 
                 // Ensure numeric types
                 $item['level'] = isset($item['level']) ? (int)$item['level'] : 0;
@@ -337,11 +381,75 @@ class PhotoChecklistConfigAPI {
                 $item['max_photos'] = isset($item['photo_requirements']['max_photos']) ? $item['photo_requirements']['max_photos'] : 10;
             }
             unset($item); // Break reference
+
+            // Load sample media from new table and merge with items
+            $itemIds = array_column($items, 'id');
+            $mediaByItem = $this->mediaService->getMediaForItems($itemIds);
+            
+            // Merge media into items (convert new format back to legacy for backward compatibility)
+            foreach ($items as &$item) {
+                $itemId = $item['id'];
+                if (isset($mediaByItem[$itemId])) {
+                    $legacyMedia = $this->convertMediaToLegacyFormat($mediaByItem[$itemId]);
+                    // Override JSON column data with data from new table (new table is source of truth)
+                    $item['sample_images'] = $legacyMedia['sample_images'];
+                    $item['sample_videos'] = $legacyMedia['sample_videos'];
+                }
+            }
+            unset($item);
         }
         
-        // Nest child items under their parents
-        $result['items'] = $this->nestItems($items);
-        return $result;
+        // Return items as FLAT LIST (matches frontend expectation and ONE-PASS save algorithm)
+        // Frontend uses 'level' and 'parent_id' fields to understand hierarchy
+        $result['items'] = $items;
+        
+        // Transform to clean enterprise format
+        return ChecklistTemplateTransformer::toApiResponse($result);
+    }
+
+    /**
+     * Convert media from new table format to legacy JSON format
+     * @param array $media Media items from checklist_item_sample_media table
+     * @return array Legacy format with sample_images and sample_videos arrays
+     */
+    private function convertMediaToLegacyFormat($media) {
+        $sampleImages = [];
+        $sampleVideos = [];
+
+        foreach ($media as $item) {
+            $legacyItem = [
+                'url' => $item['url'],
+                'label' => $item['label'],
+                'description' => $item['description'],
+                'order_index' => (int)$item['order_index'],
+                'is_primary' => $item['media_category'] === 'primary_sample',
+                'image_type' => $this->mapCategoryToImageType($item['media_category'])
+            ];
+
+            if ($item['media_type'] === 'video') {
+                $sampleVideos[] = $legacyItem;
+            } else {
+                $sampleImages[] = $legacyItem;
+            }
+        }
+
+        return [
+            'sample_images' => $sampleImages,
+            'sample_videos' => $sampleVideos
+        ];
+    }
+
+    /**
+     * Map database media_category to legacy image_type
+     */
+    private function mapCategoryToImageType($category) {
+        $mapping = [
+            'primary_sample' => 'sample',
+            'reference' => 'reference',
+            'diagram' => 'diagram',
+            'defect_example' => 'defect_example'
+        ];
+        return $mapping[$category] ?? 'reference';
     }
 
     /**
@@ -466,6 +574,12 @@ class PhotoChecklistConfigAPI {
             return [false, 'Maximum of 5 reference images allowed per checklist item'];
         }
 
+        //** 
+        // this will result in too many restrictions for users trying to add images. 
+        // Total images should not exceed 6 (1 sample + 5 reference)
+        // we need to make sure that the rules are enforced. 
+        //  */
+
         $totalImages = count($sampleImages);
         if ($totalImages > 6) {
             return [false, 'Maximum of 6 total images allowed (1 sample + 5 reference)'];
@@ -546,10 +660,12 @@ class PhotoChecklistConfigAPI {
             
             // For new templates (not versions), we need to insert without template_group_id first,
             // then update it to its own ID. Use a temporary value of 0 or omit if nullable.
+            $isDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : 1; // Default to draft
+            
             if ($templateGroupId === null) {
                 // Insert template without template_group_id (omit from INSERT for new templates)
-                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, created_by, is_active) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, created_by, is_active, is_draft, last_autosave_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)";
                 $stmt = $this->conn->prepare($sql);
                 $success = $stmt->execute([
                     $data['name'],
@@ -566,12 +682,13 @@ class PhotoChecklistConfigAPI {
                     $data['category'] ?? 'quality_control',
                     $version,
                     $parentTemplateId,
-                    $data['created_by'] ?? null
+                    $data['created_by'] ?? null,
+                    $isDraft
                 ]);
             } else {
                 // Insert template with versioning fields and metadata (for versions)
-                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, template_group_id, created_by, is_active) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, template_group_id, created_by, is_active, is_draft, last_autosave_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)";
                 $stmt = $this->conn->prepare($sql);
                 $success = $stmt->execute([
                     $data['name'],
@@ -589,7 +706,8 @@ class PhotoChecklistConfigAPI {
                     $version,
                     $parentTemplateId,
                     $templateGroupId,
-                    $data['created_by'] ?? null
+                    $data['created_by'] ?? null,
+                    $isDraft
                 ]);
             }
 
@@ -600,8 +718,15 @@ class PhotoChecklistConfigAPI {
             $templateId = $this->conn->lastInsertId();
             error_log("Template inserted with ID: " . $templateId);
             
-            if (!$templateId) {
+            $templateId = (int)$templateId;
+            if ($templateId <= 0) {
                 throw new Exception("Failed to get template ID after insert");
+            }
+
+            $existsStmt = $this->conn->prepare("SELECT id FROM checklist_templates WHERE id = ?");
+            $existsStmt->execute([$templateId]);
+            if (!$existsStmt->fetch(PDO::FETCH_ASSOC)) {
+                throw new Exception("Template insert verification failed for ID: " . $templateId);
             }
             
             // If this is a brand new template (not a version), set template_group_id to its own ID
@@ -636,25 +761,32 @@ class PhotoChecklistConfigAPI {
                 $checkSubmissionTypeStmt = $this->conn->prepare($checkSubmissionTypeSql);
                 $checkSubmissionTypeStmt->execute();
                 $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
-                // Pass 1: Insert ALL items, build order_index → database_id map
-                // Pass 2: Update child items' parent_id from order_index to actual database ID
+
+                $checkLinksSql = "SHOW COLUMNS FROM checklist_items LIKE 'links'";
+                $checkLinksStmt = $this->conn->prepare($checkLinksSql);
+                $checkLinksStmt->execute();
+                $hasLinksColumn = $checkLinksStmt->rowCount() > 0;
                 
-                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
-                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
+                // ============================================================
+                // ONE-PASS SAVE ALGORITHM (Fixed parent_id bug)
+                // ============================================================
+                error_log("=== Starting ONE-PASS item save for template $templateId ===");
                 
-                // PASS 1: Insert all items with NULL parent_id
+                $lastItemAtLevel = []; // Track last inserted database ID at each level
+                
+                // SINGLE PASS: Insert items sequentially and set parent_id immediately
                 foreach ($data['items'] as $index => $item) {
                     $orderIndex = $item['order_index'] ?? ($index + 1);
                     $level = $item['level'] ?? 0;
                     $title = $item['title'];
                     
-                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
-                    $parentOrderIndex = null;
-                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
-                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    // Determine parent_id from lastItemAtLevel array
+                    $parentId = null;
+                    if ($level > 0 && isset($lastItemAtLevel[$level - 1])) {
+                        $parentId = $lastItemAtLevel[$level - 1];
                     }
                     
-                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
+                    error_log("  📝 Item #$index: order=$orderIndex, level=$level, parent_id=" . ($parentId ?? 'NULL') . ", title='$title'");
                     
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
@@ -672,11 +804,16 @@ class PhotoChecklistConfigAPI {
                             foreach ($item['sample_images'] as $img) {
                                 $imageUrl = $img['url'];
                                 
+                                error_log("  [DEBUG] Processing image URL: $imageUrl");
+                                
                                 // Check if this is a temp image (contains '/temp/')
                                 if (strpos($imageUrl, '/temp/') !== false) {
                                     // Move from temp to permanent storage
+                                    $originalUrl = $imageUrl;
                                     $imageUrl = $this->moveTempImageToPermanent($imageUrl);
-                                    error_log("  � Moved temp image to permanent: " . $imageUrl);
+                                    error_log("  [DEBUG] After moveTempImageToPermanent: original=$originalUrl, new=$imageUrl");
+                                } else {
+                                    error_log("  [DEBUG] URL is already permanent (no /temp/)");
                                 }
                                 
                                 $sampleImagesArray[] = [
@@ -764,13 +901,19 @@ class PhotoChecklistConfigAPI {
                         if (isset($item['photo_requirements']['max_video_duration_seconds'])) {
                             $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
                         }
+
+                        $linksPayload = [];
+                        if (!empty($item['links']) && is_array($item['links'])) {
+                            $linksPayload = $item['links'];
+                        }
                         
-                        // Insert with NULL parent_id initially - dynamically build SQL based on available columns
+                        // Insert item with correct parent_id IMMEDIATELY
                         $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
-                        $insertValues = ['?', '?', 'NULL', '?', '?', '?', '?', '?', '?'];
+                        $insertValues = ['?', '?', '?', '?', '?', '?', '?', '?', '?'];
                         $executeParams = [
                             $templateId,
                             $orderIndex,
+                            $parentId,  // ← Set parent_id NOW, not in second pass!
                             $level,
                             $title,
                             $item['description'] ?? '',
@@ -796,10 +939,21 @@ class PhotoChecklistConfigAPI {
                             $insertValues[] = '?';
                             $executeParams[] = !empty($videoRequirements) ? json_encode($videoRequirements) : null;
                         }
+
+                        if ($hasLinksColumn) {
+                            $insertColumns[] = 'links';
+                            $insertValues[] = '?';
+                            $executeParams[] = json_encode($linksPayload);
+                        }
                         
                         $insertColumns[] = 'is_required';
                         $insertValues[] = '?';
                         $executeParams[] = $item['is_required'] ?? true;
+                        
+                        // DEBUG: Log what we're about to save to database
+                        if (!empty($sampleImagesArray)) {
+                            error_log("  💾 About to save sample_images JSON to DB: " . json_encode($sampleImagesArray));
+                        }
                         
                         $sql = "INSERT INTO checklist_items (" . implode(', ', $insertColumns) . ") 
                                 VALUES (" . implode(', ', $insertValues) . ")";
@@ -810,66 +964,32 @@ class PhotoChecklistConfigAPI {
                     // Get the database ID for this item
                     $dbId = $this->conn->lastInsertId();
                     
-                    // Map order_index → database_id (use string keys to avoid float/int issues)
-                    $mapKey = (string)$orderIndex;
-                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    // Save sample media to new table (use processed arrays to avoid temp URLs)
+                    $this->saveSampleMediaForItem($dbId, $item, $sampleImagesArray ?? null, $sampleVideosArray ?? null);
                     
-                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    // Track this item's database ID for its level (for child items to use as parent_id)
+                    $lastItemAtLevel[$level] = $dbId;
                     
-                    // If this is a child item (has parent), track it for updating
-                    if ($parentOrderIndex !== null) {
-                        $itemsToUpdate[] = [
-                            'db_id' => $dbId,
-                            'parent_order_index' => $parentOrderIndex
-                        ];
-                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
-                    }
+                    error_log("    ✅ Inserted with DB ID=$dbId, stored at level[$level] for future children");
                 }
                 
-                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
-                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
-                
-                // PASS 2: Update child items' parent_id to actual database IDs
-                foreach ($itemsToUpdate as $update) {
-                    $parentOrderIndex = $update['parent_order_index'];
-                    $childDbId = $update['db_id'];
-                    
-                    // Convert to string key for consistent lookup
-                    $lookupKey = (string)$parentOrderIndex;
-                    
-                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
-                    
-                    // Look up the actual database ID for the parent
-                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
-                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
-                        
-                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
-                        
-                        // Update the child item's parent_id
-                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
-                        $stmt = $this->conn->prepare($sql);
-                        $stmt->execute([$parentDbId, $childDbId]);
-                    } else {
-                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
-                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
-                    }
-                }
-                
-                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
+                error_log("=== ONE-PASS save complete ===");
             }
             
             $this->conn->commit();
             
-            // Return detailed info for debugging (visible in browser Network tab)
+            // Fetch the saved template with updated URLs to return to frontend
+            $savedTemplate = $this->getTemplate($templateId);
+            
             return [
                 'success' => true, 
                 'template_id' => $templateId,
+                'template' => $savedTemplate,
+                'image_move_log' => $this->debugLog, // Include debug log in response
                 'debug_info' => [
-                    'items_received' => count($data['items']),
-                    'items_inserted' => count($orderIndexToDbIdMap),
-                    'child_items_updated' => count($itemsToUpdate),
-                    'order_index_map' => $orderIndexToDbIdMap,
-                    'message' => 'Check database to verify all items saved with correct parent_id'
+                    'items_saved' => count($data['items'] ?? []),
+                    'algorithm' => 'ONE-PASS (sequential parent_id assignment)',
+                    'message' => 'All items saved with correct parent_id in single pass'
                 ]
             ];
             
@@ -888,36 +1008,71 @@ class PhotoChecklistConfigAPI {
         $this->conn->beginTransaction();
         
         try {
+            $existsStmt = $this->conn->prepare("SELECT id FROM checklist_templates WHERE id = ?");
+            $existsStmt->execute([$id]);
+            if (!$existsStmt->fetch(PDO::FETCH_ASSOC)) {
+                $this->conn->rollback();
+                return ['success' => false, 'error' => 'Template not found'];
+            }
+
             // Update template (removed is_active = 1 check to allow updating inactive templates)
-            $sql = "UPDATE checklist_templates 
-                    SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
-                $data['name'],
-                $data['description'] ?? '',
-                $data['part_number'] ?? '',
-                $data['customer_part_number'] ?? null,
-                $data['revision'] ?? null,
-                $data['original_filename'] ?? null,
-                $data['review_date'] ?? null,
-                $data['revision_number'] ?? null,
-                $data['revision_details'] ?? null,
-                $data['revised_by'] ?? null,
-                $data['product_type'] ?? '',
-                $data['category'] ?? 'quality_control',
-                $data['is_active'] ?? true,
-                $id
-            ]);
+            $isDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : null;
+            
+            if ($isDraft !== null) {
+                // Update with draft status
+                $sql = "UPDATE checklist_templates 
+                        SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, is_draft = ?, last_autosave_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $data['name'],
+                    $data['description'] ?? '',
+                    $data['part_number'] ?? '',
+                    $data['customer_part_number'] ?? null,
+                    $data['revision'] ?? null,
+                    $data['original_filename'] ?? null,
+                    $data['review_date'] ?? null,
+                    $data['revision_number'] ?? null,
+                    $data['revision_details'] ?? null,
+                    $data['revised_by'] ?? null,
+                    $data['product_type'] ?? '',
+                    $data['category'] ?? 'quality_control',
+                    $data['is_active'] ?? 1,
+                    $isDraft,
+                    $id
+                ]);
+            } else {
+                // Update without changing draft status
+                $sql = "UPDATE checklist_templates 
+                        SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $data['name'],
+                    $data['description'] ?? '',
+                    $data['part_number'] ?? '',
+                    $data['customer_part_number'] ?? null,
+                    $data['revision'] ?? null,
+                    $data['original_filename'] ?? null,
+                    $data['review_date'] ?? null,
+                    $data['revision_number'] ?? null,
+                    $data['revision_details'] ?? null,
+                    $data['revised_by'] ?? null,
+                    $data['product_type'] ?? '',
+                    $data['category'] ?? 'quality_control',
+                    $data['is_active'] ?? 1,
+                    $id
+                ]);
+            }
             
             // Delete existing items
             $sql = "DELETE FROM checklist_items WHERE template_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$id]);
             
-            // Insert updated items with TWO-PASS approach (same as createTemplate)
+            // Insert updated items with ONE-PASS approach (same as createTemplate)
             if (!empty($data['items'])) {
-                error_log("🔵 updateTemplate: Starting to insert " . count($data['items']) . " items");
+                error_log("=== Starting ONE-PASS item save for template update ID=$id ===");
                 
                 // Check if sample_images and sample_videos columns exist once (moved outside loop for efficiency)
                 $checkColumnSql = "SHOW COLUMNS FROM checklist_items LIKE 'sample_images'";
@@ -939,27 +1094,28 @@ class PhotoChecklistConfigAPI {
                 $checkSubmissionTypeStmt = $this->conn->prepare($checkSubmissionTypeSql);
                 $checkSubmissionTypeStmt->execute();
                 $hasSubmissionTypeColumn = $checkSubmissionTypeStmt->rowCount() > 0;
+
+                $checkLinksSql = "SHOW COLUMNS FROM checklist_items LIKE 'links'";
+                $checkLinksStmt = $this->conn->prepare($checkLinksSql);
+                $checkLinksStmt->execute();
+                $hasLinksColumn = $checkLinksStmt->rowCount() > 0;
                 
-                // TWO-PASS APPROACH:
-                // Pass 1: Insert ALL items, build order_index → database_id map
-                // Pass 2: Update child items' parent_id from order_index to actual database ID
+                // ONE-PASS ALGORITHM: Track last inserted database ID at each level
+                $lastItemAtLevel = [];
                 
-                $orderIndexToDbIdMap = []; // Maps order_index → database_id (use string keys for consistency)
-                $itemsToUpdate = []; // Track [child_db_id, parent_order_index] pairs
-                
-                // PASS 1: Insert all items with NULL parent_id
+                // SINGLE PASS: Insert items sequentially and set parent_id immediately
                 foreach ($data['items'] as $index => $item) {
                     $orderIndex = $item['order_index'] ?? ($index + 1);
                     $level = $item['level'] ?? 0;
                     $title = $item['title'];
                     
-                    // Determine parent order_index from child's order_index (e.g., 3.01 → parent is 3)
-                    $parentOrderIndex = null;
-                    if ($level > 0 && strpos((string)$orderIndex, '.') !== false) {
-                        $parentOrderIndex = floor($orderIndex); // 3.01 → 3, 11.05 → 11
+                    // Determine parent_id from lastItemAtLevel array
+                    $parentId = null;
+                    if ($level > 0 && isset($lastItemAtLevel[$level - 1])) {
+                        $parentId = $lastItemAtLevel[$level - 1];
                     }
                     
-                    error_log("  📝 Pass 1 - Item $index: order_index=$orderIndex, level=$level, parent_order_index=$parentOrderIndex, title='$title'");
+                    error_log("  📝 Item #$index: order=$orderIndex, level=$level, parent_id=" . ($parentId ?? 'NULL') . ", title='$title'");
                     
                     // Get sample image URL from frontend (single string format)
                     $sampleImageUrl = $item['sample_image_url'] ?? '';
@@ -1071,12 +1227,13 @@ class PhotoChecklistConfigAPI {
                             $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
                         }
                         
-                        // Insert with NULL parent_id initially - dynamically build SQL based on available columns
+                        // Insert item with correct parent_id IMMEDIATELY
                         $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
-                        $insertValues = ['?', '?', 'NULL', '?', '?', '?', '?', '?', '?'];
+                        $insertValues = ['?', '?', '?', '?', '?', '?', '?', '?', '?'];
                         $executeParams = [
                             $id,
                             $orderIndex,
+                            $parentId,  // ← Set parent_id NOW, not in second pass!
                             $level,
                             $title,
                             $item['description'] ?? '',
@@ -1116,60 +1273,74 @@ class PhotoChecklistConfigAPI {
                     // Get the database ID for this item
                     $dbId = $this->conn->lastInsertId();
                     
-                    // Map order_index → database_id (use string keys to avoid float/int issues)
-                    $mapKey = (string)$orderIndex;
-                    $orderIndexToDbIdMap[$mapKey] = $dbId;
+                    // Save sample media to new table (use processed arrays to avoid temp URLs)
+                    $this->saveSampleMediaForItem($dbId, $item, $sampleImagesArray ?? null, $sampleVideosArray ?? null);
                     
-                    error_log("    ✅ Inserted with database ID=$dbId, mapped '$mapKey' → $dbId");
+                    // Track this item's database ID for its level (for child items to use as parent_id)
+                    $lastItemAtLevel[$level] = $dbId;
                     
-                    // If this is a child item (has parent), track it for updating
-                    if ($parentOrderIndex !== null) {
-                        $itemsToUpdate[] = [
-                            'db_id' => $dbId,
-                            'parent_order_index' => $parentOrderIndex
-                        ];
-                        error_log("    🔗 Child item: will update parent_id to match order_index $parentOrderIndex");
-                    }
+                    error_log("    ✅ Inserted with DB ID=$dbId, stored at level[$level] for future children");
                 }
                 
-                error_log("🟢 Pass 1 Complete: Inserted " . count($orderIndexToDbIdMap) . " items");
-                error_log("🔵 Pass 2: Updating parent_id for " . count($itemsToUpdate) . " child items");
-                
-                // PASS 2: Update child items' parent_id to actual database IDs
-                foreach ($itemsToUpdate as $update) {
-                    $parentOrderIndex = $update['parent_order_index'];
-                    $childDbId = $update['db_id'];
-                    
-                    // Convert to string key for consistent lookup
-                    $lookupKey = (string)$parentOrderIndex;
-                    
-                    error_log("  🔍 Child ID=$childDbId: Looking for parent with order_index='$lookupKey'");
-                    
-                    // Look up the actual database ID for the parent
-                    if (isset($orderIndexToDbIdMap[$lookupKey])) {
-                        $parentDbId = $orderIndexToDbIdMap[$lookupKey];
-                        
-                        error_log("    ✅ Found parent database ID=$parentDbId, updating child ID=$childDbId");
-                        
-                        // Update the child item's parent_id
-                        $sql = "UPDATE checklist_items SET parent_id = ? WHERE id = ?";
-                        $stmt = $this->conn->prepare($sql);
-                        $stmt->execute([$parentDbId, $childDbId]);
-                    } else {
-                        error_log("    ❌ ERROR: Parent with order_index='$lookupKey' NOT FOUND in map!");
-                        error_log("    Available keys in map: " . implode(", ", array_keys($orderIndexToDbIdMap)));
-                    }
-                }
-                
-                error_log("🟢 Pass 2 Complete: Updated parent_id for child items");
+                error_log("=== ONE-PASS update complete ===");
             }
             
             $this->conn->commit();
-            return ['success' => true, 'template_id' => $id];
+            
+            // Fetch the updated template with new URLs to return to frontend
+            $updatedTemplate = $this->getTemplate($id);
+            
+            return [
+                'success' => true, 
+                'template_id' => $id, 
+                'template' => $updatedTemplate,
+                'algorithm' => 'ONE-PASS'
+            ];
             
         } catch (Exception $e) {
             $this->conn->rollback();
             throw $e;
+        }
+    }
+
+    /**
+     * Auto-save template as draft (creates new or updates existing draft)
+     * Called every 10 seconds from frontend
+     */
+    public function autosaveTemplate($id = null) {
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Force draft status
+        $data['is_draft'] = 1;
+        
+        error_log("🔄 Auto-saving template" . ($id ? " ID=$id" : " (new)"));
+        
+        if ($id) {
+            // Update existing draft
+            return $this->updateTemplate($id);
+        } else {
+            // Create new draft
+            return $this->createTemplate();
+        }
+    }
+
+    /**
+     * Publish template (convert draft to published)
+     */
+    public function publishTemplate($id) {
+        try {
+            $sql = "UPDATE checklist_templates 
+                    SET is_draft = 0, updated_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$id]);
+            
+            error_log("✅ Published template ID=$id");
+            
+            return ['success' => true, 'template_id' => $id, 'published' => true];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -1396,6 +1567,11 @@ class PhotoChecklistConfigAPI {
                 if (is_string($photoRequirements)) {
                     $photoRequirements = json_decode($photoRequirements, true) ?: [];
                 }
+
+                $links = $row['links'] ?? [];
+                if (is_string($links)) {
+                    $links = json_decode($links, true) ?: [];
+                }
                 
                 $items[$itemId] = [
                     'id' => (int)$row['id'],
@@ -1404,6 +1580,7 @@ class PhotoChecklistConfigAPI {
                     'title' => $row['title'],
                     'description' => $row['description'],
                     'photo_requirements' => $photoRequirements,
+                    'links' => $links,
                     'sample_image_url' => $row['sample_image_url'],
                     'is_required' => (bool)$row['is_required'],
                     'level' => isset($row['level']) ? (int)$row['level'] : 0,
@@ -1941,41 +2118,85 @@ class PhotoChecklistConfigAPI {
      * @return string - New permanent URL
      */
     private function moveTempImageToPermanent($tempUrl) {
+        $debugEntry = ['original_url' => $tempUrl];
+        
         try {
+            error_log("🔄 moveTempImageToPermanent called with: $tempUrl");
+            
             // Extract the filename from the temp URL
             // Example: https://dashboard.eye-fi.com/attachments/photoChecklist/temp/temp_item-0-ref-1763481030603_691c95c69aaad.png
             $urlPath = parse_url($tempUrl, PHP_URL_PATH);
             $filename = basename($urlPath);
             
+            $debugEntry['filename'] = $filename;
+            
             // Define paths
             $tempDir = __DIR__ . '/../../../attachments/photoChecklist/temp/';
             $permanentDir = __DIR__ . '/../../../attachments/photoChecklist/';
+
+            // Ensure permanent directory exists
+            if (!is_dir($permanentDir)) {
+                @mkdir($permanentDir, 0755, true);
+            }
             
             $tempFilePath = $tempDir . $filename;
+            
+            $debugEntry['temp_path'] = $tempFilePath;
+            $debugEntry['temp_file_exists'] = file_exists($tempFilePath);
             
             // Remove 'temp_' prefix from filename for permanent storage
             $permanentFilename = preg_replace('/^temp_/', '', $filename);
             $permanentFilePath = $permanentDir . $permanentFilename;
             
+            $debugEntry['permanent_path'] = $permanentFilePath;
+            
             // Check if temp file exists
             if (file_exists($tempFilePath)) {
+                
                 // Move the file
                 if (rename($tempFilePath, $permanentFilePath)) {
                     // Return the new permanent URL
                     $permanentUrl = str_replace('/temp/temp_', '/', $tempUrl);
-                    error_log("  ✅ Moved temp image: $filename -> $permanentFilename");
+                    $debugEntry['status'] = 'success';
+                    $debugEntry['new_url'] = $permanentUrl;
+                    $this->debugLog[] = $debugEntry;
                     return $permanentUrl;
                 } else {
-                    error_log("  ❌ Failed to move temp image: $tempFilePath");
+                    // Fallback: copy+unlink for cross-device or permission issues
+                    if (@copy($tempFilePath, $permanentFilePath)) {
+                        @unlink($tempFilePath);
+                        $permanentUrl = str_replace('/temp/temp_', '/', $tempUrl);
+                        $debugEntry['status'] = 'copied_then_deleted';
+                        $debugEntry['new_url'] = $permanentUrl;
+                        $this->debugLog[] = $debugEntry;
+                        return $permanentUrl;
+                    }
+
+                    $debugEntry['status'] = 'failed_to_move';
+                    $debugEntry['error'] = error_get_last()['message'] ?? 'Unknown error';
+                    $this->debugLog[] = $debugEntry;
                     return $tempUrl; // Return original if move fails
                 }
             } else {
                 // File doesn't exist in temp - might already be permanent or doesn't exist
-                error_log("  ⚠️ Temp file not found: $tempFilePath");
+                
+                // Check if file already exists in permanent location
+                if (file_exists($permanentFilePath)) {
+                    $permanentUrl = str_replace('/temp/temp_', '/', $tempUrl);
+                    $debugEntry['status'] = 'already_permanent';
+                    $debugEntry['new_url'] = $permanentUrl;
+                    $this->debugLog[] = $debugEntry;
+                    return $permanentUrl;
+                }
+                
+                $debugEntry['status'] = 'temp_file_not_found';
+                $this->debugLog[] = $debugEntry;
                 return $tempUrl; // Return original URL
             }
         } catch (Exception $e) {
-            error_log("  ❌ Error moving temp image: " . $e->getMessage());
+            $debugEntry['status'] = 'exception';
+            $debugEntry['error'] = $e->getMessage();
+            $this->debugLog[] = $debugEntry;
             return $tempUrl; // Return original URL on error
         }
     }
@@ -2029,6 +2250,49 @@ class PhotoChecklistConfigAPI {
             'changes' => $changes,
             'summary' => $summary
         ];
+    }
+
+    /**
+     * We need to set the sample media 
+     * Save sample media for an item to the new table
+     * Merges sample_images and sample_videos arrays from frontend
+     * 
+     * @param int $itemId The database ID of the checklist item
+     * @param array $item The item data from frontend containing sample_images and sample_videos
+     */
+    private function saveSampleMediaForItem($itemId, $item, $processedSampleImages = null, $processedSampleVideos = null) {
+        // Combine sample_images and sample_videos into single array for the service
+        $allMedia = [];
+
+        // Add images
+        $imagesToSave = $processedSampleImages;
+        if ($imagesToSave === null) {
+            $imagesToSave = (!empty($item['sample_images']) && is_array($item['sample_images'])) ? $item['sample_images'] : [];
+        }
+
+        if (!empty($imagesToSave)) {
+            foreach ($imagesToSave as $img) {
+                $allMedia[] = array_merge($img, ['media_type' => 'image']);
+            }
+        }
+
+        // Add videos
+        $videosToSave = $processedSampleVideos;
+        if ($videosToSave === null) {
+            $videosToSave = (!empty($item['sample_videos']) && is_array($item['sample_videos'])) ? $item['sample_videos'] : [];
+        }
+
+        if (!empty($videosToSave)) {
+            foreach ($videosToSave as $vid) {
+                $allMedia[] = array_merge($vid, ['media_type' => 'video']);
+            }
+        }
+
+        // Save to database using the service
+        if (!empty($allMedia)) {
+            $this->mediaService->saveMediaForItem($itemId, $allMedia);
+            error_log("      💾 Saved " . count($allMedia) . " media items to new table for item $itemId");
+        }
     }
 }
 

@@ -1,4 +1,6 @@
 <?php
+require '/var/www/html/server/Databases/DatabaseEyefiV1.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -71,7 +73,7 @@ try {
     $file_url = 'https://dashboard.eye-fi.com/attachments/photoChecklist/' . $unique_filename;
     
     // Update the database
-    $pdo = getConnection();
+    $pdo = $database->pdo;
     
     // First, verify the template and item exist
     $stmt = $pdo->prepare("
