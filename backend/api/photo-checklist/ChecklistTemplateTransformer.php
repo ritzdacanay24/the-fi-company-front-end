@@ -35,6 +35,7 @@ class ChecklistTemplateTransformer {
             'description' => $dbTemplate['description'] ?? '',
             'part_number' => $dbTemplate['part_number'] ?? '',
             'customer_part_number' => $dbTemplate['customer_part_number'] ?? '',
+            'customer_name' => $dbTemplate['customer_name'] ?? '',
             'revision' => $dbTemplate['revision'] ?? '',
             'original_filename' => $dbTemplate['original_filename'] ?? '',
             'review_date' => $dbTemplate['review_date'] ?? null,
@@ -47,6 +48,8 @@ class ChecklistTemplateTransformer {
             'template_group_id' => isset($dbTemplate['template_group_id']) ? (int)$dbTemplate['template_group_id'] : null,
             'parent_template_id' => isset($dbTemplate['parent_template_id']) ? (int)$dbTemplate['parent_template_id'] : null,
             'is_active' => self::toBoolean($dbTemplate['is_active'] ?? true),
+            'is_draft' => self::toBoolean($dbTemplate['is_draft'] ?? false),
+            'published_at' => $dbTemplate['published_at'] ?? null,
             'created_at' => $dbTemplate['created_at'] ?? null,
             'updated_at' => $dbTemplate['updated_at'] ?? null,
             'created_by' => $dbTemplate['created_by'] ?? null,
@@ -265,6 +268,23 @@ class ChecklistTemplateTransformer {
         if (is_string($links)) {
             $decodedLinks = json_decode($links, true);
             $links = is_array($decodedLinks) ? $decodedLinks : [];
+        }
+
+        // Backward/forward compatibility: frontend expects `title`
+        if (is_array($links)) {
+            $normalizedLinks = [];
+            foreach ($links as $link) {
+                if (!is_array($link)) {
+                    continue;
+                }
+
+                if (!isset($link['title']) && isset($link['label'])) {
+                    $link['title'] = $link['label'];
+                }
+
+                $normalizedLinks[] = $link;
+            }
+            $links = $normalizedLinks;
         }
         
         // Build clean photo_requirements (no duplication)

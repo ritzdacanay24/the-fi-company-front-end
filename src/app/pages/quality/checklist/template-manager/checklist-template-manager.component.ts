@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
 
 interface SampleImage {
@@ -20,6 +21,19 @@ interface SampleImage {
   is_primary: boolean;
   order_index: number;
   status?: 'loading' | 'loaded' | 'error';
+}
+
+interface MajorNavNode {
+  major: number;
+  currentTemplate: ChecklistTemplate | null;
+  templates: ChecklistTemplate[];
+}
+
+interface FamilyNavNode {
+  groupId: number;
+  label: string;
+  currentTemplate: ChecklistTemplate | null;
+  majorNodes: MajorNavNode[];
 }
 
 @Component({
@@ -148,172 +162,267 @@ interface SampleImage {
             
             <div class="card-body p-0">
               <ng-container *ngIf="getFilteredTemplates()?.length; else noRecords">
-                <div class="table-responsive">
-                  <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th style="width: 120px;">Actions</th>
-                        <th>Template Name</th>
-                        <th>Category</th>
-                        <th>Description</th>
-                        <th>Part Number</th>
-                        <th>Items</th>
-                        <th>Version</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <ng-container *ngFor="let group of getGroupedTemplates() | keyvalue; trackBy: trackByGroupId">
-                        <ng-container *ngIf="group.value && group.value.length > 0">
-                          <!-- Latest Version (Main Row) -->
-                          <tr class="align-middle" 
-                              [class.table-primary]="group.value.length > 1"
-                              [style.border-left]="group.value.length > 1 ? '4px solid #0d6efd' : 'none'">
-                            <td>
-                              <div class="d-flex gap-1 align-items-center justify-content-center">
-                                <!-- Expand/Collapse Button for version groups -->
-                                <button 
-                                  *ngIf="group.value.length > 1"
-                                  class="btn btn-sm btn-outline-secondary" 
-                                  (click)="toggleGroup(group.key)"
-                                  title="{{isGroupExpanded(group.key) ? 'Hide' : 'Show'}} older versions">
-                                  <i class="mdi" [class.mdi-chevron-down]="!isGroupExpanded(group.key)" 
-                                     [class.mdi-chevron-up]="isGroupExpanded(group.key)"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary" 
-                                        (click)="viewTemplate(getLatestVersion(group.value))"
-                                        title="View Template">
-                                  <i class="mdi mdi-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary" 
-                                        (click)="editTemplate(getLatestVersion(group.value))"
-                                        title="Edit Template">
-                                  <i class="mdi mdi-pencil"></i>
-                                </button>
-                                <button *ngIf="getLatestVersion(group.value).quality_document_metadata"
-                                        class="btn btn-sm btn-outline-info" 
-                                        (click)="viewRevisionHistory(getLatestVersion(group.value))"
-                                        title="View Revision History">
-                                  <i class="mdi mdi-history"></i>
-                                </button>
-                              </div>
-                            </td>
-                            <td>
-                              <div class="d-flex align-items-center">
-                                <div>
-                                  <div class="fw-semibold">{{getLatestVersion(group.value).name}}</div>
-                                  <small class="text-muted" *ngIf="group.value.length > 1">
-                                    <i class="mdi mdi-history me-1"></i>
-                                    {{group.value.length}} version{{group.value.length > 1 ? 's' : ''}} available
-                                  </small>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              <span class="badge bg-primary">{{getLatestVersion(group.value).category | titlecase}}</span>
-                            </td>
-                            <td>
-                              <span class="text-muted">{{getLatestVersion(group.value).description || 'No description available'}}</span>
-                            </td>
-                            <td>
-                              <code *ngIf="getLatestVersion(group.value).part_number">{{getLatestVersion(group.value).part_number}}</code>
-                              <span class="text-muted" *ngIf="!getLatestVersion(group.value).part_number">-</span>
-                            </td>
-                            <td>
-                              <div class="text-center">
-                                <div class="fw-semibold">{{getLatestVersion(group.value).item_count || 0}}</div>
-                                <small class="text-muted">items</small>
-                              </div>
-                            </td>
-                            <td>
-                              <span class="badge bg-success bg-gradient">
-                                <i class="mdi mdi-check-circle me-1"></i>
-                                v{{getLatestVersion(group.value).version}}
-                              </span>
-                            </td>
-                            <td>
-                              <span class="badge" [class]="getLatestVersion(group.value).is_active ? 'bg-success' : 'bg-danger'">
-                                {{getLatestVersion(group.value).is_active ? 'Active' : 'Inactive'}}
-                              </span>
-                            </td>
-                            <td>
-                              <small class="text-muted">
-                                {{getLatestVersion(group.value).created_at | date:'MMM d, y'}}
-                              </small>
-                            </td>
-                          </tr>
+                <div class="row g-0">
+                  <div #branchNavPanel class="col-12 col-lg-3 border-end bg-light branch-nav-panel">
+                    <div class="p-3">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="mb-0 text-primary">
+                          <i class="mdi mdi-folder-multiple-outline me-1"></i>Template Families
+                        </h6>
+                        <span class="badge bg-secondary">{{getFamilyNavNodes().length}}</span>
+                      </div>
+                      <small class="text-muted d-block mb-2">Select a part/customer</small>
 
-                          <!-- Older Versions (Expandable Rows) -->
-                          <ng-container *ngIf="isGroupExpanded(group.key) && getOlderVersions(group.value).length > 0">
-                            <tr *ngFor="let template of getOlderVersions(group.value); let i = index" 
-                                class="align-middle bg-light"
-                                style="border-left: 4px solid #6c757d;">
-                              <td>
-                                <div class="d-flex gap-1 align-items-center justify-content-center">
-                                  <div style="width: 32px;"></div> <!-- Spacer for alignment -->
-                                  <button class="btn btn-sm btn-outline-primary" 
-                                          (click)="viewTemplate(template)"
-                                          title="View Template">
-                                    <i class="mdi mdi-eye"></i>
-                                  </button>
-                                  <button class="btn btn-sm btn-outline-secondary" 
-                                          (click)="editTemplate(template)"
-                                          title="Edit Template">
-                                    <i class="mdi mdi-pencil"></i>
-                                  </button>
-                                  <button *ngIf="template.quality_document_metadata"
-                                          class="btn btn-sm btn-outline-info" 
-                                          (click)="viewRevisionHistory(template)"
-                                          title="View Revision History">
-                                    <i class="mdi mdi-history"></i>
-                                  </button>
-                                </div>
-                              </td>
-                              <td>
-                                <div class="d-flex align-items-center">
-                                  <i class="mdi mdi-subdirectory-arrow-right text-muted me-2"></i>
-                                  <div>
-                                    <div class="fw-normal">{{template.name}}</div>
-                                    <small class="text-muted">Previous version</small>
+                      <div class="list-group branch-nav-list" *ngIf="getFamilyNavNodes().length; else noBranchRoots">
+                        <ng-container *ngFor="let family of getFamilyNavNodes(); trackBy: trackByFamilyNavNode">
+                          <button
+                            type="button"
+                            class="list-group-item list-group-item-action"
+                            (click)="onFamilyNavClick(family)"
+                            [class.active]="isFamilySelected(family.groupId)">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
+                                <i class="mdi"
+                                   *ngIf="(family.majorNodes?.length || 0) > 0"
+                                   [class.mdi-chevron-down]="isFamilySelected(family.groupId)"
+                                   [class.mdi-chevron-right]="!isFamilySelected(family.groupId)"></i>
+                                <i class="mdi mdi-folder-outline"></i>
+                                <span class="fw-semibold text-truncate">{{family.label}}</span>
+                              </div>
+                              <span class="badge" [class]="isFamilySelected(family.groupId) ? 'bg-light text-dark' : 'bg-secondary'">
+                                {{family.majorNodes?.length || 0}}
+                              </span>
+                            </div>
+                            <small [class]="isFamilySelected(family.groupId) ? 'text-white-50' : 'text-muted'">
+                              <ng-container *ngIf="family.currentTemplate as current; else majorsLabel">
+                                <ng-container *ngIf="current.customer_name">Customer: {{ current.customer_name }} · </ng-container>
+                                <ng-container *ngIf="!current.customer_name && current.customer_part_number">Customer: {{ current.customer_part_number }} · </ng-container>
+                                Current: v{{ current.version }}
+                              </ng-container>
+                              <ng-template #majorsLabel>Major versions</ng-template>
+                            </small>
+                          </button>
+
+                          <div class="ms-3 mt-1 mb-2" *ngIf="isFamilySelected(family.groupId)">
+                            <div class="list-group">
+                              <ng-container *ngFor="let node of family.majorNodes; trackBy: trackByMajorNavNode">
+                                <button
+                                  type="button"
+                                  class="list-group-item list-group-item-action"
+                                  (click)="onMajorNavClickForFamily(family.groupId, node); $event.stopPropagation()"
+                                  [class.active]="isMajorSelected(node.major)">
+                                  <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
+                                      <i class="mdi"
+                                         [class.mdi-chevron-down]="isMajorExpanded(family.groupId, node.major)"
+                                         [class.mdi-chevron-right]="!isMajorExpanded(family.groupId, node.major)"></i>
+                                      <i class="mdi"
+                                         [class.mdi-folder-open]="isMajorExpanded(family.groupId, node.major)"
+                                         [class.mdi-folder]="!isMajorExpanded(family.groupId, node.major)"></i>
+                                      <span class="fw-semibold text-truncate">v{{node.major}}</span>
+                                    </div>
+                                    <span class="badge" [class]="isMajorSelected(node.major) ? 'bg-light text-dark' : 'bg-secondary'">
+                                      {{node.templates?.length || 0}}
+                                    </span>
+                                  </div>
+                                  <small [class]="isMajorSelected(node.major) ? 'text-white-50' : 'text-muted'">
+                                    {{node.currentTemplate?.is_draft ? 'Draft' : 'Published'}}
+                                    <ng-container *ngIf="node.currentTemplate">· v{{node.currentTemplate.version}}</ng-container>
+                                  </small>
+                                </button>
+
+                                <div class="ms-3 mt-1 mb-2" *ngIf="isMajorExpanded(family.groupId, node.major)">
+                                  <div class="list-group list-group-flush">
+                                    <button
+                                      type="button"
+                                      class="list-group-item list-group-item-action py-1"
+                                      *ngFor="let tpl of node.templates; trackBy: trackByTemplateId"
+                                      (click)="openTemplateFromNav(tpl); $event.stopPropagation()"
+                                      [class.active]="isNavTemplateSelected(tpl)">
+                                      <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center" style="gap: 6px; min-width: 0;">
+                                          <i class="mdi mdi-file-document-outline"></i>
+                                          <span class="small text-truncate">v{{tpl.version}}</span>
+                                        </div>
+                                        <span class="badge" [class]="tpl.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
+                                          {{tpl.is_draft ? 'Draft' : 'Published'}}
+                                        </span>
+                                      </div>
+                                    </button>
                                   </div>
                                 </div>
-                              </td>
-                              <td>
-                                <span class="badge bg-secondary bg-opacity-75">{{template.category | titlecase}}</span>
-                              </td>
-                              <td>
-                                <span class="text-muted small">{{template.description || 'No description available'}}</span>
-                              </td>
-                              <td>
-                                <code *ngIf="template.part_number" class="small">{{template.part_number}}</code>
-                                <span class="text-muted" *ngIf="!template.part_number">-</span>
-                              </td>
-                              <td>
-                                <div class="text-center">
-                                  <div class="small">{{template.item_count || 0}}</div>
-                                  <small class="text-muted" style="font-size: 0.7rem;">items</small>
-                                </div>
-                              </td>
-                              <td>
-                                <span class="badge bg-secondary">v{{template.version}}</span>
-                              </td>
-                              <td>
-                                <span class="badge bg-secondary bg-opacity-50">
-                                  {{template.is_active ? 'Active' : 'Inactive'}}
-                                </span>
-                              </td>
-                              <td>
-                                <small class="text-muted small">
-                                  {{template.created_at | date:'MMM d, y'}}
-                                </small>
-                              </td>
-                            </tr>
-                          </ng-container>
+                              </ng-container>
+                            </div>
+                          </div>
                         </ng-container>
-                      </ng-container>
-                    </tbody>
-                  </table>
+                      </div>
+                      <ng-template #noBranchRoots>
+                        <div class="small text-muted py-2">No major versions match current filters.</div>
+                      </ng-template>
+                    </div>
+
+                  </div>
+
+                  <div class="col-12 col-lg-9">
+                    <div class="p-3 border-bottom bg-light">
+                      <div class="d-flex align-items-center justify-content-between">
+                        <h6 class="mb-0 text-primary">
+                          <i class="mdi mdi-source-branch me-1"></i>
+                          <ng-container *ngIf="getSelectedMajorNumber() !== null; else noMajorSelected">
+                            Major v{{ getSelectedMajorNumber() }}
+                          </ng-container>
+                          <ng-template #noMajorSelected>Versions</ng-template>
+                        </h6>
+                        <span class="badge bg-secondary" *ngIf="getSelectedMajorNumber() !== null">v{{ getSelectedMajorNumber() }}</span>
+                      </div>
+                      <small class="text-muted d-block" *ngIf="getSelectedMajorNumber() === null">Select a major version on the left to view its versions.</small>
+                    </div>
+
+                    <div #versionsTableContainer class="table-responsive">
+                      <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th style="width: 100px; min-width: 100px;" class="text-center">Type</th>
+                            <th style="width: 190px; min-width: 190px;">Actions</th>
+                            <th>Version</th>
+                            <th>Customer</th>
+                            <th>ID</th>
+                            <th>Template Name</th>
+                            <th>Category</th>
+                            <th>Part Number</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Created</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let template of getSelectedBranchTemplates(); trackBy: trackByTemplateId" class="align-middle">
+                        <td class="text-center" style="min-width: 100px; white-space: nowrap;">
+                          <span class="badge" [class]="template.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
+                            {{template.is_draft ? 'Draft' : 'Published'}}
+                          </span>
+                        </td>
+                        <td style="min-width: 190px; white-space: nowrap;">
+                          <div class="d-flex gap-1">
+                            <div class="btn-group btn-group-sm" ngbDropdown container="body">
+                              <button class="btn btn-outline-secondary"
+                                      (click)="template.is_draft ? editTemplate(template) : viewTemplate(template)"
+                                      [title]="template.is_draft ? 'Edit Draft' : 'View Template'">
+                                <i class="mdi me-1" [class.mdi-pencil]="template.is_draft" [class.mdi-eye]="!template.is_draft"></i>
+                                {{ template.is_draft ? 'Edit' : 'View' }}
+                              </button>
+                              <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split"
+                                      ngbDropdownToggle
+                                      type="button"
+                                      aria-label="More actions">
+                              </button>
+                              <div ngbDropdownMenu>
+                                <button ngbDropdownItem
+                                        (click)="viewTemplate(template)">
+                                  <i class="mdi mdi-eye me-2"></i>View
+                                </button>
+                                <button ngbDropdownItem
+                                        *ngIf="!template.is_draft"
+                                        (click)="createNewParentVersion(template)">
+                                  <i class="mdi mdi-source-branch me-2"></i>New Major Version (v{{ getNextMajorVersion(template) }})
+                                </button>
+                                <button ngbDropdownItem
+                                        *ngIf="template.quality_document_metadata"
+                                        (click)="viewRevisionHistory(template)">
+                                  <i class="mdi mdi-history me-2"></i>Revision History
+                                </button>
+                                <button ngbDropdownItem
+                                        class="text-danger"
+                                        (click)="template.is_draft ? discardDraft(template) : deleteTemplate(template)">
+                                  <i class="mdi mdi-delete me-2"></i>{{ template.is_draft ? 'Discard Draft' : 'Delete' }}
+                                </button>
+                                <button ngbDropdownItem
+                                        class="text-danger"
+                                        *ngIf="!template.is_draft && !template.is_active"
+                                        (click)="hardDeleteTemplate(template)">
+                                  <i class="mdi mdi-delete-forever me-2"></i>Hard Delete (Permanent)
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge bg-success bg-gradient" style="white-space: nowrap;">
+                            <i class="mdi mdi-check-circle me-1"></i>
+                            v{{template.version}}
+                          </span>
+                        </td>
+                        <td>
+                          <span class="text-muted">
+                            {{template.customer_name || template.customer_part_number || '—'}}
+                          </span>
+                        </td>
+                        <td>
+                          <div>
+                            <span class="text-muted">{{template.id}}</span>
+                            <small class="d-block text-info" *ngIf="getDraftParentId(template)">
+                              Parent ID: {{ getDraftParentId(template) }}
+                            </small>
+                            <small class="d-block text-info" *ngIf="getPublishedEditingTargetId(template)">
+                              Editing ID: {{ getPublishedEditingTargetId(template) }}
+                            </small>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="d-flex align-items-center">
+                            <i class="mdi mdi-file-document-outline text-muted me-2"></i>
+                            <div>
+                              <div class="fw-semibold d-flex align-items-center gap-2">
+                                <span>{{template.name}}</span>
+                              </div>
+                              <small class="text-muted" *ngIf="template.is_draft && getParentTemplateVersion(template)">
+                                Editing parent v{{ getParentTemplateVersion(template) }}
+                              </small>
+                              <small class="text-muted" *ngIf="!template.is_draft || !getParentTemplateVersion(template)">
+                                Template version
+                              </small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge bg-primary">{{template.category | titlecase}}</span>
+                        </td>
+                        <td>
+                          <code *ngIf="template.part_number">{{template.part_number}}</code>
+                          <span class="text-muted" *ngIf="!template.part_number">-</span>
+                        </td>
+                        <td>
+                          <div class="text-center">
+                            <div class="fw-semibold">{{template.item_count || 0}}</div>
+                            <small class="text-muted">items</small>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="badge" [class]="template.is_active ? 'bg-success' : 'bg-danger'">
+                            {{template.is_active ? 'Active' : 'Inactive'}}
+                          </span>
+                        </td>
+                        <td>
+                          <small class="text-muted">
+                            {{$any(template).created_by || '—'}}
+                          </small>
+                        </td>
+                        <td>
+                          <small class="text-muted">
+                            {{template.created_at | date:'MMM d, y'}}
+                          </small>
+                        </td>
+                          </tr>
+                          <tr *ngIf="getSelectedBranchTemplates().length === 0">
+                            <td colspan="12" class="text-center text-muted py-4">
+                              Select a major version to view its versions.
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </ng-container>
               <ng-template #noRecords>
@@ -343,7 +452,7 @@ interface SampleImage {
               <i class="mdi mdi-information me-2"></i>
               <span>Click "View" to preview templates or "Edit" to modify template configurations</span>
               <div class="ms-auto">
-                <small>Total: {{getFilteredTemplates()?.length || 0}} templates</small>
+                <small>Selected Major: {{getSelectedBranchTemplates()?.length || 0}} versions</small>
               </div>
             </div>
           </div>
@@ -438,7 +547,7 @@ interface SampleImage {
                   <div class="card-body text-center p-3">
                     <i class="mdi mdi-rocket text-primary mb-2" style="font-size: 2rem;"></i>
                     <h6 class="text-primary">Major Version</h6>
-                    <p class="small text-muted mb-2">New series v{{getNextMajorVersion(editingTemplate.version)}}</p>
+                    <p class="small text-muted mb-2">New series v{{getNextMajorVersion(editingTemplate)}}</p>
                     <button type="button" class="btn btn-outline-primary btn-sm" 
                             (click)="prepareMajorVersion()">
                       <i class="mdi mdi-rocket me-1"></i>
@@ -542,7 +651,7 @@ interface SampleImage {
                 <i class="mdi mdi-plus me-1"></i>
                 Add Item
               </button>
-              <div class="btn-group btn-group-sm ms-2" ngbDropdown placement="bottom-right">
+              <div class="btn-group btn-group-sm ms-2" ngbDropdown placement="bottom-right" container="body">
                 <button type="button" class="btn btn-sm btn-outline-success" ngbDropdownToggle>
                   <i class="mdi mdi-lightning-bolt"></i>
                   Quick Add
@@ -1382,11 +1491,6 @@ interface SampleImage {
                     <i class="mdi mdi-backup-restore me-1"></i>
                     Reactivate
                   </button>
-                  <button class="btn btn-sm btn-outline-info" 
-                          (click)="createVersionBranch(version)">
-                    <i class="mdi mdi-source-branch me-1"></i>
-                    New Branch
-                  </button>
                 </div>
               </div>
 
@@ -1781,6 +1885,14 @@ interface SampleImage {
     </ng-template>
   `,
   styles: [`
+    /* Left navigation: fixed-height + scroll (desktop) */
+    @media (min-width: 992px) {
+      .branch-nav-panel {
+        max-height: calc(100vh - 260px);
+        overflow-y: auto;
+      }
+    }
+
     /* Template Modal Sticky Footer */
     ::ng-deep .modal-content:has(.template-modal-footer) {
       display: flex;
@@ -2296,9 +2408,15 @@ interface SampleImage {
   ]
 })
 export class ChecklistTemplateManagerComponent implements OnInit {
+  private readonly templateManagerStateKey = 'checklist-template-manager-state:v1';
+  private pendingRestoreState: any | null = null;
+
   @ViewChild('versionHistoryModal') versionHistoryModal!: TemplateRef<any>;
   @ViewChild('versionComparisonModal') versionComparisonModal!: TemplateRef<any>;
   @ViewChild('revisionHistoryModal') revisionHistoryModal!: TemplateRef<any>;
+
+  @ViewChild('branchNavPanel') branchNavPanelRef?: ElementRef<HTMLElement>;
+  @ViewChild('versionsTableContainer') versionsTableContainerRef?: ElementRef<HTMLElement>;
 
   // Version tracking properties
   selectedTemplateFamily: ChecklistTemplate | null = null;
@@ -2317,7 +2435,9 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   // Enhanced template properties
   templates: ChecklistTemplate[] = [];
   templateFamilies: Map<string, ChecklistTemplate[]> = new Map();
-  expandedGroups: Set<number> = new Set(); // Track which template groups are expanded
+  selectedBranchParentId: number | null = null;
+  expandedFamilyGroupIds: Set<number> = new Set<number>();
+  expandedMajorVersionsByFamily: Map<number, Set<number>> = new Map<number, Set<number>>();
   
   loading = false;
   saving = false;
@@ -2327,7 +2447,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   templateFilters = {
     category: '',
     partNumber: '',
-    activeOnly: null as boolean | null
+    activeOnly: true as boolean | null
   };
   editingTemplate: ChecklistTemplate | null = null;
   templateForm: FormGroup;
@@ -2384,6 +2504,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     private attachmentsService: AttachmentsService,
     private uploadService: UploadService,
     private photoUploadService: PhotoChecklistUploadService,
+    private authenticationService: AuthenticationService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -2391,6 +2512,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.restoreStatePreLoad();
     this.loadTemplates();
     
     // Track form changes
@@ -2409,8 +2531,8 @@ export class ChecklistTemplateManagerComponent implements OnInit {
 
   viewTemplate(template: ChecklistTemplate): void {
     // Navigate to view mode or open preview modal
-    this.router.navigate(['../template-editor', template.id], { 
-      relativeTo: this.route,
+    this.saveStateForReturn();
+    this.router.navigate(['/quality/checklist/template-editor', template.id], {
       queryParams: { mode: 'view' }
     });
   }
@@ -2421,9 +2543,19 @@ export class ChecklistTemplateManagerComponent implements OnInit {
 
   loadTemplates(): void {
     this.loading = true;
-    this.configService.getTemplates().subscribe({
+    this.configService.getTemplatesIncludingInactive().subscribe({
       next: (templates) => {
-        this.templates = templates;
+        this.templates = (templates || []).map((t: any) => ({
+          ...t,
+          is_active: t?.is_active === true || t?.is_active === 1 || t?.is_active === '1',
+          is_draft: t?.is_draft === true || t?.is_draft === 1 || t?.is_draft === '1'
+        }));
+        if (this.pendingRestoreState) {
+          this.restoreStatePostLoad();
+        } else {
+          this.ensureSelectedBranchParent();
+          this.ensureExpandedDirectoryDefaults();
+        }
         this.buildTemplateFamiliesMap(); // Build family relationships for version indicators
         this.loading = false;
       },
@@ -2454,12 +2586,141 @@ export class ChecklistTemplateManagerComponent implements OnInit {
 
   editTemplate(template: ChecklistTemplate): void {
     // Navigate to the dedicated template editor page
-    this.router.navigate(['../template-editor', template.id], { relativeTo: this.route });
+    this.saveStateForReturn();
+    this.router.navigate(['/quality/checklist/template-editor', template.id]);
   }
 
   createNewTemplate(): void {
     // Navigate to the template editor page for creating a new template
-    this.router.navigate(['../template-editor'], { relativeTo: this.route });
+    this.saveStateForReturn();
+    this.router.navigate(['/quality/checklist/template-editor']);
+  }
+
+  private saveStateForReturn(): void {
+    try {
+      const state = {
+        v: 1,
+        ts: Date.now(),
+        selectedBranchParentId: this.selectedBranchParentId,
+        templateSearch: this.templateSearch,
+        templateFilters: this.templateFilters,
+        expandedFamilyGroupIds: Array.from(this.expandedFamilyGroupIds || []),
+        expandedMajorVersionsByFamily: Array.from(this.expandedMajorVersionsByFamily?.entries?.() || []).map(([groupId, majors]) => [
+          Number(groupId || 0),
+          Array.from(majors || [])
+        ]),
+        scroll: {
+          navTop: this.branchNavPanelRef?.nativeElement?.scrollTop ?? 0,
+          tableTop: this.versionsTableContainerRef?.nativeElement?.scrollTop ?? 0
+        }
+      };
+
+      window.sessionStorage.setItem(this.templateManagerStateKey, JSON.stringify(state));
+    } catch {
+      // Non-fatal; state restore is a UX improvement only.
+    }
+  }
+
+  private restoreStatePreLoad(): void {
+    const restored = this.readStoredState();
+    if (!restored) {
+      return;
+    }
+
+    // Apply filters/search up front so initial list is consistent.
+    if (typeof restored.templateSearch === 'string') {
+      this.templateSearch = restored.templateSearch;
+    }
+    if (restored.templateFilters && typeof restored.templateFilters === 'object') {
+      this.templateFilters = {
+        category: restored.templateFilters.category ?? this.templateFilters.category,
+        partNumber: restored.templateFilters.partNumber ?? this.templateFilters.partNumber,
+        activeOnly: restored.templateFilters.activeOnly ?? this.templateFilters.activeOnly
+      };
+    }
+
+    if (restored.selectedBranchParentId) {
+      this.selectedBranchParentId = Number(restored.selectedBranchParentId);
+    }
+
+    this.pendingRestoreState = restored;
+  }
+
+  private restoreStatePostLoad(): void {
+    const restored = this.pendingRestoreState;
+    this.pendingRestoreState = null;
+
+    if (!restored) {
+      return;
+    }
+
+    // Restore selection if it still exists in the loaded list.
+    const selectedId = Number(restored.selectedBranchParentId || 0);
+    if (selectedId > 0 && this.templates.some(t => Number(t?.id || 0) === selectedId)) {
+      this.selectedBranchParentId = selectedId;
+    } else {
+      this.ensureSelectedBranchParent();
+    }
+
+    // Restore expansion sets.
+    try {
+      this.expandedFamilyGroupIds = new Set<number>((restored.expandedFamilyGroupIds || []).map((v: any) => Number(v || 0)).filter((v: number) => v > 0));
+      const majorsMap = new Map<number, Set<number>>();
+      (restored.expandedMajorVersionsByFamily || []).forEach((entry: any) => {
+        const groupId = Number(entry?.[0] || 0);
+        const majors = Array.isArray(entry?.[1]) ? entry[1] : [];
+        if (groupId > 0) {
+          majorsMap.set(groupId, new Set<number>(majors.map((m: any) => Number(m || 0)).filter((m: number) => m > 0)));
+        }
+      });
+      this.expandedMajorVersionsByFamily = majorsMap;
+    } catch {
+      // ignore
+    }
+
+    // Prune expansions for current filtered list.
+    this.ensureExpandedDirectoryDefaults();
+
+    // Restore scroll positions after view updates.
+    const navTop = Number(restored?.scroll?.navTop || 0);
+    const tableTop = Number(restored?.scroll?.tableTop || 0);
+    setTimeout(() => {
+      if (this.branchNavPanelRef?.nativeElement) {
+        this.branchNavPanelRef.nativeElement.scrollTop = navTop;
+      }
+      if (this.versionsTableContainerRef?.nativeElement) {
+        this.versionsTableContainerRef.nativeElement.scrollTop = tableTop;
+      }
+    }, 0);
+
+    this.clearStoredState();
+  }
+
+  private readStoredState(): any | null {
+    try {
+      const raw = window.sessionStorage.getItem(this.templateManagerStateKey);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw);
+      const ts = Number(parsed?.ts || 0);
+      // Expire after 2 hours.
+      if (!ts || Date.now() - ts > 2 * 60 * 60 * 1000) {
+        this.clearStoredState();
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private clearStoredState(): void {
+    try {
+      window.sessionStorage.removeItem(this.templateManagerStateKey);
+    } catch {
+      // ignore
+    }
   }
 
   duplicateTemplate(template: ChecklistTemplate): void {
@@ -2482,17 +2743,143 @@ export class ChecklistTemplateManagerComponent implements OnInit {
   }
 
   deleteTemplate(template: ChecklistTemplate): void {
-    if (confirm(`Are you sure you want to delete "${template.name}"? This action cannot be undone.`)) {
-      this.configService.deleteTemplate(template.id).subscribe({
-        next: () => {
-          this.loadTemplates();
-        },
-        error: (error) => {
-          console.error('Error deleting template:', error);
-          alert('Error deleting template. Please try again.');
-        }
-      });
+    if (!template) {
+      return;
     }
+
+    if (!confirm(`Are you sure you want to delete "${template.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    this.configService.deleteTemplate(template.id).subscribe({
+      next: (response) => {
+        if (response?.success) {
+          this.loadTemplates();
+          return;
+        }
+
+        const count = (response as any)?.instance_count ?? 0;
+        const backendError = (response as any)?.error || (response as any)?.message || 'Cannot delete template.';
+        if (count > 0) {
+          alert(`${backendError} (${count} existing instance${count !== 1 ? 's' : ''})`);
+        } else {
+          alert(backendError);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting template:', error);
+        alert(error?.error?.error || error?.message || 'Error deleting template. Please try again.');
+      }
+    });
+  }
+
+  hardDeleteTemplate(template: ChecklistTemplate): void {
+    if (!template) {
+      return;
+    }
+
+    if (template.is_draft) {
+      return;
+    }
+
+    if (template.is_active) {
+      alert('Hard delete is only available for inactive templates. Deactivate it first.');
+      return;
+    }
+
+    if (!confirm(`Permanently delete "${template.name}" (v${template.version})? This cannot be undone.\n\nThis will remove the template and its line items from the database.`)) {
+      return;
+    }
+
+    this.configService.hardDeleteTemplate(template.id).subscribe({
+      next: (response) => {
+        if (response?.success) {
+          this.loadTemplates();
+          return;
+        }
+
+        const count = (response as any)?.instance_count ?? 0;
+        const subCount = (response as any)?.submission_count ?? 0;
+        const childCount = (response as any)?.child_count ?? 0;
+        const backendError = (response as any)?.error || (response as any)?.message || 'Cannot hard delete template.';
+
+        const details: string[] = [];
+        if (count > 0) details.push(`${count} instance${count !== 1 ? 's' : ''}`);
+        if (subCount > 0) details.push(`${subCount} submission${subCount !== 1 ? 's' : ''}`);
+        if (childCount > 0) details.push(`${childCount} child version${childCount !== 1 ? 's' : ''}`);
+
+        alert(details.length ? `${backendError} (${details.join(', ')})` : backendError);
+      },
+      error: (error) => {
+        console.error('Error hard deleting template:', error);
+        alert(error?.error?.error || error?.message || 'Error hard deleting template. Please try again.');
+      }
+    });
+  }
+
+  discardDraft(template: ChecklistTemplate): void {
+    if (!template) {
+      return;
+    }
+
+    if (!template.is_draft) {
+      return;
+    }
+
+    if (!confirm(`Discard draft "${template.name}"? Any unpublished changes will be lost.`)) {
+      return;
+    }
+
+    this.configService.discardDraft(template.id).subscribe({
+      next: (response) => {
+        if (response?.success) {
+          if (response?.template_id) {
+            this.selectedBranchParentId = Number(response.template_id);
+          }
+          this.loadTemplates();
+          return;
+        }
+
+        const count = (response as any)?.instance_count ?? 0;
+        const backendError = (response as any)?.error || (response as any)?.message || 'Cannot discard draft.';
+        if (count > 0) {
+          alert(`${backendError} (${count} existing instance${count !== 1 ? 's' : ''})`);
+        } else {
+          alert(backendError);
+        }
+      },
+      error: (error) => {
+        console.error('Error discarding draft:', error);
+        alert(error?.error?.error || error?.message || 'Error discarding draft. Please try again.');
+      }
+    });
+  }
+
+  createNewParentVersion(template: ChecklistTemplate): void {
+    if (!template || this.saving) {
+      return;
+    }
+
+    this.saving = true;
+
+    this.configService.createParentVersion(template.id).subscribe({
+      next: (response) => {
+        this.saving = false;
+
+        if (!response?.success || !response?.template_id) {
+          alert((response as any)?.error || (response as any)?.message || 'Failed to create new major version.');
+          return;
+        }
+
+        this.selectedBranchParentId = Number(response.template_id);
+        this.loadTemplates();
+      },
+      error: (error) => {
+        console.error('Error creating major version:', error);
+        this.saving = false;
+        alert(error?.error?.error || error?.message || 'An error occurred while creating the new major version.');
+      }
+    });
   }
 
   /**
@@ -2635,6 +3022,7 @@ export class ChecklistTemplateManagerComponent implements OnInit {
     const templateData = {
       ...formValue,
       items: processedItems,
+      created_by: this.getCurrentUserIdentifier(),
       // Add quality document metadata for traceability
       quality_document_metadata: this.selectedQualityDocument ? {
         document_id: this.selectedQualityDocument.documentId,
@@ -2669,6 +3057,20 @@ export class ChecklistTemplateManagerComponent implements OnInit {
         }
       }
     });
+  }
+
+  private getCurrentUserIdentifier(): string {
+    const currentUser = this.authenticationService.currentUserValue;
+    if (currentUser?.id !== null && currentUser?.id !== undefined) {
+      return String(currentUser.id);
+    }
+    if (currentUser?.full_name) {
+      return String(currentUser.full_name);
+    }
+    if (currentUser?.username) {
+      return String(currentUser.username);
+    }
+    return 'system';
   }
 
   private handleForeignKeyConstraintError(): void {
@@ -2771,7 +3173,7 @@ Enter choice (1-4):`;
 
   private createMajorVersion(): void {
     const currentVersion = this.templateForm.get('version')?.value || '1.0';
-    const newVersion = this.getNextMajorVersion(currentVersion);
+    const newVersion = this.getNextMajorVersion(this.editingTemplate || currentVersion);
     
     // Reset to create mode and increment major version
     this.editingTemplate = null;
@@ -2798,10 +3200,60 @@ Enter choice (1-4):`;
     return `${major}.${minor + 1}`;
   }
 
-  getNextMajorVersion(version: string): string {
-    const parts = version.split('.');
-    const major = parseInt(parts[0]) || 1;
-    
+  getNextMajorVersion(templateOrVersion: ChecklistTemplate | string | null | undefined): string {
+    const extractMajor = (rawVersion: string | null | undefined): number => {
+      const raw = String(rawVersion || '').trim();
+      const parts = raw.split('.');
+      const major = parseInt(parts[0], 10);
+      return Number.isFinite(major) && major > 0 ? major : 1;
+    };
+
+    // If we have a template, compute next major from the entire family.
+    if (templateOrVersion && typeof templateOrVersion === 'object') {
+      const template = templateOrVersion as ChecklistTemplate;
+      const familyGroupId = Number((template as any)?.template_group_id || template.id || 0);
+      if (familyGroupId > 0 && Array.isArray(this.templates) && this.templates.length > 0) {
+        let maxMajor = 0;
+        for (const t of this.templates) {
+          if (!t) {
+            continue;
+          }
+
+          const groupId = Number((t as any)?.template_group_id || 0);
+          if (groupId !== familyGroupId) {
+            continue;
+          }
+
+          const isDeleted = (t as any)?.is_deleted === true || (t as any)?.is_deleted === 1 || (t as any)?.is_deleted === '1';
+          if (isDeleted) {
+            continue;
+          }
+
+          // Next major should be based on the latest PUBLISHED major line.
+          // Drafts should not advance the next-major calculation; they should be reused.
+          const isDraft = (t as any)?.is_draft === true || (t as any)?.is_draft === 1 || (t as any)?.is_draft === '1';
+          if (isDraft) {
+            continue;
+          }
+
+          const major = extractMajor((t as any)?.version);
+          if (major > maxMajor) {
+            maxMajor = major;
+          }
+        }
+
+        if (maxMajor > 0) {
+          return `${maxMajor + 1}.0`;
+        }
+      }
+
+      // Fallback: just increment the current template's major.
+      const major = extractMajor(template.version);
+      return `${major + 1}.0`;
+    }
+
+    // If we only have a version string, fall back to a local increment.
+    const major = extractMajor(templateOrVersion as any);
     return `${major + 1}.0`;
   }
 
@@ -3418,10 +3870,6 @@ Enter choice (1-4):`;
     }).length;
   }
 
-  trackByGroupId(index: number, item: any): number {
-    return item.key; // The group ID from keyvalue pipe
-  }
-
   trackByTemplateId(index: number, template: ChecklistTemplate): number {
     return template.id;
   }
@@ -3475,62 +3923,782 @@ Enter choice (1-4):`;
     });
   }
 
-  // Group templates by template_group_id
-  getGroupedTemplates(): Map<number, ChecklistTemplate[]> {
+  getFlatTemplates(): ChecklistTemplate[] {
     const filtered = this.getFilteredTemplates();
-    const grouped = new Map<number, ChecklistTemplate[]>();
-    
+    const byFamily = new Map<number, ChecklistTemplate[]>();
+
     filtered.forEach(template => {
-      const groupId = template.template_group_id || template.id;
-      if (!grouped.has(groupId)) {
-        grouped.set(groupId, []);
+      const familyId = Number(template.template_group_id || template.id || 0);
+      if (!byFamily.has(familyId)) {
+        byFamily.set(familyId, []);
       }
-      grouped.get(groupId)!.push(template);
+      byFamily.get(familyId)!.push(template);
     });
-    
-    // Sort each group by version (descending - newest first)
-    grouped.forEach((templates, groupId) => {
-      templates.sort((a, b) => {
-        // Parse versions like "1.0", "1.1", "2.0"
-        const versionA = parseFloat(a.version || '0');
-        const versionB = parseFloat(b.version || '0');
-        return versionB - versionA; // Descending order
+
+    const pickNewest = (templates: ChecklistTemplate[]): ChecklistTemplate | null => {
+      if (!templates.length) {
+        return null;
+      }
+
+      const ordered = templates.slice().sort((a, b) => {
+        const activeA = a.is_active ? 1 : 0;
+        const activeB = b.is_active ? 1 : 0;
+        if (activeA !== activeB) {
+          return activeB - activeA;
+        }
+
+        const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+        if (versionOrder !== 0) {
+          return versionOrder;
+        }
+
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+
+      return ordered[0] || null;
+    };
+
+    const visibleRows: ChecklistTemplate[] = [];
+
+    byFamily.forEach(group => {
+      const drafts = group.filter(template => !!template.is_draft);
+      const choice = drafts.length > 0 ? pickNewest(drafts) : pickNewest(group);
+      if (choice) {
+        visibleRows.push(choice);
+      }
+    });
+
+    return visibleRows.sort((a, b) => {
+      const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+      if (versionOrder !== 0) {
+        return versionOrder;
+      }
+
+      const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+      const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+      if (updatedA !== updatedB) {
+        return updatedB - updatedA;
+      }
+      return Number(b.id || 0) - Number(a.id || 0);
+    });
+  }
+
+  getBranchParentTemplates(): ChecklistTemplate[] {
+    return this.getFilteredTemplates()
+      .filter(template => this.isBranchParentTemplate(template))
+      .sort((a, b) => {
+        const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+        if (versionOrder !== 0) {
+          return versionOrder;
+        }
+
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+  }
+
+  trackByMajorNavNode(index: number, node: MajorNavNode): number {
+    return Number(node?.major || 0);
+  }
+
+  private getSelectedFamilyTemplates(): ChecklistTemplate[] {
+    const filtered = this.getFilteredTemplates();
+    if (!filtered.length) {
+      return [];
+    }
+
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    const selected = filtered.find(t => Number(t.id || 0) === selectedId) || filtered[0];
+    const selectedGroupId = this.resolveTemplateGroupId(selected);
+    if (!selectedGroupId) {
+      return [];
+    }
+
+    return filtered.filter(t => this.resolveTemplateGroupId(t) === selectedGroupId);
+  }
+
+  private buildMajorNavNodesForTemplates(familyTemplates: ChecklistTemplate[]): MajorNavNode[] {
+    if (!familyTemplates.length) {
+      return [];
+    }
+
+    const byMajor = new Map<number, ChecklistTemplate[]>();
+    familyTemplates.forEach(t => {
+      const major = this.getMajorVersionNumber(t);
+      if (!byMajor.has(major)) {
+        byMajor.set(major, []);
+      }
+      byMajor.get(major)!.push(t);
+    });
+
+    const pickCurrentForMajor = (templates: ChecklistTemplate[]): ChecklistTemplate | null => {
+      if (!templates.length) {
+        return null;
+      }
+
+      const drafts = templates.filter(t => !!t.is_draft);
+      if (drafts.length) {
+        return drafts.slice().sort((a, b) => {
+          const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+          const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+          if (updatedA !== updatedB) {
+            return updatedB - updatedA;
+          }
+          return Number(b.id || 0) - Number(a.id || 0);
+        })[0] || null;
+      }
+
+      const published = templates.filter(t => !t.is_draft);
+      if (!published.length) {
+        return templates[0] || null;
+      }
+
+      return published.slice().sort((a, b) => {
+        const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+        if (versionOrder !== 0) {
+          return versionOrder;
+        }
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      })[0] || null;
+    };
+
+    const nodes: MajorNavNode[] = [];
+    byMajor.forEach((group, major) => {
+      const templatesOrdered = group.slice().sort((a, b) => {
+        // Prefer drafts at top within a major, then semantic version desc, then updated.
+        const draftA = a.is_draft ? 1 : 0;
+        const draftB = b.is_draft ? 1 : 0;
+        if (draftA !== draftB) {
+          return draftB - draftA;
+        }
+
+        const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+        if (versionOrder !== 0) {
+          return versionOrder;
+        }
+
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+
+      nodes.push({
+        major,
+        currentTemplate: pickCurrentForMajor(group),
+        templates: templatesOrdered
       });
     });
-    
-    return grouped;
+
+    // Newest major on top: v5, v4, v3...
+    return nodes.sort((a, b) => Number(b.major || 0) - Number(a.major || 0));
   }
 
-  // Get the latest version of a template group
-  getLatestVersion(templates: ChecklistTemplate[]): ChecklistTemplate {
-    return templates[0]; // Already sorted by version descending
+  getSelectedFamilyMajorNavNodes(): MajorNavNode[] {
+    return this.buildMajorNavNodesForTemplates(this.getSelectedFamilyTemplates());
   }
 
-  // Get older versions (excluding the latest)
-  getOlderVersions(templates: ChecklistTemplate[]): ChecklistTemplate[] {
-    return templates.slice(1);
+  trackByFamilyNavNode(index: number, node: FamilyNavNode): number {
+    return Number(node?.groupId || 0);
   }
 
-  // Toggle group expansion
-  toggleGroup(groupId: number): void {
-    if (this.expandedGroups.has(groupId)) {
-      this.expandedGroups.delete(groupId);
+  getFamilyNavNodes(): FamilyNavNode[] {
+    const filtered = this.getFilteredTemplates();
+    if (!filtered.length) {
+      return [];
+    }
+
+    const byFamily = new Map<number, ChecklistTemplate[]>();
+    filtered.forEach(t => {
+      const groupId = Number(this.resolveTemplateGroupId(t) || 0);
+      if (groupId <= 0) {
+        return;
+      }
+      if (!byFamily.has(groupId)) {
+        byFamily.set(groupId, []);
+      }
+      byFamily.get(groupId)!.push(t);
+    });
+
+    const pickNewestByUpdated = (templates: ChecklistTemplate[]): ChecklistTemplate | null => {
+      if (!templates.length) {
+        return null;
+      }
+      const ordered = templates.slice().sort((a, b) => {
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+      return ordered[0] || null;
+    };
+
+    const pickNewestByVersion = (templates: ChecklistTemplate[]): ChecklistTemplate | null => {
+      if (!templates.length) {
+        return null;
+      }
+      const ordered = templates.slice().sort((a, b) => {
+        const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+        if (versionOrder !== 0) {
+          return versionOrder;
+        }
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+      return ordered[0] || null;
+    };
+
+    const nodes: FamilyNavNode[] = [];
+
+    byFamily.forEach((templates, groupId) => {
+      const drafts = templates.filter(t => !!t.is_draft);
+      const currentTemplate = pickNewestByUpdated(drafts) || pickNewestByVersion(templates);
+
+      const partNumber = String(currentTemplate?.part_number || '').trim();
+      const customer = String(currentTemplate?.customer_part_number || '').trim();
+      const fallbackName = String(currentTemplate?.name || '').trim();
+      const labelBase = partNumber || fallbackName || `Family ${groupId}`;
+      const label = customer ? `${labelBase} — ${customer}` : labelBase;
+      nodes.push({
+        groupId,
+        label,
+        currentTemplate,
+        majorNodes: this.buildMajorNavNodesForTemplates(templates)
+      });
+    });
+
+    return nodes.sort((a, b) => {
+      const labelOrder = String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity: 'base' });
+      if (labelOrder !== 0) {
+        return labelOrder;
+      }
+      return Number(a.groupId || 0) - Number(b.groupId || 0);
+    });
+  }
+
+  getSelectedFamilyGroupId(): number | null {
+    const filtered = this.getFilteredTemplates();
+    if (!filtered.length) {
+      return null;
+    }
+
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    const selected = filtered.find(t => Number(t.id || 0) === selectedId) || filtered[0];
+    return this.resolveTemplateGroupId(selected);
+  }
+
+  isFamilySelected(groupId: number): boolean {
+    const selectedGroupId = this.getSelectedFamilyGroupId();
+    return selectedGroupId !== null && Number(groupId || 0) === Number(selectedGroupId || 0);
+  }
+
+  isFamilyExpanded(groupId: number): boolean {
+    return this.expandedFamilyGroupIds.has(Number(groupId || 0));
+  }
+
+  onFamilyNavClick(node: FamilyNavNode): void {
+    // Anchor selection to this family so the right-side table updates.
+    const templateId = Number(node?.currentTemplate?.id || 0);
+    if (templateId > 0) {
+      this.selectedBranchParentId = templateId;
+    }
+
+    this.ensureExpandedDirectoryDefaults();
+  }
+
+  onMajorNavClick(node: MajorNavNode): void {
+    const groupId = Number(this.getSelectedFamilyGroupId() || 0);
+    if (groupId <= 0) {
+      return;
+    }
+    this.onMajorNavClickForFamily(groupId, node);
+  }
+
+  private getExpandedMajorsForFamily(groupId: number): Set<number> {
+    const key = Number(groupId || 0);
+    if (key <= 0) {
+      return new Set<number>();
+    }
+
+    let majors = this.expandedMajorVersionsByFamily.get(key);
+    if (!majors) {
+      majors = new Set<number>();
+      this.expandedMajorVersionsByFamily.set(key, majors);
+    }
+    return majors;
+  }
+
+  getSelectedMajorNumber(): number | null {
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    if (selectedId > 0) {
+      const selected = this.getFilteredTemplates().find(t => Number(t.id || 0) === selectedId);
+      if (selected) {
+        return this.getMajorVersionNumber(selected);
+      }
+    }
+
+    const nodes = this.getSelectedFamilyMajorNavNodes();
+    if (!nodes.length) {
+      return null;
+    }
+    return Number(nodes[0].major || 0) || null;
+  }
+
+  isMajorSelected(major: number): boolean {
+    const selectedMajor = this.getSelectedMajorNumber();
+    return selectedMajor !== null && Number(major || 0) === Number(selectedMajor || 0);
+  }
+
+  isMajorExpanded(groupId: number, major: number): boolean {
+    const key = Number(major || 0);
+    if (key <= 0) {
+      return false;
+    }
+    return this.getExpandedMajorsForFamily(groupId).has(key);
+  }
+
+  private toggleMajorExpanded(groupId: number, major: number): void {
+    const key = Number(major || 0);
+    if (key <= 0) {
+      return;
+    }
+
+    const majors = this.getExpandedMajorsForFamily(groupId);
+    if (majors.has(key)) {
+      majors.delete(key);
     } else {
-      this.expandedGroups.add(groupId);
+      majors.add(key);
     }
   }
 
-  isGroupExpanded(groupId: number): boolean {
-    return this.expandedGroups.has(groupId);
+  isNavTemplateSelected(template: ChecklistTemplate): boolean {
+    const templateId = Number(template?.id || 0);
+    return templateId > 0 && templateId === Number(this.selectedBranchParentId || 0);
+  }
+
+  onMajorNavClickForFamily(groupId: number, node: MajorNavNode): void {
+    const major = Number(node?.major || 0);
+    if (major > 0) {
+      this.toggleMajorExpanded(groupId, major);
+    }
+
+    // Anchor selection to this family/major so the right table stays consistent.
+    const templateId = Number(node?.currentTemplate?.id || 0);
+    if (templateId > 0) {
+      this.selectedBranchParentId = templateId;
+      this.ensureExpandedDirectoryDefaults();
+      return;
+    }
+
+    const fallbackId = Number(node?.templates?.[0]?.id || 0);
+    if (fallbackId > 0) {
+      this.selectedBranchParentId = fallbackId;
+      this.ensureExpandedDirectoryDefaults();
+    }
+  }
+
+  private ensureExpandedDirectoryDefaults(): void {
+    const families = this.getFamilyNavNodes();
+    if (!families.length) {
+      this.expandedFamilyGroupIds.clear();
+      this.expandedMajorVersionsByFamily.clear();
+      return;
+    }
+
+    const validGroupIds = new Set(families.map(f => Number(f.groupId || 0)).filter(id => id > 0));
+    const selectedGroupId = Number(this.getSelectedFamilyGroupId() || 0);
+    const defaultGroupId = selectedGroupId > 0 ? selectedGroupId : Number(families[0]?.groupId || 0);
+
+    // Always expand the selected family (directory feel), and ensure at least one family is expanded.
+    if (defaultGroupId > 0) {
+      this.expandedFamilyGroupIds.add(defaultGroupId);
+    }
+    if (this.expandedFamilyGroupIds.size === 0 && defaultGroupId > 0) {
+      this.expandedFamilyGroupIds.add(defaultGroupId);
+    }
+
+    // Drop expansions for families not in the current filtered list.
+    Array.from(this.expandedFamilyGroupIds).forEach(id => {
+      if (!validGroupIds.has(Number(id || 0))) {
+        this.expandedFamilyGroupIds.delete(id);
+      }
+    });
+    Array.from(this.expandedMajorVersionsByFamily.keys()).forEach(id => {
+      if (!validGroupIds.has(Number(id || 0))) {
+        this.expandedMajorVersionsByFamily.delete(id);
+      }
+    });
+
+    // Prune major expansions per family to only valid majors.
+    families.forEach(family => {
+      const groupId = Number(family.groupId || 0);
+      if (groupId <= 0) {
+        return;
+      }
+
+      const validMajors = new Set((family.majorNodes || []).map(n => Number(n.major || 0)).filter(m => m > 0));
+      const expanded = this.expandedMajorVersionsByFamily.get(groupId);
+      if (expanded) {
+        Array.from(expanded).forEach(m => {
+          if (!validMajors.has(Number(m || 0))) {
+            expanded.delete(m);
+          }
+        });
+        if (expanded.size === 0) {
+          this.expandedMajorVersionsByFamily.delete(groupId);
+        }
+      }
+    });
+
+    // Expand the newest major of the selected family by default.
+    const targetFamily = families.find(f => Number(f.groupId || 0) === defaultGroupId) || families[0];
+    const targetGroupId = Number(targetFamily?.groupId || 0);
+    if (targetGroupId > 0) {
+      const expandedMajors = this.getExpandedMajorsForFamily(targetGroupId);
+      if (expandedMajors.size === 0) {
+        const newestMajor = Number(targetFamily?.majorNodes?.[0]?.major || 0);
+        if (newestMajor > 0) {
+          expandedMajors.add(newestMajor);
+        }
+      }
+    }
+  }
+
+  getMajorNavNodeLabel(node: MajorNavNode): string {
+    const tpl = node?.currentTemplate;
+    if (!tpl) {
+      return 'No templates';
+    }
+
+    const partLabel = tpl.part_number || tpl.name || '';
+    if (tpl.is_draft) {
+      return `Draft v${tpl.version} · ${partLabel}`;
+    }
+    return `Current v${tpl.version} · ${partLabel}`;
+  }
+
+  openTemplateFromNav(template: ChecklistTemplate): void {
+    if (!template) {
+      return;
+    }
+
+    // Keep selection anchored so the left nav stays on this family/major.
+    const templateId = Number(template.id || 0);
+    if (templateId > 0) {
+      this.selectedBranchParentId = templateId;
+    }
+
+    if (template.is_draft) {
+      this.editTemplate(template);
+      return;
+    }
+
+    this.viewTemplate(template);
+  }
+
+  selectBranchParent(template: ChecklistTemplate): void {
+    const parentId = Number(template?.id || 0);
+    this.selectedBranchParentId = parentId > 0 ? parentId : null;
+  }
+
+  isBranchSelected(template: ChecklistTemplate): boolean {
+    const parentId = Number(template?.id || 0);
+    return parentId > 0 && parentId === Number(this.selectedBranchParentId || 0);
+  }
+
+  getSelectedBranchTemplates(): ChecklistTemplate[] {
+    // Option A UX: show ONLY the versions within the currently selected MAJOR line
+    // (e.g., when major 4 is selected, show v4.0, v4.2, v4.10, v4.0.1, drafts, etc.)
+    const familyTemplates = this.getSelectedFamilyTemplates();
+    if (!familyTemplates.length) {
+      return [];
+    }
+
+    const selectedMajor = Number(this.getSelectedMajorNumber() || 0);
+    if (selectedMajor <= 0) {
+      return [];
+    }
+
+    const withinMajor = familyTemplates.filter(t => this.getMajorVersionNumber(t) === selectedMajor);
+
+    return withinMajor.slice().sort((a, b) => {
+      const draftA = a.is_draft ? 1 : 0;
+      const draftB = b.is_draft ? 1 : 0;
+      if (draftA !== draftB) {
+        return draftB - draftA; // drafts first
+      }
+
+      const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+      if (versionOrder !== 0) {
+        return versionOrder; // newest version first
+      }
+
+      const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+      const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+      if (updatedA !== updatedB) {
+        return updatedB - updatedA;
+      }
+
+      return Number(b.id || 0) - Number(a.id || 0);
+    });
+  }
+
+  private resolveTemplateGroupId(template: ChecklistTemplate | undefined | null): number | null {
+    if (!template) {
+      return null;
+    }
+
+    const explicit = Number((template as any).template_group_id || 0);
+    if (explicit > 0) {
+      return explicit;
+    }
+
+    const fallbackId = Number(template.id || 0);
+    return fallbackId > 0 ? fallbackId : null;
+  }
+
+  private getMajorVersionNumber(template: ChecklistTemplate): number {
+    const parts = this.parseVersionSegments(String(template?.version || ''));
+    const major = Number(parts[0] ?? 0);
+    return Number.isFinite(major) ? major : 0;
+  }
+
+  getBranchTemplateCount(parentTemplate: ChecklistTemplate): number {
+    const parentId = Number(parentTemplate?.id || 0);
+    if (parentId <= 0) {
+      return 0;
+    }
+    return this.collectBranchTemplateIds(parentId).size;
+  }
+
+  getBranchCurrentTemplateLabel(parentTemplate: ChecklistTemplate): string {
+    const current = this.getBranchCurrentTemplate(parentTemplate);
+    if (!current) {
+      return 'No templates';
+    }
+
+    if (current.is_draft) {
+      return 'Draft';
+    }
+
+    return `Current v${current.version}`;
+  }
+
+  private isBranchParentTemplate(template: ChecklistTemplate): boolean {
+    if (!template) {
+      return false;
+    }
+
+    const parentId = Number((template as any).parent_template_id || 0);
+    const isDraft = !!template.is_draft;
+    if (isDraft && parentId > 0) {
+      // Drafts that are edits of an existing published template should not appear
+      // as major-version roots in the left navigator.
+      return false;
+    }
+
+    // Treat "parent version" as a base version without a 3rd+ segment (e.g., 5.0).
+    // Branch children are assumed to have 3+ segments (e.g., 5.0.1).
+    const parts = this.parseVersionSegments(String(template.version || ''));
+    return parts.length <= 2;
+  }
+
+  private parseVersionSegments(version: string): number[] {
+    const cleaned = String(version || '').trim().replace(/^v/i, '');
+    if (!cleaned) {
+      return [0];
+    }
+    return cleaned
+      .split('.')
+      .map(part => {
+        const match = part.match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      });
+  }
+
+  private getBranchCurrentTemplate(parentTemplate: ChecklistTemplate): ChecklistTemplate | null {
+    const parentId = Number(parentTemplate?.id || 0);
+    if (parentId <= 0) {
+      return null;
+    }
+
+    const branchIds = this.collectBranchTemplateIds(parentId);
+    const branchTemplates = this.getFilteredTemplates().filter(t => branchIds.has(Number(t.id || 0)));
+    if (!branchTemplates.length) {
+      return null;
+    }
+
+    const pickNewestByUpdated = (templates: ChecklistTemplate[]): ChecklistTemplate | null => {
+      const ordered = templates.slice().sort((a, b) => {
+        const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+        if (updatedA !== updatedB) {
+          return updatedB - updatedA;
+        }
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+      return ordered[0] || null;
+    };
+
+    // Rule: show the draft if one exists anywhere in this branch.
+    const drafts = branchTemplates.filter(t => !!t.is_draft);
+    const newestDraft = pickNewestByUpdated(drafts);
+    if (newestDraft) {
+      return newestDraft;
+    }
+
+    // Otherwise show the newest published leaf by semantic version.
+    const published = branchTemplates.filter(t => !t.is_draft);
+    const orderedPublished = published.slice().sort((a, b) => {
+      const versionOrder = this.compareVersionNumbers(String(b.version || ''), String(a.version || ''));
+      if (versionOrder !== 0) {
+        return versionOrder;
+      }
+      const updatedA = Date.parse(a.updated_at || a.created_at || '') || 0;
+      const updatedB = Date.parse(b.updated_at || b.created_at || '') || 0;
+      if (updatedA !== updatedB) {
+        return updatedB - updatedA;
+      }
+      return Number(b.id || 0) - Number(a.id || 0);
+    });
+
+    return orderedPublished[0] || null;
+  }
+
+  private ensureSelectedBranchParent(): void {
+    const filtered = this.getFilteredTemplates();
+    if (!filtered.length) {
+      this.selectedBranchParentId = null;
+      return;
+    }
+
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    const selectedExists = filtered.some(template => Number(template.id || 0) === selectedId);
+    if (!selectedExists) {
+      this.selectedBranchParentId = Number(filtered[0].id || 0);
+    }
+  }
+
+  private resolveSelectedBranchRootId(branchRoots: ChecklistTemplate[]): number | null {
+    const selectedId = Number(this.selectedBranchParentId || 0);
+    const selectedExists = branchRoots.some(template => Number(template.id || 0) === selectedId);
+    if (selectedExists && selectedId > 0) {
+      return selectedId;
+    }
+    return Number(branchRoots[0]?.id || 0) || null;
+  }
+
+  private collectBranchTemplateIds(rootTemplateId: number): Set<number> {
+    const validRootId = Number(rootTemplateId || 0);
+    const branchIds = new Set<number>();
+    if (validRootId <= 0) {
+      return branchIds;
+    }
+
+    const childrenByParent = new Map<number, number[]>();
+    this.getFilteredTemplates().forEach(template => {
+      const templateId = Number(template.id || 0);
+      const parentId = Number(template.parent_template_id || 0);
+      if (templateId <= 0 || parentId <= 0) {
+        return;
+      }
+      if (!childrenByParent.has(parentId)) {
+        childrenByParent.set(parentId, []);
+      }
+      childrenByParent.get(parentId)!.push(templateId);
+    });
+
+    const queue: number[] = [validRootId];
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (branchIds.has(currentId)) {
+        continue;
+      }
+
+      branchIds.add(currentId);
+
+      const children = childrenByParent.get(currentId) || [];
+      children.forEach(childId => {
+        if (!branchIds.has(childId)) {
+          queue.push(childId);
+        }
+      });
+    }
+
+    return branchIds;
+  }
+
+  getParentTemplateVersion(template: ChecklistTemplate): string | null {
+    const parentId = Number(template?.parent_template_id || 0);
+    if (!template?.is_draft || parentId <= 0) {
+      return null;
+    }
+
+    const parentTemplate = this.templates.find(t => Number(t.id || 0) === parentId);
+    if (!parentTemplate?.version) {
+      return null;
+    }
+
+    return String(parentTemplate.version);
+  }
+
+  getDraftParentId(template: ChecklistTemplate): number | null {
+    if (!template?.is_draft) {
+      return null;
+    }
+
+    const parentId = Number(template?.parent_template_id || 0);
+    return parentId > 0 ? parentId : null;
+  }
+
+  getPublishedEditingTargetId(template: ChecklistTemplate): number | null {
+    if (template?.is_draft) {
+      return null;
+    }
+
+    const templateId = Number(template?.id || 0);
+    const editTargetId = Number(template?.edit_target_template_id || 0);
+
+    if (templateId <= 0 || editTargetId <= 0 || editTargetId === templateId) {
+      return null;
+    }
+
+    return editTargetId;
   }
 
   onTemplateSearch(): void {
-    // This method is called on input changes to trigger re-filtering
-    // The actual filtering happens in getFilteredTemplates()
+    this.ensureSelectedBranchParent();
+    this.ensureExpandedDirectoryDefaults();
   }
 
   clearTemplateSearch(): void {
     this.templateSearch = '';
+    this.ensureSelectedBranchParent();
+    this.ensureExpandedDirectoryDefaults();
   }
 
   clearAllTemplateFilters(): void {
@@ -3538,8 +4706,10 @@ Enter choice (1-4):`;
     this.templateFilters = {
       category: '',
       partNumber: '',
-      activeOnly: null
+      activeOnly: true
     };
+    this.ensureSelectedBranchParent();
+    this.ensureExpandedDirectoryDefaults();
   }
 
   hasActiveFilters(): boolean {
@@ -3892,7 +5062,7 @@ Enter choice (1-4):`;
       const familyName = this.getTemplateFamilyName(template);
       
       // Load all templates and filter by family
-      const allTemplates = await this.configService.getTemplates().toPromise();
+      const allTemplates = await this.configService.getTemplatesIncludingInactive().toPromise();
       
       // Group templates by family name and filter
       this.versionHistory = allTemplates
@@ -3935,17 +5105,33 @@ Enter choice (1-4):`;
   }
 
   compareVersionNumbers(version1: string, version2: string): number {
-    const parseVersion = (v: string) => {
-      const parts = v.split('.').map(num => parseInt(num) || 0);
-      return { major: parts[0] || 0, minor: parts[1] || 0, patch: parts[2] || 0 };
+    const parseVersion = (raw: string): number[] => {
+      const cleaned = String(raw || '').trim().replace(/^v/i, '');
+      if (!cleaned) {
+        return [0];
+      }
+
+      return cleaned
+        .split('.')
+        .map(part => {
+          const match = part.match(/\d+/);
+          return match ? parseInt(match[0], 10) : 0;
+        });
     };
 
     const v1 = parseVersion(version1);
     const v2 = parseVersion(version2);
+    const maxLength = Math.max(v1.length, v2.length);
 
-    if (v1.major !== v2.major) return v1.major - v2.major;
-    if (v1.minor !== v2.minor) return v1.minor - v2.minor;
-    return v1.patch - v2.patch;
+    for (let index = 0; index < maxLength; index++) {
+      const segment1 = v1[index] ?? 0;
+      const segment2 = v2[index] ?? 0;
+      if (segment1 !== segment2) {
+        return segment1 - segment2;
+      }
+    }
+
+    return 0;
   }
 
   getVersionTypeLabel(template: ChecklistTemplate): string {

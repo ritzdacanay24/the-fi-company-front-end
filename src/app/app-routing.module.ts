@@ -82,6 +82,14 @@ const routes: Routes = [
     loadComponent: () => import("./features/ul-audit-signoff/ul-audit-signoff.component").then(c => c.UlAuditSignoffComponent),
     title: "UL Audit Sign-Off"
   },
+
+  // Standalone Checklist Inspection (no global sidebar)
+  {
+    path: 'standalone/checklist/instance',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./pages/quality/checklist/instance/checklist-instance.component').then(c => c.ChecklistInstanceComponent),
+    title: 'Checklist Inspection'
+  },
   
   // Legacy route for backward compatibility
   { 
@@ -288,6 +296,13 @@ const routes: Routes = [
       },
     ],
   },
+  // Public: Shareable inspection report (no auth)
+  {
+    path: 'inspection/report/:token',
+    loadComponent: () => import('./pages/public/inspection-report/inspection-report.component').then(c => c.InspectionReportComponent),
+    title: 'Inspection Report'
+  },
+
   // Utility routes
   {
     path: "access-denied",

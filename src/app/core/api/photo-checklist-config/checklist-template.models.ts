@@ -33,6 +33,7 @@ export interface TemplateMetadata {
   product_type: string;
   category: 'quality_control' | 'installation' | 'maintenance' | 'inspection';
   customer_part_number?: string;
+  customer_name?: string;
   revision?: string;
   original_filename?: string;
 }
@@ -171,6 +172,7 @@ export class ChecklistTemplateTransformer {
         product_type: dbTemplate.product_type || '',
         category: dbTemplate.category || 'quality_control',
         customer_part_number: dbTemplate.customer_part_number,
+        customer_name: dbTemplate.customer_name,
         revision: dbTemplate.revision,
         original_filename: dbTemplate.original_filename
       },

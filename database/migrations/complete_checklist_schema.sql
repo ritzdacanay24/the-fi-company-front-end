@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS checklist_instances (
     operator_name VARCHAR(100) COMMENT 'Operators name (cached)',
     status ENUM('draft', 'in_progress', 'review', 'completed', 'submitted') DEFAULT 'draft' COMMENT 'Current status of the checklist',
     progress_percentage DECIMAL(5,2) DEFAULT 0.00 COMMENT 'Calculated completion percentage (0-100)',
+    item_completion JSON NULL COMMENT 'Per-item completion + notes (supports verification without photos)',
     started_at TIMESTAMP NULL COMMENT 'When work began',
     completed_at TIMESTAMP NULL COMMENT 'When all required items were completed',
     submitted_at TIMESTAMP NULL COMMENT 'Final submission timestamp',

@@ -172,68 +172,87 @@
                   <table class="table table-hover mb-0">
                     <thead class="table-light">
                       <tr>
+                        <th>Version</th>
+                        <th>Customer</th>
                         <th>Template Name</th>
                         <th>Category</th>
-                        <th>Description</th>
                         <th>Part Number</th>
                         <th>Product Type</th>
                         <th>Items</th>
                         <th>Active Instances</th>
-                        <th>Version</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let template of getFilteredTemplates(); trackBy: trackByTemplateId" 
-                          class="align-middle"
-                          [class.table-primary]="selectedTemplate?.id === template.id">
-                        <td>
-                          <div class="fw-semibold" [innerHTML]="highlightSearchTerm(template.name, templateSearch)"></div>
-                        </td>
-                        <td>
-                          <span class="badge bg-primary">{{template.category | titlecase}}</span>
-                        </td>
-                        <td>
-                          <span class="text-muted" [innerHTML]="highlightSearchTerm(template.description || 'No description available', templateSearch)"></span>
-                        </td>
-                        <td>
-                          <code *ngIf="template.part_number" [innerHTML]="highlightSearchTerm(template.part_number, templateSearch)"></code>
-                          <span class="text-muted" *ngIf="!template.part_number">-</span>
-                        </td>
-                        <td>
-                          <span *ngIf="template.product_type" [innerHTML]="highlightSearchTerm(template.product_type, templateSearch)"></span>
-                          <span class="text-muted" *ngIf="!template.product_type">-</span>
-                        </td>
-                        <td>
-                          <div class="text-center">
-                            <div class="fw-semibold">{{template.item_count || 0}}</div>
-                            <small class="text-muted">items</small>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="text-center">
-                            <div class="fw-semibold">{{template.active_instances || 0}}</div>
-                            <small class="text-muted">active</small>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="badge bg-secondary">v{{template.version}}</span>
-                        </td>
-                        <td>
-                          <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    (click)="openPreviewModal(template)"
-                                    title="Preview Template">
-                              <i class="mdi mdi-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-primary" 
-                                    (click)="openCreateInstanceModal(template)"
-                                    title="Start Checklist">
-                              <i class="mdi mdi-plus"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+
+                      <!-- Grouped list: Family → Major → Versions -->
+                      <ng-container *ngFor="let family of getTemplateFamilyGroups(); trackBy: trackByFamilyGroup">
+                        <tr class="table-secondary">
+                          <td colspan="9" class="fw-semibold">
+                            <i class="mdi mdi-folder-outline me-2"></i>{{ family.label }}
+                          </td>
+                        </tr>
+
+                        <ng-container *ngFor="let major of family.majors; trackBy: trackByMajorGroup">
+                          <tr class="table-light">
+                            <td colspan="9" class="small text-muted">
+                              <i class="mdi mdi-source-branch me-2"></i>
+                              Major v{{ major.major }} • Latest published
+                            </td>
+                          </tr>
+
+                          <tr *ngFor="let template of major.templates; trackBy: trackByTemplateId"
+                              class="align-middle"
+                              [class.table-primary]="selectedTemplate?.id === template.id">
+                            <td>
+                              <span class="badge bg-secondary" style="white-space: nowrap;">v{{template.version}}</span>
+                            </td>
+                            <td>
+                              <span class="text-muted" [innerHTML]="highlightSearchTerm(getCustomerLabel(template) || '—', templateSearch)"></span>
+                            </td>
+                            <td>
+                              <div class="fw-semibold" [innerHTML]="highlightSearchTerm(template.name, templateSearch)"></div>
+                            </td>
+                            <td>
+                              <span class="badge bg-primary">{{template.category | titlecase}}</span>
+                            </td>
+                            <td>
+                              <code *ngIf="template.part_number" [innerHTML]="highlightSearchTerm(template.part_number, templateSearch)"></code>
+                              <span class="text-muted" *ngIf="!template.part_number">-</span>
+                            </td>
+                            <td>
+                              <span *ngIf="template.product_type" [innerHTML]="highlightSearchTerm(template.product_type, templateSearch)"></span>
+                              <span class="text-muted" *ngIf="!template.product_type">-</span>
+                            </td>
+                            <td>
+                              <div class="text-center">
+                                <div class="fw-semibold">{{template.item_count || 0}}</div>
+                                <small class="text-muted">items</small>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="text-center">
+                                <div class="fw-semibold">{{template.active_instances || 0}}</div>
+                                <small class="text-muted">active</small>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        (click)="openPreviewModal(template)"
+                                        title="Preview Template">
+                                  <i class="mdi mdi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary"
+                                        (click)="openCreateInstanceModal(template)"
+                                        title="Start Checklist">
+                                  <i class="mdi mdi-plus"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </ng-container>
+                      </ng-container>
                     </tbody>
                   </table>
                 </div>
@@ -587,8 +606,8 @@
                 <div class="fw-semibold">{{selectedTemplate.category | titlecase}}</div>
               </div>
               <div class="col-md-3">
-                <small class="text-muted">Total Items:</small>
-                <div class="fw-semibold">{{selectedTemplate.item_count || 0}}</div>
+                <small class="text-muted">Version:</small>
+                <div class="fw-semibold">v{{selectedTemplate.version}}</div>
               </div>
               <div class="col-md-3">
                 <small class="text-muted">Active Instances:</small>
@@ -614,7 +633,7 @@
           </div>
         </div>
 
-        <!-- Checklist Items -->
+        <!-- Checklist Items with Shared Navigation -->
         <div class="card border-0">
           <div class="card-header bg-success text-white">
             <h6 class="mb-0">
@@ -623,10 +642,25 @@
             </h6>
           </div>
           <div class="card-body p-0">
-            <div class="list-group list-group-flush" *ngIf="selectedTemplate.items && selectedTemplate.items.length > 0">
+            <div class="row g-0">
+              <div class="col-12 col-md-4 col-lg-3 border-end">
+                <app-checklist-navigation
+                  [templateId]="selectedTemplate.id"
+                  [items]="previewNavItems"
+                  [activeItemId]="previewActiveItemId"
+                  [activeItemIndex]="previewActiveItemIndex"
+                  [mode]="'readonly'"
+                  [showSearch]="true"
+                  [showExpandCollapse]="true"
+                  (itemSelected)="onPreviewNavItemSelected($event)">
+                </app-checklist-navigation>
+              </div>
+
+              <div class="col-12 col-md-8 col-lg-9" style="max-height: 70vh; overflow: auto;">
+                <div class="list-group list-group-flush" *ngIf="selectedTemplate.items && selectedTemplate.items.length > 0">
               <!-- Parent items -->
               <ng-container *ngFor="let item of selectedTemplate.items; let i = index">
-                <div class="list-group-item">
+                <div class="list-group-item" [attr.id]="'preview-item-' + item.id">
                   <div class="d-flex align-items-start gap-3">
                     <!-- Left side: Number badge and content -->
                     <div class="flex-shrink-0">
@@ -795,6 +829,7 @@
                 <ng-container *ngIf="item.children && item.children.length > 0">
                   <div class="list-group-item ms-4 border-start border-primary border-3 bg-light" 
                        *ngFor="let child of item.children; let j = index">
+                    <span class="d-none" [attr.id]="'preview-item-' + child.id"></span>
                     <div class="d-flex align-items-start gap-3">
                       <!-- Left: Number badge -->
                       <div class="flex-shrink-0">
@@ -945,6 +980,8 @@
                 </ng-container>
               </ng-container>
             </div>
+              </div>
+            </div>
             
             <!-- Empty State -->
             <div class="text-center p-4" *ngIf="!selectedTemplate.items || selectedTemplate.items.length === 0">
@@ -967,7 +1004,7 @@
             <i class="mdi mdi-close me-1"></i>Close Preview
           </button>
           <button type="button" class="btn btn-primary d-flex align-items-center" 
-                  (click)="closePreviewModal(); openCreateInstanceModal(selectedTemplate!)">
+              (click)="startChecklistFromPreview()">
             <i class="mdi mdi-plus me-1"></i>Start Checklist
           </button>
         </div>

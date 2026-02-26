@@ -25,8 +25,13 @@ export class PhotoOperationsService {
   /**
    * Upload photo to server
    */
-  uploadPhoto(instanceId: number, itemId: number, file: File): Observable<any> {
-    return this.photoChecklistService.uploadPhoto(instanceId, itemId, file);
+  uploadPhoto(
+    instanceId: number,
+    itemId: number,
+    file: File,
+    options?: { captureSource?: 'camera' | 'library'; userId?: number | string }
+  ): Observable<any> {
+    return this.photoChecklistService.uploadPhoto(instanceId, itemId, file, options);
   }
 
   /**
@@ -47,9 +52,10 @@ export class PhotoOperationsService {
     }
 
     const photoIndex = progress.photos.findIndex(p => p === photoUrl);
-    if (photoIndex === -1) {
-      console.error('Photo not found in progress.photos:', photoUrl);
-      return null;
+    const videoIndex = (progress.videos || []).findIndex(v => v === photoUrl);
+    const isVideo = videoIndex !== -1 && photoIndex === -1;
+    if (photoIndex === -1 && videoIndex === -1) {
+      console.warn('Media not found in progress state, will attempt server delete by URL:', photoUrl);
     }
 
     // Extract base item ID for instance lookup
@@ -63,6 +69,10 @@ export class PhotoOperationsService {
     
     // Get photo object
     let photoToDelete = this.instanceMatcher.getPhotoByIndex(instanceItem, photoIndex);
+
+    if (isVideo) {
+      photoToDelete = this.instanceMatcher.getVideoByIndex(instanceItem, videoIndex);
+    }
     
     // Fallback: search by URL across all instance items
     if (!photoToDelete || !photoToDelete.id) {
@@ -71,7 +81,11 @@ export class PhotoOperationsService {
 
     if (!photoToDelete || !photoToDelete.id) {
       console.warn('Photo has no ID, removing from UI only');
-      this.stateService.removePhotoByUrl(itemId, photoUrl);
+      if (isVideo) {
+        this.stateService.removeVideoByUrl(itemId, photoUrl);
+      } else {
+        this.stateService.removePhotoByUrl(itemId, photoUrl);
+      }
       return null;
     }
 
@@ -79,7 +93,11 @@ export class PhotoOperationsService {
     return this.photoChecklistService.deletePhoto(photoToDelete.id).pipe(
       tap(() => {
         // Remove from state after successful deletion
-        this.stateService.removePhotoByUrl(itemId, photoUrl);
+        if (isVideo) {
+          this.stateService.removeVideoByUrl(itemId, photoUrl);
+        } else {
+          this.stateService.removePhotoByUrl(itemId, photoUrl);
+        }
       })
     );
   }

@@ -1,0 +1,290 @@
+<!-- Loading -->
+@if (loading) {
+  <div class="d-flex flex-column align-items-center justify-content-center" style="min-height:100vh; background:#f5f6fa;">
+    <div class="spinner-border text-primary mb-3" style="width:2.5rem;height:2.5rem;"></div>
+    <p class="text-muted">Loading inspection report…</p>
+  </div>
+}
+
+<!-- Error -->
+@if (!loading && error) {
+  <div class="d-flex flex-column align-items-center justify-content-center" style="min-height:100vh; background:#f5f6fa;">
+    <div class="text-center p-4">
+      <i class="mdi mdi-link-off fs-1 text-danger mb-3 d-block"></i>
+      <h5 class="fw-bold text-danger mb-2">Report Unavailable</h5>
+      <p class="text-muted mb-0">{{ error }}</p>
+    </div>
+  </div>
+}
+
+<!-- Report -->
+@if (!loading && !error && report) {
+  <!-- Header -->
+  <div class="report-header">
+    <div class="container-fluid" style="max-width:900px;">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <!-- EyeFi logo -->
+        <img src="assets/images/fi-color.png" alt="EyeFi" class="report-logo">
+        @if (label) {
+          <span class="badge bg-white bg-opacity-20 text-light px-3 py-2 rounded-pill">{{ label }}</span>
+        }
+      </div>
+      <div class="d-flex align-items-baseline gap-2 flex-wrap">
+        <h1 class="mb-0">{{ instance.template_name }}</h1>
+        @if (instance.template_version) {
+          <span class="template-version-badge">v{{ instance.template_version }}</span>
+        }
+      </div>
+      @if (instance.template_description) {
+        <p class="mb-0 mt-1 opacity-75 small" [innerHTML]="instance.template_description"></p>
+      }
+    </div>
+  </div>
+
+  <div class="container-fluid py-4" style="max-width:900px;">
+
+    <!-- Meta info card -->
+    <div class="meta-card mb-4">
+      <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+        <div class="meta-row flex-grow-1">
+          <div class="meta-item">
+            <div class="meta-label">Work Order</div>
+            <div class="meta-value">{{ instance.work_order_number || '—' }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Serial Number</div>
+            <div class="meta-value">{{ instance.serial_number || '—' }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Part Number</div>
+            <div class="meta-value">{{ instance.part_number || '—' }}</div>
+          </div>
+          @if (instance.customer_name) {
+            <div class="meta-item">
+              <div class="meta-label">Customer</div>
+              <div class="meta-value">{{ instance.customer_name }}</div>
+            </div>
+          }
+          <div class="meta-item">
+            <div class="meta-label">Inspector</div>
+            <div class="meta-value">{{ instance.operator_name || '—' }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Date</div>
+            <div class="meta-value">{{ formatDate(instance.submitted_at || instance.completed_at || instance.created_at) }}</div>
+          </div>
+          @if (instance.template_version) {
+            <div class="meta-item">
+              <div class="meta-label">Template Version</div>
+              <div class="meta-value">v{{ instance.template_version }}</div>
+            </div>
+          }
+        </div>
+
+        <!-- Progress ring -->
+        <div class="text-center ms-3 flex-shrink-0">
+          <div class="progress-ring text-primary">{{ instance.progress_percentage | number:'1.0-0' }}%</div>
+          <div class="small text-muted mt-1">Complete</div>
+          <span class="badge mt-2 rounded-pill"
+            [class.bg-success]="instance.status === 'submitted'"
+            [class.bg-warning]="instance.status === 'completed'"
+            [class.bg-secondary]="instance.status !== 'submitted' && instance.status !== 'completed'"
+            style="font-size:.72rem;">
+            {{ instance.status | titlecase }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="d-flex gap-3 mt-2 flex-wrap">
+        <div class="small text-muted">
+          <i class="mdi mdi-checkbox-marked-outline me-1 text-success"></i>
+          <strong class="text-dark">{{ completedCount }}</strong>
+          of {{ items.length }} items completed
+        </div>
+        @if (expiresAt) {
+          <div class="small text-muted">
+            <i class="mdi mdi-clock-outline me-1 text-warning"></i>
+            Link expires {{ formatDate(expiresAt) }}
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="d-flex flex-column gap-3">
+      @for (item of items; track item.id; let i = $index) {
+        <div class="item-card">
+          <!-- Item header -->
+          <div class="item-header">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="item-number">Item {{ i + 1 }}</div>
+              <span class="badge rounded-pill"
+                [class.badge-status-completed]="item.completed"
+                [class.badge-status-pending]="!item.completed">
+                <i class="mdi me-1" [class.mdi-check-circle]="item.completed" [class.mdi-circle-outline]="!item.completed"></i>
+                {{ item.completed ? 'Completed' : 'Pending' }}
+              </span>
+            </div>
+            <h3>{{ item.title }}</h3>
+            @if (item.completed && (item.completed_by || item.completed_at)) {
+              <div class="small text-muted mt-1 opacity-75">
+                <i class="mdi mdi-account-check-outline me-1"></i>
+                @if (item.completed_by) { {{ item.completed_by }} }
+                @if (item.completed_at) { &mdash; {{ formatDate(item.completed_at) }} }
+              </div>
+            }
+          </div>
+
+          <div class="item-body">
+            <!-- Description -->
+            @if (item.description) {
+              <div class="text-muted small mb-3 item-description" [innerHTML]="item.description"></div>
+            }
+
+            <!-- Notes -->
+            @if (item.notes) {
+              <div class="notes-box mb-3">
+                <i class="mdi mdi-note-text-outline me-1 text-warning"></i>
+                <strong class="small me-1">Notes:</strong>
+                <span class="small">{{ item.notes }}</span>
+              </div>
+            }
+
+            <!-- Photos -->
+            @if (item.photos?.length > 0) {
+              <div class="mb-3">
+                <div class="small fw-semibold text-muted mb-2">
+                  <i class="mdi mdi-image-multiple-outline me-1"></i>
+                  Photos ({{ item.photos.length }})
+                </div>
+                <div class="media-grid">
+                  @for (photo of item.photos; track photo.url) {
+                    <div class="media-thumb" (click)="openLightboxAt(item, 'photo', $index)">
+                      <img [src]="photo.url" [alt]="'Photo ' + ($index + 1)" loading="lazy" (error)="onImgError($event)">
+                      <div class="media-badge">
+                        @if (photo.source === 'camera') { <i class="mdi mdi-camera" title="Camera"></i> }
+                        @else if (photo.source === 'library') { <i class="mdi mdi-image" title="Library"></i> }
+                        @else { {{ $index + 1 }} }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Videos -->
+            @if (item.videos?.length > 0) {
+              <div class="mb-2">
+                <div class="small fw-semibold text-muted mb-2">
+                  <i class="mdi mdi-video-outline me-1"></i>
+                  Videos ({{ item.videos.length }})
+                </div>
+                <div class="media-grid">
+                  @for (video of item.videos; track video) {
+                    <div class="media-thumb" (click)="openLightboxAt(item, 'video', $index)">
+                      <video [src]="video" preload="metadata" muted playsinline></video>
+                      <div class="play-overlay"><i class="mdi mdi-play-circle"></i></div>
+                      <div class="media-badge">VIDEO</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- No media -->
+            @if (!item.photos?.length && !item.videos?.length) {
+              <p class="text-muted small fst-italic mb-0">No media submitted for this item.</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer mt-4">
+      <p class="mb-1">This report was generated by EyeFi Quality Inspection System.</p>
+      <p class="mb-0">For questions, contact your quality control representative.</p>
+    </div>
+  </div>
+}
+
+<!-- Lightbox -->
+@if (lightboxUrl) {
+  <div class="lightbox-overlay" (click)="closeLightbox()" (keydown.escape)="closeLightbox()">
+
+    <!-- Close -->
+    <button class="lightbox-close" (click)="closeLightbox()" aria-label="Close">
+      <i class="mdi mdi-close"></i>
+    </button>
+
+    <!-- Prev -->
+    @if (lightboxTotalCount > 1) {
+      <button class="lightbox-nav lightbox-prev" (click)="$event.stopPropagation(); lightboxPrev()" aria-label="Previous">
+        <i class="mdi mdi-chevron-left"></i>
+      </button>
+    }
+
+    <!-- Full-screen media -->
+    <div class="lightbox-media" (click)="$event.stopPropagation()">
+      @if (lightboxType === 'image') {
+        <img class="lightbox-image" [src]="lightboxUrl" alt="Inspection photo">
+      } @else {
+        <video class="lightbox-video" [src]="lightboxUrl" controls autoplay></video>
+      }
+    </div>
+
+    <!-- Floating description sidebar -->
+    @if (lightboxItem) {
+      <div class="lightbox-sidebar" (click)="$event.stopPropagation()">
+
+        <!-- Item number + title -->
+        <div class="lightbox-item-number">Item {{ getItemNumber(lightboxItem) }}</div>
+        <div class="lightbox-item-title">{{ lightboxItem.title }}</div>
+
+        @if (lightboxItem.description) {
+          <div class="lightbox-item-desc" [innerHTML]="lightboxItem.description"></div>
+        }
+
+        <!-- Completion info -->
+        @if (lightboxItem.completed_by || lightboxItem.completed_at) {
+          <div class="lightbox-completion-info">
+            @if (lightboxItem.completed_by) {
+              <div><i class="mdi mdi-account-check-outline me-1"></i>{{ lightboxItem.completed_by }}</div>
+            }
+            @if (lightboxItem.completed_at) {
+              <div><i class="mdi mdi-clock-outline me-1"></i>{{ formatDate(lightboxItem.completed_at) }}</div>
+            }
+          </div>
+        }
+
+        @if (lightboxItem.notes) {
+          <div class="lightbox-item-notes">
+            <i class="mdi mdi-note-text-outline me-1"></i>
+            <span>{{ lightboxItem.notes }}</span>
+          </div>
+        }
+        @if (lightboxSource) {
+          <div class="lightbox-source-badge">
+            @if (lightboxSource === 'camera') {
+              <i class="mdi mdi-camera me-1"></i> Taken with camera
+            } @else if (lightboxSource === 'library') {
+              <i class="mdi mdi-image-multiple me-1"></i> From photo library
+            }
+          </div>
+        }
+        <div class="lightbox-counter mt-3">
+          <i class="mdi mdi-image-outline me-1"></i>
+          {{ lightboxIndex + 1 }} / {{ lightboxTotalCount }}
+        </div>
+      </div>
+    }
+
+    <!-- Next -->
+    @if (lightboxTotalCount > 1) {
+      <button class="lightbox-nav lightbox-next" (click)="$event.stopPropagation(); lightboxNext()" aria-label="Next">
+        <i class="mdi mdi-chevron-right"></i>
+      </button>
+    }
+  </div>
+}

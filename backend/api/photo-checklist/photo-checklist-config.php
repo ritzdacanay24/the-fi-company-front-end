@@ -16,10 +16,95 @@ class PhotoChecklistConfigAPI {
     private $database;
     private $mediaService;
     private $debugLog = []; // Debug log for image operations
+    private $hasTemplateIsDeletedColumn = null;
+    private $hasTemplateCustomerNameColumn = null;
 
     public function __construct($db) {
         $this->conn = $db;
         $this->mediaService = new ChecklistSampleMediaService($db);
+    }
+
+    /**
+     * If the incoming payload contains links, ensure the checklist_items.links column exists.
+     * We try to auto-migrate once to avoid silently dropping link data.
+     * NOTE: Runs outside a transaction because ALTER TABLE causes implicit commits in MySQL.
+     */
+    private function ensureLinksColumnIfNeeded($data) {
+        if (empty($data['items']) || !is_array($data['items'])) {
+            return null;
+        }
+
+        $needsLinks = false;
+        foreach ($data['items'] as $it) {
+            if (!empty($it['links'])) {
+                $needsLinks = true;
+                break;
+            }
+        }
+
+        if (!$needsLinks) {
+            return null;
+        }
+
+        try {
+            $checkStmt = $this->conn->prepare("SHOW COLUMNS FROM checklist_items LIKE 'links'");
+            $checkStmt->execute();
+            if ($checkStmt->rowCount() > 0) {
+                return null;
+            }
+
+            error_log("🧩 checklist_items.links column missing but payload contains links; attempting to add column");
+            $this->conn->exec("ALTER TABLE checklist_items ADD COLUMN links JSON NULL");
+            error_log("✅ Added checklist_items.links column");
+
+            return null;
+        } catch (Exception $e) {
+            error_log("❌ Failed to ensure checklist_items.links column: " . $e->getMessage());
+            return "Links could not be saved because the database is missing checklist_items.links (JSON). Run migration backend/database/migrations/add_links_to_checklist_items.sql or grant ALTER permissions. Error: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * Normalize links payload for storage in checklist_items.links (JSON).
+     * Returns an array (possibly empty) when the column exists; otherwise returns null.
+     */
+    private function normalizeLinksPayload($item, $hasLinksColumn) {
+        if (!$hasLinksColumn) {
+            return null;
+        }
+
+        $rawLinks = $item['links'] ?? [];
+
+        if (is_string($rawLinks)) {
+            $decoded = json_decode($rawLinks, true);
+            $rawLinks = is_array($decoded) ? $decoded : [];
+        } elseif (!is_array($rawLinks)) {
+            $rawLinks = [];
+        }
+
+        $normalized = [];
+        foreach ($rawLinks as $link) {
+            if (!is_array($link)) {
+                continue;
+            }
+
+            // Frontend uses `title`; older payloads may use `label`
+            $title = trim((string)($link['title'] ?? $link['label'] ?? ''));
+            $url = trim((string)($link['url'] ?? ''));
+            $description = trim((string)($link['description'] ?? ''));
+
+            if ($title === '' && $url === '' && $description === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'title' => $title,
+                'url' => $url,
+                'description' => $description
+            ];
+        }
+
+        return $normalized;
     }
 
     /**
@@ -44,7 +129,9 @@ class PhotoChecklistConfigAPI {
                 // Template Management
                 case 'templates':
                     if ($method === 'GET') {
-                        echo json_encode($this->getTemplates());
+                        $includeDeleted = isset($_GET['include_deleted']) && ($_GET['include_deleted'] === '1' || $_GET['include_deleted'] === 'true');
+                        $includeInactive = isset($_GET['include_inactive']) && ($_GET['include_inactive'] === '1' || $_GET['include_inactive'] === 'true');
+                        echo json_encode($this->getTemplates($includeDeleted, $includeInactive));
                     } elseif ($method === 'POST') {
                         echo json_encode($this->createTemplate());
                     }
@@ -53,7 +140,9 @@ class PhotoChecklistConfigAPI {
                 case 'template':
                     $id = $_GET['id'] ?? null;
                     if ($method === 'GET' && $id) {
-                        echo json_encode($this->getTemplate($id));
+                        $includeDeleted = isset($_GET['include_deleted']) && ($_GET['include_deleted'] === '1' || $_GET['include_deleted'] === 'true');
+                        $includeInactive = isset($_GET['include_inactive']) && ($_GET['include_inactive'] === '1' || $_GET['include_inactive'] === 'true');
+                        echo json_encode($this->getTemplate($id, $includeDeleted, $includeInactive));
                     } elseif ($method === 'PUT' && $id) {
                         echo json_encode($this->updateTemplate($id));
                     } elseif ($method === 'DELETE' && $id) {
@@ -61,10 +150,39 @@ class PhotoChecklistConfigAPI {
                     }
                     break;
 
-                case 'autosave':
+                case 'hard_delete_template':
                     $id = $_GET['id'] ?? null;
-                    if ($method === 'POST') {
-                        echo json_encode($this->autosaveTemplate($id));
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->hardDeleteTemplate((int)$id));
+                    }
+                    break;
+
+                case 'delete_major_version':
+                    $groupId = $_GET['group_id'] ?? null;
+                    $major = $_GET['major'] ?? null;
+                    if ($method === 'POST' && $groupId && $major) {
+                        echo json_encode($this->deleteMajorVersion((int)$groupId, (int)$major));
+                    }
+                    break;
+
+                case 'restore_template':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->restoreTemplate($id));
+                    }
+                    break;
+
+                case 'discard_draft':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->discardDraft($id));
+                    }
+                    break;
+
+                case 'create_parent_version':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'POST' && $id) {
+                        echo json_encode($this->createParentVersion((int)$id));
                     }
                     break;
 
@@ -112,6 +230,8 @@ class PhotoChecklistConfigAPI {
                         echo json_encode($this->getInstance($id));
                     } elseif ($method === 'PUT' && $id) {
                         echo json_encode($this->updateInstance($id));
+                    } elseif ($method === 'DELETE' && $id) {
+                        echo json_encode($this->deleteInstance($id));
                     }
                     break;
 
@@ -126,6 +246,14 @@ class PhotoChecklistConfigAPI {
                     $id = $_GET['id'] ?? null;
                     if ($method === 'DELETE' && $id) {
                         echo json_encode($this->deletePhoto($id));
+                    }
+                    break;
+
+                // PDF Export
+                case 'instance_pdf':
+                    $id = $_GET['id'] ?? null;
+                    if ($method === 'GET' && $id) {
+                        $this->downloadInstancePDF($id);
                     }
                     break;
 
@@ -161,12 +289,61 @@ class PhotoChecklistConfigAPI {
     // Template Management Methods
     // ==============================================
 
-    public function getTemplates() {
-        $sql = "SELECT ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number, 
-                       ct.revision, ct.original_filename, ct.review_date, ct.revision_number, 
-                       ct.revision_details, ct.revised_by, ct.product_type, 
-                       ct.category, ct.version, ct.parent_template_id, ct.template_group_id, 
-                       ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
+    private function hasChecklistTemplatesIsDeletedColumn() {
+        if ($this->hasTemplateIsDeletedColumn !== null) {
+            return (bool)$this->hasTemplateIsDeletedColumn;
+        }
+
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM checklist_templates LIKE 'is_deleted'");
+            $stmt->execute();
+            $this->hasTemplateIsDeletedColumn = ($stmt->rowCount() > 0);
+        } catch (Exception $e) {
+            $this->hasTemplateIsDeletedColumn = false;
+        }
+
+        return (bool)$this->hasTemplateIsDeletedColumn;
+    }
+
+    private function hasChecklistTemplatesCustomerNameColumn() {
+        if ($this->hasTemplateCustomerNameColumn !== null) {
+            return (bool)$this->hasTemplateCustomerNameColumn;
+        }
+
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM checklist_templates LIKE 'customer_name'");
+            $stmt->execute();
+            $this->hasTemplateCustomerNameColumn = ($stmt->rowCount() > 0);
+        } catch (Exception $e) {
+            $this->hasTemplateCustomerNameColumn = false;
+        }
+
+        return (bool)$this->hasTemplateCustomerNameColumn;
+    }
+
+    public function getTemplates($includeDeleted = false, $includeInactive = false) {
+        if ($includeDeleted) {
+            $whereClause = "1=1";
+        } else if ($includeInactive) {
+            // Include inactive historical templates. If is_deleted exists, still exclude deleted.
+            // If is_deleted does not exist, we cannot distinguish deleted vs inactive, so include all.
+            $whereClause = $this->hasChecklistTemplatesIsDeletedColumn()
+                ? "(COALESCE(ct.is_deleted, 0) = 0)"
+                : "1=1";
+        } else {
+            // Backward-compatible default: show active published + drafts only.
+            // Note: without an is_deleted column we can't safely distinguish "inactive historical" from "soft-deleted".
+            $whereClause = "(ct.is_active = 1 OR ct.is_draft = 1)";
+        }
+
+        $isDeletedSelect = $this->hasChecklistTemplatesIsDeletedColumn() ? ", ct.is_deleted" : "";
+        $customerNameSelect = $this->hasChecklistTemplatesCustomerNameColumn() ? ", ct.customer_name" : "";
+
+        $sql = "SELECT ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number{$customerNameSelect}, 
+                   ct.revision, ct.original_filename, ct.review_date, ct.revision_number, 
+                   ct.revision_details, ct.revised_by, ct.product_type, 
+                   ct.category, ct.version, ct.parent_template_id, ct.template_group_id, 
+                   ct.is_active, ct.is_draft{$isDeletedSelect}, ct.created_by, ct.created_at, ct.updated_at, ct.published_at,
                        qd.id as qd_id,
                        qd.document_number,
                        qd.title as qd_title,
@@ -179,18 +356,48 @@ class PhotoChecklistConfigAPI {
                 LEFT JOIN quality_revisions qr ON qr.id = ct.quality_revision_id
                 LEFT JOIN checklist_instances ci ON ct.id = ci.template_id AND ci.status != 'completed'
                 LEFT JOIN checklist_items cit ON ct.id = cit.template_id
-                WHERE ct.is_active = 1
-                GROUP BY ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number, 
+                WHERE " . $whereClause . "
+                GROUP BY ct.id, ct.name, ct.description, ct.part_number, ct.customer_part_number{$customerNameSelect}, 
                          ct.revision, ct.original_filename, ct.review_date, ct.revision_number,
                          ct.revision_details, ct.revised_by, ct.product_type, 
                          ct.category, ct.version, ct.parent_template_id, ct.template_group_id,
-                         ct.is_active, ct.created_by, ct.created_at, ct.updated_at,
+                         ct.is_active, ct.is_draft{$isDeletedSelect}, ct.created_by, ct.created_at, ct.updated_at, ct.published_at,
                          qd.id, qd.document_number, qd.title, qr.id, qr.revision_number
                 ORDER BY ct.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $bestDraftByParent = [];
+        $parentTemplateIds = [];
+        foreach ($results as $row) {
+            if (empty($row['is_draft']) && !empty($row['id'])) {
+                $parentTemplateIds[] = (int)$row['id'];
+            }
+        }
+
+        $parentTemplateIds = array_values(array_unique(array_filter($parentTemplateIds, function ($value) {
+            return (int)$value > 0;
+        })));
+
+        if (!empty($parentTemplateIds)) {
+            $placeholders = implode(',', array_fill(0, count($parentTemplateIds), '?'));
+            $draftLookupSql = "SELECT parent_template_id, id, is_active, updated_at
+                               FROM checklist_templates
+                               WHERE is_draft = 1 AND parent_template_id IN ($placeholders)
+                               ORDER BY parent_template_id ASC, is_active DESC, updated_at DESC, id DESC";
+            $draftLookupStmt = $this->conn->prepare($draftLookupSql);
+            $draftLookupStmt->execute($parentTemplateIds);
+            $draftRows = $draftLookupStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($draftRows as $draftRow) {
+                $parentId = (int)($draftRow['parent_template_id'] ?? 0);
+                if ($parentId > 0 && !isset($bestDraftByParent[$parentId])) {
+                    $bestDraftByParent[$parentId] = (int)$draftRow['id'];
+                }
+            }
+        }
         
         // Add quality_document_metadata to each template
         foreach ($results as &$template) {
@@ -206,6 +413,22 @@ class PhotoChecklistConfigAPI {
             } else {
                 $template['quality_document_metadata'] = null;
             }
+
+            // Normalize types for frontend (PDO returns strings)
+            $template['is_active'] = (bool)$template['is_active'];
+            $template['is_draft'] = (bool)$template['is_draft'];
+            if (array_key_exists('is_deleted', $template)) {
+                $template['is_deleted'] = (bool)$template['is_deleted'];
+            }
+            $template['active_instances'] = isset($template['active_instances']) ? (int)$template['active_instances'] : 0;
+            $template['item_count'] = isset($template['item_count']) ? (int)$template['item_count'] : 0;
+
+            $templateId = isset($template['id']) ? (int)$template['id'] : 0;
+            if (!empty($template['is_draft'])) {
+                $template['edit_target_template_id'] = $templateId > 0 ? $templateId : null;
+            } else {
+                $template['edit_target_template_id'] = $bestDraftByParent[$templateId] ?? null;
+            }
             
             // Remove the joined fields from root level
             unset($template['qd_id'], $template['document_number'], $template['qd_title'], 
@@ -215,7 +438,18 @@ class PhotoChecklistConfigAPI {
         return $results;
     }
 
-    public function getTemplate($id) {
+    public function getTemplate($id, $includeDeleted = false, $includeInactive = false) {
+        if ($includeDeleted) {
+            $whereCondition = "ct.id = ?";
+        } else if ($includeInactive) {
+            // Include inactive historical templates. If is_deleted exists, still exclude deleted.
+            $whereCondition = $this->hasChecklistTemplatesIsDeletedColumn()
+                ? "ct.id = ? AND (COALESCE(ct.is_deleted, 0) = 0)"
+                : "ct.id = ?";
+        } else {
+            $whereCondition = "ct.id = ? AND (ct.is_active = 1 OR ct.is_draft = 1)";
+        }
+
         // First get the template with quality document metadata
         $sql = "SELECT ct.*,
                        qd.id as qd_id,
@@ -227,7 +461,7 @@ class PhotoChecklistConfigAPI {
                 FROM checklist_templates ct
                 LEFT JOIN quality_documents qd ON qd.id = ct.quality_document_id
                 LEFT JOIN quality_revisions qr ON qr.id = ct.quality_revision_id
-                WHERE ct.id = ? AND ct.is_active = 1";
+                WHERE " . $whereCondition;
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -253,6 +487,43 @@ class PhotoChecklistConfigAPI {
         // Remove the joined fields from root level
         unset($result['qd_id'], $result['document_number'], $result['qd_title'], 
               $result['qr_id'], $result['revision_number'], $result['qr_description']);
+
+        // Normalize types for frontend (PDO returns strings)
+        if (isset($result['id'])) {
+            $result['id'] = (int)$result['id'];
+        }
+        if (array_key_exists('is_active', $result)) {
+            $result['is_active'] = (bool)$result['is_active'];
+        }
+        if (array_key_exists('is_draft', $result)) {
+            $result['is_draft'] = (bool)$result['is_draft'];
+        }
+        if (array_key_exists('is_deleted', $result)) {
+            $result['is_deleted'] = (bool)$result['is_deleted'];
+        }
+        if (isset($result['template_group_id']) && $result['template_group_id'] !== null) {
+            $result['template_group_id'] = (int)$result['template_group_id'];
+        }
+        if (isset($result['parent_template_id']) && $result['parent_template_id'] !== null) {
+            $result['parent_template_id'] = (int)$result['parent_template_id'];
+        }
+
+        $result['edit_target_template_id'] = null;
+        if (!empty($result['id'])) {
+            $templateId = (int)$result['id'];
+            if (!empty($result['is_draft'])) {
+                $result['edit_target_template_id'] = $templateId;
+            } else {
+                $draftStmt = $this->conn->prepare(
+                    "SELECT id FROM checklist_templates WHERE parent_template_id = ? AND is_draft = 1 ORDER BY is_active DESC, updated_at DESC, id DESC LIMIT 1"
+                );
+                $draftStmt->execute([$templateId]);
+                $draftId = (int)($draftStmt->fetchColumn() ?: 0);
+                if ($draftId > 0) {
+                    $result['edit_target_template_id'] = $draftId;
+                }
+            }
+        }
         
         // Then get items separately with proper ordering
         // Detect if sample_videos and video_requirements columns exist to avoid SQL errors on older schemas
@@ -535,6 +806,53 @@ class PhotoChecklistConfigAPI {
     }
 
     /**
+     * Flatten a nested items structure (items with optional children arrays) into a flat list.
+     * This is used for cloning templates (e.g., creating a new major version) because createTemplate()
+     * expects a flat list where `level` indicates nesting depth.
+     *
+     * Notes:
+     * - getTemplate() returns nested items (children arrays) via ChecklistTemplateTransformer.
+     * - createTemplate() currently only iterates a flat list; without flattening, child items are dropped.
+     */
+    private function flattenNestedTemplateItemsForCreate($items, $level = 0) {
+        if (empty($items) || !is_array($items)) {
+            return [];
+        }
+
+        // Defensive sort by order_index if present
+        $itemsCopy = $items;
+        usort($itemsCopy, function ($a, $b) {
+            $ao = isset($a['order_index']) ? (float)$a['order_index'] : 0;
+            $bo = isset($b['order_index']) ? (float)$b['order_index'] : 0;
+            return $ao <=> $bo;
+        });
+
+        $flat = [];
+        foreach ($itemsCopy as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $children = [];
+            if (isset($item['children']) && is_array($item['children'])) {
+                $children = $item['children'];
+            }
+
+            $row = $item;
+            $row['level'] = (int)$level;
+            unset($row['children']);
+
+            $flat[] = $row;
+
+            if (!empty($children)) {
+                $flat = array_merge($flat, $this->flattenNestedTemplateItemsForCreate($children, $level + 1));
+            }
+        }
+
+        return $flat;
+    }
+
+    /**
      * Validate sample images array
      * Ensures only 1 primary sample image and max 5 reference images
      * 
@@ -618,8 +936,249 @@ class PhotoChecklistConfigAPI {
         return $normalized;
     }
 
-    public function createTemplate() {
-        $data = json_decode(file_get_contents('php://input'), true);
+    /**
+     * Parse version string into [major, minor, patch]
+     */
+    private function parseVersionParts($version) {
+        $versionStr = trim((string)$version);
+        if ($versionStr === '') {
+            return [1, 0, 0];
+        }
+
+        if (preg_match('/(\d+)(?:\.(\d+))?(?:\.(\d+))?/', $versionStr, $matches)) {
+            $major = isset($matches[1]) ? (int)$matches[1] : 1;
+            $minor = isset($matches[2]) ? (int)$matches[2] : 0;
+            $patch = isset($matches[3]) ? (int)$matches[3] : 0;
+            return [$major, $minor, $patch];
+        }
+
+        return [1, 0, 0];
+    }
+
+    /**
+     * Normalize version to a canonical string.
+     * Uses major.minor unless patch is present, then major.minor.patch.
+     */
+    private function normalizeVersionString($version) {
+        [$major, $minor, $patch] = $this->parseVersionParts($version);
+        if ($patch > 0) {
+            return $major . '.' . $minor . '.' . $patch;
+        }
+        return $major . '.' . $minor;
+    }
+
+    /**
+     * Compare two version strings.
+     * Returns -1 if $a < $b, 0 if equal, 1 if $a > $b.
+     */
+    private function compareVersions($a, $b) {
+        [$aMajor, $aMinor, $aPatch] = $this->parseVersionParts($a);
+        [$bMajor, $bMinor, $bPatch] = $this->parseVersionParts($b);
+
+        if ($aMajor !== $bMajor) {
+            return $aMajor <=> $bMajor;
+        }
+        if ($aMinor !== $bMinor) {
+            return $aMinor <=> $bMinor;
+        }
+        return $aPatch <=> $bPatch;
+    }
+
+    /**
+     * Increment a version string.
+     * If patch exists, increment patch; otherwise increment minor.
+     */
+    private function incrementVersion($version) {
+        [$major, $minor, $patch] = $this->parseVersionParts($version);
+        if ($patch > 0) {
+            $patch++;
+            return $major . '.' . $minor . '.' . $patch;
+        }
+
+        $minor++;
+        return $major . '.' . $minor;
+    }
+
+    /**
+     * Resolve a unique version for a template group.
+     * - Keeps the requested version whenever possible (even if it's lower than the group's max),
+     *   because major lines are independent (e.g., v1.x and v3.x can co-exist).
+     * - If requested version is a duplicate within the group (excluding an optional template ID), auto-bump.
+     * - Guarantees unique version string within the group.
+     */
+    private function resolveVersionForTemplateGroup($templateGroupId, $requestedVersion, $excludeTemplateId = null) {
+        $requested = $this->normalizeVersionString($requestedVersion ?: '1.0');
+
+        $excludeTemplateId = $excludeTemplateId !== null ? (int)$excludeTemplateId : null;
+
+        $sql = "SELECT id, version FROM checklist_templates WHERE template_group_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([(int)$templateGroupId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($rows)) {
+            return $requested;
+        }
+
+        $existing = [];
+
+        foreach ($rows as $row) {
+            $rowId = isset($row['id']) ? (int)$row['id'] : 0;
+            if ($excludeTemplateId !== null && $excludeTemplateId > 0 && $rowId === $excludeTemplateId) {
+                continue;
+            }
+
+            $v = $this->normalizeVersionString($row['version'] ?? '1.0');
+            $existing[$v] = true;
+        }
+
+        $candidate = $requested;
+        while (isset($existing[$candidate])) {
+            $candidate = $this->incrementVersion($candidate);
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Resolve the next branch version for a specific parent template.
+     * Examples:
+     * - parent v1.0 -> first publish from its draft = v1.0.1
+     * - parent v4 -> first publish from its draft = v4.1
+     * - parent v4 with existing children v4.1, v4.2 -> next = v4.3
+     */
+    private function resolveNextBranchVersionForParent($parentTemplateId, $fallbackParentVersion = '1.0', $excludeTemplateId = null) {
+        $parentTemplateId = (int)$parentTemplateId;
+        $excludeTemplateId = $excludeTemplateId !== null ? (int)$excludeTemplateId : null;
+
+        $baseVersion = $this->normalizeVersionString($fallbackParentVersion ?: '1.0');
+
+        if ($parentTemplateId > 0) {
+            $parentVersionStmt = $this->conn->prepare("SELECT version FROM checklist_templates WHERE id = ? LIMIT 1");
+            $parentVersionStmt->execute([$parentTemplateId]);
+            $parentVersion = $parentVersionStmt->fetchColumn();
+            if (!empty($parentVersion)) {
+                $baseVersion = $this->normalizeVersionString((string)$parentVersion);
+            }
+        }
+
+        $sql = "SELECT id, version
+                FROM checklist_templates
+                WHERE parent_template_id = ?
+                  AND is_draft = 0";
+        $params = [$parentTemplateId];
+
+        if ($excludeTemplateId !== null && $excludeTemplateId > 0) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeTemplateId;
+        }
+
+        $sql .= " ORDER BY id DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $pattern = '/^' . preg_quote($baseVersion, '/') . '\\.(\\d+)$/';
+        $maxSuffix = 0;
+
+        foreach ($rows as $row) {
+            $candidateVersion = trim((string)($row['version'] ?? ''));
+            if ($candidateVersion === '') {
+                continue;
+            }
+
+            if (preg_match($pattern, $candidateVersion, $matches)) {
+                $suffix = isset($matches[1]) ? (int)$matches[1] : 0;
+                if ($suffix > $maxSuffix) {
+                    $maxSuffix = $suffix;
+                }
+            }
+        }
+
+        return $baseVersion . '.' . ($maxSuffix + 1);
+    }
+
+    /**
+     * Keep only one active published template per major line within a template family.
+     * Called after a draft is published.
+     */
+    private function deactivateOtherPublishedInSameMajor($templateId) {
+        $templateId = (int)$templateId;
+        if ($templateId <= 0) {
+            return;
+        }
+
+        $rowStmt = $this->conn->prepare("SELECT id, template_group_id, version FROM checklist_templates WHERE id = ? LIMIT 1");
+        $rowStmt->execute([$templateId]);
+        $row = $rowStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return;
+        }
+
+        $groupId = (int)($row['template_group_id'] ?? 0);
+        if ($groupId <= 0) {
+            $groupId = $templateId;
+        }
+
+        [$major] = $this->parseVersionParts($row['version'] ?? '1.0');
+        $major = (int)$major;
+
+        $whereDeleted = '';
+        if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+            $whereDeleted = ' AND COALESCE(is_deleted, 0) = 0';
+        }
+
+        $sql = "UPDATE checklist_templates
+                SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+                WHERE template_group_id = ?
+                  AND is_draft = 0
+                  AND id != ?
+                  AND CAST(SUBSTRING_INDEX(version, '.', 1) AS UNSIGNED) = ?
+                  {$whereDeleted}";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$groupId, $templateId, $major]);
+    }
+
+    public function createTemplate($dataOverride = null) {
+        $data = $dataOverride ?? json_decode(file_get_contents('php://input'), true);
+
+        $linksError = $this->ensureLinksColumnIfNeeded($data);
+        if ($linksError) {
+            return ['success' => false, 'error' => $linksError];
+        }
+
+        // Single-draft policy guard for direct create calls:
+        // if a draft already exists for the same parent template, block creating another.
+        $requestedIsDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : 0;
+        if ($requestedIsDraft === 1) {
+            $draftParentTemplateId = 0;
+
+            if (!empty($data['parent_template_id'])) {
+                $draftParentTemplateId = (int)$data['parent_template_id'];
+            } elseif (!empty($data['source_template_id'])) {
+                // Save Draft flows may clone from a published source template.
+                $draftParentTemplateId = (int)$data['source_template_id'];
+            }
+
+            if ($draftParentTemplateId > 0) {
+                $existingDraftStmt = $this->conn->prepare(
+                    "SELECT id FROM checklist_templates WHERE parent_template_id = ? AND is_draft = 1 ORDER BY is_active DESC, updated_at DESC, id DESC LIMIT 1"
+                );
+                $existingDraftStmt->execute([$draftParentTemplateId]);
+                $existingDraftId = (int)($existingDraftStmt->fetchColumn() ?: 0);
+
+                if ($existingDraftId > 0) {
+                    return [
+                        'success' => false,
+                        'code' => 'DRAFT_ALREADY_EXISTS',
+                        'error' => 'A draft already exists for this template. Open the existing draft instead of creating another.',
+                        'existing_draft_id' => $existingDraftId,
+                        'parent_template_id' => $draftParentTemplateId
+                    ];
+                }
+            }
+        }
         
         // Debug: Log the received data
         error_log("createTemplate received data: " . json_encode($data, JSON_PRETTY_PRINT));
@@ -643,8 +1202,12 @@ class PhotoChecklistConfigAPI {
                 $sourceTemplate = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($sourceTemplate) {
-                    $parentTemplateId = $sourceTemplateId;
+                    $parentTemplateId = (int)$sourceTemplateId;
                     $templateGroupId = $sourceTemplate['template_group_id'];
+                    if (empty($templateGroupId)) {
+                        // Legacy safety: if source template has no group, use source ID as group root
+                        $templateGroupId = (int)$sourceTemplateId;
+                    }
                     
                     // Deactivate the previous version (only if it's currently active)
                     if ($sourceTemplate['is_active']) {
@@ -657,21 +1220,66 @@ class PhotoChecklistConfigAPI {
                     error_log("Warning: Source template $sourceTemplateId not found, creating as new template");
                 }
             }
+
+            // Allow explicitly setting parent/group IDs (used for drafts created from a published template)
+            if ($parentTemplateId === null && isset($data['parent_template_id']) && !empty($data['parent_template_id'])) {
+                $parentTemplateId = (int)$data['parent_template_id'];
+            }
+            if ($templateGroupId === null && isset($data['template_group_id']) && !empty($data['template_group_id'])) {
+                $templateGroupId = (int)$data['template_group_id'];
+            }
+
+            // If parent is provided but group is missing, inherit group from parent to avoid detaching this row
+            // into its own family.
+            if ($templateGroupId === null && !empty($parentTemplateId)) {
+                $parentGroupStmt = $this->conn->prepare("SELECT template_group_id FROM checklist_templates WHERE id = ?");
+                $parentGroupStmt->execute([(int)$parentTemplateId]);
+                $parentGroupId = (int)($parentGroupStmt->fetchColumn() ?: 0);
+                if ($parentGroupId > 0) {
+                    $templateGroupId = $parentGroupId;
+                }
+            }
+
+            // Enforce unique, monotonic versioning for template families.
+            // This prevents duplicates like multiple "v1.1" entries in the same group.
+            if ($templateGroupId !== null) {
+                $resolvedVersion = $this->resolveVersionForTemplateGroup((int)$templateGroupId, $version);
+                if ((string)$resolvedVersion !== (string)$version) {
+                    error_log("Version override for group {$templateGroupId}: requested={$version}, resolved={$resolvedVersion}");
+                }
+                $version = $resolvedVersion;
+            } else {
+                $version = $this->normalizeVersionString($version);
+            }
             
-            // For new templates (not versions), we need to insert without template_group_id first,
-            // then update it to its own ID. Use a temporary value of 0 or omit if nullable.
-            $isDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : 1; // Default to draft
+            // For normal template creation ("Save"), default to published.
+            // Drafts must be created explicitly via is_draft=1 (e.g., Save Draft).
+            $isDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : 0;
+            $publishedAt = ($isDraft === 0) ? date('Y-m-d H:i:s') : null;
+
+            $hasCustomerNameColumn = $this->hasChecklistTemplatesCustomerNameColumn();
+            $customerNameValue = $hasCustomerNameColumn ? ($data['customer_name'] ?? null) : null;
             
             if ($templateGroupId === null) {
                 // Insert template without template_group_id (omit from INSERT for new templates)
-                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, created_by, is_active, is_draft, last_autosave_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)";
-                $stmt = $this->conn->prepare($sql);
-                $success = $stmt->execute([
+                $columns = ['name', 'description', 'part_number', 'customer_part_number'];
+                $values = ['?', '?', '?', '?'];
+                $params = [
                     $data['name'],
                     $data['description'] ?? '',
                     $data['part_number'] ?? '',
-                    $data['customer_part_number'] ?? null,
+                    $data['customer_part_number'] ?? null
+                ];
+
+                if ($hasCustomerNameColumn) {
+                    $columns[] = 'customer_name';
+                    $values[] = '?';
+                    $params[] = $customerNameValue;
+                }
+
+                $columns = array_merge($columns, ['revision', 'original_filename', 'review_date', 'revision_number', 'revision_details', 'revised_by', 'product_type', 'category', 'version', 'parent_template_id', 'created_by', 'is_active', 'is_draft', 'published_at']);
+                $values = array_merge($values, ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '1', '?', '?']);
+                $params = array_merge($params, [
                     $data['revision'] ?? null,
                     $data['original_filename'] ?? null,
                     $data['review_date'] ?? null,
@@ -683,18 +1291,33 @@ class PhotoChecklistConfigAPI {
                     $version,
                     $parentTemplateId,
                     $data['created_by'] ?? null,
-                    $isDraft
+                    $isDraft,
+                    $publishedAt
                 ]);
+
+                $sql = "INSERT INTO checklist_templates (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+                $stmt = $this->conn->prepare($sql);
+                $success = $stmt->execute($params);
             } else {
                 // Insert template with versioning fields and metadata (for versions)
-                $sql = "INSERT INTO checklist_templates (name, description, part_number, customer_part_number, revision, original_filename, review_date, revision_number, revision_details, revised_by, product_type, category, version, parent_template_id, template_group_id, created_by, is_active, is_draft, last_autosave_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP)";
-                $stmt = $this->conn->prepare($sql);
-                $success = $stmt->execute([
+                $columns = ['name', 'description', 'part_number', 'customer_part_number'];
+                $values = ['?', '?', '?', '?'];
+                $params = [
                     $data['name'],
                     $data['description'] ?? '',
                     $data['part_number'] ?? '',
-                    $data['customer_part_number'] ?? null,
+                    $data['customer_part_number'] ?? null
+                ];
+
+                if ($hasCustomerNameColumn) {
+                    $columns[] = 'customer_name';
+                    $values[] = '?';
+                    $params[] = $customerNameValue;
+                }
+
+                $columns = array_merge($columns, ['revision', 'original_filename', 'review_date', 'revision_number', 'revision_details', 'revised_by', 'product_type', 'category', 'version', 'parent_template_id', 'template_group_id', 'created_by', 'is_active', 'is_draft', 'published_at']);
+                $values = array_merge($values, ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '1', '?', '?']);
+                $params = array_merge($params, [
                     $data['revision'] ?? null,
                     $data['original_filename'] ?? null,
                     $data['review_date'] ?? null,
@@ -707,8 +1330,13 @@ class PhotoChecklistConfigAPI {
                     $parentTemplateId,
                     $templateGroupId,
                     $data['created_by'] ?? null,
-                    $isDraft
+                    $isDraft,
+                    $publishedAt
                 ]);
+
+                $sql = "INSERT INTO checklist_templates (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ")";
+                $stmt = $this->conn->prepare($sql);
+                $success = $stmt->execute($params);
             }
 
             if (!$success) {
@@ -895,17 +1523,14 @@ class PhotoChecklistConfigAPI {
                         
                         // Build video_requirements JSON from frontend data
                         $videoRequirements = [];
-                        if ($item['submission_time_seconds'] !== null) {
+                        if (array_key_exists('submission_time_seconds', $item) && $item['submission_time_seconds'] !== null) {
                             $videoRequirements['submission_time_seconds'] = (int)$item['submission_time_seconds'];
                         }
                         if (isset($item['photo_requirements']['max_video_duration_seconds'])) {
                             $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
                         }
 
-                        $linksPayload = [];
-                        if (!empty($item['links']) && is_array($item['links'])) {
-                            $linksPayload = $item['links'];
-                        }
+                        $linksPayload = $this->normalizeLinksPayload($item, $hasLinksColumn);
                         
                         // Insert item with correct parent_id IMMEDIATELY
                         $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
@@ -943,7 +1568,7 @@ class PhotoChecklistConfigAPI {
                         if ($hasLinksColumn) {
                             $insertColumns[] = 'links';
                             $insertValues[] = '?';
-                            $executeParams[] = json_encode($linksPayload);
+                            $executeParams[] = json_encode($linksPayload ?? []);
                         }
                         
                         $insertColumns[] = 'is_required';
@@ -977,6 +1602,8 @@ class PhotoChecklistConfigAPI {
             }
             
             $this->conn->commit();
+
+            $this->ensureTemplateFamilyIntegrity($templateId);
             
             // Fetch the saved template with updated URLs to return to frontend
             $savedTemplate = $this->getTemplate($templateId);
@@ -999,79 +1626,228 @@ class PhotoChecklistConfigAPI {
         }
     }
 
-    public function updateTemplate($id) {
-        $data = json_decode(file_get_contents('php://input'), true);
+    public function updateTemplate($id, $dataOverride = null) {
+        $data = $dataOverride ?? json_decode(file_get_contents('php://input'), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        $linksError = $this->ensureLinksColumnIfNeeded($data);
+        if ($linksError) {
+            return ['success' => false, 'error' => $linksError];
+        }
         
         // Debug: Log the received data
         error_log("updateTemplate received data: " . json_encode($data, JSON_PRETTY_PRINT));
+
+        // Read requested draft flag early (used by publish transition logic)
+        $requestedIsDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : null;
         
+        // If frontend sends is_draft=1 while editing a published template, DO NOT update the published
+        // template in-place (it may have instances/photo_submissions referencing its checklist_items).
+        // Instead, create/update a separate draft template and save items there.
+        $selectCustomerName = $this->hasChecklistTemplatesCustomerNameColumn() ? ", customer_name" : "";
+        $currentStmt = $this->conn->prepare(
+            "SELECT id, name, description, part_number, customer_part_number{$selectCustomerName}, revision, original_filename, review_date,
+                revision_number, revision_details, revised_by, product_type, category,
+                version, is_draft, is_active, parent_template_id, template_group_id
+             FROM checklist_templates WHERE id = ?"
+        );
+        $currentStmt->execute([$id]);
+        $currentTemplate = $currentStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$currentTemplate) {
+            return ['success' => false, 'error' => 'Template not found'];
+        }
+
+        // Support partial updates: when a field isn't provided, keep the current DB value.
+        $name = array_key_exists('name', $data) ? $data['name'] : ($currentTemplate['name'] ?? '');
+        $description = array_key_exists('description', $data) ? ($data['description'] ?? '') : ($currentTemplate['description'] ?? '');
+        $partNumber = array_key_exists('part_number', $data) ? ($data['part_number'] ?? '') : ($currentTemplate['part_number'] ?? '');
+        $customerPartNumber = array_key_exists('customer_part_number', $data) ? ($data['customer_part_number'] ?? null) : ($currentTemplate['customer_part_number'] ?? null);
+        $customerName = null;
+        if ($this->hasChecklistTemplatesCustomerNameColumn()) {
+            $customerName = array_key_exists('customer_name', $data) ? ($data['customer_name'] ?? null) : ($currentTemplate['customer_name'] ?? null);
+        }
+        $revision = array_key_exists('revision', $data) ? ($data['revision'] ?? null) : ($currentTemplate['revision'] ?? null);
+        $originalFilename = array_key_exists('original_filename', $data) ? ($data['original_filename'] ?? null) : ($currentTemplate['original_filename'] ?? null);
+        $reviewDate = array_key_exists('review_date', $data) ? ($data['review_date'] ?? null) : ($currentTemplate['review_date'] ?? null);
+        $revisionNumber = array_key_exists('revision_number', $data) ? ($data['revision_number'] ?? null) : ($currentTemplate['revision_number'] ?? null);
+        $revisionDetails = array_key_exists('revision_details', $data) ? ($data['revision_details'] ?? null) : ($currentTemplate['revision_details'] ?? null);
+        $revisedBy = array_key_exists('revised_by', $data) ? ($data['revised_by'] ?? null) : ($currentTemplate['revised_by'] ?? null);
+        $productType = array_key_exists('product_type', $data) ? ($data['product_type'] ?? '') : ($currentTemplate['product_type'] ?? '');
+        $category = array_key_exists('category', $data) ? ($data['category'] ?? 'quality_control') : ($currentTemplate['category'] ?? 'quality_control');
+        $isActive = array_key_exists('is_active', $data) ? ($data['is_active'] ?? 1) : ($currentTemplate['is_active'] ?? 1);
+
+        $publishingDraft = ($requestedIsDraft === 0 && (int)$currentTemplate['is_draft'] === 1);
+        $resolvedPublishVersion = null;
+        if ($publishingDraft) {
+            // Publishing a draft should keep its current major.minor version (e.g., 2.1 stays 2.1).
+            // If that version collides with an existing template in the same family, auto-bump to the next available.
+            $groupIdForPublish = (int)($currentTemplate['template_group_id'] ?? 0);
+            if ($groupIdForPublish <= 0) {
+                $groupIdForPublish = $this->resolveTemplateGroupIdForTemplate((int)$id, (int)($currentTemplate['parent_template_id'] ?? 0));
+            }
+
+            if ($groupIdForPublish > 0) {
+                $resolvedPublishVersion = $this->resolveVersionForTemplateGroup(
+                    $groupIdForPublish,
+                    $currentTemplate['version'] ?? ($data['version'] ?? '1.0'),
+                    (int)$id
+                );
+                if (!empty($resolvedPublishVersion) && (string)$resolvedPublishVersion !== (string)($currentTemplate['version'] ?? '')) {
+                    error_log("🧮 Publishing draft template ID=$id; requested_version=" . ($currentTemplate['version'] ?? '') . ", resolved_unique_version={$resolvedPublishVersion}");
+                } else {
+                    error_log("🧮 Publishing draft template ID=$id; keeping version=" . ($currentTemplate['version'] ?? ''));
+                }
+            }
+        }
+
+        $submissionCount = 0;
+
+        if (!empty($data['items']) && is_array($data['items'])) {
+            $subStmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM photo_submissions ps INNER JOIN checklist_items citm ON ps.item_id = citm.id WHERE citm.template_id = ?"
+            );
+            $subStmt->execute([$id]);
+            $submissionCount = (int)$subStmt->fetchColumn();
+        }
+
+        if ($requestedIsDraft === 1 && (int)$currentTemplate['is_draft'] === 0) {
+            error_log("🧩 updateTemplate called with is_draft=1 on published template ID=$id; saving to draft copy instead of updating published");
+            return $this->saveDraftForPublishedTemplate((int)$id, $data, $currentTemplate);
+        }
+
+        // If this template already has submissions referencing its items, we cannot delete/recreate checklist_items
+        // without breaking FK constraints.
+        // IMPORTANT: only allow clone-on-save for published templates. Draft-on-draft must stay on the same ID.
+        if ($requestedIsDraft === 1 && (int)$currentTemplate['is_draft'] === 0 && !empty($data['items']) && is_array($data['items'])) {
+            if ($submissionCount > 0) {
+                $groupId = !empty($currentTemplate['template_group_id']) ? (int)$currentTemplate['template_group_id'] : null;
+
+                // Preserve nesting dynamically:
+                // - If editing a draft, new snapshot draft should be a child of the current draft (this exact level).
+                // - If editing published (handled earlier), parenting is resolved in saveDraftForPublishedTemplate().
+                $baseParentId = ((int)$currentTemplate['is_draft'] === 1)
+                    ? (int)$id
+                    : $this->resolveDraftParentTemplateId((int)$id, $currentTemplate['parent_template_id'] ?? null, $groupId);
+
+                if ($groupId === null || $groupId <= 0) {
+                    $groupId = $this->resolveTemplateGroupIdForTemplate((int)$id, $baseParentId);
+                }
+
+                error_log("🧩 updateTemplate draft save blocked by FK (template ID=$id has $submissionCount submissions). Creating new draft template instead.");
+
+                // Deactivate the old draft so it doesn't stay editable/visible as the latest draft.
+                // Instances will still reference it via template_id; leaving row intact preserves history.
+                try {
+                    $deactivateStmt = $this->conn->prepare("UPDATE checklist_templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                    $deactivateStmt->execute([$id]);
+                } catch (Exception $e) {
+                    // Non-fatal; continue creating a new draft.
+                    error_log("⚠️ Failed to deactivate old draft template ID=$id: " . $e->getMessage());
+                }
+
+                if ($baseParentId !== null && (int)$baseParentId > 0 && (int)$baseParentId !== (int)$id) {
+                    $data['parent_template_id'] = (int)$baseParentId;
+                } else {
+                    unset($data['parent_template_id']);
+                }
+                if ($groupId !== null) {
+                    $data['template_group_id'] = $groupId;
+                }
+                $data['is_draft'] = 1;
+                $data['is_active'] = 1;
+
+                return $this->createTemplate($data);
+            }
+        }
+
         $this->conn->beginTransaction();
         
         try {
-            $existsStmt = $this->conn->prepare("SELECT id FROM checklist_templates WHERE id = ?");
-            $existsStmt->execute([$id]);
-            if (!$existsStmt->fetch(PDO::FETCH_ASSOC)) {
-                $this->conn->rollback();
-                return ['success' => false, 'error' => 'Template not found'];
-            }
 
             // Update template (removed is_active = 1 check to allow updating inactive templates)
             $isDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : null;
             
             if ($isDraft !== null) {
                 // Update with draft status
-                $sql = "UPDATE checklist_templates 
-                        SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, is_draft = ?, last_autosave_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    $data['name'],
-                    $data['description'] ?? '',
-                    $data['part_number'] ?? '',
-                    $data['customer_part_number'] ?? null,
-                    $data['revision'] ?? null,
-                    $data['original_filename'] ?? null,
-                    $data['review_date'] ?? null,
-                    $data['revision_number'] ?? null,
-                    $data['revision_details'] ?? null,
-                    $data['revised_by'] ?? null,
-                    $data['product_type'] ?? '',
-                    $data['category'] ?? 'quality_control',
-                    $data['is_active'] ?? 1,
+                $sql = "UPDATE checklist_templates SET name = ?, description = ?, part_number = ?, customer_part_number = ?";
+                $params = [$name, $description, $partNumber, $customerPartNumber];
+
+                if ($this->hasChecklistTemplatesCustomerNameColumn()) {
+                    $sql .= ", customer_name = ?";
+                    $params[] = $customerName;
+                }
+
+                $sql .= ", revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, is_draft = ?, published_at = CASE WHEN ? = 0 THEN COALESCE(published_at, CURRENT_TIMESTAMP) ELSE published_at END, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                $params = array_merge($params, [
+                    $revision,
+                    $originalFilename,
+                    $reviewDate,
+                    $revisionNumber,
+                    $revisionDetails,
+                    $revisedBy,
+                    $productType,
+                    $category,
+                    $isActive,
+                    $isDraft,
                     $isDraft,
                     $id
                 ]);
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute($params);
+
+                if ($resolvedPublishVersion !== null) {
+                    $versionStmt = $this->conn->prepare("UPDATE checklist_templates SET version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                    $versionStmt->execute([$resolvedPublishVersion, $id]);
+                }
+
+                if ((int)$isDraft === 0) {
+                    $this->deactivateOtherPublishedInSameMajor((int)$id);
+                }
             } else {
                 // Update without changing draft status
-                $sql = "UPDATE checklist_templates 
-                        SET name = ?, description = ?, part_number = ?, customer_part_number = ?, revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    $data['name'],
-                    $data['description'] ?? '',
-                    $data['part_number'] ?? '',
-                    $data['customer_part_number'] ?? null,
-                    $data['revision'] ?? null,
-                    $data['original_filename'] ?? null,
-                    $data['review_date'] ?? null,
-                    $data['revision_number'] ?? null,
-                    $data['revision_details'] ?? null,
-                    $data['revised_by'] ?? null,
-                    $data['product_type'] ?? '',
-                    $data['category'] ?? 'quality_control',
-                    $data['is_active'] ?? 1,
+                $sql = "UPDATE checklist_templates SET name = ?, description = ?, part_number = ?, customer_part_number = ?";
+                $params = [$name, $description, $partNumber, $customerPartNumber];
+
+                if ($this->hasChecklistTemplatesCustomerNameColumn()) {
+                    $sql .= ", customer_name = ?";
+                    $params[] = $customerName;
+                }
+
+                $sql .= ", revision = ?, original_filename = ?, review_date = ?, revision_number = ?, revision_details = ?, revised_by = ?, product_type = ?, category = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                $params = array_merge($params, [
+                    $revision,
+                    $originalFilename,
+                    $reviewDate,
+                    $revisionNumber,
+                    $revisionDetails,
+                    $revisedBy,
+                    $productType,
+                    $category,
+                    $isActive,
                     $id
                 ]);
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute($params);
             }
             
-            // Delete existing items
-            $sql = "DELETE FROM checklist_items WHERE template_id = ?";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$id]);
-            
-            // Insert updated items with ONE-PASS approach (same as createTemplate)
-            if (!empty($data['items'])) {
+            $itemsUpdateSkipped = false;
+
+            if (!empty($data['items']) && $submissionCount > 0) {
+                $itemsUpdateSkipped = true;
+                error_log("⚠️ updateTemplate: template ID=$id has $submissionCount photo submissions; skipping checklist_items delete/reinsert to avoid FK violations");
+            }
+
+            // Delete/reinsert items only when safe (no dependent submissions)
+            if (!empty($data['items']) && !$itemsUpdateSkipped) {
+                $sql = "DELETE FROM checklist_items WHERE template_id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([$id]);
+
+                // Insert updated items with ONE-PASS approach (same as createTemplate)
                 error_log("=== Starting ONE-PASS item save for template update ID=$id ===");
                 
                 // Check if sample_images and sample_videos columns exist once (moved outside loop for efficiency)
@@ -1220,12 +1996,14 @@ class PhotoChecklistConfigAPI {
                         
                         // Build video_requirements JSON from frontend data
                         $videoRequirements = [];
-                        if ($item['submission_time_seconds'] !== null) {
+                        if (array_key_exists('submission_time_seconds', $item) && $item['submission_time_seconds'] !== null) {
                             $videoRequirements['submission_time_seconds'] = (int)$item['submission_time_seconds'];
                         }
                         if (isset($item['photo_requirements']['max_video_duration_seconds'])) {
                             $videoRequirements['max_video_duration_seconds'] = (int)$item['photo_requirements']['max_video_duration_seconds'];
                         }
+
+                        $linksPayload = $this->normalizeLinksPayload($item, $hasLinksColumn);
                         
                         // Insert item with correct parent_id IMMEDIATELY
                         $insertColumns = ['template_id', 'order_index', 'parent_id', 'level', 'title', 'description', 'photo_requirements', 'sample_image_url', 'sample_images'];
@@ -1259,6 +2037,12 @@ class PhotoChecklistConfigAPI {
                             $insertValues[] = '?';
                             $executeParams[] = !empty($videoRequirements) ? json_encode($videoRequirements) : null;
                         }
+
+                        if ($hasLinksColumn) {
+                            $insertColumns[] = 'links';
+                            $insertValues[] = '?';
+                            $executeParams[] = json_encode($linksPayload ?? []);
+                        }
                         
                         $insertColumns[] = 'is_required';
                         $insertValues[] = '?';
@@ -1288,13 +2072,18 @@ class PhotoChecklistConfigAPI {
             $this->conn->commit();
             
             // Fetch the updated template with new URLs to return to frontend
+            if ($isDraft !== null && (int)$isDraft === 0) {
+                $this->ensureTemplateFamilyIntegrity($id);
+            }
             $updatedTemplate = $this->getTemplate($id);
             
             return [
                 'success' => true, 
                 'template_id' => $id, 
                 'template' => $updatedTemplate,
-                'algorithm' => 'ONE-PASS'
+                'algorithm' => 'ONE-PASS',
+                'items_update_skipped' => $itemsUpdateSkipped,
+                'submission_count' => $submissionCount
             ];
             
         } catch (Exception $e) {
@@ -1304,24 +2093,351 @@ class PhotoChecklistConfigAPI {
     }
 
     /**
-     * Auto-save template as draft (creates new or updates existing draft)
-     * Called every 10 seconds from frontend
+     * Create a new parent/root version (major version) from an existing template.
+     * - New template shares template_group_id with the source (same family)
+     * - New template has parent_template_id = NULL (new root branch)
+     * - Version defaults to next major: (source major + 1).0
+     *
+     * This is how users create v2.0 from v1.0 without it becoming a child like v1.0.1.
      */
-    public function autosaveTemplate($id = null) {
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        // Force draft status
-        $data['is_draft'] = 1;
-        
-        error_log("🔄 Auto-saving template" . ($id ? " ID=$id" : " (new)"));
-        
-        if ($id) {
-            // Update existing draft
-            return $this->updateTemplate($id);
-        } else {
-            // Create new draft
-            return $this->createTemplate();
+    public function createParentVersion($sourceTemplateId) {
+        $sourceTemplateId = (int)$sourceTemplateId;
+        if ($sourceTemplateId <= 0) {
+            return ['success' => false, 'error' => 'Invalid source template ID'];
         }
+
+        $selectCustomerName = $this->hasChecklistTemplatesCustomerNameColumn() ? ", customer_name" : "";
+        $sourceRowStmt = $this->conn->prepare(
+            "SELECT id, name, description, part_number, customer_part_number{$selectCustomerName}, revision, original_filename, review_date,
+                revision_number, revision_details, revised_by, product_type, category, version,
+                template_group_id, created_by
+             FROM checklist_templates
+             WHERE id = ?")
+        ;
+        $sourceRowStmt->execute([$sourceTemplateId]);
+        $sourceRow = $sourceRowStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$sourceRow) {
+            return ['success' => false, 'error' => 'Source template not found'];
+        }
+
+        $templateGroupId = !empty($sourceRow['template_group_id']) ? (int)$sourceRow['template_group_id'] : (int)$sourceTemplateId;
+
+        // Compute the next major based on the latest major that exists in this template family,
+        // not just the specific template the user clicked.
+        $maxMajor = 0;
+
+        $whereDeleted = '';
+        if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+            $whereDeleted = ' AND COALESCE(is_deleted, 0) = 0';
+        }
+
+        // IMPORTANT: base next major on PUBLISHED templates only.
+        // Drafts must not advance the next-major computation (otherwise v4.0 draft would cause next click to create v5.0 draft).
+        $versionsStmt = $this->conn->prepare(
+            "SELECT version FROM checklist_templates WHERE template_group_id = ? AND is_draft = 0 {$whereDeleted}"
+        );
+        $versionsStmt->execute([(int)$templateGroupId]);
+        $versionRows = $versionsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($versionRows as $vr) {
+            [$maj] = $this->parseVersionParts($vr['version'] ?? '');
+            $maj = (int)$maj;
+            if ($maj > $maxMajor) {
+                $maxMajor = $maj;
+            }
+        }
+
+        if ($maxMajor <= 0) {
+            [$maxMajor] = $this->parseVersionParts($sourceRow['version'] ?? '1.0');
+            $maxMajor = (int)$maxMajor;
+        }
+
+        $nextMajorVersion = ((int)$maxMajor + 1) . '.0';
+
+        // Single-draft policy for major versions: if the next major draft already exists for this family,
+        // reuse it instead of creating duplicates.
+        $whereDeleted = '';
+        if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+            $whereDeleted = ' AND COALESCE(is_deleted, 0) = 0';
+        }
+
+        $existingMajorDraftStmt = $this->conn->prepare(
+            "SELECT id
+             FROM checklist_templates
+             WHERE template_group_id = ?
+               AND is_draft = 1
+               AND parent_template_id IS NULL
+               AND version = ?
+               {$whereDeleted}
+             ORDER BY is_active DESC, updated_at DESC, id DESC
+             LIMIT 1"
+        );
+        $existingMajorDraftStmt->execute([(int)$templateGroupId, (string)$nextMajorVersion]);
+        $existingMajorDraftId = (int)($existingMajorDraftStmt->fetchColumn() ?: 0);
+
+        if ($existingMajorDraftId > 0) {
+            try {
+                // Make chosen draft active and hide any siblings (defensive cleanup).
+                $activateStmt = $this->conn->prepare(
+                    "UPDATE checklist_templates SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+                );
+                $activateStmt->execute([(int)$existingMajorDraftId]);
+
+                $deactivateSiblingsStmt = $this->conn->prepare(
+                    "UPDATE checklist_templates
+                     SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+                     WHERE template_group_id = ?
+                       AND is_draft = 1
+                       AND parent_template_id IS NULL
+                       AND id != ?
+                       {$whereDeleted}"
+                );
+                $deactivateSiblingsStmt->execute([(int)$templateGroupId, (int)$existingMajorDraftId]);
+            } catch (Exception $e) {
+                // Non-fatal
+                error_log("⚠️ createParentVersion: failed to enforce single major draft policy: " . $e->getMessage());
+            }
+
+            $existingTemplate = $this->getTemplate($existingMajorDraftId, true, true);
+            return [
+                'success' => true,
+                'template_id' => $existingMajorDraftId,
+                'template' => $existingTemplate,
+                'reused_existing_draft' => true,
+                'version' => (string)$nextMajorVersion
+            ];
+        }
+
+        // Enforce only one active root major draft in the family before creating a new one.
+        // (Even though drafts remain visible in history views, this prevents multiple "Active" drafts like v4.0 and v5.0.)
+        try {
+            $deactivateOtherRootDraftsStmt = $this->conn->prepare(
+                "UPDATE checklist_templates
+                 SET is_active = 0, updated_at = CURRENT_TIMESTAMP
+                 WHERE template_group_id = ?
+                   AND is_draft = 1
+                   AND parent_template_id IS NULL
+                   {$whereDeleted}"
+            );
+            $deactivateOtherRootDraftsStmt->execute([(int)$templateGroupId]);
+        } catch (Exception $e) {
+            // Non-fatal
+            error_log("⚠️ createParentVersion: failed to deactivate existing root drafts before create: " . $e->getMessage());
+        }
+
+        // Fetch items from the source template (include inactive OK)
+        // IMPORTANT: getTemplate() returns NESTED items (children arrays). createTemplate() expects a FLAT list.
+        $sourceFull = $this->getTemplate($sourceTemplateId, true, true);
+        $items = [];
+        if (is_array($sourceFull) && !empty($sourceFull['items']) && is_array($sourceFull['items'])) {
+            $flatItems = $this->flattenNestedTemplateItemsForCreate($sourceFull['items'], 0);
+            foreach ($flatItems as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+
+                // Strip fields that should not be client-controlled on create
+                unset($item['id'], $item['template_id'], $item['created_at'], $item['updated_at']);
+                // Ensure no nested structures remain
+                unset($item['children']);
+                $items[] = $item;
+            }
+        }
+
+        $payload = [
+            'name' => (string)($sourceRow['name'] ?? ''),
+            'description' => (string)($sourceRow['description'] ?? ''),
+            'part_number' => $sourceRow['part_number'] ?? '',
+            'customer_part_number' => $sourceRow['customer_part_number'] ?? null,
+            'customer_name' => $this->hasChecklistTemplatesCustomerNameColumn() ? ($sourceRow['customer_name'] ?? null) : null,
+            'revision' => $sourceRow['revision'] ?? null,
+            'original_filename' => $sourceRow['original_filename'] ?? null,
+            'review_date' => $sourceRow['review_date'] ?? null,
+            'revision_number' => $sourceRow['revision_number'] ?? null,
+            'revision_details' => $sourceRow['revision_details'] ?? null,
+            'revised_by' => $sourceRow['revised_by'] ?? null,
+            'product_type' => $sourceRow['product_type'] ?? '',
+            'category' => $sourceRow['category'] ?? 'quality_control',
+            'version' => $nextMajorVersion,
+            'template_group_id' => $templateGroupId,
+            'is_draft' => 1,
+            'is_active' => 1,
+            'created_by' => $sourceRow['created_by'] ?? null,
+            'items' => $items
+        ];
+
+        // New parent version: no parent_template_id, and do not pass source_template_id (that would create a child).
+        unset($payload['parent_template_id'], $payload['source_template_id']);
+
+        return $this->createTemplate($payload);
+    }
+
+    /**
+     * Save Draft behavior (copy-on-write): if user is editing a published template and clicks Save Draft,
+     * never update the published row in-place. Instead, create or update a separate draft linked via
+     * parent_template_id.
+     */
+    private function saveDraftForPublishedTemplate($publishedTemplateId, $data, $publishedTemplateRow = null) {
+        $data['is_draft'] = 1;
+        $data['is_active'] = $data['is_active'] ?? 1;
+        unset($data['source_template_id']);
+
+        $templateGroupId = null;
+        if (is_array($publishedTemplateRow) && !empty($publishedTemplateRow['template_group_id'])) {
+            $templateGroupId = (int)$publishedTemplateRow['template_group_id'];
+        }
+        if (!$templateGroupId) {
+            $tplStmt = $this->conn->prepare("SELECT template_group_id FROM checklist_templates WHERE id = ?");
+            $tplStmt->execute([(int)$publishedTemplateId]);
+            $templateGroupId = (int)($tplStmt->fetchColumn() ?: 0);
+        }
+
+        $stableParentId = (int)$publishedTemplateId;
+
+        $data['parent_template_id'] = (int)$stableParentId;
+        if ($templateGroupId) {
+            $data['template_group_id'] = (int)$templateGroupId;
+        }
+
+        // Single-draft policy: reuse one existing draft for this published template.
+        // Prefer currently active draft; otherwise reuse the most recently updated draft.
+        $existingDraftId = null;
+        try {
+            $findActiveStmt = $this->conn->prepare(
+                "SELECT id FROM checklist_templates WHERE parent_template_id = ? AND is_draft = 1 AND is_active = 1 ORDER BY updated_at DESC, id DESC LIMIT 1"
+            );
+            $findActiveStmt->execute([(int)$stableParentId]);
+            $existingDraftId = (int)($findActiveStmt->fetchColumn() ?: 0);
+
+            if ($existingDraftId <= 0) {
+                $findAnyStmt = $this->conn->prepare(
+                    "SELECT id FROM checklist_templates WHERE parent_template_id = ? AND is_draft = 1 ORDER BY updated_at DESC, id DESC LIMIT 1"
+                );
+                $findAnyStmt->execute([(int)$stableParentId]);
+                $existingDraftId = (int)($findAnyStmt->fetchColumn() ?: 0);
+            }
+        } catch (Exception $e) {
+            error_log("⚠️ Save Draft: failed while locating existing draft for parent ID=$publishedTemplateId: " . $e->getMessage());
+            $existingDraftId = 0;
+        }
+
+        if ($existingDraftId > 0) {
+            try {
+                // Keep only one active draft visible for this parent.
+                $deactivateOthersStmt = $this->conn->prepare(
+                    "UPDATE checklist_templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE parent_template_id = ? AND is_draft = 1 AND id != ?"
+                );
+                $deactivateOthersStmt->execute([(int)$stableParentId, (int)$existingDraftId]);
+            } catch (Exception $e) {
+                error_log("⚠️ Save Draft: failed to deactivate sibling drafts for parent ID=$publishedTemplateId: " . $e->getMessage());
+            }
+
+            error_log("♻️ Save Draft: updating existing draft template ID=$existingDraftId for published template ID=$publishedTemplateId (group_id=$templateGroupId)");
+            return $this->updateTemplate((int)$existingDraftId, $data);
+        }
+
+        error_log("🆕 Save Draft: creating first draft template for published template ID=$publishedTemplateId (group_id=$templateGroupId)");
+        return $this->createTemplate($data);
+    }
+
+    /**
+     * Resolve stable parent template for a draft save operation.
+     * Never returns the same ID as the current template.
+     */
+    private function resolveDraftParentTemplateId($templateId, $currentParentId = null, $templateGroupId = null) {
+        $templateId = (int)$templateId;
+        $parentId = !empty($currentParentId) ? (int)$currentParentId : null;
+
+        if ($parentId !== null && $parentId > 0 && $parentId !== $templateId) {
+            return $parentId;
+        }
+
+        // If no parent exists, create the new draft as a child of the current template.
+        return $templateId;
+    }
+
+    /**
+     * Resolve a template group id using current template and optional parent.
+     */
+    private function resolveTemplateGroupIdForTemplate($templateId, $parentTemplateId = null) {
+        $templateId = (int)$templateId;
+
+        if (!empty($parentTemplateId)) {
+            $parentStmt = $this->conn->prepare("SELECT template_group_id FROM checklist_templates WHERE id = ?");
+            $parentStmt->execute([(int)$parentTemplateId]);
+            $parentGroupId = (int)($parentStmt->fetchColumn() ?: 0);
+            if ($parentGroupId > 0) {
+                return $parentGroupId;
+            }
+        }
+
+        $stmt = $this->conn->prepare("SELECT template_group_id FROM checklist_templates WHERE id = ?");
+        $stmt->execute([$templateId]);
+        $groupId = (int)($stmt->fetchColumn() ?: 0);
+
+        if ($groupId > 0) {
+            return $groupId;
+        }
+
+        return $templateId;
+    }
+
+    /**
+     * Ensure template family linkage is preserved:
+     * - Keep existing parent_template_id untouched.
+     * - Backfill template_group_id when missing.
+     */
+    private function ensureTemplateFamilyIntegrity($id) {
+        $stmt = $this->conn->prepare("SELECT id, parent_template_id, template_group_id FROM checklist_templates WHERE id = ?");
+        $stmt->execute([(int)$id]);
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$template) {
+            return;
+        }
+
+        $templateId = (int)$template['id'];
+        $parentTemplateId = !empty($template['parent_template_id']) ? (int)$template['parent_template_id'] : null;
+        $currentGroupId = !empty($template['template_group_id']) ? (int)$template['template_group_id'] : 0;
+
+        // Never allow self-parenting
+        if ($parentTemplateId !== null && $parentTemplateId === $templateId) {
+            $parentTemplateId = null;
+        }
+
+        // Keep direct parent/child relationship; only ensure group consistency.
+
+        // If this is not the group root and parent is missing, recover a canonical parent from the same family.
+        if ($parentTemplateId === null && $currentGroupId > 0 && $templateId !== $currentGroupId) {
+            $inferredParentId = $this->resolveDraftParentTemplateId($templateId, null, $currentGroupId);
+            if (!empty($inferredParentId) && (int)$inferredParentId !== $templateId) {
+                $parentTemplateId = (int)$inferredParentId;
+            }
+        }
+
+        $resolvedGroupId = null;
+
+        if ($parentTemplateId) {
+            $parentStmt = $this->conn->prepare("SELECT template_group_id FROM checklist_templates WHERE id = ?");
+            $parentStmt->execute([$parentTemplateId]);
+            $parentGroupId = (int)($parentStmt->fetchColumn() ?: 0);
+            if ($parentGroupId > 0) {
+                $resolvedGroupId = $parentGroupId;
+            }
+        }
+
+        if (!$resolvedGroupId && $currentGroupId > 0) {
+            $resolvedGroupId = $currentGroupId;
+        }
+
+        if (!$resolvedGroupId) {
+            $resolvedGroupId = $templateId;
+        }
+
+        $updateStmt = $this->conn->prepare("UPDATE checklist_templates SET parent_template_id = ?, template_group_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+        $updateStmt->execute([$parentTemplateId, $resolvedGroupId, $templateId]);
+
+        error_log("🧬 ensureTemplateFamilyIntegrity: template ID={$templateId}, parent_id=" . ($parentTemplateId ?? 'NULL') . ", group_id={$resolvedGroupId}");
     }
 
     /**
@@ -1329,11 +2445,42 @@ class PhotoChecklistConfigAPI {
      */
     public function publishTemplate($id) {
         try {
+            $templateStmt = $this->conn->prepare("SELECT id, version, is_draft, parent_template_id, template_group_id FROM checklist_templates WHERE id = ?");
+            $templateStmt->execute([(int)$id]);
+            $template = $templateStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$template) {
+                return ['success' => false, 'error' => 'Template not found'];
+            }
+
+            $newVersion = null;
+            if ((int)$template['is_draft'] === 1) {
+                $groupIdForPublish = (int)($template['template_group_id'] ?? 0);
+                if ($groupIdForPublish <= 0) {
+                    $groupIdForPublish = $this->resolveTemplateGroupIdForTemplate((int)$id, (int)($template['parent_template_id'] ?? 0));
+                }
+
+                if ($groupIdForPublish > 0) {
+                    $newVersion = $this->resolveVersionForTemplateGroup(
+                        $groupIdForPublish,
+                        $template['version'] ?? '1.0',
+                        (int)$id
+                    );
+                }
+            }
+
             $sql = "UPDATE checklist_templates 
-                    SET is_draft = 0, updated_at = CURRENT_TIMESTAMP 
+                    SET is_draft = 0,
+                        is_active = 1,
+                        version = COALESCE(?, version),
+                        published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+                        updated_at = CURRENT_TIMESTAMP 
                     WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$id]);
+            $stmt->execute([$newVersion, $id]);
+
+            $this->ensureTemplateFamilyIntegrity($id);
+            $this->deactivateOtherPublishedInSameMajor((int)$id);
             
             error_log("✅ Published template ID=$id");
             
@@ -1345,26 +2492,30 @@ class PhotoChecklistConfigAPI {
     }
 
     public function deleteTemplate($id) {
-        // Check if template has active instances
-        $sql = "SELECT COUNT(*) as active_count FROM checklist_instances 
-                WHERE template_id = ? AND status NOT IN ('completed', 'submitted')";
+        // Check if template has any existing instances (regardless of status)
+        $sql = "SELECT COUNT(*) as instance_count FROM checklist_instances 
+            WHERE template_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result['active_count'] > 0) {
+        if ((int)$result['instance_count'] > 0) {
             return [
                 'success' => false, 
-                'error' => 'Cannot delete template with active instances. Complete or archive instances first.',
-                'active_instances' => $result['active_count']
+            'error' => 'Cannot delete template with existing instances.',
+            'instance_count' => (int)$result['instance_count']
             ];
         }
         
         $this->conn->beginTransaction();
         
         try {
-            // Soft delete - mark as inactive instead of hard delete to preserve audit trail
-            $sql = "UPDATE checklist_templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+            // Soft delete - mark as inactive and clear draft flag to hide from manager list
+            if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+                $sql = "UPDATE checklist_templates SET is_active = 0, is_draft = 0, is_deleted = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+            } else {
+                $sql = "UPDATE checklist_templates SET is_active = 0, is_draft = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+            }
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$id]);
             
@@ -1384,6 +2535,355 @@ class PhotoChecklistConfigAPI {
         } catch (Exception $e) {
             $this->conn->rollback();
             throw $e;
+        }
+    }
+
+    /**
+     * Permanently delete a template version and its line items.
+     * Safety checks (must all be zero):
+     * - No checklist instances exist for this template_id
+     * - No photo submissions exist referencing this template's items
+     * - No document control revisions reference this template_id
+     * - Not the current_template_id of any document_control record
+     * - No other templates reference this template as parent_template_id
+     */
+    public function hardDeleteTemplate($id) {
+        $templateId = (int)$id;
+
+        $stmt = $this->conn->prepare("SELECT id, name, is_draft, is_active, parent_template_id, template_group_id FROM checklist_templates WHERE id = ?");
+        $stmt->execute([$templateId]);
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$template) {
+            return ['success' => false, 'error' => 'Template not found'];
+        }
+
+        // Block if any instances exist.
+        $instanceStmt = $this->conn->prepare("SELECT COUNT(*) FROM checklist_instances WHERE template_id = ?");
+        $instanceStmt->execute([$templateId]);
+        $instanceCount = (int)$instanceStmt->fetchColumn();
+        if ($instanceCount > 0) {
+            return ['success' => false, 'error' => 'Cannot hard delete template with existing instances.', 'instance_count' => $instanceCount];
+        }
+
+        // Block if any photo submissions exist for this template's items.
+        $submissionStmt = $this->conn->prepare(
+            "SELECT COUNT(*)
+             FROM photo_submissions ps
+             INNER JOIN checklist_items citm ON ps.item_id = citm.id
+             WHERE citm.template_id = ?"
+        );
+        $submissionStmt->execute([$templateId]);
+        $submissionCount = (int)$submissionStmt->fetchColumn();
+        if ($submissionCount > 0) {
+            return ['success' => false, 'error' => 'Cannot hard delete template because photo submissions reference its items.', 'submission_count' => $submissionCount];
+        }
+
+        // Block if document control revisions reference this template.
+        try {
+            $docRevStmt = $this->conn->prepare("SELECT COUNT(*) FROM document_revisions WHERE template_id = ?");
+            $docRevStmt->execute([$templateId]);
+            $docRevCount = (int)$docRevStmt->fetchColumn();
+            if ($docRevCount > 0) {
+                return ['success' => false, 'error' => 'Cannot hard delete template because document control revisions reference it.', 'document_revision_count' => $docRevCount];
+            }
+        } catch (Exception $e) {
+            // document_revisions table may not exist in some deployments; ignore.
+        }
+
+        // Block if it is the current template for any controlled document.
+        try {
+            $docCurrentStmt = $this->conn->prepare("SELECT COUNT(*) FROM document_control WHERE current_template_id = ?");
+            $docCurrentStmt->execute([$templateId]);
+            $docCurrentCount = (int)$docCurrentStmt->fetchColumn();
+            if ($docCurrentCount > 0) {
+                return ['success' => false, 'error' => 'Cannot hard delete template because it is the current template for a controlled document.', 'document_current_count' => $docCurrentCount];
+            }
+        } catch (Exception $e) {
+            // document_control table may not exist; ignore.
+        }
+
+        // Block if any other templates point to this as a parent.
+        $childStmt = $this->conn->prepare("SELECT COUNT(*) FROM checklist_templates WHERE parent_template_id = ?");
+        $childStmt->execute([$templateId]);
+        $childCount = (int)$childStmt->fetchColumn();
+        if ($childCount > 0) {
+            return ['success' => false, 'error' => 'Cannot hard delete template because other versions/drafts reference it as a parent.', 'child_count' => $childCount];
+        }
+
+        $this->conn->beginTransaction();
+        try {
+            // Delete line items for this version.
+            $deleteItemsStmt = $this->conn->prepare("DELETE FROM checklist_items WHERE template_id = ?");
+            $deleteItemsStmt->execute([$templateId]);
+
+            // Delete the template row.
+            $deleteTemplateStmt = $this->conn->prepare("DELETE FROM checklist_templates WHERE id = ?");
+            $deleteTemplateStmt->execute([$templateId]);
+
+            // Audit log
+            $auditStmt = $this->conn->prepare(
+                "INSERT INTO checklist_audit_log (instance_id, action, user_id, details, ip_address, user_agent)
+                 VALUES (NULL, 'template_hard_deleted', NULL, ?, ?, ?)"
+            );
+            $auditStmt->execute([
+                json_encode(['template_id' => $templateId, 'template_name' => $template['name'] ?? null, 'deleted_at' => date('Y-m-d H:i:s')]),
+                $_SERVER['REMOTE_ADDR'] ?? '',
+                $_SERVER['HTTP_USER_AGENT'] ?? ''
+            ]);
+
+            $this->conn->commit();
+            return ['success' => true, 'template_id' => $templateId, 'message' => 'Template permanently deleted'];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Soft delete an entire major line for a template family.
+     * - Marks all templates with version major=$major in template_group_id=$groupId as inactive and deleted.
+     * - Blocks if any checklist_instances or photo_submissions exist for ANY template in that major.
+     */
+    public function deleteMajorVersion($groupId, $major) {
+        $groupId = (int)$groupId;
+        $major = (int)$major;
+
+        if ($groupId <= 0 || $major <= 0) {
+            return ['success' => false, 'error' => 'Invalid group_id or major'];
+        }
+
+        $whereDeleted = '';
+        if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+            $whereDeleted = ' AND COALESCE(is_deleted, 0) = 0';
+        }
+
+        $tplStmt = $this->conn->prepare(
+            "SELECT id, name, version, is_draft, is_active
+             FROM checklist_templates
+             WHERE template_group_id = ?
+               AND CAST(SUBSTRING_INDEX(version, '.', 1) AS UNSIGNED) = ?
+               {$whereDeleted}"
+        );
+        $tplStmt->execute([$groupId, $major]);
+        $templates = $tplStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($templates)) {
+            return ['success' => false, 'error' => 'No templates found for that major'];
+        }
+
+        $templateIds = array_values(array_filter(array_map(function ($row) {
+            return isset($row['id']) ? (int)$row['id'] : 0;
+        }, $templates), function ($id) {
+            return (int)$id > 0;
+        }));
+
+        if (empty($templateIds)) {
+            return ['success' => false, 'error' => 'No valid template IDs found for that major'];
+        }
+
+        // Block if ANY instances exist for these templates.
+        $placeholders = implode(',', array_fill(0, count($templateIds), '?'));
+        $instanceStmt = $this->conn->prepare("SELECT COUNT(*) FROM checklist_instances WHERE template_id IN ({$placeholders})");
+        $instanceStmt->execute($templateIds);
+        $instanceCount = (int)$instanceStmt->fetchColumn();
+        if ($instanceCount > 0) {
+            return ['success' => false, 'error' => 'Cannot delete major version because one or more versions have checklist instances.', 'instance_count' => $instanceCount];
+        }
+
+        // Block if ANY submissions exist referencing items from these templates.
+        $submissionStmt = $this->conn->prepare(
+            "SELECT COUNT(*)
+             FROM photo_submissions ps
+             INNER JOIN checklist_items citm ON ps.item_id = citm.id
+             WHERE citm.template_id IN ({$placeholders})"
+        );
+        $submissionStmt->execute($templateIds);
+        $submissionCount = (int)$submissionStmt->fetchColumn();
+        if ($submissionCount > 0) {
+            return ['success' => false, 'error' => 'Cannot delete major version because photo submissions reference one or more of its items.', 'submission_count' => $submissionCount];
+        }
+
+        // Block if any templates outside this set reference these as a parent.
+        $childOutsideStmt = $this->conn->prepare(
+            "SELECT COUNT(*)
+             FROM checklist_templates
+             WHERE parent_template_id IN ({$placeholders})
+               AND id NOT IN ({$placeholders})"
+        );
+        $childOutsideStmt->execute(array_merge($templateIds, $templateIds));
+        $childOutsideCount = (int)$childOutsideStmt->fetchColumn();
+        if ($childOutsideCount > 0) {
+            return ['success' => false, 'error' => 'Cannot delete major version because other templates reference versions in this major as a parent.', 'child_outside_count' => $childOutsideCount];
+        }
+
+        // Best-effort doc control checks (if tables exist).
+        try {
+            $docRevStmt = $this->conn->prepare("SELECT COUNT(*) FROM document_revisions WHERE template_id IN ({$placeholders})");
+            $docRevStmt->execute($templateIds);
+            $docRevCount = (int)$docRevStmt->fetchColumn();
+            if ($docRevCount > 0) {
+                return ['success' => false, 'error' => 'Cannot delete major version because document control revisions reference one or more templates in this major.', 'document_revision_count' => $docRevCount];
+            }
+        } catch (Exception $e) {
+            // ignore if document control not installed
+        }
+
+        try {
+            $docCurrentStmt = $this->conn->prepare("SELECT COUNT(*) FROM document_control WHERE current_template_id IN ({$placeholders})");
+            $docCurrentStmt->execute($templateIds);
+            $docCurrentCount = (int)$docCurrentStmt->fetchColumn();
+            if ($docCurrentCount > 0) {
+                return ['success' => false, 'error' => 'Cannot delete major version because it contains a template that is currently active for a controlled document.', 'document_current_count' => $docCurrentCount];
+            }
+        } catch (Exception $e) {
+            // ignore if document control not installed
+        }
+
+        $this->conn->beginTransaction();
+        try {
+            if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+                $updateSql = "UPDATE checklist_templates
+                              SET is_active = 0,
+                                  is_draft = 0,
+                                  is_deleted = 1,
+                                  updated_at = CURRENT_TIMESTAMP
+                              WHERE id IN ({$placeholders})";
+            } else {
+                $updateSql = "UPDATE checklist_templates
+                              SET is_active = 0,
+                                  is_draft = 0,
+                                  updated_at = CURRENT_TIMESTAMP
+                              WHERE id IN ({$placeholders})";
+            }
+
+            $updateStmt = $this->conn->prepare($updateSql);
+            $updateStmt->execute($templateIds);
+
+            $auditStmt = $this->conn->prepare(
+                "INSERT INTO checklist_audit_log (instance_id, action, user_id, details, ip_address, user_agent)
+                 VALUES (NULL, 'template_major_deleted', NULL, ?, ?, ?)"
+            );
+            $auditStmt->execute([
+                json_encode(['template_group_id' => $groupId, 'major' => $major, 'template_ids' => $templateIds, 'deleted_at' => date('Y-m-d H:i:s')]),
+                $_SERVER['REMOTE_ADDR'] ?? '',
+                $_SERVER['HTTP_USER_AGENT'] ?? ''
+            ]);
+
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Major version deleted (soft)', 'template_ids' => $templateIds];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Restore a soft-deleted template.
+     * Admin-only caller responsibility is enforced at route/middleware level.
+     */
+    public function restoreTemplate($id) {
+        $sql = "SELECT id, is_active, is_draft FROM checklist_templates WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$id]);
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$template) {
+            return ['success' => false, 'error' => 'Template not found'];
+        }
+
+        if ((int)$template['is_active'] === 1) {
+            return ['success' => true, 'message' => 'Template is already active', 'template_id' => (int)$id];
+        }
+
+        // Restore as active published template by default.
+        if ($this->hasChecklistTemplatesIsDeletedColumn()) {
+            $sql = "UPDATE checklist_templates
+                    SET is_active = 1,
+                        is_draft = 0,
+                        is_deleted = 0,
+                        published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?";
+        } else {
+            $sql = "UPDATE checklist_templates
+                    SET is_active = 1,
+                        is_draft = 0,
+                        published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?";
+        }
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$id]);
+
+        return ['success' => true, 'message' => 'Template restored successfully', 'template_id' => (int)$id];
+    }
+
+    /**
+     * Discard an existing draft template.
+     * - Only draft templates can be discarded.
+     * - Drafts linked to existing checklist instances are blocked for safety.
+     */
+    public function discardDraft($id) {
+        $templateId = (int)$id;
+
+        $sql = "SELECT id, name, is_draft, parent_template_id FROM checklist_templates WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$templateId]);
+        $template = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$template) {
+            return ['success' => false, 'error' => 'Template not found'];
+        }
+
+        if ((int)$template['is_draft'] !== 1) {
+            return ['success' => false, 'error' => 'Only draft templates can be discarded'];
+        }
+
+        $instanceCountStmt = $this->conn->prepare("SELECT COUNT(*) FROM checklist_instances WHERE template_id = ?");
+        $instanceCountStmt->execute([$templateId]);
+        $instanceCount = (int)$instanceCountStmt->fetchColumn();
+
+        if ($instanceCount > 0) {
+            return [
+                'success' => false,
+                'error' => 'Cannot discard draft because it has existing checklist instances.',
+                'instance_count' => $instanceCount
+            ];
+        }
+
+        $this->conn->beginTransaction();
+        try {
+            $parentTemplateId = (int)($template['parent_template_id'] ?? 0);
+
+            $deleteItemsStmt = $this->conn->prepare("DELETE FROM checklist_items WHERE template_id = ?");
+            $deleteItemsStmt->execute([$templateId]);
+
+            $deleteTemplateStmt = $this->conn->prepare("DELETE FROM checklist_templates WHERE id = ? AND is_draft = 1");
+            $deleteTemplateStmt->execute([$templateId]);
+
+            if ($parentTemplateId > 0) {
+                $reactivateParentStmt = $this->conn->prepare(
+                    "UPDATE checklist_templates
+                     SET is_active = 1,
+                         is_draft = 0,
+                         published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE id = ? AND is_draft = 0"
+                );
+                $reactivateParentStmt->execute([$parentTemplateId]);
+            }
+
+            $this->conn->commit();
+
+            return [
+                'success' => true,
+                'template_id' => $templateId,
+                'message' => 'Draft discarded successfully'
+            ];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -1649,12 +3149,28 @@ class PhotoChecklistConfigAPI {
         $params = [];
         
         // Build dynamic update query based on provided fields
-        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number', 'progress_percentage'];
+        $allowedFields = ['status', 'operator_id', 'operator_name', 'part_number', 'serial_number', 'progress_percentage', 'item_completion'];
         
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
                 $updateFields[] = "$field = ?";
-                $params[] = $data[$field];
+                if ($field === 'item_completion') {
+                    if ($data[$field] === null) {
+                        $params[] = null;
+                    } else if (is_string($data[$field])) {
+                        // Validate JSON string
+                        $decoded = json_decode($data[$field], true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            return ['success' => false, 'error' => 'Invalid item_completion JSON'];
+                        }
+                        $params[] = json_encode($decoded);
+                    } else {
+                        // Encode arrays/objects
+                        $params[] = json_encode($data[$field]);
+                    }
+                } else {
+                    $params[] = $data[$field];
+                }
             }
         }
         
@@ -1707,6 +3223,63 @@ class PhotoChecklistConfigAPI {
         }
     }
 
+    public function deleteInstance($id) {
+        $instanceId = (int)$id;
+        if ($instanceId <= 0) {
+            return ['success' => false, 'error' => 'Invalid instance id'];
+        }
+
+        // Check current status
+        $stmt = $this->conn->prepare('SELECT id, status FROM checklist_instances WHERE id = ?');
+        $stmt->execute([$instanceId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return ['success' => false, 'error' => 'Instance not found'];
+        }
+
+        $status = $row['status'] ?? '';
+        if ($status === 'completed' || $status === 'submitted') {
+            return ['success' => false, 'error' => 'Cannot delete a completed/submitted inspection'];
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            // Delete files for all submissions in this instance
+            $stmt = $this->conn->prepare('SELECT id, file_path FROM photo_submissions WHERE instance_id = ?');
+            $stmt->execute([$instanceId]);
+            $subs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($subs as $sub) {
+                $path = $sub['file_path'] ?? null;
+                if ($path && file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+
+            // Remove submissions
+            $stmt = $this->conn->prepare('DELETE FROM photo_submissions WHERE instance_id = ?');
+            $stmt->execute([$instanceId]);
+
+            // Remove audit log
+            $stmt = $this->conn->prepare('DELETE FROM checklist_audit_log WHERE instance_id = ?');
+            $stmt->execute([$instanceId]);
+
+            // Remove instance
+            $stmt = $this->conn->prepare('DELETE FROM checklist_instances WHERE id = ?');
+            $stmt->execute([$instanceId]);
+
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Inspection deleted'];
+        } catch (Exception $e) {
+            try {
+                $this->conn->rollBack();
+            } catch (Exception $e2) {
+                // ignore
+            }
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     // ==============================================
     // Photo Management Methods
     // ==============================================
@@ -1715,6 +3288,8 @@ class PhotoChecklistConfigAPI {
         $instanceId = $_POST['instance_id'] ?? null;
         $itemId = $_POST['item_id'] ?? null;
         $uploadedFile = $_FILES['photo'] ?? null;
+        $userId = $_POST['user_id'] ?? null;
+        $captureSource = $_POST['capture_source'] ?? null;
         
         if (!$instanceId || !$itemId || !$uploadedFile) {
             throw new Exception('Missing required parameters');
@@ -1778,13 +3353,19 @@ class PhotoChecklistConfigAPI {
         }
         
         if (move_uploaded_file($uploadedFile['tmp_name'], $uploadPath)) {
+            // Build photo_metadata, including capture source
+            $photoMetadata = json_encode([
+                'capture_source' => $captureSource  // 'camera', 'library', or null
+            ]);
+
             // Save to database
-            $sql = "INSERT INTO photo_submissions (instance_id, item_id, file_name, file_path, file_url, file_type, file_size, mime_type) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            $sql = "INSERT INTO photo_submissions (instance_id, item_id, file_name, file_path, file_url, file_type, file_size, mime_type, photo_metadata) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE 
                     file_name = VALUES(file_name), 
                     file_path = VALUES(file_path),
                     file_url = VALUES(file_url),
+                    photo_metadata = VALUES(photo_metadata),
                     updated_at = CURRENT_TIMESTAMP";
             
             $stmt = $this->conn->prepare($sql);
@@ -1796,14 +3377,21 @@ class PhotoChecklistConfigAPI {
                 '/attachments/photo-submissions/' . $fileName,
                 strpos($uploadedFile['type'], 'video') !== false ? 'video' : 'image',
                 $uploadedFile['size'],
-                $uploadedFile['type']
+                $uploadedFile['type'],
+                $photoMetadata
             ]);
             
             // Update instance progress
             $this->updateInstanceProgress($instanceId);
             
             // Log action
-            $this->logAction($instanceId, 'photo_added', null, ['item_id' => $itemId, 'file_name' => $fileName]);
+            $this->logAction($instanceId, 'photo_added', $userId, [
+                'item_id' => $itemId,
+                'file_name' => $fileName,
+                'mime_type' => $uploadedFile['type'] ?? null,
+                'file_type' => strpos($uploadedFile['type'], 'video') !== false ? 'video' : 'image',
+                'capture_source' => $captureSource
+            ]);
             
             return ['success' => true, 'file_url' => '/attachments/photo-submissions/' . $fileName];
         } else {
@@ -2293,6 +3881,48 @@ class PhotoChecklistConfigAPI {
             $this->mediaService->saveMediaForItem($itemId, $allMedia);
             error_log("      💾 Saved " . count($allMedia) . " media items to new table for item $itemId");
         }
+    }
+
+    /**
+     * Generate and download a checklist instance as JSON for PDF generation on frontend
+     * Returns all data needed to render a printable inspection report
+     */
+    public function downloadInstancePDF($instanceId) {
+        header('Content-Type: application/json');
+
+        // Fetch the instance with all required data
+        $instance = $this->getInstance($instanceId);
+        if (!$instance || isset($instance['error'])) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Checklist instance not found']);
+            return;
+        }
+
+        // Fetch the template
+        $template = null;
+        if (!empty($instance['template_id'])) {
+            $template = $this->getTemplate($instance['template_id']);
+        }
+
+        // Prepare the PDF data package
+        $pdfData = [
+            'instance' => $instance,
+            'template' => $template,
+            'generated_at' => date('c'),
+            'base_url' => $this->getBaseUrl()
+        ];
+
+        // Return JSON data for frontend PDF generation
+        echo json_encode($pdfData);
+    }
+
+    /**
+     * Helper to get base URL for image paths
+     */
+    private function getBaseUrl() {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $protocol . $host;
     }
 }
 

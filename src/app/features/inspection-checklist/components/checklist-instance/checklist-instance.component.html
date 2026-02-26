@@ -1,4 +1,18 @@
 <div class="checklist-instance" *ngIf="!isLoading">
+  <!-- Landscape required overlay (PWA/tablet) -->
+  <div class="landscape-lock-overlay" *ngIf="showLandscapeOverlay">
+    <div class="landscape-lock-card card border-0 shadow-sm">
+      <div class="card-body text-center p-4">
+        <div class="mb-3">
+          <i class="fas fa-rotate" style="font-size: 1.6rem;"></i>
+        </div>
+        <h5 class="mb-2">Rotate to landscape</h5>
+        <div class="text-muted mb-3">This screen is designed for landscape mode on tablet.</div>
+        <button type="button" class="btn btn-primary btn-sm" (click)="requestLandscape()">Try to switch</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Header Section -->
   <div class="header-section">
     <div class="instance-info">
@@ -130,25 +144,12 @@
 
     <!-- Item Overview -->
     <div class="items-overview" *ngIf="showAllItems && instance">
-      <div class="items-grid">
-        <div 
-          *ngFor="let item of instance.items; let i = index"
-          class="item-overview-card"
-          [class.active]="i === currentItemIndex"
-          [class.completed]="item.status === 'completed'"
-          [class.skipped]="item.status === 'skipped'"
-          (click)="goToItem(i)">
-          <div class="item-number">{{ i + 1 }}</div>
-          <div class="item-info">
-            <div class="item-title">{{ template?.items[i]?.title }}</div>
-            <div class="item-status">
-              <span class="badge" [ngClass]="getStatusBadgeClass(item.status)">
-                {{ item.status | titlecase }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <app-checklist-navigation
+        [templateId]="template?.id"
+        [activeItemId]="getActiveTemplateItemId()"
+        [mode]="'readonly'"
+        (itemSelected)="onNavItemSelected($event)">
+      </app-checklist-navigation>
     </div>
   </div>
 
@@ -491,6 +492,15 @@
             (click)="startCamera()">
             <i class="fas fa-video"></i>
             Start Camera
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            *ngIf="cameraTorchSupported"
+            [class.active]="cameraTorchEnabled"
+            (click)="toggleCameraTorch()">
+            <i class="fas fa-bolt"></i>
+            Torch
           </button>
           <button 
             type="button" 

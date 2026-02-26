@@ -1,5 +1,6 @@
 import { Routes, RouterModule } from "@angular/router";
 import { NgModule } from "@angular/core";
+import { CanDeactivateGuard } from "@app/core/guards/CanDeactivateGuard";
 
 const routes: Routes = [
   {
@@ -25,10 +26,12 @@ const routes: Routes = [
   {
     path: "template-editor",
     loadComponent: () => import('./template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
+    canDeactivate: [CanDeactivateGuard],
   },
   {
     path: "template-editor/:id",
     loadComponent: () => import('./template-editor/checklist-template-editor.component').then(c => c.ChecklistTemplateEditorComponent),
+    canDeactivate: [CanDeactivateGuard],
   },
 ];
 

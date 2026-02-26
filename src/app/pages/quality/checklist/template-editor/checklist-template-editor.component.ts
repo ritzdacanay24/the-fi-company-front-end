@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ViewChildren, TemplateRef, ChangeDetectorRef, ElementRef, QueryList, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -7,12 +7,16 @@ import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { QuillModule, QuillModules } from 'ngx-quill';
 import Quill from 'quill';
+import { Subscription } from 'rxjs';
 
 import { PhotoChecklistConfigService, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { AttachmentsService } from '@app/core/api/attachments/attachments.service';
 import { UploadService } from '@app/core/api/upload/upload.service';
 import { PhotoChecklistUploadService } from '@app/core/api/photo-checklist/photo-checklist-upload.service';
+import { AuthenticationService } from '@app/core/services/auth.service';
 import { QualityDocumentSelectorComponent, QualityDocumentSelection } from '@app/shared/components/quality-document-selector/quality-document-selector.component';
+import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
+import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
 import { PdfParserService } from './services/pdf-parser.service';
 import { WordParserService } from './services/word-parser.service';
 import { RevisionDescriptionDialogComponent } from './components/revision-description-dialog.component';
@@ -50,7 +54,7 @@ interface ItemLink {
 @Component({
   selector: 'app-checklist-template-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule, QuillModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModule, DragDropModule, QualityDocumentSelectorComponent, RouterModule, QuillModule, ChecklistNavigationComponent],
   template: `
     <div class="container-fluid">
       <div class="print-hide">
@@ -106,13 +110,33 @@ interface ItemLink {
                 *ngIf="items.length > 0">
                 <i class="mdi mdi-printer me-2"></i>Print Template
               </button>
+              <button
+                type="button"
+                class="btn me-3"
+                *ngIf="editingTemplate"
+                [disabled]="saving || loading"
+                [class.btn-outline-danger]="editingTemplate.is_active"
+                [class.btn-outline-success]="!editingTemplate.is_active"
+                (click)="setTemplateActiveStatus(!editingTemplate.is_active)"
+                [title]="editingTemplate.is_active ? 'Make template inactive' : 'Make template active'">
+                <i class="mdi me-2" [class.mdi-close-circle-outline]="editingTemplate.is_active" [class.mdi-check-circle-outline]="!editingTemplate.is_active"></i>
+                {{ editingTemplate.is_active ? 'Deactivate' : 'Activate' }}
+              </button>
               <div class="bg-primary bg-gradient rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                 <i class="mdi mdi-clipboard-edit-outline text-white fs-4"></i>
               </div>
               <div>
                 <h2 class="mb-1 text-primary">{{editingTemplate ? 'Edit Checklist Template' : 'Create Checklist Template'}}</h2>
                 <p class="text-muted mb-0" *ngIf="editingTemplate">
-                  {{editingTemplate.name}} - Version {{editingTemplate.version}}
+                  {{getDisplayTemplateName(editingTemplate)}}
+                  <span class="badge bg-light text-dark border ms-2">Viewing v{{editingTemplate.version}}</span>
+                  <span class="badge bg-light text-dark border ms-2" *ngIf="editingTemplate.is_draft && draftParentVersion">Parent v{{draftParentVersion}}</span>
+                  <span class="badge ms-2" [class]="editingTemplate.is_draft ? 'bg-warning text-dark' : 'bg-light text-dark border'">
+                    {{editingTemplate.is_draft ? 'Draft' : 'Published'}}
+                  </span>
+                  <span class="badge ms-2" [class]="editingTemplate.is_active ? 'bg-success' : 'bg-danger'">
+                    {{ editingTemplate.is_active ? 'Active' : 'Inactive' }}
+                  </span>
                   <span *ngIf="editingTemplate.quality_document_metadata" class="badge bg-info text-dark ms-2">
                     <i class="mdi mdi-file-document me-1"></i>
                     {{editingTemplate.quality_document_metadata.document_number}}, Rev {{editingTemplate.quality_document_metadata.revision_number}}
@@ -127,14 +151,38 @@ interface ItemLink {
               </div>
             </div>
             
-            <!-- Versioning Warning for Editing Existing Template -->
-            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate && !autoSaveEnabled">
+            <!-- Published templates are read-only; users must explicitly start a draft -->
+            <div
+              class="alert alert-info border-info border-opacity-25 bg-info bg-opacity-10"
+              role="alert"
+              *ngIf="editingTemplate && !editingTemplate.is_draft">
+              <div class="d-flex align-items-start">
+                <i class="mdi mdi-lock-outline text-info me-3 mt-1 fs-5"></i>
+                <div class="w-100">
+                  <h6 class="alert-heading text-info mb-2">Published Template (Read-Only)</h6>
+                  <p class="mb-2">
+                    Published templates cannot be edited directly. Start a <strong>Sub-Version Draft</strong> (e.g., {{ editingTemplate.version }} → {{ getNextSubVersionDisplay(editingTemplate.version || '1.0') }}) or a <strong>Major Version Draft</strong>.
+                  </p>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="saving" (click)="saveDraft()">
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="startMajorVersionDraft()">
+                      <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Draft warning/info -->
+            <div class="alert alert-warning border-warning border-opacity-25 bg-warning bg-opacity-10" role="alert" *ngIf="editingTemplate && editingTemplate.is_draft && !autoSaveEnabled">
               <div class="d-flex align-items-start">
                 <i class="mdi mdi-alert text-warning me-3 mt-1 fs-5"></i>
                 <div>
-                  <h6 class="alert-heading text-warning mb-2">Version Notice</h6>
+                  <h6 class="alert-heading text-warning mb-2">Draft Mode</h6>
                   <p class="mb-2">
-                    Editing this template will create a <strong>new version</strong>. Previous versions will remain available for reference.
+                    You are editing a <strong>draft</strong>. Use <strong>Publish Draft</strong> when you are ready to make it the current published version.
                   </p>
                 </div>
               </div>
@@ -160,7 +208,7 @@ interface ItemLink {
             <div [ngClass]="items.length > 0 ? 'col-12 col-md-8 col-lg-8' : 'col-12'">
               <div class="card shadow-sm border-0">
                 <div [formGroup]="templateForm">
-                  <div class="card-body p-4">
+                  <div class="card-body p-4" [class.pe-none]="isPublishedLocked()">
               
                     <!-- Template Basic Information Section -->
                     <div class="mb-4 pb-4 border-bottom">
@@ -173,7 +221,10 @@ interface ItemLink {
 
                       <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">Template Name <span class="text-danger">*</span></label>
+                    <label class="form-label">
+                      Template Name <span class="text-danger">*</span>
+                      <span class="badge bg-light text-dark border ms-2" *ngIf="editingTemplate">Viewing v{{editingTemplate.version}}</span>
+                    </label>
                     <input type="text" class="form-control" formControlName="name" 
                            placeholder="Enter template name"
                            [ngClass]="{ 'is-invalid': templateForm.get('name')?.invalid && templateForm.get('name')?.touched }">
@@ -227,6 +278,17 @@ interface ItemLink {
 
                 <div class="row">
                   <div class="col-md-6 mb-3">
+                    <label class="form-label">Customer Name</label>
+                    <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
+                    <div class="form-text">
+                      <i class="mdi mdi-information-outline me-1"></i>
+                      Optional customer/account name for this checklist template.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
                     <label class="form-label">Max Upload Size (MB)</label>
                     <input type="number" class="form-control" formControlName="max_upload_size_mb" min="1" placeholder="Leave empty for defaults">
                     <div class="form-text">
@@ -250,7 +312,7 @@ interface ItemLink {
 
                 <div class="row">
                   <div class="col-12 mb-3">
-                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                    <label class="form-label">Description</label>
                     <div class="border rounded" [ngClass]="{ 'border-danger border-2': templateForm.get('description')?.invalid && templateForm.get('description')?.touched }">
                       <quill-editor 
                         formControlName="description" 
@@ -259,9 +321,6 @@ interface ItemLink {
                         placeholder="Enter template description"
                         class="quill-auto-height quill-template">
                       </quill-editor>
-                    </div>
-                    <div class="text-danger small mt-1" *ngIf="templateForm.get('description')?.invalid && templateForm.get('description')?.touched">
-                      Description is required
                     </div>
                   </div>
                 </div>
@@ -409,8 +468,11 @@ interface ItemLink {
                         <div class="form-check">
                           <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
                           <label class="form-check-label" [for]="'required-' + i">
-                            Active
+                            Required
                           </label>
+                        </div>
+                        <div class="small text-muted">
+                          Counts toward progress
                         </div>
                         <button 
                           type="button" 
@@ -654,12 +716,29 @@ interface ItemLink {
                     <button type="button" class="btn btn-outline-secondary me-2" [disabled]="saving" (click)="cancel()">
                       <i class="mdi mdi-close me-1"></i>Cancel
                     </button>
-                    <button type="button" class="btn btn-success ms-auto" [disabled]="saving" (click)="saveTemplate()">
+                    <button type="button" class="btn btn-outline-primary me-2" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveDraft()">
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Save Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-primary me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="saveDraft()">
+                      <i class="mdi mdi-content-save-edit-outline me-1"></i>Start Sub-Version Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="startMajorVersionDraft()">
+                      <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger me-2"
+                      *ngIf="editingTemplate?.is_draft"
+                      [disabled]="saving"
+                      (click)="discardCurrentDraft()">
+                      <i class="mdi mdi-delete-outline me-1"></i>Discard Draft
+                    </button>
+                    <button type="button" class="btn btn-success ms-auto" *ngIf="!editingTemplate || editingTemplate.is_draft" [disabled]="saving" (click)="saveTemplate()">
                       @if (saving) {
                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                         Saving...
                       } @else {
-                        <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Save as New Version' : 'Create Template'}}
+                        <i class="mdi mdi-content-save me-1"></i>{{editingTemplate ? 'Publish Draft' : 'Create Template'}}
                       }
                     </button>
                   </div>
@@ -667,30 +746,10 @@ interface ItemLink {
             
             <!-- Navigation Sidebar Card -->
             <div class="col-12 col-md-4 col-lg-4 mt-3 mt-md-0" *ngIf="items.length > 0">
-              <div class="position-sticky" style="top: 66px;">
-                <div class="card shadow-sm border-0">
-                  <div class="card-header bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <h6 class="mb-0">
-                        <i class="mdi mdi-view-list me-2"></i>Navigation
-                      </h6>
-                      <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" 
-                                class="btn btn-outline-secondary py-0 px-2" 
-                                (click)="expandAllNav()"
-                                title="Expand All">
-                          <i class="mdi mdi-chevron-down"></i>
-                        </button>
-                        <button type="button" 
-                                class="btn btn-outline-secondary py-0 px-2" 
-                                (click)="collapseAllNav()"
-                                title="Collapse All">
-                          <i class="mdi mdi-chevron-right"></i>
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div class="form-check form-switch">
+              <div class="position-sticky" style="top: 66px;" [class.pe-none]="isPublishedLocked()">
+                <div class="card shadow-sm border-0 mb-2">
+                  <div class="card-body py-2">
+                    <div class="form-check form-switch m-0">
                       <input class="form-check-input" 
                              type="checkbox" 
                              id="focusedEditModeSwitch" 
@@ -700,201 +759,19 @@ interface ItemLink {
                         <small><i class="mdi mdi-filter me-1"></i>Focus Mode</small>
                       </label>
                     </div>
-
-                    <div class="mt-2">
-                      <div class="input-group input-group-sm">
-                        <span class="input-group-text">
-                          <i class="mdi mdi-magnify"></i>
-                        </span>
-                        <input 
-                          type="text"
-                          class="form-control"
-                          placeholder="Search items..."
-                          [(ngModel)]="navSearchTerm"
-                          (input)="onNavSearchTermChanged()">
-                        <button 
-                          *ngIf="isNavSearchActive()"
-                          type="button"
-                          class="btn btn-outline-secondary"
-                          (click)="clearNavSearch()"
-                          title="Clear search">
-                          <i class="mdi mdi-close"></i>
-                        </button>
-                      </div>
-                      <div *ngIf="isNavSearchActive()" class="mt-1">
-                        <small class="text-muted">
-                          {{ navSearchMatchCount }} match{{ navSearchMatchCount !== 1 ? 'es' : '' }}
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="card-body p-0">
-                    <div class="list-group list-group-flush nav-scroll-container"
-                         cdkDropList 
-                         [cdkDropListDisabled]="isNavSearchActive()"
-                         (cdkDropListDropped)="dropNavItem($event)">
-                      <a *ngFor="let item of items.controls; let i = index" 
-                         [id]="'nav-item-' + i"
-                         class="list-group-item list-group-item-action py-2 border-0"
-                         [class.bg-body-secondary]="activeNavItemIndex === i"
-                         [class.border-start]="activeNavItemIndex === i"
-                         [class.border-3]="activeNavItemIndex === i"
-                         [class.border-primary]="activeNavItemIndex === i"
-                         [class.fw-semibold]="activeNavItemIndex === i"
-                         [class.nav-item-match]="isNavItemMatch(i)"
-                         [class.nav-item-invalid]="isNavItemInvalid(i)"
-                         style="cursor: pointer; min-height: 40px;"
-                         [style.display]="isNavItemVisible(i) ? 'block' : 'none'"
-                         [style.padding-left.rem]="0.5"
-                         [style.padding-right.rem]="0.5"
-                         cdkDrag
-                         [cdkDragDisabled]="isNavSearchActive()"
-                         (click)="scrollToItem(i)">
-                        
-                        <!-- Drag preview (what you see while dragging) -->
-                        <div class="d-flex align-items-center gap-1 px-2 py-1 bg-body-secondary border rounded" *cdkDragPreview>
-                          <i class="mdi" 
-                             [class.mdi-folder]="(item.get('level')?.value || 0) === 0"
-                             [class.mdi-file-document-outline]="(item.get('level')?.value || 0) > 0"
-                             [class.text-warning]="(item.get('level')?.value || 0) === 0"
-                             [class.text-muted]="(item.get('level')?.value || 0) > 0"></i>
-                          <span class="badge bg-secondary" style="font-size: 0.65rem;">{{getOutlineNumber(i)}}</span>
-                          <small class="fw-semibold">{{item.get('title')?.value || 'Untitled'}}</small>
-                        </div>
-                        
-                        <div class="d-flex align-items-center gap-1">
-                          <!-- Drag handle -->
-                          <div class="flex-shrink-0" style="width: 16px;" cdkDragHandle title="Drag to reorder">
-                            <i class="mdi mdi-drag-vertical text-muted" style="font-size: 18px; cursor: grab;"></i>
-                          </div>
-                          
-                          <!-- Indentation spacer based on level -->
-                          <div class="flex-shrink-0" [style.width.px]="(item.get('level')?.value || 0) * 20"></div>
-                          
-                          <!-- Expand/Collapse chevron for parent items -->
-                          <div class="flex-shrink-0" style="width: 18px;">
-                            <i *ngIf="hasChildren(i)" 
-                               class="mdi text-muted"
-                               [class.mdi-chevron-down]="expandedItems.has(i)"
-                               [class.mdi-chevron-right]="!expandedItems.has(i)"
-                               (click)="toggleNavExpansion(i, $event)"
-                               style="cursor: pointer; font-size: 18px;"></i>
-                          </div>
-                          
-                          <!-- Folder/File icon -->
-                          <div class="flex-shrink-0" style="width: 20px;">
-                            <i class="mdi" 
-                               [class.mdi-folder-open]="(item.get('level')?.value || 0) === 0 && expandedItems.has(i)"
-                               [class.mdi-folder]="(item.get('level')?.value || 0) === 0 && !expandedItems.has(i)"
-                               [class.mdi-file-document-outline]="(item.get('level')?.value || 0) > 0"
-                               [class.text-warning]="(item.get('level')?.value || 0) === 0"
-                               [class.text-muted]="(item.get('level')?.value || 0) > 0"
-                               style="font-size: 18px;"></i>
-                          </div>
-                          
-                          <!-- Outline number badge -->
-                          <span class="badge bg-secondary flex-shrink-0 me-1" style="min-width: 42px; font-size: 0.65rem;">
-                            {{getOutlineNumber(i)}}
-                          </span>
-                          
-                          <!-- Item title -->
-                          <div class="flex-grow-1 min-w-0">
-                            <small class="text-truncate d-block" 
-                                   [class.fw-semibold]="(item.get('level')?.value || 0) === 0">
-                              {{item.get('title')?.value || 'Untitled'}}
-                            </small>
-                          </div>
-                          
-                          <!-- Photo indicator badges -->
-                          <div class="flex-shrink-0 d-flex align-items-center gap-1">
-                            <!-- Has sample image -->
-                            <div *ngIf="item.get('submission_type')?.value !== 'none' && hasPrimarySampleImage(i)" class="position-relative">
-                              <img [src]="getPrimarySampleImageUrl(i)" 
-                                   class="rounded border border-success"
-                                   style="width: 28px; height: 28px; object-fit: cover;"
-                                [alt]="'Thumbnail'"
-                                title="Preview image"
-                                (click)="previewNavPrimaryImage(i, $event)">
-                              <i class="mdi mdi-check-circle position-absolute bg-white rounded-circle text-success" 
-                                 style="bottom: -3px; right: -3px; font-size: 12px;"></i>
-                            </div>
-                            <!-- Requires photo but no image -->
-                            <div *ngIf="item.get('submission_type')?.value !== 'none' && !hasPrimarySampleImage(i) && item.get('photo_requirements')?.value?.picture_required">
-                              <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10" 
-                                   style="width: 28px; height: 28px;"
-                                   title="Photo required">
-                                <i class="mdi mdi-camera-outline text-warning" style="font-size: 14px;"></i>
-                              </div>
-                            </div>
-                            <!-- Has video -->
-                            <div *ngIf="item.get('submission_type')?.value !== 'none' && hasSampleVideo(i)" 
-                                 class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10" 
-                                 style="width: 28px; height: 28px;object-fit: cover;"
-                                 title="Preview video"
-                                 (click)="previewNavSampleVideo(i, $event)">
-                              <i class="mdi mdi-video text-info" style="font-size: 14px;"></i>
-                            </div>
-                          </div>
-                          
-                          <!-- Invalid indicator -->
-                          <div class="flex-shrink-0" *ngIf="isNavItemInvalid(i)" title="Item has missing/invalid fields">
-                            <i class="mdi mdi-alert-circle text-danger" style="font-size: 16px;"></i>
-                          </div>
-
-                          <!-- 3-dot dropdown menu -->
-                          <div class="flex-shrink-0 nav-item-actions" ngbDropdown container="body" placement="bottom-end">
-                            <button class="btn btn-sm btn-link text-muted p-0 border-0" 
-                                    ngbDropdownToggle
-                                    (click)="$event.stopPropagation()"
-                                    style="width: 24px; height: 24px; line-height: 1;"
-                                    title="Actions">
-                              <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
-                            </button>
-                            <div ngbDropdownMenu>
-                              <button ngbDropdownItem (click)="editItemOnly(i, $event)">
-                                <i class="mdi mdi-pencil me-2"></i>Edit Item
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button ngbDropdownItem (click)="addItemAbove(i, $event)">
-                                <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
-                              </button>
-                              <button ngbDropdownItem (click)="addItemBelow(i, $event)">
-                                <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
-                              </button>
-                              <button ngbDropdownItem (click)="duplicateItem(i, $event)">
-                                <i class="mdi mdi-content-copy me-2"></i>Duplicate
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button ngbDropdownItem (click)="moveItemUp(i, $event)" [disabled]="i === 0">
-                                <i class="mdi mdi-chevron-up me-2"></i>Move Up
-                              </button>
-                              <button ngbDropdownItem (click)="moveItemDown(i, $event)" [disabled]="i === items.length - 1">
-                                <i class="mdi mdi-chevron-down me-2"></i>Move Down
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button ngbDropdownItem (click)="promoteItem(i)" [disabled]="(item.get('level')?.value || 0) === 0">
-                                <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
-                              </button>
-                              <button ngbDropdownItem (click)="demoteItem(i)" [disabled]="i === 0">
-                                <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button ngbDropdownItem (click)="deleteItemFromNav(i, $event)" class="text-danger">
-                                <i class="mdi mdi-delete me-2"></i>Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="card-footer bg-light text-center py-2">
-                    <small class="text-muted">
-                      <i class="mdi mdi-information-outline me-1"></i>
-                      {{ items.length }} item{{ items.length !== 1 ? 's' : '' }}
-                    </small>
                   </div>
                 </div>
+
+                <app-checklist-navigation
+                  [items]="buildEditorNavItems()"
+                  [activeItemIndex]="activeNavItemIndex"
+                  [mode]="'editor'"
+                  (itemSelected)="scrollToItem($event.index)"
+                  (navDrop)="dropNavItem($event)"
+                  (navAction)="handleNavAction($event)"
+                  (primaryImageRequested)="previewNavPrimaryImage($event.index)"
+                  (sampleVideoRequested)="previewNavSampleVideo($event.index)">
+                </app-checklist-navigation>
               </div>
             </div>
             </div>
@@ -1449,7 +1326,7 @@ interface ItemLink {
                 <div class="flex-grow-1">
                   <h6 class="mb-1" [class.fw-bold]="item.get('level')?.value === 0">
                     {{item.get('title')?.value}}
-                    <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-2">Active</span>
+                    <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-2">Required</span>
                   </h6>
                   
                   <!-- Description (plain text, no rich editor) -->
@@ -1581,35 +1458,14 @@ interface ItemLink {
 
           <!-- Navigation Sidebar -->
           <div class="col-md-3 border-start bg-light" style="max-height: 70vh; overflow-y: auto;">
-            <div class="p-3">
-              <h6 class="text-muted mb-3">
-                <i class="mdi mdi-map-marker-path me-1"></i>Navigation
-              </h6>
-
-              <!-- Navigation Items -->
-              <div class="nav flex-column">
-                <a *ngFor="let item of items.controls; let i = index"
-                   class="nav-link py-2 px-2 text-start border-bottom"
-                   [class.fw-bold]="item.get('level')?.value === 0"
-                   [class.text-primary]="item.get('level')?.value === 0"
-                   [class.text-secondary]="item.get('level')?.value > 0"
-                   [style.padding-left.rem]="0.5 + (item.get('level')?.value || 0) * 0.75"
-                   [style.font-size.rem]="item.get('level')?.value === 0 ? 0.9 : 0.85"
-                   (click)="scrollToPreviewItem(i)"
-                   style="cursor: pointer; transition: all 0.2s;"
-                   onmouseover="this.style.backgroundColor='rgba(13, 110, 253, 0.1)'"
-                   onmouseout="this.style.backgroundColor='transparent'">
-                  <span class="badge bg-secondary me-2" style="font-size: 0.7rem; min-width: 40px;">
-                    {{getOutlineNumber(i)}}
-                  </span>
-                  <span class="text-truncate d-inline-block" style="max-width: 150px;" [title]="item.get('title')?.value">
-                    {{item.get('title')?.value}}
-                  </span>
-                  <span *ngIf="item.get('is_required')?.value" class="badge bg-danger ms-1" style="font-size: 0.6rem;">
-                    Active
-                  </span>
-                </a>
-              </div>
+            <div class="p-2">
+              <app-checklist-navigation
+                [items]="buildEditorNavItems()"
+                [mode]="'readonly'"
+                [showSearch]="false"
+                [showExpandCollapse]="false"
+                (itemSelected)="scrollToPreviewItem($event.index)">
+              </app-checklist-navigation>
             </div>
           </div>
         </div>
@@ -1647,6 +1503,7 @@ interface ItemLink {
         <div class="col-6">Category: {{ templateForm.get('category')?.value | titlecase }}</div>
         <div class="col-6">Product Type: {{ templateForm.get('product_type')?.value || 'N/A' }}</div>
         <div class="col-6">Part Number: {{ templateForm.get('part_number')?.value || 'N/A' }}</div>
+        <div class="col-6">Customer Name: {{ templateForm.get('customer_name')?.value || 'N/A' }}</div>
         <div class="col-6" *ngIf="editingTemplate?.quality_document_metadata">
           Doc: {{ editingTemplate?.quality_document_metadata?.document_number }} Rev {{ editingTemplate?.quality_document_metadata?.revision_number }}
         </div>
@@ -1934,6 +1791,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   templateForm: FormGroup;
   editingTemplate: ChecklistTemplate | null = null;
+  draftParentVersion: string | null = null;
   saving = false;
   loading = false;
   uploadingImage = false;
@@ -2001,6 +1859,15 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   lastSavedAt: Date | null = null;
   private autoSaveTimeout: any = null;
 
+  // Unsaved changes tracking (sequence-based so we can handle async saves)
+  private suppressChangeTracking = false;
+  private changeSeq = 0;
+  private savedSeq = 0;
+  private changeTrackingReady = false;
+
+  private routeParamSub?: Subscription;
+  private templateFormChangesSub?: Subscription;
+
   // Quill editor configuration
   quillConfig: QuillModules = {
     toolbar: [
@@ -2020,6 +1887,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     public route: ActivatedRoute,
     private router: Router,
     private configService: PhotoChecklistConfigService,
+    private authenticationService: AuthenticationService,
     private modalService: NgbModal,
     private attachmentsService: AttachmentsService,
     private uploadService: UploadService,
@@ -2033,8 +1901,91 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.templateForm = this.createTemplateForm();
   }
 
+  private stripVersionSuffixFromName(name: string): string {
+    let cleaned = String(name || '').trim();
+
+    // Remove trailing "(vX)", "(vX.Y)", or "(vX.Y.Z)" suffixes.
+    const suffixRegex = /\s*\(v\d+(?:\.\d+){0,2}\)\s*$/i;
+    while (suffixRegex.test(cleaned)) {
+      cleaned = cleaned.replace(suffixRegex, '').trim();
+    }
+
+    return cleaned;
+  }
+
+  public getDisplayTemplateName(template: ChecklistTemplate | null): string {
+    if (!template) {
+      return '';
+    }
+    return this.stripVersionSuffixFromName(template.name);
+  }
+
   printChecklist(): void {
     window.print();
+  }
+
+  setTemplateActiveStatus(makeActive: boolean): void {
+    if (!this.editingTemplate || this.saving || this.loading) {
+      return;
+    }
+
+    const templateId = Number(this.editingTemplate.id || 0);
+    if (templateId <= 0) {
+      return;
+    }
+
+    const nextActive = !!makeActive;
+    const currentActive = !!this.editingTemplate.is_active;
+    if (nextActive === currentActive) {
+      return;
+    }
+
+    const actionLabel = nextActive ? 'activate' : 'deactivate';
+    const confirmMessage = nextActive
+      ? `Activate this template? It will be available for new checklist instances.`
+      : `Deactivate this template? It will no longer be available for new checklist instances.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    this.saving = true;
+
+    // Send a full metadata payload (not just is_active) to stay compatible with older backends
+    // that expect required fields like name in update requests.
+    const payload: any = {
+      name: this.editingTemplate.name,
+      description: this.editingTemplate.description ?? '',
+      part_number: this.editingTemplate.part_number ?? '',
+      customer_part_number: (this.editingTemplate as any)?.customer_part_number ?? null,
+      customer_name: (this.editingTemplate as any)?.customer_name ?? null,
+      revision: (this.editingTemplate as any)?.revision ?? null,
+      original_filename: (this.editingTemplate as any)?.original_filename ?? null,
+      review_date: (this.editingTemplate as any)?.review_date ?? null,
+      revision_number: (this.editingTemplate as any)?.revision_number ?? null,
+      revision_details: (this.editingTemplate as any)?.revision_details ?? null,
+      revised_by: (this.editingTemplate as any)?.revised_by ?? null,
+      product_type: (this.editingTemplate as any)?.product_type ?? '',
+      category: this.editingTemplate.category ?? 'quality_control',
+      is_active: nextActive ? 1 : 0
+    };
+
+    this.configService.updateTemplate(templateId, payload).subscribe({
+      next: (response) => {
+        this.saving = false;
+        if ((response as any)?.success === false) {
+          alert((response as any)?.error || (response as any)?.message || `Failed to ${actionLabel} template.`);
+          return;
+        }
+
+        this.loadTemplate(templateId);
+      },
+      error: (error) => {
+        console.error(`Error attempting to ${actionLabel} template:`, error);
+        this.saving = false;
+        alert(error?.error?.error || error?.message || `Failed to ${actionLabel} template.`);
+      }
+    });
   }
 
   private ensureQuillFileLinksEnabled(): void {
@@ -2149,20 +2100,141 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   ngOnInit(): void {
-    const templateId = this.route.snapshot.paramMap.get('id');
-    if (templateId) {
-      this.loadTemplate(parseInt(templateId));
+    // Track user edits. Some widgets (notably rich text editors) can emit valueChanges
+    // during initialization; gate tracking until the form is fully ready.
+    this.templateFormChangesSub = this.templateForm.valueChanges.subscribe(() => {
+      if (this.suppressChangeTracking) {
+        return;
+      }
+
+      if (!this.changeTrackingReady) {
+        return;
+      }
+
+      this.changeSeq++;
+    });
+
+    // React to route ID changes (e.g., Save Draft navigates to a new template ID).
+    this.routeParamSub = this.route.paramMap.subscribe((params) => {
+      const templateId = params.get('id');
+      if (templateId) {
+        this.loadTemplate(Number(templateId));
+        return;
+      }
+
+      // New template state
+      this.editingTemplate = null;
+      this.lastSavedAt = null;
+
+      this.changeTrackingReady = false;
+      this.suppressChangeTracking = true;
+
+      this.templateForm.reset();
+      this.templateForm.patchValue({
+        description: '',
+        max_upload_size_mb: null,
+        disable_max_upload_limit: true,
+        is_active: true,
+        quality_document_id: null
+      });
+
+      while (this.items.length) {
+        this.items.removeAt(0);
+      }
+
+      this.sampleImages = {};
+
+      this.changeSeq = 0;
+      this.savedSeq = 0;
+      this.templateForm.markAsPristine();
+      this.suppressChangeTracking = false;
+
+      this.initializeNavExpansion();
+
+      // Start tracking after the initial setup settles.
+      setTimeout(() => {
+        this.changeTrackingReady = true;
+        this.markSaved();
+      }, 0);
+    });
+  }
+  isPublishedLocked(): boolean {
+    return !!this.editingTemplate && !this.editingTemplate.is_draft;
+  }
+
+  startMajorVersionDraft(): void {
+    if (this.saving || !this.editingTemplate || this.editingTemplate.is_draft) {
+      return;
     }
 
-    // Expand all parent items by default in navigation
-    this.initializeNavExpansion();
+    this.saving = true;
 
-    // Enable auto-save after form changes (with 3 second debounce)
-    this.templateForm.valueChanges.subscribe(() => {
-      if (this.autoSaveEnabled && this.editingTemplate) {
-        this.scheduleAutoSave();
+    this.configService.createParentVersion(this.editingTemplate.id).subscribe({
+      next: (response: any) => {
+        this.saving = false;
+
+        if (response?.success === false) {
+          alert(response?.error || response?.message || 'Unable to start major version draft.');
+          return;
+        }
+
+        const newId = Number(response?.template_id || 0);
+        if (newId > 0) {
+          this.loadTemplate(newId);
+          this.router.navigate(['/quality/checklist/template-editor', newId], { replaceUrl: true });
+          return;
+        }
+
+        alert('Unable to start major version draft.');
+      },
+      error: (error) => {
+        console.error('Error creating major version draft:', error);
+        this.saving = false;
+        alert(error?.error?.error || error?.message || 'An error occurred while starting the major version draft.');
       }
     });
+  }
+
+  private hasUnsavedChanges(): boolean {
+    return this.changeSeq > this.savedSeq;
+  }
+
+  private markSaved(startedSeq?: number): void {
+    // Treat all changes up to this point as saved.
+    this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq ?? 0);
+
+    // Reset form dirty/pristine state without incrementing change tracking.
+    this.suppressChangeTracking = true;
+    this.templateForm.markAsPristine();
+    this.suppressChangeTracking = false;
+
+    // Some controls (notably rich text editors) can emit delayed value updates.
+    // Re-baseline once on next tick to avoid false "unsaved changes" prompts.
+    setTimeout(() => {
+      this.savedSeq = Math.max(this.savedSeq, this.changeSeq);
+      this.suppressChangeTracking = true;
+      this.templateForm.markAsPristine();
+      this.suppressChangeTracking = false;
+    }, 0);
+  }
+
+  canDeactivate(): boolean {
+    if (this.saving) {
+      return window.confirm('A save is currently in progress. Leave this page anyway?');
+    }
+    if (!this.hasUnsavedChanges()) {
+      return true;
+    }
+    return window.confirm('You have unsaved changes. Leave this page without saving?');
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  beforeUnloadHandler(event: BeforeUnloadEvent): void {
+    // Browser will show a generic warning message.
+    if (this.saving || this.hasUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
 
   ngAfterViewInit(): void {
@@ -2175,7 +2247,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.fb.group({
       name: ['', Validators.required],
       category: ['', Validators.required],
-      description: ['', Validators.required],
+      description: [''],
       // Optional override (MB) for maximum upload size when editing this template
       max_upload_size_mb: [null],
       // When true, disable max upload size checks for this template (use with caution)
@@ -2183,6 +2255,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       part_number: [''],
       product_type: [''],
       customer_part_number: [''],
+      customer_name: [''],
       revision: [''],
       original_filename: [''],
       review_date: [''],
@@ -2230,7 +2303,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   loadTemplate(id: number): void {
     this.loading = true;
-    this.configService.getTemplate(id).subscribe({
+    this.configService.getTemplateIncludingInactive(id).subscribe({
       next: (template) => {
         if (!template) {
           console.error('Template not found');
@@ -2239,8 +2312,41 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
           this.loading = false;
           return;
         }
-        this.editingTemplate = template;
-        this.populateForm(template);
+
+        // Normalize backend values (often 0/1 or '0'/'1') to real booleans.
+        // Important: string '0' is truthy in JS/Angular templates and will incorrectly display as Active.
+        const rawIsActive: any = (template as any)?.is_active;
+        const rawIsDraft: any = (template as any)?.is_draft;
+
+        const normalizedTemplate: any = {
+          ...template,
+          is_active: rawIsActive === true || rawIsActive === 1 || rawIsActive === '1',
+          is_draft: rawIsDraft === true || rawIsDraft === 1 || rawIsDraft === '1'
+        };
+
+        this.editingTemplate = normalizedTemplate as ChecklistTemplate;
+        this.draftParentVersion = null;
+        this.lastSavedAt = null;
+        this.changeTrackingReady = false;
+        this.suppressChangeTracking = true;
+        this.populateForm(this.editingTemplate);
+        // Loaded state should not count as “unsaved”.
+        this.changeSeq = 0;
+        this.savedSeq = 0;
+        this.templateForm.markAsPristine();
+        this.suppressChangeTracking = false;
+
+        // Allow any late widget initialization to settle, then baseline.
+        setTimeout(() => {
+          this.changeTrackingReady = true;
+          this.markSaved();
+        }, 0);
+
+        // Expand all parent items by default in navigation
+        this.initializeNavExpansion();
+
+        this.loadDraftParentVersion(this.editingTemplate);
+
         this.loading = false;
       },
       error: (error) => {
@@ -2252,6 +2358,34 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
   }
 
+  private loadDraftParentVersion(currentTemplate: ChecklistTemplate): void {
+    this.draftParentVersion = null;
+
+    if (!currentTemplate?.is_draft) {
+      return;
+    }
+
+    const parentId = Number((currentTemplate as any)?.parent_template_id || 0);
+    if (parentId <= 0) {
+      return;
+    }
+
+    this.configService.getTemplateIncludingInactive(parentId).subscribe({
+      next: (parentTemplate) => {
+        // Ignore stale responses if user navigated away.
+        if (!this.editingTemplate || Number(this.editingTemplate.id || 0) !== Number(currentTemplate.id || 0)) {
+          return;
+        }
+
+        const parentVersion = String(parentTemplate?.version || '').trim();
+        this.draftParentVersion = parentVersion ? parentVersion : null;
+      },
+      error: () => {
+        // Non-blocking hint only.
+      }
+    });
+  }
+
   populateForm(template: ChecklistTemplate): void {
     if (!template) {
       console.error('populateForm called with null template');
@@ -2259,13 +2393,14 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     }
 
     this.templateForm.patchValue({
-      name: template.name,
+      name: this.stripVersionSuffixFromName(template.name),
       category: template.category,
       description: template.description,
       max_upload_size_mb: (template as any).max_upload_size_mb || null,
       disable_max_upload_limit: (template as any).disable_max_upload_limit || false,
       part_number: template.part_number,
       customer_part_number: template.customer_part_number,
+      customer_name: (template as any).customer_name ?? '',
       revision: template.revision,
       original_filename: template.original_filename,
       review_date: template.review_date,
@@ -2417,7 +2552,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       id: [item?.id || null], // Include ID for change detection
       title: [item?.title || '', Validators.required],
       description: [item?.description || '', Validators.required],
-      is_required: [item?.is_required || false],
+      is_required: [item?.is_required !== undefined ? item.is_required : true],
       order_index: [item?.order_index || this.items.length + 1],
       // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
       submission_type: [(item as any)?.submission_type || 'photo'],
@@ -3220,7 +3355,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Calculate the next version number for a template
    * Examples: "1.0" -> "1.1", "2.5" -> "2.6", "3.9" -> "3.10"
    */
-  private getNextVersion(currentVersion: string | number | null | undefined): string {
+  getNextVersion(currentVersion: string | number | null | undefined): string {
     if (!currentVersion) return '1.0';
 
     // Convert to string if it's a number
@@ -3232,6 +3367,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     // Increment minor version
     return `${major}.${minor + 1}`;
+  }
+
+  getNextSubVersionDisplay(currentVersion: string | number | null | undefined): string {
+    return this.getNextVersion(currentVersion);
   }
 
   /**
@@ -3928,6 +4067,70 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return touched && (invalidControls || missingSample);
   }
 
+  handleNavAction(event: { action: string; index: number }): void {
+    switch (event.action) {
+      case 'edit':
+        this.editItemOnly(event.index);
+        break;
+      case 'addAbove':
+        this.addItemAbove(event.index);
+        break;
+      case 'addBelow':
+        this.addItemBelow(event.index);
+        break;
+      case 'duplicate':
+        void this.duplicateItem(event.index);
+        break;
+      case 'moveUp':
+        this.moveItemUp(event.index);
+        break;
+      case 'moveDown':
+        this.moveItemDown(event.index);
+        break;
+      case 'promote':
+        this.promoteItem(event.index);
+        break;
+      case 'demote':
+        this.demoteItem(event.index);
+        break;
+      case 'delete':
+        this.deleteItemFromNav(event.index);
+        break;
+      default:
+        break;
+    }
+  }
+
+  buildEditorNavItems(): ChecklistNavItem[] {
+    return this.items.controls.map((control, index) => {
+      const item = control as FormGroup;
+      const rawId = item.get('id')?.value;
+      const parsedId = Number(rawId);
+      const id = Number.isFinite(parsedId) ? parsedId : index;
+      const primaryImageUrl = this.hasPrimarySampleImage(index) ? this.getPrimarySampleImageUrl(index) : null;
+      const sampleVideoUrl = this.hasSampleVideo(index) ? this.getPrimarySampleVideoUrl(index) : null;
+      const title = item.get('title')?.value || 'Untitled';
+      const description = item.get('description')?.value || '';
+      const searchText = `${title} ${description}`.trim();
+
+      return {
+        id,
+        title,
+        level: item.get('level')?.value || 0,
+        orderIndex: item.get('order_index')?.value ?? index,
+        submissionType: item.get('submission_type')?.value || 'photo',
+        isRequired: !!item.get('is_required')?.value,
+        requiresPhoto: !!item.get('photo_requirements')?.value?.picture_required,
+        hasPrimarySampleImage: this.hasPrimarySampleImage(index),
+        hasSampleVideo: this.hasSampleVideo(index),
+        primaryImageUrl,
+        sampleVideoUrl,
+        isInvalid: this.isNavItemInvalid(index),
+        searchText
+      };
+    });
+  }
+
   /**
    * Clear filters and show all form items
    */
@@ -4468,6 +4671,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     this.teardownIntersectionObserver();
     this.teardownScrollListener();
 
+    this.routeParamSub?.unsubscribe();
+    this.templateFormChangesSub?.unsubscribe();
+
     if (this.scrollCheckTimeout) {
       clearTimeout(this.scrollCheckTimeout);
     }
@@ -4767,6 +4973,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   saveTemplate(): void {
+    if (this.editingTemplate && !this.editingTemplate.is_draft) {
+      this.saving = false;
+      alert('This is a published template and cannot be edited directly. Start a draft first.');
+      return;
+    }
+
     const missingSampleImageIndex = this.getFirstMissingSampleImageIndex();
     const missingSampleVideoIndex = this.getFirstMissingSampleVideoIndex();
     const missingEitherMediaIndex = this.getFirstMissingEitherMediaIndex();
@@ -4793,6 +5005,243 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.saving = true;
 
+    const templateData = this.buildTemplatePayload();
+
+    // If editing an existing draft, publish in-place (same template ID) instead of creating a new version.
+    if (this.editingTemplate?.is_draft) {
+      (templateData as any).is_draft = 0;
+      (templateData as any).is_active = 1;
+      delete (templateData as any).source_template_id;
+      this.proceedWithSave(templateData, false);
+      return;
+    }
+
+    // When editing a template, ask user to describe changes
+    if (this.editingTemplate) {
+      this.saving = false; // Reset while we show the dialog
+
+      // Show the revision description dialog
+      const modalRef = this.modalService.open(RevisionDescriptionDialogComponent, {
+        size: 'lg',
+        backdrop: 'static',
+        keyboard: false
+      });
+
+      // Pass data to the modal
+      modalRef.componentInstance.templateName = this.editingTemplate.name;
+      modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
+      modalRef.componentInstance.nextVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
+      // Auto-fill disabled for now
+
+      modalRef.result.then(
+        (result) => {
+          // Create new version with user's description
+          this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes, result.nextVersion);
+        },
+        (reason) => {
+          // Modal dismissed (cancel)
+        }
+      );
+    } else {
+      // New template - no revision needed
+      this.proceedWithSave(templateData, false);
+    }
+  }
+
+  saveDraft(): void {
+    if (this.saving) {
+      return;
+    }
+
+    // If a published template already has a draft, just open it.
+    if (this.editingTemplate && !this.editingTemplate.is_draft) {
+      const existingDraftId = Number((this.editingTemplate as any)?.edit_target_template_id || 0);
+      if (existingDraftId > 0) {
+        this.loadTemplate(existingDraftId);
+        this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
+        return;
+      }
+    }
+
+    this.saving = true;
+
+    const startedSeq = this.changeSeq;
+
+    const templateData = this.buildTemplatePayload();
+    (templateData as any).is_draft = 1;
+
+    // If starting a draft from a published template, pick next minor based on the latest
+    // PUBLISHED template in the same major line (e.g., latest v2.x is v2.3 -> draft becomes v2.4).
+    if (this.editingTemplate && !this.editingTemplate.is_draft) {
+      const groupId = Number((this.editingTemplate as any)?.template_group_id || this.editingTemplate.id || 0);
+      const major = Number(String(this.editingTemplate.version || '1.0').split('.')[0] || 1);
+
+      this.configService.getTemplatesIncludingInactive().subscribe({
+        next: (templates: any[]) => {
+          const nextVersion = this.computeNextMinorForMajorLine(templates || [], groupId, major);
+          (templateData as any).version = nextVersion;
+
+          const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
+          this.subscribeToDraftSave(saveRequest, startedSeq);
+        },
+        error: (error) => {
+          console.error('Error loading templates for version calculation:', error);
+          // Fall back to current version + 1
+          (templateData as any).version = this.getNextVersion(this.editingTemplate!.version || '1.0');
+
+          const saveRequest = this.configService.updateTemplate(this.editingTemplate!.id, templateData);
+          this.subscribeToDraftSave(saveRequest, startedSeq);
+        }
+      });
+      return;
+    }
+
+    const saveRequest = this.editingTemplate
+      ? this.configService.updateTemplate(this.editingTemplate.id, templateData)
+      : this.configService.createTemplate(templateData);
+
+    this.subscribeToDraftSave(saveRequest, startedSeq);
+  }
+
+  private subscribeToDraftSave(saveRequest: any, startedSeq: number): void {
+    saveRequest.subscribe({
+      next: (response: any) => {
+        if (response?.success === false) {
+          this.saving = false;
+          this.handleTemplateSaveFailureResponse(response, 'draft');
+          return;
+        }
+
+        this.saving = false;
+        this.lastSavedAt = new Date();
+
+        // Clear unsaved-change prompts after a confirmed successful save.
+        // Note: this treats any edits made during the request as “saved” from the UX perspective.
+        this.markSaved(startedSeq);
+
+        // Backend may create or switch to a draft template (returns template_id). If so, switch editor to it.
+        if (response?.template_id && this.editingTemplate && response.template_id !== this.editingTemplate.id) {
+          this.loadTemplate(response.template_id);
+          this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
+        } else if (response?.template_id && !this.editingTemplate) {
+          this.loadTemplate(response.template_id);
+          this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
+        }
+
+        if (response?.template) {
+          this.updateComponentWithSavedTemplate(response.template);
+        }
+
+        // updateComponentWithSavedTemplate may patch values; re-baseline again.
+        this.markSaved(startedSeq);
+
+        // (navigation handled above)
+      },
+      error: (error) => {
+        console.error('Error saving draft:', error);
+        this.saving = false;
+
+        let errorMessage = 'Unknown error occurred';
+        if (error?.error?.error) {
+          errorMessage = error.error.error;
+        } else if (error?.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        } else if (error.status) {
+          errorMessage = `HTTP ${error.status}: ${error.statusText || 'Unknown error'}`;
+        }
+
+        alert('Error saving draft: ' + errorMessage);
+      }
+    });
+  }
+
+  private computeNextMinorForMajorLine(templates: any[], templateGroupId: number, major: number): string {
+    const safeMajor = Number.isFinite(major) && major > 0 ? major : 1;
+    const safeGroup = Number.isFinite(templateGroupId) && templateGroupId > 0 ? templateGroupId : 0;
+
+    let maxMinor = 0;
+
+    for (const t of templates) {
+      if (!t) {
+        continue;
+      }
+
+      const groupId = Number(t.template_group_id || 0);
+      if (safeGroup > 0 && groupId !== safeGroup) {
+        continue;
+      }
+
+      // Only consider published templates when choosing the next minor.
+      const isDraft = t.is_draft === true || t.is_draft === 1 || t.is_draft === '1';
+      if (isDraft) {
+        continue;
+      }
+
+      const isDeleted = t.is_deleted === true || t.is_deleted === 1 || t.is_deleted === '1';
+      if (isDeleted) {
+        continue;
+      }
+
+      const versionStr = String(t.version || '');
+      const parts = versionStr.split('.');
+      const maj = Number(parts[0] || 0);
+      const min = Number(parts[1] || 0);
+      if (maj !== safeMajor) {
+        continue;
+      }
+
+      if (Number.isFinite(min) && min > maxMinor) {
+        maxMinor = min;
+      }
+    }
+
+    return `${safeMajor}.${maxMinor + 1}`;
+  }
+
+  discardCurrentDraft(): void {
+    if (this.saving || !this.editingTemplate?.is_draft) {
+      return;
+    }
+
+    const draftName = this.editingTemplate.name || 'this draft';
+    const confirmed = confirm(
+      `Discard draft "${draftName}"? This will permanently remove the draft and all unsaved draft changes.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.saving = true;
+
+    this.configService.discardDraft(this.editingTemplate.id).subscribe({
+      next: (response) => {
+        this.saving = false;
+
+        if (response?.success) {
+          this.router.navigate(['/quality/checklist/template-manager']);
+          return;
+        }
+
+        const backendError = response?.error || response?.message || 'Unable to discard draft.';
+        if (response?.instance_count && response.instance_count > 0) {
+          alert(`${backendError} This draft has ${response.instance_count} instance(s).`);
+          return;
+        }
+
+        alert(backendError);
+      },
+      error: (error) => {
+        console.error('Error discarding current draft:', error);
+        this.saving = false;
+        alert(error?.error?.error || error?.message || 'An error occurred while discarding the draft.');
+      }
+    });
+  }
+
+  private buildTemplatePayload(): any {
     const templateData = this.templateForm.value;
 
     // DEBUG: Log sample_images from form before save
@@ -4880,36 +5329,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       };
     });
 
-    // When editing a template, ask user to describe changes
-    if (this.editingTemplate) {
-      this.saving = false; // Reset while we show the dialog
-
-      // Show the revision description dialog
-      const modalRef = this.modalService.open(RevisionDescriptionDialogComponent, {
-        size: 'lg',
-        backdrop: 'static',
-        keyboard: false
-      });
-
-      // Pass data to the modal
-      modalRef.componentInstance.templateName = this.editingTemplate.name;
-      modalRef.componentInstance.currentVersion = this.editingTemplate.version || '1.0';
-      modalRef.componentInstance.nextVersion = this.getNextVersion(this.editingTemplate.version || '1.0');
-      // Auto-fill disabled for now
-
-      modalRef.result.then(
-        (result) => {
-          // Create new version with user's description
-          this.proceedWithSave(templateData, true, null, result.revisionDescription, result.notes, result.nextVersion);
-        },
-        (reason) => {
-          // Modal dismissed (cancel)
-        }
-      );
-    } else {
-      // New template - no revision needed
-      this.proceedWithSave(templateData, false);
-    }
+    return templateData;
   }
 
   private detectTemplateChanges(originalTemplate: any, newData: any): any {
@@ -5343,6 +5763,29 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   private proceedWithSave(templateData: any, createVersion: boolean, changes?: any, revisionDescription?: string, versionNotes?: string, versionOverride?: string): void {
     this.saving = true;
 
+    // Never store version markers inside the template title; version is tracked separately.
+    if (templateData && typeof templateData.name === 'string') {
+      templateData.name = this.stripVersionSuffixFromName(templateData.name);
+    }
+
+    if (!templateData.created_by) {
+      templateData.created_by = this.getCurrentUserIdentifier();
+    }
+
+    const startedSeq = this.changeSeq;
+
+    // "Save" creates/updates a PUBLISHED template unless explicitly marked as draft.
+    if (!createVersion) {
+      (templateData as any).is_draft = (templateData as any).is_draft === 1 ? 1 : 0;
+    }
+    if ((templateData as any).is_draft === undefined || (templateData as any).is_draft === null) {
+      (templateData as any).is_draft = 0;
+    }
+
+    if (!createVersion) {
+      delete (templateData as any).source_template_id;
+    }
+
     // When creating a new version
     if (createVersion && this.editingTemplate) {
       // Increment the version for the new template
@@ -5357,13 +5800,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       if (versionNotes) {
         templateData.version_notes = versionNotes;
       }
-
-      // Clean the name - remove any existing version suffixes before adding the new one
-      let cleanName = templateData.name;
-      // Remove all version patterns like (v1.0), (v1.1), etc.
-      cleanName = cleanName.replace(/\s*\(v\d+\.\d+\)\s*/g, '').trim();
-      // Add the new version
-      templateData.name = `${cleanName} (v${newVersion})`;
     } else if (this.editingTemplate) {
       // Updating current version - use updateTemplate instead
       templateData.id = this.editingTemplate.id;
@@ -5393,7 +5829,17 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     saveRequest.subscribe({
       next: (response: any) => {
         clearTimeout(timeoutId);
+
+        if (response?.success === false) {
+          this.saving = false;
+          this.handleTemplateSaveFailureResponse(response, 'template');
+          return;
+        }
+
         console.log('Template saved successfully:', response);
+
+        // Clear unsaved-change prompts after a confirmed successful save.
+        this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq);
 
         // Get the template ID (either from response or existing template)
         const templateId = response.template_id || this.editingTemplate?.id;
@@ -5431,6 +5877,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         } else if (!this.editingTemplate) {
           // New template - create document
           this.createDocument(templateId, templateData.name, 'Initial revision', templateData);
+        } else if (!createVersion && this.editingTemplate?.is_draft) {
+          this.saving = false;
+          alert('Draft published successfully!');
+          this.router.navigate(['/quality/checklist/template-manager']);
         } else {
           // Direct update without revision tracking (shouldn't happen with current flow)
           this.saving = false;
@@ -5446,7 +5896,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
         // Show more detailed error information
         let errorMessage = 'Unknown error occurred';
-        if (error.error && error.error.message) {
+        if (error?.error?.error) {
+          errorMessage = error.error.error;
+        } else if (error?.error?.message) {
           errorMessage = error.error.message;
         } else if (error.message) {
           errorMessage = error.message;
@@ -5457,6 +5909,22 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         alert('Error saving template: ' + errorMessage);
       }
     });
+  }
+
+  private handleTemplateSaveFailureResponse(response: any, context: 'draft' | 'template'): void {
+    const responseCode = response?.code || '';
+    const existingDraftId = Number(response?.existing_draft_id || 0);
+
+    if (responseCode === 'DRAFT_ALREADY_EXISTS' && existingDraftId > 0) {
+      alert('A working draft already exists. Opening the existing draft now.');
+      this.router.navigate(['/quality/checklist/template-editor', existingDraftId], { replaceUrl: true });
+      this.loadTemplate(existingDraftId);
+      return;
+    }
+
+    const fallback = context === 'draft' ? 'Unable to save draft.' : 'Unable to save template.';
+    const message = response?.error || response?.message || fallback;
+    alert(message);
   }
 
   /**
@@ -5470,7 +5938,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       department: 'QA' as const,
       category: templateData.category || 'quality_control',
       template_id: templateId,
-      created_by: 'current_user', // TODO: Get from auth service
+      created_by: this.getCurrentUserIdentifier(),
       revision_description: revisionDescription
     };
 
@@ -5508,7 +5976,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       items_removed: items_removed,
       items_modified: items_modified,
       changes_detail: changes || {}, // Full change object as JSON (empty if no automatic detection)
-      created_by: 'current_user' // TODO: Get from auth service
+      created_by: this.getCurrentUserIdentifier()
     };
 
     if (notes) {
@@ -5717,6 +6185,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
 
     // Save to server
+    if (!templateData.created_by) {
+      templateData.created_by = this.getCurrentUserIdentifier();
+    }
     this.configService.createTemplate(templateData).subscribe({
       next: (response) => {
         console.log('✓ Imported template auto-saved successfully:', response);
@@ -5730,9 +6201,6 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
           // Update the URL without reloading the page
           this.router.navigate(['/quality/checklist/template-editor', response.template_id], { replaceUrl: true });
-
-          // Enable auto-save after initial import save
-          this.autoSaveEnabled = true;
         }
       },
       error: (error) => {
@@ -5741,6 +6209,20 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         // Just log the error for debugging
       }
     });
+  }
+
+  private getCurrentUserIdentifier(): string {
+    const currentUser = this.authenticationService.currentUserValue;
+    if (currentUser?.id !== null && currentUser?.id !== undefined) {
+      return String(currentUser.id);
+    }
+    if (currentUser?.full_name) {
+      return String(currentUser.full_name);
+    }
+    if (currentUser?.username) {
+      return String(currentUser.username);
+    }
+    return 'system';
   }
 
   /**
@@ -5789,6 +6271,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Schedule an auto-save after user stops editing (debounced)
    */
   private scheduleAutoSave(): void {
+    // Auto-save intentionally disabled; manual "Save Draft" is the source of truth.
+    return;
     // Clear any existing timeout
     if (this.autoSaveTimeout) {
       clearTimeout(this.autoSaveTimeout);
@@ -5804,16 +6288,23 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Perform auto-save of current template state
    */
   private performAutoSave(): void {
+    // Auto-save intentionally disabled; manual "Save Draft" is the source of truth.
+    return;
     if (!this.editingTemplate || this.templateForm.invalid || this.saving) {
       return;
     }
 
     console.log('📝 Auto-saving template changes...');
 
+    const startedSeq = this.changeSeq;
+
     const templateData = this.templateForm.value;
 
     // Remove quality_document_id as it's not part of the database schema
     delete templateData.quality_document_id;
+
+    // Always autosave as draft to avoid modifying published templates with active instances.
+    (templateData as any).is_draft = 1;
 
     templateData.items = templateData.items.map((item: any) => item);
 
@@ -5822,6 +6313,16 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       next: (response) => {
         this.lastSavedAt = new Date();
         console.log('✓ Auto-save successful at', this.lastSavedAt.toLocaleTimeString());
+
+        // Auto-save should also clear unsaved-change prompts.
+        this.savedSeq = Math.max(this.savedSeq, this.changeSeq, startedSeq);
+
+        // Backend may have created a new draft template; switch editor to that draft.
+        const newId = (response as any)?.template_id;
+        if (newId && newId !== this.editingTemplate?.id) {
+          this.loadTemplate(newId);
+          this.router.navigate(['/quality/checklist/template-editor', newId], { replaceUrl: true });
+        }
       },
       error: (error) => {
         console.error('✗ Auto-save failed:', error);
@@ -6091,6 +6592,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       part_number: parsedTemplate.part_number || '',
       product_type: parsedTemplate.product_type || '',
       customer_part_number: parsedTemplate.customer_part_number || '',
+      customer_name: parsedTemplate.customer_name || '',
       revision: parsedTemplate.revision || '',
       original_filename: parsedTemplate.original_filename || '',
       is_active: true

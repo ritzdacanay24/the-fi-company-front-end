@@ -94,9 +94,28 @@ export class InstanceItemMatcherService {
           return foundPhoto;
         }
       }
+
+      if (instItem.videos && Array.isArray(instItem.videos)) {
+        const foundVideo = instItem.videos.find((v: any) => v.file_url === photoUrl);
+        if (foundVideo) {
+          return foundVideo;
+        }
+      }
     }
 
     return null;
+  }
+
+  getVideoByIndex(instanceItem: any, videoIndex: number): any {
+    if (!instanceItem || !instanceItem.videos || !Array.isArray(instanceItem.videos)) {
+      return null;
+    }
+
+    if (videoIndex < 0 || videoIndex >= instanceItem.videos.length) {
+      return null;
+    }
+
+    return instanceItem.videos[videoIndex];
   }
 
   /**

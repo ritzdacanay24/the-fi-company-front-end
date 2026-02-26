@@ -1,3 +1,18 @@
+.landscape-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2005;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(var(--bs-body-bg-rgb), 0.96);
+}
+
+.landscape-lock-card {
+  width: min(420px, 92vw);
+}
+
 .checklist-instance {
   max-width: 1200px;
   margin: 0 auto;

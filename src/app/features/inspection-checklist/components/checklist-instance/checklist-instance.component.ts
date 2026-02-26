@@ -12,6 +12,7 @@ import {
   ChecklistItem 
 } from '../../models/checklist-template.interface';
 import { ChecklistTemplateMockService } from '../../services/checklist-template-mock.service';
+import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
 
 interface PhotoUpload {
   file: File;
@@ -23,7 +24,7 @@ interface PhotoUpload {
 @Component({
   selector: 'app-checklist-instance',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ChecklistNavigationComponent],
   providers: [ChecklistTemplateMockService],
   templateUrl: './checklist-instance.component.html',
   styleUrls: ['./checklist-instance.component.scss']
@@ -62,11 +63,20 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
   // Photo handling
   pendingPhotos: Map<string, PhotoUpload[]> = new Map();
   cameraStream?: MediaStream;
+  private cameraVideoTrack: MediaStreamTrack | null = null;
+  cameraTorchSupported = false;
+  cameraTorchEnabled = false;
 
   // Validation and progress
   completedItems = 0;
   totalItems = 0;
   progressPercentage = 0;
+
+  // Tablet/PWA orientation guard (iOS can't truly lock; we block portrait with an overlay)
+  isPwaStandalone = false;
+  isPortraitOrientation = false;
+  private orientationMql?: MediaQueryList;
+  private orientationMqlListener?: (e: MediaQueryListEvent) => void;
 
   constructor(
     private route: ActivatedRoute,
@@ -78,6 +88,8 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.initOrientationGuard();
+
     this.route.paramMap.pipe(
       takeUntil(this.destroy$)
     ).subscribe(params => {
@@ -109,6 +121,81 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.stopCamera();
+
+    this.destroyOrientationGuard();
+  }
+
+  get showLandscapeOverlay(): boolean {
+    return !!this.isPwaStandalone && !!this.isPortraitOrientation;
+  }
+
+  requestLandscape(): void {
+    void this.tryLockLandscape();
+  }
+
+  private initOrientationGuard(): void {
+    this.isPwaStandalone = this.detectStandaloneDisplayMode();
+
+    try {
+      this.orientationMql = window.matchMedia('(orientation: portrait)');
+      this.isPortraitOrientation = !!this.orientationMql.matches;
+
+      this.orientationMqlListener = (e: MediaQueryListEvent) => {
+        this.isPortraitOrientation = !!e.matches;
+        if (this.isPortraitOrientation) {
+          void this.tryLockLandscape();
+        }
+      };
+
+      if (this.orientationMql.addEventListener) {
+        this.orientationMql.addEventListener('change', this.orientationMqlListener);
+      } else {
+        (this.orientationMql as any).addListener(this.orientationMqlListener);
+      }
+    } catch {
+      // ignore
+    }
+
+    void this.tryLockLandscape();
+  }
+
+  private destroyOrientationGuard(): void {
+    try {
+      if (this.orientationMql && this.orientationMqlListener) {
+        if (this.orientationMql.removeEventListener) {
+          this.orientationMql.removeEventListener('change', this.orientationMqlListener);
+        } else {
+          (this.orientationMql as any).removeListener(this.orientationMqlListener);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    this.orientationMql = undefined;
+    this.orientationMqlListener = undefined;
+  }
+
+  private detectStandaloneDisplayMode(): boolean {
+    try {
+      const navAny: any = navigator as any;
+      return (
+        !!window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+      ) || navAny?.standalone === true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async tryLockLandscape(): Promise<void> {
+    try {
+      if (!this.isPwaStandalone) return;
+      const screenAny: any = window.screen as any;
+      const orientation = screenAny?.orientation;
+      if (!orientation?.lock) return;
+      await orientation.lock('landscape');
+    } catch {
+      // ignore
+    }
   }
 
   private initializeForms(): void {
@@ -188,13 +275,20 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
   private calculateProgress(): void {
     if (!this.instance || !this.template) return;
 
-    this.totalItems = this.instance.items.length;
+    const requiredFlags = this.template.items.map(item => item.required !== false);
+    const requiredCount = requiredFlags.filter(flag => flag).length;
+    const useRequired = requiredCount > 0;
+
+    this.totalItems = useRequired ? requiredCount : this.instance.items.length;
     
     // Count items as completed if:
     // 1. Status is 'completed' or 'skipped'
     // 2. For photo-type items: has at least one photo
     // 3. For other types: has a value
     this.completedItems = this.instance.items.filter((item, index) => {
+      if (useRequired && !requiredFlags[index]) {
+        return false;
+      }
       const templateItem = this.template?.items[index];
       
       // Check explicit status first
@@ -211,7 +305,7 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
       return item.value !== undefined && item.value !== null && item.value !== '';
     }).length;
     
-    this.progressPercentage = this.totalItems > 0 ? 
+    this.progressPercentage = this.totalItems > 0 ?
       (this.completedItems / this.totalItems) * 100 : 0;
   }
 
@@ -252,6 +346,34 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
       this.loadCurrentItem();
       this.updateUrlWithCurrentItem();
     }
+  }
+
+  onNavItemSelected(event: { itemId: number; index: number }): void {
+    const instanceIndex = this.findInstanceIndexByTemplateItemId(event.itemId);
+    if (instanceIndex >= 0) {
+      this.goToItem(instanceIndex);
+      return;
+    }
+
+    if (event.index >= 0 && event.index < this.totalItems) {
+      this.goToItem(event.index);
+    }
+  }
+
+  getActiveTemplateItemId(): number | null {
+    const currentTemplateItem = this.getCurrentTemplateItem();
+    if (!currentTemplateItem?.id) {
+      return null;
+    }
+    const parsed = Number(currentTemplateItem.id);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private findInstanceIndexByTemplateItemId(templateItemId: number): number {
+    if (!this.instance) {
+      return -1;
+    }
+    return this.instance.items.findIndex(item => String(item.templateItemId) === String(templateItemId));
   }
 
   private updateUrlWithCurrentItem(): void {
@@ -442,6 +564,11 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
           height: { ideal: 1080 }
         } 
       });
+
+      this.cameraVideoTrack = (this.cameraStream.getVideoTracks && this.cameraStream.getVideoTracks()[0])
+        ? this.cameraStream.getVideoTracks()[0]
+        : null;
+      this.detectCameraTorchSupport();
       
       const video = document.getElementById('cameraVideo') as HTMLVideoElement;
       if (video) {
@@ -453,11 +580,50 @@ export class ChecklistInstanceComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleCameraTorch(): void {
+    if (!this.cameraTorchSupported) return;
+    void this.setCameraTorch(!this.cameraTorchEnabled);
+  }
+
+  private detectCameraTorchSupport(): void {
+    this.cameraTorchSupported = false;
+    this.cameraTorchEnabled = false;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      const caps: any = track?.getCapabilities?.() || {};
+      this.cameraTorchSupported = !!caps.torch;
+    } catch {
+      this.cameraTorchSupported = false;
+    }
+  }
+
+  private async setCameraTorch(enabled: boolean): Promise<void> {
+    if (!this.cameraVideoTrack) return;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      if (!track?.applyConstraints) return;
+      await track.applyConstraints({ advanced: [{ torch: enabled }] });
+      this.cameraTorchEnabled = enabled;
+    } catch {
+      this.cameraTorchEnabled = false;
+      this.cameraTorchSupported = false;
+    }
+  }
+
   stopCamera(): void {
     if (this.cameraStream) {
+      if (this.cameraTorchEnabled) {
+        try { void this.setCameraTorch(false); } catch { /* ignore */ }
+      }
       this.cameraStream.getTracks().forEach(track => track.stop());
       this.cameraStream = undefined;
     }
+
+    this.cameraVideoTrack = null;
+    this.cameraTorchSupported = false;
+    this.cameraTorchEnabled = false;
   }
 
   capturePhoto(): void {

@@ -1,0 +1,186 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="share-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="d-flex align-items-center justify-content-between w-100">
+        <div class="d-flex align-items-center gap-2">
+          <i class="mdi mdi-share-variant text-primary fs-5"></i>
+          <h5>Share Inspection Report</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
+      </div>
+      <!-- Tabs -->
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-sm" [class.btn-primary]="step !== 'list'" [class.btn-outline-secondary]="step === 'list'"
+                (click)="step !== 'done' ? step = 'select' : null">
+          <i class="mdi mdi-link-plus me-1"></i>New Link
+        </button>
+        <button class="btn btn-sm" [class.btn-primary]="step === 'list'" [class.btn-outline-secondary]="step !== 'list'"
+                (click)="step = 'list'">
+          <i class="mdi mdi-history me-1"></i>Existing Links
+          @if (existingTokens.length > 0) {
+            <span class="badge bg-secondary ms-1">{{ existingTokens.length }}</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="modal-body">
+
+      <!-- ── STEP: select items ── -->
+      @if (step === 'select') {
+        <!-- Error -->
+        @if (errorMsg) {
+          <div class="alert alert-danger py-2 small mb-3">{{ errorMsg }}</div>
+        }
+
+        <!-- Link label -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Link Label <span class="text-muted fw-normal">(optional)</span></label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="label"
+                 placeholder="e.g. Customer Copy, Auditor View…" maxlength="100">
+        </div>
+
+        <!-- Expiry -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small">Link Expiry</label>
+          <select class="form-select form-select-sm" [(ngModel)]="expiresOption">
+            <option value="never">Never expires</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+            <option value="90d">90 days</option>
+            <option value="custom">Custom date…</option>
+          </select>
+          @if (expiresOption === 'custom') {
+            <input type="datetime-local" class="form-control form-control-sm mt-2" [(ngModel)]="customExpiresAt">
+          }
+        </div>
+
+        <!-- Item selector -->
+        <div class="mb-1">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label fw-semibold small mb-0">
+              Items to Share
+              <span class="badge bg-primary ms-1">{{ selectedItemIds.size }} / {{ selectableItems.length }} selected</span>
+            </label>
+            <div class="d-flex gap-1">
+              <button class="btn btn-xs btn-outline-primary py-0 px-2 small" (click)="selectAll()">All</button>
+              <button class="btn btn-xs btn-outline-secondary py-0 px-2 small" (click)="deselectAll()">None</button>
+            </div>
+          </div>
+
+          <div class="item-selector-list">
+            @for (progress of selectableItems; track progress.item.id) {
+              <div class="item-row" [class.selected]="isSelected(progress)"
+                   [class.nested]="(progress.item.level || 0) > 0"
+                   [style.padding-left.rem]="0.9 + ((progress.item.level || 0) * 1.1)"
+                   (click)="toggleItem(+((progress.item.baseItemId ?? progress.item.id)))">
+                <input class="form-check-input mt-0" type="checkbox" [checked]="isSelected(progress)"
+                       (click)="$event.stopPropagation()">
+                <span class="item-title">{{ progress.item.title || 'Untitled' }}</span>
+                @if (progress.completed) {
+                  <i class="mdi mdi-check-circle text-success item-status"></i>
+                } @else {
+                  <i class="mdi mdi-circle-outline text-secondary item-status"></i>
+                }
+              </div>
+            }
+          </div>
+          <div class="small text-muted mt-1">
+            <i class="mdi mdi-information-outline me-1"></i>
+            Un-checked items will be hidden from the recipient.
+          </div>
+        </div>
+      }
+
+      <!-- ── STEP: generating ── -->
+      @if (step === 'generating') {
+        <div class="d-flex flex-column align-items-center py-4 gap-3">
+          <div class="spinner-border text-primary"></div>
+          <p class="text-muted mb-0">Generating secure share link…</p>
+        </div>
+      }
+
+      <!-- ── STEP: done ── -->
+      @if (step === 'done') {
+        <div class="text-center mb-3">
+          <i class="mdi mdi-check-circle text-success" style="font-size:2.5rem;"></i>
+          <h6 class="fw-bold mt-2 mb-1">Share Link Ready!</h6>
+          <p class="text-muted small mb-0">Anyone with this link can view the selected inspection items.</p>
+        </div>
+
+        <div class="generated-link-box mb-3">
+          <div class="link-text mb-2">{{ generatedUrl }}</div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary btn-sm flex-fill" (click)="copyLink()">
+              <i class="mdi" [class.mdi-check]="copied" [class.mdi-content-copy]="!copied" class="me-1"></i>
+              {{ copied ? 'Copied!' : 'Copy Link' }}
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="shareViaEmail()" title="Share via email">
+              <i class="mdi mdi-email-outline me-1"></i>Email
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-outline-primary btn-sm w-100" (click)="newLink()">
+          <i class="mdi mdi-link-plus me-1"></i>Generate Another Link
+        </button>
+      }
+
+      <!-- ── STEP: list tokens ── -->
+      @if (step === 'list') {
+        @if (loadingTokens) {
+          <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+        } @else if (!existingTokens.length) {
+          <div class="text-center py-4 text-muted">
+            <i class="mdi mdi-link-off d-block fs-2 mb-2"></i>
+            No share links created yet.
+          </div>
+        } @else {
+          <div class="token-list">
+            @for (token of existingTokens; track token.id) {
+              <div class="token-row">
+                <div class="flex-grow-1">
+                  <div class="token-label">{{ token.label || 'Unnamed Link' }}</div>
+                  <div class="token-meta">
+                    @if (token.visible_item_ids) {
+                      {{ token.visible_item_ids.length }} items ·
+                    } @else {
+                      All items ·
+                    }
+                    @if (token.expires_at) {
+                      Expires {{ formatDate(token.expires_at) }} ·
+                    } @else {
+                      No expiry ·
+                    }
+                    {{ token.accessed_count }} views
+                  </div>
+                </div>
+                <button class="btn btn-xs btn-outline-primary py-0 px-2"
+                        (click)="copyTokenUrl(token)" title="Copy link">
+                  <i class="mdi mdi-content-copy"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-danger py-0 px-2"
+                        (click)="revokeToken(token)" title="Revoke link">
+                  <i class="mdi mdi-delete-outline"></i>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Footer -->
+    @if (step === 'select') {
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="close()">Cancel</button>
+        <button class="btn btn-primary" (click)="generateLink()" [disabled]="selectedItemIds.size === 0">
+          <i class="mdi mdi-link-plus me-1"></i>Generate Link
+        </button>
+      </div>
+    }
+  </div>
+</div>

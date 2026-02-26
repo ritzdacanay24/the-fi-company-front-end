@@ -58,7 +58,8 @@ export class ChecklistExecutionComponent implements OnInit {
     this.loading = true;
     this.photoChecklistConfigService.getTemplates().pipe(first()).subscribe(templates => {
       this.loading = false;
-      this.checklistTemplates = templates;
+      // Operators should only see published templates
+      this.checklistTemplates = (templates || []).filter(t => t.is_active && !t.is_draft && !!t.published_at);
     }, () => this.loading = false);
   }
 
@@ -213,7 +214,7 @@ export class ChecklistExecutionComponent implements OnInit {
 
   openChecklistInstance(instanceId: number) {
     // Navigate to the checklist instance page with query parameters
-    this.router.navigate(['/quality/checklist/instance'], { queryParams: { id: instanceId } });
+    this.router.navigate(['/standalone/checklist/instance'], { queryParams: { id: instanceId } });
   }
 
   ngOnInit(): void {

@@ -1,0 +1,43 @@
+.template-tree-wrapper {
+  .list-group-item {
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    cursor: pointer;
+
+    &:first-child {
+      border-top: 0;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  .tree-row {
+    user-select: none;
+  }
+
+  .tree-node {
+    min-height: 28px;
+  }
+
+  .toggle-chevron {
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.75;
+    flex: 0 0 16px;
+
+    &.can-toggle {
+      cursor: pointer;
+      opacity: 1;
+    }
+
+    .mdi {
+      font-size: 16px;
+      line-height: 1;
+    }
+  }
+}

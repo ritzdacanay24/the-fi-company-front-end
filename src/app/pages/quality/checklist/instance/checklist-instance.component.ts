@@ -1,11 +1,17 @@
-import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy, ElementRef, TemplateRef, ViewChild, ViewChildren, QueryList, HostListener, Renderer2, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { NgbDropdownModule, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbModal, NgbModalModule, NgbModalRef, NgbOffcanvas } from '@ng-bootstrap/ng-bootstrap';
 import { PhotoChecklistConfigService, ChecklistInstance, ChecklistTemplate, ChecklistItem } from '@app/core/api/photo-checklist-config/photo-checklist-config.service';
 import { GlobalComponent } from '@app/global-component';
 import { AuthenticationService } from '@app/core/services/auth.service';
+import { WebsocketService } from '@app/core/services/websocket.service';
+import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
+import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
+import { filter, Subscription } from 'rxjs';
+import { ShareReportModalComponent } from './components/share-report/share-report-modal.component';
 
 // Import services
 import { ChecklistStateService, ChecklistItemProgress } from './services/checklist-state.service';
@@ -13,6 +19,7 @@ import { PhotoValidationService } from './services/photo-validation.service';
 import { PhotoOperationsService } from './services/photo-operations.service';
 import { ItemIdExtractorService } from './services/item-id-extractor.service';
 import { InstanceItemMatcherService } from './services/instance-item-matcher.service';
+import { PdfExportService } from './services/pdf-export.service';
 
 @Component({
   selector: 'app-checklist-instance',
@@ -21,7 +28,10 @@ import { InstanceItemMatcherService } from './services/instance-item-matcher.ser
     CommonModule, 
     FormsModule, 
     RouterModule,
-    NgbDropdownModule
+    NgbDropdownModule,
+    NgbModalModule,
+    ChecklistNavigationComponent,
+    ShareReportModalComponent
   ],
   templateUrl: './checklist-instance.component.html',
   styleUrls: [
@@ -36,6 +46,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   saving = false;
   instanceId: number = 0;
 
+  // Start-from-template (fullscreen modal) state
+  showTemplatePickerModal = false;
+  availableTemplates: ChecklistTemplate[] = [];
+  loadingTemplates = false;
+  selectedTemplateId: number | null = null;
+  selectedTemplatePreview: ChecklistTemplate | null = null;
+  loadingTemplatePreview = false;
+  startingTemplateId: number | null = null;
+
+  startFromTemplateWorkOrder = '';
+  startFromTemplateSerialNumber = '';
+  startFromTemplatePartNumber = '';
+
   // Photo upload
   selectedFiles: { [itemId: number]: FileList } = {};
   uploadProgress: { [itemId: number]: number } = {};
@@ -44,6 +67,158 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   isReviewMode = false;
   largeView = false;
   currentStep = 1;
+
+  // Optional media UI toggles (tablet-friendly)
+  showOptionalPhotoCapture: { [itemId: number]: boolean } = {};
+
+  // Instructions overflow hint (scrolling container; show hint when content is clipped)
+  instructionsHasMore: { [itemId: string]: boolean } = {};
+
+  @ViewChildren('instructionsScroll')
+  private instructionsScrollEls!: QueryList<ElementRef<HTMLElement>>;
+
+  @ViewChild('swipeArea')
+  private swipeAreaEl?: ElementRef<HTMLElement>;
+
+  private removeSwipeListeners: Array<() => void> = [];
+  private swipeStartX: number | null = null;
+  private swipeStartY: number | null = null;
+  private swipeStartTime: number | null = null;
+
+  swipeNavCue: 'next' | 'prev' | null = null;
+  private swipeNavCueTimeout: any = null;
+
+  private lastSwipeNavAtMs = 0;
+
+  swipeSlideDirection: 'next' | 'prev' | null = null;
+  swipeSlidePhase: 'out' | 'in' | null = null;
+  private swipeSlideTimeouts: any[] = [];
+
+  private instructionsResizeObserver: ResizeObserver | null = null;
+
+  showOptionalPhotoFor(itemId: number): void {
+    this.showOptionalPhotoCapture[itemId] = true;
+  }
+
+  hideOptionalPhotoFor(itemId: number): void {
+    this.showOptionalPhotoCapture[itemId] = false;
+  }
+
+  onInstructionsScroll(event: Event, itemId: number | string): void {
+    const el = event.target as HTMLElement | null;
+    if (!el) return;
+
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    const hideAfterPx = 12;
+    const nearTop = el.scrollTop <= hideAfterPx;
+    this.instructionsHasMore[String(itemId)] = hasOverflow && nearTop && !atBottom;
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateInstructionsOverflowHints();
+  }
+
+  openItemNotes(progress: ChecklistItemProgress): void {
+    const itemId = progress?.item?.id;
+    if (itemId === undefined || itemId === null) return;
+
+    this.activeNotesItemId = itemId;
+    this.activeNotesText = progress?.notes || '';
+
+    if (!this.itemNotesModalRef) return;
+    try {
+      this.itemNotesModal = this.modalService.open(this.itemNotesModalRef, {
+        centered: true,
+        size: 'md',
+        backdrop: true,
+        keyboard: true
+      });
+
+      this.itemNotesModal.result.finally(() => {
+        this.itemNotesModal = undefined;
+        this.activeNotesItemId = null;
+        this.activeNotesText = '';
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  onActiveNotesTextChange(value: string): void {
+    const itemId = this.activeNotesItemId;
+    if (!itemId) return;
+
+    this.activeNotesText = value;
+
+    // Submitted instances are read-only
+    if (!this.ensureCanModify(false)) {
+      return;
+    }
+
+    this.stateService.updateNotes(itemId, value);
+    this.onNotesChange(itemId);
+  }
+
+  closeItemNotes(): void {
+    try {
+      this.itemNotesModal?.close('close');
+    } catch {
+      // ignore
+    }
+  }
+
+  private attachInstructionsObservers(): void {
+    if (!this.instructionsResizeObserver) {
+      this.instructionsResizeObserver = new ResizeObserver(() => {
+        this.updateInstructionsOverflowHints();
+      });
+    }
+
+    for (const ref of this.instructionsScrollEls?.toArray?.() || []) {
+      const el = ref?.nativeElement;
+      if (el) {
+        this.instructionsResizeObserver.observe(el);
+      }
+    }
+  }
+
+  private detachInstructionsObservers(): void {
+    try {
+      this.instructionsResizeObserver?.disconnect();
+    } catch {
+      // ignore
+    }
+  }
+
+  private updateInstructionsOverflowHints(): void {
+    if (!this.instructionsScrollEls) return;
+
+    let changed = false;
+    for (const ref of this.instructionsScrollEls.toArray()) {
+      const el = ref?.nativeElement;
+      if (!el) continue;
+
+      const itemId = el.getAttribute('data-item-id');
+      if (!itemId) continue;
+      const key = String(itemId);
+
+      const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+      const hideAfterPx = 12;
+      const nearTop = el.scrollTop <= hideAfterPx;
+      const next = hasOverflow && nearTop && !atBottom;
+      if (this.instructionsHasMore[key] !== next) {
+        this.instructionsHasMore[key] = next;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.cdr.detectChanges();
+    }
+  }
 
   // Photo validation errors
   photoValidationErrors: { [itemId: number]: string } = {};
@@ -57,28 +232,185 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.comparisonPhotoIndex;
   }
 
+  /**
+   * Auto-advance helper: jump to the next incomplete item ("open")
+   * Used when users are working through only open items.
+   */
+  nextOpenItem(): void {
+    const currentIndex = this.getActiveNavIndex();
+    if (currentIndex < 0) {
+      return;
+    }
+
+    let nextIndex = -1;
+    for (let i = currentIndex + 1; i < this.itemProgress.length; i++) {
+      if (!this.itemProgress[i]?.completed) {
+        nextIndex = i;
+        break;
+      }
+    }
+
+    if (nextIndex === -1) {
+      return;
+    }
+
+    this.startNavTransition();
+    this.selectedItemIndex = nextIndex;
+
+    const rootIndex = this.findRootParentIndex(nextIndex);
+    const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.itemProgress[nextIndex];
+    const step = this.getItemNumber(rootProgress);
+    if (step > 0) {
+      this.currentStep = step;
+    }
+
+    this.updateUrlWithCurrentStep();
+    this.cdr.detectChanges();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
   // Notes auto-save functionality
   private notesAutoSaveTimeout: any = null;
   notesSaving = false;
   notesLastSaved: Date | null = null;
 
-  // Image preview modal
-  showImagePreview = false;
+  // Websocket sync (minimal real-time)
+  private wsSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+  private wsSubscription?: Subscription;
+  private wsRefreshTimeout: any = null;
+
+  // Standalone/tablet mode styling hook
+  private readonly standaloneBodyClass = 'standalone-checklist-instance';
+  isStandaloneMode = false;
+
+  // Image preview / lightbox
+  showImagePreview = false;  // kept for legacy compat
   previewImageUrl: string = '';
+
+  // Lightbox state
+  lightboxUrl: string | null = null;
+  lightboxType: 'image' | 'video' = 'image';
+  lightboxItem: ChecklistItemProgress | null = null;
+  lightboxPhotoSource: string | null = null;
+  lightboxIndex = 0;
+  lightboxTotal = 0;
+  private lightboxMedia: { url: string; type: 'image' | 'video'; progress: ChecklistItemProgress | null; source: string | null }[] = [];
+
+  // Per-item notes (space-saving modal)
+  @ViewChild('itemNotesModal') itemNotesModalRef?: TemplateRef<any>;
+  private itemNotesModal?: NgbModalRef;
+  activeNotesItemId: number | string | null = null;
+  activeNotesText = '';
+
+  // Share report modal
+  showShareModal = false;
+
+  openShareModal(): void {
+    if (!this.instance) return;
+    this.showShareModal = true;
+  }
+
+  closeShareModal(): void {
+    this.showShareModal = false;
+  }
 
   // Full checklist overview modal
   showFullChecklistModal = false;
 
+  // In-app camera capture (reliable)
+  cameraCaptureItemId: number | string | null = null;
+  private cameraStream: MediaStream | null = null;
+  private cameraVideoTrack: MediaStreamTrack | null = null;
+  cameraTorchSupported = false;
+  cameraTorchEnabled = false;
+  cameraZoomSupported = false;
+  cameraZoomMin = 1;
+  cameraZoomMax = 1;
+  cameraZoomStep = 0.1;
+  cameraZoom = 1;
+  private cameraStarting = false;
+
+  // When true, the “Take Photo” button opens the in-app camera modal (getUserMedia).
+  // When false, it falls back to the system/tablet camera (native capture).
+  enableInAppPhotoCapture = false;
+
+  @ViewChild('cameraVideo') cameraVideoRef?: ElementRef<HTMLVideoElement>;
+  @ViewChild('cameraCaptureModal') cameraCaptureModalRef?: TemplateRef<any>;
+  private cameraModal?: NgbModalRef;
+
   // Auto-advance after photo capture
   autoAdvanceAfterPhoto = false;
 
+  // Navigation filter (shared with nav component)
+  navShowOnlyOpenItems = false;
+
   // User's open checklists for offcanvas
   userOpenChecklists: ChecklistInstance[] = [];
+  userOpenChecklistGroups: Array<{ workOrder: string; instances: ChecklistInstance[]; newestUpdatedAtMs: number }> = [];
+  userOpenChecklistTotalCount = 0;
+  userOpenChecklistSearch = '';
+  userOpenChecklistStatusFilter: 'open' | 'all' | 'completed' = 'open';
   loadingChecklists = false;
+
+  // Tablet/PWA orientation guard (iOS can't truly lock; we block portrait with an overlay)
+  isPwaStandalone = false;
+  isPortraitOrientation = false;
+  private orientationMql?: MediaQueryList;
+  private orientationMqlListener?: (e: MediaQueryListEvent) => void;
+
+  get visibleUserOpenChecklistTotalCount(): number {
+    return this.filteredUserOpenChecklistGroups.reduce((sum, g) => sum + (g.instances?.length || 0), 0);
+  }
+
+  get filteredUserOpenChecklistGroups(): Array<{ workOrder: string; instances: ChecklistInstance[]; newestUpdatedAtMs: number }> {
+    const q = (this.userOpenChecklistSearch || '').trim().toLowerCase();
+    const statusFilter = this.userOpenChecklistStatusFilter;
+
+    const statusMatches = (inst: ChecklistInstance) => {
+      const status = String(inst.status || '').toLowerCase();
+      if (statusFilter === 'all') {
+        return status !== 'submitted';
+      }
+      if (statusFilter === 'completed') {
+        return status === 'completed';
+      }
+      // open
+      return status !== 'completed' && status !== 'submitted';
+    };
+
+    const matches = (inst: ChecklistInstance, workOrder: string) => {
+      const hay = [
+        workOrder,
+        inst.template_name,
+        inst.operator_name,
+        inst.work_order_number,
+        inst.serial_number,
+        inst.part_number,
+        inst.status
+      ].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    };
+
+    const filtered = this.userOpenChecklistGroups
+      .map(g => {
+        const instances = (g.instances || []).filter(i => {
+          if (!statusMatches(i)) return false;
+          if (!q) return true;
+          return matches(i, g.workOrder);
+        });
+        if (!instances.length) return null;
+        const newestUpdatedAtMs = instances.length ? new Date(instances[0].updated_at || 0).getTime() || 0 : 0;
+        return { workOrder: g.workOrder, instances, newestUpdatedAtMs };
+      })
+      .filter(Boolean) as Array<{ workOrder: string; instances: ChecklistInstance[]; newestUpdatedAtMs: number }>;
+
+    // Keep group ordering newest->oldest
+    return filtered.sort((a, b) => b.newestUpdatedAtMs - a.newestUpdatedAtMs);
+  }
 
   // Permission check
   canModifyChecklist = false;
   currentUserId: number | null = null;
+  currentUserName?: string;
 
   // Configuration values
   maxPhotoSizeMB = 10;
@@ -86,6 +418,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   // Navigation sidebar state
   expandedNavItems: Set<number | string> = new Set();
+  selectedItemIndex: number | null = null;
+  private pendingSelectedIndex: number | null = null;
+  isNavTransitioning = false;
+  private navTransitionTimeout: any = null;
+  private lastVisibleItems: ChecklistItemProgress[] = [];
+
+  // Cached nav items to avoid recreating arrays on every CD cycle
+  executionNavItems: ChecklistNavItem[] = [];
+  private itemProgressSubscription?: Subscription;
 
   // Expose state service property for template
   get itemProgress(): ChecklistItemProgress[] {
@@ -103,42 +444,546 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     private idExtractor: ItemIdExtractorService,
     private instanceMatcher: InstanceItemMatcherService,
     private offcanvasService: NgbOffcanvas,
-    private authService: AuthenticationService
+    private authService: AuthenticationService,
+    private websocketService: WebsocketService,
+    private modalService: NgbModal,
+    private renderer: Renderer2,
+    private pdfExportService: PdfExportService,
+    @Inject(DOCUMENT) private document: Document
   ) {
-    // Get current user ID
+    // Get current user ID and name
     const currentUser = this.authService.currentUserValue;
     this.currentUserId = currentUser?.id || null;
+    this.currentUserName = this.getUserDisplayName(currentUser);
+  }
+
+  private ensureChecklistWebsocket(): void {
+    try {
+      if (!this.websocketService.getWebSocket()) {
+        this.websocketService.connect();
+      }
+
+      const ws = this.websocketService.getWebSocket();
+      if (!ws) return;
+
+      // Only subscribe once
+      if (this.wsSubscription) return;
+
+      this.wsSubscription = ws.pipe(
+        filter((message: any) => message && message.type === 'CHECKLIST_INSTANCE_UPDATED')
+      ).subscribe({
+        next: (message: any) => {
+          const data = message?.data;
+          const instanceId = Number(data?.instanceId);
+          if (!instanceId || instanceId !== this.instanceId) return;
+
+          // Ignore our own browser session messages
+          if (data?.sessionId && data.sessionId === this.wsSessionId) return;
+
+          // Debounce refreshes
+          if (this.wsRefreshTimeout) {
+            clearTimeout(this.wsRefreshTimeout);
+          }
+
+          this.wsRefreshTimeout = setTimeout(() => {
+            this.refreshInstanceSilently();
+          }, 500);
+        },
+        error: (err) => console.error('Checklist websocket subscription error:', err)
+      });
+    } catch (e) {
+      console.warn('Websocket not available for checklist sync:', e);
+    }
+  }
+
+  private broadcastChecklistUpdate(action: string, details?: any): void {
+    try {
+      if (!this.websocketService.getWebSocket()) {
+        this.websocketService.connect();
+      }
+
+      this.websocketService.next({
+        type: 'CHECKLIST_INSTANCE_UPDATED',
+        data: {
+          instanceId: this.instanceId,
+          action,
+          details,
+          userId: this.currentUserId,
+          userName: this.currentUserName,
+          sessionId: this.wsSessionId,
+          ts: new Date().toISOString()
+        }
+      });
+    } catch (e) {
+      // best-effort
+      console.warn('Failed to broadcast checklist update:', e);
+    }
+  }
+
+  private refreshInstanceSilently(): void {
+    if (!this.instanceId) return;
+
+    this.photoChecklistService.getInstance(this.instanceId).subscribe({
+      next: (instance) => {
+        if (!instance) return;
+        this.instance = instance;
+
+        // Keep current template; just rebuild progress against the updated instance
+        if (this.template) {
+          this.initializeProgress();
+        } else if (instance.template_id) {
+          this.loadTemplate();
+        }
+
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error refreshing instance silently:', error);
+      }
+    });
+  }
+
+  private getUserDisplayName(user: any): string | undefined {
+    if (!user) return undefined;
+
+    const fullName = String(user.full_name || user.fullName || '').trim();
+    if (fullName) return fullName;
+
+    const first = String(user.first_name || user.firstName || '').trim();
+    const last = String(user.last_name || user.lastName || '').trim();
+    const combined = `${first} ${last}`.trim();
+    if (combined) return combined;
+
+    const username = String(user.username || '').trim();
+    if (username) return username;
+
+    const email = String(user.email || '').trim();
+    if (email) return email;
+
+    return undefined;
+  }
+
+  async startCameraCapture(itemId: number | string): Promise<void> {
+    if (!this.ensureCanModify(true)) return;
+    if (this.cameraStarting) return;
+    this.cameraStarting = true;
+
+    try {
+      this.cameraCaptureItemId = itemId;
+
+      if (this.cameraModal) {
+        try {
+          this.cameraModal.dismiss();
+        } catch {
+          // ignore
+        }
+        this.cameraModal = undefined;
+      }
+
+      if (this.cameraCaptureModalRef) {
+        this.cameraModal = this.modalService.open(this.cameraCaptureModalRef, {
+          centered: true,
+          size: 'lg',
+          fullscreen: 'md',
+          backdrop: true,
+          keyboard: true
+        });
+
+        this.cameraModal.result.finally(() => {
+          this.cameraCaptureItemId = null;
+          this.stopCameraStream();
+          this.cameraModal = undefined;
+        });
+      }
+
+      // Stop any existing stream
+      this.stopCameraStream();
+
+      // iOS Safari (and most browsers) require a secure context (HTTPS) for getUserMedia
+      if (!window.isSecureContext) {
+        alert('In-app camera capture requires HTTPS (secure context). Use the upload/capture button instead, or open this site over https.');
+        this.closeCameraCapture();
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        alert('Camera is not supported on this device/browser (getUserMedia unavailable).');
+        this.closeCameraCapture();
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width:  { ideal: 4096 },
+          height: { ideal: 3072 }
+        },
+        audio: false
+      });
+
+      this.cameraStream = stream;
+      this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+      this.detectCameraTorchSupport();
+      this.detectCameraZoomSupport();
+
+      // Attach to video element after it renders
+      setTimeout(() => {
+        const video = this.cameraVideoRef?.nativeElement;
+        if (!video || !this.cameraStream) return;
+        try {
+          (video as any).srcObject = this.cameraStream;
+          video.play().catch(() => {
+            // some browsers require user gesture; capture button will still work once playback starts
+          });
+        } catch (e) {
+          console.error('Failed to attach camera stream to video element', e);
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Error starting camera:', error);
+      alert('Unable to access the camera. Please check permissions and try again.');
+      this.closeCameraCapture();
+    } finally {
+      this.cameraStarting = false;
+    }
+  }
+
+  takePhoto(itemId: number | string, fileInput?: HTMLInputElement): void {
+    if (!this.ensureCanModify(true)) return;
+
+    // Prefer the in-app camera modal when enabled and available.
+    if (this.enableInAppPhotoCapture && window.isSecureContext && navigator.mediaDevices?.getUserMedia) {
+      void this.startCameraCapture(itemId);
+      return;
+    }
+
+    if (fileInput) {
+      // Force native capture for photos (tablet/system camera)
+      fileInput.setAttribute('capture', 'environment');
+      fileInput.click();
+      return;
+    }
+
+    alert('Unable to open camera capture. Use “Add Photo” to select a file, or enable the in-app camera in Settings (requires HTTPS + camera support).');
+  }
+
+  onEnableInAppPhotoCaptureChange(enabled: boolean): void {
+    if (!enabled) return;
+
+    if (!window.isSecureContext) {
+      alert('In-app photo capture requires HTTPS (secure context).');
+      this.enableInAppPhotoCapture = false;
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      alert('In-app photo capture is not supported in this browser/device.');
+      this.enableInAppPhotoCapture = false;
+    }
+  }
+
+  toggleCameraTorch(): void {
+    if (!this.cameraTorchSupported) return;
+    void this.setCameraTorch(!this.cameraTorchEnabled);
+  }
+
+  changeCameraZoom(delta: number): void {
+    if (!this.cameraZoomSupported) return;
+    const next = this.clampNumber((this.cameraZoom || 1) + delta, this.cameraZoomMin, this.cameraZoomMax);
+    void this.setCameraZoom(next);
+  }
+
+  onCameraZoomChange(value: any): void {
+    if (!this.cameraZoomSupported) return;
+    const n = Number(value);
+    if (isNaN(n)) return;
+    void this.setCameraZoom(this.clampNumber(n, this.cameraZoomMin, this.cameraZoomMax));
+  }
+
+  private detectCameraTorchSupport(): void {
+    this.cameraTorchSupported = false;
+    this.cameraTorchEnabled = false;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      const caps: any = track?.getCapabilities?.() || {};
+      this.cameraTorchSupported = !!caps.torch;
+    } catch {
+      this.cameraTorchSupported = false;
+    }
+  }
+
+  private detectCameraZoomSupport(): void {
+    this.cameraZoomSupported = false;
+    this.cameraZoomMin = 1;
+    this.cameraZoomMax = 1;
+    this.cameraZoomStep = 0.1;
+    this.cameraZoom = 1;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      const caps: any = track?.getCapabilities?.() || {};
+      if (!caps || caps.zoom === undefined || caps.zoom === null) {
+        return;
+      }
+
+      const z = caps.zoom;
+      const min = Number(z.min);
+      const max = Number(z.max);
+      const step = Number(z.step);
+
+      if (!isNaN(min)) this.cameraZoomMin = min;
+      if (!isNaN(max)) this.cameraZoomMax = max;
+      if (!isNaN(step) && step > 0) this.cameraZoomStep = step;
+
+      this.cameraZoomSupported = this.cameraZoomMax > this.cameraZoomMin;
+
+      const settings: any = track?.getSettings?.() || {};
+      const current = Number(settings.zoom);
+      if (!isNaN(current)) {
+        this.cameraZoom = this.clampNumber(current, this.cameraZoomMin, this.cameraZoomMax);
+      } else {
+        this.cameraZoom = this.cameraZoomMin;
+      }
+    } catch {
+      this.cameraZoomSupported = false;
+    }
+  }
+
+  private async setCameraZoom(value: number): Promise<void> {
+    if (!this.cameraVideoTrack) return;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      if (!track?.applyConstraints) return;
+      await track.applyConstraints({ advanced: [{ zoom: value }] });
+      this.cameraZoom = value;
+    } catch {
+      // Some browsers report caps but reject constraints; treat as unsupported.
+      this.cameraZoomSupported = false;
+    }
+  }
+
+  private clampNumber(value: number, min: number, max: number): number {
+    const v = Number(value);
+    const lo = Number(min);
+    const hi = Number(max);
+    if (isNaN(v) || isNaN(lo) || isNaN(hi)) return value;
+    return Math.min(hi, Math.max(lo, v));
+  }
+
+  private async setCameraTorch(enabled: boolean): Promise<void> {
+    if (!this.cameraVideoTrack) return;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      if (!track?.applyConstraints) return;
+
+      // Spec uses advanced constraints for torch.
+      await track.applyConstraints({ advanced: [{ torch: enabled }] });
+      this.cameraTorchEnabled = enabled;
+    } catch {
+      // Unsupported on iOS/Safari and some browsers.
+      this.cameraTorchEnabled = false;
+      this.cameraTorchSupported = false;
+    }
+  }
+
+  async captureCameraPhoto(): Promise<void> {
+    if (!this.ensureCanModify(true)) return;
+    if (!this.cameraCaptureItemId) return;
+
+    const video = this.cameraVideoRef?.nativeElement;
+    if (!video) return;
+
+    // Prefer ImageCapture.takePhoto() which uses the full sensor resolution rather
+    // than a downscaled video frame. Fall back to canvas if unavailable.
+    let blob: Blob | null = null;
+    try {
+      if (this.cameraVideoTrack && (window as any).ImageCapture) {
+        const ic = new (window as any).ImageCapture(this.cameraVideoTrack);
+        blob = await ic.takePhoto({ imageHeight: 3072, imageWidth: 4096 }) as Blob;
+      }
+    } catch {
+      blob = null; // fall through to canvas
+    }
+
+    if (!blob) {
+      const width  = video.videoWidth  || 1280;
+      const height = video.videoHeight || 720;
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, width, height);
+      blob = await new Promise<Blob | null>(resolve =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.95)
+      );
+    }
+
+    if (!blob) {
+      alert('Failed to capture photo. Please try again.');
+      return;
+    }
+
+    const filename = `camera_${this.instanceId}_${Date.now()}.jpg`;
+    const file = new File([blob], filename, { type: 'image/jpeg' });
+
+    // Upload directly as a camera-captured photo
+    this.uploadSingleFile(this.cameraCaptureItemId, file, 'camera');
+
+    // Close camera after capture
+    this.closeCameraCapture();
+  }
+
+  closeCameraCapture(): void {
+    try {
+      this.cameraModal?.close();
+    } catch {
+      // ignore
+    }
+    // cleanup handled by modal result.finally
+  }
+
+  private stopCameraStream(): void {
+    try {
+      // Turn off torch before stopping tracks (best-effort)
+      if (this.cameraTorchEnabled) {
+        try { void this.setCameraTorch(false); } catch { /* ignore */ }
+      }
+
+      if (this.cameraStream) {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      }
+    } catch {
+      // ignore
+    }
+    this.cameraStream = null;
+    this.cameraVideoTrack = null;
+    this.cameraTorchSupported = false;
+    this.cameraTorchEnabled = false;
+    this.cameraZoomSupported = false;
+    this.cameraZoomMin = 1;
+    this.cameraZoomMax = 1;
+    this.cameraZoomStep = 0.1;
+    this.cameraZoom = 1;
+  }
+
+  private stampLastModified(itemId: number | string, action: 'media' | 'verification' | 'notes' = 'media'): void {
+    const progress = this.stateService.findItemProgress(itemId);
+    if (!progress) return;
+
+    const now = new Date();
+    const patch: any = {
+      lastModifiedAt: now,
+      lastModifiedByUserId: this.currentUserId || undefined,
+      lastModifiedByName: this.currentUserName || undefined
+    };
+
+    // If an action causes the item to become incomplete, clear completion attribution
+    if (!progress.completed && action === 'media') {
+      patch.completedByUserId = undefined;
+      patch.completedByName = undefined;
+    }
+
+    this.stateService.updateItemProgress(itemId, patch);
+  }
+
+  getPhotoSourceLabel(progress: ChecklistItemProgress, photoUrl: string): string | null {
+    if (!progress || !photoUrl) return null;
+    const source = progress.photoMeta?.[photoUrl]?.source;
+    if (source === 'camera') return 'Camera';
+    if (source === 'library') return 'Library';
+    return null;
+  }
+
+  getCameraCaptureTitle(): string {
+    if (!this.cameraCaptureItemId) return 'Take Photo';
+    const progress = this.stateService.findItemProgress(this.cameraCaptureItemId);
+    const title = progress?.item?.title ? String(progress.item.title).trim() : '';
+    return title || 'Take Photo';
+  }
+
+  getCameraCaptureDescription(): string {
+    if (!this.cameraCaptureItemId) return '';
+    const progress = this.stateService.findItemProgress(this.cameraCaptureItemId);
+    const raw = progress?.item?.description ? String(progress.item.description) : '';
+    return this.toPlainText(raw);
+  }
+
+  private toPlainText(value: string): string {
+    const text = (value || '')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text;
   }
 
   ngOnInit(): void {
     // Load configuration values
     this.loadConfig();
+
+    // Add a scoped body class for standalone route so we can override styles for tablet UX
+    this.isStandaloneMode = this.router.url?.includes('/standalone/checklist/instance');
+    if (this.isStandaloneMode) {
+      this.renderer.addClass(this.document.body, this.standaloneBodyClass);
+    }
+
+    // Minimal real-time sync
+    this.ensureChecklistWebsocket();
+
+    // Landscape guard for tablet PWA
+    this.initOrientationGuard();
+
+    // Keep cached nav items in sync with progress changes
+    this.itemProgressSubscription = this.stateService.itemProgress$.subscribe(() => {
+      this.executionNavItems = this.buildExecutionNavItems();
+      this.cdr.detectChanges();
+    });
     
     this.route.queryParams.subscribe(params => {
       const idParam = params['id'];
       const stepParam = params['step'];
+      const itemParam = params['item'];
       
       if (idParam) {
         const newInstanceId = +idParam;
-        
+
         if (newInstanceId && !isNaN(newInstanceId) && newInstanceId > 0) {
+          const isSameInstance = this.instanceId === newInstanceId;
+          const hasInstanceLoaded = !!this.instance && !!this.template;
+
           // Reset state when switching to a different checklist
-          if (this.instanceId !== newInstanceId) {
+          if (!isSameInstance) {
             this.instanceId = newInstanceId;
             this.instance = null;
             this.template = null;
             this.loading = true;
           }
-          
+
           // Update instance ID
           this.instanceId = newInstanceId;
-          
+
           // Restore step if provided
           if (stepParam && !isNaN(+stepParam)) {
             this.currentStep = +stepParam;
           }
-          
-          this.loadInstance();
+
+          if (itemParam !== undefined && itemParam !== null && !isNaN(+itemParam)) {
+            this.pendingSelectedIndex = +itemParam;
+          } else {
+            this.pendingSelectedIndex = null;
+          }
+
+          if (!isSameInstance || !hasInstanceLoaded) {
+            this.loadInstance();
+          } else {
+            this.applySelectionFromQuery();
+            this.cdr.detectChanges();
+          }
         } else {
           this.loading = false;
           alert('Invalid checklist instance ID. Please check the URL.');
@@ -155,17 +1000,304 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     setTimeout(() => {
       this.initializeCarousels();
     }, 500);
+
+    // Instructions overflow hint (after header renders)
+    setTimeout(() => {
+      this.attachInstructionsObservers();
+      this.updateInstructionsOverflowHints();
+    }, 0);
+
+    // Tablet swipe navigation (left/right)
+    setTimeout(() => this.attachSwipeListeners(), 0);
+
+    try {
+      this.instructionsScrollEls?.changes?.subscribe(() => {
+        setTimeout(() => {
+          this.attachInstructionsObservers();
+          this.updateInstructionsOverflowHints();
+        }, 0);
+      });
+    } catch {
+      // ignore
+    }
   }
 
   ngOnDestroy(): void {
+    this.detachInstructionsObservers();
+    this.detachSwipeListeners();
+
+    this.stopCameraStream();
+
+    // Remove standalone styling hook
+    try {
+      this.renderer.removeClass(this.document.body, this.standaloneBodyClass);
+    } catch {
+      // ignore
+    }
+
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+      this.wsSubscription = undefined;
+    }
+    if (this.wsRefreshTimeout) {
+      clearTimeout(this.wsRefreshTimeout);
+      this.wsRefreshTimeout = null;
+    }
+
+    if (this.itemProgressSubscription) {
+      this.itemProgressSubscription.unsubscribe();
+      this.itemProgressSubscription = undefined;
+    }
     // Clear any pending auto-save timeout
     if (this.notesAutoSaveTimeout) {
       clearTimeout(this.notesAutoSaveTimeout);
       this.notesAutoSaveTimeout = null;
     }
+
+    if (this.navTransitionTimeout) {
+      clearTimeout(this.navTransitionTimeout);
+      this.navTransitionTimeout = null;
+    }
+
+    this.destroyOrientationGuard();
+
+    for (const t of this.swipeSlideTimeouts) {
+      try { clearTimeout(t); } catch { /* ignore */ }
+    }
+    this.swipeSlideTimeouts = [];
+    if (this.swipeNavCueTimeout) {
+      try { clearTimeout(this.swipeNavCueTimeout); } catch { /* ignore */ }
+      this.swipeNavCueTimeout = null;
+    }
     
     // Save notes immediately before component destruction
     this.saveNotesImmediately();
+  }
+
+  get showLandscapeOverlay(): boolean {
+    // Only enforce on standalone/PWA contexts to avoid breaking normal desktop/browser usage.
+    return !!this.isPwaStandalone && !!this.isPortraitOrientation;
+  }
+
+  requestLandscape(): void {
+    void this.tryLockLandscape();
+  }
+
+  private initOrientationGuard(): void {
+    this.isPwaStandalone = this.detectStandaloneDisplayMode();
+
+    try {
+      this.orientationMql = window.matchMedia('(orientation: portrait)');
+      this.isPortraitOrientation = !!this.orientationMql.matches;
+
+      this.orientationMqlListener = (e: MediaQueryListEvent) => {
+        this.isPortraitOrientation = !!e.matches;
+        if (this.isPortraitOrientation) {
+          void this.tryLockLandscape();
+        }
+        this.cdr.detectChanges();
+      };
+
+      if (this.orientationMql.addEventListener) {
+        this.orientationMql.addEventListener('change', this.orientationMqlListener);
+      } else {
+        // Safari < 14
+        (this.orientationMql as any).addListener(this.orientationMqlListener);
+      }
+    } catch {
+      // ignore
+    }
+
+    // Best-effort lock immediately (may require a user gesture on some platforms)
+    void this.tryLockLandscape();
+  }
+
+  private destroyOrientationGuard(): void {
+    try {
+      if (this.orientationMql && this.orientationMqlListener) {
+        if (this.orientationMql.removeEventListener) {
+          this.orientationMql.removeEventListener('change', this.orientationMqlListener);
+        } else {
+          (this.orientationMql as any).removeListener(this.orientationMqlListener);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    this.orientationMql = undefined;
+    this.orientationMqlListener = undefined;
+  }
+
+  private detectStandaloneDisplayMode(): boolean {
+    try {
+      const navAny: any = navigator as any;
+      return (
+        !!window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+      ) || navAny?.standalone === true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async tryLockLandscape(): Promise<void> {
+    try {
+      if (!this.isPwaStandalone) return;
+      const screenAny: any = window.screen as any;
+      const orientation = screenAny?.orientation;
+      if (!orientation?.lock) return;
+      await orientation.lock('landscape');
+    } catch {
+      // iOS/Safari and some browsers will reject/ignore
+    }
+  }
+
+  private attachSwipeListeners(): void {
+    this.detachSwipeListeners();
+
+    const el = this.swipeAreaEl?.nativeElement;
+    if (!el) return;
+
+    const onTouchStart = (ev: TouchEvent) => {
+      if (!ev.touches || ev.touches.length !== 1) {
+        this.swipeStartX = null;
+        this.swipeStartY = null;
+        this.swipeStartTime = null;
+        return;
+      }
+
+      if (!this.isSwipeAllowedTarget(ev.target)) {
+        this.swipeStartX = null;
+        this.swipeStartY = null;
+        this.swipeStartTime = null;
+        return;
+      }
+
+      this.swipeStartX = ev.touches[0].clientX;
+      this.swipeStartY = ev.touches[0].clientY;
+      this.swipeStartTime = Date.now();
+    };
+
+    const onTouchEnd = (ev: TouchEvent) => {
+      if (this.swipeStartX === null || this.swipeStartY === null || this.swipeStartTime === null) {
+        return;
+      }
+
+      const changed = ev.changedTouches;
+      if (!changed || changed.length !== 1) {
+        return;
+      }
+
+      const dx = changed[0].clientX - this.swipeStartX;
+      const dy = changed[0].clientY - this.swipeStartY;
+      const dt = Date.now() - this.swipeStartTime;
+
+      // Reset early
+      this.swipeStartX = null;
+      this.swipeStartY = null;
+      this.swipeStartTime = null;
+
+      // Thresholds tuned for tablet: require deliberate horizontal swipe.
+      const minDistanceX = 80;
+      const maxDistanceY = 50;
+      const maxDurationMs = 900;
+
+      if (dt > maxDurationMs) return;
+      if (Math.abs(dx) < minDistanceX) return;
+      if (Math.abs(dy) > maxDistanceY) return;
+
+      if (dx < 0) {
+        // Swipe left => next
+        this.triggerSwipeNavigation('next');
+      } else {
+        // Swipe right => previous
+        this.triggerSwipeNavigation('prev');
+      }
+    };
+
+    this.removeSwipeListeners.push(this.renderer.listen(el, 'touchstart', onTouchStart));
+    this.removeSwipeListeners.push(this.renderer.listen(el, 'touchend', onTouchEnd));
+  }
+
+  private detachSwipeListeners(): void {
+    for (const dispose of this.removeSwipeListeners) {
+      try {
+        dispose();
+      } catch {
+        // ignore
+      }
+    }
+    this.removeSwipeListeners = [];
+  }
+
+  private isSwipeAllowedTarget(target: EventTarget | null): boolean {
+    const el = target as HTMLElement | null;
+    if (!el || typeof (el as any).closest !== 'function') return true;
+
+    // Don't swipe when interacting with controls/media.
+    if (el.closest('button, a, input, textarea, select, label, video, audio')) return false;
+
+    // Don't swipe inside nested scroll areas (instructions box).
+    if (el.closest('.task-instructions-scroll')) return false;
+
+    // Avoid swipe when a modal/offcanvas is open (touch should belong to overlay content).
+    if (el.closest('.modal, .offcanvas')) return false;
+
+    return true;
+  }
+
+  private triggerSwipeNavigation(direction: 'next' | 'prev'): void {
+    // Avoid overlapping swipe transitions (common source of flicker/glitch)
+    const now = Date.now();
+    if (this.swipeSlidePhase || this.isNavTransitioning) return;
+    if (now - this.lastSwipeNavAtMs < 300) return;
+    this.lastSwipeNavAtMs = now;
+
+    // Respect boundaries
+    if (direction === 'next' && this.isLastItem()) return;
+    if (direction === 'prev' && this.isFirstItem()) return;
+
+    // Clear any pending swipe timers from prior gestures
+    for (const t of this.swipeSlideTimeouts) {
+      try { clearTimeout(t); } catch { /* ignore */ }
+    }
+    this.swipeSlideTimeouts = [];
+    if (this.swipeNavCueTimeout) {
+      try { clearTimeout(this.swipeNavCueTimeout); } catch { /* ignore */ }
+      this.swipeNavCueTimeout = null;
+    }
+
+    // Show animated cue immediately
+    this.swipeNavCue = direction;
+    this.cdr.detectChanges();
+
+    // Slide out, then navigate, then slide in
+    this.swipeSlideDirection = direction;
+    this.swipeSlidePhase = 'out';
+    this.cdr.detectChanges();
+
+    this.swipeSlideTimeouts.push(setTimeout(() => {
+      if (direction === 'next') {
+        this.nextItem();
+      } else {
+        this.previousItem();
+      }
+
+      // Let Angular render the new content, then animate it in
+      this.swipeSlidePhase = 'in';
+      this.cdr.detectChanges();
+
+      this.swipeSlideTimeouts.push(setTimeout(() => {
+        this.swipeSlidePhase = null;
+        this.swipeSlideDirection = null;
+        this.cdr.detectChanges();
+      }, 220));
+    }, 120));
+
+    // Clear cue after animation
+    this.swipeNavCueTimeout = setTimeout(() => {
+      this.swipeNavCue = null;
+      this.cdr.detectChanges();
+    }, 420);
   }
 
   private initializeCarousels(): void {
@@ -196,20 +1328,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
   /**
    * Check if current user has permission to modify this checklist
+   * UPDATED: Allow collaborative editing - anyone can help complete the checklist
    */
   private checkPermission(instance: ChecklistInstance): boolean {
-    if (!this.currentUserId) {
-      console.error('No current user ID available');
-      return false;
-    }
-
-    if (!instance.operator_id) {
-      console.warn('Instance has no operator_id');
-      return true; // Allow modification if no operator assigned
-    }
-
-    // Use == for comparison to handle number vs string (e.g., 3 == "3")
-    return this.currentUserId == instance.operator_id;
+    // Allow anyone to edit - we'll track who makes each change instead
+    return true;
   }
 
   loadConfig(): void {
@@ -227,6 +1350,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         if (videoSizeConfig) {
           this.maxVideoSizeMB = parseFloat(videoSizeConfig.config_value) || 50;
         }
+
       },
       error: (error) => {
         console.error('Error loading config:', error);
@@ -246,14 +1370,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           return;
         }
 
-        // Check if current user has permission to modify this checklist
-        this.canModifyChecklist = this.checkPermission(instance);
-        if (!this.canModifyChecklist) {
+        // Check if current user has permission to VIEW this checklist
+        const canViewChecklist = this.checkPermission(instance);
+        if (!canViewChecklist) {
           this.loading = false;
           alert(`Access Denied: This checklist belongs to ${instance.operator_name}. You can only modify your own checklists.`);
           this.router.navigate(['/quality/checklist/execution']);
           return;
         }
+
+        // Submitted checklists are read-only
+        this.canModifyChecklist = canViewChecklist && instance.status !== 'submitted';
         
         if (!instance.template_id) {
           this.loading = false;
@@ -271,6 +1398,22 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.router.navigate(['/quality/checklist/list']);
       }
     });
+  }
+
+  private ensureCanModify(interactive = true): boolean {
+    if (this.instance?.status === 'submitted') {
+      if (interactive) {
+        alert('This checklist is submitted and read-only. No changes can be made.');
+      }
+      return false;
+    }
+    if (!this.canModifyChecklist) {
+      if (interactive) {
+        alert('This checklist is read-only.');
+      }
+      return false;
+    }
+    return true;
   }
 
   loadTemplate(): void {
@@ -357,6 +1500,22 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Load completion status from localStorage
     const completionMap = this.stateService.loadFromLocalStorage();
+
+    // Load completion status from DB (authoritative for collaboration)
+    const dbCompletionMap = new Map<string, any>();
+    try {
+      const raw = (this.instance as any)?.item_completion;
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (Array.isArray(parsed)) {
+        parsed.forEach((entry: any) => {
+          if (entry && entry.itemId !== undefined && entry.itemId !== null) {
+            dbCompletionMap.set(String(entry.itemId), entry);
+          }
+        });
+      }
+    } catch (e) {
+      // ignore bad JSON
+    }
     
     // Flatten items to include sub-items from children arrays
     const flattenedItems = this.flattenItems(this.template.items);
@@ -392,22 +1551,67 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       
       // Use localStorage data as fallback
       const localData = completionMap.get(String(itemId));
+      const dbData = dbCompletionMap.get(String(itemId));
       let completed = isCompleted;
       let completionDate = completedAt;
       let notes = '';
+      let completedByUserId: number | undefined = undefined;
+      let completedByName: string | undefined = undefined;
+      let photoMeta: Record<string, { source?: 'camera' | 'library' }> | undefined = undefined;
+
+      // DB completion overrides local-only (and can mark complete without photos)
+      if (dbData) {
+        completed = completed || !!dbData.completed;
+        if (dbData.completedAt) {
+          completionDate = new Date(dbData.completedAt);
+        }
+        notes = dbData.notes || notes;
+        completedByUserId = dbData.completedByUserId;
+        completedByName = dbData.completedByName;
+        photoMeta = dbData.photoMeta;
+
+        if (completedByName && String(completedByName).trim() === 'Unknown User') {
+          completedByName = undefined;
+        }
+      }
       
-      if (localData && !isCompleted) {
+      if (localData && !isCompleted && !dbData) {
         completed = localData.completed;
         if (localData.completedAt) {
           completionDate = new Date(localData.completedAt);
         }
         notes = localData.notes || '';
+
+        // Hydrate attribution fields if present
+        completedByUserId = localData.completedByUserId;
+        completedByName = localData.completedByName;
+
+        photoMeta = (localData as any).photoMeta;
+
+        // Hydrate last-modified attribution if present
+        // (only used locally today)
+        const localModifiedAt = (localData as any).lastModifiedAt;
+        const lastModifiedAt = localModifiedAt ? new Date(localModifiedAt) : undefined;
+        const lastModifiedByUserId = (localData as any).lastModifiedByUserId;
+        const lastModifiedByName = (localData as any).lastModifiedByName;
+
+        // Back-compat: don't display the old placeholder
+        if (completedByName && completedByName.trim() === 'Unknown User') {
+          completedByName = undefined;
+        }
+        
+        // Attach hydrated last-modified values onto the localData object for return mapping below
+        (localData as any)._hydratedLastModifiedAt = lastModifiedAt;
+        (localData as any)._hydratedLastModifiedByUserId = lastModifiedByUserId;
+        (localData as any)._hydratedLastModifiedByName = lastModifiedByName;
       }
       
-      // Check if item should be completed based on photos meeting requirements
-      if (!completed && existingPhotos.length > 0) {
-        const minPhotos = item.photo_requirements?.min_photos || 1;
-        if (existingPhotos.length >= minPhotos) {
+      const submissionType = item.submission_type || 'photo';
+      const hasMedia = existingPhotos.length > 0 || existingVideos.length > 0;
+
+      // Check if item should be completed based on media meeting requirements
+      if (!completed && hasMedia && submissionType !== 'none') {
+        if (this.photoValidation.areSubmissionRequirementsMet(existingPhotos.length, existingVideos.length, item)) {
           completed = true;
           completionDate = completionDate || new Date();
         }
@@ -422,9 +1626,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         } as ChecklistItem & { id: string; original_position: number; baseItemId: number },
         completed,
         photos: existingPhotos,
+        photoMeta,
         videos: existingVideos, // Use extracted videos
         notes,
-        completedAt: completionDate
+        completedAt: completionDate,
+        completedByUserId,
+        completedByName,
+        lastModifiedAt: (localData as any)?._hydratedLastModifiedAt,
+        lastModifiedByUserId: (localData as any)?._hydratedLastModifiedByUserId,
+        lastModifiedByName: (localData as any)?._hydratedLastModifiedByName
       };
     });
     
@@ -432,9 +1642,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     // Update parent completion based on sub-items
     this.updateParentCompletion();
-    
-    // Navigate to first incomplete item if no step param was provided
-    this.navigateToFirstIncompleteItem();
+
+    if (!this.applySelectionFromQuery()) {
+      // Navigate to first incomplete item if no step param was provided
+      this.navigateToFirstIncompleteItem();
+    }
   }
 
   /**
@@ -443,7 +1655,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private navigateToFirstIncompleteItem(): void {
     // Only auto-navigate if step was not explicitly provided in URL
     const stepParam = this.route.snapshot.queryParams['step'];
+    const itemParam = this.route.snapshot.queryParams['item'];
     if (stepParam) {
+      return;
+    }
+    if (itemParam) {
       return;
     }
     
@@ -459,6 +1675,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   onFileSelectedAndUpload(event: any, itemId: number | string): void {
+    if (!this.ensureCanModify(true)) {
+      try { event?.target && (event.target.value = ''); } catch { /* ignore */ }
+      return;
+    }
     // Validate itemId
     if (!this.idExtractor.isValidItemId(itemId)) {
       console.error('Invalid itemId:', itemId);
@@ -468,6 +1688,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    const firstFile = files[0] as File | undefined;
+    const isVideoSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('video/');
 
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
@@ -479,16 +1702,25 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Validate photo count limits
     const progress = this.stateService.findItemProgress(itemId);
     if (progress) {
-      const validation = this.photoValidation.validateFileSelection(
-        files, 
-        progress.photos.length, 
-        progress.item
-      );
-      
-      if (!validation.valid) {
-        alert(validation.error);
-        event.target.value = '';
-        return;
+      if (!isVideoSelection) {
+        const validation = this.photoValidation.validateFileSelection(
+          files, 
+          progress.photos.length, 
+          progress.item
+        );
+        
+        if (!validation.valid) {
+          alert(validation.error);
+          event.target.value = '';
+          return;
+        }
+      } else {
+        // Videos are tracked separately from photos; do not apply photo count limits.
+        if (files.length > 1) {
+          alert('Please select a single video file.');
+          event.target.value = '';
+          return;
+        }
       }
     }
     
@@ -499,6 +1731,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   uploadPhotos(itemId: number | string): void {
+    if (!this.ensureCanModify(true)) return;
     const itemIdKey = this.idExtractor.toNumericKey(itemId);
     const files = this.selectedFiles[itemIdKey];
     if (!files || files.length === 0) return;
@@ -520,6 +1753,37 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       progressItem.item.id,
       (progressItem.item as any).baseItemId
     );
+
+    const firstFile = files[0] as File | undefined;
+    const isVideoSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('video/');
+    if (isVideoSelection) {
+      if (files.length > 1) {
+        alert('Please select a single video file.');
+      }
+
+      this.uploadProgress[itemIdKey] = 0;
+      this.photoOps.uploadPhoto(this.instanceId, dbItemId, firstFile!, {
+        captureSource: 'library',
+        userId: this.currentUserId || undefined
+      }).subscribe({
+        next: (response) => {
+          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName);
+          delete this.uploadProgress[itemIdKey];
+          delete this.selectedFiles[itemIdKey];
+          this.cdr.detectChanges();
+          this.saveProgress();
+          this.broadcastChecklistUpdate('video_added', { itemId });
+        },
+        error: (error) => {
+          console.error('Error uploading video:', error);
+          delete this.uploadProgress[itemIdKey];
+          const errorMessage = error.error?.error || error.message || 'Upload failed';
+          alert(`Error uploading video: ${errorMessage}`);
+        }
+      });
+
+      return;
+    }
 
     // Pre-upload validation
     if (progressItem) {
@@ -559,9 +1823,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       const file = files[index];
       
-      this.photoOps.uploadPhoto(this.instanceId, dbItemId, file).subscribe({
+      this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
+        captureSource: 'library',
+        userId: this.currentUserId || undefined
+      }).subscribe({
         next: (response) => {
-          this.stateService.addPhoto(itemId, response.file_url);
+          this.stateService.addPhoto(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, 'library');
           
           uploadedCount++;
           this.uploadProgress[itemIdKey] = Math.round((uploadedCount / totalFiles) * 100);
@@ -600,6 +1867,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const parents = allProgress.filter(p => p.item.level === 0 || !p.item.level);
     
     parents.forEach(parent => {
+      if ((parent.item as ChecklistItem).is_required !== false) {
+        return;
+      }
       // Find all sub-items for this parent
       const subItems = allProgress.filter(sub => 
         sub.item.level === 1 && 
@@ -612,15 +1882,24 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         
         // Update parent completion status
         if (allSubItemsComplete && !parent.completed) {
-          this.stateService.updateItemProgress(parent.item.id, {
-            completed: true,
-            completedAt: new Date()
-          });
+          // Find the last sub-item completed to attribute the parent completion
+          const lastCompletedSub = subItems
+            .filter(s => s.completed && s.completedAt)
+            .sort((a, b) => (b.completedAt?.getTime() || 0) - (a.completedAt?.getTime() || 0))[0];
+          
+            this.stateService.updateItemProgress(parent.item.id, {
+              completed: true,
+              completedAt: new Date(),
+              completedByUserId: lastCompletedSub?.completedByUserId || this.currentUserId || undefined,
+              completedByName: lastCompletedSub?.completedByName || this.currentUserName || undefined
+            });
         } else if (!allSubItemsComplete && parent.completed) {
           // If any sub-item is incomplete, mark parent as incomplete
           this.stateService.updateItemProgress(parent.item.id, {
             completed: false,
-            completedAt: undefined
+            completedAt: undefined,
+            completedByUserId: undefined,
+            completedByName: undefined
           });
         }
       }
@@ -660,6 +1939,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         
         // Trigger change detection to update UI
         this.cdr.detectChanges();
+
+        // Minimal real-time sync: notify other viewers
+        this.broadcastChecklistUpdate('progress_saved');
       },
       error: (error) => {
         console.error('Error saving progress:', error);
@@ -695,6 +1977,43 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  /**
+   * Download checklist as PDF report
+   */
+  downloadAsPDF(): void {
+    if (!this.instanceId) {
+      alert('No checklist instance to download.');
+      return;
+    }
+
+    this.saving = true;
+
+    // Fetch PDF data from backend
+    this.photoChecklistService.downloadInstancePDF(this.instanceId).subscribe({
+      next: async (data: any) => {
+        try {
+          // Generate PDF filename
+          const templateName = this.template?.name || 'Checklist';
+          const timestamp = new Date().toISOString().split('T')[0];
+          const filename = `${templateName}_${this.instance?.work_order_number || 'Report'}_${timestamp}.pdf`;
+
+          // Generate PDF using the export service
+          await this.pdfExportService.generateChecklistPDF(data, filename);
+          this.saving = false;
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          this.saving = false;
+          alert('Error generating PDF. Please try again.');
+        }
+      },
+      error: (error) => {
+        console.error('Error downloading PDF data:', error);
+        this.saving = false;
+        alert('Error downloading checklist. Please try again.');
+      }
+    });
+  }
+
   getCompletionPercentage(): number {
     return this.stateService.getCompletionPercentage();
   }
@@ -712,77 +2031,74 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (this.isReviewMode) {
       return this.itemProgress;
     }
-    
-    const currentIndex = this.currentStep - 1;
-    const currentItem = this.itemProgress[currentIndex];
-    
-    if (!currentItem) {
-      return [];
-    }
-    
-    // If current item is a sub-item, skip it (it will be shown with its parent)
-    if (currentItem.item.level === 1) {
-      return [];
-    }
-    
-    // If current item is a parent (level 0), return it along with all its children
-    const itemsToShow: ChecklistItemProgress[] = [currentItem];
-    
-    // Debug logging
-    // console.log('=== getCurrentItemsToShow DEBUG ===');
-    // console.log('Current parent item:', {
-    //   id: currentItem.item.id,
-    //   order_index: currentItem.item.order_index,
-    //   level: currentItem.item.level,
-    //   title: currentItem.item.title
-    // });
-    
-    // Find all sub-items that belong to this parent
-    // Sub-items have parent_id matching the current item's order_index or id
-    for (let i = currentIndex + 1; i < this.itemProgress.length; i++) {
-      const nextItem = this.itemProgress[i];
-      
-      // console.log(`Checking item ${i}:`, {
-      //   id: nextItem.item.id,
-      //   order_index: nextItem.item.order_index,
-      //   parent_id: nextItem.item.parent_id,
-      //   level: nextItem.item.level,
-      //   title: nextItem.item.title,
-      //   'parent_id type': typeof nextItem.item.parent_id,
-      //   'order_index type': typeof currentItem.item.order_index,
-      //   'parent_id == order_index': nextItem.item.parent_id == currentItem.item.order_index,
-      //   'parent_id === order_index': nextItem.item.parent_id === currentItem.item.order_index
-      // });
-      
-      // Stop when we hit another parent item
-      if (nextItem.item.level === 0 || !nextItem.item.level) {
-        // console.log('Stopping - found next parent item');
-        break;
+
+    if (this.selectedItemIndex !== null) {
+      const selected = this.itemProgress[this.selectedItemIndex];
+      if (selected) {
+        this.lastVisibleItems = [selected];
+        return this.lastVisibleItems;
       }
-      
-      // Check if this sub-item belongs to the current parent
-      // parent_id typically matches the parent's order_index
-      if (nextItem.item.level === 1 && 
-          (nextItem.item.parent_id === currentItem.item.order_index || 
-           nextItem.item.parent_id === currentItem.item.baseItemId)) {
-        // console.log('✓ MATCH - Adding sub-item:', nextItem.item.title);
-        itemsToShow.push(nextItem);
-      } else {
-        // console.log('✗ NO MATCH - Skipping');
-      }
+      return this.lastVisibleItems;
     }
-    
-    // console.log('Total items to show:', itemsToShow.length);
-    // console.log('=== END DEBUG ===');
-    
-    return itemsToShow;
+    const activeIndex = this.getActiveNavIndex();
+    const currentItem = activeIndex >= 0 ? this.itemProgress[activeIndex] : undefined;
+    if (currentItem) {
+      this.lastVisibleItems = [currentItem];
+      return this.lastVisibleItems;
+    }
+    return this.lastVisibleItems;
   }
 
   goBack(): void {
     this.router.navigate(['/quality/checklist/execution']);
   }
 
+  deleteInspection(offcanvas?: any): void {
+    if (!this.instanceId || this.instanceId <= 0) {
+      return;
+    }
+    if (!this.instance) {
+      return;
+    }
+
+    if (this.instance.status === 'completed' || this.instance.status === 'submitted') {
+      alert('This inspection cannot be deleted because it is already completed/submitted.');
+      return;
+    }
+
+    const ok = confirm('Delete this inspection? This will remove uploaded media and cannot be undone.');
+    if (!ok) {
+      return;
+    }
+
+    try {
+      offcanvas?.dismiss?.();
+    } catch {
+      // ignore
+    }
+
+    this.saving = true;
+    this.photoChecklistService.deleteInstance(this.instanceId).subscribe({
+      next: (res) => {
+        this.saving = false;
+        if (res?.success) {
+          this.goBack();
+        } else {
+          alert(res?.error || 'Failed to delete inspection.');
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Delete inspection error:', err);
+        this.saving = false;
+        alert('Failed to delete inspection.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   toggleItemCompletion(itemId: number | string): void {
+    if (!this.ensureCanModify(true)) return;
     const itemProgress = this.stateService.findItemProgress(itemId);
     
     if (itemProgress) {
@@ -800,14 +2116,16 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         }
       }
 
-      this.stateService.toggleItemCompletion(itemId);
+      this.stateService.toggleItemCompletion(itemId, this.currentUserId || undefined, this.currentUserName);
       this.saveProgress();
     }
   }
 
   markAsVerified(): void {
-    // Get current progress item based on currentStep
-    const progress = this.itemProgress[this.currentStep - 1];
+    if (!this.ensureCanModify(true)) return;
+    // Get current progress item based on active cursor (parent or selected sub-item)
+    const activeIndex = this.getActiveNavIndex();
+    const progress = activeIndex >= 0 ? this.itemProgress[activeIndex] : undefined;
     if (!progress) return;
 
     // Mark as completed without requiring photos (for optional photo items)
@@ -819,40 +2137,41 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.saveProgress();
     
     // Auto-advance to next step if available
-    if (this.currentStep < this.itemProgress.length) {
-      setTimeout(() => {
-        this.currentStep++;
-        this.updateUrlWithCurrentStep();
-      }, 300);
+    if (!this.isLastItem()) {
+      setTimeout(() => this.nextItem(), 300);
     }
   }
 
-  toggleVerification(): void {
-    // Get current progress item based on currentStep
-    const progress = this.itemProgress[this.currentStep - 1];
-    if (!progress) return;
+  toggleVerification(progress?: ChecklistItemProgress): void {
+    if (!this.ensureCanModify(true)) return;
+    const activeIndex = this.getActiveNavIndex();
+    const target = progress || (activeIndex >= 0 ? this.itemProgress[activeIndex] : undefined);
+    if (!target) return;
 
-    if (progress.completed) {
+    if (target.completed) {
       // Unmark verification - reset to incomplete
-      this.stateService.updateItemProgress(progress.item.id, {
+      this.stateService.updateItemProgress(target.item.id, {
         completed: false,
         completedAt: undefined,
-        notes: progress.notes || ''
+        completedByUserId: undefined,
+        completedByName: undefined,
+        notes: target.notes || ''
       });
+      this.stampLastModified(target.item.id, 'verification');
     } else {
-      // Mark as completed without requiring photos
-      this.stateService.updateItemProgress(progress.item.id, {
+      // Mark as completed without requiring photos - track who completed it
+      this.stateService.updateItemProgress(target.item.id, {
         completed: true,
         completedAt: new Date(),
-        notes: progress.notes || 'Verified without photos'
+        completedByUserId: this.currentUserId || undefined,
+        completedByName: this.currentUserName || undefined,
+        notes: target.notes || 'Verified without photos'
       });
+      this.stampLastModified(target.item.id, 'verification');
       
       // Auto-advance to next step if available
-      if (this.currentStep < this.itemProgress.length) {
-        setTimeout(() => {
-          this.currentStep++;
-          this.updateUrlWithCurrentStep();
-        }, 300);
+      if (!this.isLastItem()) {
+        setTimeout(() => this.nextOpenItem(), 300);
       }
     }
     
@@ -860,6 +2179,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   removePhoto(itemId: number | string, photoIndex: number): void {
+    if (!this.ensureCanModify(true)) return;
     if (!confirm('Are you sure you want to remove this photo?')) return;
 
     const result = this.photoOps.deletePhotoByIndex(
@@ -871,8 +2191,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (result) {
       result.subscribe({
         next: () => {
+          this.stampLastModified(itemId, 'media');
           // Recalculate progress after photo deletion
           this.saveProgress();
+          this.broadcastChecklistUpdate('photo_deleted', { itemId });
           this.cdr.detectChanges();
           setTimeout(() => this.initializeCarousels(), 100);
         },
@@ -883,12 +2205,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       });
     } else {
       // UI-only removal (no backend ID found) - still recalculate progress
+      this.stampLastModified(itemId, 'media');
       this.saveProgress();
       this.cdr.detectChanges();
     }
   }
 
   removeAllPhotos(itemId: number | string): void {
+    if (!this.ensureCanModify(true)) return;
     if (!confirm('Are you sure you want to remove all photos for this item?')) return;
 
     const result = this.photoOps.deleteAllPhotos(
@@ -899,8 +2223,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (result) {
       result.subscribe({
         next: () => {
+          this.stampLastModified(itemId, 'media');
           // Recalculate progress after removing all photos
           this.saveProgress();
+          this.broadcastChecklistUpdate('photos_cleared', { itemId });
           this.cdr.detectChanges();
           this.loadInstance();
         },
@@ -911,55 +2237,160 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       });
     } else {
       // UI-only removal - still recalculate progress
+      this.stampLastModified(itemId, 'media');
       this.saveProgress();
       this.cdr.detectChanges();
     }
   }
 
   deletePhoto(photoUrl: string, itemId: number | string): void {
-    if (!confirm('Are you sure you want to remove this photo?')) return;
+    if (!this.ensureCanModify(true)) return;
+    if (!confirm('Are you sure you want to remove this media?')) return;
 
-    const result = this.photoOps.deletePhotoByUrl(
-      photoUrl,
-      itemId,
-      this.instance?.items || []
-    );
+    const attemptDelete = (instanceItems: any[], didRefresh: boolean) => {
+      const result = this.photoOps.deletePhotoByUrl(
+        photoUrl,
+        itemId,
+        instanceItems
+      );
 
-    if (result) {
-      result.subscribe({
-        next: () => {
-          // Recalculate progress after photo deletion
-          this.saveProgress();
-          this.cdr.detectChanges();
-          setTimeout(() => this.initializeCarousels(), 100);
-        },
-        error: () => {
-          alert('Error deleting photo. Please try again.');
-        }
-      });
-    } else {
-      // Recalculate progress for local deletion
+      if (result) {
+        result.subscribe({
+          next: () => {
+            this.stampLastModified(itemId, 'media');
+            this.saveProgress();
+            this.broadcastChecklistUpdate('media_deleted', { itemId });
+            this.cdr.detectChanges();
+            setTimeout(() => this.initializeCarousels(), 100);
+          },
+          error: () => {
+            alert('Error deleting media. Please try again.');
+          }
+        });
+        return;
+      }
+
+      // If we couldn't find a backend ID (common right after upload because instanceItems is stale), refresh once and retry.
+      if (!didRefresh && this.idExtractor.isValidInstanceId(this.instanceId)) {
+        this.photoChecklistService.getInstance(this.instanceId).subscribe({
+          next: (fresh) => {
+            this.instance = fresh as any;
+            this.cdr.detectChanges();
+            attemptDelete((fresh as any)?.items || [], true);
+          },
+          error: () => {
+            // fallback: UI-only removal already handled by service; still recompute
+            this.stampLastModified(itemId, 'media');
+            this.saveProgress();
+            this.cdr.detectChanges();
+          }
+        });
+        return;
+      }
+
+      // UI-only removal path
+      this.stampLastModified(itemId, 'media');
       this.saveProgress();
       this.cdr.detectChanges();
-    }
+    };
+
+    attemptDelete(this.instance?.items || [], false);
   }
 
   previewImage(imageUrl: string): void {
-    if (imageUrl) {
-      this.previewImageUrl = imageUrl;
-      this.showImagePreview = true;
+    if (!imageUrl) return;
+    // Build global media list and find this URL
+    this._buildGlobalLightboxMedia();
+    const idx = this.lightboxMedia.findIndex(f => f.url === imageUrl || f.url === this.getPhotoUrl(imageUrl));
+    this.lightboxIndex = idx >= 0 ? idx : 0;
+    if (idx < 0) {
+      // Not found in progress (e.g. sample image) — single-frame
+      this.lightboxMedia = [{ url: imageUrl, type: 'image', progress: null, source: null }];
+      this.lightboxIndex = 0;
     }
+    this.lightboxTotal = this.lightboxMedia.length;
+    this._applyLightboxFrame();
+  }
+
+  openLightboxForProgress(progress: ChecklistItemProgress, index: number, kind: 'photo' | 'video' = 'photo'): void {
+    this._buildGlobalLightboxMedia();
+    // Find the position of this item+index in the global list
+    let searchIdx = 0;
+    let offset = 0;
+    for (const p of this.itemProgress) {
+      if (p === progress) {
+        searchIdx = kind === 'photo' ? offset + index : offset + (p.photos?.length ?? 0) + index;
+        break;
+      }
+      offset += (p.photos?.length ?? 0) + (p.videos?.length ?? 0);
+    }
+    this.lightboxIndex = searchIdx;
+    this.lightboxTotal = this.lightboxMedia.length;
+    this._applyLightboxFrame();
+  }
+
+  private _buildGlobalLightboxMedia(): void {
+    const media: { url: string; type: 'image' | 'video'; progress: ChecklistItemProgress | null; source: string | null }[] = [];
+    for (const p of this.itemProgress) {
+      for (const photo of (p.photos || [])) {
+        const url = this.getPhotoUrl(photo);
+        const source = p.photoMeta?.[photo]?.source ?? null;
+        media.push({ url, type: 'image', progress: p, source });
+      }
+      for (const video of (p.videos || [])) {
+        const url = this.getPhotoUrl(video);
+        media.push({ url, type: 'video', progress: p, source: null });
+      }
+    }
+    this.lightboxMedia = media;
+  }
+
+  private _applyLightboxFrame(): void {
+    const frame = this.lightboxMedia[this.lightboxIndex];
+    if (!frame) return;
+    this.lightboxUrl         = frame.url;
+    this.lightboxType        = frame.type;
+    this.lightboxItem        = frame.progress;
+    this.lightboxPhotoSource = frame.source;
+  }
+
+  lightboxPrev(): void {
+    if (this.lightboxTotal <= 1) return;
+    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxTotal) % this.lightboxTotal;
+    this._applyLightboxFrame();
+  }
+
+  lightboxNext(): void {
+    if (this.lightboxTotal <= 1) return;
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxTotal;
+    this._applyLightboxFrame();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onLightboxKeydown(e: KeyboardEvent): void {
+    if (!this.lightboxUrl) return;
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); this.lightboxPrev(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); this.lightboxNext(); }
+    if (e.key === 'Escape')     { this.closeLightbox(); }
+  }
+
+  closeLightbox(): void {
+    this.lightboxUrl  = null;
+    this.lightboxItem = null;
+    this.lightboxMedia = [];
+    this.lightboxIndex = 0;
+    this.lightboxTotal = 0;
   }
 
   closeImagePreview(): void {
     this.showImagePreview = false;
     this.previewImageUrl = '';
+    this.closeLightbox();
   }
 
   openImageInNewTab(): void {
-    if (this.previewImageUrl) {
-      window.open(this.previewImageUrl, '_blank');
-    }
+    const url = this.lightboxUrl || this.previewImageUrl;
+    if (url) window.open(url, '_blank');
   }
 
   goToCarouselSlide(itemId: number | string, slideIndex: number): void {
@@ -1095,44 +2526,66 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   goToItem(itemNumber: number): void {
+    this.startNavTransition();
+    this.selectedItemIndex = null;
     this.currentStep = itemNumber;
     this.updateUrlWithCurrentStep();
   }
 
   nextItem(): void {
-    if (this.currentStep < this.getTotalParentItemsCount()) {
-      this.currentStep++;
-      
-      // Skip sub-items since they're shown with their parent
-      while (this.currentStep <= this.getTotalParentItemsCount()) {
-        const nextItemProgress = this.itemProgress[this.currentStep - 1];
-        if (nextItemProgress && nextItemProgress.item.level === 1) {
-          this.currentStep++;
-        } else {
-          break;
-        }
-      }
-      
-      this.updateUrlWithCurrentStep();
+    const currentIndex = this.getActiveNavIndex();
+    if (currentIndex < 0) {
+      return;
     }
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= this.itemProgress.length) {
+      return;
+    }
+
+    this.startNavTransition();
+    this.selectedItemIndex = nextIndex;
+
+    const rootIndex = this.findRootParentIndex(nextIndex);
+    const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.itemProgress[nextIndex];
+    const step = this.getItemNumber(rootProgress);
+    if (step > 0) {
+      this.currentStep = step;
+    }
+
+    this.updateUrlWithCurrentStep();
+    this.cdr.detectChanges();
+    setTimeout(() => this.updateInstructionsOverflowHints(), 0);
+    setTimeout(() => this.updateInstructionsOverflowHints(), 250);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   previousItem(): void {
-    if (this.currentStep > 1) {
-      this.currentStep--;
-      
-      // Skip sub-items since they're shown with their parent
-      while (this.currentStep > 0) {
-        const prevItemProgress = this.itemProgress[this.currentStep - 1];
-        if (prevItemProgress && prevItemProgress.item.level === 1) {
-          this.currentStep--;
-        } else {
-          break;
-        }
-      }
-      
-      this.updateUrlWithCurrentStep();
+    const currentIndex = this.getActiveNavIndex();
+    if (currentIndex < 0) {
+      return;
     }
+
+    const prevIndex = currentIndex - 1;
+    if (prevIndex < 0) {
+      return;
+    }
+
+    this.startNavTransition();
+    this.selectedItemIndex = prevIndex;
+
+    const rootIndex = this.findRootParentIndex(prevIndex);
+    const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.itemProgress[prevIndex];
+    const step = this.getItemNumber(rootProgress);
+    if (step > 0) {
+      this.currentStep = step;
+    }
+
+    this.updateUrlWithCurrentStep();
+    this.cdr.detectChanges();
+    setTimeout(() => this.updateInstructionsOverflowHints(), 0);
+    setTimeout(() => this.updateInstructionsOverflowHints(), 250);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // Missing helper methods for the template
@@ -1196,11 +2649,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   isFirstItem(): boolean {
-    return this.currentStep === 1;
+    const currentIndex = this.getActiveNavIndex();
+    return currentIndex <= 0;
   }
 
   isLastItem(): boolean {
-    return this.currentStep === this.getTotalParentItemsCount();
+    const currentIndex = this.getActiveNavIndex();
+    return currentIndex >= this.itemProgress.length - 1;
   }
 
   getRequiredCompletionStatus(): { completed: number; total: number } {
@@ -1299,21 +2754,35 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Save only notes data without triggering full progress save
    */
   private saveNotesOnly(): void {
+    // Submitted instances are read-only
+    if (!this.ensureCanModify(false)) {
+      return;
+    }
+
     if (!this.instanceId) {
       console.error('Cannot save notes: Instance ID is not available');
       return;
     }
 
     this.notesSaving = true;
-    
-    // Save notes to localStorage immediately
-    const itemCompletionData = this.itemProgress.map(p => ({
-      itemId: p.item.id,
-      completed: p.completed,
-      completedAt: p.completedAt?.toISOString(),
-      notes: p.notes || ''
-    }));
-    localStorage.setItem(`checklist_${this.instanceId}_completion`, JSON.stringify(itemCompletionData));
+
+    // Save to localStorage via state service
+    this.stateService.saveToLocalStorage();
+
+    // Save to DB (so verified-without-photos and notes are shared)
+    const completionData = this.stateService.getCompletionDataForApi();
+    const progressPct = this.stateService.getCompletionPercentage();
+    this.photoChecklistService.updateInstance(this.instanceId, {
+      item_completion: completionData,
+      progress_percentage: progressPct
+    } as any).subscribe({
+      next: () => {
+        this.broadcastChecklistUpdate('notes_saved');
+      },
+      error: (error) => {
+        console.error('Error saving notes to DB:', error);
+      }
+    });
     
     // Simulate slight delay for better UX
     setTimeout(() => {
@@ -1353,11 +2822,93 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.onFileSelectedAndUpload(event, itemId);
   }
 
+  private uploadSingleFile(itemId: number | string, file: File, captureSource: 'camera' | 'library'): void {
+    if (!this.ensureCanModify(true)) return;
+    // Validate instance ID
+    if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
+      alert('Error: Instance ID is not available. Please reload the page.');
+      return;
+    }
+
+    const progress = this.stateService.findItemProgress(itemId);
+    if (!progress) {
+      alert('Error: Item not found. Please reload the page.');
+      return;
+    }
+
+    const isVideo = !!file && typeof file.type === 'string' && file.type.toLowerCase().startsWith('video/');
+
+    // Validate photo count limits (for photo submissions)
+    if (!isVideo) {
+      if (!this.photoValidation.canAddMorePhotos(progress.photos.length, progress.item)) {
+        alert('Maximum photos reached.');
+        return;
+      }
+    }
+
+    const dbItemId = this.idExtractor.extractBaseItemId(
+      itemId,
+      (progress.item as any).baseItemId
+    );
+
+    const itemIdKey = this.idExtractor.toNumericKey(itemId);
+    this.uploadProgress[itemIdKey] = 0;
+
+    this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
+      captureSource,
+      userId: this.currentUserId || undefined
+    }).subscribe({
+      next: (response) => {
+        if (isVideo) {
+          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName);
+        } else {
+          this.stateService.addPhoto(
+            itemId,
+            response.file_url,
+            this.currentUserId || undefined,
+            this.currentUserName,
+            captureSource
+          );
+        }
+        this.uploadProgress[itemIdKey] = 100;
+        this.cdr.detectChanges();
+        setTimeout(() => this.initializeCarousels(), 100);
+        this.handlePhotoUploadComplete(itemId);
+
+        // Persist progress + notify other viewers
+        this.saveProgress();
+        this.broadcastChecklistUpdate(isVideo ? 'video_added' : 'photo_added', { itemId });
+      },
+      error: (error) => {
+        console.error('Error uploading photo:', error);
+        delete this.uploadProgress[itemIdKey];
+        const errorMessage = error.error?.error || error.message || 'Upload failed';
+        alert(`Error uploading photo: ${errorMessage}`);
+      }
+    });
+  }
+
+  /**
+   * Open camera directly for photo capture
+   */
+  recordVideo(fileInput: HTMLInputElement, itemId: number | string): void {
+    if (!this.ensureCanModify(true)) return;
+    this.openCamera(fileInput, itemId);
+  }
+
   /**
    * Open camera directly for photo capture
    */
   openCamera(fileInput: HTMLInputElement, itemId: number | string): void {
-    // Trigger camera by setting accept to capture
+    const accept = String(fileInput?.accept || '').toLowerCase();
+    const isVideoInput = accept.includes('video/');
+
+    if (isVideoInput) {
+      fileInput.removeAttribute('capture');
+      fileInput.click();
+      return;
+    }
+
     fileInput.setAttribute('capture', 'environment');
     fileInput.click();
   }
@@ -1376,9 +2927,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   private handlePhotoUploadComplete(itemId: number | string): void {
     // If auto-advance is enabled, move to next item
-    if (this.autoAdvanceAfterPhoto && !this.isLastItem()) {
+    if (this.autoAdvanceAfterPhoto) {
       setTimeout(() => {
-        this.nextItem();
+        this.nextOpenItem();
       }, 500); // Small delay to show the uploaded photo
     }
   }
@@ -1406,12 +2957,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const completedItems = this.itemProgress.filter(p => p.completed).length;
     const progress = Math.round((completedItems / this.itemProgress.length) * 100);
     
-    const itemCompletionData = this.itemProgress.map(p => ({
-      itemId: p.item.id,
-      completed: p.completed,
-      completedAt: p.completedAt?.toISOString(),
-      notes: p.notes || ''
-    }));
+    const itemCompletionData = this.stateService.getCompletionDataForApi();
     
     localStorage.setItem(`checklist_${this.instanceId}_completion`, JSON.stringify(itemCompletionData));
     
@@ -1438,7 +2984,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    */
   navigateToPhotoMode(itemIndex: number): void {
     this.isReviewMode = false;
-    this.currentStep = itemIndex + 1; // Convert 0-based index to 1-based step
+    const progress = this.itemProgress[itemIndex];
+    if (!progress) {
+      return;
+    }
+
+    // Use the flattened index so navigation works for sub-items too
+    this.selectedItemIndex = itemIndex;
+
+    const rootIndex = this.findRootParentIndex(itemIndex);
+    const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : progress;
+    const step = this.getItemNumber(rootProgress);
+    if (step > 0) {
+      this.currentStep = step;
+    }
     this.updateUrlWithCurrentStep();
   }
 
@@ -1448,7 +3007,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private updateUrlWithCurrentStep(): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { id: this.instanceId, step: this.currentStep },
+      queryParams: {
+        id: this.instanceId,
+        step: this.currentStep,
+        item: this.selectedItemIndex !== null ? this.selectedItemIndex : null
+      },
       queryParamsHandling: 'merge',
       replaceUrl: true
     });
@@ -1494,50 +3057,68 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   openUserChecklists(content: any): void {
     this.loadingChecklists = true;
     
-    // Get current user's operator ID from the instance
-    const currentOperatorId = this.instance?.operator_id;
-    
     // Fetch all instances (no status filter to get everything)
     this.photoChecklistService.getInstances().subscribe({
       next: (instances) => {
-        // Filter to show current user's checklists that are not submitted yet
-        // Include: draft, in_progress, and completed (but not yet submitted)
-        if (currentOperatorId) {
-          this.userOpenChecklists = instances.filter(inst => 
-            inst.operator_id === currentOperatorId && 
-            inst.status !== 'submitted'
-          );
-        } else {
-          this.userOpenChecklists = instances.filter(inst => 
-            inst.status !== 'submitted'
-          );
-        }
+        // Include all non-submitted checklists (yours + other operators), so you can edit/continue collaborative work.
+        this.userOpenChecklists = instances.filter(inst => String(inst.status || '').toLowerCase() !== 'submitted');
         
         // Ensure current checklist is in the list (add it if not present)
         if (this.instance && !this.userOpenChecklists.find(inst => inst.id === this.instance!.id)) {
           this.userOpenChecklists.unshift(this.instance);
         }
-        
-        // Sort by updated_at (most recent first), but keep current checklist at top
-        this.userOpenChecklists.sort((a, b) => {
-          if (a.id === this.instanceId) return -1;
-          if (b.id === this.instanceId) return 1;
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-        });
+
+        // Group by Work Order and sort newest -> oldest
+        const dateMs = (d: any) => {
+          const t = new Date(d || 0).getTime();
+          return isNaN(t) ? 0 : t;
+        };
+
+        const groups = new Map<string, ChecklistInstance[]>();
+        for (const inst of this.userOpenChecklists) {
+          const wo = String(inst.work_order_number || '').trim() || 'No Work Order';
+          const arr = groups.get(wo) || [];
+          arr.push(inst);
+          groups.set(wo, arr);
+        }
+
+        this.userOpenChecklistGroups = Array.from(groups.entries()).map(([workOrder, list]) => {
+          const sorted = list.slice().sort((a, b) => dateMs(b.updated_at) - dateMs(a.updated_at));
+          return {
+            workOrder,
+            instances: sorted,
+            newestUpdatedAtMs: sorted.length ? dateMs(sorted[0].updated_at) : 0
+          };
+        }).sort((a, b) => b.newestUpdatedAtMs - a.newestUpdatedAtMs);
+
+        this.userOpenChecklistTotalCount = this.userOpenChecklistGroups.reduce((sum, g) => sum + (g.instances?.length || 0), 0);
         
         this.loadingChecklists = false;
         this.cdr.detectChanges();
+
+        // Scroll to currently viewing item
+        setTimeout(() => this.scrollToCurrentOpenChecklist(), 0);
+        setTimeout(() => this.scrollToCurrentOpenChecklist(), 150);
       },
       error: (error) => {
         console.error('Error loading user checklists:', error);
         // On error, at least show the current checklist
         if (this.instance) {
           this.userOpenChecklists = [this.instance];
+          this.userOpenChecklistGroups = [{
+            workOrder: String(this.instance.work_order_number || '').trim() || 'No Work Order',
+            instances: [this.instance],
+            newestUpdatedAtMs: new Date(this.instance.updated_at || 0).getTime() || 0
+          }];
+          this.userOpenChecklistTotalCount = 1;
         } else {
           this.userOpenChecklists = [];
+          this.userOpenChecklistGroups = [];
+          this.userOpenChecklistTotalCount = 0;
         }
         this.loadingChecklists = false;
         this.cdr.detectChanges();
+        setTimeout(() => this.scrollToCurrentOpenChecklist(), 0);
       }
     });
     
@@ -1548,14 +3129,192 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     });
   }
 
+  private scrollToCurrentOpenChecklist(): void {
+    try {
+      const el = document.getElementById('current-open-checklist');
+      if (el) {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Open checklist navigation in an offcanvas (used for tablet/portrait layouts)
+   */
+  openNavigation(content: any): void {
+    this.offcanvasService.open(content, {
+      position: 'end',
+      panelClass: 'navigation-offcanvas'
+    });
+  }
+
+  /**
+   * Open header actions menu (tablet-friendly)
+   */
+  openHeaderActions(content: any): void {
+    this.offcanvasService.open(content, {
+      position: 'end',
+      panelClass: 'execution-actions-offcanvas'
+    });
+  }
+
+  openSettings(content: any): void {
+    this.offcanvasService.open(content, {
+      position: 'end',
+      panelClass: 'execution-settings-offcanvas'
+    });
+  }
+
+  openTemplatePickerModal(): void {
+    this.showTemplatePickerModal = true;
+    this.loadingTemplates = true;
+    this.availableTemplates = [];
+    this.selectedTemplateId = null;
+    this.selectedTemplatePreview = null;
+    this.loadingTemplatePreview = false;
+    this.startingTemplateId = null;
+
+    // Start empty by default (user must confirm context)
+    this.startFromTemplateWorkOrder = '';
+    this.startFromTemplateSerialNumber = '';
+    // Keep optional part number convenience
+    this.startFromTemplatePartNumber = this.instance?.part_number || '';
+
+    this.photoChecklistService.getTemplates().subscribe({
+      next: (templates) => {
+        this.availableTemplates = (templates || [])
+          .filter(t => !!t?.is_active && !(t as any)?.is_draft && !!(t as any)?.published_at)
+          .slice()
+          .sort((a, b) =>
+          String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' })
+        );
+        this.loadingTemplates = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading templates:', error);
+        this.availableTemplates = [];
+        this.loadingTemplates = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeTemplatePickerModal(): void {
+    this.showTemplatePickerModal = false;
+  }
+
+  selectTemplateForPreview(template: ChecklistTemplate): void {
+    if (!template?.id) return;
+    if (this.selectedTemplateId === template.id && this.selectedTemplatePreview) return;
+
+    this.selectedTemplateId = template.id;
+    this.loadingTemplatePreview = true;
+    this.selectedTemplatePreview = null;
+    this.cdr.detectChanges();
+
+    this.photoChecklistService.getTemplate(template.id).subscribe({
+      next: (full) => {
+        this.selectedTemplatePreview = full;
+        this.loadingTemplatePreview = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading template preview:', error);
+        this.selectedTemplatePreview = null;
+        this.loadingTemplatePreview = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  startSelectedTemplateInstance(): void {
+    const templateId = this.selectedTemplateId;
+    if (!templateId) {
+      alert('Select a template first.');
+      return;
+    }
+
+    const workOrder = (this.startFromTemplateWorkOrder || '').trim();
+    const serialNumber = (this.startFromTemplateSerialNumber || '').trim();
+    const partNumber = (this.startFromTemplatePartNumber || '').trim();
+
+    if (!workOrder || !serialNumber) {
+      alert('Work Order Number and Serial Number are required.');
+      return;
+    }
+
+    this.startingTemplateId = templateId;
+    this.cdr.detectChanges();
+
+    this.photoChecklistService.createInstanceFromTemplate(
+      templateId,
+      workOrder,
+      partNumber,
+      serialNumber,
+      { id: this.currentUserId || undefined, name: this.currentUserName }
+    ).subscribe({
+      next: (result) => {
+        this.startingTemplateId = null;
+        this.cdr.detectChanges();
+
+        if (result?.success && result.instance_id) {
+          this.closeTemplatePickerModal();
+          this.switchToChecklist(result.instance_id);
+        } else {
+          alert('Failed to start checklist from template.');
+        }
+      },
+      error: (error) => {
+        console.error('Error starting checklist from template:', error);
+        this.startingTemplateId = null;
+        alert('Failed to start checklist from template.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  openActionFromOffcanvas(offcanvas: any, action: 'navigation' | 'myChecklists' | 'workOrderInfo' | 'fullView' | 'settings', content?: any): void {
+    try {
+      offcanvas?.dismiss();
+    } catch {
+      // ignore
+    }
+
+    setTimeout(() => {
+      switch (action) {
+        case 'navigation':
+          this.openNavigation(content);
+          break;
+        case 'myChecklists':
+          this.openUserChecklists(content);
+          break;
+        case 'workOrderInfo':
+          this.openWorkOrderInfo(content);
+          break;
+        case 'fullView':
+          this.openFullChecklistModal();
+          break;
+        case 'settings':
+          this.openSettings(content);
+          break;
+      }
+    }, 0);
+  }
+
   /**
    * Navigate to a different checklist instance
    */
   switchToChecklist(instanceId: number): void {
     this.offcanvasService.dismiss();
+
+    const isStandalone = this.router.url?.includes('/standalone/checklist/instance');
+    const targetRoute = isStandalone ? '/standalone/checklist/instance' : '/quality/checklist/instance';
     
     // Navigate without step param so it auto-navigates to first incomplete item
-    this.router.navigate(['/quality/checklist/instance'], { 
+    this.router.navigate([targetRoute], { 
       queryParams: { id: instanceId }
       // NOTE: No step param - this triggers auto-navigation to first incomplete item
     }).catch(err => {
@@ -1579,6 +3338,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return notes || '-';
   }
 
+  formatLinkUrl(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(value)) {
+      return value;
+    }
+    return `https://${value}`;
+  }
+
   /**
    * Get status badge class
    */
@@ -1595,6 +3365,199 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return 'Pending';
   }
 
+  buildExecutionNavItems(): ChecklistNavItem[] {
+    return this.itemProgress.map((progress, index) => {
+      const item = progress.item as ChecklistItem;
+      const sampleImages = Array.isArray(item.sample_images) ? item.sample_images : [];
+      const sampleVideos = Array.isArray(item.sample_videos) ? item.sample_videos : [];
+      const primaryImage = sampleImages.find(img => img.is_primary) ?? null;
+      const primaryVideo = sampleVideos.find(vid => vid.is_primary ?? true) ?? null;
+      const searchText = `${item.title || ''} ${item.description || ''}`.trim();
+      const descendants = this.getDescendantProgress(index);
+      const isParent = descendants.length > 0;
+      const isRequired = (item as ChecklistItem).is_required !== false;
+      const requiredDescendants = descendants.filter(child => (child.item as ChecklistItem).is_required !== false);
+      const totalRequired = (isRequired ? 1 : 0) + requiredDescendants.length;
+      const progressTotal = isParent && totalRequired > 0 ? totalRequired : undefined;
+      const progressCompleted = isParent && totalRequired > 0
+        ? (isRequired && progress.completed ? 1 : 0) + requiredDescendants.filter(child => child.completed).length
+        : undefined;
+      const progressPercent = progressTotal && progressTotal > 0 ? Math.round((progressCompleted || 0) / progressTotal * 100) : undefined;
+      const latestPhotoUrl = progress.photos && progress.photos.length > 0 ? progress.photos[progress.photos.length - 1] : null;
+
+      return {
+        id: index,
+        title: item.title || 'Untitled',
+        level: item.level ?? 0,
+        orderIndex: index,
+        submissionType: (item as any).submission_type ?? 'photo',
+        isRequired: !!(item as any).is_required,
+        requiresPhoto: item.photo_requirements?.picture_required ?? false,
+        hasPrimarySampleImage: !!item.sample_image_url || sampleImages.some(img => img.is_primary),
+        hasSampleVideo: sampleVideos.length > 0,
+        primaryImageUrl: item.sample_image_url || primaryImage?.url || null,
+        sampleVideoUrl: primaryVideo?.url || null,
+        isInvalid: false,
+        searchText,
+        isComplete: progress.completed,
+        progressCompleted,
+        progressTotal,
+        progressPercent,
+        photoCount: progress.photos?.length || 0,
+        videoCount: progress.videos?.length || 0,
+        isParent,
+        latestPhotoUrl
+      };
+    });
+  }
+
+  getNavSummary(): { completed: number; total: number; percent: number } {
+    const requiredItems = this.itemProgress.filter(item => (item.item as ChecklistItem).is_required !== false);
+    const total = requiredItems.length;
+    const completed = requiredItems.filter(item => item.completed).length;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { completed, total, percent };
+  }
+
+  onNavUserPhotoRequested(event: { url: string }): void {
+    if (event?.url) {
+      this.previewImage(event.url);
+    }
+  }
+
+  private getDescendantProgress(parentIndex: number): ChecklistItemProgress[] {
+    const descendants: ChecklistItemProgress[] = [];
+    const parentLevel = this.itemProgress[parentIndex]?.item.level ?? 0;
+
+    for (let i = parentIndex + 1; i < this.itemProgress.length; i++) {
+      const level = this.itemProgress[i]?.item.level ?? 0;
+      if (level <= parentLevel) {
+        break;
+      }
+      descendants.push(this.itemProgress[i]);
+    }
+
+    return descendants;
+  }
+
+  getActiveNavIndex(): number {
+    if (this.selectedItemIndex !== null) {
+      return this.selectedItemIndex;
+    }
+
+    let parentCount = 0;
+    for (let i = 0; i < this.itemProgress.length; i++) {
+      const level = this.itemProgress[i].item.level ?? 0;
+      if (level === 0) {
+        parentCount++;
+        if (parentCount === this.currentStep) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  onExecutionNavSelected(event: { itemId: number; index: number }): void {
+    if (this.isReviewMode) {
+      return;
+    }
+
+    const progress = this.itemProgress[event.index];
+    if (!progress) {
+      return;
+    }
+
+    const level = progress.item.level ?? 0;
+    this.startNavTransition();
+    this.selectedItemIndex = event.index;
+    if (level > 0) {
+      const rootIndex = this.findRootParentIndex(event.index);
+      const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.resolveParentProgress(progress);
+      const step = rootProgress ? this.getItemNumber(rootProgress) : 0;
+      if (step > 0) {
+        this.currentStep = step;
+        this.updateUrlWithCurrentStep();
+        this.cdr.detectChanges();
+        setTimeout(() => this.updateInstructionsOverflowHints(), 0);
+        setTimeout(() => this.updateInstructionsOverflowHints(), 250);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
+    this.currentStep = this.getItemNumber(progress);
+    this.updateUrlWithCurrentStep();
+    this.cdr.detectChanges();
+    setTimeout(() => this.updateInstructionsOverflowHints(), 0);
+    setTimeout(() => this.updateInstructionsOverflowHints(), 250);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  private findRootParentIndex(startIndex: number): number {
+    for (let i = startIndex; i >= 0; i--) {
+      const level = this.itemProgress[i]?.item.level ?? 0;
+      if (level === 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private applySelectionFromQuery(): boolean {
+    if (this.pendingSelectedIndex === null || this.pendingSelectedIndex === undefined) {
+      return false;
+    }
+
+    const selected = this.itemProgress[this.pendingSelectedIndex];
+    if (!selected) {
+      this.pendingSelectedIndex = null;
+      return false;
+    }
+
+    this.selectedItemIndex = this.pendingSelectedIndex;
+    this.pendingSelectedIndex = null;
+
+    const rootIndex = this.findRootParentIndex(this.selectedItemIndex);
+    const rootProgress = rootIndex >= 0 ? this.itemProgress[rootIndex] : this.resolveParentProgress(selected);
+    const step = rootProgress ? this.getItemNumber(rootProgress) : 0;
+    if (step > 0) {
+      this.currentStep = step;
+    }
+
+    this.isNavTransitioning = false;
+
+    return true;
+  }
+
+  private startNavTransition(): void {
+    this.isNavTransitioning = true;
+    if (this.navTransitionTimeout) {
+      clearTimeout(this.navTransitionTimeout);
+    }
+    this.navTransitionTimeout = setTimeout(() => {
+      this.isNavTransitioning = false;
+      this.cdr.detectChanges();
+    }, 200);
+  }
+
+  private resolveParentProgress(progress: ChecklistItemProgress): ChecklistItemProgress | null {
+    if ((progress.item.level ?? 0) === 0) {
+      return progress;
+    }
+
+    const parentId = progress.item.parent_id;
+    if (parentId === undefined || parentId === null) {
+      return null;
+    }
+
+    return this.itemProgress.find(p =>
+      p.item.order_index === parentId ||
+      (p.item as any).baseItemId === parentId ||
+      p.item.id === parentId
+    ) || null;
+  }
+
   /**
    * Jump to a specific item in the checklist
    */
@@ -1608,6 +3571,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
     
+    this.selectedItemIndex = null;
     this.currentStep = step;
     this.updateUrlWithCurrentStep();
     this.cdr.detectChanges();

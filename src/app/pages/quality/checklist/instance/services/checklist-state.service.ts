@@ -10,9 +10,16 @@ export interface ChecklistItemProgress {
   };
   completed: boolean;
   photos: string[];
+  photoMeta?: Record<string, { source?: 'camera' | 'library' }>; // per-photo metadata by URL
   videos?: string[]; // NEW: Array of uploaded video URLs
   notes: string;
   completedAt?: Date;
+  completedByUserId?: number; // Track who completed this item
+  completedByName?: string; // Display name of who completed it
+
+  lastModifiedAt?: Date; // Track last modification time
+  lastModifiedByUserId?: number; // Track who last modified this item
+  lastModifiedByName?: string; // Display name of who last modified it
 }
 
 interface CompletionData {
@@ -20,6 +27,12 @@ interface CompletionData {
   completed: boolean;
   completedAt?: string;
   notes?: string;
+  completedByUserId?: number;
+  completedByName?: string;
+  photoMeta?: Record<string, { source?: 'camera' | 'library' }>;
+  lastModifiedAt?: string;
+  lastModifiedByUserId?: number;
+  lastModifiedByName?: string;
 }
 
 /**
@@ -74,21 +87,32 @@ export class ChecklistStateService {
   /**
    * Toggle item completion status
    */
-  toggleItemCompletion(itemId: number | string): void {
+  toggleItemCompletion(itemId: number | string, userId?: number, userName?: string): void {
     const item = this.findItemProgress(itemId);
     if (!item) return;
 
     const newCompleted = !item.completed;
     this.updateItemProgress(itemId, {
       completed: newCompleted,
-      completedAt: newCompleted ? new Date() : undefined
+      completedAt: newCompleted ? new Date() : undefined,
+      completedByUserId: newCompleted ? (userId ?? item.completedByUserId) : undefined,
+      completedByName:   newCompleted ? (userName ?? item.completedByName) : undefined,
+      lastModifiedAt: new Date(),
+      lastModifiedByUserId: userId,
+      lastModifiedByName: userName
     });
   }
 
   /**
    * Add photo to item
    */
-  addPhoto(itemId: number | string, photoUrl: string): void {
+  addPhoto(
+    itemId: number | string,
+    photoUrl: string,
+    userId?: number,
+    userName?: string,
+    captureSource?: 'camera' | 'library'
+  ): void {
     const item = this.findItemProgress(itemId);
     if (!item) return;
 
@@ -99,10 +123,76 @@ export class ChecklistStateService {
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = newPhotos.length >= minPhotos;
 
+    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    if (captureSource) {
+      photoMeta[photoUrl] = { ...(photoMeta[photoUrl] || {}), source: captureSource };
+    }
+
     this.updateItemProgress(itemId, {
       photos: newPhotos,
+      photoMeta,
       completed: shouldComplete,
-      completedAt: shouldComplete && !item.completedAt ? new Date() : item.completedAt
+      completedAt: shouldComplete && !item.completedAt ? new Date() : item.completedAt,
+      completedByUserId: shouldComplete && !item.completedByUserId ? userId : item.completedByUserId,
+      completedByName: shouldComplete && !item.completedByName ? userName : item.completedByName,
+      lastModifiedAt: new Date(),
+      lastModifiedByUserId: userId,
+      lastModifiedByName: userName
+    });
+  }
+
+  /**
+   * Add/replace video for an item
+   * Note: UI currently supports a single video per item.
+   */
+  addVideo(
+    itemId: number | string,
+    videoUrl: string,
+    userId?: number,
+    userName?: string
+  ): void {
+    const item = this.findItemProgress(itemId);
+    if (!item) return;
+
+    const submissionType = (item.item.submission_type || 'photo') as any;
+    const nextVideos = [videoUrl];
+
+    // For video/either submissions, a video is sufficient to complete.
+    const shouldComplete = submissionType === 'video' || submissionType === 'either';
+
+    this.updateItemProgress(itemId, {
+      videos: nextVideos,
+      completed: shouldComplete ? true : item.completed,
+      completedAt: shouldComplete && !item.completedAt ? new Date() : item.completedAt,
+      completedByUserId: shouldComplete && !item.completedByUserId ? userId : item.completedByUserId,
+      completedByName: shouldComplete && !item.completedByName ? userName : item.completedByName,
+      lastModifiedAt: new Date(),
+      lastModifiedByUserId: userId,
+      lastModifiedByName: userName
+    });
+  }
+
+  removeVideoByUrl(itemId: number | string, videoUrl: string): void {
+    const item = this.findItemProgress(itemId);
+    if (!item) return;
+
+    const videos = (item.videos || []).filter(v => v !== videoUrl);
+    const submissionType = (item.item.submission_type || 'photo') as any;
+
+    // If this is a video-only item, removing the video makes it incomplete.
+    const shouldBeComplete = submissionType === 'either'
+      ? (item.photos?.length || 0) > 0 || videos.length > 0
+      : submissionType === 'video'
+        ? videos.length > 0
+        : item.completed;
+
+    this.updateItemProgress(itemId, {
+      videos,
+      completed: shouldBeComplete,
+      completedAt:        shouldBeComplete ? item.completedAt        : undefined,
+      completedByUserId:  shouldBeComplete ? item.completedByUserId  : undefined,
+      completedByName:    shouldBeComplete ? item.completedByName    : undefined,
+      lastModifiedAt: new Date()
     });
   }
 
@@ -114,16 +204,26 @@ export class ChecklistStateService {
     if (!item) return;
 
     const photos = [...item.photos];
+    const removedUrl = photos[photoIndex];
     photos.splice(photoIndex, 1);
     
     // Check if item should still be marked as completed
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = photos.length >= minPhotos;
     
+    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    if (removedUrl && photoMeta[removedUrl]) {
+      delete photoMeta[removedUrl];
+    }
+
     this.updateItemProgress(itemId, { 
       photos,
+      photoMeta,
       completed: shouldComplete,
-      completedAt: shouldComplete ? item.completedAt : undefined
+      completedAt:       shouldComplete ? item.completedAt       : undefined,
+      completedByUserId: shouldComplete ? item.completedByUserId : undefined,
+      completedByName:   shouldComplete ? item.completedByName   : undefined,
+      lastModifiedAt: new Date()
     });
   }
 
@@ -135,6 +235,11 @@ export class ChecklistStateService {
     if (!item) return;
 
     const photos = item.photos.filter(p => p !== photoUrl);
+
+    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    if (photoMeta[photoUrl]) {
+      delete photoMeta[photoUrl];
+    }
     
     // Check if item should still be marked as completed
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
@@ -142,8 +247,12 @@ export class ChecklistStateService {
     
     this.updateItemProgress(itemId, { 
       photos,
+      photoMeta,
       completed: shouldComplete,
-      completedAt: shouldComplete ? item.completedAt : undefined
+      completedAt:       shouldComplete ? item.completedAt       : undefined,
+      completedByUserId: shouldComplete ? item.completedByUserId : undefined,
+      completedByName:   shouldComplete ? item.completedByName   : undefined,
+      lastModifiedAt: new Date()
     });
   }
 
@@ -153,8 +262,12 @@ export class ChecklistStateService {
   removeAllPhotos(itemId: number | string): void {
     this.updateItemProgress(itemId, { 
       photos: [],
+      photoMeta: {},
       completed: false,
-      completedAt: undefined
+      completedAt: undefined,
+      completedByUserId: undefined,
+      completedByName: undefined,
+      lastModifiedAt: new Date()
     });
   }
 
@@ -167,19 +280,19 @@ export class ChecklistStateService {
   }
 
   /**
-   * Get completion percentage based on PARENT items only
-   * Sub-items are considered part of their parent's completion
+   * Get completion percentage based on required items only
+   * Items without is_required are treated as required by default
    */
   getCompletionPercentage(): number {
     const progress = this.itemProgressSubject.value;
     if (progress.length === 0) return 0;
-    
-    // Only count parent items (level 0 or undefined)
-    const parentItems = progress.filter(p => p.item.level === 0 || !p.item.level);
-    if (parentItems.length === 0) return 0;
-    
-    const completedParents = parentItems.filter(p => p.completed).length;
-    return Math.round((completedParents / parentItems.length) * 100);
+
+    const requiredItems = progress.filter(p => p.item.is_required !== false);
+    const total = requiredItems.length;
+    if (total === 0) return 0;
+
+    const completed = requiredItems.filter(p => p.completed).length;
+    return Math.round((completed / total) * 100);
   }
 
   /**
@@ -187,7 +300,7 @@ export class ChecklistStateService {
    */
   getRequiredCompletionStatus(): { completed: number; total: number } {
     const progress = this.itemProgressSubject.value;
-    const requiredItems = progress.filter(p => p.item.is_required);
+    const requiredItems = progress.filter(p => p.item.is_required !== false);
     const completedRequired = requiredItems.filter(p => p.completed);
     
     return {
@@ -197,20 +310,20 @@ export class ChecklistStateService {
   }
 
   /**
-   * Get completed items count (PARENT items only)
+   * Get completed required items count
    * Matches the numerator used in getCompletionPercentage()
    */
   getCompletedItemsCount(): number {
-    const parentItems = this.itemProgressSubject.value.filter(p => p.item.level === 0 || !p.item.level);
-    return parentItems.filter(p => p.completed).length;
+    const requiredItems = this.itemProgressSubject.value.filter(p => p.item.is_required !== false);
+    return requiredItems.filter(p => p.completed).length;
   }
 
   /**
-   * Get total items count (PARENT items only)
+   * Get total required items count
    * This should match the denominator used in getCompletionPercentage()
    */
   getTotalItemsCount(): number {
-    return this.itemProgressSubject.value.filter(p => p.item.level === 0 || !p.item.level).length;
+    return this.itemProgressSubject.value.filter(p => p.item.is_required !== false).length;
   }
 
   /**
@@ -246,7 +359,13 @@ export class ChecklistStateService {
       itemId: p.item.id,
       completed: p.completed,
       completedAt: p.completedAt?.toISOString(),
-      notes: p.notes || ''
+      notes: p.notes || '',
+      completedByUserId: p.completedByUserId,
+      completedByName: p.completedByName,
+      photoMeta: p.photoMeta,
+      lastModifiedAt: p.lastModifiedAt?.toISOString(),
+      lastModifiedByUserId: p.lastModifiedByUserId,
+      lastModifiedByName: p.lastModifiedByName
     }));
 
     const key = `checklist_${this.currentInstanceId}_completion`;
@@ -305,7 +424,13 @@ export class ChecklistStateService {
       itemId: p.item.id,
       completed: p.completed,
       completedAt: p.completedAt?.toISOString(),
-      notes: p.notes || ''
+      notes: p.notes || '',
+      completedByUserId: p.completedByUserId,
+      completedByName: p.completedByName,
+      photoMeta: p.photoMeta,
+      lastModifiedAt: p.lastModifiedAt?.toISOString(),
+      lastModifiedByUserId: p.lastModifiedByUserId,
+      lastModifiedByName: p.lastModifiedByName
     }));
   }
 }

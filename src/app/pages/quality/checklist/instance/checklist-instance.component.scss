@@ -1,34 +1,234 @@
+/*
+  Minimal, Bootstrap-first styling for the checklist instance UI.
+  Keep custom CSS small and rely on Bootstrap utilities/components.
+*/
+
+/* Constrain pasted HTML (rendered via [innerHTML]) */
+.description-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+
+  :where(*) {
+    font-size: 1em !important;
+    line-height: inherit !important;
+    max-width: 100% !important;
+  }
+
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-size: 1.05em !important;
+    font-weight: 600 !important;
+    margin: 0 0 0.5rem 0 !important;
+  }
+
+  :where(img, video, iframe) {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  :where(table) {
+    display: block;
+    width: 100% !important;
+    overflow-x: auto;
+  }
+}
+
 .cursor-pointer {
   cursor: pointer;
-  transition: transform 0.2s ease;
-  
-  &:hover {
-    transform: scale(1.05);
+}
+
+.landscape-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2005;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(var(--bs-body-bg-rgb), 0.96);
+}
+
+.landscape-lock-card {
+  width: min(420px, 92vw);
+}
+
+.task-instructions-scroll {
+  max-height: clamp(120px, 22vh, 240px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-gutter: stable;
+}
+
+.task-instructions-scroll.has-overflow {
+  padding-bottom: 1.25rem;
+}
+
+.task-instructions-overflow-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-top: 0.5rem;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(var(--bs-warning-rgb), 0.10)
+  );
+}
+
+.swipe-nav-indicator {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.swipe-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(var(--bs-dark-rgb), 0.65);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  animation: swipeCuePop 420ms ease-out;
+}
+
+.swipe-nav-indicator.next .swipe-nav-pill {
+  animation-name: swipeCueNext;
+}
+
+.swipe-nav-indicator.prev .swipe-nav-pill {
+  animation-name: swipeCuePrev;
+}
+
+@keyframes swipeCueNext {
+  0% { opacity: 0; transform: translateX(16px) scale(0.98); }
+  20% { opacity: 1; transform: translateX(0) scale(1); }
+  80% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-8px) scale(0.98); }
+}
+
+@keyframes swipeCuePrev {
+  0% { opacity: 0; transform: translateX(-16px) scale(0.98); }
+  20% { opacity: 1; transform: translateX(0) scale(1); }
+  80% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0; transform: translateX(8px) scale(0.98); }
+}
+
+/* Swipe pager-style slide transition (content) */
+.nav-transition-container.swipe-out-next {
+  animation: swipeSlideOutNext 120ms ease-out;
+}
+
+.nav-transition-container.swipe-in-next {
+  animation: swipeSlideInNext 220ms ease-out;
+}
+
+.nav-transition-container.swipe-out-prev {
+  animation: swipeSlideOutPrev 120ms ease-out;
+}
+
+.nav-transition-container.swipe-in-prev {
+  animation: swipeSlideInPrev 220ms ease-out;
+}
+
+@keyframes swipeSlideOutNext {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0.55; transform: translateX(-18px); }
+}
+
+@keyframes swipeSlideInNext {
+  from { opacity: 0.55; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes swipeSlideOutPrev {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0.55; transform: translateX(18px); }
+}
+
+@keyframes swipeSlideInPrev {
+  from { opacity: 0.55; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Split-pane layout for standalone mode (email-style) */
+:host-context(body.standalone-checklist-instance) {
+  @media (min-width: 992px) {
+    .execution-layout-row {
+      display: flex;
+      flex-wrap: nowrap;
+      flex-direction: row; /* Sidebar on left, main content on right */
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .execution-main-col {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: none;
+    }
   }
 }
 
-.badge-sm {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
+.nav-transition-container {
+  position: relative;
 }
 
-.reference-thumbnail {
-  transition: all 0.2s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border-color: #0d6efd !important;
+.nav-transition-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--bs-body-bg-rgb), 0.6);
+  z-index: 5;
+}
+
+.execution-title h2 {
+  margin-bottom: 0.25rem !important;
+  line-height: 1.1;
+}
+
+@media (max-width: 991.98px) {
+  h2 {
+    font-size: 1.35rem;
+  }
+
+  .card-body {
+    padding: 1rem !important;
+  }
+
+  .btn {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
   }
 }
 
-.reference-thumbnail-container {
-  &:hover {
-    z-index: 10;
+/* Fixed footer positioning */
+.checklist-footer-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+
+  @media (min-width: 992px) {
+    left: 320px; // Offset by sidebar width on desktop
   }
 }
 
-// Full checklist modal styles
+/* Full checklist modal styles */
 .modal-fullscreen {
   .modal-body {
     .table {
@@ -70,6 +270,134 @@
           z-index: 5;
         }
       }
+    }
+  }
+}
+
+//  Lightbox overlay (same pattern as inspection-report) 
+.ci-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9999;
+
+  .ci-lightbox-media {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ci-lightbox-image {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .ci-lightbox-video {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    outline: none;
+  }
+
+  .ci-lightbox-close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: rgba(255,255,255,0.15);
+    border: none; color: #fff;
+    font-size: 1.5rem;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    z-index: 2;
+    &:hover { background: rgba(255,255,255,0.3); }
+  }
+
+  .ci-lightbox-nav {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.12);
+    border: none; color: #fff;
+    font-size: 2rem;
+    width: 48px; height: 64px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+    z-index: 2;
+    &:hover { background: rgba(255,255,255,0.28); }
+    &.ci-lightbox-prev { left: 0.6rem; }
+    &.ci-lightbox-next { right: 0.6rem; }
+  }
+
+  .ci-lightbox-sidebar {
+    position: absolute;
+    left: 1rem; bottom: 1rem;
+    width: 240px;
+    max-height: calc(100vh - 6rem);
+    background: rgba(10,10,20,0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    color: #fff;
+    display: flex; flex-direction: column; gap: 0.55rem;
+    overflow-y: auto;
+    z-index: 2;
+
+    &--minimal { gap: 0.4rem; }
+  }
+
+  .ci-lightbox-item-number {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .ci-lightbox-item-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff;
+  }
+
+  .ci-lightbox-notes {
+    font-size: 0.76rem;
+    color: #ffc107;
+    background: rgba(255,193,7,0.08);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .ci-lightbox-source {
+    font-size: 0.74rem;
+    color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    display: flex; align-items: center;
+  }
+
+  .ci-lightbox-counter {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+  }
+
+  @media (max-width: 640px) {
+    .ci-lightbox-sidebar {
+      width: calc(100% - 1.5rem);
+      max-height: 140px;
+      bottom: 0.4rem; left: 0.75rem;
     }
   }
 }

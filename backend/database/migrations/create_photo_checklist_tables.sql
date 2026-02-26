@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS checklist_instances (
     operator_name VARCHAR(100),
     status ENUM('draft', 'in_progress', 'review', 'completed', 'submitted') DEFAULT 'draft',
     progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+    item_completion JSON NULL,
     started_at TIMESTAMP NULL,
     completed_at TIMESTAMP NULL,
     submitted_at TIMESTAMP NULL,

@@ -14,6 +14,7 @@ export interface ChecklistTemplate {
   description: string;
   part_number: string;
   customer_part_number?: string; // Customer's part number from Word import
+  customer_name?: string; // Optional customer name / account
   revision?: string; // Revision number from Word import
   original_filename?: string; // Original Word document filename
   review_date?: string; // Review/revision date
@@ -25,7 +26,11 @@ export interface ChecklistTemplate {
   version: string;
   template_group_id?: number; // Groups all versions of the same template family
   parent_template_id?: number; // Direct parent template ID for version lineage
+  edit_target_template_id?: number | null; // Draft template id to open for editing
+  is_draft?: boolean;
   is_active: boolean;
+  created_by?: string;
+  published_at?: string | null;
   active_instances?: number;
   item_count?: number;
   version_count?: number; // Number of versions in this template family
@@ -137,6 +142,7 @@ export interface ChecklistInstance {
   operator_name: string;
   status: 'draft' | 'in_progress' | 'review' | 'completed' | 'submitted';
   progress_percentage: number;
+  item_completion?: any; // Persisted per-item completion/notes (JSON)
   photo_count?: number;
   required_items?: number;
   completed_required?: number;
@@ -204,8 +210,26 @@ export class PhotoChecklistConfigService {
     );
   }
 
+  getTemplatesIncludingInactive(): Observable<ChecklistTemplate[]> {
+    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}?request=templates&include_inactive=1`).pipe(
+      tap(templates => this.templatesSubject.next(templates))
+    );
+  }
+
+  getTemplatesIncludingDeleted(): Observable<ChecklistTemplate[]> {
+    return this.http.get<ChecklistTemplate[]>(`${this.baseUrl}?request=templates&include_deleted=1`);
+  }
+
   getTemplate(id: number): Observable<ChecklistTemplate> {
     return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}`);
+  }
+
+  getTemplateIncludingInactive(id: number): Observable<ChecklistTemplate> {
+    return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}&include_inactive=1`);
+  }
+
+  getTemplateIncludingDeleted(id: number): Observable<ChecklistTemplate> {
+    return this.http.get<ChecklistTemplate>(`${this.baseUrl}?request=template&id=${id}&include_deleted=1`);
   }
 
   createTemplate(template: Partial<ChecklistTemplate>): Observable<{success: boolean, template_id: number, template?: ChecklistTemplate, debug?: any}> {
@@ -232,11 +256,47 @@ export class PhotoChecklistConfigService {
     );
   }
 
-  deleteTemplate(id: number): Observable<{success: boolean}> {
-    return this.http.delete<{success: boolean}>(
+  deleteTemplate(id: number): Observable<{success: boolean; error?: string; instance_count?: number; message?: string}> {
+    return this.http.delete<{success: boolean; error?: string; instance_count?: number; message?: string}>(
       `${this.baseUrl}?request=template&id=${id}`
     ).pipe(
       tap(() => this.getTemplates().subscribe()) // Refresh templates list
+    );
+  }
+
+  hardDeleteTemplate(id: number): Observable<{success: boolean; error?: string; instance_count?: number; submission_count?: number; child_count?: number; message?: string}> {
+    return this.http.post<{success: boolean; error?: string; instance_count?: number; submission_count?: number; child_count?: number; message?: string}>(
+      `${this.baseUrl}?request=hard_delete_template&id=${id}`,
+      {}
+    ).pipe(
+      tap(() => this.getTemplatesIncludingInactive().subscribe())
+    );
+  }
+
+  discardDraft(id: number): Observable<{success: boolean; error?: string; instance_count?: number; message?: string; template_id?: number}> {
+    return this.http.post<{success: boolean; error?: string; instance_count?: number; message?: string; template_id?: number}>(
+      `${this.baseUrl}?request=discard_draft&id=${id}`,
+      {}
+    ).pipe(
+      tap(() => this.getTemplates().subscribe())
+    );
+  }
+
+  createParentVersion(sourceTemplateId: number): Observable<{success: boolean; template_id?: number; template?: ChecklistTemplate; error?: string; message?: string}> {
+    return this.http.post<{success: boolean; template_id?: number; template?: ChecklistTemplate; error?: string; message?: string}>(
+      `${this.baseUrl}?request=create_parent_version&id=${sourceTemplateId}`,
+      {}
+    ).pipe(
+      tap(() => this.getTemplatesIncludingInactive().subscribe())
+    );
+  }
+
+  restoreTemplate(id: number): Observable<{success: boolean; message?: string; template_id?: number}> {
+    return this.http.post<{success: boolean; message?: string; template_id?: number}>(
+      `${this.baseUrl}?request=restore_template&id=${id}`,
+      {}
+    ).pipe(
+      tap(() => this.getTemplates().subscribe())
     );
   }
 
@@ -435,11 +495,24 @@ export class PhotoChecklistConfigService {
     return this.updateInstance(id, { status });
   }
 
+  deleteInstance(id: number): Observable<{success: boolean; message?: string; error?: string}> {
+    return this.http.delete<{success: boolean; message?: string; error?: string}>(
+      `${this.baseUrl}?request=instance&id=${id}`
+    ).pipe(
+      tap(() => this.getInstances().subscribe())
+    );
+  }
+
   // ==============================================
   // Photo Management
   // ==============================================
 
-  uploadPhoto(instanceId: number, itemId: number, file: File): Observable<{success: boolean, file_url: string}> {
+  uploadPhoto(
+    instanceId: number,
+    itemId: number,
+    file: File,
+    options?: { captureSource?: 'camera' | 'library'; userId?: number | string }
+  ): Observable<{success: boolean, file_url: string}> {
     // Add debugging to see what values are actually received
     console.log('PhotoChecklistConfigService.uploadPhoto called with:', {
       instanceId: instanceId,
@@ -469,6 +542,13 @@ export class PhotoChecklistConfigService {
     formData.append('instance_id', instanceId.toString());
     formData.append('item_id', itemId.toString());
     formData.append('photo', file);
+
+    if (options?.captureSource) {
+      formData.append('capture_source', options.captureSource);
+    }
+    if (options?.userId !== undefined && options?.userId !== null) {
+      formData.append('user_id', String(options.userId));
+    }
 
     return this.http.post<{success: boolean, file_url: string}>(
       `${this.baseUrl}?request=photos`, 
@@ -626,5 +706,39 @@ export class PhotoChecklistConfigService {
     }
 
     return messages;
+  }
+
+  /**
+   * Download instance data for PDF generation
+   */
+  downloadInstancePDF(instanceId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}?request=instance_pdf&id=${instanceId}`);
+  }
+
+  // ==============================================
+  // Share Report / Public Links
+  // ==============================================
+
+  private readonly reportUrl = '/photo-checklist/inspection-report.php';
+
+  createShareToken(payload: {
+    instance_id: number;
+    visible_item_ids: number[] | null;
+    label?: string;
+    expires_at?: string | null;
+  }): Observable<{ success: boolean; token: string; expires_at: string | null; label: string }> {
+    return this.http.post<any>(`${this.reportUrl}?request=create_share_token`, payload);
+  }
+
+  listShareTokens(instanceId: number): Observable<{ success: boolean; tokens: any[] }> {
+    return this.http.get<any>(`${this.reportUrl}?request=list_tokens&instance_id=${instanceId}`);
+  }
+
+  deleteShareToken(id: number): Observable<{ success: boolean }> {
+    return this.http.delete<any>(`${this.reportUrl}?request=delete_token`, { body: { id } });
+  }
+
+  getPublicReport(token: string): Observable<any> {
+    return this.http.get<any>(`${this.reportUrl}?request=get_report&token=${encodeURIComponent(token)}`);
   }
 }

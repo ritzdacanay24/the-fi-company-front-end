@@ -1,0 +1,250 @@
+<div class="checklist-nav h-100 d-flex flex-column" 
+     [class.card]="cardStyle"
+     [class.shadow-sm]="cardStyle"
+     [class.border-0]="cardStyle"
+     [class.readonly]="isReadonlyMode()" 
+     [class.editor]="isEditorMode()">
+  <div [class.card-header]="cardStyle" [class.bg-light]="cardStyle" [class.p-3]="!cardStyle">
+    <div class="d-flex justify-content-between align-items-center" [class.mb-2]="cardStyle || showSearch || (summary && isReadonlyMode())">
+      <h6 class="mb-0" *ngIf="cardStyle">
+        <i class="mdi mdi-view-list me-2"></i>Navigation
+      </h6>
+      <div *ngIf="showExpandCollapse" class="btn-group btn-group-sm" [class.ms-auto]="!cardStyle || !showSearch" role="group">
+        <button type="button"
+                class="btn btn-outline-secondary py-0 px-2"
+                (click)="expandAllNav()"
+                title="Expand All">
+          <i class="mdi mdi-chevron-down"></i>
+        </button>
+        <button type="button"
+                class="btn btn-outline-secondary py-0 px-2"
+                (click)="collapseAllNav()"
+                title="Collapse All">
+          <i class="mdi mdi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="summary && isReadonlyMode()" class="nav-summary mt-2">
+      <div class="d-flex justify-content-between align-items-center small text-muted">
+        <span>Progress</span>
+        <span>{{ summary.completed }}/{{ summary.total }} ({{ summary.percent }}%)</span>
+      </div>
+      <div class="progress mt-1" style="height: 6px;">
+        <div class="progress-bar" role="progressbar" [style.width.%]="summary.percent"></div>
+      </div>
+    </div>
+
+    <div *ngIf="showSearch" class="nav-search mt-2">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text">
+          <i class="mdi mdi-magnify"></i>
+        </span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search items..."
+          [(ngModel)]="navSearchTerm"
+          (input)="onNavSearchTermChanged()">
+        <button
+          *ngIf="isNavSearchActive()"
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="clearNavSearch()"
+          title="Clear search">
+          <i class="mdi mdi-close"></i>
+        </button>
+      </div>
+      <div *ngIf="isNavSearchActive()" class="mt-1">
+        <small class="text-muted">
+          {{ navSearchMatchCount }} match{{ navSearchMatchCount !== 1 ? 'es' : '' }}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div [class.card-body]="cardStyle" class="p-0 d-flex flex-column flex-grow-1 overflow-hidden">
+    <div *ngIf="isLoading" class="py-3 text-center text-muted">
+      <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+      Loading navigation...
+    </div>
+
+    <div *ngIf="!isLoading && loadError" class="py-3 text-center text-muted">
+      {{ loadError }}
+    </div>
+
+    <div *ngIf="!isLoading && !loadError && navItems.length === 0" class="py-3 text-center text-muted">
+      No checklist items available.
+    </div>
+
+        <div *ngIf="!isLoading && !loadError && navItems.length > 0"
+          class="list-group list-group-flush nav-scroll-container flex-grow-1 overflow-auto"
+          #navContainer
+          cdkDropList
+          [cdkDropListDisabled]="!isEditorMode() || isNavSearchActive()"
+          (cdkDropListDropped)="onDrop($event)">
+      <a *ngFor="let item of navItems; let i = index; trackBy: trackByItemId"
+         [id]="'nav-item-' + i"
+         class="list-group-item list-group-item-action py-2 border-0"
+        [class.nav-item-active]="activeNavItemIndex === i"
+        [class.bg-primary]="activeNavItemIndex === i"
+        [class.text-white]="activeNavItemIndex === i"
+         [class.fw-semibold]="activeNavItemIndex === i"
+         [class.nav-item-match]="isNavItemMatch(i)"
+         [class.nav-item-invalid]="!!item.isInvalid"
+         style="cursor: pointer; min-height: 40px;"
+         [style.display]="isNavItemVisible(i) ? 'block' : 'none'"
+         cdkDrag
+         [cdkDragDisabled]="!isEditorMode() || isNavSearchActive()"
+         (click)="selectItem(i)">
+
+        <ng-container *ngIf="isEditorMode()">
+          <div class="d-flex align-items-center gap-1 px-2 py-1 bg-body-secondary border rounded" *cdkDragPreview>
+            <i class="mdi"
+               [class.mdi-folder]="item.level === 0"
+               [class.mdi-file-document-outline]="item.level > 0"
+               [class.text-warning]="item.level === 0"
+               [class.text-muted]="item.level > 0"></i>
+            <span class="badge bg-secondary" style="font-size: 0.65rem;">{{ i + 1 }}</span>
+            <small class="fw-semibold">{{ item.title }}</small>
+          </div>
+        </ng-container>
+
+        <div class="d-flex align-items-center gap-1">
+          <div *ngIf="isEditorMode()" class="flex-shrink-0" style="width: 16px;" cdkDragHandle title="Drag to reorder">
+            <i class="mdi mdi-drag-vertical text-muted" style="font-size: 18px; cursor: grab;"></i>
+          </div>
+
+          <div class="flex-shrink-0" style="width: 18px;">
+            <i *ngIf="hasChildren(i)"
+               class="mdi text-muted"
+               [class.mdi-chevron-down]="expandedItems.has(i)"
+               [class.mdi-chevron-right]="!expandedItems.has(i)"
+               (click)="toggleNavExpansion(i, $event)"
+               style="cursor: pointer; font-size: 18px;"></i>
+          </div>
+
+          <div class="flex-shrink-0" [style.width.px]="item.level * 20"></div>
+
+          <div class="flex-shrink-0" style="width: 20px;">
+            <i class="mdi"
+               [class.mdi-folder-open]="item.level === 0 && expandedItems.has(i)"
+               [class.mdi-folder]="item.level === 0 && !expandedItems.has(i)"
+               [class.mdi-file-document-outline]="item.level > 0"
+               [class.text-warning]="item.level === 0"
+               [class.text-muted]="item.level > 0"
+               style="font-size: 18px;"></i>
+          </div>
+
+          <span class="badge bg-secondary flex-shrink-0 me-1" style="min-width: 42px; font-size: 0.65rem;">
+            {{ i + 1 }}
+          </span>
+
+          <div class="flex-grow-1 min-w-0">
+            <small class="text-truncate d-block" [class.fw-semibold]="item.level === 0">
+              {{ item.title }}
+              <span *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
+                    class="text-muted ms-1"
+                    style="font-size: 0.7rem;">
+                ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
+              </span>
+            </small>
+          </div>
+
+          <div class="flex-shrink-0 d-flex align-items-center gap-1">
+            <!-- Read-only mode: keep navigation clean (status only) -->
+            <i *ngIf="isReadonlyMode() && item.isComplete !== undefined"
+            class="mdi"
+            [class.mdi-check-circle]="item.isComplete"
+            [class.mdi-circle-outline]="!item.isComplete"
+            [class.text-success]="item.isComplete"
+            [class.text-muted]="!item.isComplete"
+            style="font-size: 16px;"
+            title="{{ item.isComplete ? 'Complete' : 'Pending' }}"></i>
+
+            <!-- Editor mode: show extra context icons (samples/requirements) -->
+            <ng-container *ngIf="isEditorMode()">
+              <div *ngIf="item.submissionType !== 'none' && item.hasPrimarySampleImage" class="position-relative">
+                <img *ngIf="item.primaryImageUrl"
+                     [src]="item.primaryImageUrl"
+                     class="rounded border border-success"
+                     style="width: 28px; height: 28px; object-fit: cover;"
+                     [alt]="'Thumbnail'"
+                     title="Preview image"
+                     (click)="requestPrimaryImage(i, $event)">
+                <div *ngIf="!item.primaryImageUrl"
+                     class="d-flex align-items-center justify-content-center rounded border border-success bg-success bg-opacity-10"
+                     style="width: 28px; height: 28px;"
+                     title="Sample image available">
+                  <i class="mdi mdi-image text-success" style="font-size: 14px;"></i>
+                </div>
+              </div>
+              <div *ngIf="item.submissionType !== 'none' && !item.hasPrimarySampleImage && item.requiresPhoto">
+                <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
+                     style="width: 28px; height: 28px;"
+                     title="Photo required">
+                  <i class="mdi mdi-camera-outline text-warning" style="font-size: 14px;"></i>
+                </div>
+              </div>
+              <div *ngIf="item.submissionType !== 'none' && item.hasSampleVideo"
+                   class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10"
+                   style="width: 28px; height: 28px;"
+                   title="Sample video available"
+                   (click)="requestSampleVideo(i, $event)">
+                <i class="mdi mdi-video text-info" style="font-size: 14px;"></i>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="flex-shrink-0" *ngIf="isEditorMode() && item.isInvalid" title="Item has missing/invalid fields">
+            <i class="mdi mdi-alert-circle text-danger" style="font-size: 16px;"></i>
+          </div>
+
+          <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end">
+            <button class="btn btn-sm btn-link text-muted p-0 border-0"
+                    ngbDropdownToggle
+                    (click)="$event.stopPropagation()"
+                    style="width: 24px; height: 24px; line-height: 1;"
+                    title="Actions">
+              <i class="mdi mdi-dots-vertical" style="font-size: 18px;"></i>
+            </button>
+            <div ngbDropdownMenu>
+              <button ngbDropdownItem (click)="emitAction('edit', i, $event)">
+                <i class="mdi mdi-pencil me-2"></i>Edit Item
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="emitAction('addAbove', i, $event)">
+                <i class="mdi mdi-arrow-up-bold me-2"></i>Add Item Above
+              </button>
+              <button ngbDropdownItem (click)="emitAction('addBelow', i, $event)">
+                <i class="mdi mdi-arrow-down-bold me-2"></i>Add Item Below
+              </button>
+              <button ngbDropdownItem (click)="emitAction('duplicate', i, $event)">
+                <i class="mdi mdi-content-copy me-2"></i>Duplicate
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="emitAction('moveUp', i, $event)" [disabled]="i === 0">
+                <i class="mdi mdi-chevron-up me-2"></i>Move Up
+              </button>
+              <button ngbDropdownItem (click)="emitAction('moveDown', i, $event)" [disabled]="i === navItems.length - 1">
+                <i class="mdi mdi-chevron-down me-2"></i>Move Down
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="emitAction('promote', i, $event)" [disabled]="item.level === 0">
+                <i class="mdi mdi-arrow-left-bold me-2"></i>Promote (Outdent)
+              </button>
+              <button ngbDropdownItem (click)="emitAction('demote', i, $event)" [disabled]="i === 0">
+                <i class="mdi mdi-arrow-right-bold me-2"></i>Demote (Indent)
+              </button>
+              <div class="dropdown-divider"></div>
+              <button ngbDropdownItem (click)="emitAction('delete', i, $event)" class="text-danger">
+                <i class="mdi mdi-delete me-2"></i>Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </a>
+    </div>
+  </div>
+</div>
