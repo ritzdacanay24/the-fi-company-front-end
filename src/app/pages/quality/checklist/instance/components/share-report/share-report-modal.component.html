@@ -11,18 +11,26 @@
         <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
       </div>
       <!-- Tabs -->
-      <div class="d-flex gap-2 mt-2">
-        <button class="btn btn-sm" [class.btn-primary]="step !== 'list'" [class.btn-outline-secondary]="step === 'list'"
+      <div class="share-tabs mt-3">
+        <div class="btn-group w-100" role="group" aria-label="Share report mode">
+        <button class="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1"
+                [class.btn-primary]="step !== 'list'" [class.btn-outline-secondary]="step === 'list'"
                 (click)="step !== 'done' ? step = 'select' : null">
           <i class="mdi mdi-link-plus me-1"></i>New Link
         </button>
-        <button class="btn btn-sm" [class.btn-primary]="step === 'list'" [class.btn-outline-secondary]="step !== 'list'"
+        <button class="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1"
+                [class.btn-primary]="step === 'list'" [class.btn-outline-secondary]="step !== 'list'"
                 (click)="step = 'list'">
           <i class="mdi mdi-history me-1"></i>Existing Links
           @if (existingTokens.length > 0) {
-            <span class="badge bg-secondary ms-1">{{ existingTokens.length }}</span>
+            <span class="badge ms-1"
+                  [class.bg-light]="step === 'list'"
+                  [class.text-dark]="step === 'list'"
+                  [class.bg-secondary-subtle]="step !== 'list'"
+                  [class.text-secondary]="step !== 'list'">{{ existingTokens.length }}</span>
           }
         </button>
+        </div>
       </div>
     </div>
 
@@ -66,8 +74,8 @@
               <span class="badge bg-primary ms-1">{{ selectedItemIds.size }} / {{ selectableItems.length }} selected</span>
             </label>
             <div class="d-flex gap-1">
-              <button class="btn btn-xs btn-outline-primary py-0 px-2 small" (click)="selectAll()">All</button>
-              <button class="btn btn-xs btn-outline-secondary py-0 px-2 small" (click)="deselectAll()">None</button>
+              <button class="btn btn-sm btn-outline-primary py-0 px-2" (click)="selectAll()">All</button>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-2" (click)="deselectAll()">None</button>
             </div>
           </div>
 
@@ -176,7 +184,7 @@
     <!-- Footer -->
     @if (step === 'select') {
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="close()">Cancel</button>
+        <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
         <button class="btn btn-primary" (click)="generateLink()" [disabled]="selectedItemIds.size === 0">
           <i class="mdi mdi-link-plus me-1"></i>Generate Link
         </button>

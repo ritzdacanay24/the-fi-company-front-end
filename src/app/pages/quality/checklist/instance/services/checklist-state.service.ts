@@ -10,8 +10,9 @@ export interface ChecklistItemProgress {
   };
   completed: boolean;
   photos: string[];
-  photoMeta?: Record<string, { source?: 'camera' | 'library' }>; // per-photo metadata by URL
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>; // per-photo metadata by URL
   videos?: string[]; // NEW: Array of uploaded video URLs
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>; // per-video metadata by URL
   notes: string;
   completedAt?: Date;
   completedByUserId?: number; // Track who completed this item
@@ -29,7 +30,8 @@ interface CompletionData {
   notes?: string;
   completedByUserId?: number;
   completedByName?: string;
-  photoMeta?: Record<string, { source?: 'camera' | 'library' }>;
+  photoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>;
+  videoMeta?: Record<string, { source?: 'in-app' | 'system' | 'library' }>;
   lastModifiedAt?: string;
   lastModifiedByUserId?: number;
   lastModifiedByName?: string;
@@ -111,7 +113,7 @@ export class ChecklistStateService {
     photoUrl: string,
     userId?: number,
     userName?: string,
-    captureSource?: 'camera' | 'library'
+    captureSource?: 'in-app' | 'system' | 'library'
   ): void {
     const item = this.findItemProgress(itemId);
     if (!item) return;
@@ -123,7 +125,7 @@ export class ChecklistStateService {
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = newPhotos.length >= minPhotos;
 
-    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.photoMeta || {}) };
     if (captureSource) {
       photoMeta[photoUrl] = { ...(photoMeta[photoUrl] || {}), source: captureSource };
     }
@@ -149,19 +151,25 @@ export class ChecklistStateService {
     itemId: number | string,
     videoUrl: string,
     userId?: number,
-    userName?: string
+    userName?: string,
+    captureSource?: 'in-app' | 'system' | 'library'
   ): void {
     const item = this.findItemProgress(itemId);
     if (!item) return;
 
     const submissionType = (item.item.submission_type || 'photo') as any;
     const nextVideos = [videoUrl];
+    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = {};
+    if (captureSource) {
+      videoMeta[videoUrl] = { source: captureSource };
+    }
 
     // For video/either submissions, a video is sufficient to complete.
     const shouldComplete = submissionType === 'video' || submissionType === 'either';
 
     this.updateItemProgress(itemId, {
       videos: nextVideos,
+      videoMeta,
       completed: shouldComplete ? true : item.completed,
       completedAt: shouldComplete && !item.completedAt ? new Date() : item.completedAt,
       completedByUserId: shouldComplete && !item.completedByUserId ? userId : item.completedByUserId,
@@ -177,6 +185,10 @@ export class ChecklistStateService {
     if (!item) return;
 
     const videos = (item.videos || []).filter(v => v !== videoUrl);
+    const videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.videoMeta || {}) };
+    if (videoMeta[videoUrl]) {
+      delete videoMeta[videoUrl];
+    }
     const submissionType = (item.item.submission_type || 'photo') as any;
 
     // If this is a video-only item, removing the video makes it incomplete.
@@ -188,6 +200,7 @@ export class ChecklistStateService {
 
     this.updateItemProgress(itemId, {
       videos,
+      videoMeta,
       completed: shouldBeComplete,
       completedAt:        shouldBeComplete ? item.completedAt        : undefined,
       completedByUserId:  shouldBeComplete ? item.completedByUserId  : undefined,
@@ -211,7 +224,7 @@ export class ChecklistStateService {
     const minPhotos = item.item.photo_requirements?.min_photos || 1;
     const shouldComplete = photos.length >= minPhotos;
     
-    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.photoMeta || {}) };
     if (removedUrl && photoMeta[removedUrl]) {
       delete photoMeta[removedUrl];
     }
@@ -236,7 +249,7 @@ export class ChecklistStateService {
 
     const photos = item.photos.filter(p => p !== photoUrl);
 
-    const photoMeta: Record<string, { source?: 'camera' | 'library' }> = { ...(item.photoMeta || {}) };
+    const photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> = { ...(item.photoMeta || {}) };
     if (photoMeta[photoUrl]) {
       delete photoMeta[photoUrl];
     }
@@ -363,6 +376,7 @@ export class ChecklistStateService {
       completedByUserId: p.completedByUserId,
       completedByName: p.completedByName,
       photoMeta: p.photoMeta,
+      videoMeta: p.videoMeta,
       lastModifiedAt: p.lastModifiedAt?.toISOString(),
       lastModifiedByUserId: p.lastModifiedByUserId,
       lastModifiedByName: p.lastModifiedByName
@@ -428,6 +442,7 @@ export class ChecklistStateService {
       completedByUserId: p.completedByUserId,
       completedByName: p.completedByName,
       photoMeta: p.photoMeta,
+      videoMeta: p.videoMeta,
       lastModifiedAt: p.lastModifiedAt?.toISOString(),
       lastModifiedByUserId: p.lastModifiedByUserId,
       lastModifiedByName: p.lastModifiedByName

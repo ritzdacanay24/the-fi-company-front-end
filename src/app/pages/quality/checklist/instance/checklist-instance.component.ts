@@ -337,6 +337,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   @ViewChild('cameraCaptureModal') cameraCaptureModalRef?: TemplateRef<any>;
   private cameraModal?: NgbModalRef;
 
+  // In-app video capture (test path)
+  videoCaptureItemId: number | string | null = null;
+  @ViewChild('videoCaptureModal') videoCaptureModalRef?: TemplateRef<any>;
+  @ViewChild('videoPreview') videoPreviewRef?: ElementRef<HTMLVideoElement>;
+  private videoModal?: NgbModalRef;
+  private videoRecorder: MediaRecorder | null = null;
+  private videoChunks: Blob[] = [];
+  isVideoRecording = false;
+
   // Auto-advance after photo capture
   autoAdvanceAfterPhoto = false;
 
@@ -582,9 +591,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       if (this.cameraCaptureModalRef) {
         this.cameraModal = this.modalService.open(this.cameraCaptureModalRef, {
-          centered: true,
-          size: 'lg',
-          fullscreen: 'md',
+          fullscreen: true,
+          windowClass: 'in-app-capture-modal',
           backdrop: true,
           keyboard: true
         });
@@ -615,14 +623,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },
-          width:  { ideal: 4096 },
-          height: { ideal: 3072 }
+          width: { ideal: 4096 },
+          height: { ideal: 3072 },
+          aspectRatio: { ideal: 4 / 3 },
+          frameRate: { ideal: 30, max: 30 }
         },
         audio: false
       });
 
       this.cameraStream = stream;
       this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+      void this.optimizeCameraTrackForFocusAndQuality('photo');
       this.detectCameraTorchSupport();
       this.detectCameraZoomSupport();
 
@@ -789,6 +800,286 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     }
   }
 
+  private async optimizeCameraTrackForFocusAndQuality(mode: 'photo' | 'video' = 'photo'): Promise<void> {
+    if (!this.cameraVideoTrack) return;
+
+    try {
+      const track: any = this.cameraVideoTrack as any;
+      if (!track?.applyConstraints) return;
+
+      const caps: any = track.getCapabilities?.() || {};
+      const advanced: any[] = [];
+
+      // For video mode, do NOT apply focus constraints - they cause pulsation
+      // Only apply focus optimization for photo mode
+      if (mode === 'photo') {
+        if (caps.focusMode && Array.isArray(caps.focusMode)) {
+          // For photos, prefer single-shot focus
+          if (caps.focusMode.includes('single-shot')) {
+            advanced.push({ focusMode: 'single-shot' });
+          } else if (caps.focusMode.includes('fixed')) {
+            advanced.push({ focusMode: 'fixed' });
+          }
+        }
+
+        // Lock focus distance if available for photos
+        if (caps.focusDistance && Array.isArray(caps.focusDistance) && caps.focusDistance.length > 0) {
+          const focusDistances = caps.focusDistance.filter((d: any) => Number.isFinite(d));
+          if (focusDistances.length > 0) {
+            advanced.push({ focusDistance: 0.5 });
+          }
+        }
+      }
+
+      // Apply resolution constraints only (safest constraint)
+      const constraints: any = {};
+      if (caps.width && caps.height) {
+        const maxWidth = Number(caps.width.max);
+        const maxHeight = Number(caps.height.max);
+        const idealWidth = mode === 'video' ? 3840 : 4096;
+        const idealHeight = mode === 'video' ? 2160 : 3072;
+        const width = Number.isFinite(maxWidth) && maxWidth > 0 ? Math.min(maxWidth, idealWidth) : idealWidth;
+        const height = Number.isFinite(maxHeight) && maxHeight > 0 ? Math.min(maxHeight, idealHeight) : idealHeight;
+
+        constraints.width = { ideal: width };
+        constraints.height = { ideal: height };
+
+        if (mode === 'video') {
+          constraints.frameRate = { ideal: 30, max: 30 };
+          constraints.aspectRatio = { ideal: 16 / 9 };
+        }
+      }
+
+      // Only add advanced constraints if we have any
+      if (advanced.length > 0) {
+        constraints.advanced = advanced;
+      }
+
+      // Apply constraints safely with error handling
+      if (Object.keys(constraints).length > 0) {
+        try {
+          await track.applyConstraints(constraints);
+        } catch (e) {
+          // Some constraints may not be supported on this device/browser
+          // Try again with just the focus mode constraint for photos only
+          if (advanced.length > 0 && mode === 'photo') {
+            try {
+              await track.applyConstraints({ advanced });
+            } catch {
+              // If even focus constraints fail, give up silently
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore if browser rejects advanced camera constraints.
+    }
+  }
+
+  async startVideoCapture(itemId: number | string): Promise<void> {
+    if (!this.ensureCanModify(true)) return;
+
+    try {
+      this.videoCaptureItemId = itemId;
+
+      if (!window.isSecureContext) {
+        alert('In-app video capture requires HTTPS (secure context).');
+        this.closeVideoCapture();
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        alert('Video capture is not supported on this device/browser.');
+        this.closeVideoCapture();
+        return;
+      }
+
+      this.stopVideoRecording();
+      this.stopCameraStream();
+
+      // Optimize video constraints for tablets and keep framerate stable
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 3840, min: 1920 },
+          height: { ideal: 2160, min: 1080 },
+          aspectRatio: { ideal: 16 / 9 },
+          frameRate: { ideal: 30, max: 30 }
+        },
+        audio: false
+      });
+
+      this.cameraStream = stream;
+      this.cameraVideoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) ? stream.getVideoTracks()[0] : null;
+      void this.optimizeCameraTrackForFocusAndQuality('video');
+
+      if (this.videoCaptureModalRef) {
+        this.videoModal = this.modalService.open(this.videoCaptureModalRef, {
+          fullscreen: true,
+          windowClass: 'in-app-capture-modal',
+          backdrop: true,
+          keyboard: true
+        });
+
+        this.videoModal.result.finally(() => {
+          this.stopVideoRecording();
+          this.videoCaptureItemId = null;
+          this.stopCameraStream();
+          this.videoModal = undefined;
+        });
+      }
+
+      setTimeout(() => {
+        const video = this.videoPreviewRef?.nativeElement;
+        if (!video || !this.cameraStream) return;
+        try {
+          (video as any).srcObject = this.cameraStream;
+          video.play().catch(() => {});
+        } catch (e) {
+          console.error('Failed to attach video stream', e);
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Error starting in-app video capture:', error);
+      alert('Unable to start in-app video capture. Please check camera permissions and try again.');
+      this.closeVideoCapture();
+    }
+  }
+
+  startVideoRecording(): void {
+    if (!this.cameraStream || this.isVideoRecording || !this.videoCaptureItemId) return;
+
+    try {
+      const mimeType = this.getPreferredVideoMimeType();
+      this.videoChunks = [];
+      
+      // Use high-quality video bitrate for tablets (12Mbps for standard, 8Mbps fallback)
+      // Lower bitrate prevents large file sizes while maintaining quality on tablets
+      const videoBitrate = this.getOptimalVideoBitrate();
+      
+      this.videoRecorder = mimeType
+        ? new MediaRecorder(this.cameraStream, {
+            mimeType,
+            videoBitsPerSecond: videoBitrate,
+            audioBitsPerSecond: 128_000
+          })
+        : new MediaRecorder(this.cameraStream);
+
+      this.videoRecorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data && event.data.size > 0) {
+          this.videoChunks.push(event.data);
+        }
+      };
+
+      this.videoRecorder.onstop = () => {
+        this.finalizeVideoRecording();
+      };
+
+      this.videoRecorder.start(250);
+      this.isVideoRecording = true;
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Unable to start video recording:', error);
+      alert('Unable to start recording. Try again or use Add from Library.');
+    }
+  }
+
+  stopVideoRecording(): void {
+    if (!this.videoRecorder) {
+      this.isVideoRecording = false;
+      return;
+    }
+
+    if (this.videoRecorder.state === 'recording') {
+      this.videoRecorder.stop();
+    } else {
+      this.videoRecorder = null;
+      this.isVideoRecording = false;
+    }
+  }
+
+  private finalizeVideoRecording(): void {
+    try {
+      const itemId = this.videoCaptureItemId;
+      if (!itemId || this.videoChunks.length === 0) {
+        this.videoRecorder = null;
+        this.videoChunks = [];
+        this.isVideoRecording = false;
+        return;
+      }
+
+      const mimeType = this.videoRecorder?.mimeType || 'video/webm';
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(this.videoChunks, { type: mimeType });
+      const file = new File([blob], `camera_video_${this.instanceId}_${Date.now()}.${ext}`, { type: mimeType });
+
+      this.uploadSingleFile(itemId, file, 'in-app');
+      this.closeVideoCapture();
+    } catch (error) {
+      console.error('Error finalizing video recording:', error);
+      alert('Failed to save recorded video. Please try again.');
+    } finally {
+      this.videoRecorder = null;
+      this.videoChunks = [];
+      this.isVideoRecording = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  closeVideoCapture(): void {
+    try {
+      this.videoModal?.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  private getPreferredVideoMimeType(): string | null {
+    const mediaRecorderAny: any = MediaRecorder as any;
+    if (!mediaRecorderAny?.isTypeSupported) {
+      return null;
+    }
+
+    const candidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4'
+    ];
+
+    for (const type of candidates) {
+      if (mediaRecorderAny.isTypeSupported(type)) {
+        return type;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Determine optimal video bitrate based on device capabilities
+   * Higher bitrates improve video quality significantly on tablets
+   */
+  private getOptimalVideoBitrate(): number {
+    // Check if device has effective type (connection quality)
+    const connection = (navigator as any).connection;
+    if (connection && connection.effectiveType) {
+      switch (connection.effectiveType) {
+        case '4g':
+          return 20_000_000; // 20 Mbps for excellent quality on good connections
+        case '3g':
+          return 12_000_000; // 12 Mbps for medium connections
+        case '2g':
+        case 'slow-2g':
+          return 6_000_000; // 6 Mbps for poor connections
+        default:
+          return 20_000_000;
+      }
+    }
+    // Default to high quality
+    return 20_000_000;
+  }
+
   async captureCameraPhoto(): Promise<void> {
     if (!this.ensureCanModify(true)) return;
     if (!this.cameraCaptureItemId) return;
@@ -811,11 +1102,17 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     if (!blob) {
       const width  = video.videoWidth  || 1280;
       const height = video.videoHeight || 720;
+      // Account for device pixel ratio to prevent blurriness on high-DPI displays (tablets)
+      const dpr = window.devicePixelRatio || 1;
       const canvas = document.createElement('canvas');
-      canvas.width  = width;
-      canvas.height = height;
+      canvas.width  = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      // Scale context to match device pixel ratio
+      ctx.scale(dpr, dpr);
       ctx.drawImage(video, 0, 0, width, height);
       blob = await new Promise<Blob | null>(resolve =>
         canvas.toBlob(resolve, 'image/jpeg', 0.95)
@@ -831,7 +1128,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const file = new File([blob], filename, { type: 'image/jpeg' });
 
     // Upload directly as a camera-captured photo
-    this.uploadSingleFile(this.cameraCaptureItemId, file, 'camera');
+    this.uploadSingleFile(this.cameraCaptureItemId, file, 'in-app');
 
     // Close camera after capture
     this.closeCameraCapture();
@@ -893,7 +1190,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   getPhotoSourceLabel(progress: ChecklistItemProgress, photoUrl: string): string | null {
     if (!progress || !photoUrl) return null;
     const source = progress.photoMeta?.[photoUrl]?.source;
-    if (source === 'camera') return 'Camera';
+    return this.toSourceLabel(source);
+  }
+
+  getVideoSourceLabel(progress: ChecklistItemProgress, videoUrl: string): string | null {
+    if (!progress || !videoUrl) return null;
+    const source = progress.videoMeta?.[videoUrl]?.source;
+    return this.toSourceLabel(source);
+  }
+
+  private toSourceLabel(source?: 'in-app' | 'system' | 'library'): string | null {
+    if (source === 'in-app') return 'In-App';
+    if (source === 'system') return 'System';
     if (source === 'library') return 'Library';
     return null;
   }
@@ -908,6 +1216,20 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   getCameraCaptureDescription(): string {
     if (!this.cameraCaptureItemId) return '';
     const progress = this.stateService.findItemProgress(this.cameraCaptureItemId);
+    const raw = progress?.item?.description ? String(progress.item.description) : '';
+    return this.toPlainText(raw);
+  }
+
+  getVideoCaptureTitle(): string {
+    if (!this.videoCaptureItemId) return 'In-App Video Capture';
+    const progress = this.stateService.findItemProgress(this.videoCaptureItemId);
+    const title = progress?.item?.title ? String(progress.item.title).trim() : '';
+    return title || 'In-App Video Capture';
+  }
+
+  getVideoCaptureDescription(): string {
+    if (!this.videoCaptureItemId) return '';
+    const progress = this.stateService.findItemProgress(this.videoCaptureItemId);
     const raw = progress?.item?.description ? String(progress.item.description) : '';
     return this.toPlainText(raw);
   }
@@ -1557,7 +1879,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       let notes = '';
       let completedByUserId: number | undefined = undefined;
       let completedByName: string | undefined = undefined;
-      let photoMeta: Record<string, { source?: 'camera' | 'library' }> | undefined = undefined;
+      let photoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> | undefined = undefined;
+      let videoMeta: Record<string, { source?: 'in-app' | 'system' | 'library' }> | undefined = undefined;
 
       // DB completion overrides local-only (and can mark complete without photos)
       if (dbData) {
@@ -1569,6 +1892,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         completedByUserId = dbData.completedByUserId;
         completedByName = dbData.completedByName;
         photoMeta = dbData.photoMeta;
+        videoMeta = dbData.videoMeta;
 
         if (completedByName && String(completedByName).trim() === 'Unknown User') {
           completedByName = undefined;
@@ -1587,6 +1911,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         completedByName = localData.completedByName;
 
         photoMeta = (localData as any).photoMeta;
+        videoMeta = (localData as any).videoMeta;
 
         // Hydrate last-modified attribution if present
         // (only used locally today)
@@ -1628,6 +1953,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         photos: existingPhotos,
         photoMeta,
         videos: existingVideos, // Use extracted videos
+        videoMeta,
         notes,
         completedAt: completionDate,
         completedByUserId,
@@ -1686,8 +2012,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
     
-    const files = event.target.files;
+    const input = event?.target as HTMLInputElement | null;
+    const files = input?.files;
     if (!files || files.length === 0) return;
+    const captureSource = this.getCaptureSourceFromInput(input);
 
     const firstFile = files[0] as File | undefined;
     const isVideoSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('video/');
@@ -1727,10 +2055,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Store files and upload
     const numericKey = this.idExtractor.toNumericKey(itemId);
     this.selectedFiles[numericKey] = files;
-    this.uploadPhotos(itemId);
+    this.uploadPhotos(itemId, captureSource);
   }
 
-  uploadPhotos(itemId: number | string): void {
+  uploadPhotos(itemId: number | string, captureSource: 'in-app' | 'system' | 'library' = 'library'): void {
     if (!this.ensureCanModify(true)) return;
     const itemIdKey = this.idExtractor.toNumericKey(itemId);
     const files = this.selectedFiles[itemIdKey];
@@ -1763,11 +2091,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
       this.uploadProgress[itemIdKey] = 0;
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, firstFile!, {
-        captureSource: 'library',
+        captureSource: captureSource === 'library' ? 'library' : 'camera',
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
-          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName);
+          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
           delete this.uploadProgress[itemIdKey];
           delete this.selectedFiles[itemIdKey];
           this.cdr.detectChanges();
@@ -1824,11 +2152,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const file = files[index];
       
       this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
-        captureSource: 'library',
+        captureSource: captureSource === 'library' ? 'library' : 'camera',
         userId: this.currentUserId || undefined
       }).subscribe({
         next: (response) => {
-          this.stateService.addPhoto(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, 'library');
+          this.stateService.addPhoto(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
           
           uploadedCount++;
           this.uploadProgress[itemIdKey] = Math.round((uploadedCount / totalFiles) * 100);
@@ -2822,7 +3150,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.onFileSelectedAndUpload(event, itemId);
   }
 
-  private uploadSingleFile(itemId: number | string, file: File, captureSource: 'camera' | 'library'): void {
+  private uploadSingleFile(itemId: number | string, file: File, captureSource: 'in-app' | 'system' | 'library'): void {
     if (!this.ensureCanModify(true)) return;
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
@@ -2855,12 +3183,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     this.uploadProgress[itemIdKey] = 0;
 
     this.photoOps.uploadPhoto(this.instanceId, dbItemId, file, {
-      captureSource,
+      captureSource: captureSource === 'library' ? 'library' : 'camera',
       userId: this.currentUserId || undefined
     }).subscribe({
       next: (response) => {
         if (isVideo) {
-          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName);
+          this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
         } else {
           this.stateService.addPhoto(
             itemId,
@@ -2904,12 +3232,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const isVideoInput = accept.includes('video/');
 
     if (isVideoInput) {
-      fileInput.removeAttribute('capture');
+      fileInput.setAttribute('capture', 'environment');
+      fileInput.setAttribute('data-capture-source', 'system');
       fileInput.click();
       return;
     }
 
     fileInput.setAttribute('capture', 'environment');
+    fileInput.setAttribute('data-capture-source', 'system');
     fileInput.click();
   }
 
@@ -2917,9 +3247,18 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
    * Open file picker for uploading existing photo
    */
   openFilePicker(fileInput: HTMLInputElement, itemId: number | string): void {
-    // Remove capture attribute for regular file selection
-    fileInput.removeAttribute('capture');
+    // Preserve input-level attributes (including capture) and just open picker.
+    const source = fileInput.hasAttribute('capture') ? 'system' : 'library';
+    fileInput.setAttribute('data-capture-source', source);
     fileInput.click();
+  }
+
+  private getCaptureSourceFromInput(input: HTMLInputElement | null): 'in-app' | 'system' | 'library' {
+    const raw = String(input?.getAttribute('data-capture-source') || '').trim().toLowerCase();
+    if (raw === 'in-app' || raw === 'system' || raw === 'library') {
+      return raw;
+    }
+    return input?.hasAttribute('capture') ? 'system' : 'library';
   }
 
   /**

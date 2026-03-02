@@ -274,6 +274,30 @@
   }
 }
 
+:host ::ng-deep .in-app-capture-modal .modal-dialog {
+  margin: 0 !important;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+}
+
+:host ::ng-deep .in-app-capture-modal .modal-content {
+  height: 100dvh;
+  border-radius: 0;
+}
+
+:host ::ng-deep .in-app-capture-modal .modal-header {
+  padding-top: calc(var(--bs-modal-header-padding-y) + env(safe-area-inset-top));
+}
+
+:host ::ng-deep .in-app-capture-modal .modal-body {
+  overflow: hidden;
+}
+
+:host ::ng-deep .in-app-capture-modal .modal-footer {
+  padding-bottom: calc(var(--bs-modal-footer-padding-y) + env(safe-area-inset-bottom));
+}
+
 //  Lightbox overlay (same pattern as inspection-report) 
 .ci-lightbox-overlay {
   position: fixed;

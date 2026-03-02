@@ -618,9 +618,14 @@
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
                           <button class="btn btn-primary btn-sm" 
-                            (click)="takePhoto(progress.item.id, fileInput)"
+                            (click)="openCamera(fileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist">
-                            <i class="mdi mdi-camera me-2"></i>Take Photo
+                            <i class="mdi mdi-camera-iris me-2"></i>Capture Fullscreen
+                          </button>
+                          <button class="btn btn-outline-primary btn-sm" 
+                                  (click)="openCamera(fileInput, progress.item.id)"
+                                  [disabled]="!canModifyChecklist">
+                            <i class="mdi mdi-camera me-2"></i>Capture (System)
                           </button>
                           <button class="btn btn-outline-primary btn-sm" 
                                   (click)="openFilePicker(fileInput, progress.item.id)"
@@ -633,6 +638,12 @@
 
                     <!-- Current Photo -->
                     <div *ngIf="progress.photos && progress.photos.length > 0">
+                       <input type="file"
+                         #replaceCapturePhotoFileInput
+                         (change)="onFileSelected($event, progress.item.id)"
+                         accept="image/*"
+                         capture="environment"
+                         class="d-none">
                       <input type="file" 
                              #replaceFileInput 
                              (change)="onFileSelected($event, progress.item.id)" 
@@ -647,7 +658,8 @@
                          title="Click to preview">
                         <span *ngIf="getPhotoSourceLabel(progress, progress.photos[0]) as src"
                               class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-2">
-                          <i class="mdi mdi-camera me-1" *ngIf="src === 'Camera'"></i>
+                          <i class="mdi mdi-camera-iris me-1" *ngIf="src === 'In-App'"></i>
+                          <i class="mdi mdi-camera me-1" *ngIf="src === 'System'"></i>
                           <i class="mdi mdi-folder-image me-1" *ngIf="src === 'Library'"></i>
                           {{src}}
                         </span>
@@ -659,10 +671,20 @@
                         </button>
                       </div>
                       <div class="mt-2 text-center">
+                        <button class="btn btn-outline-primary btn-sm me-2"
+                                (click)="replaceCapturePhotoFileInput.click()"
+                                [disabled]="!canModifyChecklist">
+                          <i class="mdi mdi-camera-iris me-1"></i>Recapture Fullscreen
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm me-2"
+                                (click)="replaceCapturePhotoFileInput.click()"
+                                [disabled]="!canModifyChecklist">
+                          <i class="mdi mdi-camera me-1"></i>Recapture (System)
+                        </button>
                         <button class="btn btn-outline-secondary btn-sm" 
                                 (click)="replaceFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-camera-refresh me-1"></i>Replace Photo
+                          <i class="mdi mdi-camera-refresh me-1"></i>Replace from Library
                         </button>
                       </div>
                     </div>
@@ -737,24 +759,37 @@
                       <div class="text-center" 
                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1;">
                         <i class="mdi mdi-video-plus text-muted fs-1 mb-2"></i>
-                        <p class="text-muted mb-3">Capture or select a video</p>
+                        <p class="text-muted mb-2">Capture or add a video</p>
+                        <small class="text-muted d-block mb-3">If direct capture looks blurry, use Add from Library after recording in the Camera app.</small>
                         <input type="file" 
-                               #videoFileInput 
+                               #videoCaptureInput 
                                (change)="onFileSelected($event, progress.item.id)" 
-                               accept="video/*" 
+                               accept="video/*"
+                               capture="environment"
+                               class="d-none">
+                        <input type="file"
+                               #videoFileInput
+                               (change)="onFileSelected($event, progress.item.id)" 
+                             accept=".mp4,.mov,.m4v,.webm,.3gp,.avi" 
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
                           <button class="btn btn-primary btn-sm" 
-                              (click)="recordVideo(videoFileInput, progress.item.id)"
+                                  (click)="startVideoCapture(progress.item.id)"
                                   [disabled]="!canModifyChecklist"
-                                  title="Capture or select a video from the tablet">
-                            <i class="mdi mdi-camcorder me-2"></i>Capture/Select Video
+                                  title="Record video in-app with rear camera preview">
+                            <i class="mdi mdi-video-wireless me-2"></i>Record In-App
                           </button>
                           <button class="btn btn-outline-primary btn-sm" 
+                                  (click)="openFilePicker(videoCaptureInput, progress.item.id)"
+                                  [disabled]="!canModifyChecklist"
+                                  title="Record video using system camera chooser">
+                            <i class="mdi mdi-video me-2"></i>Record (System)
+                          </button>
+                          <button class="btn btn-primary btn-sm" 
                                   (click)="openFilePicker(videoFileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist"
-                                  title="Upload an existing video">
-                            <i class="mdi mdi-upload me-2"></i>Add Video
+                                  title="Select a recorded video from tablet storage">
+                            <i class="mdi mdi-upload me-2"></i>Add from Library
                           </button>
                         </div>
                       </div>
@@ -763,9 +798,15 @@
                     <!-- Current Video -->
                     <div *ngIf="progress.videos && progress.videos.length > 0">
                       <input type="file" 
+                             #replaceCaptureVideoFileInput
+                             (change)="onFileSelected($event, progress.item.id)"
+                             accept="video/*"
+                             capture="environment"
+                             class="d-none">
+                      <input type="file"
                              #replaceVideoFileInput 
                              (change)="onFileSelected($event, progress.item.id)" 
-                             accept="video/*" 
+                         accept=".mp4,.mov,.m4v,.webm,.3gp,.avi" 
                              class="d-none">
                       <div class="position-relative border border-2 border-dashed border-secondary rounded" 
                            style="min-height: 280px; display: flex; align-items: center; justify-content: center; background-color: #000;">
@@ -774,6 +815,13 @@
                                class="w-100 rounded shadow-sm"
                                style="max-height: 250px; max-width: 100%; object-fit: contain;">
                         </video>
+                        <span *ngIf="getVideoSourceLabel(progress, progress.videos[0]) as vSrc"
+                              class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-2">
+                          <i class="mdi mdi-video-wireless me-1" *ngIf="vSrc === 'In-App'"></i>
+                          <i class="mdi mdi-video me-1" *ngIf="vSrc === 'System'"></i>
+                          <i class="mdi mdi-folder-video me-1" *ngIf="vSrc === 'Library'"></i>
+                          {{vSrc}}
+                        </span>
                         <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
                                 (click)="deletePhoto(progress.videos[0], progress.item.id)"
                                 [disabled]="!canModifyChecklist"
@@ -782,10 +830,20 @@
                         </button>
                       </div>
                       <div class="mt-2 text-center">
+                        <button class="btn btn-outline-primary btn-sm me-2"
+                                (click)="startVideoCapture(progress.item.id)"
+                                [disabled]="!canModifyChecklist">
+                          <i class="mdi mdi-video-wireless me-1"></i>Re-record In-App
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm me-2"
+                                (click)="replaceCaptureVideoFileInput.click()"
+                                [disabled]="!canModifyChecklist">
+                          <i class="mdi mdi-video me-1"></i>Re-record Video
+                        </button>
                         <button class="btn btn-outline-secondary btn-sm" 
                                 (click)="replaceVideoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-video-refresh me-1"></i>Replace Video
+                          <i class="mdi mdi-video-refresh me-1"></i>Replace from Library
                         </button>
                       </div>
                     </div>
@@ -1088,7 +1146,7 @@
 <!-- In-app Camera Capture Modal (ng-bootstrap) -->
 <ng-template #cameraCaptureModal let-modal>
   <div class="modal-header">
-    <div class="min-w-0">
+    <div class="flex-grow-1 min-w-0 me-2">
       <h6 class="modal-title mb-0 text-truncate" [title]="getCameraCaptureTitle()">
         <i class="mdi mdi-camera me-2"></i>{{ getCameraCaptureTitle() }}
       </h6>
@@ -1098,10 +1156,10 @@
     </div>
     <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('close')"></button>
   </div>
-  <div class="modal-body p-0" style="background: #000;">
+  <div class="modal-body p-0 d-flex align-items-center justify-content-center" style="background: #000;">
     <video #cameraVideo playsinline autoplay muted
-           class="w-100"
-           style="max-height: 70vh; object-fit: contain;"></video>
+           class="w-100 h-100"
+           style="max-height: 100%; max-width: 100%; object-fit: contain; image-rendering: crisp-edges; -webkit-backface-visibility: hidden; backface-visibility: hidden;"></video>
   </div>
   <div class="modal-footer justify-content-between">
     <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('cancel')">
@@ -1136,6 +1194,43 @@
     <button type="button" class="btn btn-primary" (click)="captureCameraPhoto()">
       <i class="mdi mdi-camera-iris me-1"></i>Capture
     </button>
+  </div>
+</ng-template>
+
+<!-- In-app Video Capture Modal (ng-bootstrap) -->
+<ng-template #videoCaptureModal let-modal>
+  <div class="modal-header">
+    <div class="flex-grow-1 min-w-0 me-2">
+      <h6 class="modal-title mb-0 text-truncate" [title]="getVideoCaptureTitle()">
+        <i class="mdi mdi-video-wireless me-2"></i>{{ getVideoCaptureTitle() }}
+      </h6>
+      <small class="text-muted d-block text-truncate" *ngIf="getVideoCaptureDescription()" [title]="getVideoCaptureDescription()">
+        {{ getVideoCaptureDescription() }}
+      </small>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('close')"></button>
+  </div>
+  <div class="modal-body p-0 d-flex align-items-center justify-content-center" style="background: #000;">
+    <video #videoPreview playsinline autoplay muted
+           class="w-100 h-100"
+           style="max-height: 100%; max-width: 100%; object-fit: contain; image-rendering: crisp-edges; -webkit-backface-visibility: hidden; backface-visibility: hidden;"></video>
+  </div>
+  <div class="modal-footer justify-content-between">
+    <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss('cancel')">
+      <i class="mdi mdi-close me-1"></i>Cancel
+    </button>
+
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-danger" *ngIf="isVideoRecording">
+        <i class="mdi mdi-record-rec me-1"></i>Recording
+      </span>
+      <button type="button" class="btn btn-danger" *ngIf="!isVideoRecording" (click)="startVideoRecording()">
+        <i class="mdi mdi-record-circle-outline me-1"></i>Start Recording
+      </button>
+      <button type="button" class="btn btn-success" *ngIf="isVideoRecording" (click)="stopVideoRecording()">
+        <i class="mdi mdi-stop-circle-outline me-1"></i>Stop & Use Video
+      </button>
+    </div>
   </div>
 </ng-template>
 
@@ -1209,10 +1304,12 @@
         }
         @if (lightboxPhotoSource) {
           <div class="ci-lightbox-source">
-            @if (lightboxPhotoSource === 'camera') {
-              <i class="mdi mdi-camera me-1"></i> Taken with camera
+            @if (lightboxPhotoSource === 'in-app') {
+              <i class="mdi mdi-camera-iris me-1"></i> Captured In-App
+            } @else if (lightboxPhotoSource === 'system') {
+              <i class="mdi mdi-camera me-1"></i> Captured with System Camera
             } @else {
-              <i class="mdi mdi-image-multiple me-1"></i> From photo library
+              <i class="mdi mdi-image-multiple me-1"></i> From Photo Library
             }
           </div>
         }
@@ -1731,7 +1828,7 @@
   <div class="offcanvas-body">
     <div class="mb-4">
       <label class="text-muted text-uppercase small fw-semibold mb-2">Capture</label>
-      <small class="text-muted d-block mt-1">“Take Photo” uses the tablet/system camera.</small>
+      <small class="text-muted d-block mt-1">For no-quality-change capture, use fullscreen system capture or library upload (original file upload).</small>
 
       <div class="form-check form-switch">
         <input class="form-check-input" type="checkbox" id="autoAdvanceSwitch" [(ngModel)]="autoAdvanceAfterPhoto">
@@ -1741,7 +1838,7 @@
       </div>
       <small class="text-muted d-block mt-1">Moves to the next open item after upload/capture.</small>
 
-      <small class="text-muted d-block mt-3">In-app video is locked off. “Capture/Select Video” uses the tablet/system chooser for higher-quality capture or selection.</small>
+      <small class="text-muted d-block mt-3">In-app recording remains available for testing, but browser pipelines may re-encode. System fullscreen capture keeps native quality best.</small>
     </div>
 
     <div class="mb-4">
