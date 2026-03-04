@@ -145,6 +145,14 @@ export class ReportsComponent implements OnInit {
       keywords: ['daily', 'operations', 'summary', 'metrics']
     },
     {
+      title: 'Daily Report History',
+      description: 'Historical daily reports with date filtering and search',
+      path: 'daily-report-history',
+      icon: 'mdi mdi-history',
+      category: 'operations',
+      keywords: ['history', 'daily', 'report', 'archive', 'search', 'date range']
+    },
+    {
       title: 'Work Order Variance Report',
       description: 'Work order completion variance and efficiency analysis',
       path: 'work-order-variance-report',

@@ -1,10 +1,11 @@
 import {
-  Component, OnInit, Input, Output, EventEmitter,
-  ChangeDetectorRef
+  Component, OnInit, AfterViewInit, Input, Output, EventEmitter,
+  ChangeDetectorRef, ViewChild, TemplateRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 export interface ShareReportToken {
   id: number;
@@ -20,16 +21,19 @@ export interface ShareReportToken {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgbModule],
   selector: 'app-share-report-modal',
   templateUrl: './share-report-modal.component.html',
   styleUrls: ['./share-report-modal.component.scss']
 })
-export class ShareReportModalComponent implements OnInit {
+export class ShareReportModalComponent implements OnInit, AfterViewInit {
+  @ViewChild('shareReportModal') modalTemplate!: TemplateRef<any>;
   @Input() instanceId!: number;
   @Input() items: any[] = [];      // ChecklistItemProgress[] from parent
+  @Input() instance: any;          // ChecklistInstance from parent
   @Output() closed = new EventEmitter<void>();
 
+  private modalRef: NgbModalRef | null = null;
   step: 'select' | 'generating' | 'done' | 'list' = 'select';
 
   // Item selection
@@ -43,6 +47,7 @@ export class ShareReportModalComponent implements OnInit {
   // Generated link
   generatedToken: string | null = null;
   generatedUrl: string | null = null;
+  generatedTokenData: any = null;  // Store token data for email
   copied = false;
 
   // Existing tokens
@@ -54,7 +59,11 @@ export class ShareReportModalComponent implements OnInit {
 
   private readonly apiUrl = '/photo-checklist/inspection-report.php';
 
-  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef,
+    private modalService: NgbModal
+  ) {}
 
   ngOnInit(): void {
     // Default: all items selected
@@ -63,6 +72,21 @@ export class ShareReportModalComponent implements OnInit {
       if (baseId) this.selectedItemIds.add(Number(baseId));
     });
     this.loadExistingTokens();
+  }
+
+  ngAfterViewInit(): void {
+    // Open modal after view is fully initialized
+    this.openModal();
+  }
+
+  openModal(): void {
+    this.modalRef = this.modalService.open(this.modalTemplate, {
+      size: 'lg',
+      backdrop: 'static',
+      keyboard: false,
+      centered: true
+    });
+    this.modalRef.result.finally(() => this.close());
   }
 
   get selectableItems(): any[] {
@@ -136,6 +160,7 @@ export class ShareReportModalComponent implements OnInit {
         if (res?.success) {
           this.generatedToken = res.token;
           this.generatedUrl = this.buildInspectionReportUrl(res.token);
+          this.generatedTokenData = res;  // Store full response
           this.step = 'done';
           this.loadExistingTokens();
         } else {
@@ -172,10 +197,42 @@ export class ShareReportModalComponent implements OnInit {
     });
   }
 
+  openInNewTab(): void {
+    if (!this.generatedUrl) return;
+    window.open(this.generatedUrl, '_blank');
+  }
+
   shareViaEmail(): void {
     if (!this.generatedUrl) return;
-    const subject = encodeURIComponent('Inspection Report');
-    const body = encodeURIComponent(`Please find the inspection report at the following link:\n\n${this.generatedUrl}`);
+    
+    // Build email body with rich context
+    const lines = [
+      'Inspection Report Share',
+      '',
+      `From: ${this.instance?.operator_name || this.instance?.assigned_to_name || 'A user'}`,
+      '',
+      'Details:',
+      `  Work Order: ${this.instance?.work_order_number || 'N/A'}`,
+      `  Serial Number: ${this.instance?.serial_number || 'N/A'}`,
+      `  Part Number: ${this.instance?.part_number || 'N/A'}`,
+      `  Checklist: ${this.instance?.template_name || 'N/A'}`,
+    ];
+    
+    // Add expiration info if applicable
+    if (this.generatedTokenData?.expires_at) {
+      const expiresDate = new Date(this.generatedTokenData.expires_at);
+      lines.push(`  Expires: ${expiresDate.toLocaleDateString()} at ${expiresDate.toLocaleTimeString()}`);
+    }
+    
+    lines.push('');
+    lines.push('View Report:');
+    lines.push(this.generatedUrl);
+    lines.push('');
+    lines.push('---');
+    lines.push('This link provides access to the selected inspection items.');
+    
+    const subject = encodeURIComponent(`Inspection Report - ${this.instance?.work_order_number || 'Work Order'}`);
+    const body = encodeURIComponent(lines.join('\n'));
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
   }
 
@@ -183,6 +240,7 @@ export class ShareReportModalComponent implements OnInit {
     this.step = 'select';
     this.generatedToken = null;
     this.generatedUrl = null;
+    this.generatedTokenData = null;
     this.copied = false;
     this.label = '';
     this.expiresOption = 'never';
@@ -217,6 +275,45 @@ export class ShareReportModalComponent implements OnInit {
     navigator.clipboard.writeText(url).catch(() => {});
   }
 
+  openTokenInNewTab(token: ShareReportToken): void {
+    const url = this.buildInspectionReportUrl(token.token);
+    window.open(url, '_blank');
+  }
+
+  shareTokenViaEmail(token: ShareReportToken): void {
+    const url = this.buildInspectionReportUrl(token.token);
+    
+    // Build email body with rich context
+    const lines = [
+      'Inspection Report Share',
+      '',
+      `From: ${this.instance?.operator_name || this.instance?.assigned_to_name || 'A user'}`,
+      '',
+      'Details:',
+      `  Work Order: ${this.instance?.work_order_number || 'N/A'}`,
+      `  Serial Number: ${this.instance?.serial_number || 'N/A'}`,
+      `  Part Number: ${this.instance?.part_number || 'N/A'}`,
+      `  Checklist: ${this.instance?.template_name || 'N/A'}`,
+    ];
+    
+    // Add expiration info if applicable
+    if (token.expires_at) {
+      const expiresDate = new Date(token.expires_at);
+      lines.push(`  Expires: ${expiresDate.toLocaleDateString()} at ${expiresDate.toLocaleTimeString()}`);
+    }
+    
+    lines.push('');
+    lines.push('View Report:');
+    lines.push(url);
+    lines.push('');
+    lines.push('---');
+    lines.push('This link provides access to the selected inspection items.');
+    
+    const subject = encodeURIComponent(`Inspection Report - ${this.instance?.work_order_number || 'Work Order'}`);
+    const body = encodeURIComponent(lines.join('\n'));
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  }
+
   private buildInspectionReportUrl(token: string): string {
     return `${window.location.origin}/dist/web/inspection/report/${token}`;
   }
@@ -227,6 +324,7 @@ export class ShareReportModalComponent implements OnInit {
   }
 
   close(): void {
+    this.modalRef?.close();
     this.closed.emit();
   }
 }

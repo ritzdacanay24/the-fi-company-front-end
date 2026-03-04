@@ -11,6 +11,7 @@ import { SafetyStockReportComponent } from './safety-stock-report/safety-stock-r
 import { ShippedOrdersReportComponent } from './shipped-orders-report/shipped-orders-report.component';
 import { RevenueByCustomerComponent } from './revenue-by-customer/revenue-by-customer.component';
 import { DailyReportComponent } from './daily-report/daily-report.component';
+import { DailyReportHistoryComponent } from './daily-report-history/daily-report-history.component';
 import { NegativeLocationReportComponent } from './negative-location-report/negative-location-report.component';
 import { EmptyLocationReportComponent } from './empty-location-report/empty-location-report.component';
 import { InventoryReportComponent } from './inventory-report/inventory-report.component';
@@ -36,6 +37,11 @@ const routes: Routes = [
         title: "Daily Report",
         path: 'daily-report',
         component: DailyReportComponent
+      },
+      {
+        title: "Daily Report History",
+        path: 'daily-report-history',
+        component: DailyReportHistoryComponent
       },
       {
         title: "Revenue By Customer Report",

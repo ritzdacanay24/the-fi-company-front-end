@@ -1,24 +1,22 @@
-<div class="modal-overlay" (click)="close()">
-  <div class="share-modal" (click)="$event.stopPropagation()">
+<ng-template #shareReportModal let-modal>
+  <div class="modal-header" [class.border-bottom]="true">
+    <div class="d-flex align-items-center gap-2">
+      <i class="mdi mdi-share-variant text-primary fs-5"></i>
+      <h5 class="mb-0">Share Inspection Report</h5>
+    </div>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
 
-    <!-- Header -->
-    <div class="modal-header">
-      <div class="d-flex align-items-center justify-content-between w-100">
-        <div class="d-flex align-items-center gap-2">
-          <i class="mdi mdi-share-variant text-primary fs-5"></i>
-          <h5>Share Inspection Report</h5>
-        </div>
-        <button type="button" class="btn-close" (click)="close()" aria-label="Close"></button>
-      </div>
-      <!-- Tabs -->
-      <div class="share-tabs mt-3">
+  <div class="modal-body">
+    <!-- Tabs -->
+    <div class="share-tabs mb-3">
         <div class="btn-group w-100" role="group" aria-label="Share report mode">
-        <button class="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1"
+        <button class="btn d-flex align-items-center justify-content-center gap-1 flex-fill"
                 [class.btn-primary]="step !== 'list'" [class.btn-outline-secondary]="step === 'list'"
                 (click)="step !== 'done' ? step = 'select' : null">
           <i class="mdi mdi-link-plus me-1"></i>New Link
         </button>
-        <button class="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1"
+        <button class="btn d-flex align-items-center justify-content-center gap-1 flex-fill"
                 [class.btn-primary]="step === 'list'" [class.btn-outline-secondary]="step !== 'list'"
                 (click)="step = 'list'">
           <i class="mdi mdi-history me-1"></i>Existing Links
@@ -32,10 +30,6 @@
         </button>
         </div>
       </div>
-    </div>
-
-    <!-- BODY -->
-    <div class="modal-body">
 
       <!-- ── STEP: select items ── -->
       @if (step === 'select') {
@@ -73,9 +67,9 @@
               Items to Share
               <span class="badge bg-primary ms-1">{{ selectedItemIds.size }} / {{ selectableItems.length }} selected</span>
             </label>
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-outline-primary py-0 px-2" (click)="selectAll()">All</button>
-              <button class="btn btn-sm btn-outline-secondary py-0 px-2" (click)="deselectAll()">None</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary" (click)="selectAll()">All</button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="deselectAll()">None</button>
             </div>
           </div>
 
@@ -126,11 +120,27 @@
               <i class="mdi" [class.mdi-check]="copied" [class.mdi-content-copy]="!copied" class="me-1"></i>
               {{ copied ? 'Copied!' : 'Copy Link' }}
             </button>
+            <button class="btn btn-outline-primary btn-sm" (click)="openInNewTab()" title="Open in new tab">
+              <i class="mdi mdi-open-in-new me-1"></i>View
+            </button>
             <button class="btn btn-outline-secondary btn-sm" (click)="shareViaEmail()" title="Share via email">
               <i class="mdi mdi-email-outline me-1"></i>Email
             </button>
           </div>
         </div>
+
+        <!-- Expiration info -->
+        @if (generatedTokenData?.expires_at) {
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="mdi mdi-clock-outline me-1"></i>
+            This link expires on <strong>{{ formatDate(generatedTokenData.expires_at) }}</strong>. After that, access will no longer be available and a new link must be generated.
+          </div>
+        } @else {
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="mdi mdi-infinity me-1"></i>
+            This link never expires
+          </div>
+        }
 
         <button class="btn btn-outline-primary btn-sm w-100" (click)="newLink()">
           <i class="mdi mdi-link-plus me-1"></i>Generate Another Link
@@ -167,6 +177,14 @@
                   </div>
                 </div>
                 <button class="btn btn-xs btn-outline-primary py-0 px-2"
+                        (click)="openTokenInNewTab(token)" title="View in new tab">
+                  <i class="mdi mdi-open-in-new"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-primary py-0 px-2"
+                        (click)="shareTokenViaEmail(token)" title="Share via email">
+                  <i class="mdi mdi-email-outline"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-primary py-0 px-2"
                         (click)="copyTokenUrl(token)" title="Copy link">
                   <i class="mdi mdi-content-copy"></i>
                 </button>
@@ -179,16 +197,15 @@
           </div>
         }
       }
-    </div>
-
-    <!-- Footer -->
-    @if (step === 'select') {
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
-        <button class="btn btn-primary" (click)="generateLink()" [disabled]="selectedItemIds.size === 0">
-          <i class="mdi mdi-link-plus me-1"></i>Generate Link
-        </button>
-      </div>
-    }
   </div>
-</div>
+
+  <!-- Footer -->
+  @if (step === 'select') {
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="generateLink()" [disabled]="selectedItemIds.size === 0">
+        <i class="mdi mdi-link-plus me-1"></i>Generate Link
+      </button>
+    </div>
+  }
+</ng-template>

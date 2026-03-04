@@ -425,3 +425,12 @@
     }
   }
 }
+
+.item-title-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  min-width: 0;
+  max-width: calc(100%);
+}

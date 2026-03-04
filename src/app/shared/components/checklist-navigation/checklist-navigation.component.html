@@ -1,4 +1,6 @@
-<div class="checklist-nav h-100 d-flex flex-column" 
+<div class="checklist-nav d-flex flex-column" 
+  [class.h-100]="!height"
+  [style.max-height]="height"
      [class.card]="cardStyle"
      [class.shadow-sm]="cardStyle"
      [class.border-0]="cardStyle"
@@ -140,14 +142,17 @@
             {{ i + 1 }}
           </span>
 
-          <div class="flex-grow-1 min-w-0">
-            <small class="text-truncate d-block" [class.fw-semibold]="item.level === 0">
+          <div class="flex-grow-1 min-w-0" style="overflow: hidden;">
+            <small class="d-block" 
+                   [class.fw-semibold]="item.level === 0"
+                   style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;"
+                   [title]="item.title">
               {{ item.title }}
-              <span *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
-                    class="text-muted ms-1"
-                    style="font-size: 0.7rem;">
-                ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
-              </span>
+            </small>
+            <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
+                   class="text-muted d-block"
+                   style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">
+              ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
             </small>
           </div>
 

@@ -623,8 +623,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 4096 },
-          height: { ideal: 3072 },
+          width: { ideal: 1920 },          // 1080p photos
+          height: { ideal: 1440 },
           aspectRatio: { ideal: 4 / 3 },
           frameRate: { ideal: 30, max: 30 }
         },
@@ -807,72 +807,35 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const track: any = this.cameraVideoTrack as any;
       if (!track?.applyConstraints) return;
 
+      // For video recording, DO NOT apply any constraints - they cause blackouts
+      // during recording. Just let the native stream flow.
+      if (mode === 'video') {
+        return;
+      }
+
+      // For photos, apply minimal focus optimization only
       const caps: any = track.getCapabilities?.() || {};
       const advanced: any[] = [];
 
-      // For video mode, do NOT apply focus constraints - they cause pulsation
-      // Only apply focus optimization for photo mode
-      if (mode === 'photo') {
-        if (caps.focusMode && Array.isArray(caps.focusMode)) {
-          // For photos, prefer single-shot focus
-          if (caps.focusMode.includes('single-shot')) {
-            advanced.push({ focusMode: 'single-shot' });
-          } else if (caps.focusMode.includes('fixed')) {
-            advanced.push({ focusMode: 'fixed' });
-          }
-        }
-
-        // Lock focus distance if available for photos
-        if (caps.focusDistance && Array.isArray(caps.focusDistance) && caps.focusDistance.length > 0) {
-          const focusDistances = caps.focusDistance.filter((d: any) => Number.isFinite(d));
-          if (focusDistances.length > 0) {
-            advanced.push({ focusDistance: 0.5 });
-          }
+      if (caps.focusMode && Array.isArray(caps.focusMode)) {
+        // For photos, prefer single-shot focus
+        if (caps.focusMode.includes('single-shot')) {
+          advanced.push({ focusMode: 'single-shot' });
+        } else if (caps.focusMode.includes('fixed')) {
+          advanced.push({ focusMode: 'fixed' });
         }
       }
 
-      // Apply resolution constraints only (safest constraint)
-      const constraints: any = {};
-      if (caps.width && caps.height) {
-        const maxWidth = Number(caps.width.max);
-        const maxHeight = Number(caps.height.max);
-        const idealWidth = mode === 'video' ? 3840 : 4096;
-        const idealHeight = mode === 'video' ? 2160 : 3072;
-        const width = Number.isFinite(maxWidth) && maxWidth > 0 ? Math.min(maxWidth, idealWidth) : idealWidth;
-        const height = Number.isFinite(maxHeight) && maxHeight > 0 ? Math.min(maxHeight, idealHeight) : idealHeight;
-
-        constraints.width = { ideal: width };
-        constraints.height = { ideal: height };
-
-        if (mode === 'video') {
-          constraints.frameRate = { ideal: 30, max: 30 };
-          constraints.aspectRatio = { ideal: 16 / 9 };
-        }
-      }
-
-      // Only add advanced constraints if we have any
+      // Only apply advanced constraints for photos
       if (advanced.length > 0) {
-        constraints.advanced = advanced;
-      }
-
-      // Apply constraints safely with error handling
-      if (Object.keys(constraints).length > 0) {
         try {
-          await track.applyConstraints(constraints);
-        } catch (e) {
-          // Some constraints may not be supported on this device/browser
-          // Try again with just the focus mode constraint for photos only
-          if (advanced.length > 0 && mode === 'photo') {
-            try {
-              await track.applyConstraints({ advanced });
-            } catch {
-              // If even focus constraints fail, give up silently
-            }
-          }
+          await track.applyConstraints({ advanced });
+        } catch {
+          // If focus constraints fail, just continue without them
         }
       }
     } catch {
-      // Ignore if browser rejects advanced camera constraints.
+      // Ignore if browser rejects camera constraints
     }
   }
 
@@ -897,12 +860,13 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.stopVideoRecording();
       this.stopCameraStream();
 
-      // Optimize video constraints for tablets and keep framerate stable
+      // Optimize video constraints for tablets - request realistic resolution
+      // Tablets often have lower resolution cameras; request 1080p ideal, fallback to 720p
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 3840, min: 1920 },
-          height: { ideal: 2160, min: 1080 },
+          width: { ideal: 1920, min: 1280 },     // 1080p ideal, 720p minimum
+          height: { ideal: 1080, min: 720 },
           aspectRatio: { ideal: 16 / 9 },
           frameRate: { ideal: 30, max: 30 }
         },
@@ -953,10 +917,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const mimeType = this.getPreferredVideoMimeType();
       this.videoChunks = [];
       
-      // Use high-quality video bitrate for tablets (12Mbps for standard, 8Mbps fallback)
-      // Lower bitrate prevents large file sizes while maintaining quality on tablets
+      // Use high-quality video bitrate for tablets
       const videoBitrate = this.getOptimalVideoBitrate();
       
+      // Create MediaRecorder without timeslice to prevent stream interruption
       this.videoRecorder = mimeType
         ? new MediaRecorder(this.cameraStream, {
             mimeType,
@@ -975,7 +939,15 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         this.finalizeVideoRecording();
       };
 
-      this.videoRecorder.start(250);
+      // Handle MediaRecorder errors
+      this.videoRecorder.onerror = (event: any) => {
+        console.error('MediaRecorder error:', event.error);
+        alert('Recording error: ' + event.error);
+        this.stopVideoRecording();
+      };
+
+      // Start recording without timeslice to maintain continuous stream
+      this.videoRecorder.start();
       this.isVideoRecording = true;
       this.cdr.detectChanges();
     } catch (error) {
@@ -1280,6 +1252,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
 
           // Reset state when switching to a different checklist
           if (!isSameInstance) {
+            this.closeLightbox();
             this.instanceId = newInstanceId;
             this.instance = null;
             this.template = null;

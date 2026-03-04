@@ -227,8 +227,8 @@
           <!-- Task Description - Full Width -->
           <div *ngIf="progress.item" class="p-3 border-bottom"
             [class.bg-warning-subtle]="progress.item.level === 1">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h6 class="mb-1"
+            <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+              <h6 class="mb-1 flex-grow-1 min-w-0"
                   [class.text-primary]="progress.item.level === 0 || !progress.item.level"
                   [class.text-secondary]="progress.item.level === 1">
                 <span class="badge bg-dark bg-opacity-75 me-2 small" *ngIf="progress.item.order_index">
@@ -237,7 +237,7 @@
                 <i class="mdi mdi-subdirectory-arrow-right me-2" *ngIf="progress.item.level === 1"></i>
                 <i class="mdi mdi-clipboard-text me-2" *ngIf="progress.item.level === 0 || !progress.item.level"></i>
                 <span *ngIf="progress.item.level === 1" class="badge bg-secondary me-2 small">Sub-item</span>
-                {{progress.item.title}}
+                <span class="item-title-truncate" [title]="progress.item.title">{{progress.item.title}}</span>
               </h6>
               <div class="d-flex flex-column align-items-end gap-1">
                 <button type="button"
@@ -617,20 +617,23 @@
                                accept="image/*" 
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
-                          <button class="btn btn-primary btn-sm" 
-                            (click)="openCamera(fileInput, progress.item.id)"
-                                  [disabled]="!canModifyChecklist">
-                            <i class="mdi mdi-camera-iris me-2"></i>Capture Fullscreen
-                          </button>
-                          <button class="btn btn-outline-primary btn-sm" 
+                          <button class="btn btn-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
                                   (click)="openCamera(fileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist">
-                            <i class="mdi mdi-camera me-2"></i>Capture (System)
+                            Capture Fullscreen
                           </button>
-                          <button class="btn btn-outline-primary btn-sm" 
+                          <button class="btn btn-outline-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
+                                  (click)="openCamera(fileInput, progress.item.id)"
+                                  [disabled]="!canModifyChecklist">
+                            Capture (System)
+                          </button>
+                          <button class="btn btn-outline-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
                                   (click)="openFilePicker(fileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist">
-                            <i class="mdi mdi-upload me-2"></i>Add Photo
+                            Add Photo
                           </button>
                         </div>
                       </div>
@@ -674,17 +677,17 @@
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCapturePhotoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-camera-iris me-1"></i>Recapture Fullscreen
+                          Recapture Fullscreen
                         </button>
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCapturePhotoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-camera me-1"></i>Recapture (System)
+                          Recapture (System)
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" 
                                 (click)="replaceFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-camera-refresh me-1"></i>Replace from Library
+                          Replace from Library
                         </button>
                       </div>
                     </div>
@@ -773,23 +776,26 @@
                              accept=".mp4,.mov,.m4v,.webm,.3gp,.avi" 
                                class="d-none">
                         <div class="d-flex gap-2 justify-content-center mb-3">
-                          <button class="btn btn-primary btn-sm" 
+                          <button class="btn btn-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
                                   (click)="startVideoCapture(progress.item.id)"
                                   [disabled]="!canModifyChecklist"
                                   title="Record video in-app with rear camera preview">
-                            <i class="mdi mdi-video-wireless me-2"></i>Record In-App
+                            Record In-App
                           </button>
-                          <button class="btn btn-outline-primary btn-sm" 
+                          <button class="btn btn-outline-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
                                   (click)="openFilePicker(videoCaptureInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist"
                                   title="Record video using system camera chooser">
-                            <i class="mdi mdi-video me-2"></i>Record (System)
+                            Record (System)
                           </button>
-                          <button class="btn btn-primary btn-sm" 
+                          <button class="btn btn-primary btn-sm px-2 py-1"
+                                  style="min-width: 96px;"
                                   (click)="openFilePicker(videoFileInput, progress.item.id)"
                                   [disabled]="!canModifyChecklist"
                                   title="Select a recorded video from tablet storage">
-                            <i class="mdi mdi-upload me-2"></i>Add from Library
+                            Add from Library
                           </button>
                         </div>
                       </div>
@@ -833,17 +839,17 @@
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="startVideoCapture(progress.item.id)"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-video-wireless me-1"></i>Re-record In-App
+                          Re-record In-App
                         </button>
                         <button class="btn btn-outline-primary btn-sm me-2"
                                 (click)="replaceCaptureVideoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-video me-1"></i>Re-record Video
+                          Re-record Video
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" 
                                 (click)="replaceVideoFileInput.click()"
                                 [disabled]="!canModifyChecklist">
-                          <i class="mdi mdi-video-refresh me-1"></i>Replace from Library
+                          Replace from Library
                         </button>
                       </div>
                     </div>
@@ -2071,6 +2077,7 @@
   <app-share-report-modal
     [instanceId]="instanceId"
     [items]="itemProgress"
+    [instance]="instance"
     (closed)="closeShareModal()">
   </app-share-report-modal>
 }

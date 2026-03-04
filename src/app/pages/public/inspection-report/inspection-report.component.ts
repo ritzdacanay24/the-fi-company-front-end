@@ -13,6 +13,7 @@ import { HttpClient } from '@angular/common/http';
 export class InspectionReportComponent implements OnInit {
   loading = true;
   error: string | null = null;
+  isExpired = false;
 
   report: any = null;
   instance: any = null;
@@ -70,7 +71,14 @@ export class InspectionReportComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'Report not found or the link has expired.';
+        const errorMsg = err?.error?.error || 'Report not found or the link has expired.';
+        // Check if error indicates expiration
+        if (errorMsg.toLowerCase().includes('expired') || errorMsg.toLowerCase().includes('access denied')) {
+          this.isExpired = true;
+          this.error = 'This share link has expired. The original Inspector must generate a new link to share the report.';
+        } else {
+          this.error = errorMsg;
+        }
         this.loading = false;
         this.cdr.detectChanges();
       }

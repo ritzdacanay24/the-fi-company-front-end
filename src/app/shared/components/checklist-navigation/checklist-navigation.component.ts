@@ -25,6 +25,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   @Input() mode: 'editor' | 'readonly' = 'readonly';
   @Input() summary: { completed: number; total: number; percent: number } | null = null;
   @Input() cardStyle = true;
+  @Input() height: string | null = null;  // e.g., '500px', 'calc(100vh - 300px)'
 
   @Input() showOnlyOpenItems = false;
   @Output() showOnlyOpenItemsChange = new EventEmitter<boolean>();

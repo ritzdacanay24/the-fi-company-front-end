@@ -53,10 +53,10 @@ export interface QualityDocumentSelection {
                   (ngModelChange)="onCategoryChange()">
             <option value="">All Categories</option>
             <option value="quality_control">Quality Control</option>
-            <option value="training">Training</option>
+            <!-- <option value="training">Training</option>
             <option value="process">Process</option>
             <option value="safety">Safety</option>
-            <option value="compliance">Compliance</option>
+            <option value="compliance">Compliance</option> -->
           </select>
           <div class="form-text">
             <i class="mdi mdi-information-outline me-1"></i>

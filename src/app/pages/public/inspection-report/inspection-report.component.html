@@ -9,10 +9,21 @@
 <!-- Error -->
 @if (!loading && error) {
   <div class="d-flex flex-column align-items-center justify-content-center" style="min-height:100vh; background:#f5f6fa;">
-    <div class="text-center p-4">
-      <i class="mdi mdi-link-off fs-1 text-danger mb-3 d-block"></i>
-      <h5 class="fw-bold text-danger mb-2">Report Unavailable</h5>
-      <p class="text-muted mb-0">{{ error }}</p>
+    <div class="text-center p-4" style="max-width:500px;">
+      @if (isExpired) {
+        <i class="mdi mdi-clock-alert fs-1 text-warning mb-3 d-block"></i>
+        <h5 class="fw-bold text-warning mb-2">Share Link Expired</h5>
+      } @else {
+        <i class="mdi mdi-link-off fs-1 text-danger mb-3 d-block"></i>
+        <h5 class="fw-bold text-danger mb-2">Report Unavailable</h5>
+      }
+      <p class="text-muted mb-3">{{ error }}</p>
+      @if (isExpired) {
+        <div class="alert alert-info py-2 small">
+          <i class="mdi mdi-information-outline me-2"></i>
+          <strong>Next Steps:</strong> Contact the Inspector who shared this report and request a new share link with updated expiration.
+        </div>
+      }
     </div>
   </div>
 }
@@ -26,7 +37,7 @@
         <!-- EyeFi logo -->
         <img src="assets/images/fi-color.png" alt="EyeFi" class="report-logo">
         @if (label) {
-          <span class="badge bg-white bg-opacity-20 text-light px-3 py-2 rounded-pill">{{ label }}</span>
+          <span class="badge bg-white bg-opacity-20 text-dark px-3 py-2 rounded-pill">{{ label }}</span>
         }
       </div>
       <div class="d-flex align-items-baseline gap-2 flex-wrap">

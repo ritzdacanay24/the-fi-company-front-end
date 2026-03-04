@@ -241,15 +241,11 @@ interface ItemLink {
                     <label class="form-label">Category <span class="text-danger">*</span></label>
                     <select class="form-select" formControlName="category"
                             [ngClass]="{ 'is-invalid': templateForm.get('category')?.invalid && templateForm.get('category')?.touched }">
-                      <option value="">Select a category</option>
-                      <option value="quality_control">Quality Control</option>
-                      <option value="installation">Installation</option>
-                      <option value="maintenance">Maintenance</option>
                       <option value="inspection">Inspection</option>
                     </select>
                     <div class="form-text">
                       <i class="mdi mdi-information-outline me-1"></i>
-                      Categorize the template for organization and filtering.
+                      Template category is fixed to Inspection.
                     </div>
                     <div class="invalid-feedback" *ngIf="templateForm.get('category')?.invalid && templateForm.get('category')?.touched">
                       Category is required
@@ -452,28 +448,19 @@ interface ItemLink {
                     
                     <!-- Drag Handle and Header -->
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                      <div class="d-flex align-items-center">
+                      <div class="d-flex align-items-center flex-grow-1" style="min-width: 0;">
                         <div class="drag-handle me-3" cdkDragHandle title="Drag to reorder">
                           <i class="mdi mdi-drag-vertical text-muted fs-4"></i>
                         </div>
-                        <h6 class="mb-0">
-                          <span class="badge bg-secondary me-2">{{getOutlineNumber(i)}}</span>
-                          <span [class.text-primary]="(item.get('level')?.value || 0) > 0">
-                            <i class="mdi" [class.mdi-file-document-outline]="(item.get('level')?.value || 0) === 0" [class.mdi-subdirectory-arrow-right]="(item.get('level')?.value || 0) > 0" class="me-1"></i>
-                            {{item.get('title')?.value || 'Untitled'}}
+                        <h6 class="mb-0 d-flex align-items-center flex-grow-1" style="min-width: 0;">
+                          <span class="badge bg-secondary me-2 flex-shrink-0">{{getOutlineNumber(i)}}</span>
+                          <span class="item-header-title" [class.text-primary]="(item.get('level')?.value || 0) > 0" [title]="item.get('title')?.value || 'Untitled'">
+                            <i class="mdi me-1 flex-shrink-0" [class.mdi-file-document-outline]="(item.get('level')?.value || 0) === 0" [class.mdi-subdirectory-arrow-right]="(item.get('level')?.value || 0) > 0"></i>
+                            <span class="text-truncate d-inline-block" style="max-width: 100%;">{{item.get('title')?.value || 'Untitled'}}</span>
                           </span>
                         </h6>
                       </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
-                          <label class="form-check-label" [for]="'required-' + i">
-                            Required
-                          </label>
-                        </div>
-                        <div class="small text-muted">
-                          Counts toward progress
-                        </div>
+                      <div class="d-flex align-items-center gap-2 flex-shrink-0">
                         <button 
                           type="button" 
                           class="btn btn-sm btn-outline-primary" 
@@ -509,6 +496,18 @@ interface ItemLink {
 
                     <!-- Item Content -->
                     <div class="card-body">
+                      <div class="d-flex justify-content-end align-items-center gap-2 mb-2">
+                        <div class="small text-muted">
+                          Counts toward progress
+                        </div>
+                        <div class="form-check mb-0">
+                          <input class="form-check-input" type="checkbox" formControlName="is_required" [id]="'required-' + i">
+                          <label class="form-check-label" [for]="'required-' + i">
+                            Required
+                          </label>
+                        </div>
+                      </div>
+
                       <div class="row mb-3">
                         <div class="col-md-12">
                           <label class="form-label">Title <span class="text-danger">*</span></label>
@@ -528,8 +527,8 @@ interface ItemLink {
                       <input type="hidden" formControlName="order_index">
 
                       <div class="mb-3">
-                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                        <div class="border rounded" [ngClass]="{ 'border-danger border-2': item.get('description')?.invalid && item.get('description')?.touched }">
+                        <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+                        <div class="border rounded">
                           <quill-editor 
                             formControlName="description" 
                             [modules]="quillConfig"
@@ -537,9 +536,6 @@ interface ItemLink {
                             placeholder="Enter item description (supports rich text formatting)"
                             class="quill-auto-height quill-item">
                           </quill-editor>
-                        </div>
-                        <div class="text-danger small mt-1" *ngIf="item.get('description')?.invalid && item.get('description')?.touched">
-                          Description is required
                         </div>
                         <div class="form-text">
                           <i class="mdi mdi-information-outline me-1"></i>
@@ -766,6 +762,7 @@ interface ItemLink {
                   [items]="buildEditorNavItems()"
                   [activeItemIndex]="activeNavItemIndex"
                   [mode]="'editor'"
+                  [height]="editorNavHeight"
                   (itemSelected)="scrollToItem($event.index)"
                   (navDrop)="dropNavItem($event)"
                   (navAction)="handleNavAction($event)"
@@ -1464,6 +1461,7 @@ interface ItemLink {
                 [mode]="'readonly'"
                 [showSearch]="false"
                 [showExpandCollapse]="false"
+                [height]="previewNavHeight"
                 (itemSelected)="scrollToPreviewItem($event.index)">
               </app-checklist-navigation>
             </div>
@@ -1779,6 +1777,19 @@ interface ItemLink {
     :host ::ng-deep .quill-item .ql-editor {
       min-height: 200px;
     }
+
+    /* Item title truncation */
+    .item-header-title {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .item-header-title .text-truncate {
+      min-width: 0;
+    }
   `]
 })
 export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -1836,6 +1847,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   // Active item tracking for scroll highlighting
   activeNavItemIndex: number = -1;
   stickyParentIndex: number | null = null;
+
+  // Navigation panel heights (customizable per view)
+  editorNavHeight = 'calc(100vh - 190px)';
+  previewNavHeight = 'calc(70vh - 90px)';
   private scrollCheckTimeout: any = null;
   private boundScrollHandler: (() => void) | null = null;
   private activeItemObserver: IntersectionObserver | null = null;
@@ -1966,7 +1981,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       revision_details: (this.editingTemplate as any)?.revision_details ?? null,
       revised_by: (this.editingTemplate as any)?.revised_by ?? null,
       product_type: (this.editingTemplate as any)?.product_type ?? '',
-      category: this.editingTemplate.category ?? 'quality_control',
+      category: 'inspection',
       is_active: nextActive ? 1 : 0
     };
 
@@ -2131,6 +2146,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
       this.templateForm.reset();
       this.templateForm.patchValue({
+        category: 'inspection',
         description: '',
         max_upload_size_mb: null,
         disable_max_upload_limit: true,
@@ -2246,7 +2262,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   createTemplateForm(): FormGroup {
     return this.fb.group({
       name: ['', Validators.required],
-      category: ['', Validators.required],
+      category: ['inspection', Validators.required],
       description: [''],
       // Optional override (MB) for maximum upload size when editing this template
       max_upload_size_mb: [null],
@@ -2394,7 +2410,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
     this.templateForm.patchValue({
       name: this.stripVersionSuffixFromName(template.name),
-      category: template.category,
+      category: 'inspection',
       description: template.description,
       max_upload_size_mb: (template as any).max_upload_size_mb || null,
       disable_max_upload_limit: (template as any).disable_max_upload_limit || false,
@@ -2551,7 +2567,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     return this.fb.group({
       id: [item?.id || null], // Include ID for change detection
       title: [item?.title || '', Validators.required],
-      description: [item?.description || '', Validators.required],
+      description: [item?.description || ''],
       is_required: [item?.is_required !== undefined ? item.is_required : true],
       order_index: [item?.order_index || this.items.length + 1],
       // TOP-LEVEL: submission_type is a separate ENUM column in database (photo, video, either)
@@ -2728,7 +2744,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const subItem = this.fb.group({
       id: [null], // New item has no ID yet
       title: ['', Validators.required],
-      description: ['', Validators.required],
+      description: [''],
       order_index: [newOrderIndex],
       is_required: [true],
       submission_type: ['photo'],
@@ -5264,6 +5280,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       templateData.is_active = !!templateData.is_active;
     }
 
+    templateData.category = 'inspection';
+
     // Note: Quality document relationship is handled separately from template creation
     // Remove the form control field since it's not part of the database schema
     delete templateData.quality_document_id;
@@ -5936,7 +5954,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       title: title,
       description: templateData.description || '',
       department: 'QA' as const,
-      category: templateData.category || 'quality_control',
+      category: 'inspection',
       template_id: templateId,
       created_by: this.getCurrentUserIdentifier(),
       revision_description: revisionDescription
@@ -6098,7 +6116,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     const parsedTemplate = this.pdfParser.createManualTemplate({
       name: this.importManualName,
       itemCount: this.importManualItemCount,
-      category: 'quality_control'
+      category: 'inspection'
     });
 
     this.populateFormFromImport(parsedTemplate);
@@ -6587,7 +6605,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     // Populate basic info
     this.templateForm.patchValue({
       name: parsedTemplate.name || 'Imported Template',
-      category: parsedTemplate.category || 'quality_control',
+      category: 'inspection',
       description: parsedTemplate.description || '',
       part_number: parsedTemplate.part_number || '',
       product_type: parsedTemplate.product_type || '',
