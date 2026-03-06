@@ -164,8 +164,8 @@ export class ChecklistStateService {
       videoMeta[videoUrl] = { source: captureSource };
     }
 
-    // For video/either submissions, a video is sufficient to complete.
-    const shouldComplete = submissionType === 'video' || submissionType === 'either';
+    // For video/audio/either submissions, uploaded media is sufficient to complete.
+    const shouldComplete = submissionType === 'video' || submissionType === 'audio' || submissionType === 'either';
 
     this.updateItemProgress(itemId, {
       videos: nextVideos,
@@ -194,7 +194,7 @@ export class ChecklistStateService {
     // If this is a video-only item, removing the video makes it incomplete.
     const shouldBeComplete = submissionType === 'either'
       ? (item.photos?.length || 0) > 0 || videos.length > 0
-      : submissionType === 'video'
+      : (submissionType === 'video' || submissionType === 'audio')
         ? videos.length > 0
         : item.completed;
 

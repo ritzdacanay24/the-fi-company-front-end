@@ -170,6 +170,9 @@ interface ItemLink {
                     <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="saving" (click)="startMajorVersionDraft()">
                       <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
                     </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" [disabled]="saving" (click)="openCopyAsNewParentModal()">
+                      <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
+                    </button>
                   </div>
                 </div>
               </div>
@@ -208,7 +211,7 @@ interface ItemLink {
             <div [ngClass]="items.length > 0 ? 'col-12 col-md-8 col-lg-8' : 'col-12'">
               <div class="card shadow-sm border-0">
                 <div [formGroup]="templateForm">
-                  <div class="card-body p-4" [class.pe-none]="isPublishedLocked()">
+                  <div class="card-body p-4" [class.readonly-form]="isPublishedLocked()">
               
                     <!-- Template Basic Information Section -->
                     <div class="mb-4 pb-4 border-bottom">
@@ -590,6 +593,9 @@ interface ItemLink {
                           <option value="video">
                             🎥 Video Only - Users submit videos
                           </option>
+                          <option value="audio">
+                            🎙️ Audio Only - Users submit recordings
+                          </option>
                           <option value="either">
                             📁 Photo OR Video - Users choose one (mutually exclusive)
                           </option>
@@ -604,12 +610,12 @@ interface ItemLink {
                       </div>
 
                         <!-- SAMPLE IMAGES SECTION (only for photo/either submissions) -->
-                        <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either')"
+                        <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none')"
                           class="mb-3"
                           [ngClass]="{ 'border border-danger border-2 rounded p-2': (item.get('submission_type')?.value === 'photo' && item.get('photo_requirements')?.value?.picture_required && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0) || (item.get('submission_type')?.value === 'either' && !hasPrimarySampleImage(i) && getReferenceImageCount(i) === 0 && !hasSampleVideo(i)) }">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                           <label class="form-label mb-0">
-                            <i class="mdi mdi-image-multiple me-1"></i>Sample Images
+                            <i class="mdi mdi-image-multiple me-1"></i>{{ item.get('submission_type')?.value === 'none' ? 'Reference Images' : 'Sample Images' }}
                           </label>
                           <button type="button" class="btn btn-outline-primary btn-sm" (click)="openSampleImagesModal(i)">
                             <i class="mdi mdi-cog me-1"></i>Manage Images
@@ -624,6 +630,7 @@ interface ItemLink {
                             <div *ngIf="hasPrimarySampleImage(i)" class="position-relative">
                               <img [src]="getPrimarySampleImageUrl(i)"
                                    class="img-thumbnail"
+                                [class.locked-media-clickable]="isPublishedLocked()"
                                    style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
                                    (click)="previewSampleImage(i)">
                               <span class="badge bg-primary position-absolute top-0 start-0" style="font-size: 0.6rem;">Primary</span>
@@ -632,6 +639,7 @@ interface ItemLink {
                             <div *ngFor="let refImage of getReferenceImages(i); let refIdx = index" class="position-relative">
                               <img [src]="getReferenceImageUrl(refImage)"
                                    class="img-thumbnail"
+                                [class.locked-media-clickable]="isPublishedLocked()"
                                    style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
                                    (click)="previewReferenceImage(i, refIdx)">
                               <span class="badge bg-secondary position-absolute top-0 start-0" style="font-size: 0.6rem;">Ref</span>
@@ -667,6 +675,7 @@ interface ItemLink {
                         <!-- Compact Display -->
                         <div *ngIf="hasSampleVideo(i)" class="border rounded p-2 bg-light text-center">
                           <video [src]="getPrimarySampleVideoUrl(i)" 
+                                 [class.locked-media-clickable]="isPublishedLocked()"
                                  style="max-height: 80px; max-width: 140px; object-fit: cover; cursor: pointer;"
                                  (click)="previewSampleVideo(i)"></video>
                           <div class="mt-1">
@@ -721,6 +730,9 @@ interface ItemLink {
                     <button type="button" class="btn btn-outline-secondary me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="startMajorVersionDraft()">
                       <i class="mdi mdi-source-branch me-1"></i>Start Major Version Draft
                     </button>
+                    <button type="button" class="btn btn-outline-dark me-2" *ngIf="editingTemplate && !editingTemplate.is_draft" [disabled]="saving" (click)="openCopyAsNewParentModal()">
+                      <i class="mdi mdi-content-copy me-1"></i>Copy as New Parent
+                    </button>
                     <button
                       type="button"
                       class="btn btn-outline-danger me-2"
@@ -742,7 +754,7 @@ interface ItemLink {
             
             <!-- Navigation Sidebar Card -->
             <div class="col-12 col-md-4 col-lg-4 mt-3 mt-md-0" *ngIf="items.length > 0">
-              <div class="position-sticky" style="top: 66px;" [class.pe-none]="isPublishedLocked()">
+              <div class="position-sticky" style="top: 66px;">
                 <div class="card shadow-sm border-0 mb-2">
                   <div class="card-body py-2">
                     <div class="form-check form-switch m-0">
@@ -755,13 +767,24 @@ interface ItemLink {
                         <small><i class="mdi mdi-filter me-1"></i>Focus Mode</small>
                       </label>
                     </div>
+                    <div class="form-check form-switch m-0 mt-2">
+                      <input class="form-check-input"
+                             type="checkbox"
+                             id="showNavMediaSwitch"
+                             [(ngModel)]="showNavMediaContext"
+                             [ngModelOptions]="{standalone: true}">
+                      <label class="form-check-label" for="showNavMediaSwitch">
+                        <small><i class="mdi mdi-image-multiple me-1"></i>Show Nav Media</small>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
                 <app-checklist-navigation
                   [items]="buildEditorNavItems()"
                   [activeItemIndex]="activeNavItemIndex"
-                  [mode]="'editor'"
+                  [mode]="isPublishedLocked() ? 'readonly' : 'editor'"
+                  [showMediaContext]="showNavMediaContext"
                   [height]="editorNavHeight"
                   (itemSelected)="scrollToItem($event.index)"
                   (navDrop)="dropNavItem($event)"
@@ -797,7 +820,7 @@ interface ItemLink {
         </div>
 
         <!-- File Upload Section -->
-        <div class="mb-4">
+        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
           <label class="form-label">Upload File</label>
           <input 
             type="file" 
@@ -867,6 +890,77 @@ interface ItemLink {
       </div>
     </ng-template>
 
+    <!-- Copy as New Parent Modal -->
+    <ng-template #copyAsParentModal let-modal>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="mdi mdi-content-copy me-2"></i>
+          Copy Template as New Parent
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()" [disabled]="copyingAsParent"></button>
+      </div>
+      <div class="modal-body" [formGroup]="copyAsParentForm">
+        <p class="text-muted mb-3">
+          Configure the new template details. Checklist structure and text are copied, but all media is excluded.
+          <br>
+          <strong>Not copied:</strong> sample images, reference images, sample videos, and audio media.
+        </p>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Template Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="name" placeholder="Enter template name"
+                   [ngClass]="{ 'is-invalid': copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched }">
+            <div class="invalid-feedback" *ngIf="copyAsParentForm.get('name')?.invalid && copyAsParentForm.get('name')?.touched">
+              Template name is required
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-control" value="Inspection" readonly>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Part Number</label>
+            <input type="text" class="form-control" formControlName="part_number" placeholder="Enter part number">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Product Type</label>
+            <input type="text" class="form-control" formControlName="product_type" placeholder="Enter product type">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Customer Name</label>
+            <input type="text" class="form-control" formControlName="customer_name" placeholder="Enter customer name">
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="form-check form-switch mt-4">
+              <input class="form-check-input" type="checkbox" formControlName="is_active" id="copyParentIsActive">
+              <label class="form-check-label" for="copyParentIsActive">Active Template</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" rows="4" formControlName="description" placeholder="Enter template description"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" [disabled]="copyingAsParent">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="createCopyAsNewParent(modal)" [disabled]="copyingAsParent">
+          <span *ngIf="copyingAsParent" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <i *ngIf="!copyingAsParent" class="mdi mdi-check me-1"></i>
+          {{ copyingAsParent ? 'Creating...' : 'Create Parent Template' }}
+        </button>
+      </div>
+    </ng-template>
+
     <!-- Image Preview Modal -->
     <ng-template #imagePreviewModal let-modal>
       <div class="modal-header">
@@ -904,18 +998,20 @@ interface ItemLink {
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
           <i class="mdi mdi-image-multiple me-2"></i>
-          Manage Sample Images
+          {{ isCurrentModalNoMedia() ? 'Manage Reference Images' : 'Manage Sample Images' }}
         </h5>
         <button type="button" class="btn-close btn-close-white" (click)="modal.dismiss()"></button>
       </div>
       <div class="modal-body">
         <p class="text-muted mb-4">
           <i class="mdi mdi-information-outline me-1"></i>
-          Configure the primary sample image and reference images for this checklist item.
+          {{ isCurrentModalNoMedia()
+            ? 'Add reference images for this instruction-only item.'
+            : 'Configure the primary sample image and reference images for this checklist item.' }}
         </p>
 
         <!-- Primary Sample Image -->
-        <div class="mb-4">
+        <div class="mb-4" *ngIf="!isCurrentModalNoMedia()">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
               <label class="form-label mb-0 fw-bold">Primary Sample Image</label>
@@ -967,7 +1063,7 @@ interface ItemLink {
           </div>
         </div>
 
-        <hr>
+        <hr *ngIf="!isCurrentModalNoMedia()">
 
         <!-- Reference Images -->
         <div class="mb-3">
@@ -1025,10 +1121,10 @@ interface ItemLink {
           </div>
         </div>
 
-        <hr>
+        <hr *ngIf="!isCurrentModalNoMedia()">
 
         <!-- Photo Requirements -->
-        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex)">
+        <div class="mb-3" *ngIf="currentModalItemIndex >= 0 && getItemFormGroup(currentModalItemIndex) && !isCurrentModalNoMedia()">
           <h6 class="mb-3 fw-bold">
             <i class="mdi mdi-cog me-1"></i>Photo Requirements
           </h6>
@@ -1358,6 +1454,9 @@ interface ItemLink {
                       <span *ngSwitchCase="'video'" class="badge bg-success">
                         <i class="mdi mdi-video me-1"></i>Video
                       </span>
+                      <span *ngSwitchCase="'audio'" class="badge bg-warning text-dark">
+                        <i class="mdi mdi-microphone me-1"></i>Audio
+                      </span>
                       <span *ngSwitchCase="'either'" class="badge bg-info">
                         <i class="mdi mdi-file-multiple me-1"></i>Photo/Video
                       </span>
@@ -1368,7 +1467,7 @@ interface ItemLink {
                   </div>
 
                   <!-- Sample Images Preview (improved layout) -->
-                  <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either') && getSampleImagesArray(i).length > 0">
+                  <div *ngIf="(item.get('submission_type')?.value === 'photo' || item.get('submission_type')?.value === 'either' || item.get('submission_type')?.value === 'none') && getSampleImagesArray(i).length > 0">
                     <!-- Primary Sample Image - Large, floated right -->
                     <div *ngFor="let img of getSampleImagesArray(i)">
                       <div *ngIf="img.is_primary" class="float-end ms-3 mb-2">
@@ -1459,6 +1558,7 @@ interface ItemLink {
               <app-checklist-navigation
                 [items]="buildEditorNavItems()"
                 [mode]="'readonly'"
+                [showMediaContext]="showNavMediaContext"
                 [showSearch]="false"
                 [showExpandCollapse]="false"
                 [height]="previewNavHeight"
@@ -1790,10 +1890,23 @@ interface ItemLink {
     .item-header-title .text-truncate {
       min-width: 0;
     }
+
+    .locked-media-clickable {
+      pointer-events: auto !important;
+    }
+
+    .readonly-form :is(input, select, textarea, button, .btn, .form-check-input, .form-select, .form-control, .ql-toolbar, .ql-editor) {
+      pointer-events: none !important;
+    }
+
+    .readonly-form .locked-media-clickable {
+      pointer-events: auto !important;
+    }
   `]
 })
 export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('importModal') importModalRef!: TemplateRef<any>;
+  @ViewChild('copyAsParentModal') copyAsParentModalRef!: TemplateRef<any>;
   @ViewChild('imagePreviewModal') imagePreviewModalRef!: TemplateRef<any>;
   @ViewChild('videoPreviewModal') videoPreviewModalRef!: TemplateRef<any>;
   @ViewChild('previewModal') previewModalRef!: TemplateRef<any>;
@@ -1801,9 +1914,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   @ViewChildren('itemTitleInput') itemTitleInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   templateForm: FormGroup;
+  copyAsParentForm: FormGroup;
   editingTemplate: ChecklistTemplate | null = null;
   draftParentVersion: string | null = null;
   saving = false;
+  copyingAsParent = false;
   loading = false;
   uploadingImage = false;
   selectedQualityDocument: QualityDocumentSelection | null = null;
@@ -1822,6 +1937,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   sampleImages: { [itemIndex: number]: SampleImage | SampleImage[] | null } = {};
   sampleVideos: { [itemIndex: number]: SampleVideo | SampleVideo[] | null } = {};
   currentModalItemIndex: number = -1;
+  currentModalSubmissionType: 'photo' | 'video' | 'audio' | 'either' | 'none' = 'photo';
   currentLinksItemIndex: number = -1;
 
   // Navigation tree expansion state
@@ -1843,6 +1959,9 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
 
   // Focused edit mode toggle - when true, clicking items shows only that item; when false, just scrolls
   focusedEditMode: boolean = false;
+
+  // Navigation media indicators toggle in editor/preview nav (default ON)
+  showNavMediaContext: boolean = true;
 
   // Active item tracking for scroll highlighting
   activeNavItemIndex: number = -1;
@@ -1914,6 +2033,19 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   ) {
     this.ensureQuillFileLinksEnabled();
     this.templateForm = this.createTemplateForm();
+    this.copyAsParentForm = this.createCopyAsParentForm();
+  }
+
+  private createCopyAsParentForm(): FormGroup {
+    return this.fb.group({
+      name: ['', Validators.required],
+      category: ['inspection'],
+      description: [''],
+      part_number: [''],
+      product_type: [''],
+      customer_name: [''],
+      is_active: [true]
+    });
   }
 
   private stripVersionSuffixFromName(name: string): string {
@@ -2211,6 +2343,106 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     });
   }
 
+  openCopyAsNewParentModal(): void {
+    if (!this.editingTemplate || this.saving || this.loading) {
+      return;
+    }
+
+    const currentName = this.stripVersionSuffixFromName(this.templateForm.get('name')?.value || this.editingTemplate.name || '');
+    const suggestedName = currentName ? `${currentName} (Copy)` : 'New Template Copy';
+
+    this.copyAsParentForm.reset({
+      name: suggestedName,
+      category: 'inspection',
+      description: this.templateForm.get('description')?.value || this.editingTemplate.description || '',
+      part_number: this.templateForm.get('part_number')?.value || this.editingTemplate.part_number || '',
+      product_type: this.templateForm.get('product_type')?.value || this.editingTemplate.product_type || '',
+      customer_name: this.templateForm.get('customer_name')?.value || (this.editingTemplate as any)?.customer_name || '',
+      is_active: true
+    });
+
+    this.copyAsParentForm.markAsPristine();
+    this.copyAsParentForm.markAsUntouched();
+
+    this.modalService.open(this.copyAsParentModalRef, {
+      size: 'lg',
+      centered: true,
+      backdrop: 'static',
+      keyboard: false
+    });
+  }
+
+  createCopyAsNewParent(modal: any): void {
+    if (!this.editingTemplate || this.copyingAsParent || this.saving) {
+      return;
+    }
+
+    this.copyAsParentForm.markAllAsTouched();
+    if (this.copyAsParentForm.invalid) {
+      return;
+    }
+
+    this.copyingAsParent = true;
+
+    const templateData = this.buildTemplatePayload();
+    const modalValue = this.copyAsParentForm.value;
+
+    templateData.name = this.stripVersionSuffixFromName(String(modalValue.name || '').trim());
+    templateData.category = 'inspection';
+    templateData.description = modalValue.description || '';
+    templateData.part_number = modalValue.part_number || '';
+    templateData.product_type = modalValue.product_type || '';
+    templateData.customer_name = modalValue.customer_name || '';
+    templateData.is_active = !!modalValue.is_active ? 1 : 0;
+    templateData.is_draft = 1;
+    templateData.version = '1.0';
+    templateData.created_by = this.getCurrentUserIdentifier();
+
+    delete templateData.id;
+    delete templateData.source_template_id;
+
+    // Copy structure/content only. Do NOT carry over any media assets.
+    // This removes primary sample image, reference images, and sample videos.
+    if (Array.isArray(templateData.items)) {
+      templateData.items = templateData.items.map((item: any) => {
+        const sanitizedItem = { ...item };
+
+        sanitizedItem.sample_image_url = null;
+        sanitizedItem.sample_images = [];
+        sanitizedItem.sample_videos = [];
+
+        return sanitizedItem;
+      });
+    }
+
+    this.configService.createTemplate(templateData).subscribe({
+      next: (response: any) => {
+        this.copyingAsParent = false;
+
+        if (response?.success === false) {
+          this.handleTemplateSaveFailureResponse(response, 'template');
+          return;
+        }
+
+        const newTemplateId = Number(response?.template_id || 0);
+        modal.close();
+
+        if (newTemplateId > 0) {
+          this.router.navigate(['/quality/checklist/template-editor', newTemplateId], { replaceUrl: true });
+          this.loadTemplate(newTemplateId);
+          return;
+        }
+
+        alert('Template copy created, but no template ID was returned by the server.');
+      },
+      error: (error) => {
+        console.error('Error copying template as new parent:', error);
+        this.copyingAsParent = false;
+        alert(error?.error?.error || error?.error?.message || error?.message || 'An error occurred while copying the template.');
+      }
+    });
+  }
+
   private hasUnsavedChanges(): boolean {
     return this.changeSeq > this.savedSeq;
   }
@@ -2428,11 +2660,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       quality_document_id: template.quality_document_metadata?.document_id || null
     });
 
-    // Clear existing items and sample images
+    // Clear existing items and sample media
     while (this.items.length) {
       this.items.removeAt(0);
     }
     this.sampleImages = {};
+    this.sampleVideos = {};
 
     // Recursively flatten nested items structure to flat list
     const flattenedItems = this.flattenNestedItems(template.items || []);
@@ -2441,6 +2674,11 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
     if (flattenedItems.length > 0) {
       flattenedItems.forEach((item, index) => {
         this.items.push(this.createItemFormGroup(item));
+
+        // Always initialize videos from backend data, even when no sample image exists.
+        if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
+          this.sampleVideos[index] = item.sample_videos;
+        }
 
         // Load sample images - handle both array format and single URL
         if (item.sample_images && Array.isArray(item.sample_images) && item.sample_images.length > 0) {
@@ -2469,16 +2707,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
               photo_requirements: {
                 ...(itemFormGroup.get('photo_requirements')?.value || {}),
                 submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
-                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
               },
               submission_time_seconds: (item as any)?.submission_time_seconds || null
             });
           }
 
-          // Also populate the sampleVideos component property so display methods work
-          if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
-            this.sampleVideos[index] = item.sample_videos;
-          }
         } else if (item.sample_image_url) {
           // Single URL format: Just the primary image
           this.sampleImages[index] = {
@@ -2503,16 +2737,12 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
               photo_requirements: {
                 ...(itemFormGroup.get('photo_requirements')?.value || {}),
                 submission_type: (item as any)?.photo_requirements?.submission_type || 'photo',
-                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+                max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
               },
               submission_time_seconds: (item as any)?.submission_time_seconds || null
             });
           }
 
-          // Also populate the sampleVideos component property so display methods work
-          if (item.sample_videos && Array.isArray(item.sample_videos) && item.sample_videos.length > 0) {
-            this.sampleVideos[index] = item.sample_videos;
-          }
         }
       });
     }
@@ -2581,7 +2811,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         min_photos: [(item as any)?.photo_requirements?.min_photos || null],
         max_photos: [(item as any)?.photo_requirements?.max_photos || null],
         picture_required: [(item as any)?.photo_requirements?.picture_required !== undefined ? (item as any)?.photo_requirements?.picture_required : true], // Default to true
-        max_video_duration_seconds: [(item as any)?.photo_requirements?.max_video_duration_seconds || 30]
+        max_video_duration_seconds: [(item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30]
       }),
       // TOP-LEVEL: per-item submission time limit (in seconds). Stored in video_requirements JSON. Null or 0 = no limit
       submission_time_seconds: [(item as any)?.submission_time_seconds || null],
@@ -2644,7 +2874,7 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
         min_photos: item.photo_requirements?.min_photos || 1,
         max_photos: item.photo_requirements?.max_photos || 5,
         picture_required: hasImages, // Set to false if no images, true if images exist
-        max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || 30
+        max_video_duration_seconds: (item as any)?.photo_requirements?.max_video_duration_seconds || (item as any)?.video_requirements?.max_duration_seconds || 30
       },
       submission_time_seconds: (item as any)?.submission_time_seconds || null,
       sample_videos: (item as any)?.sample_videos || null
@@ -3054,6 +3284,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
    * Handle drop in navigation (needs to map visible indices to actual indices)
    */
   dropNavItem(event: CdkDragDrop<string[]>): void {
+    if (this.isPublishedLocked()) {
+      return;
+    }
+
     const visibleIndices = this.getVisibleItemIndices();
 
     if (event.previousIndex >= visibleIndices.length || event.currentIndex >= visibleIndices.length) {
@@ -4084,6 +4318,10 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   }
 
   handleNavAction(event: { action: string; index: number }): void {
+    if (this.isPublishedLocked()) {
+      return;
+    }
+
     switch (event.action) {
       case 'edit':
         this.editItemOnly(event.index);
@@ -4125,7 +4363,8 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
       const id = Number.isFinite(parsedId) ? parsedId : index;
       const primaryImageUrl = this.hasPrimarySampleImage(index) ? this.getPrimarySampleImageUrl(index) : null;
       const sampleVideoUrl = this.hasSampleVideo(index) ? this.getPrimarySampleVideoUrl(index) : null;
-      const title = item.get('title')?.value || 'Untitled';
+      const rawTitle = String(item.get('title')?.value ?? '');
+      const title = rawTitle.trim() || 'Untitled';
       const description = item.get('description')?.value || '';
       const searchText = `${title} ${description}`.trim();
 
@@ -4702,9 +4941,18 @@ export class ChecklistTemplateEditorComponent implements OnInit, AfterViewInit, 
   openSampleImagesModal(itemIndex: number): void {
     // Store the current item index for the modal
     this.currentModalItemIndex = itemIndex;
+    this.currentModalSubmissionType = (this.items.at(itemIndex)?.get('submission_type')?.value || 'photo') as 'photo' | 'video' | 'audio' | 'either' | 'none';
+
+    if (this.currentModalSubmissionType === 'none') {
+      this.items.at(itemIndex)?.get('photo_requirements.picture_required')?.setValue(false);
+    }
 
     // Open modal - the modal content will use openPrimarySampleImageUpload and openReferenceImageUpload
     this.modalService.open(this.sampleImagesModalTemplate, { size: 'lg', backdrop: 'static' });
+  }
+
+  isCurrentModalNoMedia(): boolean {
+    return this.currentModalSubmissionType === 'none';
   }
 
   openSampleVideoModal(itemIndex: number): void {

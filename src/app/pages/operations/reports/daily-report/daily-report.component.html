@@ -3,7 +3,40 @@
 
         <div class="card">
             <div class="card-header d-flex align-items-center">
-                <h4 class="card-title mb-0 flex-grow-1 me-3">Daily Report as of {{todayAsOf}}</h4>
+                <h4 class="card-title mb-0 flex-grow-1 me-3">Daily Report - {{ viewMode === 'live' ? 'Live' : 'History' }} as of {{displayedDateAsOf}}</h4>
+                <div class="btn-group btn-group-sm me-3" role="group" aria-label="Daily report mode">
+                    <button class="btn" [ngClass]="viewMode === 'history' ? 'btn-primary' : 'btn-outline-primary'" (click)="setHistoryMode()" [disabled]="isLoading">History</button>
+                    <button class="btn" [ngClass]="viewMode === 'live' ? 'btn-primary' : 'btn-outline-primary'" (click)="setLiveMode()" [disabled]="isLoading">Live</button>
+                </div>
+                <div class="me-3" *ngIf="viewMode === 'history'">
+                    <div class="input-group input-group-sm" style="width: 260px;">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            (click)="navigateHistoryDate(-1)"
+                            [disabled]="isLoading"
+                            title="Previous day"
+                            aria-label="Previous day">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </button>
+                        <input
+                            type="date"
+                            class="form-control"
+                            [(ngModel)]="selectedDate"
+                            (change)="onHistoryDateChange(selectedDate)"
+                            [disabled]="isLoading"
+                            aria-label="History date">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            (click)="navigateHistoryDate(1)"
+                            [disabled]="isLoading"
+                            title="Next day"
+                            aria-label="Next day">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
                 <button class="btn btn-primary ms-auto btn-sm" (click)="openConfig()" [disabled]="isLoading">Column & Sort</button>
 
             </div>
@@ -17,7 +50,11 @@
                 </h4>
             </div>
 
-            <div class="card-body" *ngIf="!isLoading">
+            <div class="card-body" *ngIf="!isLoading && data">
+
+                <div class="alert" [ngClass]="viewMode === 'live' ? 'alert-success' : 'alert-info'" role="alert">
+                    {{ modeMessage }}
+                </div>
 
                 <div class="table-responsive">
                     <table class="table table-sm align-middle table table-striped-columns table-hover">
@@ -124,6 +161,10 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div class="card-body text-center" *ngIf="!isLoading && !data">
+                <p class="text-muted mb-0">No report found for the selected history date.</p>
             </div>
         </div>
     </div>
@@ -345,15 +386,15 @@
     </div> -->
 </div>
 
-<div class="row" *ngIf="!isLoading">
+<!-- <div class="row" *ngIf="!isLoading && data">
     <div class="col-12 col-xl-12">
         <div class="card">
             <div class="card-header">
-                <h4>Recorded daily &#64; 4pm </h4>
+                <h4>Recorded daily &#64; 4pm</h4>
             </div>
             <ag-grid-angular [gridOptions]="gridOptions" class="ag-theme-quartz no-border"
                 style="height: calc(100vh - 170px);" [rowData]="data?.scheduledJobs" [columnDefs]="columnDefs">
             </ag-grid-angular>
         </div>
     </div>
-</div>
+</div> -->

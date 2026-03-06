@@ -11,6 +11,8 @@ import { LayoutComponent } from "./layouts/layout.component";
 // Auth
 import { AuthGuard } from "./core/guards/auth.guard";
 import { RequestPublicComponent } from "./pages/public/request-public/request-public.component";
+import { RequestPublicV2Component } from "./pages/public/request-public-v2/request-public-v2.component";
+import { RequestPublicV2HorizontalComponent } from "./pages/public/request-public-v2/request-public-v2-horizontal.component";
 import { QirCreatePublicComponent } from "./pages/quality/qir/qir-create-public/qir-create-public.component";
 import { StandaloneULUsageFormComponent } from "./standalone/ul-usage-form/ul-usage-form.component";
 import { StandaloneShippingPriorityDisplayComponent } from "./standalone/shipping-priority-display/shipping-priority-display.component";
@@ -32,6 +34,8 @@ const routes: Routes = [
   },
   { path: "menu", component: MenuComponent },
   { path: "request", component: RequestPublicComponent },
+  { path: "request-v2", component: RequestPublicV2HorizontalComponent },
+  { path: "request-v2-horizontal", component: RequestPublicV2HorizontalComponent },
   { path: "quality-incident-request", component: QirCreatePublicComponent },
   
   // Public Forms Portal

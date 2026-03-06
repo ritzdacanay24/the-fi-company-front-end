@@ -22,6 +22,7 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
   @Input() activeItemIndex: number | null = null;
   @Input() showSearch = true;
   @Input() showExpandCollapse = true;
+  @Input() showMediaContext = false;
   @Input() mode: 'editor' | 'readonly' = 'readonly';
   @Input() summary: { completed: number; total: number; percent: number } | null = null;
   @Input() cardStyle = true;
@@ -167,11 +168,12 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
     const primaryImage = sampleImages.find((img) => img.is_primary) ?? null;
     const primaryVideo = sampleVideos.find((vid) => vid.is_primary ?? true) ?? null;
 
-    const searchText = `${item.title || ''} ${item.description || ''}`.trim();
+    const normalizedTitle = String(item.title ?? '').trim() || 'Untitled';
+    const searchText = `${normalizedTitle} ${item.description || ''}`.trim();
 
     return {
       id: item.id,
-      title: item.title || 'Untitled',
+      title: normalizedTitle,
       level: item.level ?? 0,
       orderIndex: item.order_index ?? index,
       submissionType: item.submission_type ?? 'photo',
@@ -382,10 +384,12 @@ export class ChecklistNavigationComponent implements OnChanges, OnDestroy {
         this.expandedItems.add(i);
       }
     });
+    this.cdr.markForCheck();
   }
 
   collapseAllNav(): void {
     this.expandedItems.clear();
+    this.cdr.markForCheck();
   }
 
   selectItem(itemIndex: number): void {

@@ -20,7 +20,7 @@ export interface SimpleItem {
   parent_id?: number;
   order_index: number;
   is_required: boolean;
-  submission_type: 'photo' | 'video' | 'either' | 'none';
+  submission_type: 'photo' | 'video' | 'audio' | 'either' | 'none';
   photo_requirements?: PhotoRequirements | null;
   references?: ReferenceImage[];
   has_photo_requirements?: boolean;

@@ -108,6 +108,60 @@ class PhotoChecklistConfigAPI {
     }
 
     /**
+     * Ensure checklist_items.submission_type supports all currently used values.
+     * Some environments still have legacy ENUMs that do not include audio/none,
+     * which causes MySQL to coerce unsupported values to empty string.
+     */
+    private function ensureSubmissionTypeColumnSupportsCurrentValues() {
+        try {
+            $stmt = $this->conn->prepare("SHOW COLUMNS FROM checklist_items LIKE 'submission_type'");
+            $stmt->execute();
+            $column = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $targetEnum = "ENUM('photo','video','audio','either','none')";
+            $targetComment = "Controls submission mode: photo, video, audio, either, or none";
+
+            if (!$column) {
+                error_log("🧩 checklist_items.submission_type missing; adding column with audio support");
+                $this->conn->exec(
+                    "ALTER TABLE checklist_items
+                     ADD COLUMN submission_type {$targetEnum} DEFAULT 'photo'
+                     COMMENT '{$targetComment}'
+                     AFTER photo_requirements"
+                );
+
+                try {
+                    $this->conn->exec("ALTER TABLE checklist_items ADD INDEX idx_submission_type (submission_type)");
+                } catch (Exception $indexError) {
+                    // Non-fatal if index already exists or cannot be created.
+                    error_log("ℹ️ idx_submission_type not created/updated: " . $indexError->getMessage());
+                }
+
+                return null;
+            }
+
+            $type = strtolower((string)($column['Type'] ?? ''));
+            $hasAudio = strpos($type, "'audio'") !== false;
+            $hasNone = strpos($type, "'none'") !== false;
+
+            if (!$hasAudio || !$hasNone) {
+                error_log("🧩 checklist_items.submission_type ENUM is legacy; upgrading to include audio/none");
+                $this->conn->exec(
+                    "ALTER TABLE checklist_items
+                     MODIFY COLUMN submission_type {$targetEnum} DEFAULT 'photo'
+                     COMMENT '{$targetComment}'"
+                );
+            }
+
+            return null;
+        } catch (Exception $e) {
+            error_log("❌ Failed to ensure submission_type ENUM compatibility: " . $e->getMessage());
+            return "Could not ensure checklist_items.submission_type supports audio/none. " .
+                   "Please run the submission_type migration (audio/none enum update). Error: " . $e->getMessage();
+        }
+    }
+
+    /**
      * Handle API requests
      */
     public function handleRequest() {
@@ -1148,6 +1202,11 @@ class PhotoChecklistConfigAPI {
             return ['success' => false, 'error' => $linksError];
         }
 
+        $submissionTypeError = $this->ensureSubmissionTypeColumnSupportsCurrentValues();
+        if ($submissionTypeError) {
+            return ['success' => false, 'error' => $submissionTypeError];
+        }
+
         // Single-draft policy guard for direct create calls:
         // if a draft already exists for the same parent template, block creating another.
         $requestedIsDraft = isset($data['is_draft']) ? (int)$data['is_draft'] : 0;
@@ -1635,6 +1694,11 @@ class PhotoChecklistConfigAPI {
         $linksError = $this->ensureLinksColumnIfNeeded($data);
         if ($linksError) {
             return ['success' => false, 'error' => $linksError];
+        }
+
+        $submissionTypeError = $this->ensureSubmissionTypeColumnSupportsCurrentValues();
+        if ($submissionTypeError) {
+            return ['success' => false, 'error' => $submissionTypeError];
         }
         
         // Debug: Log the received data
@@ -2899,11 +2963,13 @@ class PhotoChecklistConfigAPI {
                        ci.operator_id, ci.operator_name, ci.status, ci.progress_percentage,
                        ci.created_at, ci.updated_at, ci.started_at, ci.completed_at, ci.submitted_at,
                        ct.name as template_name, ct.category, ct.version as template_version,
+                       u.image as operator_image,
                        COUNT(DISTINCT ps.id) as photo_count,
                        COUNT(DISTINCT CASE WHEN citm.is_required = 1 THEN citm.id END) as required_items,
                        COUNT(DISTINCT CASE WHEN ps.id IS NOT NULL AND citm.is_required = 1 THEN ps.id END) as completed_required
                 FROM checklist_instances ci
                 INNER JOIN checklist_templates ct ON ci.template_id = ct.id
+                LEFT JOIN db.users u ON ci.operator_id = u.id
                 LEFT JOIN checklist_items citm ON ct.id = citm.template_id
                 LEFT JOIN photo_submissions ps ON ci.id = ps.instance_id AND citm.id = ps.item_id
                 WHERE 1=1";
@@ -2923,7 +2989,7 @@ class PhotoChecklistConfigAPI {
         $sql .= " GROUP BY ci.id, ci.template_id, ci.work_order_number, ci.part_number, ci.serial_number, 
                            ci.operator_id, ci.operator_name, ci.status, ci.progress_percentage,
                            ci.created_at, ci.updated_at, ci.started_at, ci.completed_at, ci.submitted_at,
-                           ct.name, ct.category, ct.version
+                           ct.name, ct.category, ct.version, u.image
                   ORDER BY ci.created_at DESC";
         
         $stmt = $this->conn->prepare($sql);

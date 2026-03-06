@@ -27,6 +27,8 @@ export class ChecklistExecutionComponent implements OnInit {
   selectedStatus: string = '';
   selectedTemplate: string = '';
   selectedOperator: string = ''; // Filter by operator
+  currentUser: any = null;
+  showMyChecklistsOnly: boolean = true; // Default to showing current user's checklists only
 
   constructor(
     private photosService: PhotosService,
@@ -35,7 +37,9 @@ export class ChecklistExecutionComponent implements OnInit {
     private photoChecklistConfigService: PhotoChecklistConfigService,
     private router: Router,
     private authService: AuthenticationService
-  ) { }
+  ) {
+    this.currentUser = this.authService.currentUser();
+  }
   woNumber: any
   partNumber: string
   serialNumber: string
@@ -117,6 +121,11 @@ export class ChecklistExecutionComponent implements OnInit {
   private applyFilters() {
     this.filteredChecklists = this.openChecklists.filter(checklist => {
       let matches = true;
+
+      // Filter by current user by default if enabled
+      if (this.showMyChecklistsOnly && this.currentUser?.id) {
+        matches = matches && checklist.operator_id?.toString() === this.currentUser.id.toString();
+      }
 
       // Filter by work order number
       if (this.woNumber && this.woNumber.trim()) {

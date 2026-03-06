@@ -41,6 +41,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
   
   // Auto-refresh
   private refreshSubscription?: Subscription;
+  private completionsSubscription?: Subscription;
+  private metricsSubscription?: Subscription;
   private readonly REFRESH_INTERVAL = 10000; // 10 seconds
   
   // UI State
@@ -72,6 +74,8 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();
+    this.completionsSubscription?.unsubscribe();
+    this.metricsSubscription?.unsubscribe();
   }
 
   private loadSession(sessionId: number): void {
@@ -122,8 +126,10 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
 
   private loadCompletions(): void {
     if (!this.session) return;
+
+    this.completionsSubscription?.unsubscribe();
     
-    this.trainingService.getSessionAttendance(this.session.id).subscribe({
+    this.completionsSubscription = this.trainingService.getSessionAttendance(this.session.id).subscribe({
       next: (attendance) => {
         this.completedAttendees = attendance.sort((a, b) => 
           new Date(b.signInTime).getTime() - new Date(a.signInTime).getTime()
@@ -138,8 +144,10 @@ export class BadgeSignOffComponent implements OnInit, OnDestroy {
 
   private loadMetrics(): void {
     if (!this.session) return;
+
+    this.metricsSubscription?.unsubscribe();
     
-    this.trainingService.getSessionMetrics(this.session.id).subscribe({
+    this.metricsSubscription = this.trainingService.getSessionMetrics(this.session.id).subscribe({
       next: (metrics) => {
         this.metrics = metrics;
       },

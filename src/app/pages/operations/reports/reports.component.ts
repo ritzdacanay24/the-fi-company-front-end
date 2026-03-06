@@ -138,19 +138,11 @@ export class ReportsComponent implements OnInit {
     // Operations & Performance Reports
     {
       title: 'Daily Report',
-      description: 'Daily operations summary and key metrics',
+      description: 'Combined live and history daily operations metrics',
       path: 'daily-report',
       icon: 'mdi mdi-calendar-today',
       category: 'operations',
       keywords: ['daily', 'operations', 'summary', 'metrics']
-    },
-    {
-      title: 'Daily Report History',
-      description: 'Historical daily reports with date filtering and search',
-      path: 'daily-report-history',
-      icon: 'mdi mdi-history',
-      category: 'operations',
-      keywords: ['history', 'daily', 'report', 'archive', 'search', 'date range']
     },
     {
       title: 'Work Order Variance Report',

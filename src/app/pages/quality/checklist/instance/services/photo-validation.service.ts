@@ -176,6 +176,16 @@ export class PhotoValidationService {
           };
         }
         break;
+
+      case 'audio':
+        // AUDIO ONLY: Must have at least one audio recording
+        if (currentVideoCount === 0) {
+          return {
+            valid: false,
+            error: `Cannot mark as complete. This item requires an audio submission.`
+          };
+        }
+        break;
         
       case 'either':
         // EITHER: Must have at least one photo OR one video
@@ -205,6 +215,8 @@ export class PhotoValidationService {
       case 'photo':
         return photoCount >= minPhotos;
       case 'video':
+        return videoCount > 0;
+      case 'audio':
         return videoCount > 0;
       case 'either':
         return photoCount > 0 || videoCount > 0;

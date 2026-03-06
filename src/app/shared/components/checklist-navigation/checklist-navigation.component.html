@@ -88,10 +88,7 @@
       <a *ngFor="let item of navItems; let i = index; trackBy: trackByItemId"
          [id]="'nav-item-' + i"
          class="list-group-item list-group-item-action py-2 border-0"
-        [class.nav-item-active]="activeNavItemIndex === i"
-        [class.bg-primary]="activeNavItemIndex === i"
-        [class.text-white]="activeNavItemIndex === i"
-         [class.fw-semibold]="activeNavItemIndex === i"
+         [class.active]="activeNavItemIndex === i"
          [class.nav-item-match]="isNavItemMatch(i)"
          [class.nav-item-invalid]="!!item.isInvalid"
          style="cursor: pointer; min-height: 40px;"
@@ -114,14 +111,19 @@
 
         <div class="d-flex align-items-center gap-1">
           <div *ngIf="isEditorMode()" class="flex-shrink-0" style="width: 16px;" cdkDragHandle title="Drag to reorder">
-            <i class="mdi mdi-drag-vertical text-muted" style="font-size: 18px; cursor: grab;"></i>
+            <i class="mdi mdi-drag-vertical"
+               [class.text-muted]="activeNavItemIndex !== i"
+               [class.text-white-50]="activeNavItemIndex === i"
+               style="font-size: 18px; cursor: grab;"></i>
           </div>
 
           <div class="flex-shrink-0" style="width: 18px;">
             <i *ngIf="hasChildren(i)"
-               class="mdi text-muted"
+               class="mdi"
                [class.mdi-chevron-down]="expandedItems.has(i)"
                [class.mdi-chevron-right]="!expandedItems.has(i)"
+               [class.text-muted]="activeNavItemIndex !== i"
+               [class.text-white-50]="activeNavItemIndex === i"
                (click)="toggleNavExpansion(i, $event)"
                style="cursor: pointer; font-size: 18px;"></i>
           </div>
@@ -133,43 +135,52 @@
                [class.mdi-folder-open]="item.level === 0 && expandedItems.has(i)"
                [class.mdi-folder]="item.level === 0 && !expandedItems.has(i)"
                [class.mdi-file-document-outline]="item.level > 0"
-               [class.text-warning]="item.level === 0"
-               [class.text-muted]="item.level > 0"
+               [class.text-warning]="item.level === 0 && activeNavItemIndex !== i"
+               [class.text-muted]="item.level > 0 && activeNavItemIndex !== i"
+               [class.text-white]="activeNavItemIndex === i"
                style="font-size: 18px;"></i>
           </div>
 
-          <span class="badge bg-secondary flex-shrink-0 me-1" style="min-width: 42px; font-size: 0.65rem;">
+          <span class="badge flex-shrink-0 me-1"
+                [class.bg-secondary]="activeNavItemIndex !== i"
+                [class.bg-white]="activeNavItemIndex === i"
+                [class.bg-opacity-25]="activeNavItemIndex === i"
+                [class.text-white]="activeNavItemIndex === i"
+                style="min-width: 42px; font-size: 0.65rem;">
             {{ i + 1 }}
           </span>
 
-          <div class="flex-grow-1 min-w-0" style="overflow: hidden;">
+          <div class="flex-grow-1" style="overflow: hidden; min-width: 96px;">
             <small class="d-block" 
                    [class.fw-semibold]="item.level === 0"
-                   style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;"
+                   style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                    [title]="item.title">
               {{ item.title }}
             </small>
             <small *ngIf="isReadonlyMode() && item.isParent && item.progressTotal"
-                   class="text-muted d-block"
-                   style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">
+                   class="d-block"
+                   [class.text-muted]="activeNavItemIndex !== i"
+                   [class.text-white-50]="activeNavItemIndex === i"
+                   style="font-size: 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               ({{ item.progressCompleted || 0 }}/{{ item.progressTotal }} · {{ item.progressPercent || 0 }}%)
             </small>
           </div>
 
           <div class="flex-shrink-0 d-flex align-items-center gap-1">
             <!-- Read-only mode: keep navigation clean (status only) -->
-            <i *ngIf="isReadonlyMode() && item.isComplete !== undefined"
+            <i *ngIf="isReadonlyMode() && item.isComplete !== undefined && item.isRequired"
             class="mdi"
             [class.mdi-check-circle]="item.isComplete"
             [class.mdi-circle-outline]="!item.isComplete"
-            [class.text-success]="item.isComplete"
-            [class.text-muted]="!item.isComplete"
+            [class.text-success]="item.isComplete && activeNavItemIndex !== i"
+            [class.text-muted]="!item.isComplete && activeNavItemIndex !== i"
+            [class.text-white]="activeNavItemIndex === i"
             style="font-size: 16px;"
             title="{{ item.isComplete ? 'Complete' : 'Pending' }}"></i>
 
-            <!-- Editor mode: show extra context icons (samples/requirements) -->
-            <ng-container *ngIf="isEditorMode()">
-              <div *ngIf="item.submissionType !== 'none' && item.hasPrimarySampleImage" class="position-relative">
+            <!-- Optional media context (hidden by default) -->
+            <ng-container *ngIf="showMediaContext">
+              <div *ngIf="item.hasPrimarySampleImage" class="position-relative">
                 <img *ngIf="item.primaryImageUrl"
                      [src]="item.primaryImageUrl"
                      class="rounded border border-success"
@@ -184,29 +195,40 @@
                   <i class="mdi mdi-image text-success" style="font-size: 14px;"></i>
                 </div>
               </div>
-              <div *ngIf="item.submissionType !== 'none' && !item.hasPrimarySampleImage && item.requiresPhoto">
+              <div *ngIf="isEditorMode() && !item.hasPrimarySampleImage && item.requiresPhoto && (item.submissionType === 'photo' || item.submissionType === 'either')">
                 <div class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
                      style="width: 28px; height: 28px;"
                      title="Photo required">
                   <i class="mdi mdi-camera-outline text-warning" style="font-size: 14px;"></i>
                 </div>
               </div>
-              <div *ngIf="item.submissionType !== 'none' && item.hasSampleVideo"
+              <div *ngIf="item.hasSampleVideo"
                    class="d-flex align-items-center justify-content-center rounded border border-info bg-info bg-opacity-10"
                    style="width: 28px; height: 28px;"
                    title="Sample video available"
                    (click)="requestSampleVideo(i, $event)">
                 <i class="mdi mdi-video text-info" style="font-size: 14px;"></i>
               </div>
+              <div *ngIf="item.submissionType === 'audio'"
+                   class="d-flex align-items-center justify-content-center rounded border border-warning bg-warning bg-opacity-10"
+                   style="width: 28px; height: 28px;"
+                   title="Audio submission type">
+                <i class="mdi mdi-microphone text-warning" style="font-size: 14px;"></i>
+              </div>
             </ng-container>
           </div>
 
           <div class="flex-shrink-0" *ngIf="isEditorMode() && item.isInvalid" title="Item has missing/invalid fields">
-            <i class="mdi mdi-alert-circle text-danger" style="font-size: 16px;"></i>
+            <i class="mdi mdi-alert-circle"
+               [class.text-danger]="activeNavItemIndex !== i"
+               [class.text-white]="activeNavItemIndex === i"
+               style="font-size: 16px;"></i>
           </div>
 
           <div class="flex-shrink-0 nav-item-actions" *ngIf="isEditorMode()" ngbDropdown container="body" placement="bottom-end">
-            <button class="btn btn-sm btn-link text-muted p-0 border-0"
+            <button class="btn btn-sm btn-link p-0 border-0"
+                    [class.text-muted]="activeNavItemIndex !== i"
+                    [class.text-white-50]="activeNavItemIndex === i"
                     ngbDropdownToggle
                     (click)="$event.stopPropagation()"
                     style="width: 24px; height: 24px; line-height: 1;"

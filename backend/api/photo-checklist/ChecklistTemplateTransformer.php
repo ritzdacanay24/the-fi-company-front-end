@@ -304,7 +304,7 @@ class ChecklistTemplateTransformer {
         $cleanVideoReq = null;
         if (!empty($videoReq)) {
             $cleanVideoReq = [
-                'max_duration_seconds' => (int)($videoReq['max_duration_seconds'] ?? 30),
+                'max_duration_seconds' => (int)($videoReq['max_video_duration_seconds'] ?? $videoReq['max_duration_seconds'] ?? 30),
                 'submission_time_seconds' => (int)($videoReq['submission_time_seconds'] ?? 0)
             ];
             if (isset($videoReq['min_duration'])) {

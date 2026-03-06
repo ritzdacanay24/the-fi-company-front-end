@@ -1,0 +1,433 @@
+<div class="auth-one-bg-position auth-one-bg" id="auth-particles">
+  <div class="bg-overlay"></div>
+
+  <div class="container py-4 position-relative" style="min-height: 100vh;">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-11 request-v2-shell">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+          <div class="card shadow-sm border-0 main-form-card">
+            <div class="card-header bg-transparent border-0 p-4 pb-0">
+              <h2 class="h4 text-dark mb-1 fw-bold">Field Service Request Form V2</h2>
+              <p class="text-muted mb-0">Horizontal form preview using Bootstrap label sizing.</p>
+            </div>
+            <div class="card-body p-md-4">
+              <div class="alert alert-light border required-hint" role="note">
+                <span class="text-danger fw-semibold">*</span> Required fields. You can add multiple service requests and products below.
+              </div>
+
+              <div class="form-section">
+                <h5 class="section-title">Customer Info</h5>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Customer Name&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(form.get('customer_name')) }" formControlName="customer_name" placeholder="Enter customer name" />
+                    <div class="invalid-feedback">Customer name is required.</div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Service Requestor&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(form.get('service_requestor')) }" formControlName="service_requestor" placeholder="Enter requestor full name" />
+                    <div class="invalid-feedback">Service requestor is required.</div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Primary Email&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(form.get('primary_email')) }" formControlName="primary_email" placeholder="name@company.com" />
+                    <div class="invalid-feedback" *ngIf="form.get('primary_email')?.errors?.['required']">Primary email is required.</div>
+                    <div class="invalid-feedback" *ngIf="form.get('primary_email')?.errors?.['email']">Enter a valid email address.</div>
+                  </div>
+                </div>
+
+                <div class="row mb-0 align-items-center">
+                  <label class="col-sm-3 col-form-label">Additional Recipients</label>
+                  <div class="col-sm-9">
+                    <input class="form-control" formControlName="additional_recipients" placeholder="Comma-separated emails" (blur)="normalizeAdditionalRecipients()" />
+                    <div class="form-text">Use comma, semicolon, or new line between emails. We format it automatically.</div>
+                    <div class="d-flex flex-wrap gap-1 mt-2" *ngIf="getAdditionalRecipientList().length > 0">
+                      <span class="badge bg-light text-dark border d-inline-flex align-items-center" *ngFor="let email of getAdditionalRecipientList(); let emailIndex = index">
+                        {{ email }}
+                        <button
+                          type="button"
+                          class="btn-close ms-2"
+                          style="font-size: 0.6rem;"
+                          aria-label="Remove"
+                          (click)="removeAdditionalRecipient(emailIndex)">
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr class="section-divider" />
+
+              <div class="form-section">
+                <h5 class="section-title">Date/Time of Job + Site / Service Location</h5>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Requested Date / Time</label>
+                  <div class="col-sm-9">
+                    <div class="row g-3">
+                      <div class="col-sm-6">
+                        <input type="date" class="form-control" formControlName="requested_date" aria-label="Requested Date" />
+                      </div>
+                      <div class="col-sm-6">
+                        <input type="time" class="form-control" formControlName="requested_time" aria-label="Requested Time" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Casino Name&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(form.get('casino_name')) }" formControlName="casino_name" placeholder="Enter site/casino name" />
+                    <div class="invalid-feedback">Casino name is required.</div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Address&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <app-address-search
+                      (notifyParent)="notifyAddressSelected($event)"
+                      [showLabel]="false"
+                      [placeholder]="'Search by property name or address'"
+                      [showCategories]="true"
+                      [required]="true"
+                      [editableSearchTerm]="false"
+                      [hideSelected]="false"
+                      [addTag]="false"
+                      [value]="(form.get('address_line_1')?.value || '').trim() || null"
+                      [disabled]="submitting"
+                      [appendToBody]="'body'">
+                    </app-address-search>
+                    <div class="text-danger small mt-1" *ngIf="isControlInvalid(form.get('address_line_1'))">Address is required.</div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Suite / Unit #</label>
+                  <div class="col-sm-9">
+                    <input class="form-control" formControlName="suite_unit" placeholder="Suite / Unit" />
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">City / State / Zip&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <div class="row g-3">
+                      <div class="col-sm-6">
+                        <input type="text" class="form-control" formControlName="city" placeholder="City" aria-label="City" />
+                      </div>
+                      <div class="col-sm-3">
+                        <select class="form-select" formControlName="state" aria-label="State">
+                          <option value="">State</option>
+                          <option *ngFor="let row of states" [value]="row.abbreviation">{{ row.name }}</option>
+                        </select>
+                      </div>
+                      <div class="col-sm-3">
+                        <input type="text" class="form-control" formControlName="zip" placeholder="Zip" aria-label="Zip" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Onsite Techs / Contact&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <div class="row g-3">
+                      <div class="col-sm-6">
+                        <input class="form-control" formControlName="onsite_techs" placeholder="Technician names" aria-label="Onsite Techs" />
+                      </div>
+                      <div class="col-sm-6">
+                        <input class="form-control" formControlName="onsite_tech_contact" placeholder="Phone or email" aria-label="Onsite Tech Contact" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                  <label class="col-sm-3 col-form-label">Special Site Notes&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <input class="form-control" formControlName="special_site_notes" placeholder="Site-specific notes" />
+                  </div>
+                </div>
+
+                <div class="row mb-0 align-items-center">
+                  <label class="col-sm-3 col-form-label">Site Requirements</label>
+                  <div class="col-sm-9">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <div class="form-check">
+                          <input id="gaming_license_horizontal" class="form-check-input" type="checkbox" formControlName="gaming_license" />
+                          <label for="gaming_license_horizontal" class="form-check-label">Gaming License</label>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-check">
+                          <input id="site_survey_horizontal" class="form-check-input" type="checkbox" formControlName="site_survey" />
+                          <label for="site_survey_horizontal" class="form-check-label">Site Survey</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr class="section-divider" />
+
+              <div class="form-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="section-title mb-0">Service Request + Product Info</h5>
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="addServiceRequest()">Add Service Request</button>
+                </div>
+                <p class="text-muted small mb-3">Horizontal preview keeps product fields compact while preserving repeatable sections.</p>
+
+                <div formArrayName="service_requests" class="d-flex flex-column gap-3">
+                  <div class="border rounded p-3 bg-light-subtle" *ngFor="let requestGroup of serviceRequests.controls; let i = index" [formGroupName]="i">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <button type="button" class="btn btn-link p-0 text-start text-decoration-none flex-grow-1 me-2" (click)="toggleServiceRequest(i)">
+                        <h6 class="mb-0 d-flex align-items-center gap-2">
+                          <i class="mdi" [ngClass]="serviceRequestExpanded[i] ? 'mdi-chevron-down' : 'mdi-chevron-right'"></i>
+                          <span>Service Request {{ i + 1 }}</span>
+                          <small class="text-muted fw-normal">{{ getServiceRequestSummary(i) }}</small>
+                        </h6>
+                      </button>
+                      <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleServiceRequest(i)">
+                          {{ serviceRequestExpanded[i] ? 'Collapse' : 'Expand' }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeServiceRequest(i)" [disabled]="serviceRequests.length === 1">
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    <div *ngIf="serviceRequestExpanded[i]">
+                      <div class="row mb-3 align-items-center">
+                        <label class="col-md-3 col-form-label">Service Type&nbsp;<span class="text-danger">*</span></label>
+                        <div class="col-md-9">
+                          <ng-select
+                            [items]="serviceTypes$"
+                            bindLabel="name"
+                            bindValue="name"
+                            formControlName="service_type"
+                            placeholder="Select service type"
+                            [ngClass]="{ 'is-invalid': isControlInvalid(requestGroup.get('service_type')) }"
+                            [selectOnTab]="true"
+                            (open)="getServiceTypes()">
+                          </ng-select>
+                          <div class="invalid-feedback">Service type is required.</div>
+                        </div>
+                      </div>
+
+                      <div class="row mb-3 align-items-center">
+                        <label class="col-md-3 col-form-label">Sales Order #<span class="required-asterisk text-danger">*</span></label>
+                        <div class="col-md-9">
+                          <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(requestGroup.get('sales_order_number')) }" formControlName="sales_order_number" placeholder="Enter sales order number" />
+                          <div class="invalid-feedback">Sales order number is required.</div>
+                        </div>
+                      </div>
+
+                      <div class="row mb-3 align-items-start">
+                        <label class="col-md-3 col-form-label">Service Request Summary&nbsp;<span class="text-danger">*</span></label>
+                        <div class="col-md-9">
+                          <textarea rows="2" class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(requestGroup.get('service_request_summary')) }" formControlName="service_request_summary" placeholder="Describe scope of work and issue details"></textarea>
+                          <div class="invalid-feedback">Service request summary is required.</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                      <h6 class="mb-0">Products</h6>
+                      <button type="button" class="btn btn-sm btn-outline-primary" (click)="addProduct(i)">Add Product</button>
+                    </div>
+
+                    <div formArrayName="products" class="d-flex flex-column gap-3">
+                      <div class="border rounded p-3 bg-white" *ngFor="let productGroup of getProducts(i).controls; let j = index" [formGroupName]="j">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                          <button type="button" class="btn btn-link p-0 text-start text-decoration-none flex-grow-1 me-2" (click)="toggleProduct(i, j)">
+                            <h6 class="mb-0 d-flex align-items-center gap-2">
+                              <i class="mdi" [ngClass]="productExpanded[i]?.[j] ? 'mdi-chevron-down' : 'mdi-chevron-right'"></i>
+                              <span>Product {{ j + 1 }}</span>
+                              <small class="text-muted fw-normal">{{ getProductSummary(i, j) }}</small>
+                            </h6>
+                          </button>
+                          <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleProduct(i, j)">
+                              {{ productExpanded[i]?.[j] ? 'Collapse' : 'Expand' }}
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeProduct(i, j)" [disabled]="getProducts(i).length === 1">
+                              Remove Product
+                            </button>
+                          </div>
+                        </div>
+
+                        <div *ngIf="productExpanded[i]?.[j]">
+                          <div class="row g-3 mb-2">
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">Platform&nbsp;<span class="text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('platform')) }" formControlName="platform" placeholder="Platform/model" />
+                                  <div class="invalid-feedback">Platform is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">Configuration&nbsp;<span class="text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('configuration')) }" formControlName="configuration" placeholder="Enter configuration" />
+                                  <div class="invalid-feedback">Configuration is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="row g-3 mb-2">
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">Sign Theme&nbsp;<span class="text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('sign_theme')) }" formControlName="sign_theme" placeholder="Theme name" />
+                                  <div class="invalid-feedback">Sign theme is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">Sign Mount&nbsp;<span class="text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('sign_mount')) }" formControlName="sign_mount" placeholder="Mount type" />
+                                  <div class="invalid-feedback">Sign mount is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="row g-3 mb-2">
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">EF / Cust Part #<span class="required-asterisk text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('eyefi_customer_part_number')) }" formControlName="eyefi_customer_part_number" placeholder="Part number" />
+                                  <div class="invalid-feedback">Part number is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <div class="row align-items-center">
+                                <label class="col-sm-4 col-form-label">SN#<span class="required-asterisk text-danger">*</span></label>
+                                <div class="col-sm-8">
+                                  <input class="form-control" [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('sn')) }" formControlName="sn" placeholder="Serial number" />
+                                  <div class="invalid-feedback">Serial number is required.</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="row mb-3 align-items-center">
+                            <label class="col-md-3 col-form-label">Customer Product #<span class="required-asterisk text-danger">*</span></label>
+                            <div class="col-md-9">
+                              <ng-select
+                                [ngClass]="{ 'is-invalid': isControlInvalid(productGroup.get('customer_product_number')) }"
+                                [readonly]="form.disabled"
+                                bindLabel="cp_cust_part"
+                                bindValue="cp_cust_part"
+                                [loading]="isProductLoading(i, j)"
+                                [addTag]="true"
+                                [hideSelected]="true"
+                                [multiple]="false"
+                                formControlName="customer_product_number"
+                                placeholder="Search customer product number"
+                                [items]="getProductOptions(i, j) | async"
+                                [typeahead]="getProductTypeahead(i, j)"
+                                [virtualScroll]="true"
+                                [minTermLength]="3"
+                                typeToSearchText="Please enter 3 or more characters"
+                                appendTo="body"
+                                notFoundText="Customer item not found.">
+                                <ng-template ng-option-tmp let-item="item">
+                                  <p class="mb-0">{{ item.cp_cust_part }}</p>
+                                  <small class="text-muted">{{ item.pt_desc1 }} {{ item.pt_desc2 }}</small>
+                                </ng-template>
+                              </ng-select>
+                              <div class="invalid-feedback">Customer product number is required.</div>
+                            </div>
+                          </div>
+
+                          <div class="row mb-3 align-items-start">
+                            <label class="col-md-3 col-form-label">Attachments&nbsp;<span class="text-danger">*</span></label>
+                            <div class="col-md-9">
+                              <input type="file" class="form-control" [class.file-required-invalid]="isProductFilesInvalid(i, j)" multiple (change)="onProductFilesSelected(i, j, $event)" />
+                              <div class="text-danger small mt-1" *ngIf="isProductFilesInvalid(i, j)">At least one attachment is required.</div>
+                              <div class="mt-2" *ngIf="getProductFiles(i, j).length > 0">
+                                <div class="small text-muted mb-1">Selected files:</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                  <span class="badge bg-light text-dark border d-inline-flex align-items-center" *ngFor="let file of getProductFiles(i, j); let fileIndex = index">
+                                    {{ file.name }}
+                                    <button type="button" class="btn-close ms-2" style="font-size: 0.6rem;" aria-label="Remove" (click)="removeProductFile(i, j, fileIndex)"></button>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="row mb-0 align-items-center">
+                            <label class="col-md-3 col-form-label">Install Requirements</label>
+                            <div class="col-md-9">
+                              <div class="row g-3">
+                                <div class="col-md-6">
+                                  <div class="form-check">
+                                    <input [id]="'sign_jacks_required_h_' + i + '_' + j" class="form-check-input" type="checkbox" formControlName="sign_jacks_required" />
+                                    <label [for]="'sign_jacks_required_h_' + i + '_' + j" class="form-check-label">Sign Jacks Required</label>
+                                  </div>
+                                </div>
+                                <div class="col-md-6">
+                                  <div class="form-check">
+                                    <input [id]="'floor_mounting_required_h_' + i + '_' + j" class="form-check-input" type="checkbox" formControlName="floor_mounting_required" />
+                                    <label [for]="'floor_mounting_required_h_' + i + '_' + j" class="form-check-label">Floor Mounting Req</label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr class="section-divider" />
+
+              <div class="form-section">
+                <div class="row align-items-start mb-0">
+                  <label class="col-sm-3 col-form-label">Special Instructions&nbsp;<span class="text-danger">*</span></label>
+                  <div class="col-sm-9">
+                    <textarea rows="4" class="form-control" formControlName="special_instructions" placeholder="Enter any special instructions for the service team"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-4">
+                <button type="button" class="btn btn-outline-secondary" (click)="onReset()" [disabled]="submitting">Reset</button>
+                <button type="submit" class="btn btn-primary" [disabled]="submitting">
+                  <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {{ submitting ? 'Submitting...' : 'Submit Request V2' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

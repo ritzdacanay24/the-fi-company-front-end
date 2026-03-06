@@ -28,6 +28,8 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
   
   // Auto-refresh
   private refreshSubscription?: Subscription;
+  private attendanceSubscription?: Subscription;
+  private metricsSubscription?: Subscription;
   private readonly REFRESH_INTERVAL = 3000; // 3 seconds for dashboard
   
   // Display options
@@ -54,6 +56,8 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoRefresh();
+    this.attendanceSubscription?.unsubscribe();
+    this.metricsSubscription?.unsubscribe();
   }
 
   private loadDashboardData(sessionId: number): void {
@@ -99,9 +103,11 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
 
   private loadAttendanceData(): void {
     if (!this.session) return;
+
+    this.attendanceSubscription?.unsubscribe();
     
     // Load completed attendees
-    this.trainingService.getSessionAttendance(this.session.id).subscribe({
+    this.attendanceSubscription = this.trainingService.getSessionAttendance(this.session.id).subscribe({
       next: (attendance) => {
         // Process attendance data and calculate duration if missing
         this.completedAttendees = attendance.map(att => {
@@ -146,8 +152,10 @@ export class AttendanceDashboardComponent implements OnInit, OnDestroy {
 
   private loadMetrics(): void {
     if (!this.session) return;
+
+    this.metricsSubscription?.unsubscribe();
     
-    this.trainingService.getSessionMetrics(this.session.id).subscribe({
+    this.metricsSubscription = this.trainingService.getSessionMetrics(this.session.id).subscribe({
       next: (metrics) => {
         this.metrics = metrics;
       },

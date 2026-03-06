@@ -188,15 +188,23 @@
             @if (item.videos?.length > 0) {
               <div class="mb-2">
                 <div class="small fw-semibold text-muted mb-2">
-                  <i class="mdi mdi-video-outline me-1"></i>
-                  Videos ({{ item.videos.length }})
+                  <i class="mdi me-1" [class.mdi-microphone-outline]="isAudioSubmission(item)" [class.mdi-video-outline]="!isAudioSubmission(item)"></i>
+                  {{ isAudioSubmission(item) ? 'Audio' : 'Videos' }} ({{ item.videos.length }})
                 </div>
-                <div class="media-grid">
+                <div class="media-grid" [class.media-grid-audio]="isAudioSubmission(item)">
                   @for (video of item.videos; track video) {
-                    <div class="media-thumb" (click)="openLightboxAt(item, 'video', $index)">
-                      <video [src]="video" preload="metadata" muted playsinline></video>
-                      <div class="play-overlay"><i class="mdi mdi-play-circle"></i></div>
-                      <div class="media-badge">VIDEO</div>
+                    <div class="media-thumb" [class.media-thumb-audio]="isAudioSubmission(item, video)" (click)="openLightboxAt(item, isAudioSubmission(item, video) ? 'audio' : 'video', $index)">
+                      @if (isAudioSubmission(item, video)) {
+                        <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-light rounded p-2">
+                          <i class="mdi mdi-microphone text-warning" style="font-size: 1.55rem;"></i>
+                          <audio [src]="video" controls preload="metadata" style="width: 100%; max-width: 240px;"></audio>
+                        </div>
+                        <div class="media-badge">AUDIO</div>
+                      } @else {
+                        <video [src]="video" preload="metadata" muted playsinline></video>
+                        <div class="play-overlay"><i class="mdi mdi-play-circle"></i></div>
+                        <div class="media-badge">VIDEO</div>
+                      }
                     </div>
                   }
                 </div>
@@ -240,6 +248,11 @@
     <div class="lightbox-media" (click)="$event.stopPropagation()">
       @if (lightboxType === 'image') {
         <img class="lightbox-image" [src]="lightboxUrl" alt="Inspection photo">
+      } @else if (lightboxType === 'audio') {
+        <div class="d-flex flex-column align-items-center justify-content-center text-white gap-3">
+          <i class="mdi mdi-microphone" style="font-size: 2.2rem;"></i>
+          <audio class="w-100" style="max-width: 640px;" [src]="lightboxUrl" controls autoplay></audio>
+        </div>
       } @else {
         <video class="lightbox-video" [src]="lightboxUrl" controls autoplay></video>
       }

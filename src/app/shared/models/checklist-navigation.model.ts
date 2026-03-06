@@ -1,6 +1,6 @@
 import { SafeUrl } from '@angular/platform-browser';
 
-export type ChecklistNavSubmissionType = 'photo' | 'video' | 'either' | 'none';
+export type ChecklistNavSubmissionType = 'photo' | 'video' | 'audio' | 'either' | 'none';
 
 export interface ChecklistNavItem {
   id: number;

@@ -149,6 +149,7 @@ export class RequestFormComponent {
     { name: "Konami", code: "KONGAM" },
     { name: "L&W", code: "" },
     { name: "Synergy Blue", code: "" },
+    { name: "Zitro", code: "ZITRO" },
     { name: "Other", code: "" },
   ]
 

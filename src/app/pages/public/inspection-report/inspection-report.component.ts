@@ -23,12 +23,12 @@ export class InspectionReportComponent implements OnInit {
 
   // Lightbox state
   lightboxUrl: string | null = null;
-  lightboxType: 'image' | 'video' = 'image';
+  lightboxType: 'image' | 'video' | 'audio' = 'image';
   lightboxSource: string | null = null;  // 'camera' | 'library' | null
   lightboxItem: any = null;      // the checklist item context
   lightboxIndex = 0;             // current index within the item's media array
   lightboxTotalCount = 0;        // total media count for the open item
-  private lightboxMedia: { url: string; type: 'image' | 'video'; source?: string | null; item: any }[] = [];
+  private lightboxMedia: { url: string; type: 'image' | 'video' | 'audio'; source?: string | null; item: any }[] = [];
 
   private readonly apiUrl = '/photo-checklist/inspection-report.php';
 
@@ -93,9 +93,9 @@ export class InspectionReportComponent implements OnInit {
     if (e.key === 'Escape')     { this.closeLightbox(); }
   }
 
-  openLightboxAt(item: any, kind: 'photo' | 'video', index: number): void {
+  openLightboxAt(item: any, kind: 'photo' | 'video' | 'audio', index: number): void {
     // Build a GLOBAL flat list of all media across all items (photos first then videos per item)
-    const globalMedia: { url: string; type: 'image' | 'video'; source?: string | null; item: any }[] = [];
+    const globalMedia: { url: string; type: 'image' | 'video' | 'audio'; source?: string | null; item: any }[] = [];
     let startIndex = 0;
     let found = false;
 
@@ -107,7 +107,10 @@ export class InspectionReportComponent implements OnInit {
         item: it
       }));
       const videos = (it.videos || []).map((u: string) => ({
-        url: u, type: 'video' as const, source: null, item: it
+        url: u,
+        type: this.getSubmittedMediaType(it, u),
+        source: null,
+        item: it
       }));
 
       const itemMedia = [...photos, ...videos];
@@ -118,7 +121,7 @@ export class InspectionReportComponent implements OnInit {
         if (kind === 'photo') {
           startIndex = offset + index;
         } else {
-          // clicked a video: offset past this item's photos
+          // clicked submitted media (video/audio): offset past this item's photos
           startIndex = offset + (it.photos?.length ?? 0) + index;
         }
         found = true;
@@ -134,7 +137,7 @@ export class InspectionReportComponent implements OnInit {
   }
 
   /** Legacy single-item open (kept for safety) */
-  openLightbox(url: string, type: 'image' | 'video' = 'image'): void {
+  openLightbox(url: string, type: 'image' | 'video' | 'audio' = 'image'): void {
     this.lightboxMedia      = [{ url, type, source: null, item: null }];
     this.lightboxIndex      = 0;
     this.lightboxItem       = null;
@@ -200,6 +203,26 @@ export class InspectionReportComponent implements OnInit {
   onImgError(event: Event): void {
     const el = event.target as HTMLElement;
     if (el) el.style.display = 'none';
+  }
+
+  private getSubmittedMediaType(item: any, url: string): 'video' | 'audio' {
+    const submissionType = String(item?.submission_type || '').toLowerCase();
+    if (submissionType === 'audio' || this.isAudioUrl(url)) {
+      return 'audio';
+    }
+    return 'video';
+  }
+
+  isAudioSubmission(item: any, url?: string): boolean {
+    const submissionType = String(item?.submission_type || '').toLowerCase();
+    if (submissionType === 'audio') return true;
+    if (url) return this.isAudioUrl(url);
+    return false;
+  }
+
+  private isAudioUrl(url: string): boolean {
+    const lower = (url || '').toLowerCase();
+    return lower.includes('.mp3') || lower.includes('.wav') || lower.includes('.m4a') || lower.includes('.aac') || lower.includes('.ogg');
   }
 
   isVideo(url: string): boolean {

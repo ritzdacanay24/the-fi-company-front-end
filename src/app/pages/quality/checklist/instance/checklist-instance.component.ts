@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy, ElementRef, TemplateRef, ViewChild, ViewChildren, QueryList, HostListener, Renderer2, Inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy, ElementRef, TemplateRef, ViewChild, ViewChildren, QueryList, HostListener, Renderer2, Inject, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,7 @@ import { WebsocketService } from '@app/core/services/websocket.service';
 import { ChecklistNavigationComponent } from '@app/shared/components/checklist-navigation/checklist-navigation.component';
 import { ChecklistNavItem } from '@app/shared/models/checklist-navigation.model';
 import { filter, Subscription } from 'rxjs';
+import Swal from 'sweetalert2';
 import { ShareReportModalComponent } from './components/share-report/share-report-modal.component';
 
 // Import services
@@ -345,6 +346,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   private videoRecorder: MediaRecorder | null = null;
   private videoChunks: Blob[] = [];
   isVideoRecording = false;
+  videoRecordingSeconds = 0;
+  videoMaxDurationSeconds = 0;
+  private videoRecordingInterval: any = null;
 
   // Auto-advance after photo capture
   autoAdvanceAfterPhoto = false;
@@ -358,6 +362,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   userOpenChecklistTotalCount = 0;
   userOpenChecklistSearch = '';
   userOpenChecklistStatusFilter: 'open' | 'all' | 'completed' = 'open';
+  userOpenChecklistShowCurrentUserOnly = true; // Filter to show current user's checklists by default
   loadingChecklists = false;
 
   // Tablet/PWA orientation guard (iOS can't truly lock; we block portrait with an overlay)
@@ -402,6 +407,10 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const filtered = this.userOpenChecklistGroups
       .map(g => {
         const instances = (g.instances || []).filter(i => {
+          // Filter by current user if enabled
+          if (this.userOpenChecklistShowCurrentUserOnly && this.currentUserId) {
+            if (i.operator_id?.toString() !== this.currentUserId.toString()) return false;
+          }
           if (!statusMatches(i)) return false;
           if (!q) return true;
           return matches(i, g.workOrder);
@@ -426,6 +435,8 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   maxVideoSizeMB = 50; // Default to 50MB for videos
 
   // Navigation sidebar state
+  hideInspectionNavigation = false;
+  showInspectionNavMediaContext = false;
   expandedNavItems: Set<number | string> = new Set();
   selectedItemIndex: number | null = null;
   private pendingSelectedIndex: number | null = null;
@@ -458,6 +469,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     private modalService: NgbModal,
     private renderer: Renderer2,
     private pdfExportService: PdfExportService,
+    private ngZone: NgZone,
     @Inject(DOCUMENT) private document: Document
   ) {
     // Get current user ID and name
@@ -949,6 +961,28 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       // Start recording without timeslice to maintain continuous stream
       this.videoRecorder.start();
       this.isVideoRecording = true;
+
+      // Start elapsed timer and read max duration from item config
+      this.videoRecordingSeconds = 0;
+      const itemProgress = this.stateService.findItemProgress(this.videoCaptureItemId!);
+      this.videoMaxDurationSeconds = (itemProgress?.item as any)?.video_requirements?.max_duration_seconds || 0;
+
+      // Run interval OUTSIDE Angular's zone so it doesn't trigger change detection every second.
+      // Only re-enter the zone when we actually need to update the UI or stop recording.
+      this.ngZone.runOutsideAngular(() => {
+        this.videoRecordingInterval = setInterval(() => {
+          this.ngZone.run(() => {
+            this.videoRecordingSeconds++;
+            // Auto-stop at limit — video is kept, not discarded
+            if (this.videoMaxDurationSeconds > 0 && this.videoRecordingSeconds >= this.videoMaxDurationSeconds) {
+              this.stopVideoRecording();
+            } else {
+              this.cdr.detectChanges();
+            }
+          });
+        }, 1000);
+      });
+
       this.cdr.detectChanges();
     } catch (error) {
       console.error('Unable to start video recording:', error);
@@ -957,6 +991,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   }
 
   stopVideoRecording(): void {
+    this.clearVideoRecordingTimer();
     if (!this.videoRecorder) {
       this.isVideoRecording = false;
       return;
@@ -968,6 +1003,19 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       this.videoRecorder = null;
       this.isVideoRecording = false;
     }
+  }
+
+  private clearVideoRecordingTimer(): void {
+    if (this.videoRecordingInterval) {
+      clearInterval(this.videoRecordingInterval);
+      this.videoRecordingInterval = null;
+    }
+  }
+
+  formatVideoTime(totalSeconds: number): string {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
   }
 
   private finalizeVideoRecording(): void {
@@ -986,11 +1034,21 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const file = new File([blob], `camera_video_${this.instanceId}_${Date.now()}.${ext}`, { type: mimeType });
 
       this.uploadSingleFile(itemId, file, 'in-app');
+      Swal.fire({
+        title: 'Saving video...',
+        text: 'Please wait while your video is uploaded.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+      });
       this.closeVideoCapture();
     } catch (error) {
       console.error('Error finalizing video recording:', error);
       alert('Failed to save recorded video. Please try again.');
     } finally {
+      this.clearVideoRecordingTimer();
+      this.videoRecordingSeconds = 0;
+      this.videoMaxDurationSeconds = 0;
       this.videoRecorder = null;
       this.videoChunks = [];
       this.isVideoRecording = false;
@@ -1171,6 +1229,27 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     return this.toSourceLabel(source);
   }
 
+  getAudioSourceLabel(progress: ChecklistItemProgress, audioUrl: string): string | null {
+    if (!progress || !audioUrl) return null;
+    const source = progress.videoMeta?.[audioUrl]?.source;
+    return this.toSourceLabel(source);
+  }
+
+  private getMediaAddedAction(file: File | undefined): 'photo_added' | 'video_added' | 'audio_added' {
+    if (!file || typeof file.type !== 'string') {
+      return 'photo_added';
+    }
+
+    const mimeType = file.type.toLowerCase();
+    if (mimeType.startsWith('audio/')) {
+      return 'audio_added';
+    }
+    if (mimeType.startsWith('video/')) {
+      return 'video_added';
+    }
+    return 'photo_added';
+  }
+
   private toSourceLabel(source?: 'in-app' | 'system' | 'library'): string | null {
     if (source === 'in-app') return 'In-App';
     if (source === 'system') return 'System';
@@ -1242,6 +1321,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       const idParam = params['id'];
       const stepParam = params['step'];
       const itemParam = params['item'];
+
+      // Instance-only toggle: hide the left checklist navigation when embedding/launching with this flag
+      const hideNavParam = params['hideNav'] ?? params['hide_nav'] ?? params['hideNavigation'] ?? params['hide_navigation'];
+      this.hideInspectionNavigation = this.toBooleanQueryParam(hideNavParam);
+
+      // Instance-only toggle: show media indicators/thumbnails in navigation when explicitly requested
+      const showNavMediaParam = params['showNavMedia'] ?? params['show_nav_media'] ?? params['showMediaContext'];
+      this.showInspectionNavMediaContext = this.toBooleanQueryParam(showNavMediaParam);
       
       if (idParam) {
         const newInstanceId = +idParam;
@@ -1288,6 +1375,12 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
         alert('No checklist instance ID provided. Please check the URL.');
       }
     });
+  }
+
+  private toBooleanQueryParam(value: any): boolean {
+    if (typeof value === 'boolean') return value;
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
   }
 
   ngAfterViewInit(): void {
@@ -1717,7 +1810,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
     
-    this.photoChecklistService.getTemplate(this.instance.template_id).subscribe({
+    this.photoChecklistService.getTemplateIncludingInactive(this.instance.template_id).subscribe({
       next: (template) => {
         if (!template) {
           this.loading = false;
@@ -1991,7 +2084,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     const captureSource = this.getCaptureSourceFromInput(input);
 
     const firstFile = files[0] as File | undefined;
-    const isVideoSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('video/');
+    const isMediaSelection = this.isVideoOrAudioFile(firstFile);
 
     // Validate instance ID
     if (!this.idExtractor.isValidInstanceId(this.instanceId)) {
@@ -2003,7 +2096,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     // Validate photo count limits
     const progress = this.stateService.findItemProgress(itemId);
     if (progress) {
-      if (!isVideoSelection) {
+      if (!isMediaSelection) {
         const validation = this.photoValidation.validateFileSelection(
           files, 
           progress.photos.length, 
@@ -2016,9 +2109,9 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           return;
         }
       } else {
-        // Videos are tracked separately from photos; do not apply photo count limits.
+        // Video/audio are tracked separately from photos; do not apply photo count limits.
         if (files.length > 1) {
-          alert('Please select a single video file.');
+          alert('Please select a single media file.');
           event.target.value = '';
           return;
         }
@@ -2056,10 +2149,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
     );
 
     const firstFile = files[0] as File | undefined;
-    const isVideoSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('video/');
-    if (isVideoSelection) {
+    const isMediaSelection = this.isVideoOrAudioFile(firstFile);
+    const isAudioSelection = !!firstFile && typeof firstFile.type === 'string' && firstFile.type.toLowerCase().startsWith('audio/');
+    if (isMediaSelection) {
       if (files.length > 1) {
-        alert('Please select a single video file.');
+        alert('Please select a single media file.');
       }
 
       this.uploadProgress[itemIdKey] = 0;
@@ -2073,13 +2167,14 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           delete this.selectedFiles[itemIdKey];
           this.cdr.detectChanges();
           this.saveProgress();
-          this.broadcastChecklistUpdate('video_added', { itemId });
+          this.broadcastChecklistUpdate(this.getMediaAddedAction(firstFile), { itemId });
         },
         error: (error) => {
-          console.error('Error uploading video:', error);
+          const mediaLabel = isAudioSelection ? 'audio' : 'video';
+          console.error(`Error uploading ${mediaLabel}:`, error);
           delete this.uploadProgress[itemIdKey];
           const errorMessage = error.error?.error || error.message || 'Upload failed';
-          alert(`Error uploading video: ${errorMessage}`);
+          alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
         }
       });
 
@@ -3116,11 +3211,36 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
   return item.sample_image_url || '';
   }
 
+  getReferenceSampleImages(item: ChecklistItem): any[] {
+    const sampleImages = Array.isArray(item?.sample_images) ? item.sample_images : [];
+    if (!sampleImages.length) {
+      return [];
+    }
+
+    const submissionType = ((item as any)?.submission_type || '').toString().toLowerCase();
+    if (submissionType === 'none') {
+      return sampleImages;
+    }
+
+    const nonPrimaryImages = sampleImages.filter((image: any) => !image?.is_primary);
+    if (nonPrimaryImages.length) {
+      return nonPrimaryImages;
+    }
+
+    return sampleImages.slice(1);
+  }
+
   /**
    * Handle file selection from photo section component
    */
   onFileSelected(event: Event, itemId: number | string): void {
     this.onFileSelectedAndUpload(event, itemId);
+  }
+
+  private isVideoOrAudioFile(file: File | undefined): boolean {
+    if (!file || typeof file.type !== 'string') return false;
+    const mimeType = file.type.toLowerCase();
+    return mimeType.startsWith('video/') || mimeType.startsWith('audio/');
   }
 
   private uploadSingleFile(itemId: number | string, file: File, captureSource: 'in-app' | 'system' | 'library'): void {
@@ -3137,10 +3257,11 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       return;
     }
 
-    const isVideo = !!file && typeof file.type === 'string' && file.type.toLowerCase().startsWith('video/');
+    const isMedia = this.isVideoOrAudioFile(file);
+    const isAudio = !!file && typeof file.type === 'string' && file.type.toLowerCase().startsWith('audio/');
 
     // Validate photo count limits (for photo submissions)
-    if (!isVideo) {
+    if (!isMedia) {
       if (!this.photoValidation.canAddMorePhotos(progress.photos.length, progress.item)) {
         alert('Maximum photos reached.');
         return;
@@ -3160,7 +3281,7 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
       userId: this.currentUserId || undefined
     }).subscribe({
       next: (response) => {
-        if (isVideo) {
+        if (isMedia) {
           this.stateService.addVideo(itemId, response.file_url, this.currentUserId || undefined, this.currentUserName, captureSource);
         } else {
           this.stateService.addPhoto(
@@ -3172,19 +3293,22 @@ export class ChecklistInstanceComponent implements OnInit, AfterViewInit, OnDest
           );
         }
         this.uploadProgress[itemIdKey] = 100;
+        Swal.close();
         this.cdr.detectChanges();
         setTimeout(() => this.initializeCarousels(), 100);
         this.handlePhotoUploadComplete(itemId);
 
         // Persist progress + notify other viewers
         this.saveProgress();
-        this.broadcastChecklistUpdate(isVideo ? 'video_added' : 'photo_added', { itemId });
+        this.broadcastChecklistUpdate(this.getMediaAddedAction(file), { itemId });
       },
       error: (error) => {
-        console.error('Error uploading photo:', error);
+        const mediaLabel = isMedia ? (isAudio ? 'audio' : 'video') : 'photo';
+        console.error(`Error uploading ${mediaLabel}:`, error);
+        Swal.close();
         delete this.uploadProgress[itemIdKey];
         const errorMessage = error.error?.error || error.message || 'Upload failed';
-        alert(`Error uploading photo: ${errorMessage}`);
+        alert(`Error uploading ${mediaLabel}: ${errorMessage}`);
       }
     });
   }

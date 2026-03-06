@@ -60,8 +60,8 @@ export interface ChecklistItem {
   order_index: number;
   title: string;
   description: string;
-  // ✅ TOP-LEVEL: submission_type is a separate ENUM column (photo, video, either)
-  submission_type?: 'photo' | 'video' | 'either' | 'none';
+  // ✅ TOP-LEVEL: submission_type is a separate ENUM column (photo, video, audio, either)
+  submission_type?: 'photo' | 'video' | 'audio' | 'either' | 'none';
   links?: ChecklistItemLink[];
   photo_requirements: PhotoRequirements;
   sample_images: SampleImageData[];
@@ -119,7 +119,7 @@ export interface PhotoRequirements {
   max_photos?: number;
   min_photos?: number;
   picture_required?: boolean; // When false, users can just confirm without taking a photo
-  submission_type?: 'photo' | 'video' | 'either' | 'none'; // NEW: Type of submission allowed (mutually exclusive)
+  submission_type?: 'photo' | 'video' | 'audio' | 'either' | 'none'; // NEW: Type of submission allowed (mutually exclusive)
   max_video_duration_seconds?: number; // NEW: Maximum allowed video duration in seconds (only used if submission_type includes video)
 }
 
@@ -140,6 +140,7 @@ export interface ChecklistInstance {
   serial_number: string;
   operator_id: number;
   operator_name: string;
+  operator_image?: string; // User's profile image URL
   status: 'draft' | 'in_progress' | 'review' | 'completed' | 'submitted';
   progress_percentage: number;
   item_completion?: any; // Persisted per-item completion/notes (JSON)
